@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateSector, hashCoords } from '../worldgen.js';
-import { WORLD_SEED, SECTOR_TYPES } from '@void-sector/shared';
+import { WORLD_SEED, SECTOR_TYPES, RESOURCE_TYPES } from '@void-sector/shared';
 
 describe('worldgen', () => {
   it('hashCoords is deterministic', () => {
@@ -48,5 +48,36 @@ describe('worldgen', () => {
     // station should be roughly 5%
     expect(counts['station']! / n).toBeGreaterThan(0.01);
     expect(counts['station']! / n).toBeLessThan(0.12);
+  });
+
+  it('generateSector includes resource yields', () => {
+    const sector = generateSector(10, -5, null);
+    expect(sector.resources).toBeDefined();
+    for (const res of RESOURCE_TYPES) {
+      expect(typeof sector.resources![res]).toBe('number');
+      expect(sector.resources![res]).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('resource yields vary by seed (±30% of base)', () => {
+    const yields: number[] = [];
+    for (let i = 0; i < 100; i++) {
+      const s = generateSector(i, 0, null);
+      if (s.resources) yields.push(s.resources.ore);
+    }
+    const unique = new Set(yields);
+    expect(unique.size).toBeGreaterThan(1);
+  });
+
+  it('station sectors have zero resources', () => {
+    for (let i = 0; i < 10000; i++) {
+      const s = generateSector(i, i * 17, null);
+      if (s.type === 'station') {
+        expect(s.resources!.ore).toBe(0);
+        expect(s.resources!.gas).toBe(0);
+        expect(s.resources!.crystal).toBe(0);
+        return;
+      }
+    }
   });
 });

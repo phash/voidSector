@@ -1,5 +1,5 @@
-import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED } from '@void-sector/shared';
-import type { SectorData, SectorType } from '@void-sector/shared';
+import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS } from '@void-sector/shared';
+import type { SectorData, SectorType, SectorResources, ResourceType } from '@void-sector/shared';
 
 /**
  * Simple deterministic hash for coordinates.
@@ -30,6 +30,21 @@ function sectorTypeFromSeed(seed: number): SectorType {
   return 'empty'; // fallback
 }
 
+function generateResources(type: SectorType, seed: number): SectorResources {
+  const base = SECTOR_RESOURCE_YIELDS[type];
+  const resources: SectorResources = { ore: 0, gas: 0, crystal: 0 };
+  const types: ResourceType[] = ['ore', 'gas', 'crystal'];
+  for (let i = 0; i < types.length; i++) {
+    const res = types[i];
+    if (base[res] === 0) continue;
+    // Use seed bits to vary ±30%
+    const variation = ((seed >>> (i * 8)) & 0xFF) / 255; // 0..1
+    const factor = 0.7 + variation * 0.6; // 0.7..1.3
+    resources[res] = Math.round(base[res] * factor);
+  }
+  return resources;
+}
+
 export function generateSector(
   x: number,
   y: number,
@@ -43,6 +58,7 @@ export function generateSector(
     y,
     type,
     seed,
+    resources: generateResources(type, seed),
     discoveredBy,
     discoveredAt: null,
     metadata: {},
