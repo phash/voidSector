@@ -35,5 +35,5 @@ export function spendAP(
 ): APState | null {
   const updated = calculateCurrentAP(ap, now);
   if (updated.current < cost) return null;
-  return { ...updated, current: updated.current - cost };
+  return { ...updated, current: Math.floor(updated.current - cost) };
 }
