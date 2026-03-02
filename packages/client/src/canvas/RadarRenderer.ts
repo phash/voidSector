@@ -7,6 +7,7 @@ export const CELL_SIZES = [
   { w: 48, h: 38, fontSize: 12, coordSize: 8 },
   { w: 64, h: 50, fontSize: 14, coordSize: 9 },
   { w: 80, h: 64, fontSize: 16, coordSize: 10 },
+  { w: 96, h: 76, fontSize: 18, coordSize: 11 },
 ];
 
 interface RadarState {

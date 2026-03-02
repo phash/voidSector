@@ -60,7 +60,7 @@ export function MonitorBezel({ children, monitorId, statusLeds = [] }: MonitorBe
             label="ZOOM"
             value={zoomLevel}
             min={0}
-            max={2}
+            max={3}
             onChange={(v) => setZoomLevel(Math.round(v))}
           />
         </div>

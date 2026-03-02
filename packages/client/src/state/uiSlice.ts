@@ -47,7 +47,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   jumpPending: false,
   brightness: parseFloat(safeGetItem('vs-brightness') || '1'),
   colorProfile: (safeGetItem('vs-color-profile') as ColorProfileName) || 'Amber Classic',
-  zoomLevel: 1,
+  zoomLevel: 2,
   panOffset: { x: 0, y: 0 },
   jumpAnimation: null,
   sidebarSlots: JSON.parse(safeGetItem('vs-sidebar-slots') || '["SHIP-SYS","COMMS"]') as [string, string],
@@ -68,7 +68,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     safeSetItem('vs-color-profile', profile);
     set({ colorProfile: profile });
   },
-  setZoomLevel: (level) => set({ zoomLevel: Math.max(0, Math.min(2, level)) }),
+  setZoomLevel: (level) => set({ zoomLevel: Math.max(0, Math.min(3, level)) }),
   setPanOffset: (offset) => set({
     panOffset: {
       x: Math.max(-3, Math.min(3, offset.x)),
