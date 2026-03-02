@@ -65,7 +65,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const isHome = sx === 0 && sy === 0;
 
       // Cell border
-      ctx.strokeStyle = 'rgba(255, 176, 0, 0.25)';
+      ctx.strokeStyle = state.dimColor.replace(/[\d.]+\)$/, '0.4)');
       ctx.lineWidth = 2;
       ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
 
@@ -76,7 +76,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       if (sector || isPlayer) {
         ctx.fillStyle = state.dimColor;
       } else {
-        ctx.fillStyle = 'rgba(255, 176, 0, 0.15)';
+        ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.25)');
       }
       ctx.fillText(`(${sx},${sy})`, cellX, cellY - CELL_H / 2 + 3);
 
@@ -106,7 +106,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         const label = isHome ? 'HOME' : getSectorLabel(sector.type);
         ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
       } else {
-        ctx.fillStyle = 'rgba(255, 176, 0, 0.1)';
+        ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.15)');
         ctx.textBaseline = 'bottom';
         ctx.font = COORD_FONT;
         ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H / 2 - 2);

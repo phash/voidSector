@@ -3,12 +3,12 @@ import { useCanvas } from '../canvas/useCanvas';
 import { drawRadar, CELL_SIZES } from '../canvas/RadarRenderer';
 import { updateJumpAnimation } from '../canvas/JumpAnimation';
 import { useStore } from '../state/store';
-import { THEME } from '@void-sector/shared';
+import { COLOR_PROFILES } from '../styles/themes';
 
 export function RadarCanvas() {
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
     const state = useStore.getState();
-    const themeColors = THEME[state.theme];
+    const themeColors = COLOR_PROFILES[state.colorProfile];
 
     // Update jump animation each frame
     let jumpAnimation = state.jumpAnimation;
