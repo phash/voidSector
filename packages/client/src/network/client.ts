@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState } from '@void-sector/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -117,6 +117,16 @@ class GameNetwork {
       useStore.getState().addLogEntry(`ERROR: ${data.message}`);
     });
 
+    // Mining updates
+    room.onMessage('miningUpdate', (data: MiningState) => {
+      useStore.getState().setMining(data);
+    });
+
+    // Cargo updates
+    room.onMessage('cargoUpdate', (data: CargoState) => {
+      useStore.getState().setCargo(data);
+    });
+
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
@@ -159,6 +169,40 @@ class GameNetwork {
   requestDiscoveries() {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('getDiscoveries', {});
+  }
+
+  sendMine(resource: string) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('mine', { resource });
+  }
+
+  sendStopMine() {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('stopMine', {});
+  }
+
+  sendJettison(resource: string) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('jettison', { resource });
+  }
+
+  requestCargo() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getCargo', {});
+  }
+
+  requestMiningStatus() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getMiningStatus', {});
   }
 }
 

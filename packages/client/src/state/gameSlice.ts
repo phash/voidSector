@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -49,6 +49,12 @@ export interface GameSlice {
   // Event log
   log: string[];
 
+  // Mining
+  mining: MiningState | null;
+
+  // Cargo
+  cargo: CargoState;
+
   // Active monitor
   activeMonitor: string;
 
@@ -66,6 +72,8 @@ export interface GameSlice {
   addDiscoveries: (sectors: SectorData[]) => void;
   addLogEntry: (message: string) => void;
   setActiveMonitor: (monitor: string) => void;
+  setMining: (mining: MiningState) => void;
+  setCargo: (cargo: CargoState) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -80,6 +88,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   players: {},
   discoveries: {},
   log: [],
+  mining: null,
+  cargo: { ore: 0, gas: 0, crystal: 0 },
   activeMonitor: 'NAV-COM',
 
   setAuth: (token, playerId, username) => {
@@ -129,4 +139,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
     })),
 
   setActiveMonitor: (activeMonitor) => set({ activeMonitor }),
+  setMining: (mining) => set({ mining }),
+  setCargo: (cargo) => set({ cargo }),
 });
