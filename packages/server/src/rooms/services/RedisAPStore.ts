@@ -1,7 +1,8 @@
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
-import type { APState } from '@void-sector/shared';
+import type { APState, MiningState } from '@void-sector/shared';
 import { createAPState } from '../../engine/ap.js';
+import { createMiningState } from '../../engine/mining.js';
 
 dotenv.config();
 
@@ -47,6 +48,38 @@ export async function savePlayerPosition(
   y: number
 ): Promise<void> {
   await redis.hset(`player:pos:${playerId}`, { x: String(x), y: String(y) });
+}
+
+const MINING_PREFIX = 'player:mining:';
+
+export async function getMiningState(playerId: string): Promise<MiningState> {
+  const data = await redis.hgetall(`${MINING_PREFIX}${playerId}`);
+  if (!data.active) return createMiningState();
+  return {
+    active: data.active === 'true',
+    resource: (data.resource as MiningState['resource']) || null,
+    sectorX: Number(data.sectorX),
+    sectorY: Number(data.sectorY),
+    startedAt: data.startedAt ? Number(data.startedAt) : null,
+    rate: Number(data.rate),
+    sectorYield: Number(data.sectorYield),
+  };
+}
+
+export async function saveMiningState(playerId: string, state: MiningState): Promise<void> {
+  if (!state.active) {
+    await redis.del(`${MINING_PREFIX}${playerId}`);
+    return;
+  }
+  await redis.hset(`${MINING_PREFIX}${playerId}`, {
+    active: String(state.active),
+    resource: state.resource || '',
+    sectorX: String(state.sectorX),
+    sectorY: String(state.sectorY),
+    startedAt: String(state.startedAt || 0),
+    rate: String(state.rate),
+    sectorYield: String(state.sectorYield),
+  });
 }
 
 export { redis };
