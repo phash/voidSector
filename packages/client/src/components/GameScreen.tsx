@@ -9,7 +9,7 @@ import { MONITORS, SHIP_CLASSES } from '@void-sector/shared';
 function NavComScreen() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: '6px 12px', fontSize: '0.7rem', letterSpacing: '0.2em', opacity: 0.6 }}>
+      <div style={{ padding: '6px 12px', fontSize: '0.85rem', letterSpacing: '0.2em', opacity: 0.6 }}>
         VOID SECTOR — NAV-COM
       </div>
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
@@ -57,30 +57,39 @@ export function GameScreen() {
         >
           {activeMonitor === MONITORS.NAV_COM && <NavComScreen />}
           {activeMonitor === MONITORS.SHIP_SYS && <ShipSysScreen />}
+          {activeMonitor === MONITORS.MINING && (
+            <div style={{ padding: '12px', fontSize: '0.9rem' }}>MINING — COMING SOON</div>
+          )}
+          {activeMonitor === MONITORS.CARGO && (
+            <div style={{ padding: '12px', fontSize: '0.9rem' }}>CARGO — COMING SOON</div>
+          )}
         </MonitorBezel>
       </div>
 
       <div style={{
         display: 'flex',
-        gap: '4px',
+        gap: '2px',
         padding: '4px',
         background: '#111',
         borderTop: '2px solid #2a2a2a',
       }}>
-        <button
-          className="vs-btn"
-          style={{ flex: 1, fontSize: '0.65rem' }}
-          onClick={() => setActiveMonitor(MONITORS.NAV_COM)}
-        >
-          [NAV-COM]
-        </button>
-        <button
-          className="vs-btn"
-          style={{ flex: 1, fontSize: '0.65rem' }}
-          onClick={() => setActiveMonitor(MONITORS.SHIP_SYS)}
-        >
-          [SHIP-SYS]
-        </button>
+        {[MONITORS.NAV_COM, MONITORS.SHIP_SYS, MONITORS.MINING, MONITORS.CARGO].map((id) => (
+          <button
+            key={id}
+            className="vs-btn"
+            style={{
+              flex: 1,
+              fontSize: '0.85rem',
+              padding: '8px 4px',
+              border: '2px solid var(--color-primary)',
+              background: activeMonitor === id ? 'var(--color-primary)' : 'transparent',
+              color: activeMonitor === id ? '#050505' : 'var(--color-primary)',
+            }}
+            onClick={() => setActiveMonitor(id)}
+          >
+            [{id}]
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -2,10 +2,10 @@ import { SYMBOLS, RADAR_RADIUS } from '@void-sector/shared';
 import type { SectorData, Coords } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 
-const CELL_W = 72;
-const CELL_H = 56;
-const FONT_SIZE = 14;
-const COORD_FONT_SIZE = 8;
+const CELL_W = 80;
+const CELL_H = 64;
+const FONT_SIZE = 16;
+const COORD_FONT_SIZE = 10;
 const FONT = `${FONT_SIZE}px 'Share Tech Mono', 'Courier New', monospace`;
 const COORD_FONT = `${COORD_FONT_SIZE}px 'Share Tech Mono', 'Courier New', monospace`;
 
@@ -45,7 +45,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
       // Cell border
       ctx.strokeStyle = 'rgba(255, 176, 0, 0.08)';
-      ctx.lineWidth = 0.5;
+      ctx.lineWidth = 1.0;
       ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
 
       // Coordinates label
