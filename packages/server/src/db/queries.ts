@@ -333,3 +333,125 @@ export async function getRecentMessages(channel: string, limit: number = 50): Pr
   );
   return rows.reverse();
 }
+
+export async function getPlayerCredits(playerId: string): Promise<number> {
+  const { rows } = await query<{ credits: number }>(
+    'SELECT credits FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.credits ?? 0;
+}
+
+export async function addCredits(playerId: string, amount: number): Promise<number> {
+  const { rows } = await query<{ credits: number }>(
+    'UPDATE players SET credits = credits + $2 WHERE id = $1 RETURNING credits',
+    [playerId, amount]
+  );
+  return rows[0].credits;
+}
+
+export async function deductCredits(playerId: string, amount: number): Promise<boolean> {
+  const { rowCount } = await query(
+    'UPDATE players SET credits = credits - $2 WHERE id = $1 AND credits >= $2',
+    [playerId, amount]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function getStorageInventory(playerId: string): Promise<{ ore: number; gas: number; crystal: number }> {
+  const { rows } = await query<{ ore: number; gas: number; crystal: number }>(
+    'SELECT ore, gas, crystal FROM storage_inventory WHERE player_id = $1',
+    [playerId]
+  );
+  if (rows.length === 0) return { ore: 0, gas: 0, crystal: 0 };
+  return { ore: rows[0].ore, gas: rows[0].gas, crystal: rows[0].crystal };
+}
+
+export async function updateStorageResource(
+  playerId: string, resource: string, delta: number
+): Promise<boolean> {
+  const safeCols = ['ore', 'gas', 'crystal'];
+  if (!safeCols.includes(resource)) return false;
+  const { rowCount } = await query(
+    `INSERT INTO storage_inventory (player_id, ${resource})
+     VALUES ($1, GREATEST(0, $2))
+     ON CONFLICT (player_id) DO UPDATE
+     SET ${resource} = GREATEST(0, storage_inventory.${resource} + $2)`,
+    [playerId, delta]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function getStructureTier(structureId: string): Promise<number> {
+  const { rows } = await query<{ tier: number }>(
+    'SELECT tier FROM structures WHERE id = $1',
+    [structureId]
+  );
+  return rows[0]?.tier ?? 1;
+}
+
+export async function upgradeStructureTier(structureId: string): Promise<number> {
+  const { rows } = await query<{ tier: number }>(
+    'UPDATE structures SET tier = tier + 1 WHERE id = $1 RETURNING tier',
+    [structureId]
+  );
+  return rows[0].tier;
+}
+
+export async function getPlayerStructure(
+  playerId: string, type: string
+): Promise<{ id: string; tier: number; sector_x: number; sector_y: number } | null> {
+  const { rows } = await query<{ id: string; tier: number; sector_x: number; sector_y: number }>(
+    `SELECT s.id, s.tier, s.sector_x, s.sector_y FROM structures s
+     JOIN players p ON p.id = $1
+     WHERE s.owner_id = $1 AND s.type = $2
+       AND s.sector_x = (p.home_base->>'x')::int
+       AND s.sector_y = (p.home_base->>'y')::int`,
+    [playerId, type]
+  );
+  return rows[0] ?? null;
+}
+
+export async function createTradeOrder(
+  playerId: string, resource: string, amount: number, pricePerUnit: number, type: 'buy' | 'sell'
+): Promise<{ id: string }> {
+  const { rows } = await query<{ id: string }>(
+    `INSERT INTO trade_orders (player_id, resource, amount, price_per_unit, type)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [playerId, resource, amount, pricePerUnit, type]
+  );
+  return rows[0];
+}
+
+export async function getActiveTradeOrders(): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT t.*, p.username as player_name FROM trade_orders t
+     JOIN players p ON t.player_id = p.id
+     WHERE t.fulfilled = FALSE ORDER BY t.created_at DESC`
+  );
+  return rows;
+}
+
+export async function getPlayerTradeOrders(playerId: string): Promise<any[]> {
+  const { rows } = await query(
+    'SELECT * FROM trade_orders WHERE player_id = $1 AND fulfilled = FALSE ORDER BY created_at DESC',
+    [playerId]
+  );
+  return rows;
+}
+
+export async function fulfillTradeOrder(orderId: string): Promise<boolean> {
+  const { rowCount } = await query(
+    'UPDATE trade_orders SET fulfilled = TRUE WHERE id = $1 AND fulfilled = FALSE',
+    [orderId]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function cancelTradeOrder(orderId: string, playerId: string): Promise<boolean> {
+  const { rowCount } = await query(
+    'DELETE FROM trade_orders WHERE id = $1 AND player_id = $2 AND fulfilled = FALSE',
+    [orderId, playerId]
+  );
+  return (rowCount ?? 0) > 0;
+}
