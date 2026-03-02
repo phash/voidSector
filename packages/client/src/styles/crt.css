@@ -1,0 +1,140 @@
+.crt-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.crt-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background:
+    linear-gradient(
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.25) 50%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.03)
+    );
+  background-size: 100% 3px, 3px 100%;
+}
+
+.crt-flicker {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 11;
+  background: rgba(18, 16, 16, 0.1);
+  animation: crt-flicker 0.15s infinite;
+}
+
+@keyframes crt-flicker {
+  0%   { opacity: 0.27; }
+  10%  { opacity: 0.24; }
+  20%  { opacity: 0.39; }
+  30%  { opacity: 0.40; }
+  40%  { opacity: 0.26; }
+  50%  { opacity: 0.25; }
+  60%  { opacity: 0.30; }
+  70%  { opacity: 0.18; }
+  80%  { opacity: 0.43; }
+  90%  { opacity: 0.33; }
+  100% { opacity: 0.27; }
+}
+
+.crt-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+}
+
+/* Hardware Bezel Frame */
+.bezel-frame {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  border: 3px solid #2a2a2a;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 20px rgba(0,0,0,0.8),
+    0 0 30px rgba(0,0,0,0.5);
+}
+
+.bezel-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 4px;
+  background: linear-gradient(180deg, #1a1a1a, #151515, #1a1a1a);
+  min-width: 28px;
+}
+
+.bezel-left {
+  border-right: 1px solid #2a2a2a;
+}
+.bezel-right {
+  border-left: 1px solid #2a2a2a;
+}
+
+.bezel-label-vertical {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 176, 0, 0.3);
+}
+
+.bezel-led-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.bezel-led-label {
+  font-size: 0.45rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 176, 0, 0.3);
+}
+
+.bezel-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-led-off);
+  border: 1px solid #333;
+}
+.bezel-led.active {
+  background: var(--color-led-active);
+  box-shadow: 0 0 4px var(--color-led-active);
+}
+
+.bezel-toggle-switch {
+  width: 8px;
+  height: 14px;
+  background: #444;
+  border-radius: 2px;
+  border: 1px solid #555;
+}
+
+.crt-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}

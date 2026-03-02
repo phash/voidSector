@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-primary: #FFB000;
+  --color-dim: rgba(255, 176, 0, 0.4);
+  --color-bg: #050505;
+  --color-danger: #FF3333;
+  --color-bezel: #1a1a1a;
+  --color-bezel-light: #2a2a2a;
+  --color-led-active: #FFB000;
+  --color-led-off: #3a3000;
+  --font-mono: 'Share Tech Mono', 'Courier New', Courier, monospace;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+}
+
+/* Button style: invert on click */
+.vs-btn {
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.05s;
+}
+.vs-btn:active {
+  background: var(--color-primary);
+  color: #000;
+}
+.vs-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Segmented progress bar: [░░░░] */
+.vs-bar {
+  font-family: var(--font-mono);
+  letter-spacing: -1px;
+}
