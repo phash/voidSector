@@ -21,7 +21,7 @@ export interface SectorData {
   discoveredBy: string | null;
   discoveredAt: string | null;
   metadata: Record<string, unknown>;
-  resources: SectorResources;
+  resources?: SectorResources;
 }
 
 export interface PlayerData {
