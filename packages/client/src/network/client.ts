@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData } from '@void-sector/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -145,6 +145,11 @@ class GameNetwork {
     // Cargo updates
     room.onMessage('cargoUpdate', (data: CargoState) => {
       useStore.getState().setCargo(data);
+    });
+
+    // Ship data
+    room.onMessage('shipData', (data: ShipData) => {
+      useStore.getState().setShip(data);
     });
 
     // Chat messages

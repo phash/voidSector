@@ -9,7 +9,7 @@ import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
 import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild } from '../engine/commands.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered } from '../db/queries.js';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages } from '../db/queries.js';
 import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES } from '@void-sector/shared';
 import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage } from '@void-sector/shared';
 
@@ -20,6 +20,11 @@ interface SectorRoomOptions {
 
 export class SectorRoom extends Room<SectorRoomState> {
   autoDispose = true;
+  private clientShips = new Map<string, typeof SHIP_CLASSES[keyof typeof SHIP_CLASSES]>();
+
+  private getShipForClient(sessionId: string) {
+    return this.clientShips.get(sessionId) ?? SHIP_CLASSES.aegis_scout_mk1;
+  }
 
   static async onAuth(token: string) {
     if (!token) throw new ServerError(401, 'No token');
@@ -130,6 +135,27 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Save position
     await savePlayerPosition(auth.userId, this.state.sector.x, this.state.sector.y);
 
+    // Load active ship
+    const activeShip = await getActiveShip(auth.userId);
+    const shipClass = activeShip?.shipClass ?? 'aegis_scout_mk1';
+    const shipStats = SHIP_CLASSES[shipClass];
+    this.clientShips.set(client.sessionId, shipStats);
+
+    // Send ship data to client
+    client.send('shipData', {
+      id: '',
+      ownerId: auth.userId,
+      shipClass,
+      fuel: activeShip?.fuel ?? shipStats.fuelMax,
+      fuelMax: shipStats.fuelMax,
+      jumpRange: shipStats.jumpRange,
+      apCostJump: shipStats.apCostJump,
+      cargoCap: shipStats.cargoCap,
+      scannerLevel: shipStats.scannerLevel,
+      safeSlots: shipStats.safeSlots,
+      active: true,
+    });
+
     // Record discovery
     await addDiscovery(auth.userId, this.state.sector.x, this.state.sector.y);
 
@@ -173,7 +199,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const mining = await getMiningState(auth.userId);
       if (mining.active) {
         const cargoTotal = await getCargoTotal(auth.userId);
-        const ship = SHIP_CLASSES.aegis_scout_mk1;
+        const ship = this.getShipForClient(client.sessionId);
         const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
         const result = stopMining(mining, cargoSpace);
         if (result.mined > 0 && result.resource) {
@@ -198,6 +224,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
+    this.clientShips.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
   }
@@ -210,7 +237,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const mining = await getMiningState(auth.userId);
     if (mining.active) {
       const cargoTotal = await getCargoTotal(auth.userId);
-      const ship = SHIP_CLASSES.aegis_scout_mk1;
+      const ship = this.getShipForClient(client.sessionId);
       const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
       const result = stopMining(mining, cargoSpace);
       if (result.mined > 0 && result.resource) {
@@ -230,7 +257,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.state.sector.y,
       targetX,
       targetY,
-      SHIP_CLASSES.aegis_scout_mk1.jumpRange,
+      this.getShipForClient(client.sessionId).jumpRange,
       AP_COSTS.jump,
     );
     if (!jumpResult.valid) {
@@ -279,7 +306,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-    const scannerLevel = SHIP_CLASSES.aegis_scout_mk1.scannerLevel;
+    const scannerLevel = this.getShipForClient(client.sessionId).scannerLevel;
 
     const result = validateLocalScan(currentAP, AP_COSTS_LOCAL_SCAN, scannerLevel);
     if (!result.valid) {
@@ -303,7 +330,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-    const scannerLevel = SHIP_CLASSES.aegis_scout_mk1.scannerLevel;
+    const scannerLevel = this.getShipForClient(client.sessionId).scannerLevel;
 
     const scanResult = validateAreaScan(currentAP, scannerLevel);
     if (!scanResult.valid) {
@@ -347,7 +374,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     const current = await getMiningState(auth.userId);
     const cargoTotal = await getCargoTotal(auth.userId);
-    const ship = SHIP_CLASSES.aegis_scout_mk1;
+    const ship = this.getShipForClient(client.sessionId);
 
     const result = validateMine(
       resource,
@@ -377,7 +404,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
 
     const cargoTotal = await getCargoTotal(auth.userId);
-    const ship = SHIP_CLASSES.aegis_scout_mk1;
+    const ship = this.getShipForClient(client.sessionId);
     const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
     const result = stopMining(mining, cargoSpace);
 

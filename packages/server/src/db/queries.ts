@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { SectorData, PlayerData, CargoState, ResourceType } from '@void-sector/shared';
+import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass } from '@void-sector/shared';
 import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -52,6 +52,28 @@ export async function findPlayerByUsername(
     homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
+  };
+}
+
+export async function getActiveShip(playerId: string): Promise<{
+  shipClass: ShipClass;
+  fuel: number;
+  fuelMax: number;
+} | null> {
+  const { rows } = await query<{
+    ship_class: string;
+    fuel: number;
+    fuel_max: number;
+  }>(
+    `SELECT ship_class, fuel, fuel_max FROM ships
+     WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
+    [playerId]
+  );
+  if (rows.length === 0) return null;
+  return {
+    shipClass: rows[0].ship_class as ShipClass,
+    fuel: rows[0].fuel,
+    fuelMax: rows[0].fuel_max,
   };
 }
 
