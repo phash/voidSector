@@ -37,6 +37,7 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     mining: null,
     cargo: defaultCargo,
     activeMonitor: 'NAV-COM',
+    sidebarSlots: ['SHIP-SYS', 'COMMS'] as [string, string],
     screen: 'game' as const,
     theme: 'amber' as const,
     jumpPending: false,

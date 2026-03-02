@@ -159,4 +159,15 @@ export const MONITORS = {
   MINING: 'MINING',
   CARGO: 'CARGO',
   COMMS: 'COMMS',
+  BASE_LINK: 'BASE-LINK',
 } as const;
+
+export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
+
+export const SIDEBAR_MONITORS: MonitorId[] = [
+  MONITORS.SHIP_SYS,
+  MONITORS.MINING,
+  MONITORS.CARGO,
+  MONITORS.COMMS,
+  MONITORS.BASE_LINK,
+];

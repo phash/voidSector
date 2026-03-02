@@ -22,6 +22,7 @@ export interface UISlice {
   zoomLevel: number;
   panOffset: { x: number; y: number };
   jumpAnimation: JumpAnimationState | null;
+  sidebarSlots: [string, string];
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -33,6 +34,7 @@ export interface UISlice {
   resetPan: () => void;
   startJumpAnimation: (dx: number, dy: number) => void;
   clearJumpAnimation: () => void;
+  setSidebarSlot: (index: 0 | 1, monitor: string) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -44,6 +46,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   zoomLevel: 1,
   panOffset: { x: 0, y: 0 },
   jumpAnimation: null,
+  sidebarSlots: JSON.parse(safeGetItem('vs-sidebar-slots') || '["SHIP-SYS","COMMS"]') as [string, string],
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -69,4 +72,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   resetPan: () => set({ panOffset: { x: 0, y: 0 } }),
   startJumpAnimation: (dx, dy) => set({ jumpAnimation: createJumpAnimation(dx, dy) }),
   clearJumpAnimation: () => set({ jumpAnimation: null }),
+  setSidebarSlot: (index, monitor) => set((s) => {
+    const slots = [...s.sidebarSlots] as [string, string];
+    slots[index] = monitor;
+    safeSetItem('vs-sidebar-slots', JSON.stringify(slots));
+    return { sidebarSlots: slots };
+  }),
 });
