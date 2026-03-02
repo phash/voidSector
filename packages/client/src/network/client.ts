@@ -132,7 +132,9 @@ class GameNetwork {
     room.onMessage('localScanResult', (data: { resources: SectorResources; hiddenSignatures: boolean }) => {
       const store = useStore.getState();
       if (store.currentSector) {
-        store.setCurrentSector({ ...store.currentSector, resources: data.resources });
+        const updatedSector = { ...store.currentSector, resources: data.resources };
+        store.setCurrentSector(updatedSector);
+        store.addDiscoveries([updatedSector]);
       }
       if (data.hiddenSignatures) {
         store.addLogEntry('UNKNOWN SIGNATURES DETECTED — SCANNER UPGRADE REQUIRED');
