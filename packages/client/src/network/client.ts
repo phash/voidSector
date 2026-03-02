@@ -97,10 +97,10 @@ class GameNetwork {
       apRemaining: number;
     }) => {
       useStore.getState().addDiscoveries(data.sectors);
-      useStore.getState().setAP({
-        ...useStore.getState().ap!,
-        current: data.apRemaining,
-      });
+      const currentAP = useStore.getState().ap;
+      if (currentAP) {
+        useStore.getState().setAP({ ...currentAP, current: data.apRemaining });
+      }
       useStore.getState().addLogEntry(
         `Scan complete: ${data.sectors.length} sectors revealed`
       );
