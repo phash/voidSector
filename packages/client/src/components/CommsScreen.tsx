@@ -9,11 +9,11 @@ export function CommsScreen() {
   const messages = useStore(s => s.chatMessages);
   const channel = useStore(s => s.chatChannel);
   const setChatChannel = useStore(s => s.setChatChannel);
-  const setUnreadComms = useStore(s => s.setUnreadComms);
+  const clearAlert = useStore(s => s.clearAlert);
   const [input, setInput] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setUnreadComms(false); }, []);
+  useEffect(() => { clearAlert('COMMS'); }, []);
 
   useEffect(() => {
     logRef.current?.scrollTo(0, logRef.current.scrollHeight);

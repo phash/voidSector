@@ -26,7 +26,7 @@ describe('CommsScreen', () => {
         },
       ],
       chatChannel: 'local' as const,
-      unreadComms: false,
+      alerts: {},
     });
   });
 
@@ -62,7 +62,7 @@ describe('CommsScreen', () => {
     mockStoreState({
       chatMessages: [],
       chatChannel: 'local' as const,
-      unreadComms: false,
+      alerts: {},
     });
     render(<CommsScreen />);
     expect(screen.getByText(/NO MESSAGES ON THIS CHANNEL/)).toBeInTheDocument();

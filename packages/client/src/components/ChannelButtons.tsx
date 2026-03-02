@@ -16,7 +16,7 @@ const CHANNEL_LABELS: Record<string, string> = {
 export function ChannelButtons({ slotIndex }: ChannelButtonsProps) {
   const sidebarSlots = useStore((s) => s.sidebarSlots);
   const setSidebarSlot = useStore((s) => s.setSidebarSlot);
-  const unreadComms = useStore((s) => s.unreadComms);
+  const alerts = useStore((s) => s.alerts);
   const activeMonitor = sidebarSlots[slotIndex];
 
   return (
@@ -27,12 +27,12 @@ export function ChannelButtons({ slotIndex }: ChannelButtonsProps) {
           className={`channel-btn ${activeMonitor === id ? 'active' : ''}`}
           onClick={() => {
             setSidebarSlot(slotIndex, id);
-            if (id === 'COMMS') useStore.getState().setUnreadComms(false);
+            if (id === 'COMMS') useStore.getState().clearAlert('COMMS');
           }}
           title={id}
         >
           {CHANNEL_LABELS[id] || id.slice(0, 3)}
-          {id === 'COMMS' && unreadComms && <span className="channel-dot" />}
+          {id === 'COMMS' && !!alerts['COMMS'] && <span className="channel-dot" />}
         </button>
       ))}
     </div>

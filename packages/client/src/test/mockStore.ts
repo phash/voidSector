@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { useStore } from '../state/store';
 import type { StoreState } from '../state/store';
 import type { APState, SectorData, CargoState } from '@void-sector/shared';
@@ -37,8 +38,17 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     mining: null,
     cargo: defaultCargo,
     activeMonitor: 'NAV-COM',
+    alerts: {},
+    selectedSector: null,
     baseStructures: [],
     sidebarSlots: ['SHIP-SYS', 'COMMS'] as [string, string],
+    leftSidebarSlots: ['LOG', 'SHIP-SYS'] as [string, string],
+    mainMonitorMode: 'split' as 'split' | string,
+    setAlert: vi.fn(),
+    clearAlert: vi.fn(),
+    setSelectedSector: vi.fn(),
+    setLeftSidebarSlot: vi.fn(),
+    setMainMonitorMode: vi.fn(),
     screen: 'game' as const,
     theme: 'amber' as const,
     jumpPending: false,

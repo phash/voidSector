@@ -156,7 +156,7 @@ class GameNetwork {
     room.onMessage('chatMessage', (data: ChatMessage) => {
       useStore.getState().addChatMessage(data);
       if (useStore.getState().activeMonitor !== 'COMMS') {
-        useStore.getState().setUnreadComms(true);
+        useStore.getState().setAlert('COMMS', true);
       }
     });
 

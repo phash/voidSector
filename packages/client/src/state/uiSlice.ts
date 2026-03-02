@@ -23,6 +23,8 @@ export interface UISlice {
   panOffset: { x: number; y: number };
   jumpAnimation: JumpAnimationState | null;
   sidebarSlots: [string, string];
+  leftSidebarSlots: [string, string];
+  mainMonitorMode: 'split' | string;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -35,6 +37,8 @@ export interface UISlice {
   startJumpAnimation: (dx: number, dy: number) => void;
   clearJumpAnimation: () => void;
   setSidebarSlot: (index: 0 | 1, monitor: string) => void;
+  setLeftSidebarSlot: (index: 0 | 1, monitor: string) => void;
+  setMainMonitorMode: (mode: 'split' | string) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -47,6 +51,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   panOffset: { x: 0, y: 0 },
   jumpAnimation: null,
   sidebarSlots: JSON.parse(safeGetItem('vs-sidebar-slots') || '["SHIP-SYS","COMMS"]') as [string, string],
+  leftSidebarSlots: JSON.parse(safeGetItem('vs-left-sidebar-slots') || '["LOG","SHIP-SYS"]') as [string, string],
+  mainMonitorMode: 'split' as 'split' | string,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -78,4 +84,11 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     safeSetItem('vs-sidebar-slots', JSON.stringify(slots));
     return { sidebarSlots: slots };
   }),
+  setLeftSidebarSlot: (index, monitor) => set((s) => {
+    const slots = [...s.leftSidebarSlots] as [string, string];
+    slots[index] = monitor;
+    safeSetItem('vs-left-sidebar-slots', JSON.stringify(slots));
+    return { leftSidebarSlots: slots };
+  }),
+  setMainMonitorMode: (mode) => set({ mainMonitorMode: mode }),
 });

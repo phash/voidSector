@@ -61,7 +61,12 @@ export interface GameSlice {
   // Chat / COMMS
   chatMessages: ChatMessage[];
   chatChannel: ChatChannel;
-  unreadComms: boolean;
+
+  // Alerts
+  alerts: Record<string, boolean>;
+
+  // Selected sector (radar click)
+  selectedSector: { x: number; y: number } | null;
 
   // Base
   baseStructures: any[];
@@ -84,7 +89,9 @@ export interface GameSlice {
   setCargo: (cargo: CargoState) => void;
   addChatMessage: (msg: ChatMessage) => void;
   setChatChannel: (channel: ChatChannel) => void;
-  setUnreadComms: (unread: boolean) => void;
+  setAlert: (monitorId: string, active: boolean) => void;
+  clearAlert: (monitorId: string) => void;
+  setSelectedSector: (sector: { x: number; y: number } | null) => void;
   setBaseStructures: (structures: any[]) => void;
 }
 
@@ -105,7 +112,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   activeMonitor: 'NAV-COM',
   chatMessages: [],
   chatChannel: 'local' as ChatChannel,
-  unreadComms: false,
+  alerts: {},
+  selectedSector: null,
   baseStructures: [],
 
   setAuth: (token, playerId, username) => {
@@ -163,6 +171,14 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
       chatMessages: [...s.chatMessages.slice(-199), msg],
     })),
   setChatChannel: (chatChannel) => set({ chatChannel }),
-  setUnreadComms: (unreadComms) => set({ unreadComms }),
+  setAlert: (monitorId, active) => set((s) => ({
+    alerts: { ...s.alerts, [monitorId]: active },
+  })),
+  clearAlert: (monitorId) => set((s) => {
+    const next = { ...s.alerts };
+    delete next[monitorId];
+    return { alerts: next };
+  }),
+  setSelectedSector: (selectedSector) => set({ selectedSector }),
   setBaseStructures: (baseStructures) => set({ baseStructures }),
 });

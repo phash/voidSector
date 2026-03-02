@@ -83,7 +83,7 @@ export function GameScreen() {
   const activeMonitor = useStore((s) => s.activeMonitor);
   const setActiveMonitor = useStore((s) => s.setActiveMonitor);
   const colorProfile = useStore((s) => s.colorProfile);
-  const unreadComms = useStore((s) => s.unreadComms);
+  const commsAlert = useStore((s) => !!s.alerts['COMMS']);
 
   useEffect(() => {
     const profile = COLOR_PROFILES[colorProfile];
@@ -122,10 +122,10 @@ export function GameScreen() {
             }}
             onClick={() => {
               setActiveMonitor(id);
-              if (id === MONITORS.COMMS) useStore.getState().setUnreadComms(false);
+              if (id === MONITORS.COMMS) useStore.getState().clearAlert('COMMS');
             }}
           >
-            [{id}]{id === MONITORS.COMMS && unreadComms ? ' \u2022' : ''}
+            [{id}]{id === MONITORS.COMMS && commsAlert ? ' \u2022' : ''}
           </button>
         ))}
       </div>
