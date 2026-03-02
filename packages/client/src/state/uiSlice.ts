@@ -3,6 +3,14 @@ import type { StateCreator } from 'zustand';
 export type Screen = 'login' | 'game';
 export type ThemeColor = 'amber';
 
+function safeGetItem(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* quota exceeded or private mode */ }
+}
+
 export interface UISlice {
   screen: Screen;
   theme: ThemeColor;
@@ -15,12 +23,12 @@ export interface UISlice {
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   screen: 'login',
-  theme: (localStorage.getItem('vs_theme') as ThemeColor) || 'amber',
+  theme: (safeGetItem('vs_theme') as ThemeColor) || 'amber',
   jumpPending: false,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
-    localStorage.setItem('vs_theme', theme);
+    safeSetItem('vs_theme', theme);
     set({ theme });
   },
   setJumpPending: (jumpPending) => set({ jumpPending }),

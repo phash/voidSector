@@ -1,6 +1,18 @@
 import type { StateCreator } from 'zustand';
 import type { APState, SectorData, Coords, FuelState, ShipData } from '@void-sector/shared';
 
+function safeGetItem(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* quota exceeded or private mode */ }
+}
+
+function safeRemoveItem(key: string): void {
+  try { localStorage.removeItem(key); } catch { /* noop */ }
+}
+
 export interface PlayerPresence {
   sessionId: string;
   username: string;
@@ -57,9 +69,9 @@ export interface GameSlice {
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
-  token: localStorage.getItem('vs_token'),
-  playerId: localStorage.getItem('vs_playerId'),
-  username: localStorage.getItem('vs_username'),
+  token: safeGetItem('vs_token'),
+  playerId: safeGetItem('vs_playerId'),
+  username: safeGetItem('vs_username'),
   position: { x: 0, y: 0 },
   ap: null,
   fuel: null,
@@ -71,16 +83,16 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   activeMonitor: 'NAV-COM',
 
   setAuth: (token, playerId, username) => {
-    localStorage.setItem('vs_token', token);
-    localStorage.setItem('vs_playerId', playerId);
-    localStorage.setItem('vs_username', username);
+    safeSetItem('vs_token', token);
+    safeSetItem('vs_playerId', playerId);
+    safeSetItem('vs_username', username);
     set({ token, playerId, username });
   },
 
   clearAuth: () => {
-    localStorage.removeItem('vs_token');
-    localStorage.removeItem('vs_playerId');
-    localStorage.removeItem('vs_username');
+    safeRemoveItem('vs_token');
+    safeRemoveItem('vs_playerId');
+    safeRemoveItem('vs_username');
     set({ token: null, playerId: null, username: null });
   },
 
