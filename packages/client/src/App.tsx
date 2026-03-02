@@ -1,23 +1,25 @@
 import { MonitorBezel } from './components/MonitorBezel';
+import { LoginScreen } from './components/LoginScreen';
+import { useStore } from './state/store';
 import './styles/global.css';
 
 export function App() {
+  const screen = useStore((s) => s.screen);
+
   return (
     <MonitorBezel
-      monitorId="NAV-COM"
+      monitorId={screen === 'login' ? 'VOID-SEC' : 'NAV-COM'}
       statusLeds={[
         { label: 'SYS', active: true },
-        { label: 'NAV', active: true },
+        { label: 'NAV', active: screen === 'game' },
       ]}
     >
-      <div style={{ padding: '16px' }}>
-        <h1 style={{ fontSize: '1.2rem', letterSpacing: '0.2em' }}>
-          VOID SECTOR
-        </h1>
-        <p style={{ marginTop: '8px', opacity: 0.6 }}>
-          SYSTEM INITIALIZING...
-        </p>
-      </div>
+      {screen === 'login' && <LoginScreen />}
+      {screen === 'game' && (
+        <div style={{ position: 'relative', zIndex: 1, padding: 16 }}>
+          <p>GAME SCREEN — TODO</p>
+        </div>
+      )}
     </MonitorBezel>
   );
 }
