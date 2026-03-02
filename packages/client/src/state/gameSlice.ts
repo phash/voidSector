@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -71,6 +71,16 @@ export interface GameSlice {
   // Base
   baseStructures: any[];
 
+  // Credits
+  credits: number;
+
+  // Storage
+  storage: StorageInventory;
+
+  // Trade orders
+  tradeOrders: TradeOrder[];
+  myOrders: TradeOrder[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
@@ -93,6 +103,10 @@ export interface GameSlice {
   clearAlert: (monitorId: string) => void;
   setSelectedSector: (sector: { x: number; y: number } | null) => void;
   setBaseStructures: (structures: any[]) => void;
+  setCredits: (credits: number) => void;
+  setStorage: (storage: StorageInventory) => void;
+  setTradeOrders: (orders: TradeOrder[]) => void;
+  setMyOrders: (orders: TradeOrder[]) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -115,6 +129,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   alerts: {},
   selectedSector: null,
   baseStructures: [],
+  credits: 0,
+  storage: { ore: 0, gas: 0, crystal: 0 },
+  tradeOrders: [],
+  myOrders: [],
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -181,4 +199,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   }),
   setSelectedSector: (selectedSector) => set({ selectedSector }),
   setBaseStructures: (baseStructures) => set({ baseStructures }),
+  setCredits: (credits) => set({ credits }),
+  setStorage: (storage) => set({ storage }),
+  setTradeOrders: (tradeOrders) => set({ tradeOrders }),
+  setMyOrders: (myOrders) => set({ myOrders }),
 });
