@@ -3,6 +3,7 @@ import { RadarCanvas } from './RadarCanvas';
 import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
 import { EventLog } from './EventLog';
+import { MiningScreen } from './MiningScreen';
 import { useStore } from '../state/store';
 import { MONITORS, SHIP_CLASSES } from '@void-sector/shared';
 
@@ -57,9 +58,7 @@ export function GameScreen() {
         >
           {activeMonitor === MONITORS.NAV_COM && <NavComScreen />}
           {activeMonitor === MONITORS.SHIP_SYS && <ShipSysScreen />}
-          {activeMonitor === MONITORS.MINING && (
-            <div style={{ padding: '12px', fontSize: '0.9rem' }}>MINING — COMING SOON</div>
-          )}
+          {activeMonitor === MONITORS.MINING && <MiningScreen />}
           {activeMonitor === MONITORS.CARGO && (
             <div style={{ padding: '12px', fontSize: '0.9rem' }}>CARGO — COMING SOON</div>
           )}
