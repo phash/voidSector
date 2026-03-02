@@ -7,6 +7,7 @@ const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 class GameNetwork {
   private client: Client;
   private sectorRoom: Room | null = null;
+  private reconnecting = false;
 
   constructor() {
     this.client = new Client(WS_URL);
@@ -117,7 +118,8 @@ class GameNetwork {
     });
 
     room.onLeave(async (code) => {
-      if (code > 1000) {
+      if (code > 1000 && !this.reconnecting) {
+        this.reconnecting = true;
         useStore.getState().addLogEntry(`Disconnected (code: ${code}) — reconnecting...`);
         const store = useStore.getState();
         try {
@@ -125,6 +127,8 @@ class GameNetwork {
           useStore.getState().addLogEntry('Reconnected');
         } catch {
           useStore.getState().addLogEntry('Reconnect failed');
+        } finally {
+          this.reconnecting = false;
         }
       }
     });
