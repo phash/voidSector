@@ -6,6 +6,10 @@ import { mockStoreState } from '../test/mockStore';
 vi.mock('../network/client', () => ({
   network: {
     requestBase: vi.fn(),
+    requestStorage: vi.fn(),
+    requestCredits: vi.fn(),
+    sendTransfer: vi.fn(),
+    sendUpgradeStructure: vi.fn(),
   },
 }));
 
