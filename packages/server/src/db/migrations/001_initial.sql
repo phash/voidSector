@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE players (
+CREATE TABLE IF NOT EXISTS players (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username VARCHAR(32) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE players (
   level INTEGER DEFAULT 1
 );
 
-CREATE TABLE ships (
+CREATE TABLE IF NOT EXISTS ships (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   owner_id UUID REFERENCES players(id) ON DELETE CASCADE,
   ship_class VARCHAR(32) NOT NULL DEFAULT 'aegis_scout_mk1',
@@ -24,7 +24,7 @@ CREATE TABLE ships (
   active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-CREATE TABLE sectors (
+CREATE TABLE IF NOT EXISTS sectors (
   x INTEGER NOT NULL,
   y INTEGER NOT NULL,
   type VARCHAR(32) NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE sectors (
   PRIMARY KEY (x, y)
 );
 
-CREATE TABLE player_discoveries (
+CREATE TABLE IF NOT EXISTS player_discoveries (
   player_id UUID REFERENCES players(id) ON DELETE CASCADE,
   sector_x INTEGER NOT NULL,
   sector_y INTEGER NOT NULL,
@@ -43,6 +43,6 @@ CREATE TABLE player_discoveries (
   PRIMARY KEY (player_id, sector_x, sector_y)
 );
 
-CREATE INDEX idx_ships_owner ON ships(owner_id);
-CREATE INDEX idx_sectors_discovered_by ON sectors(discovered_by);
-CREATE INDEX idx_discoveries_player ON player_discoveries(player_id);
+CREATE INDEX IF NOT EXISTS idx_ships_owner ON ships(owner_id);
+CREATE INDEX IF NOT EXISTS idx_sectors_discovered_by ON sectors(discovered_by);
+CREATE INDEX IF NOT EXISTS idx_discoveries_player ON player_discoveries(player_id);
