@@ -31,6 +31,7 @@ export function RadarCanvas() {
       zoomLevel: state.zoomLevel,
       panOffset: state.panOffset,
       jumpAnimation,
+      selectedSector: state.selectedSector,
     });
   }, []);
 
@@ -55,11 +56,13 @@ export function RadarCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     let dragging = false;
+    let dragMoved = false;
     let dragStartX = 0, dragStartY = 0;
     let panStartX = 0, panStartY = 0;
 
     const onPointerDown = (e: PointerEvent) => {
       dragging = true;
+      dragMoved = false;
       dragStartX = e.clientX;
       dragStartY = e.clientY;
       const pan = useStore.getState().panOffset;
@@ -69,6 +72,9 @@ export function RadarCanvas() {
 
     const onPointerMove = (e: PointerEvent) => {
       if (!dragging) return;
+      const movedX = Math.abs(e.clientX - dragStartX);
+      const movedY = Math.abs(e.clientY - dragStartY);
+      if (movedX > 5 || movedY > 5) dragMoved = true;
       const cellW = CELL_SIZES[useStore.getState().zoomLevel]?.w ?? 64;
       const cellH = CELL_SIZES[useStore.getState().zoomLevel]?.h ?? 50;
       const dx = Math.round((e.clientX - dragStartX) / cellW);
@@ -78,7 +84,25 @@ export function RadarCanvas() {
       useStore.getState().setPanOffset({ x: newX, y: newY });
     };
 
-    const onPointerUp = () => { dragging = false; };
+    const onPointerUp = (e: PointerEvent) => {
+      if (!dragMoved && dragging && canvas) {
+        // Click — calculate which cell was clicked
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        const state = useStore.getState();
+        const { w: cellW, h: cellH } = CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1];
+        const cX = rect.width / 2;
+        const cY = rect.height / 2;
+        const dx = Math.round((clickX - cX) / cellW);
+        const dy = Math.round((clickY - cY) / cellH);
+        const viewX = state.position.x + state.panOffset.x;
+        const viewY = state.position.y + state.panOffset.y;
+        state.setSelectedSector({ x: viewX + dx, y: viewY + dy });
+      }
+      dragging = false;
+    };
 
     const onDblClick = () => { useStore.getState().resetPan(); };
 

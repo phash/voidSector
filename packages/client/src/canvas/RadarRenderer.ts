@@ -19,6 +19,7 @@ interface RadarState {
   zoomLevel: number;
   panOffset: { x: number; y: number };
   jumpAnimation?: JumpAnimationState | null;
+  selectedSector?: { x: number; y: number } | null;
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
@@ -68,6 +69,13 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       ctx.strokeStyle = state.dimColor.replace(/[\d.]+\)$/, '0.4)');
       ctx.lineWidth = 2;
       ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+
+      // Selected cell highlight
+      if (state.selectedSector && sx === state.selectedSector.x && sy === state.selectedSector.y) {
+        ctx.strokeStyle = state.themeColor;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
+      }
 
       // Coordinates label
       ctx.font = COORD_FONT;
