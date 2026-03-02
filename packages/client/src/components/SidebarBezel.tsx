@@ -5,13 +5,14 @@ import '../styles/crt.css';
 interface SidebarBezelProps {
   children: ReactNode;
   monitorId: string;
+  alert?: boolean;
 }
 
-export function SidebarBezel({ children, monitorId }: SidebarBezelProps) {
+export function SidebarBezel({ children, monitorId, alert }: SidebarBezelProps) {
   const brightness = useStore((s) => s.brightness);
 
   return (
-    <div className="bezel-frame sidebar-bezel">
+    <div className={`bezel-frame sidebar-bezel ${alert ? 'alert' : ''}`}>
       <div className="bezel-main">
         <div className="bezel-side bezel-left" style={{ minWidth: 20, padding: '4px 2px' }}>
           <span className="bezel-label-vertical" style={{ fontSize: '0.45rem' }}>{monitorId}</span>
