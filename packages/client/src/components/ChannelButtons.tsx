@@ -1,11 +1,14 @@
 import { useStore } from '../state/store';
-import { SIDEBAR_MONITORS } from '@void-sector/shared';
+import type { MonitorId } from '@void-sector/shared';
 
 interface ChannelButtonsProps {
   slotIndex: 0 | 1;
+  side: 'left' | 'right';
+  monitors: MonitorId[];
 }
 
 const CHANNEL_LABELS: Record<string, string> = {
+  'LOG': 'LOG',
   'SHIP-SYS': 'SYS',
   'MINING': 'MIN',
   'CARGO': 'CRG',
@@ -13,26 +16,30 @@ const CHANNEL_LABELS: Record<string, string> = {
   'BASE-LINK': 'BAS',
 };
 
-export function ChannelButtons({ slotIndex }: ChannelButtonsProps) {
-  const sidebarSlots = useStore((s) => s.sidebarSlots);
-  const setSidebarSlot = useStore((s) => s.setSidebarSlot);
+export function ChannelButtons({ slotIndex, side, monitors }: ChannelButtonsProps) {
+  const sidebarSlots = useStore((s) =>
+    side === 'left' ? s.leftSidebarSlots : s.sidebarSlots
+  );
+  const setSidebarSlot = useStore((s) =>
+    side === 'left' ? s.setLeftSidebarSlot : s.setSidebarSlot
+  );
   const alerts = useStore((s) => s.alerts);
+  const clearAlert = useStore((s) => s.clearAlert);
   const activeMonitor = sidebarSlots[slotIndex];
 
   return (
     <div className="channel-buttons">
-      {SIDEBAR_MONITORS.map((id) => (
+      {monitors.map((id) => (
         <button
           key={id}
-          className={`channel-btn ${activeMonitor === id ? 'active' : ''}`}
+          className={`channel-btn ${activeMonitor === id ? 'active' : ''} ${alerts[id] && activeMonitor !== id ? 'alert' : ''}`}
           onClick={() => {
             setSidebarSlot(slotIndex, id);
-            if (id === 'COMMS') useStore.getState().clearAlert('COMMS');
+            if (alerts[id]) clearAlert(id);
           }}
           title={id}
         >
           {CHANNEL_LABELS[id] || id.slice(0, 3)}
-          {id === 'COMMS' && !!alerts['COMMS'] && <span className="channel-dot" />}
         </button>
       ))}
     </div>
