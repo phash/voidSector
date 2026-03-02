@@ -33,7 +33,7 @@ export function useCanvas(draw: DrawFn) {
 
     let frameId: number;
     const render = () => {
-      draw(ctx);
+      try { draw(ctx); } catch { /* prevent render loop death */ }
       frameId = requestAnimationFrame(render);
     };
     frameId = requestAnimationFrame(render);

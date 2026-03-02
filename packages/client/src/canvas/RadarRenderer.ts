@@ -145,4 +145,5 @@ function drawGlowText(
   ctx.shadowBlur = blur / 3;
   ctx.fillText(text, x, y);
   ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
 }
