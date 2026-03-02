@@ -1,23 +1,45 @@
-import { Schema, MapSchema, type } from '@colyseus/schema';
+import { Schema, MapSchema, defineTypes } from '@colyseus/schema';
 
 export class PlayerSchema extends Schema {
-  @type('string') sessionId: string = '';
-  @type('string') userId: string = '';
-  @type('string') username: string = '';
-  @type('int32') x: number = 0;
-  @type('int32') y: number = 0;
-  @type('boolean') connected: boolean = true;
+  sessionId: string = '';
+  userId: string = '';
+  username: string = '';
+  x: number = 0;
+  y: number = 0;
+  connected: boolean = true;
 }
+
+defineTypes(PlayerSchema, {
+  sessionId: 'string',
+  userId: 'string',
+  username: 'string',
+  x: 'int32',
+  y: 'int32',
+  connected: 'boolean',
+});
 
 export class SectorSchema extends Schema {
-  @type('int32') x: number = 0;
-  @type('int32') y: number = 0;
-  @type('string') sectorType: string = 'empty';
-  @type('int32') seed: number = 0;
+  x: number = 0;
+  y: number = 0;
+  sectorType: string = 'empty';
+  seed: number = 0;
 }
 
+defineTypes(SectorSchema, {
+  x: 'int32',
+  y: 'int32',
+  sectorType: 'string',
+  seed: 'int32',
+});
+
 export class SectorRoomState extends Schema {
-  @type(SectorSchema) sector = new SectorSchema();
-  @type({ map: PlayerSchema }) players = new MapSchema<PlayerSchema>();
-  @type('uint16') playerCount: number = 0;
+  sector = new SectorSchema();
+  players = new MapSchema<PlayerSchema>();
+  playerCount: number = 0;
 }
+
+defineTypes(SectorRoomState, {
+  sector: SectorSchema,
+  players: { map: PlayerSchema },
+  playerCount: 'uint16',
+});
