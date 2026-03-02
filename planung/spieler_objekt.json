@@ -1,0 +1,11 @@
+{
+  "id": "UUID",
+  "ap": {"current": 45, "max": 100, "last_tick": "timestamp"},
+  "reputation": {"alien_race_a": 150, "alien_race_b": -500},
+  "ship": {
+    "type": "scout",
+    "safe_slots": 2,
+    "cargo": [],
+    "insurance": true
+  }
+}
