@@ -20,4 +20,12 @@ describe('generateSpawnPosition', () => {
     const unique = new Set(positions.map(p => `${p.x}:${p.y}`));
     expect(unique.size).toBeGreaterThan(1);
   });
+
+  it('always produces positions >= SPAWN_MIN_DISTANCE even with edge-case math', () => {
+    for (let i = 0; i < 100; i++) {
+      const pos = generateSpawnPosition();
+      const dist = Math.sqrt(pos.x ** 2 + pos.y ** 2);
+      expect(dist).toBeGreaterThanOrEqual(SPAWN_MIN_DISTANCE * 0.99);
+    }
+  });
 });
