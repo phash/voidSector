@@ -11,7 +11,7 @@ import { CargoScreen } from './CargoScreen';
 import { CommsScreen } from './CommsScreen';
 import { BaseScreen } from './BaseScreen';
 import { useStore } from '../state/store';
-import { MONITORS, SHIP_CLASSES } from '@void-sector/shared';
+import { MONITORS, MAIN_MONITORS, SHIP_CLASSES } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 function ShipSysScreen() {
@@ -80,6 +80,8 @@ function renderScreen(monitorId: string) {
 
 export function GameScreen() {
   const colorProfile = useStore((s) => s.colorProfile);
+  const mainMode = useStore((s) => s.mainMonitorMode);
+  const setMainMonitorMode = useStore((s) => s.setMainMonitorMode);
   const setActiveMonitor = useStore((s) => s.setActiveMonitor);
   const clearAlert = useStore((s) => s.clearAlert);
   const alerts = useStore((s) => s.alerts);
@@ -126,12 +128,37 @@ export function GameScreen() {
     </div>
   );
 
+  // Main area channel bar (NAV split + fullscreen program switching)
+  const mainChannelBar = (
+    <div className="main-channel-bar">
+      <button
+        className={`channel-btn-small ${mainMode === 'split' ? 'active' : ''}`}
+        onClick={() => setMainMonitorMode('split')}
+      >
+        NAV
+      </button>
+      {MAIN_MONITORS.filter(id => id !== MONITORS.NAV_COM).map((id) => (
+        <button
+          key={id}
+          className={`channel-btn-small ${mainMode === id ? 'active' : ''} ${alerts[id] && mainMode !== id ? 'alert' : ''}`}
+          onClick={() => {
+            setMainMonitorMode(id);
+            if (alerts[id]) clearAlert(id);
+          }}
+        >
+          {id.slice(0, 3)}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <DesktopLayout
         gridArea={gridArea}
         detailArea={detailArea}
         controlsArea={controlsArea}
+        mainChannelBar={mainChannelBar}
         renderScreen={renderScreen}
       />
 

@@ -8,10 +8,11 @@ interface DesktopLayoutProps {
   gridArea: ReactNode;
   detailArea: ReactNode;
   controlsArea: ReactNode;
+  mainChannelBar: ReactNode;
   renderScreen: (monitorId: string) => ReactNode;
 }
 
-export function DesktopLayout({ gridArea, detailArea, controlsArea, renderScreen }: DesktopLayoutProps) {
+export function DesktopLayout({ gridArea, detailArea, controlsArea, mainChannelBar, renderScreen }: DesktopLayoutProps) {
   const leftSlots = useStore((s) => s.leftSidebarSlots);
   const rightSlots = useStore((s) => s.sidebarSlots);
   const mainMode = useStore((s) => s.mainMonitorMode);
@@ -35,6 +36,7 @@ export function DesktopLayout({ gridArea, detailArea, controlsArea, renderScreen
 
       {/* Main area */}
       <div className="main-area">
+        {mainChannelBar}
         {mainMode === 'split' ? (
           <>
             <div className="main-upper">
