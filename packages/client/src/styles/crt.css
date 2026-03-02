@@ -63,6 +63,7 @@
 /* Hardware Bezel Frame */
 .bezel-frame {
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   background: #111;
@@ -71,6 +72,12 @@
   box-shadow:
     inset 0 0 20px rgba(0,0,0,0.8),
     0 0 30px rgba(0,0,0,0.5);
+}
+
+.bezel-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 .bezel-side {
@@ -150,4 +157,14 @@
   z-index: 1;
   width: 100%;
   height: 100%;
+}
+
+.bezel-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 6px 12px;
+  background: var(--color-bezel);
+  border-top: 1px solid #333;
 }

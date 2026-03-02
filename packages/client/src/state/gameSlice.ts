@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -58,6 +58,11 @@ export interface GameSlice {
   // Active monitor
   activeMonitor: string;
 
+  // Chat / COMMS
+  chatMessages: ChatMessage[];
+  chatChannel: ChatChannel;
+  unreadComms: boolean;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
@@ -74,6 +79,9 @@ export interface GameSlice {
   setActiveMonitor: (monitor: string) => void;
   setMining: (mining: MiningState) => void;
   setCargo: (cargo: CargoState) => void;
+  addChatMessage: (msg: ChatMessage) => void;
+  setChatChannel: (channel: ChatChannel) => void;
+  setUnreadComms: (unread: boolean) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -91,6 +99,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   mining: null,
   cargo: { ore: 0, gas: 0, crystal: 0 },
   activeMonitor: 'NAV-COM',
+  chatMessages: [],
+  chatChannel: 'local' as ChatChannel,
+  unreadComms: false,
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -141,4 +152,11 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setActiveMonitor: (activeMonitor) => set({ activeMonitor }),
   setMining: (mining) => set({ mining }),
   setCargo: (cargo) => set({ cargo }),
+
+  addChatMessage: (msg) =>
+    set((s) => ({
+      chatMessages: [...s.chatMessages.slice(-199), msg],
+    })),
+  setChatChannel: (chatChannel) => set({ chatChannel }),
+  setUnreadComms: (unreadComms) => set({ unreadComms }),
 });

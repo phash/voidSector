@@ -8,7 +8,7 @@
 
 :root {
   --color-primary: #FFB000;
-  --color-dim: rgba(255, 176, 0, 0.4);
+  --color-dim: rgba(255, 176, 0, 0.6);
   --color-bg: #050505;
   --color-danger: #FF3333;
   --color-bezel: #1a1a1a;
@@ -53,4 +53,15 @@ html, body, #root {
 .vs-bar {
   font-family: var(--font-mono);
   letter-spacing: -1px;
+}
+
+/* AP flash animation on spend */
+@keyframes ap-flash {
+  0% { color: #FF3333; text-shadow: 0 0 8px #FF3333; }
+  50% { color: #FFFFFF; text-shadow: 0 0 8px #FFFFFF; }
+  100% { color: var(--color-primary); text-shadow: none; }
+}
+
+.ap-flash {
+  animation: ap-flash 0.4s ease-out;
 }

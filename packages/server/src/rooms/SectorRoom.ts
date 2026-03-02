@@ -7,11 +7,11 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
-import { validateJump, validateScan, validateMine, validateJettison } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild } from '../engine/commands.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal } from '../db/queries.js';
-import { AP_COSTS, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -53,9 +53,17 @@ export class SectorRoom extends Room<SectorRoomState> {
       await this.handleJump(client, data);
     });
 
-    // Handle scan message
+    // Handle local scan message
+    this.onMessage('localScan', async (client) => {
+      await this.handleLocalScan(client);
+    });
+
+    // Handle area scan message (with backward compat for 'scan')
+    this.onMessage('areaScan', async (client) => {
+      await this.handleAreaScan(client);
+    });
     this.onMessage('scan', async (client) => {
-      await this.handleScan(client);
+      await this.handleAreaScan(client);
     });
 
     // Handle AP query
@@ -97,6 +105,14 @@ export class SectorRoom extends Room<SectorRoomState> {
       const mining = await getMiningState(auth.userId);
       client.send('miningUpdate', mining);
     });
+
+    this.onMessage('build', async (client, data: BuildMessage) => {
+      await this.handleBuild(client, data);
+    });
+
+    this.onMessage('chat', async (client, data: SendChatMessage) => {
+      await this.handleChat(client, data);
+    });
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
@@ -130,6 +146,24 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Send mining state
     const miningState = await getMiningState(auth.userId);
     client.send('miningUpdate', miningState);
+
+    // Deliver pending messages
+    const pending = await getPendingMessages(auth.userId);
+    if (pending.length > 0) {
+      for (const msg of pending) {
+        client.send('chatMessage', {
+          id: msg.id,
+          senderId: msg.sender_id,
+          senderName: msg.sender_name,
+          channel: msg.channel,
+          recipientId: msg.recipient_id,
+          content: msg.content,
+          sentAt: new Date(msg.sent_at).getTime(),
+          delayed: true,
+        } as ChatMessage);
+      }
+      await markMessagesDelivered(pending.map((m: any) => m.id));
+    }
   }
 
   async onLeave(client: Client, consented: boolean) {
@@ -215,6 +249,22 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Record discovery
     await addDiscovery(auth.userId, targetX, targetY);
 
+    // Check for origin badge
+    if (targetX === 0 && targetY === 0) {
+      const isFirst = !(await hasAnyoneBadge('ORIGIN_FIRST'));
+      const badgeType = isFirst ? 'ORIGIN_FIRST' : 'ORIGIN_REACHED';
+      const awarded = await awardBadge(auth.userId, badgeType);
+      if (awarded) {
+        client.send('badgeAwarded', { badgeType });
+        if (isFirst) {
+          this.broadcast('announcement', {
+            message: `${auth.username} is the FIRST to reach the Origin!`,
+            type: 'origin_first',
+          });
+        }
+      }
+    }
+
     // Tell client to switch rooms
     client.send('jumpResult', {
       success: true,
@@ -225,34 +275,64 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Client will leave this room and join the new sector room
   }
 
-  private async handleScan(client: Client) {
+  private async handleLocalScan(client: Client) {
     const auth = client.auth as AuthPayload;
-
     const ap = await getAPState(auth.userId);
-    const scanResult = validateScan(ap, AP_COSTS.scan);
-    if (!scanResult.valid) {
-      client.send('error', { code: 'NO_AP', message: scanResult.error });
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    const scannerLevel = SHIP_CLASSES.aegis_scout_mk1.scannerLevel;
+
+    const result = validateLocalScan(currentAP, AP_COSTS_LOCAL_SCAN, scannerLevel);
+    if (!result.valid) {
+      client.send('error', { code: 'LOCAL_SCAN_FAIL', message: result.error! });
       return;
     }
+
+    await saveAPState(auth.userId, result.newAP!);
+
+    const sectorData = await getSector(this.state.sector.x, this.state.sector.y);
+    const resources = sectorData?.resources ?? { ore: 0, gas: 0, crystal: 0 };
+
+    client.send('localScanResult', {
+      resources,
+      hiddenSignatures: result.hiddenSignatures,
+    });
+    client.send('apUpdate', result.newAP!);
+  }
+
+  private async handleAreaScan(client: Client) {
+    const auth = client.auth as AuthPayload;
+    const ap = await getAPState(auth.userId);
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    const scannerLevel = SHIP_CLASSES.aegis_scout_mk1.scannerLevel;
+
+    const scanResult = validateAreaScan(currentAP, scannerLevel);
+    if (!scanResult.valid) {
+      client.send('error', { code: 'SCAN_FAIL', message: scanResult.error! });
+      return;
+    }
+
     await saveAPState(auth.userId, scanResult.newAP!);
 
-    // Get surrounding sectors
-    const surroundings: SectorData[] = [];
-    for (let dx = -RADAR_RADIUS; dx <= RADAR_RADIUS; dx++) {
-      for (let dy = -RADAR_RADIUS; dy <= RADAR_RADIUS; dy++) {
-        const sx = this.state.sector.x + dx;
-        const sy = this.state.sector.y + dy;
-        let sector = await getSector(sx, sy);
+    const radius = scanResult.radius;
+    const sectorX = this.state.sector.x;
+    const sectorY = this.state.sector.y;
+    const sectors: SectorData[] = [];
+
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        const tx = sectorX + dx;
+        const ty = sectorY + dy;
+        let sector = await getSector(tx, ty);
         if (!sector) {
-          sector = generateSector(sx, sy, auth.userId);
+          sector = generateSector(tx, ty, auth.userId);
           await saveSector(sector);
         }
-        await addDiscovery(auth.userId, sx, sy);
-        surroundings.push(sector);
+        await addDiscovery(auth.userId, tx, ty);
+        sectors.push(sector);
       }
     }
 
-    client.send('scanResult', { sectors: surroundings, apRemaining: scanResult.newAP!.current });
+    client.send('scanResult', { sectors, apRemaining: scanResult.newAP!.current });
   }
 
   private async handleMine(client: Client, data: MineMessage) {
@@ -328,5 +408,93 @@ export class SectorRoom extends Room<SectorRoomState> {
     await jettisonCargo(auth.userId, resource);
     const updatedCargo = await getPlayerCargo(auth.userId);
     client.send('cargoUpdate', updatedCargo);
+  }
+
+  private async handleBuild(client: Client, data: BuildMessage) {
+    const auth = client.auth as AuthPayload;
+    const ap = await getAPState(auth.userId);
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    const cargo = await getPlayerCargo(auth.userId);
+
+    const result = validateBuild(currentAP, cargo, data.type);
+    if (!result.valid) {
+      client.send('error', { code: 'BUILD_FAIL', message: result.error! });
+      return;
+    }
+
+    await saveAPState(auth.userId, result.newAP!);
+
+    for (const [resource, amount] of Object.entries(result.costs)) {
+      if (amount > 0) {
+        const deducted = await deductCargo(auth.userId, resource, amount);
+        if (!deducted) {
+          client.send('buildResult', { success: false, error: `Insufficient ${resource} (concurrent modification)` });
+          return;
+        }
+      }
+    }
+
+    const structure = await createStructure(
+      auth.userId, data.type,
+      this.state.sector.x, this.state.sector.y
+    );
+
+    client.send('buildResult', { success: true, structure });
+    client.send('apUpdate', result.newAP!);
+    const updatedCargo = await getPlayerCargo(auth.userId);
+    client.send('cargoUpdate', updatedCargo);
+    this.broadcast('structureBuilt', {
+      structure,
+      sectorX: this.state.sector.x,
+      sectorY: this.state.sector.y,
+    });
+  }
+
+  private async handleChat(client: Client, data: SendChatMessage) {
+    const auth = client.auth as AuthPayload;
+
+    // Validate channel
+    const VALID_CHANNELS = ['local', 'direct', 'faction'] as const;
+    if (!VALID_CHANNELS.includes(data.channel as any)) {
+      client.send('error', { code: 'INVALID_CHANNEL', message: 'Unknown channel' });
+      return;
+    }
+
+    if (!data.content || data.content.trim().length === 0) return;
+    if (data.content.length > 500) {
+      client.send('error', { code: 'MSG_TOO_LONG', message: 'Message too long (max 500 chars)' });
+      return;
+    }
+
+    // Faction channel not yet implemented
+    if (data.channel === 'faction') {
+      client.send('error', { code: 'NOT_IMPLEMENTED', message: 'Faction channel coming soon' });
+      return;
+    }
+
+    const msg = await saveMessage(auth.userId, data.recipientId ?? null, data.channel, data.content.trim());
+
+    const chatMsg: ChatMessage = {
+      id: msg.id,
+      senderId: auth.userId,
+      senderName: auth.username,
+      channel: data.channel,
+      recipientId: data.recipientId,
+      content: data.content.trim(),
+      sentAt: new Date(msg.sent_at).getTime(),
+      delayed: false,
+    };
+
+    if (data.channel === 'local') {
+      this.broadcast('chatMessage', chatMsg);
+    } else if (data.channel === 'direct' && data.recipientId) {
+      const recipientClient = this.clients.find(
+        c => (c.auth as AuthPayload).userId === data.recipientId
+      );
+      if (recipientClient) {
+        recipientClient.send('chatMessage', chatMsg);
+      }
+      client.send('chatMessage', chatMsg);
+    }
   }
 }

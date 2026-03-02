@@ -1,4 +1,5 @@
-import type { APState, MiningState, ResourceType, SectorResources } from '@void-sector/shared';
+import type { APState, MiningState, ResourceType, SectorResources, StructureType, CargoState } from '@void-sector/shared';
+import { AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, STRUCTURE_COSTS, STRUCTURE_AP_COSTS } from '@void-sector/shared';
 import { spendAP } from './ap.js';
 import { startMining, createMiningState } from './mining.js';
 
@@ -37,6 +38,31 @@ export function validateScan(ap: APState, apCost: number): ScanValidation {
   const newAP = spendAP(ap, apCost);
   if (!newAP) return { valid: false, error: 'Not enough AP to scan' };
   return { valid: true, newAP };
+}
+
+export function validateLocalScan(
+  ap: APState,
+  cost: number = AP_COSTS_LOCAL_SCAN,
+  scannerLevel: number = 1
+): { valid: boolean; error?: string; newAP?: APState; hiddenSignatures: boolean } {
+  const newAP = spendAP(ap, cost);
+  if (!newAP) {
+    return { valid: false, error: 'Insufficient AP', hiddenSignatures: false };
+  }
+  const hiddenSignatures = scannerLevel < 3;
+  return { valid: true, newAP, hiddenSignatures };
+}
+
+export function validateAreaScan(
+  ap: APState,
+  scannerLevel: number = 1
+): { valid: boolean; error?: string; newAP?: APState; radius: number; cost: number } {
+  const config = AP_COSTS_BY_SCANNER[scannerLevel] ?? AP_COSTS_BY_SCANNER[1];
+  const newAP = spendAP(ap, config.areaScan);
+  if (!newAP) {
+    return { valid: false, error: 'Insufficient AP', radius: config.areaScanRadius, cost: config.areaScan };
+  }
+  return { valid: true, newAP, radius: config.areaScanRadius, cost: config.areaScan };
 }
 
 export interface MineValidation {
@@ -83,4 +109,34 @@ export function validateJettison(resource: ResourceType, currentAmount: number):
     return { valid: false, error: `No ${resource} to jettison` };
   }
   return { valid: true };
+}
+
+export interface BuildValidation {
+  valid: boolean;
+  error?: string;
+  newAP?: APState;
+  costs: Record<string, number>;
+}
+
+export function validateBuild(
+  ap: APState,
+  cargo: CargoState,
+  structureType: StructureType
+): BuildValidation {
+  const costs = STRUCTURE_COSTS[structureType];
+  const apCost = STRUCTURE_AP_COSTS[structureType];
+
+  for (const [resource, required] of Object.entries(costs)) {
+    const have = cargo[resource as keyof CargoState] ?? 0;
+    if (have < required) {
+      return { valid: false, error: `Insufficient ${resource}: need ${required}, have ${have}`, costs };
+    }
+  }
+
+  const newAP = spendAP(ap, apCost, Date.now());
+  if (!newAP) {
+    return { valid: false, error: `Insufficient AP: need ${apCost}`, costs };
+  }
+
+  return { valid: true, newAP, costs };
 }

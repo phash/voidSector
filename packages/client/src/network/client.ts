@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType } from '@void-sector/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -73,7 +73,7 @@ class GameNetwork {
     });
 
     // Jump result
-    room.onMessage('jumpResult', async (data: {
+    room.onMessage('jumpResult', (data: {
       success: boolean;
       error?: string;
       newSector?: SectorData;
@@ -81,12 +81,20 @@ class GameNetwork {
     }) => {
       useStore.getState().setJumpPending(false);
       if (data.success && data.newSector) {
-        useStore.getState().addDiscoveries([data.newSector]);
-        useStore.getState().addLogEntry(
-          `Jumped to (${data.newSector.x}, ${data.newSector.y}) — ${data.newSector.type}`
-        );
-        // Leave current room and join new sector
-        await this.joinSector(data.newSector.x, data.newSector.y);
+        const store = useStore.getState();
+        const dx = data.newSector.x - store.position.x;
+        const dy = data.newSector.y - store.position.y;
+        store.startJumpAnimation(dx, dy);
+        // Delay sector join until animation completes
+        const newSector = data.newSector;
+        setTimeout(async () => {
+          useStore.getState().addDiscoveries([newSector]);
+          useStore.getState().addLogEntry(
+            `Jumped to (${newSector.x}, ${newSector.y}) — ${newSector.type}`
+          );
+          await this.joinSector(newSector.x, newSector.y);
+          useStore.getState().clearJumpAnimation();
+        }, 800);
       } else {
         useStore.getState().addLogEntry(`Jump failed: ${data.error}`);
       }
@@ -107,6 +115,18 @@ class GameNetwork {
       );
     });
 
+    // Local scan result
+    room.onMessage('localScanResult', (data: { resources: SectorResources; hiddenSignatures: boolean }) => {
+      const store = useStore.getState();
+      if (store.currentSector) {
+        store.setCurrentSector({ ...store.currentSector, resources: data.resources });
+      }
+      if (data.hiddenSignatures) {
+        store.addLogEntry('UNKNOWN SIGNATURES DETECTED — SCANNER UPGRADE REQUIRED');
+      }
+      store.addLogEntry(`Local scan: Ore ${data.resources.ore}, Gas ${data.resources.gas}, Crystal ${data.resources.crystal}`);
+    });
+
     // Discoveries
     room.onMessage('discoveries', (data: Array<{ x: number; y: number }>) => {
       useStore.getState().addLogEntry(`Loaded ${data.length} discovered sectors`);
@@ -125,6 +145,23 @@ class GameNetwork {
     // Cargo updates
     room.onMessage('cargoUpdate', (data: CargoState) => {
       useStore.getState().setCargo(data);
+    });
+
+    // Chat messages
+    room.onMessage('chatMessage', (data: ChatMessage) => {
+      useStore.getState().addChatMessage(data);
+      if (useStore.getState().activeMonitor !== 'COMMS') {
+        useStore.getState().setUnreadComms(true);
+      }
+    });
+
+    // Build results
+    room.onMessage('buildResult', (data: { success: boolean; error?: string; structure?: any }) => {
+      if (data.success) {
+        useStore.getState().addLogEntry(`Built ${data.structure?.type} at current sector`);
+      } else {
+        useStore.getState().addLogEntry(`Build failed: ${data.error}`);
+      }
     });
 
     room.onLeave(async (code) => {
@@ -159,6 +196,22 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('scan', {});
+  }
+
+  sendLocalScan() {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('localScan', {});
+  }
+
+  sendAreaScan() {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('areaScan', {});
   }
 
   requestAP() {
@@ -203,6 +256,22 @@ class GameNetwork {
   requestMiningStatus() {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('getMiningStatus', {});
+  }
+
+  sendChat(channel: ChatChannel, content: string, recipientId?: string) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('chat', { channel, content, recipientId });
+  }
+
+  sendBuild(type: StructureType) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('build', { type });
   }
 }
 

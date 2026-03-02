@@ -1,9 +1,11 @@
 import { query } from './client.js';
 import type { SectorData, PlayerData, CargoState, ResourceType } from '@void-sector/shared';
+import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
   username: string,
-  passwordHash: string
+  passwordHash: string,
+  homeBase: { x: number; y: number } = { x: 0, y: 0 }
 ): Promise<PlayerData> {
   const result = await query<{
     id: string;
@@ -12,10 +14,10 @@ export async function createPlayer(
     xp: number;
     level: number;
   }>(
-    `INSERT INTO players (username, password_hash)
-     VALUES ($1, $2)
+    `INSERT INTO players (username, password_hash, home_base)
+     VALUES ($1, $2, $3)
      RETURNING id, username, home_base, xp, level`,
-    [username, passwordHash]
+    [username, passwordHash, JSON.stringify(homeBase)]
   );
   const row = result.rows[0];
   return {
@@ -169,4 +171,130 @@ export async function getCargoTotal(playerId: string): Promise<number> {
     [playerId]
   );
   return Number(result.rows[0].total);
+}
+
+export async function findNearbyCluster(x: number, y: number): Promise<any | null> {
+  const { rows } = await query(
+    `SELECT * FROM spawn_clusters
+     WHERE player_count < $3
+       AND ABS(center_x - $1) <= $4
+       AND ABS(center_y - $2) <= $4
+     ORDER BY (center_x - $1)^2 + (center_y - $2)^2
+     LIMIT 1`,
+    [x, y, SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS]
+  );
+  return rows[0] || null;
+}
+
+export async function createCluster(centerX: number, centerY: number): Promise<{ id: string }> {
+  const { rows } = await query(
+    'INSERT INTO spawn_clusters (center_x, center_y, player_count) VALUES ($1, $2, 1) RETURNING id',
+    [centerX, centerY]
+  );
+  return rows[0];
+}
+
+export async function incrementClusterCount(clusterId: string): Promise<void> {
+  await query(
+    'UPDATE spawn_clusters SET player_count = player_count + 1 WHERE id = $1',
+    [clusterId]
+  );
+}
+
+export async function awardBadge(playerId: string, badgeType: string): Promise<boolean> {
+  const { rowCount } = await query(
+    'INSERT INTO badges (player_id, badge_type) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+    [playerId, badgeType]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function getPlayerBadges(playerId: string): Promise<Array<{ badge_type: string; awarded_at: string }>> {
+  const { rows } = await query(
+    'SELECT badge_type, awarded_at FROM badges WHERE player_id = $1',
+    [playerId]
+  );
+  return rows;
+}
+
+export async function hasAnyoneBadge(badgeType: string): Promise<boolean> {
+  const { rows } = await query(
+    'SELECT 1 FROM badges WHERE badge_type = $1 LIMIT 1',
+    [badgeType]
+  );
+  return rows.length > 0;
+}
+
+export async function createStructure(
+  ownerId: string, type: string, sectorX: number, sectorY: number
+): Promise<any> {
+  const { rows } = await query(
+    `INSERT INTO structures (owner_id, type, sector_x, sector_y)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [ownerId, type, sectorX, sectorY]
+  );
+  return rows[0];
+}
+
+export async function getStructuresInRange(
+  centerX: number, centerY: number, range: number
+): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT * FROM structures
+     WHERE ABS(sector_x - $1) <= $3 AND ABS(sector_y - $2) <= $3`,
+    [centerX, centerY, range]
+  );
+  return rows;
+}
+
+export async function deductCargo(
+  playerId: string, resource: string, amount: number
+): Promise<boolean> {
+  const { rowCount } = await query(
+    `UPDATE cargo SET quantity = quantity - $3
+     WHERE player_id = $1 AND resource = $2 AND quantity >= $3`,
+    [playerId, resource, amount]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function saveMessage(
+  senderId: string, recipientId: string | null, channel: string, content: string
+): Promise<{ id: string; sent_at: string }> {
+  const { rows } = await query<{ id: string; sent_at: string }>(
+    `INSERT INTO messages (sender_id, recipient_id, channel, content, delivered)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id, sent_at`,
+    [senderId, recipientId, channel, content, recipientId === null]
+  );
+  return rows[0];
+}
+
+export async function getPendingMessages(playerId: string): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT m.*, p.username as sender_name
+     FROM messages m JOIN players p ON m.sender_id = p.id
+     WHERE m.recipient_id = $1 AND m.delivered = FALSE
+     ORDER BY m.sent_at ASC`,
+    [playerId]
+  );
+  return rows;
+}
+
+export async function markMessagesDelivered(messageIds: string[]): Promise<void> {
+  if (messageIds.length === 0) return;
+  await query(
+    `UPDATE messages SET delivered = TRUE WHERE id = ANY($1)`,
+    [messageIds]
+  );
+}
+
+export async function getRecentMessages(channel: string, limit: number = 50): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT m.*, p.username as sender_name
+     FROM messages m JOIN players p ON m.sender_id = p.id
+     WHERE m.channel = $1 AND m.delivered = TRUE
+     ORDER BY m.sent_at DESC LIMIT $2`,
+    [channel, limit]
+  );
+  return rows.reverse();
 }
