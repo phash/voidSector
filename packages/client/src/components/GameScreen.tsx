@@ -4,7 +4,7 @@ import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
 import { EventLog } from './EventLog';
 import { useStore } from '../state/store';
-import { MONITORS } from '@void-sector/shared';
+import { MONITORS, SHIP_CLASSES } from '@void-sector/shared';
 
 function NavComScreen() {
   return (
@@ -28,7 +28,7 @@ function ShipSysScreen() {
   return (
     <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 2 }}>
       <div style={{ letterSpacing: '0.2em', marginBottom: '16px' }}>
-        {ship ? `${ship.shipClass.toUpperCase()}` : 'NO SHIP DATA'}
+        {ship ? SHIP_CLASSES[ship.shipClass].name : 'NO SHIP DATA'}
       </div>
       <div>ION DRIVE ──── [RANGE: {ship?.jumpRange ?? '?'} SECTORS]</div>
       <div>CARGO HOLD ─── [CAP: {ship?.cargoCap ?? '?'} UNITS]</div>

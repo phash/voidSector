@@ -1,7 +1,7 @@
 import { useStore } from '../state/store';
 
 function SegmentedBar({ current, max, width = 12 }: { current: number; max: number; width?: number }) {
-  const filled = Math.round((current / max) * width);
+  const filled = max > 0 ? Math.round((current / max) * width) : 0;
   const empty = width - filled;
   return (
     <span className="vs-bar">
