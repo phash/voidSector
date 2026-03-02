@@ -46,7 +46,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.state.sector.sectorType = sectorData.type;
     this.state.sector.seed = sectorData.seed;
 
-    this.roomId = `sector:${sectorX}:${sectorY}`;
+    this.roomId = `sector_${sectorX}_${sectorY}`;
 
     // Handle jump message
     this.onMessage('jump', async (client, data: JumpMessage) => {
