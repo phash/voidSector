@@ -7,11 +7,12 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade } from '../engine/commands.js';
+import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -124,6 +125,51 @@ export class SectorRoom extends Room<SectorRoomState> {
       const structures = await getPlayerBaseStructures(auth.userId);
       client.send('baseData', { structures });
     });
+
+    this.onMessage('getCredits', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const credits = await getPlayerCredits(auth.userId);
+      client.send('creditsUpdate', { credits });
+    });
+
+    this.onMessage('transfer', async (client, data: TransferMessage) => {
+      await this.handleTransfer(client, data);
+    });
+
+    this.onMessage('npcTrade', async (client, data: NpcTradeMessage) => {
+      await this.handleNpcTrade(client, data);
+    });
+
+    this.onMessage('upgradeStructure', async (client, data: UpgradeStructureMessage) => {
+      await this.handleUpgradeStructure(client, data);
+    });
+
+    this.onMessage('placeOrder', async (client, data: PlaceOrderMessage) => {
+      await this.handlePlaceOrder(client, data);
+    });
+
+    this.onMessage('getTradeOrders', async (client) => {
+      const orders = await getActiveTradeOrders();
+      client.send('tradeOrders', { orders });
+    });
+
+    this.onMessage('getMyOrders', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const orders = await getPlayerTradeOrders(auth.userId);
+      client.send('myOrders', { orders });
+    });
+
+    this.onMessage('cancelOrder', async (client, data: { orderId: string }) => {
+      const auth = client.auth as AuthPayload;
+      const cancelled = await cancelTradeOrder(data.orderId, auth.userId);
+      client.send('cancelOrderResult', { success: cancelled });
+    });
+
+    this.onMessage('getStorage', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const storage = await getStorageInventory(auth.userId);
+      client.send('storageUpdate', storage);
+    });
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
@@ -174,6 +220,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Send initial cargo
     const cargo = await getPlayerCargo(auth.userId);
     client.send('cargoUpdate', cargo);
+
+    // Send credits
+    const credits = await getPlayerCredits(auth.userId);
+    client.send('creditsUpdate', { credits });
+
+    // Send storage
+    const storageInv = await getStorageInventory(auth.userId);
+    client.send('storageUpdate', storageInv);
 
     // Send mining state
     const miningState = await getMiningState(auth.userId);
@@ -556,5 +610,173 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
       client.send('chatMessage', chatMsg);
     }
+  }
+
+  private async handleTransfer(client: Client, data: TransferMessage) {
+    const auth = client.auth as AuthPayload;
+    const { resource, amount, direction } = data;
+
+    const player = await findPlayerByUsername(auth.username);
+    if (!player) { client.send('error', { code: 'NO_PLAYER', message: 'Player not found' }); return; }
+    if (this.state.sector.x !== player.homeBase.x || this.state.sector.y !== player.homeBase.y) {
+      client.send('transferResult', { success: false, error: 'Must be at home base' });
+      return;
+    }
+
+    const storageStruct = await getPlayerStructure(auth.userId, 'storage');
+    if (!storageStruct) {
+      client.send('transferResult', { success: false, error: 'No storage built' });
+      return;
+    }
+
+    const currentCargo = await getPlayerCargo(auth.userId);
+    const storage = await getStorageInventory(auth.userId);
+    const result = validateTransfer(direction, resource, amount, currentCargo, storage, storageStruct.tier);
+    if (!result.valid) {
+      client.send('transferResult', { success: false, error: result.error });
+      return;
+    }
+
+    if (direction === 'toStorage') {
+      const deducted = await deductCargo(auth.userId, resource, amount);
+      if (!deducted) { client.send('transferResult', { success: false, error: 'Cargo changed' }); return; }
+      await updateStorageResource(auth.userId, resource, amount);
+    } else {
+      await updateStorageResource(auth.userId, resource, -amount);
+      await addToCargo(auth.userId, resource, amount);
+    }
+
+    const updatedCargo = await getPlayerCargo(auth.userId);
+    const updatedStorage = await getStorageInventory(auth.userId);
+    client.send('transferResult', { success: true, cargo: updatedCargo, storage: updatedStorage });
+    client.send('cargoUpdate', updatedCargo);
+    client.send('storageUpdate', updatedStorage);
+  }
+
+  private async handleNpcTrade(client: Client, data: NpcTradeMessage) {
+    const auth = client.auth as AuthPayload;
+    const { resource, amount, action } = data;
+
+    const player = await findPlayerByUsername(auth.username);
+    if (!player) return;
+    if (this.state.sector.x !== player.homeBase.x || this.state.sector.y !== player.homeBase.y) {
+      client.send('npcTradeResult', { success: false, error: 'Must be at home base' });
+      return;
+    }
+
+    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
+    if (!tradingPost) {
+      client.send('npcTradeResult', { success: false, error: 'No trading post built' });
+      return;
+    }
+
+    const storageStruct = await getPlayerStructure(auth.userId, 'storage');
+    const storageTier = storageStruct?.tier ?? 1;
+    const currentCredits = await getPlayerCredits(auth.userId);
+    const storage = await getStorageInventory(auth.userId);
+
+    const result = validateNpcTrade(action, resource, amount, currentCredits, storage, storageTier);
+    if (!result.valid) {
+      client.send('npcTradeResult', { success: false, error: result.error });
+      return;
+    }
+
+    if (action === 'sell') {
+      await updateStorageResource(auth.userId, resource, -amount);
+      const newCredits = await addCredits(auth.userId, result.totalPrice);
+      const updatedStorage = await getStorageInventory(auth.userId);
+      client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
+      client.send('creditsUpdate', { credits: newCredits });
+      client.send('storageUpdate', updatedStorage);
+    } else {
+      const deducted = await deductCredits(auth.userId, result.totalPrice);
+      if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
+      await updateStorageResource(auth.userId, resource, amount);
+      const newCredits = await getPlayerCredits(auth.userId);
+      const updatedStorage = await getStorageInventory(auth.userId);
+      client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
+      client.send('creditsUpdate', { credits: newCredits });
+      client.send('storageUpdate', updatedStorage);
+    }
+  }
+
+  private async handleUpgradeStructure(client: Client, data: UpgradeStructureMessage) {
+    const auth = client.auth as AuthPayload;
+    const { structureId } = data;
+
+    const struct = await query<{ id: string; type: string; tier: number; owner_id: string }>(
+      'SELECT id, type, tier, owner_id FROM structures WHERE id = $1',
+      [structureId]
+    );
+    const row = struct.rows[0];
+    if (!row || row.owner_id !== auth.userId) {
+      client.send('upgradeResult', { success: false, error: 'Structure not found' });
+      return;
+    }
+
+    const tierMap = row.type === 'storage' ? STORAGE_TIERS : row.type === 'trading_post' ? TRADING_POST_TIERS : null;
+    if (!tierMap) {
+      client.send('upgradeResult', { success: false, error: 'Not upgradeable' });
+      return;
+    }
+
+    const nextTier = row.tier + 1;
+    const nextConfig = tierMap[nextTier];
+    if (!nextConfig) {
+      client.send('upgradeResult', { success: false, error: 'Already max tier' });
+      return;
+    }
+
+    const cost = nextConfig.upgradeCost;
+    if (cost > 0) {
+      const deducted = await deductCredits(auth.userId, cost);
+      if (!deducted) {
+        client.send('upgradeResult', { success: false, error: `Need ${cost} credits` });
+        return;
+      }
+    }
+
+    const newTier = await upgradeStructureTier(structureId);
+    const upgradeCredits = await getPlayerCredits(auth.userId);
+    client.send('upgradeResult', { success: true, newTier, creditsRemaining: upgradeCredits });
+    client.send('creditsUpdate', { credits: upgradeCredits });
+
+    const structures = await getPlayerBaseStructures(auth.userId);
+    client.send('baseData', { structures });
+  }
+
+  private async handlePlaceOrder(client: Client, data: PlaceOrderMessage) {
+    const auth = client.auth as AuthPayload;
+    const { resource, amount, pricePerUnit, type } = data;
+
+    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
+    if (!tradingPost || tradingPost.tier < 2) {
+      client.send('error', { code: 'NO_MARKET', message: 'Need Trading Post Tier 2+' });
+      return;
+    }
+
+    if (amount <= 0 || pricePerUnit <= 0) {
+      client.send('error', { code: 'INVALID_ORDER', message: 'Invalid amount or price' });
+      return;
+    }
+
+    if (type === 'sell') {
+      const storage = await getStorageInventory(auth.userId);
+      if (storage[resource as keyof typeof storage] < amount) {
+        client.send('error', { code: 'INSUFFICIENT', message: `Not enough ${resource} in storage` });
+        return;
+      }
+      await updateStorageResource(auth.userId, resource, -amount);
+    } else {
+      const totalCost = pricePerUnit * amount;
+      const deducted = await deductCredits(auth.userId, totalCost);
+      if (!deducted) {
+        client.send('error', { code: 'INSUFFICIENT', message: 'Not enough credits' });
+        return;
+      }
+    }
+
+    const order = await createTradeOrder(auth.userId, resource, amount, pricePerUnit, type);
+    client.send('orderPlaced', { success: true, orderId: order.id });
   }
 }
