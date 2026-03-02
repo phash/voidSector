@@ -173,18 +173,18 @@
 .channel-buttons {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 4px 2px;
+  gap: 4px;
+  padding: 6px 4px;
   background: linear-gradient(180deg, #1a1a1a, #131313, #1a1a1a);
   border-left: 1px solid #2a2a2a;
 }
 
 .channel-btn {
   position: relative;
-  width: 32px;
-  height: 24px;
+  width: 64px;
+  height: 48px;
   font-family: var(--font-mono);
-  font-size: 0.45rem;
+  font-size: 0.7rem;
   letter-spacing: 0.05em;
   color: rgba(255, 176, 0, 0.4);
   background: #1a1a1a;
@@ -207,14 +207,34 @@
   box-shadow: 0 0 4px var(--color-primary);
 }
 
-.channel-dot {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--color-danger, #FF3333);
+/* Alert blink animation for channel buttons */
+@keyframes channel-blink {
+  0%, 100% { box-shadow: 0 0 4px var(--color-primary); opacity: 1; }
+  50% { box-shadow: 0 0 12px var(--color-primary); opacity: 0.7; }
+}
+
+.channel-btn.alert {
+  animation: channel-blink 1s ease-in-out infinite;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Alert blink for sidebar bezel border */
+@keyframes bezel-alert-pulse {
+  0%, 100% { border-color: #2a2a2a; }
+  50% { border-color: var(--color-primary); }
+}
+
+.sidebar-bezel.alert {
+  animation: bezel-alert-pulse 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .channel-btn.alert,
+  .sidebar-bezel.alert {
+    animation: none;
+    border-color: var(--color-primary);
+  }
 }
 
 /* Desktop multi-monitor layout */
