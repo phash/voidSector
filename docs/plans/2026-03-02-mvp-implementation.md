@@ -9,6 +9,7 @@
 **Tech Stack:** Colyseus 0.15+, React 18, HTML5 Canvas, Zustand, PostgreSQL, Redis, Vite, Vitest, TypeScript
 
 **Reference:** See `docs/plans/2026-03-02-mvp-design.md` for the full approved design.
+**Visual Reference:** See `planung/Inhalte/` for concept art, wireframes, and the art-asset master prompt. Key images: `raumschiffsteuerung.jpg` (NAV-COM grid), `startschiff.jpg` (AEGIS Scout), `home base.jpg` (Orbital-Schmiede), `visual_design.md` (UI/UX spec).
 
 ---
 
@@ -296,7 +297,7 @@ Expected: FAIL — modules not found
 ```ts
 // packages/shared/src/types.ts
 
-export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly';
+export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly' | 'pirate';
 
 export interface Coords {
   x: number;
@@ -317,9 +318,29 @@ export interface PlayerData {
   id: string;
   username: string;
   homeBase: Coords;
-  shipType: string;
   xp: number;
   level: number;
+}
+
+export type ShipClass = 'aegis_scout_mk1' | 'void_seeker_mk2';
+
+export interface ShipData {
+  id: string;
+  ownerId: string;
+  shipClass: ShipClass;
+  fuel: number;
+  fuelMax: number;
+  jumpRange: number;       // max sectors per jump
+  apCostJump: number;      // AP cost per jump
+  cargoCap: number;        // cargo capacity in units
+  scannerLevel: number;
+  safeSlots: number;       // rescue pod slots
+  active: boolean;
+}
+
+export interface FuelState {
+  current: number;
+  max: number;
 }
 
 export interface APState {
@@ -348,6 +369,7 @@ export interface JumpResultMessage {
   error?: string;
   newSector?: SectorData;
   apRemaining?: number;
+  fuelRemaining?: number;
 }
 
 export interface ScanResultMessage {
@@ -365,18 +387,19 @@ export interface ErrorMessage {
 
 ```ts
 // packages/shared/src/constants.ts
-import type { SectorType } from './types.js';
+import type { SectorType, ShipClass } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
-  'empty', 'nebula', 'asteroid_field', 'station', 'anomaly'
+  'empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate'
 ];
 
 export const SECTOR_WEIGHTS: Record<SectorType, number> = {
-  empty: 0.60,
+  empty: 0.55,
   asteroid_field: 0.15,
   nebula: 0.10,
-  anomaly: 0.10,
+  anomaly: 0.08,
   station: 0.05,
+  pirate: 0.07,
 };
 
 export const AP_DEFAULTS = {
@@ -386,18 +409,53 @@ export const AP_DEFAULTS = {
 };
 
 export const AP_COSTS = {
-  jump: 5,
   scan: 3,
+  // jump cost comes from ship.apCostJump
 };
 
 export const WORLD_SEED = 42;
 
-export const JUMP_RANGE = 1;  // max sectors per jump (explored territory)
-export const RADAR_RADIUS = 2;  // visible sectors around player
+export const RADAR_RADIUS = 3;  // visible sectors around player on scan
 
 export const RECONNECTION_TIMEOUT_S = 15;
 
-// UI Symbols
+// Ship class definitions (from visual reference material)
+export const SHIP_CLASSES: Record<ShipClass, {
+  name: string;
+  displayName: string;
+  jumpRange: number;
+  apCostJump: number;
+  fuelMax: number;
+  fuelPerJump: number;
+  cargoCap: number;
+  scannerLevel: number;
+  safeSlots: number;
+}> = {
+  aegis_scout_mk1: {
+    name: 'VOID SCOUT MK. I',
+    displayName: '"AEGIS"',
+    jumpRange: 4,
+    apCostJump: 1,
+    fuelMax: 100,
+    fuelPerJump: 5,
+    cargoCap: 5,
+    scannerLevel: 1,
+    safeSlots: 1,
+  },
+  void_seeker_mk2: {
+    name: 'VOID SEEKER MK. II',
+    displayName: '"HELIOS"',
+    jumpRange: 12,
+    apCostJump: 2,
+    fuelMax: 200,
+    fuelPerJump: 3,
+    cargoCap: 25,
+    scannerLevel: 3,
+    safeSlots: 3,
+  },
+};
+
+// UI Symbols for grid rendering
 export const SYMBOLS = {
   ship: '■',
   empty: '·',
@@ -406,23 +464,31 @@ export const SYMBOLS = {
   nebula: '▒',
   station: '△',
   anomaly: '◊',
+  pirate: '☠',
   player: '◆',
+  iron: '⛏',
+  homeBase: '⌂',
 } as const;
 
-// Colors
+// Colors — Amber-Monochrom as per visual_design.md
 export const THEME = {
   amber: {
-    primary: '#ffb000',
+    primary: '#FFB000',
     dim: 'rgba(255, 176, 0, 0.4)',
-    bg: '#0a0a0a',
-    danger: '#ff3333',
+    bg: '#050505',
+    danger: '#FF3333',
+    bezel: '#1a1a1a',
+    bezelLight: '#2a2a2a',
   },
-  green: {
-    primary: '#33ff33',
-    dim: 'rgba(51, 255, 51, 0.4)',
-    bg: '#0a0a0a',
-    danger: '#ff3333',
-  },
+} as const;
+
+// Monitor IDs (Multi-Monitor-System)
+export const MONITORS = {
+  NAV_COM: 'NAV-COM',
+  SHIP_SYS: 'SHIP-SYS',
+  BASE_LINK: 'BASE-LINK',  // post-MVP
+  MKT_NET: 'MKT-NET',      // post-MVP
+  COMM_DL: 'COMM-DL',      // post-MVP
 } as const;
 ```
 
@@ -474,9 +540,22 @@ CREATE TABLE players (
   password_hash VARCHAR(255) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   home_base JSONB DEFAULT '{"x":0,"y":0}',
-  ship_type VARCHAR(32) DEFAULT 'scout',
   xp INTEGER DEFAULT 0,
   level INTEGER DEFAULT 1
+);
+
+CREATE TABLE ships (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  owner_id UUID REFERENCES players(id) ON DELETE CASCADE,
+  ship_class VARCHAR(32) NOT NULL DEFAULT 'aegis_scout_mk1',
+  fuel INTEGER NOT NULL DEFAULT 100,
+  fuel_max INTEGER NOT NULL DEFAULT 100,
+  jump_range INTEGER NOT NULL DEFAULT 4,
+  ap_cost_jump INTEGER NOT NULL DEFAULT 1,
+  cargo_cap INTEGER NOT NULL DEFAULT 5,
+  scanner_level INTEGER NOT NULL DEFAULT 1,
+  safe_slots INTEGER NOT NULL DEFAULT 1,
+  active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE sectors (
@@ -498,6 +577,7 @@ CREATE TABLE player_discoveries (
   PRIMARY KEY (player_id, sector_x, sector_y)
 );
 
+CREATE INDEX idx_ships_owner ON ships(owner_id);
 CREATE INDEX idx_sectors_discovered_by ON sectors(discovered_by);
 CREATE INDEX idx_discoveries_player ON player_discoveries(player_id);
 ```
@@ -1455,7 +1535,9 @@ git commit -m "feat: implement SectorRoom with jump, scan, AP spending"
 
 ---
 
-## Task 9: Client Scaffolding + CRT Theme
+## Task 9: Client Scaffolding + CRT Hardware-Konsole Theme
+
+Visual reference: `planung/Inhalte/visual_design.md`, `planung/Inhalte/raumschiffsteuerung.jpg`
 
 **Files:**
 - Create: `packages/client/index.html`
@@ -1464,7 +1546,8 @@ git commit -m "feat: implement SectorRoom with jump, scan, AP spending"
 - Create: `packages/client/src/App.tsx`
 - Create: `packages/client/src/styles/crt.css`
 - Create: `packages/client/src/styles/global.css`
-- Create: `packages/client/src/components/CRTOverlay.tsx`
+- Create: `packages/client/src/components/CRTMonitor.tsx`
+- Create: `packages/client/src/components/MonitorBezel.tsx`
 
 **Step 1: Create Vite config**
 
@@ -1506,7 +1589,7 @@ export default defineConfig({
 </html>
 ```
 
-**Step 3: Create global.css**
+**Step 3: Create global.css** (Amber-Monochrom as per visual_design.md)
 
 ```css
 /* packages/client/src/styles/global.css */
@@ -1519,10 +1602,14 @@ export default defineConfig({
 }
 
 :root {
-  --color-primary: #ffb000;
+  --color-primary: #FFB000;
   --color-dim: rgba(255, 176, 0, 0.4);
-  --color-bg: #0a0a0a;
-  --color-danger: #ff3333;
+  --color-bg: #050505;
+  --color-danger: #FF3333;
+  --color-bezel: #1a1a1a;
+  --color-bezel-light: #2a2a2a;
+  --color-led-active: #FFB000;
+  --color-led-off: #3a3000;
   --font-mono: 'Share Tech Mono', 'Courier New', Courier, monospace;
 }
 
@@ -1530,9 +1617,37 @@ html, body, #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: var(--color-bg);
+  background: #000;
   color: var(--color-primary);
   font-family: var(--font-mono);
+}
+
+/* Button style from visual_design.md: invert on click */
+.vs-btn {
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.05s;
+}
+.vs-btn:active {
+  background: var(--color-primary);
+  color: #000;
+}
+.vs-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Segmented progress bar: [████████░░░░] */
+.vs-bar {
+  font-family: var(--font-mono);
+  letter-spacing: -1px;
 }
 ```
 
@@ -1604,36 +1719,159 @@ html, body, #root {
 }
 ```
 
-**Step 5: Create CRTOverlay component**
+**Step 5: Create MonitorBezel component** (Hardware frame with LEDs and toggle switches)
+
+Visual reference: The physical CRT bezels in all concept images — dark industrial metal frame,
+toggle switches on the right side, LED indicators, "NAV_SYS / SYS STATUS / ON/OFF" labels.
 
 ```tsx
-// packages/client/src/components/CRTOverlay.tsx
+// packages/client/src/components/MonitorBezel.tsx
 import type { ReactNode } from 'react';
 import '../styles/crt.css';
 
-export function CRTOverlay({ children }: { children: ReactNode }) {
+interface MonitorBezelProps {
+  children: ReactNode;
+  monitorId: string;        // e.g. "NAV-COM"
+  statusLeds?: Array<{ label: string; active: boolean }>;
+}
+
+export function MonitorBezel({ children, monitorId, statusLeds = [] }: MonitorBezelProps) {
   return (
-    <div className="crt-wrapper">
-      <div className="crt-scanlines" />
-      <div className="crt-flicker" />
-      <div className="crt-vignette" />
-      {children}
+    <div className="bezel-frame">
+      {/* Left side label (vertical) */}
+      <div className="bezel-side bezel-left">
+        <span className="bezel-label-vertical">{monitorId}</span>
+      </div>
+
+      {/* CRT screen area */}
+      <div className="crt-wrapper">
+        <div className="crt-scanlines" />
+        <div className="crt-flicker" />
+        <div className="crt-vignette" />
+        <div className="crt-content">
+          {children}
+        </div>
+      </div>
+
+      {/* Right side controls (toggle switches, LEDs) */}
+      <div className="bezel-side bezel-right">
+        {statusLeds.map((led) => (
+          <div key={led.label} className="bezel-led-group">
+            <span className="bezel-led-label">{led.label}</span>
+            <div className={`bezel-led ${led.active ? 'active' : ''}`} />
+          </div>
+        ))}
+        <div className="bezel-toggle">
+          <span className="bezel-led-label">ON/OFF</span>
+          <div className="bezel-toggle-switch" />
+        </div>
+      </div>
     </div>
   );
 }
 ```
 
-**Step 6: Create App.tsx and main.tsx**
+**Step 6: Add bezel styles to crt.css**
+
+Append to the existing crt.css:
+```css
+/* ─── Hardware Bezel Frame ────────────────────── */
+.bezel-frame {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  border: 3px solid #2a2a2a;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 20px rgba(0,0,0,0.8),
+    0 0 30px rgba(0,0,0,0.5);
+}
+
+.bezel-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 4px;
+  background: linear-gradient(180deg, #1a1a1a, #151515, #1a1a1a);
+  min-width: 28px;
+}
+
+.bezel-left {
+  border-right: 1px solid #2a2a2a;
+}
+.bezel-right {
+  border-left: 1px solid #2a2a2a;
+}
+
+.bezel-label-vertical {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 176, 0, 0.3);
+}
+
+.bezel-led-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.bezel-led-label {
+  font-size: 0.45rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 176, 0, 0.3);
+}
+
+.bezel-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-led-off);
+  border: 1px solid #333;
+}
+.bezel-led.active {
+  background: var(--color-led-active);
+  box-shadow: 0 0 4px var(--color-led-active);
+}
+
+.bezel-toggle-switch {
+  width: 8px;
+  height: 14px;
+  background: #444;
+  border-radius: 2px;
+  border: 1px solid #555;
+}
+
+.crt-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+```
+
+**Step 7: Create App.tsx and main.tsx**
 
 ```tsx
 // packages/client/src/App.tsx
-import { CRTOverlay } from './components/CRTOverlay';
+import { MonitorBezel } from './components/MonitorBezel';
 import './styles/global.css';
 
 export function App() {
   return (
-    <CRTOverlay>
-      <div style={{ padding: '16px', position: 'relative', zIndex: 1 }}>
+    <MonitorBezel
+      monitorId="NAV-COM"
+      statusLeds={[
+        { label: 'SYS', active: true },
+        { label: 'NAV', active: true },
+      ]}
+    >
+      <div style={{ padding: '16px' }}>
         <h1 style={{ fontSize: '1.2rem', letterSpacing: '0.2em' }}>
           VOID SECTOR
         </h1>
@@ -1641,7 +1879,7 @@ export function App() {
           SYSTEM INITIALIZING...
         </p>
       </div>
-    </CRTOverlay>
+    </MonitorBezel>
   );
 }
 ```
@@ -1704,8 +1942,12 @@ export interface GameSlice {
   // Position
   position: Coords;
 
-  // AP
+  // AP & Fuel
   ap: APState | null;
+  fuel: FuelState | null;
+
+  // Ship
+  ship: ShipData | null;
 
   // Current sector
   currentSector: SectorData | null;
@@ -1719,17 +1961,23 @@ export interface GameSlice {
   // Event log
   log: string[];
 
+  // Active monitor
+  activeMonitor: string;  // 'NAV-COM' | 'SHIP-SYS'
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
   setPosition: (pos: Coords) => void;
   setAP: (ap: APState) => void;
+  setFuel: (fuel: FuelState) => void;
+  setShip: (ship: ShipData) => void;
   setCurrentSector: (sector: SectorData) => void;
   setPlayer: (sessionId: string, player: PlayerPresence) => void;
   removePlayer: (sessionId: string) => void;
   clearPlayers: () => void;
   addDiscoveries: (sectors: SectorData[]) => void;
   addLogEntry: (message: string) => void;
+  setActiveMonitor: (monitor: string) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -2244,7 +2492,11 @@ export function useCanvas(draw: DrawFn) {
 }
 ```
 
-**Step 2: Create RadarRenderer**
+**Step 2: Create RadarRenderer** (Reference: raumschiffsteuerung.jpg grid layout)
+
+Each cell shows: coordinates `[x/y]` at top, sector icon in center, label below.
+Fog of War cells show dimmed coordinates only.
+Home base at (0,0) gets special icon.
 
 ```ts
 // packages/client/src/canvas/RadarRenderer.ts
@@ -2252,9 +2504,12 @@ import { SYMBOLS, THEME, RADAR_RADIUS } from '@void-sector/shared';
 import type { SectorData, Coords } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 
-const CELL_SIZE = 36; // px per grid cell
-const FONT_SIZE = 16;
+const CELL_W = 72;  // px per grid cell (wider to fit coordinates)
+const CELL_H = 56;  // px per grid cell
+const FONT_SIZE = 14;
+const COORD_FONT_SIZE = 8;
 const FONT = `${FONT_SIZE}px 'Share Tech Mono', 'Courier New', monospace`;
+const COORD_FONT = `${COORD_FONT_SIZE}px 'Share Tech Mono', 'Courier New', monospace`;
 
 interface RadarState {
   position: Coords;
@@ -2272,84 +2527,91 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
   // Clear
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#0a0a0a';
+  ctx.fillStyle = '#050505';
   ctx.fillRect(0, 0, w, h);
 
   const centerX = w / 2;
   const centerY = h / 2;
   const radius = RADAR_RADIUS;
 
-  ctx.font = FONT;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Draw grid
+  // Draw grid cells
   for (let dx = -radius; dx <= radius; dx++) {
     for (let dy = -radius; dy <= radius; dy++) {
       const sx = state.position.x + dx;
       const sy = state.position.y + dy;
-      const screenX = centerX + dx * CELL_SIZE;
-      const screenY = centerY + dy * CELL_SIZE;
+      const cellX = centerX + dx * CELL_W;
+      const cellY = centerY + dy * CELL_H;
 
       const key = `${sx}:${sy}`;
       const sector = state.discoveries[key];
+      const isCenter = dx === 0 && dy === 0;
+      const isHome = sx === 0 && sy === 0;
 
-      if (dx === 0 && dy === 0) {
-        // Player ship
-        drawGlowText(ctx, SYMBOLS.ship, screenX, screenY, state.themeColor, 10);
-      } else if (sector) {
-        const symbol = getSectorSymbol(sector.type);
-        const color = dx === 0 && dy === 0 ? state.themeColor : state.dimColor;
-        ctx.fillStyle = color;
-        ctx.shadowBlur = 0;
-        ctx.fillText(symbol, screenX, screenY);
+      // Cell border (subtle grid lines)
+      ctx.strokeStyle = 'rgba(255, 176, 0, 0.08)';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(cellX - CELL_W/2, cellY - CELL_H/2, CELL_W, CELL_H);
+
+      // Coordinates label at top of cell: [x/y]
+      ctx.font = COORD_FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      if (sector || isCenter) {
+        ctx.fillStyle = state.dimColor;
       } else {
-        // Unexplored
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillStyle = 'rgba(255, 176, 0, 0.15)'; // fog of war
+      }
+      ctx.fillText(`[${sx}/${sy}]`, cellX, cellY - CELL_H/2 + 3);
+
+      // Sector content
+      ctx.font = FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (isCenter) {
+        // Player ship — glowing
+        drawGlowText(ctx, SYMBOLS.ship, cellX, cellY, state.themeColor, 10);
+        // Label below
+        ctx.font = COORD_FONT;
+        ctx.fillStyle = state.themeColor;
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(isHome ? 'HOME BASE' : 'YOU', cellX, cellY + CELL_H/2 - 2);
+      } else if (sector) {
+        // Discovered sector
+        const symbol = isHome ? SYMBOLS.homeBase : getSectorSymbol(sector.type);
+        ctx.fillStyle = state.dimColor;
         ctx.shadowBlur = 0;
-        ctx.fillText(SYMBOLS.unexplored, screenX, screenY);
+        ctx.fillText(symbol, cellX, cellY);
+
+        // Type label below
+        ctx.font = COORD_FONT;
+        ctx.textBaseline = 'bottom';
+        const label = isHome ? 'HOME' : getSectorLabel(sector.type);
+        ctx.fillText(label, cellX, cellY + CELL_H/2 - 2);
+      } else {
+        // Unexplored — fog of war (just dimmed coords, no icon)
+        ctx.fillStyle = 'rgba(255, 176, 0, 0.1)';
+        ctx.textBaseline = 'bottom';
+        ctx.font = COORD_FONT;
+        ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H/2 - 2);
       }
     }
   }
 
-  // Draw other players
-  for (const player of Object.values(state.players)) {
-    if (player.x === state.position.x && player.y === state.position.y) {
-      // Player is in the same sector — draw offset slightly
-      const offsetX = centerX + (Math.random() - 0.5) * 8;
-      const offsetY = centerY + 12;
-      drawGlowText(ctx, SYMBOLS.player, offsetX, offsetY, state.themeColor, 6);
+  // Draw other players as markers
+  const playerList = Object.values(state.players);
+  for (let i = 0; i < playerList.length; i++) {
+    const player = playerList[i];
+    const dx = player.x - state.position.x;
+    const dy = player.y - state.position.y;
+    if (Math.abs(dx) <= radius && Math.abs(dy) <= radius && !(dx === 0 && dy === 0)) {
+      const px = centerX + dx * CELL_W + 12;
+      const py = centerY + dy * CELL_H;
+      ctx.font = FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      drawGlowText(ctx, SYMBOLS.player, px, py, state.themeColor, 6);
     }
-  }
-
-  // Draw crosshair / grid lines
-  ctx.strokeStyle = state.dimColor;
-  ctx.lineWidth = 0.5;
-  ctx.globalAlpha = 0.2;
-  // Horizontal
-  ctx.beginPath();
-  ctx.moveTo(centerX - radius * CELL_SIZE - 10, centerY);
-  ctx.lineTo(centerX + radius * CELL_SIZE + 10, centerY);
-  ctx.stroke();
-  // Vertical
-  ctx.beginPath();
-  ctx.moveTo(centerX, centerY - radius * CELL_SIZE - 10);
-  ctx.lineTo(centerX, centerY + radius * CELL_SIZE + 10);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  // Coordinate labels at edges
-  ctx.font = `${FONT_SIZE * 0.7}px 'Share Tech Mono', monospace`;
-  ctx.fillStyle = state.dimColor;
-  for (let dx = -radius; dx <= radius; dx++) {
-    const sx = state.position.x + dx;
-    const screenX = centerX + dx * CELL_SIZE;
-    ctx.fillText(String(sx), screenX, centerY + (radius + 1) * CELL_SIZE);
-  }
-  for (let dy = -radius; dy <= radius; dy++) {
-    const sy = state.position.y + dy;
-    const screenY = centerY + dy * CELL_SIZE;
-    ctx.fillText(String(sy), centerX - (radius + 1) * CELL_SIZE, screenY);
   }
 }
 
@@ -2359,8 +2621,21 @@ function getSectorSymbol(type: string): string {
     case 'nebula': return SYMBOLS.nebula;
     case 'station': return SYMBOLS.station;
     case 'anomaly': return SYMBOLS.anomaly;
+    case 'pirate': return SYMBOLS.pirate;
     case 'empty':
     default: return SYMBOLS.empty;
+  }
+}
+
+function getSectorLabel(type: string): string {
+  switch (type) {
+    case 'asteroid_field': return 'ASTEROID';
+    case 'nebula': return 'NEBULA';
+    case 'station': return 'STATION';
+    case 'anomaly': return 'ANOMALY';
+    case 'pirate': return 'PIRATE';
+    case 'empty': return 'EMPTY';
+    default: return type.toUpperCase();
   }
 }
 
@@ -2440,29 +2715,52 @@ git commit -m "feat: add radar canvas renderer with CRT glow effects"
 - Create: `packages/client/src/components/EventLog.tsx`
 - Modify: `packages/client/src/App.tsx`
 
-**Step 1: Create HUD component**
+**Step 1: Create HUD component** (Reference: bottom status bar in raumschiffsteuerung.jpg)
+
+The status bar shows AP, FUEL, and SAFE SLOTS with segmented progress bars `[████████░░░░]`.
 
 ```tsx
 // packages/client/src/components/HUD.tsx
 import { useStore } from '../state/store';
 
-export function HUD() {
+/** Segmented progress bar: [████████░░░░] */
+function SegmentedBar({ current, max, width = 12 }: { current: number; max: number; width?: number }) {
+  const filled = Math.round((current / max) * width);
+  const empty = width - filled;
+  return (
+    <span className="vs-bar">
+      {'█'.repeat(filled)}{'░'.repeat(empty)}
+    </span>
+  );
+}
+
+export function StatusBar() {
   const ap = useStore((s) => s.ap);
-  const position = useStore((s) => s.position);
-  const currentSector = useStore((s) => s.currentSector);
-  const playerCount = Object.keys(useStore((s) => s.players)).length;
+  const fuel = useStore((s) => s.fuel);
+  const ship = useStore((s) => s.ship);
 
   return (
     <div style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      padding: '8px 12px',
+      padding: '6px 12px',
+      borderTop: '1px solid var(--color-dim)',
       borderBottom: '1px solid var(--color-dim)',
-      fontSize: '0.8rem',
-      letterSpacing: '0.1em',
+      fontSize: '0.7rem',
+      letterSpacing: '0.08em',
+      lineHeight: 1.8,
     }}>
-      <span>VOID SECTOR</span>
-      <span>AP: {ap ? `${ap.current}/${ap.max}` : '---'}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 16px' }}>
+        <span>
+          AP: {ap ? `${ap.current}/${ap.max}` : '---'}
+          {' '}<SegmentedBar current={ap?.current ?? 0} max={ap?.max ?? 100} />
+        </span>
+        <span>
+          FUEL: {fuel ? `${fuel.current}%` : '---'}
+          {' '}<SegmentedBar current={fuel?.current ?? 0} max={fuel?.max ?? 100} />
+        </span>
+        <span>
+          SAFE SLOTS: {ship ? `${ship.safeSlots}` : '---'}
+        </span>
+      </div>
     </div>
   );
 }
@@ -2491,34 +2789,15 @@ export function SectorInfo() {
 }
 ```
 
-**Step 2: Create NavControls component**
+**Step 2: Create NavControls component** (Reference: [SCAN] [MOVE] [MINE] [MARKET] in raumschiffsteuerung.jpg)
+
+Uses `[BRACKETED]` button labels and `.vs-btn` class (inverts amber/black on press).
+MVP only has [SCAN] and [MOVE] active. [MINE] and [MARKET] are shown as disabled placeholders.
 
 ```tsx
 // packages/client/src/components/NavControls.tsx
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-
-const btnStyle: React.CSSProperties = {
-  background: 'transparent',
-  border: '1px solid var(--color-primary)',
-  color: 'var(--color-primary)',
-  fontFamily: 'var(--font-mono)',
-  fontSize: '1.2rem',
-  width: '44px',
-  height: '44px',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-
-const scanBtnStyle: React.CSSProperties = {
-  ...btnStyle,
-  width: 'auto',
-  padding: '0 16px',
-  fontSize: '0.8rem',
-  letterSpacing: '0.15em',
-};
 
 export function NavControls() {
   const position = useStore((s) => s.position);
@@ -2534,19 +2813,21 @@ export function NavControls() {
   }
 
   return (
-    <div style={{
-      padding: '8px 12px',
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '8px',
-      alignItems: 'center',
-    }}>
-      <button style={btnStyle} onClick={() => jump(0, -1)} disabled={jumpPending}>↑</button>
-      <button style={btnStyle} onClick={() => jump(-1, 0)} disabled={jumpPending}>←</button>
-      <button style={btnStyle} onClick={() => jump(0, 1)} disabled={jumpPending}>↓</button>
-      <button style={btnStyle} onClick={() => jump(1, 0)} disabled={jumpPending}>→</button>
-      <div style={{ width: '16px' }} />
-      <button style={scanBtnStyle} onClick={scan} disabled={jumpPending}>SCAN</button>
+    <div style={{ padding: '8px 12px' }}>
+      {/* Direction buttons */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
+        <button className="vs-btn" onClick={() => jump(0, -1)} disabled={jumpPending}>↑</button>
+        <button className="vs-btn" onClick={() => jump(-1, 0)} disabled={jumpPending}>←</button>
+        <button className="vs-btn" onClick={() => jump(0, 1)} disabled={jumpPending}>↓</button>
+        <button className="vs-btn" onClick={() => jump(1, 0)} disabled={jumpPending}>→</button>
+      </div>
+      {/* Action buttons — [BRACKETED] style */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+        <button className="vs-btn" onClick={scan} disabled={jumpPending}>[SCAN]</button>
+        <button className="vs-btn" onClick={() => jump(0, 0)} disabled={jumpPending}>[MOVE]</button>
+        <button className="vs-btn" disabled title="Coming soon">[MINE]</button>
+        <button className="vs-btn" disabled title="Coming soon">[MARKET]</button>
+      </div>
     </div>
   );
 }
@@ -2585,41 +2866,108 @@ export function EventLog() {
 }
 ```
 
-**Step 4: Create GameScreen component**
+**Step 4: Create GameScreen component** (Multi-Monitor with hardware bezel)
+
+Mobile: one monitor at a time, tab-bar at bottom to switch.
+MVP monitors: NAV-COM (grid/radar) and SHIP-SYS (ship status).
 
 ```tsx
 // packages/client/src/components/GameScreen.tsx
+import { MonitorBezel } from './MonitorBezel';
 import { RadarCanvas } from './RadarCanvas';
-import { HUD, SectorInfo } from './HUD';
+import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
 import { EventLog } from './EventLog';
+import { useStore } from '../state/store';
+import { MONITORS } from '@void-sector/shared';
 
-export function GameScreen() {
+function NavComScreen() {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      position: 'relative',
-      zIndex: 1,
-    }}>
-      <HUD />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ padding: '6px 12px', fontSize: '0.7rem', letterSpacing: '0.2em', opacity: 0.6 }}>
+        VOID SECTOR — NAV-COM
+      </div>
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         <RadarCanvas />
       </div>
       <SectorInfo />
+      <StatusBar />
       <NavControls />
       <EventLog />
     </div>
   );
 }
+
+function ShipSysScreen() {
+  const ship = useStore((s) => s.ship);
+  return (
+    <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 2 }}>
+      <div style={{ letterSpacing: '0.2em', marginBottom: '16px' }}>
+        {ship ? `${ship.shipClass.toUpperCase()}` : 'NO SHIP DATA'}
+      </div>
+      <div>ION DRIVE ──── [RANGE: {ship?.jumpRange ?? '?'} SECTORS]</div>
+      <div>CARGO HOLD ─── [CAP: {ship?.cargoCap ?? '?'} UNITS]</div>
+      <div>SCANNER ────── [LEVEL: {ship?.scannerLevel ?? '?'}]</div>
+      <div>SAFE SLOTS ─── [{ship?.safeSlots ?? '?'}]</div>
+      <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-dim)', paddingTop: '8px' }}>
+        SYSTEMS: ONLINE &nbsp;&nbsp; AP COST/SPRUNG: {ship?.apCostJump ?? '?'}
+      </div>
+    </div>
+  );
+}
+
+export function GameScreen() {
+  const activeMonitor = useStore((s) => s.activeMonitor);
+  const setActiveMonitor = useStore((s) => s.setActiveMonitor);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <MonitorBezel
+          monitorId={activeMonitor}
+          statusLeds={[
+            { label: 'SYS', active: true },
+            { label: 'NAV', active: activeMonitor === MONITORS.NAV_COM },
+          ]}
+        >
+          {activeMonitor === MONITORS.NAV_COM && <NavComScreen />}
+          {activeMonitor === MONITORS.SHIP_SYS && <ShipSysScreen />}
+        </MonitorBezel>
+      </div>
+
+      {/* Monitor switch tabs — hardware button bar */}
+      <div style={{
+        display: 'flex',
+        gap: '4px',
+        padding: '4px',
+        background: '#111',
+        borderTop: '2px solid #2a2a2a',
+      }}>
+        <button
+          className="vs-btn"
+          style={{ flex: 1, fontSize: '0.65rem' }}
+          onClick={() => setActiveMonitor(MONITORS.NAV_COM)}
+        >
+          [NAV-COM]
+        </button>
+        <button
+          className="vs-btn"
+          style={{ flex: 1, fontSize: '0.65rem' }}
+          onClick={() => setActiveMonitor(MONITORS.SHIP_SYS)}
+        >
+          [SHIP-SYS]
+        </button>
+      </div>
+    </div>
+  );
+}
 ```
 
-**Step 5: Update App.tsx**
+**Step 5: Update App.tsx** (Login uses MonitorBezel too for consistent look)
 
 ```tsx
 // packages/client/src/App.tsx
-import { CRTOverlay } from './components/CRTOverlay';
+import { MonitorBezel } from './components/MonitorBezel';
 import { LoginScreen } from './components/LoginScreen';
 import { GameScreen } from './components/GameScreen';
 import { useStore } from './state/store';
@@ -2628,12 +2976,18 @@ import './styles/global.css';
 export function App() {
   const screen = useStore((s) => s.screen);
 
-  return (
-    <CRTOverlay>
-      {screen === 'login' && <LoginScreen />}
-      {screen === 'game' && <GameScreen />}
-    </CRTOverlay>
-  );
+  if (screen === 'login') {
+    return (
+      <MonitorBezel
+        monitorId="VOID-SEC"
+        statusLeds={[{ label: 'SYS', active: true }]}
+      >
+        <LoginScreen />
+      </MonitorBezel>
+    );
+  }
+
+  return <GameScreen />;
 }
 ```
 
