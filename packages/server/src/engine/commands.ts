@@ -1,5 +1,5 @@
-import type { APState, MiningState, ResourceType, SectorResources, StructureType, CargoState } from '@void-sector/shared';
-import { AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, STRUCTURE_COSTS, STRUCTURE_AP_COSTS } from '@void-sector/shared';
+import type { APState, MiningState, ResourceType, SectorResources, StructureType, CargoState, StorageInventory } from '@void-sector/shared';
+import { AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, STRUCTURE_COSTS, STRUCTURE_AP_COSTS, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, STORAGE_TIERS } from '@void-sector/shared';
 import { spendAP } from './ap.js';
 import { startMining, createMiningState } from './mining.js';
 
@@ -139,4 +139,71 @@ export function validateBuild(
   }
 
   return { valid: true, newAP, costs };
+}
+
+export interface TransferValidation {
+  valid: boolean;
+  error?: string;
+}
+
+export function validateTransfer(
+  direction: 'toStorage' | 'fromStorage',
+  resource: ResourceType,
+  amount: number,
+  cargo: CargoState,
+  storage: { ore: number; gas: number; crystal: number },
+  storageTier: number,
+): TransferValidation {
+  if (amount <= 0) return { valid: false, error: 'Amount must be positive' };
+  if (!['ore', 'gas', 'crystal'].includes(resource)) return { valid: false, error: 'Invalid resource' };
+
+  const tierConfig = STORAGE_TIERS[storageTier];
+  if (!tierConfig) return { valid: false, error: 'Invalid storage tier' };
+
+  if (direction === 'toStorage') {
+    if (cargo[resource] < amount) return { valid: false, error: `Not enough ${resource} in cargo` };
+    const storageTotal = storage.ore + storage.gas + storage.crystal;
+    if (storageTotal + amount > tierConfig.capacity) {
+      return { valid: false, error: `Storage full (${storageTotal}/${tierConfig.capacity})` };
+    }
+  } else {
+    if (storage[resource] < amount) return { valid: false, error: `Not enough ${resource} in storage` };
+  }
+
+  return { valid: true };
+}
+
+export interface NpcTradeValidation {
+  valid: boolean;
+  error?: string;
+  totalPrice: number;
+}
+
+export function validateNpcTrade(
+  action: 'buy' | 'sell',
+  resource: ResourceType,
+  amount: number,
+  credits: number,
+  storage: { ore: number; gas: number; crystal: number },
+  storageTier: number,
+): NpcTradeValidation {
+  if (amount <= 0) return { valid: false, error: 'Amount must be positive', totalPrice: 0 };
+  if (!['ore', 'gas', 'crystal'].includes(resource)) return { valid: false, error: 'Invalid resource', totalPrice: 0 };
+
+  const basePrice = NPC_PRICES[resource];
+  const tierConfig = STORAGE_TIERS[storageTier];
+
+  if (action === 'buy') {
+    const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);
+    if (credits < totalPrice) return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
+    const storageTotal = storage.ore + storage.gas + storage.crystal;
+    if (storageTotal + amount > tierConfig.capacity) {
+      return { valid: false, error: 'Storage full', totalPrice };
+    }
+    return { valid: true, totalPrice };
+  } else {
+    const totalPrice = Math.floor(basePrice * NPC_SELL_SPREAD * amount);
+    if (storage[resource] < amount) return { valid: false, error: `Not enough ${resource} in storage`, totalPrice };
+    return { valid: true, totalPrice };
+  }
 }
