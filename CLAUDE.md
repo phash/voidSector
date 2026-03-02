@@ -6,13 +6,13 @@ Multiplayer 2D space-exploration idle MMO with CRT terminal aesthetics. Monorepo
 ## Commands
 ```bash
 npm run dev:server          # Game server (port 2567)
-npm run dev:client          # Vite dev server (port 3000)
+npm run dev:client          # Vite dev server (port 3201)
 npm run docker:up           # PostgreSQL + Redis
 npm test                    # All tests
 
 # Per-package tests
-cd packages/server && npx vitest run    # 57 tests
-cd packages/client && npx vitest run    # 40 tests
+cd packages/server && npx vitest run    # 73 tests
+cd packages/client && npx vitest run    # 57 tests
 cd packages/shared && npx vitest run    # 5 tests
 ```
 
@@ -37,10 +37,14 @@ cd packages/shared && npx vitest run    # 5 tests
 - Tests: Vitest everywhere. Client uses jsdom + RTL + jest-canvas-mock (via jest-shim.ts)
 
 ## DB Migrations
-Files in `packages/server/src/db/migrations/` (001-005). Auto-run on startup.
+Files in `packages/server/src/db/migrations/` (001-006). Auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` for idempotency.
 
 ## Current State
-Branch `feat/ux-comms-overhaul` (28 commits, not yet merged) adds:
+Branch `feat/ux-comms-overhaul` (28 commits, merged) adds:
 jump animation, radar zoom/pan, visual overhaul, two-stage scan, AP improvements,
-cluster spawn system, communication/relay routing, structure building, and 102 tests.
+cluster spawn system, communication/relay routing, structure building.
+
+Branch `feat/storage-trading` adds:
+Credits currency, Storage building (3 tiers, transfer model), Trading Post (NPC trade + player market),
+TRADE monitor, DetailPanel scan bugfix, and 135 total tests.
