@@ -160,14 +160,35 @@ export const MONITORS = {
   CARGO: 'CARGO',
   COMMS: 'COMMS',
   BASE_LINK: 'BASE-LINK',
+  LOG: 'LOG',
 } as const;
 
 export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
 
-export const SIDEBAR_MONITORS: MonitorId[] = [
+export const RIGHT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.SHIP_SYS,
   MONITORS.MINING,
   MONITORS.CARGO,
   MONITORS.COMMS,
   MONITORS.BASE_LINK,
 ];
+
+export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
+  MONITORS.LOG,
+  MONITORS.SHIP_SYS,
+  MONITORS.MINING,
+  MONITORS.CARGO,
+  MONITORS.COMMS,
+  MONITORS.BASE_LINK,
+];
+
+export const MAIN_MONITORS: MonitorId[] = [
+  MONITORS.NAV_COM,
+  MONITORS.MINING,
+  MONITORS.CARGO,
+  MONITORS.COMMS,
+  MONITORS.BASE_LINK,
+];
+
+/** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */
+export const SIDEBAR_MONITORS = RIGHT_SIDEBAR_MONITORS;
