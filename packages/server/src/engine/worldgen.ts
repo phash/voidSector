@@ -6,19 +6,22 @@ import type { SectorData, SectorType } from '@void-sector/shared';
  * Uses a variant of MurmurHash-like mixing.
  */
 export function hashCoords(x: number, y: number, worldSeed: number): number {
-  let h = worldSeed | 0;
-  h = Math.imul(h ^ (x | 0), 0x9e3779b9);
-  h = Math.imul(h ^ (y | 0), 0x517cc1b7);
-  h = h ^ (h >>> 16);
-  h = Math.imul(h, 0x85ebca6b);
+  // Add distinct prime offsets to x/y to break (n,n)/(-n,-n) symmetry
+  let hx = ((x | 0) + 0x9e3779b9) | 0;
+  hx = Math.imul(hx ^ (worldSeed | 0), 0x85ebca6b);
+  hx = hx ^ (hx >>> 16);
+  let hy = ((y | 0) + 0x517cc1b7) | 0;
+  hy = Math.imul(hy ^ (worldSeed | 0), 0xc2b2ae35);
+  hy = hy ^ (hy >>> 16);
+  let h = Math.imul(hx ^ hy, 0x9e3779b9);
   h = h ^ (h >>> 13);
-  h = Math.imul(h, 0xc2b2ae35);
+  h = Math.imul(h, 0x85ebca6b);
   h = h ^ (h >>> 16);
   return h >>> 0; // unsigned 32-bit
 }
 
 function sectorTypeFromSeed(seed: number): SectorType {
-  const normalized = (seed % 10000) / 10000; // 0..1
+  const normalized = seed / 0x100000000; // full 32-bit range to [0, 1)
   let cumulative = 0;
   for (const type of SECTOR_TYPES) {
     cumulative += SECTOR_WEIGHTS[type];
@@ -41,7 +44,7 @@ export function generateSector(
     type,
     seed,
     discoveredBy,
-    discoveredAt: new Date().toISOString(),
+    discoveredAt: null,
     metadata: {},
   };
 }

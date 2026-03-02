@@ -10,9 +10,12 @@ describe('worldgen', () => {
   });
 
   it('hashCoords differs for different coords', () => {
-    const a = hashCoords(10, -5, WORLD_SEED);
-    const b = hashCoords(11, -5, WORLD_SEED);
-    expect(a).not.toBe(b);
+    const base = hashCoords(10, -5, WORLD_SEED);
+    expect(hashCoords(11, -5, WORLD_SEED)).not.toBe(base); // different x
+    expect(hashCoords(10, -4, WORLD_SEED)).not.toBe(base); // different y
+    // Guard against symmetric diagonal collisions
+    expect(hashCoords(1, 1, WORLD_SEED)).not.toBe(hashCoords(-1, -1, WORLD_SEED));
+    expect(hashCoords(3, 3, WORLD_SEED)).not.toBe(hashCoords(-3, -3, WORLD_SEED));
   });
 
   it('generateSector returns valid sector data', () => {
