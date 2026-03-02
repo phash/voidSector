@@ -168,6 +168,11 @@ class GameNetwork {
       }
     });
 
+    // Base data
+    room.onMessage('baseData', (data: { structures: any[] }) => {
+      useStore.getState().setBaseStructures(data.structures);
+    });
+
     // Build results
     room.onMessage('buildResult', (data: { success: boolean; error?: string; structure?: any }) => {
       if (data.success) {
@@ -277,6 +282,11 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('chat', { channel, content, recipientId });
+  }
+
+  requestBase() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getBase', {});
   }
 
   sendBuild(type: StructureType) {

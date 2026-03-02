@@ -269,6 +269,19 @@ export async function getStructuresInRange(
   return rows;
 }
 
+export async function getPlayerBaseStructures(playerId: string): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT s.* FROM structures s
+     JOIN players p ON p.id = $1
+     WHERE s.owner_id = $1
+       AND s.sector_x = (p.home_base->>'x')::int
+       AND s.sector_y = (p.home_base->>'y')::int
+     ORDER BY s.created_at ASC`,
+    [playerId]
+  );
+  return rows;
+}
+
 export async function deductCargo(
   playerId: string, resource: string, amount: number
 ): Promise<boolean> {

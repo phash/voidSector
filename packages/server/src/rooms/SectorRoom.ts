@@ -9,7 +9,7 @@ import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
 import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild } from '../engine/commands.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages } from '../db/queries.js';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures } from '../db/queries.js';
 import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES } from '@void-sector/shared';
 import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage } from '@void-sector/shared';
 
@@ -117,6 +117,12 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     this.onMessage('chat', async (client, data: SendChatMessage) => {
       await this.handleChat(client, data);
+    });
+
+    this.onMessage('getBase', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const structures = await getPlayerBaseStructures(auth.userId);
+      client.send('baseData', { structures });
     });
   }
 

@@ -63,6 +63,9 @@ export interface GameSlice {
   chatChannel: ChatChannel;
   unreadComms: boolean;
 
+  // Base
+  baseStructures: any[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
@@ -82,6 +85,7 @@ export interface GameSlice {
   addChatMessage: (msg: ChatMessage) => void;
   setChatChannel: (channel: ChatChannel) => void;
   setUnreadComms: (unread: boolean) => void;
+  setBaseStructures: (structures: any[]) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -102,6 +106,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   chatMessages: [],
   chatChannel: 'local' as ChatChannel,
   unreadComms: false,
+  baseStructures: [],
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -159,4 +164,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
     })),
   setChatChannel: (chatChannel) => set({ chatChannel }),
   setUnreadComms: (unreadComms) => set({ unreadComms }),
+  setBaseStructures: (baseStructures) => set({ baseStructures }),
 });

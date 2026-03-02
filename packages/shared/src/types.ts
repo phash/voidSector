@@ -141,6 +141,14 @@ export interface Structure {
   createdAt: string;
 }
 
+export interface BaseStructure {
+  id: string;
+  type: StructureType;
+  sectorX: number;
+  sectorY: number;
+  createdAt: string;
+}
+
 export interface BuildMessage {
   type: StructureType;
 }
