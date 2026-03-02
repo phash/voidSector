@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { MonitorBezel } from './MonitorBezel';
 import { DesktopLayout } from './DesktopLayout';
+import { DetailPanel } from './DetailPanel';
 import { RadarCanvas } from './RadarCanvas';
 import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
@@ -12,23 +13,6 @@ import { BaseScreen } from './BaseScreen';
 import { useStore } from '../state/store';
 import { MONITORS, SHIP_CLASSES } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
-
-function NavComScreen() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: '6px 12px', fontSize: '0.85rem', letterSpacing: '0.2em', opacity: 0.6 }}>
-        VOID SECTOR — NAV-COM
-      </div>
-      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-        <RadarCanvas />
-      </div>
-      <SectorInfo />
-      <StatusBar />
-      <NavControls />
-      <EventLog />
-    </div>
-  );
-}
 
 function ShipSysScreen() {
   const ship = useStore((s) => s.ship);
@@ -67,9 +51,24 @@ function ShipSysScreen() {
   );
 }
 
+// Full NavCom screen (used when main is switched to NAV-COM in fullscreen mode)
+function NavComScreen() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+        <RadarCanvas />
+      </div>
+      <SectorInfo />
+      <StatusBar />
+      <NavControls />
+    </div>
+  );
+}
+
 function renderScreen(monitorId: string) {
   switch (monitorId) {
     case MONITORS.NAV_COM: return <NavComScreen />;
+    case MONITORS.LOG: return <EventLog />;
     case MONITORS.SHIP_SYS: return <ShipSysScreen />;
     case MONITORS.MINING: return <MiningScreen />;
     case MONITORS.CARGO: return <CargoScreen />;
@@ -80,10 +79,10 @@ function renderScreen(monitorId: string) {
 }
 
 export function GameScreen() {
-  const activeMonitor = useStore((s) => s.activeMonitor);
-  const setActiveMonitor = useStore((s) => s.setActiveMonitor);
   const colorProfile = useStore((s) => s.colorProfile);
-  const commsAlert = useStore((s) => !!s.alerts['COMMS']);
+  const setActiveMonitor = useStore((s) => s.setActiveMonitor);
+  const clearAlert = useStore((s) => s.clearAlert);
+  const alerts = useStore((s) => s.alerts);
 
   useEffect(() => {
     const profile = COLOR_PROFILES[colorProfile];
@@ -91,41 +90,71 @@ export function GameScreen() {
     document.documentElement.style.setProperty('--color-dim', profile.dim);
   }, [colorProfile]);
 
-  const mainMonitor = (
+  // Grid area: radar canvas inside bezel
+  const gridArea = (
     <MonitorBezel
-      monitorId={activeMonitor}
+      monitorId="NAV-COM"
       statusLeds={[
         { label: 'SYS', active: true },
-        { label: 'NAV', active: activeMonitor === MONITORS.NAV_COM },
+        { label: 'NAV', active: true },
       ]}
     >
-      {renderScreen(activeMonitor)}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+          <RadarCanvas />
+        </div>
+      </div>
     </MonitorBezel>
+  );
+
+  // Detail area: sector inspection panel
+  const detailArea = (
+    <div style={{ height: '100%', background: '#050505' }}>
+      <div style={{ padding: '6px 12px', fontSize: '0.75rem', letterSpacing: '0.2em', opacity: 0.6, borderBottom: '1px solid var(--color-dim)' }}>
+        DETAIL
+      </div>
+      <DetailPanel />
+    </div>
+  );
+
+  // Controls area: sector info, status bar, nav controls
+  const controlsArea = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SectorInfo />
+      <StatusBar />
+      <NavControls />
+    </div>
   );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <DesktopLayout mainMonitor={mainMonitor} renderScreen={renderScreen} />
+      <DesktopLayout
+        gridArea={gridArea}
+        detailArea={detailArea}
+        controlsArea={controlsArea}
+        renderScreen={renderScreen}
+      />
 
+      {/* Mobile tabs (< 1024px) */}
       <div className="mobile-tabs">
         {[MONITORS.NAV_COM, MONITORS.SHIP_SYS, MONITORS.MINING, MONITORS.CARGO, MONITORS.COMMS, MONITORS.BASE_LINK].map((id) => (
           <button
             key={id}
-            className="vs-btn"
+            className={`vs-btn ${alerts[id] ? 'alert' : ''}`}
             style={{
               flex: 1,
               fontSize: '0.75rem',
               padding: '8px 2px',
               border: '2px solid var(--color-primary)',
-              background: activeMonitor === id ? 'var(--color-primary)' : 'transparent',
-              color: activeMonitor === id ? '#050505' : 'var(--color-primary)',
+              background: 'transparent',
+              color: 'var(--color-primary)',
             }}
             onClick={() => {
               setActiveMonitor(id);
-              if (id === MONITORS.COMMS) useStore.getState().clearAlert('COMMS');
+              if (alerts[id]) clearAlert(id);
             }}
           >
-            [{id}]{id === MONITORS.COMMS && commsAlert ? ' \u2022' : ''}
+            [{id}]
           </button>
         ))}
       </div>
