@@ -1,13 +1,12 @@
-import tools from '@colyseus/tools';
-import monitorPkg from '@colyseus/monitor';
+import toolsPkg from '@colyseus/tools';
+import { monitor } from '@colyseus/monitor';
 import express from 'express';
 import { SectorRoom } from './rooms/SectorRoom.js';
 import { register, login } from './auth.js';
 import { runMigrations } from './db/client.js';
 
-// CJS default export interop: the actual config function is on .default
-const config = (tools as any).default ?? tools;
-const { monitor } = monitorPkg as any;
+// @colyseus/tools CJS interop: default.default holds the config function
+const config = (toolsPkg as any).default ?? toolsPkg;
 
 export default config({
   initializeGameServer: (gameServer) => {

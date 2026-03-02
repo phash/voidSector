@@ -1,6 +1,7 @@
 import colyseus from 'colyseus';
+import type { Client } from 'colyseus';
+
 const { Room } = colyseus;
-type Client = colyseus.Client;
 
 export class SectorRoom extends Room {
   onCreate() {
