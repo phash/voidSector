@@ -105,14 +105,27 @@ class GameNetwork {
       sectors: SectorData[];
       apRemaining: number;
     }) => {
-      useStore.getState().addDiscoveries(data.sectors);
-      const currentAP = useStore.getState().ap;
+      const store = useStore.getState();
+      store.addDiscoveries(data.sectors);
+      const currentAP = store.ap;
       if (currentAP) {
-        useStore.getState().setAP({ ...currentAP, current: data.apRemaining });
+        store.setAP({ ...currentAP, current: data.apRemaining });
       }
-      useStore.getState().addLogEntry(
+      store.addLogEntry(
         `Scan complete: ${data.sectors.length} sectors revealed`
       );
+      // Alert LOG if interesting sectors found
+      const hasInteresting = data.sectors.some(
+        (s) => s.type === 'pirate' || s.type === 'anomaly' || s.type === 'station'
+      );
+      if (hasInteresting) {
+        const logVisible = store.sidebarSlots.includes('LOG')
+          || store.leftSidebarSlots.includes('LOG')
+          || store.mainMonitorMode === 'LOG';
+        if (!logVisible) {
+          store.setAlert('LOG', true);
+        }
+      }
     });
 
     // Local scan result
@@ -139,7 +152,18 @@ class GameNetwork {
 
     // Mining updates
     room.onMessage('miningUpdate', (data: MiningState) => {
-      useStore.getState().setMining(data);
+      const store = useStore.getState();
+      const wasMining = store.mining?.active;
+      store.setMining(data);
+      // Alert when mining completes (was active, now not)
+      if (wasMining && !data.active) {
+        const visible = store.sidebarSlots.includes('MINING')
+          || store.leftSidebarSlots.includes('MINING')
+          || store.mainMonitorMode === 'MINING';
+        if (!visible) {
+          store.setAlert('MINING', true);
+        }
+      }
     });
 
     // Cargo updates
@@ -154,9 +178,14 @@ class GameNetwork {
 
     // Chat messages
     room.onMessage('chatMessage', (data: ChatMessage) => {
-      useStore.getState().addChatMessage(data);
-      if (useStore.getState().activeMonitor !== 'COMMS') {
-        useStore.getState().setAlert('COMMS', true);
+      const store = useStore.getState();
+      store.addChatMessage(data);
+      // Alert if COMMS is not visible in any sidebar slot or main
+      const visible = store.sidebarSlots.includes('COMMS')
+        || store.leftSidebarSlots.includes('COMMS')
+        || store.mainMonitorMode === 'COMMS';
+      if (!visible) {
+        store.setAlert('COMMS', true);
       }
     });
 

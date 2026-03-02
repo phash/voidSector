@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useStore } from '../state/store';
 import '../styles/crt.css';
 
@@ -10,6 +10,13 @@ interface SidebarBezelProps {
 
 export function SidebarBezel({ children, monitorId, alert }: SidebarBezelProps) {
   const brightness = useStore((s) => s.brightness);
+
+  // Auto-clear alert when this monitor becomes visible in a sidebar
+  useEffect(() => {
+    if (useStore.getState().alerts[monitorId]) {
+      useStore.getState().clearAlert(monitorId);
+    }
+  }, [monitorId]);
 
   return (
     <div className={`bezel-frame sidebar-bezel ${alert ? 'alert' : ''}`}>
