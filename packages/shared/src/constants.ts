@@ -1,4 +1,4 @@
-import type { SectorType, ShipClass } from './types.js';
+import type { SectorType, ShipClass, ResourceType } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
   'empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate'
@@ -22,6 +22,7 @@ export const AP_DEFAULTS = {
 export const AP_COSTS = {
   jump: 1,  // base/default jump cost when no ship context is available
   scan: 3,
+  mine: 0,
   // per-ship jump cost comes from ship.apCostJump
 };
 
@@ -30,6 +31,19 @@ export const WORLD_SEED = 42;
 export const RADAR_RADIUS = 3;  // visible sectors around player on scan
 
 export const RECONNECTION_TIMEOUT_S = 15;
+
+export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<ResourceType, number>> = {
+  empty:          { ore: 5,  gas: 5,  crystal: 5  },
+  nebula:         { ore: 2,  gas: 20, crystal: 3  },
+  asteroid_field: { ore: 20, gas: 2,  crystal: 3  },
+  anomaly:        { ore: 3,  gas: 3,  crystal: 20 },
+  station:        { ore: 0,  gas: 0,  crystal: 0  },
+  pirate:         { ore: 8,  gas: 3,  crystal: 8  },
+};
+
+export const MINING_RATE_PER_SECOND = 0.1;
+
+export const RESOURCE_TYPES: ResourceType[] = ['ore', 'gas', 'crystal'];
 
 // Ship class definitions (from visual reference material)
 export const SHIP_CLASSES: Record<ShipClass, {
@@ -98,7 +112,6 @@ export const THEME = {
 export const MONITORS = {
   NAV_COM: 'NAV-COM',
   SHIP_SYS: 'SHIP-SYS',
-  BASE_LINK: 'BASE-LINK',  // post-MVP
-  MKT_NET: 'MKT-NET',      // post-MVP
-  COMM_DL: 'COMM-DL',      // post-MVP
+  MINING: 'MINING',
+  CARGO: 'CARGO',
 } as const;

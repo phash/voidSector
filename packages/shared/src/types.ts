@@ -1,5 +1,13 @@
 export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly' | 'pirate';
 
+export type ResourceType = 'ore' | 'gas' | 'crystal';
+
+export interface SectorResources {
+  ore: number;
+  gas: number;
+  crystal: number;
+}
+
 export interface Coords {
   x: number;
   y: number;
@@ -13,6 +21,7 @@ export interface SectorData {
   discoveredBy: string | null;
   discoveredAt: string | null;
   metadata: Record<string, unknown>;
+  resources: SectorResources;
 }
 
 export interface PlayerData {
@@ -81,4 +90,28 @@ export interface ScanResultMessage {
 export interface ErrorMessage {
   code: string;
   message: string;
+}
+
+export interface MiningState {
+  active: boolean;
+  resource: ResourceType | null;
+  sectorX: number;
+  sectorY: number;
+  startedAt: number | null;
+  rate: number;
+  sectorYield: number;
+}
+
+export interface CargoState {
+  ore: number;
+  gas: number;
+  crystal: number;
+}
+
+export interface MineMessage {
+  resource: ResourceType;
+}
+
+export interface JettisonMessage {
+  resource: ResourceType;
 }
