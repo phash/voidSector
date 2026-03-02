@@ -190,6 +190,23 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
       await markMessagesDelivered(pending.map((m: any) => m.id));
     }
+
+    // Send recent local chat history for this sector
+    const sectorChannel = `local`;
+    const recentMessages = await getRecentMessages(sectorChannel, 50);
+    if (recentMessages.length > 0) {
+      const history: ChatMessage[] = recentMessages.map((msg: any) => ({
+        id: msg.id,
+        senderId: msg.sender_id,
+        senderName: msg.sender_name,
+        channel: msg.channel,
+        recipientId: msg.recipient_id,
+        content: msg.content,
+        sentAt: new Date(msg.sent_at).getTime(),
+        delayed: false,
+      }));
+      client.send('chatHistory', history);
+    }
   }
 
   async onLeave(client: Client, consented: boolean) {
@@ -461,10 +478,20 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
-    const structure = await createStructure(
-      auth.userId, data.type,
-      this.state.sector.x, this.state.sector.y
-    );
+    let structure;
+    try {
+      structure = await createStructure(
+        auth.userId, data.type,
+        this.state.sector.x, this.state.sector.y
+      );
+    } catch (err: any) {
+      if (err.code === '23505') {
+        client.send('buildResult', { success: false, error: 'Structure already exists in this sector' });
+        return;
+      }
+      client.send('buildResult', { success: false, error: 'Build failed — try again' });
+      return;
+    }
 
     client.send('buildResult', { success: true, structure });
     client.send('apUpdate', result.newAP!);

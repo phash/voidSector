@@ -160,6 +160,14 @@ class GameNetwork {
       }
     });
 
+    // Chat history (loaded on join)
+    room.onMessage('chatHistory', (messages: ChatMessage[]) => {
+      const store = useStore.getState();
+      for (const msg of messages) {
+        store.addChatMessage(msg);
+      }
+    });
+
     // Build results
     room.onMessage('buildResult', (data: { success: boolean; error?: string; structure?: any }) => {
       if (data.success) {
