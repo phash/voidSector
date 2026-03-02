@@ -106,7 +106,7 @@ export async function addDiscovery(
   await query(
     `INSERT INTO player_discoveries (player_id, sector_x, sector_y)
      VALUES ($1, $2, $3)
-     ON CONFLICT DO NOTHING`,
+     ON CONFLICT (player_id, sector_x, sector_y) DO NOTHING`,
     [playerId, sectorX, sectorY]
   );
 }
