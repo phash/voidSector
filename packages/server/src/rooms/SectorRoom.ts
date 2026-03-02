@@ -5,8 +5,9 @@ const { Room, ServerError } = colyseus;
 import { SectorRoomState, PlayerSchema } from './schema/SectorState.js';
 import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
-import { spendAP, calculateCurrentAP } from '../engine/ap.js';
-import { startMining, stopMining, calculateMinedAmount } from '../engine/mining.js';
+import { calculateCurrentAP } from '../engine/ap.js';
+import { stopMining, calculateMinedAmount } from '../engine/mining.js';
+import { validateJump, validateScan, validateMine, validateJettison } from '../engine/commands.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal } from '../db/queries.js';
 import { AP_COSTS, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES } from '@void-sector/shared';
@@ -171,23 +172,38 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
-    // Validate range — use default ship jump range for MVP
-    const defaultJumpRange = SHIP_CLASSES.aegis_scout_mk1.jumpRange;
-    const dx = Math.abs(targetX - this.state.sector.x);
-    const dy = Math.abs(targetY - this.state.sector.y);
-    if (dx > defaultJumpRange || dy > defaultJumpRange || (dx === 0 && dy === 0)) {
-      client.send('jumpResult', { success: false, error: 'Target out of range' });
-      return;
+    // Auto-stop mining before jumping
+    const mining = await getMiningState(auth.userId);
+    if (mining.active) {
+      const cargoTotal = await getCargoTotal(auth.userId);
+      const ship = SHIP_CLASSES.aegis_scout_mk1;
+      const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
+      const result = stopMining(mining, cargoSpace);
+      if (result.mined > 0 && result.resource) {
+        await addToCargo(auth.userId, result.resource, result.mined);
+      }
+      await saveMiningState(auth.userId, result.newState);
+      client.send('miningUpdate', result.newState);
+      const cargo = await getPlayerCargo(auth.userId);
+      client.send('cargoUpdate', cargo);
     }
 
-    // Spend AP
+    // Validate jump
     const ap = await getAPState(auth.userId);
-    const newAP = spendAP(ap, AP_COSTS.jump);
-    if (!newAP) {
-      client.send('jumpResult', { success: false, error: 'Not enough AP' });
+    const jumpResult = validateJump(
+      ap,
+      this.state.sector.x,
+      this.state.sector.y,
+      targetX,
+      targetY,
+      SHIP_CLASSES.aegis_scout_mk1.jumpRange,
+      AP_COSTS.jump,
+    );
+    if (!jumpResult.valid) {
+      client.send('jumpResult', { success: false, error: jumpResult.error });
       return;
     }
-    await saveAPState(auth.userId, newAP);
+    await saveAPState(auth.userId, jumpResult.newAP!);
 
     // Load or generate target sector
     let targetSector = await getSector(targetX, targetY);
@@ -203,7 +219,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('jumpResult', {
       success: true,
       newSector: targetSector,
-      apRemaining: newAP.current,
+      apRemaining: jumpResult.newAP!.current,
     });
 
     // Client will leave this room and join the new sector room
@@ -213,12 +229,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
 
     const ap = await getAPState(auth.userId);
-    const newAP = spendAP(ap, AP_COSTS.scan);
-    if (!newAP) {
-      client.send('error', { code: 'NO_AP', message: 'Not enough AP to scan' });
+    const scanResult = validateScan(ap, AP_COSTS.scan);
+    if (!scanResult.valid) {
+      client.send('error', { code: 'NO_AP', message: scanResult.error });
       return;
     }
-    await saveAPState(auth.userId, newAP);
+    await saveAPState(auth.userId, scanResult.newAP!);
 
     // Get surrounding sectors
     const surroundings: SectorData[] = [];
@@ -236,23 +252,12 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
-    client.send('scanResult', { sectors: surroundings, apRemaining: newAP.current });
+    client.send('scanResult', { sectors: surroundings, apRemaining: scanResult.newAP!.current });
   }
 
   private async handleMine(client: Client, data: MineMessage) {
     const auth = client.auth as AuthPayload;
     const { resource } = data;
-
-    if (!['ore', 'gas', 'crystal'].includes(resource)) {
-      client.send('error', { code: 'INVALID_RESOURCE', message: 'Invalid resource type' });
-      return;
-    }
-
-    const current = await getMiningState(auth.userId);
-    if (current.active) {
-      client.send('error', { code: 'ALREADY_MINING', message: 'Already mining — stop first' });
-      return;
-    }
 
     const sectorData = await getSector(this.state.sector.x, this.state.sector.y);
     if (!sectorData?.resources) {
@@ -260,22 +265,26 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
 
-    const sectorYield = sectorData.resources[resource];
-    if (sectorYield <= 0) {
-      client.send('error', { code: 'NO_RESOURCE', message: `No ${resource} in this sector` });
-      return;
-    }
-
+    const current = await getMiningState(auth.userId);
     const cargoTotal = await getCargoTotal(auth.userId);
     const ship = SHIP_CLASSES.aegis_scout_mk1;
-    if (cargoTotal >= ship.cargoCap) {
-      client.send('error', { code: 'CARGO_FULL', message: 'Cargo hold is full' });
+
+    const result = validateMine(
+      resource,
+      sectorData.resources,
+      current,
+      cargoTotal,
+      ship.cargoCap,
+      this.state.sector.x,
+      this.state.sector.y,
+    );
+    if (!result.valid) {
+      client.send('error', { code: 'MINE_FAILED', message: result.error! });
       return;
     }
 
-    const state = startMining(resource, this.state.sector.x, this.state.sector.y, sectorYield);
-    await saveMiningState(auth.userId, state);
-    client.send('miningUpdate', state);
+    await saveMiningState(auth.userId, result.state!);
+    client.send('miningUpdate', result.state!);
   }
 
   private async handleStopMine(client: Client) {
@@ -307,18 +316,17 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const { resource } = data;
 
-    if (!['ore', 'gas', 'crystal'].includes(resource)) {
-      client.send('error', { code: 'INVALID_RESOURCE', message: 'Invalid resource type' });
-      return;
-    }
-
-    const jettisoned = await jettisonCargo(auth.userId, resource);
-    if (jettisoned === 0) {
-      client.send('error', { code: 'EMPTY', message: `No ${resource} to jettison` });
-      return;
-    }
-
     const cargo = await getPlayerCargo(auth.userId);
-    client.send('cargoUpdate', cargo);
+    const currentAmount = cargo[resource as keyof CargoState] ?? 0;
+
+    const result = validateJettison(resource, currentAmount);
+    if (!result.valid) {
+      client.send('error', { code: 'JETTISON_FAILED', message: result.error! });
+      return;
+    }
+
+    await jettisonCargo(auth.userId, resource);
+    const updatedCargo = await getPlayerCargo(auth.userId);
+    client.send('cargoUpdate', updatedCargo);
   }
 }
