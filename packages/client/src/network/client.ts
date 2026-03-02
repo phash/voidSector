@@ -116,21 +116,34 @@ class GameNetwork {
       useStore.getState().addLogEntry(`ERROR: ${data.message}`);
     });
 
-    room.onLeave((code) => {
+    room.onLeave(async (code) => {
       if (code > 1000) {
-        useStore.getState().addLogEntry(`Disconnected (code: ${code})`);
+        useStore.getState().addLogEntry(`Disconnected (code: ${code}) — reconnecting...`);
+        const store = useStore.getState();
+        try {
+          await this.joinSector(store.position.x, store.position.y);
+          useStore.getState().addLogEntry('Reconnected');
+        } catch {
+          useStore.getState().addLogEntry('Reconnect failed');
+        }
       }
     });
   }
 
   sendJump(targetX: number, targetY: number) {
-    if (!this.sectorRoom) return;
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
     useStore.getState().setJumpPending(true);
     this.sectorRoom.send('jump', { targetX, targetY });
   }
 
   sendScan() {
-    if (!this.sectorRoom) return;
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
     this.sectorRoom.send('scan', {});
   }
 

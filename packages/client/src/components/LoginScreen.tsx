@@ -32,10 +32,10 @@ export function LoginScreen() {
         return;
       }
       setAuth(data.token, data.player.id, data.player.username);
-      setScreen('game');
       await network.joinSector(0, 0);
+      setScreen('game');
     } catch (err) {
-      setError('Connection failed');
+      setError(err instanceof Error ? err.message : 'Connection failed');
     } finally {
       setLoading(false);
     }
