@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
 import { LegendOverlay } from './LegendOverlay';
 import { BezelKnob } from './BezelKnob';
@@ -22,7 +22,34 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
   const setPanOffset = useStore((s) => s.setPanOffset);
   const autoFollow = useStore((s) => s.autoFollow);
   const setAutoFollow = useStore((s) => s.setAutoFollow);
+  const currentSector = useStore((s) => s.currentSector);
   const [showLegend, setShowLegend] = useState(false);
+  const [monitorOn, setMonitorOn] = useState(true);
+  const [switching, setSwitching] = useState(false);
+  const switchingRef = useRef(false);
+
+  // Nebula interference: COMMS monitor shows noise in nebula sectors
+  const isInNebula = currentSector?.type === 'nebula';
+  const showNoise = isInNebula && monitorId === 'NAV-COM';
+
+  // Track children identity for program-switch flicker
+  const prevChildrenRef = useRef(children);
+  useEffect(() => {
+    if (prevChildrenRef.current !== children && !switchingRef.current) {
+      switchingRef.current = true;
+      setSwitching(true);
+      const t = setTimeout(() => {
+        setSwitching(false);
+        switchingRef.current = false;
+      }, 300);
+      prevChildrenRef.current = children;
+      return () => clearTimeout(t);
+    }
+  }, [children]);
+
+  const handlePowerToggle = () => {
+    setMonitorOn((prev) => !prev);
+  };
 
   return (
     <div className="bezel-frame">
@@ -35,6 +62,7 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
             value={panOffset.y}
             min={-20}
             max={20}
+            step={1}
             onChange={(v) => setPanOffset({ x: panOffset.x, y: v })}
           />
           <BookmarkBar />
@@ -44,12 +72,23 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
         <div className="crt-wrapper">
           <div className="crt-scanlines" />
           <div className="crt-flicker" />
+          <div className="crt-glitch-bar" />
+          <div className="crt-glitch-bar-2" />
           <div className="crt-vignette" />
-          <div className="crt-content" style={{ filter: `brightness(${brightness})` }}>
+          {showNoise && <div className="crt-noise" />}
+          <div
+            className={`crt-content${switching ? ' crt-switch-flicker' : ''}`}
+            style={{ filter: `brightness(${brightness})` }}
+          >
             <CrtErrorBoundary monitorId={monitorId}>
               {children}
             </CrtErrorBoundary>
           </div>
+          {!monitorOn && (
+            <div className="crt-monitor-off">
+              <span className="crt-monitor-off-text">DISPLAY OFF</span>
+            </div>
+          )}
         </div>
 
         {/* Right side controls (toggle switches, LEDs) + ZOOM knob */}
@@ -66,8 +105,19 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
             value={zoomLevel}
             min={0}
             max={3}
+            step={1}
             onChange={(v) => setZoomLevel(Math.round(v))}
           />
+          {/* Power button — bottom of right bezel */}
+          <div className="bezel-power-switch">
+            <span className="bezel-power-label">POWER</span>
+            <button
+              className={`bezel-power-btn${monitorOn ? ' on' : ''}`}
+              onClick={handlePowerToggle}
+              title={monitorOn ? 'Monitor ausschalten' : 'Monitor einschalten'}
+              aria-label="Monitor power"
+            />
+          </div>
         </div>
       </div>
 
@@ -78,6 +128,7 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
           value={brightness}
           min={0.5}
           max={1.5}
+          step={0.1}
           onChange={setBrightness}
         />
         {monitorId === 'NAV-COM' && (

@@ -1,4 +1,4 @@
-import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS } from '@void-sector/shared';
+import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE } from '@void-sector/shared';
 import type { SectorData, SectorType, SectorResources, ResourceType } from '@void-sector/shared';
 
 /**
@@ -45,6 +45,14 @@ function generateResources(type: SectorType, seed: number): SectorResources {
   return resources;
 }
 
+// Secondary hash for metadata decisions (uses different mixing than primary)
+function hashSecondary(seed: number): number {
+  let h = seed ^ 0xdeadbeef;
+  h = Math.imul(h, 0x9e3779b9);
+  h = h ^ (h >>> 16);
+  return (h >>> 0) / 0x100000000; // 0..1
+}
+
 export function generateSector(
   x: number,
   y: number,
@@ -52,6 +60,15 @@ export function generateSector(
 ): SectorData {
   const seed = hashCoords(x, y, WORLD_SEED);
   const type = sectorTypeFromSeed(seed);
+
+  // Special metadata: some stations are ancient variants
+  const metadata: Record<string, unknown> = {};
+  if (type === 'station') {
+    const secondaryRoll = hashSecondary(seed);
+    if (secondaryRoll < ANCIENT_STATION_CHANCE) {
+      metadata.stationVariant = 'ancient';
+    }
+  }
 
   return {
     x,
@@ -61,6 +78,6 @@ export function generateSector(
     resources: generateResources(type, seed),
     discoveredBy,
     discoveredAt: null,
-    metadata: {},
+    metadata,
   };
 }

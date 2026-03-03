@@ -34,7 +34,7 @@ export const AP_COSTS_BY_SCANNER: Record<number, { areaScan: number; areaScanRad
 
 export const AP_COSTS_LOCAL_SCAN = 1;
 
-export const WORLD_SEED = 42;
+export const WORLD_SEED = 77;
 
 export const RADAR_RADIUS = 3;  // visible sectors around player on scan
 
@@ -327,8 +327,9 @@ export const SECTOR_COLORS: Record<SectorType | 'home_base', string> = {
 
 export const SPAWN_MIN_DISTANCE = 10_000_000;
 export const SPAWN_DISTANCE_VARIANCE = 2_000_000;
-export const SPAWN_CLUSTER_RADIUS = 100;
+export const SPAWN_CLUSTER_RADIUS = 300; // wider clusters so group members have some distance
 export const SPAWN_CLUSTER_MAX_PLAYERS = 5;
+export const ANCIENT_STATION_CHANCE = 0.15; // 15% of stations are ancient/special variants
 
 // Hull-specific pixel patterns for radar rendering (3x3 grids, 1 = filled pixel)
 export const HULL_RADAR_PATTERNS: Record<HullType, number[][]> = {
