@@ -2,15 +2,16 @@ import { type ReactNode, useState } from 'react';
 import { useStore } from '../state/store';
 import { LegendOverlay } from './LegendOverlay';
 import { BezelKnob } from './BezelKnob';
+import { useMonitorLeds, LedDot } from './MonitorLeds';
 import '../styles/crt.css';
 
 interface MonitorBezelProps {
   children: ReactNode;
   monitorId: string;
-  statusLeds?: Array<{ label: string; active: boolean }>;
 }
 
-export function MonitorBezel({ children, monitorId, statusLeds = [] }: MonitorBezelProps) {
+export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
+  const leds = useMonitorLeds(monitorId);
   const brightness = useStore((s) => s.brightness);
   const setBrightness = useStore((s) => s.setBrightness);
   const zoomLevel = useStore((s) => s.zoomLevel);
@@ -46,11 +47,8 @@ export function MonitorBezel({ children, monitorId, statusLeds = [] }: MonitorBe
 
         {/* Right side controls (toggle switches, LEDs) + ZOOM knob */}
         <div className="bezel-side bezel-right">
-          {statusLeds.map((led) => (
-            <div key={led.label} className="bezel-led-group">
-              <span className="bezel-led-label">{led.label}</span>
-              <div className={`bezel-led ${led.active ? 'active' : ''}`} />
-            </div>
+          {leds.map((led) => (
+            <LedDot key={led.label} led={led} />
           ))}
           <div className="bezel-toggle">
             <span className="bezel-led-label">ON/OFF</span>

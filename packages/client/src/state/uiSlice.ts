@@ -25,6 +25,7 @@ export interface UISlice {
   sidebarSlots: [string, string];
   leftSidebarSlots: [string, string];
   mainMonitorMode: 'split' | string;
+  autoFollow: boolean;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -39,6 +40,7 @@ export interface UISlice {
   setSidebarSlot: (index: 0 | 1, monitor: string) => void;
   setLeftSidebarSlot: (index: 0 | 1, monitor: string) => void;
   setMainMonitorMode: (mode: 'split' | string) => void;
+  setAutoFollow: (val: boolean) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -53,6 +55,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   sidebarSlots: JSON.parse(safeGetItem('vs-sidebar-slots') || '["SHIP-SYS","COMMS"]') as [string, string],
   leftSidebarSlots: JSON.parse(safeGetItem('vs-left-sidebar-slots') || '["LOG","SHIP-SYS"]') as [string, string],
   mainMonitorMode: 'split' as 'split' | string,
+  autoFollow: false,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -91,4 +94,5 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     return { leftSidebarSlots: slots };
   }),
   setMainMonitorMode: (mode) => set({ mainMonitorMode: mode }),
+  setAutoFollow: (autoFollow) => set({ autoFollow }),
 });

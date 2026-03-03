@@ -104,10 +104,6 @@ export function GameScreen() {
   const gridArea = (
     <MonitorBezel
       monitorId="NAV-COM"
-      statusLeds={[
-        { label: 'SYS', active: true },
-        { label: 'NAV', active: true },
-      ]}
     >
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
@@ -118,10 +114,27 @@ export function GameScreen() {
   );
 
   // Detail area: sector inspection panel
+  const autoFollow = useStore((s) => s.autoFollow);
+  const setAutoFollow = useStore((s) => s.setAutoFollow);
   const detailArea = (
     <div style={{ height: '100%', background: '#050505' }}>
-      <div style={{ padding: '6px 12px', fontSize: '0.75rem', letterSpacing: '0.2em', opacity: 0.6, borderBottom: '1px solid var(--color-dim)' }}>
-        DETAIL
+      <div style={{ padding: '6px 12px', fontSize: '0.75rem', letterSpacing: '0.2em', borderBottom: '1px solid var(--color-dim)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ opacity: 0.6 }}>DETAIL</span>
+        <button
+          onClick={() => setAutoFollow(!autoFollow)}
+          style={{
+            background: autoFollow ? 'rgba(255, 176, 0, 0.2)' : 'transparent',
+            border: '1px solid var(--color-primary)',
+            color: 'var(--color-primary)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.65rem',
+            padding: '2px 8px',
+            cursor: 'pointer',
+            letterSpacing: '0.1em',
+          }}
+        >
+          {autoFollow ? '\u25CF AUTO' : '\u25CB AUTO'}
+        </button>
       </div>
       <DetailPanel />
     </div>

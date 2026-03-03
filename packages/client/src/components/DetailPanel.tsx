@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '../state/store';
 import { SECTOR_COLORS, FUEL_COST_PER_UNIT } from '@void-sector/shared';
 import { network } from '../network/client';
@@ -16,7 +16,7 @@ export function DetailPanel() {
   const scanEvents = useStore((s) => s.scanEvents);
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
 
-  const [autoFollow, setAutoFollow] = useState(false);
+  const autoFollow = useStore((s) => s.autoFollow);
 
   useEffect(() => {
     if (autoFollow) {
@@ -53,25 +53,8 @@ export function DetailPanel() {
 
   return (
     <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ letterSpacing: '0.2em', color: sectorColor }}>
-          SECTOR ({selectedSector.x}, {selectedSector.y})
-        </div>
-        <button
-          onClick={() => setAutoFollow(!autoFollow)}
-          style={{
-            background: autoFollow ? 'rgba(255, 176, 0, 0.2)' : 'transparent',
-            border: '1px solid var(--color-primary)',
-            color: 'var(--color-primary)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.65rem',
-            padding: '2px 8px',
-            cursor: 'pointer',
-            letterSpacing: '0.1em',
-          }}
-        >
-          {autoFollow ? '\u25CF AUTO' : '\u25CB AUTO'}
-        </button>
+      <div style={{ letterSpacing: '0.2em', color: sectorColor, marginBottom: 8 }}>
+        SECTOR ({selectedSector.x}, {selectedSector.y})
       </div>
 
       {sector ? (
