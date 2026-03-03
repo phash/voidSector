@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, ScanEvent } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -89,6 +89,13 @@ export interface GameSlice {
   factionMembers: FactionMember[];
   factionInvites: FactionInvite[];
 
+  // Phase 4: NPC Ecosystem
+  activeQuests: Quest[];
+  reputations: PlayerReputation[];
+  playerUpgrades: PlayerUpgrade[];
+  activeBattle: PirateEncounter | null;
+  scanEvents: ScanEvent[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
@@ -119,6 +126,12 @@ export interface GameSlice {
   setFaction: (faction: Faction | null) => void;
   setFactionMembers: (members: FactionMember[]) => void;
   setFactionInvites: (invites: FactionInvite[]) => void;
+  setActiveQuests: (quests: Quest[]) => void;
+  setReputations: (reps: PlayerReputation[]) => void;
+  setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
+  setActiveBattle: (encounter: PirateEncounter | null) => void;
+  setScanEvents: (events: ScanEvent[]) => void;
+  addScanEvent: (event: ScanEvent) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -149,6 +162,11 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   faction: null,
   factionMembers: [],
   factionInvites: [],
+  activeQuests: [],
+  reputations: [],
+  playerUpgrades: [],
+  activeBattle: null,
+  scanEvents: [],
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -223,4 +241,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setFaction: (faction) => set({ faction }),
   setFactionMembers: (factionMembers) => set({ factionMembers }),
   setFactionInvites: (factionInvites) => set({ factionInvites }),
+  setActiveQuests: (activeQuests) => set({ activeQuests }),
+  setReputations: (reputations) => set({ reputations }),
+  setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
+  setActiveBattle: (activeBattle) => set({ activeBattle }),
+  setScanEvents: (scanEvents) => set({ scanEvents }),
+  addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
 });
