@@ -346,6 +346,78 @@ class GameNetwork {
       }
     });
 
+    // Phase 4: NPC Ecosystem
+    room.onMessage('stationNpcsResult', (data) => {
+      const store = useStore.getState();
+      store.addLogEntry(`Station: ${data.npcs.length} NPCs, ${data.quests.length} Quests verfügbar`);
+      window.dispatchEvent(new CustomEvent('stationNpcsResult', { detail: data }));
+    });
+
+    room.onMessage('acceptQuestResult', (data) => {
+      const store = useStore.getState();
+      if (data.success && data.quest) {
+        store.setActiveQuests([...store.activeQuests, data.quest]);
+        store.addLogEntry(`Quest angenommen: ${data.quest.title}`);
+      } else {
+        store.addLogEntry(`Quest-Fehler: ${data.error}`);
+      }
+    });
+
+    room.onMessage('abandonQuestResult', (data) => {
+      const store = useStore.getState();
+      if (!data.success) store.addLogEntry(`Fehler: ${data.error}`);
+    });
+
+    room.onMessage('activeQuests', (data) => {
+      useStore.getState().setActiveQuests(data.quests);
+    });
+
+    room.onMessage('questProgress', (data) => {
+      const store = useStore.getState();
+      const quests = store.activeQuests.map(q =>
+        q.id === data.questId ? { ...q, objectives: data.objectives } : q
+      );
+      store.setActiveQuests(quests);
+      store.addLogEntry('Quest-Fortschritt aktualisiert');
+      const visible = store.sidebarSlots.includes('QUESTS')
+        || store.leftSidebarSlots.includes('QUESTS')
+        || store.mainMonitorMode === 'QUESTS';
+      if (!visible) store.setAlert('QUESTS', true);
+    });
+
+    room.onMessage('reputationUpdate', (data) => {
+      const store = useStore.getState();
+      store.setReputations(data.reputations);
+      store.setPlayerUpgrades(data.upgrades);
+    });
+
+    room.onMessage('battleResult', (data) => {
+      const store = useStore.getState();
+      store.setActiveBattle(null);
+      if (data.success && data.result) {
+        store.addLogEntry(`Kampf: ${data.result.outcome}`);
+      }
+    });
+
+    room.onMessage('pirateAmbush', (data) => {
+      const store = useStore.getState();
+      store.setActiveBattle(data.encounter);
+      store.addLogEntry(`PIRATEN-HINTERHALT bei (${data.sectorX}, ${data.sectorY})!`);
+    });
+
+    room.onMessage('scanEventDiscovered', (data) => {
+      const store = useStore.getState();
+      store.addScanEvent(data.event);
+      const visible = store.sidebarSlots.includes('QUESTS')
+        || store.leftSidebarSlots.includes('QUESTS')
+        || store.mainMonitorMode === 'QUESTS';
+      if (!visible) store.setAlert('QUESTS', true);
+    });
+
+    room.onMessage('logEntry', (data) => {
+      useStore.getState().addLogEntry(typeof data === 'string' ? data : data.message ?? '');
+    });
+
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
@@ -546,6 +618,41 @@ class GameNetwork {
 
   sendRespondInvite(inviteId: string, accept: boolean) {
     this.sectorRoom?.send('respondInvite', { inviteId, accept });
+  }
+
+  requestStationNpcs(sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('getStationNpcs', { sectorX, sectorY });
+  }
+
+  sendAcceptQuest(templateId: string, stationX: number, stationY: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('acceptQuest', { templateId, stationX, stationY });
+  }
+
+  sendAbandonQuest(questId: string) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('abandonQuest', { questId });
+  }
+
+  requestActiveQuests() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getActiveQuests', {});
+  }
+
+  sendBattleAction(action: string, sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('battleAction', { action, sectorX, sectorY });
+  }
+
+  sendCompleteScanEvent(eventId: string) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('completeScanEvent', { eventId });
+  }
+
+  requestReputation() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getReputation', {});
   }
 }
 
