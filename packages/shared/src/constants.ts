@@ -367,3 +367,10 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 
 // Multi-content sectors
 export const SECTOR_MAX_FEATURES = 3;
+
+// Far-Navigation
+export const FAR_JUMP_AP_DISCOUNT = 0.5;   // 50% AP cost for known routes
+export const FAR_JUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate sectors
+export const AUTOPILOT_STEP_MS = 100;       // ms per sector during autopilot
+export const STALENESS_DIM_HOURS = 24;      // dim sectors after 24h
+export const STALENESS_FADE_DAYS = 7;       // coords-only after 7 days

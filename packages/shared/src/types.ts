@@ -662,3 +662,15 @@ export interface Bookmark {
 
 export interface SetBookmarkMessage { slot: number; sectorX: number; sectorY: number; label: string; }
 export interface ClearBookmarkMessage { slot: number; }
+
+// --- Far-Navigation / Autopilot ---
+export interface AutopilotState {
+  targetX: number;
+  targetY: number;
+  remaining: number;
+  active: boolean;
+}
+
+export interface FarJumpMessage { targetX: number; targetY: number; }
+export interface AutopilotUpdateMessage { x: number; y: number; remaining: number; }
+export interface AutopilotCompleteMessage { x: number; y: number; }
