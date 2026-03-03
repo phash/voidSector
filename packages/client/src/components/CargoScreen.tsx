@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { SHIP_CLASSES, RESOURCE_TYPES, SLATE_AP_COST_SECTOR } from '@void-sector/shared';
+import { SHIP_CLASSES, RESOURCE_TYPES, SLATE_AP_COST_SECTOR, CUSTOM_SLATE_AP_COST, CUSTOM_SLATE_CREDIT_COST, CUSTOM_SLATE_MAX_NOTES_LENGTH } from '@void-sector/shared';
 import type { ResourceType, DataSlate } from '@void-sector/shared';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -21,6 +21,10 @@ export function CargoScreen() {
   const mySlates = useStore((s) => s.mySlates);
   const cargoCap = ship ? SHIP_CLASSES[ship.shipClass].cargoCap : SHIP_CLASSES.aegis_scout_mk1.cargoCap;
   const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customLabel, setCustomLabel] = useState('');
+  const [customNotes, setCustomNotes] = useState('');
 
   useEffect(() => {
     network.requestMySlates();
@@ -75,7 +79,10 @@ export function CargoScreen() {
               flexWrap: 'wrap',
             }}>
               <span style={{ opacity: 0.7 }}>
-                [{slate.slateType === 'sector' ? 'S' : 'A'}] {slate.sectorData.length} Sektoren
+                [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : 'C'}]
+                {slate.slateType === 'custom' && slate.customData
+                  ? ` ${slate.customData.label}`
+                  : ` ${slate.sectorData.length} Sektoren`}
               </span>
               <button className="vs-btn" style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                 onClick={() => network.sendActivateSlate(slate.id)}>
@@ -111,8 +118,49 @@ export function CargoScreen() {
           >
             [GEBIETS-SLATE]
           </button>
+          <button
+            className="vs-btn"
+            disabled={total >= cargoCap}
+            onClick={() => setShowCustomForm(!showCustomForm)}
+          >
+            [DATEN-DISK {CUSTOM_SLATE_AP_COST}AP/{CUSTOM_SLATE_CREDIT_COST}CR]
+          </button>
         </div>
       </div>
+
+      {showCustomForm && (
+        <div style={{ border: '1px solid rgba(255,176,0,0.3)', padding: 8, marginBottom: 16, fontSize: '0.8rem' }}>
+          <div style={{ marginBottom: 4, opacity: 0.6 }}>NEUE DATENDISK</div>
+          <input
+            className="vs-input"
+            placeholder="Label (max 32)"
+            value={customLabel}
+            onChange={e => setCustomLabel(e.target.value.slice(0, 32))}
+            style={{ width: '100%', marginBottom: 4 }}
+          />
+          <textarea
+            className="vs-input"
+            placeholder="Notizen (max 500)"
+            value={customNotes}
+            onChange={e => setCustomNotes(e.target.value.slice(0, CUSTOM_SLATE_MAX_NOTES_LENGTH))}
+            style={{ width: '100%', height: 60, resize: 'vertical', marginBottom: 4 }}
+          />
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="vs-btn" disabled={!customLabel.trim()} onClick={() => {
+              network.sendCreateCustomSlate({
+                label: customLabel.trim(),
+                notes: customNotes || undefined,
+              });
+              setCustomLabel('');
+              setCustomNotes('');
+              setShowCustomForm(false);
+            }}>
+              [ERSTELLEN]
+            </button>
+            <button className="vs-btn" onClick={() => setShowCustomForm(false)}>[ABBRECHEN]</button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
         {RESOURCE_TYPES.map((res: ResourceType) => (
