@@ -1,8 +1,11 @@
-import type { APState, MiningState, ResourceType, SectorResources, StructureType, CargoState, StorageInventory } from '@void-sector/shared';
+import type { APState, MiningState, ResourceType, SectorResources, StructureType, CargoState, StorageInventory, BattleAction, BattleOutcome, BattleResult, PirateEncounter } from '@void-sector/shared';
 import {
   AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, STRUCTURE_COSTS, STRUCTURE_AP_COSTS,
   NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, STORAGE_TIERS,
   SLATE_AP_COST_SECTOR, SLATE_AP_COST_AREA, SLATE_AREA_RADIUS, SLATE_NPC_PRICE_PER_SECTOR,
+  BATTLE_AP_COST_FLEE, BATTLE_FLEE_BASE_CHANCE, BATTLE_CARGO_LOSS_MIN, BATTLE_CARGO_LOSS_MAX,
+  BATTLE_NEGOTIATE_COST_PER_LEVEL, PIRATE_BASE_HP, PIRATE_HP_PER_LEVEL,
+  PIRATE_BASE_DAMAGE, PIRATE_DAMAGE_PER_LEVEL, MAX_ACTIVE_QUESTS, XP_LEVELS,
 } from '@void-sector/shared';
 import { spendAP } from './ap.js';
 import { startMining, createMiningState } from './mining.js';
@@ -292,4 +295,139 @@ export function validateFactionAction(
   }
 
   return { valid: true };
+}
+
+// --- Phase 4: Battle Validation ---
+
+export function createPirateEncounter(
+  pirateLevel: number,
+  sectorX: number,
+  sectorY: number,
+  pirateReputation: number,
+): PirateEncounter {
+  return {
+    pirateLevel,
+    pirateHp: PIRATE_BASE_HP + pirateLevel * PIRATE_HP_PER_LEVEL,
+    pirateDamage: PIRATE_BASE_DAMAGE + pirateLevel * PIRATE_DAMAGE_PER_LEVEL,
+    sectorX,
+    sectorY,
+    canNegotiate: pirateReputation >= 1,
+    negotiateCost: pirateLevel * BATTLE_NEGOTIATE_COST_PER_LEVEL,
+  };
+}
+
+export interface BattleValidation {
+  valid: boolean;
+  error?: string;
+  newAP?: APState;
+  result?: BattleResult;
+}
+
+export function validateBattleAction(
+  action: BattleAction,
+  ap: APState,
+  encounter: PirateEncounter,
+  credits: number,
+  cargo: CargoState,
+  shipAttack: number,
+  battleSeed: number,
+): BattleValidation {
+  if (action === 'flee') {
+    const newAP = spendAP(ap, BATTLE_AP_COST_FLEE);
+    if (!newAP) return { valid: false, error: 'Not enough AP to flee (need 2)' };
+
+    const fleeChance = BATTLE_FLEE_BASE_CHANCE + (shipAttack * 0.02) - (encounter.pirateLevel * 0.05);
+    const roll = ((battleSeed >>> 0) % 100) / 100;
+    if (roll < fleeChance) {
+      return { valid: true, newAP, result: { outcome: 'escaped' } };
+    }
+    const fightResult = resolveFight(encounter, shipAttack, cargo, battleSeed);
+    return { valid: true, newAP, result: fightResult };
+  }
+
+  if (action === 'fight') {
+    const result = resolveFight(encounter, shipAttack, cargo, battleSeed);
+    return { valid: true, result };
+  }
+
+  if (action === 'negotiate') {
+    if (!encounter.canNegotiate) return { valid: false, error: 'Pirates won\'t negotiate (need Friendly rep)' };
+    if (credits < encounter.negotiateCost) {
+      return { valid: false, error: `Not enough credits (need ${encounter.negotiateCost})` };
+    }
+    return {
+      valid: true,
+      result: { outcome: 'negotiated', repChange: 1 },
+    };
+  }
+
+  return { valid: false, error: 'Invalid battle action' };
+}
+
+function resolveFight(
+  encounter: PirateEncounter,
+  shipAttack: number,
+  cargo: CargoState,
+  seed: number,
+): BattleResult {
+  const playerPower = shipAttack + ((seed >>> 8) % 20);
+  const piratePower = encounter.pirateDamage + ((seed >>> 16) % 10);
+
+  if (playerPower >= piratePower) {
+    const lootCredits = encounter.pirateLevel * 10 + ((seed >>> 4) % 50);
+    const lootOre = ((seed >>> 6) % 3);
+    const lootCrystal = ((seed >>> 10) % 2);
+    return {
+      outcome: 'victory',
+      lootCredits,
+      lootResources: { ore: lootOre, crystal: lootCrystal },
+      repChange: -3,
+      xpGained: encounter.pirateLevel * 5,
+    };
+  } else {
+    const lossRatio = BATTLE_CARGO_LOSS_MIN + ((seed >>> 12) % 100) / 100 * (BATTLE_CARGO_LOSS_MAX - BATTLE_CARGO_LOSS_MIN);
+    return {
+      outcome: 'defeat',
+      cargoLost: {
+        ore: Math.floor(cargo.ore * lossRatio),
+        gas: Math.floor(cargo.gas * lossRatio),
+        crystal: Math.floor(cargo.crystal * lossRatio),
+      },
+      xpGained: Math.ceil(encounter.pirateLevel * 2),
+    };
+  }
+}
+
+// --- Phase 4: Quest Validation ---
+
+export interface AcceptQuestValidation {
+  valid: boolean;
+  error?: string;
+}
+
+export function validateAcceptQuest(activeQuestCount: number): AcceptQuestValidation {
+  if (activeQuestCount >= MAX_ACTIVE_QUESTS) {
+    return { valid: false, error: `Maximum ${MAX_ACTIVE_QUESTS} active quests reached` };
+  }
+  return { valid: true };
+}
+
+// --- Phase 4: Level Calculation ---
+
+export function calculateLevel(xp: number): number {
+  let level = 1;
+  for (const [lvl, threshold] of Object.entries(XP_LEVELS)) {
+    if (xp >= threshold) level = parseInt(lvl, 10);
+  }
+  return level;
+}
+
+// --- Phase 4: Reputation Tier ---
+
+export function getReputationTier(reputation: number): string {
+  if (reputation <= -51) return 'hostile';
+  if (reputation < 0) return 'unfriendly';
+  if (reputation === 0) return 'neutral';
+  if (reputation <= 50) return 'friendly';
+  return 'honored';
 }
