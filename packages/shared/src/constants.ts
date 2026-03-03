@@ -1,4 +1,4 @@
-import type { SectorType, ShipClass, ResourceType, StructureType } from './types.js';
+import type { SectorType, ShipClass, ResourceType, StructureType, HullType, HullDefinition, ModuleDefinition } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
   'empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate'
@@ -203,6 +203,115 @@ export const SHIP_CLASSES: Record<ShipClass, {
     scannerLevel: 3,
     safeSlots: 3,
     commRange: 200,
+  },
+};
+
+// --- Phase 7: Ship Designer ---
+export const HULLS: Record<HullType, HullDefinition> = {
+  scout: {
+    name: 'VOID SCOUT', size: 'small', slots: 3,
+    baseFuel: 80, baseCargo: 3, baseJumpRange: 5, baseApPerJump: 1,
+    baseHp: 50, baseCommRange: 50, baseScannerLevel: 1,
+    unlockLevel: 1, unlockCost: 0,
+  },
+  freighter: {
+    name: 'VOID FREIGHTER', size: 'medium', slots: 4,
+    baseFuel: 120, baseCargo: 15, baseJumpRange: 3, baseApPerJump: 2,
+    baseHp: 80, baseCommRange: 75, baseScannerLevel: 1,
+    unlockLevel: 3, unlockCost: 500,
+  },
+  cruiser: {
+    name: 'VOID CRUISER', size: 'medium', slots: 4,
+    baseFuel: 150, baseCargo: 8, baseJumpRange: 4, baseApPerJump: 1,
+    baseHp: 100, baseCommRange: 100, baseScannerLevel: 1,
+    unlockLevel: 4, unlockCost: 1000,
+  },
+  explorer: {
+    name: 'VOID EXPLORER', size: 'large', slots: 5,
+    baseFuel: 200, baseCargo: 10, baseJumpRange: 6, baseApPerJump: 1,
+    baseHp: 70, baseCommRange: 150, baseScannerLevel: 2,
+    unlockLevel: 5, unlockCost: 2000,
+  },
+  battleship: {
+    name: 'VOID BATTLESHIP', size: 'large', slots: 5,
+    baseFuel: 180, baseCargo: 5, baseJumpRange: 2, baseApPerJump: 2,
+    baseHp: 150, baseCommRange: 75, baseScannerLevel: 1,
+    unlockLevel: 6, unlockCost: 3000,
+  },
+};
+
+export const MODULES: Record<string, ModuleDefinition> = {
+  drive_mk1: {
+    id: 'drive_mk1', category: 'drive', tier: 1,
+    name: 'ION DRIVE MK.I', displayName: 'ION MK.I',
+    effects: { jumpRange: 1 },
+    cost: { credits: 100, ore: 10 },
+  },
+  drive_mk2: {
+    id: 'drive_mk2', category: 'drive', tier: 2,
+    name: 'ION DRIVE MK.II', displayName: 'ION MK.II',
+    effects: { jumpRange: 2, apCostJump: -0.2 },
+    cost: { credits: 300, ore: 20, crystal: 5 },
+  },
+  drive_mk3: {
+    id: 'drive_mk3', category: 'drive', tier: 3,
+    name: 'ION DRIVE MK.III', displayName: 'ION MK.III',
+    effects: { jumpRange: 3, apCostJump: -0.5 },
+    cost: { credits: 800, ore: 40, crystal: 15 },
+  },
+  cargo_mk1: {
+    id: 'cargo_mk1', category: 'cargo', tier: 1,
+    name: 'CARGO BAY MK.I', displayName: 'CARGO MK.I',
+    effects: { cargoCap: 5 },
+    cost: { credits: 80 },
+  },
+  cargo_mk2: {
+    id: 'cargo_mk2', category: 'cargo', tier: 2,
+    name: 'CARGO BAY MK.II', displayName: 'CARGO MK.II',
+    effects: { cargoCap: 12 },
+    cost: { credits: 250, ore: 15 },
+  },
+  cargo_mk3: {
+    id: 'cargo_mk3', category: 'cargo', tier: 3,
+    name: 'CARGO BAY MK.III', displayName: 'CARGO MK.III',
+    effects: { cargoCap: 25 },
+    cost: { credits: 600, ore: 30, gas: 10 },
+  },
+  scanner_mk1: {
+    id: 'scanner_mk1', category: 'scanner', tier: 1,
+    name: 'SCANNER MK.I', displayName: 'SCAN MK.I',
+    effects: { scannerLevel: 1 },
+    cost: { credits: 120, crystal: 5 },
+  },
+  scanner_mk2: {
+    id: 'scanner_mk2', category: 'scanner', tier: 2,
+    name: 'SCANNER MK.II', displayName: 'SCAN MK.II',
+    effects: { scannerLevel: 1, commRange: 50 },
+    cost: { credits: 350, crystal: 15 },
+  },
+  scanner_mk3: {
+    id: 'scanner_mk3', category: 'scanner', tier: 3,
+    name: 'SCANNER MK.III', displayName: 'SCAN MK.III',
+    effects: { scannerLevel: 2, commRange: 100 },
+    cost: { credits: 900, crystal: 30, gas: 10 },
+  },
+  armor_mk1: {
+    id: 'armor_mk1', category: 'armor', tier: 1,
+    name: 'ARMOR PLATING MK.I', displayName: 'ARM MK.I',
+    effects: { hp: 25 },
+    cost: { credits: 100, ore: 15 },
+  },
+  armor_mk2: {
+    id: 'armor_mk2', category: 'armor', tier: 2,
+    name: 'ARMOR PLATING MK.II', displayName: 'ARM MK.II',
+    effects: { hp: 50, damageMod: -0.10 },
+    cost: { credits: 300, ore: 30, crystal: 10 },
+  },
+  armor_mk3: {
+    id: 'armor_mk3', category: 'armor', tier: 3,
+    name: 'ARMOR PLATING MK.III', displayName: 'ARM MK.III',
+    effects: { hp: 100, damageMod: -0.25 },
+    cost: { credits: 800, ore: 50, crystal: 25 },
   },
 };
 
