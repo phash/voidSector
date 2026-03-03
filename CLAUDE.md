@@ -11,8 +11,8 @@ npm run docker:up           # PostgreSQL + Redis
 npm test                    # All tests
 
 # Per-package tests
-cd packages/server && npx vitest run    # 115 tests
-cd packages/client && npx vitest run    # 74 tests
+cd packages/server && npx vitest run    # 152 tests
+cd packages/client && npx vitest run    # 91 tests
 cd packages/shared && npx vitest run    # 5 tests
 ```
 
@@ -37,7 +37,7 @@ cd packages/shared && npx vitest run    # 5 tests
 - Tests: Vitest everywhere. Client uses jsdom + RTL + jest-canvas-mock (via jest-shim.ts)
 
 ## DB Migrations
-Files in `packages/server/src/db/migrations/` (001-008). Auto-run on startup.
+Files in `packages/server/src/db/migrations/` (001-009). Auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` for idempotency.
 
 ## Current State
@@ -53,8 +53,14 @@ Branch `feat/dataslates-factions` (merged) adds:
 Data Slates (sector/area maps, create/activate/trade/NPC buyback), Factions (create/join/invite/ranks/chat),
 FACTION monitor, CARGO slate UI, TRADE slate marketplace.
 
-Branch `feat/npc-ecosystem` adds:
+Branch `feat/npc-ecosystem` (merged) adds:
 NPC Ecosystem Phase 4: Seed-based NPC generation at stations, 4 NPC factions (Traders/Scientists/Pirates/Ancients + Independent),
 reputation system (-100..+100 per faction), procedural quest system (fetch/delivery/scan/bounty with daily rotation),
 auto-battle (flee/fight/negotiate), scan events (pirate ambush/distress/anomaly/artifact),
-faction upgrades at honored tier, QUESTS monitor, BattleDialog overlay, and 194 total tests.
+faction upgrades at honored tier, QUESTS monitor, BattleDialog overlay.
+
+Branch `feat/phase5-deep-systems` adds:
+Phase 5 Deep Systems: Fuel system (consumption + refueling), JumpGates (bidirectional + wormholes + frequency minigame),
+rescue missions (distress calls + survivor delivery), faction upgrade tree (3 tiers, A/B choices with bonuses applied to
+mining/scan/trade/combat), trade route automation, custom data slates, multi-content sectors,
+mining nav-lock bugfix (#17), UI fixes (#16), and 248 total tests.

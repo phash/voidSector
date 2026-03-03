@@ -23,6 +23,11 @@
 - [x] Auto-Battle Logik gegen Piraten.
 
 ## Phase 5: Deep Systems
-- [ ] Fraktions-Verbesserungsbaum (Boni/Malus Entscheidungen).
-- [ ] Rettungsmissionen-System.
-- [ ] Automatisierung: Handelsrouten vom Raumhafen aus.
+- [x] Fraktions-Verbesserungsbaum (Boni/Malus Entscheidungen).
+- [x] Rettungsmissionen-System.
+- [x] Automatisierung: Handelsrouten vom Raumhafen aus.
+- [x] Fuel-System (Verbrauch + Tanken).
+- [x] JumpGates (bidirektional + Wurmlöcher + Frequenz-Minispiel).
+- [x] DatenDisks erweitert (Custom Slates).
+- [x] Multi-Content-Sektoren.
+- [x] Bug-Fixes: Mining-Nav-Lock (#17), UI-Anpassungen (#16).
