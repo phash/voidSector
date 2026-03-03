@@ -10,8 +10,10 @@ export function QuestsScreen() {
   const scanEvents = useStore((s) => s.scanEvents);
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
+  const distressCalls = useStore((s) => s.distressCalls);
+  const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
 
-  const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events'>('active');
+  const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events' | 'rescue'>('active');
   const [stationNpcs, setStationNpcs] = useState<StationNpc[]>([]);
   const [availableQuests, setAvailableQuests] = useState<AvailableQuest[]>([]);
 
@@ -37,15 +39,23 @@ export function QuestsScreen() {
     friendly: '#00FF88', honored: '#00BFFF',
   };
 
+  const tabLabels: Record<string, string> = {
+    active: 'AKTIV',
+    station: 'STATION',
+    rep: 'REP',
+    events: 'EVENTS',
+    rescue: 'RETTUNG',
+  };
+
   return (
     <div style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-        {['active', 'station', 'rep', 'events'].map((t) => (
+        {(['active', 'station', 'rep', 'events', 'rescue'] as const).map((t) => (
           <button
             key={t}
             onClick={() => {
-              setTab(t as any);
+              setTab(t);
               if (t === 'station' && isAtStation) {
                 network.requestStationNpcs(position.x, position.y);
               }
@@ -57,7 +67,7 @@ export function QuestsScreen() {
               padding: '2px 6px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit',
             }}
           >
-            {t === 'active' ? 'AKTIV' : t === 'station' ? 'STATION' : t === 'rep' ? 'REP' : 'EVENTS'}
+            {tabLabels[t]}
           </button>
         ))}
       </div>
@@ -181,6 +191,63 @@ export function QuestsScreen() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Rescue tab */}
+      {tab === 'rescue' && (
+        <div>
+          <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- RETTUNG ---</div>
+
+          {/* Active distress calls */}
+          {distressCalls.length > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ color: '#FF3333', marginBottom: '4px' }}>AKTIVE NOTRUFE:</div>
+              {distressCalls.map(call => {
+                const minutesLeft = Math.max(0, Math.ceil((call.expiresAt - Date.now()) / 60000));
+                return (
+                  <div key={call.id} style={{
+                    border: '1px solid rgba(255, 51, 51, 0.3)',
+                    padding: '4px',
+                    marginBottom: '4px',
+                  }}>
+                    <div style={{ color: '#FF3333' }}>DISTRESS SIGNAL</div>
+                    <div>RICHTUNG: {call.direction}</div>
+                    <div>ENTFERNUNG: ~{call.estimatedDistance} SEKTOREN</div>
+                    <div style={{ fontSize: '10px', opacity: 0.5 }}>
+                      Verfällt in {minutesLeft} min
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {distressCalls.length === 0 && rescuedSurvivors.length === 0 && (
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Keine aktiven Rettungsmissionen</div>
+          )}
+
+          {/* Rescued survivors in transit */}
+          {rescuedSurvivors.length > 0 && (
+            <div>
+              <div style={{ color: '#00FF88', marginBottom: '4px' }}>ÜBERLEBENDE AN BORD:</div>
+              {rescuedSurvivors.map(s => (
+                <div key={s.id} style={{
+                  border: '1px solid rgba(0, 255, 136, 0.3)',
+                  padding: '4px',
+                  marginBottom: '4px',
+                }}>
+                  <div>{s.survivorCount} Überlebende</div>
+                  <div style={{ fontSize: '10px', opacity: 0.5 }}>
+                    Geborgen bei ({s.sectorX}, {s.sectorY})
+                  </div>
+                </div>
+              ))}
+              <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px' }}>
+                An einer Station abliefern für Belohnung
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
