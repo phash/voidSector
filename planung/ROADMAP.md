@@ -18,9 +18,9 @@
 - [x] Fraktions-System: Gründung und gemeinsamer Chat.
 
 ## Phase 4: NPC-Ökosystem
-- [ ] Prozedurale Alien-Quests.
-- [ ] Reputations-System (A/B Balancing).
-- [ ] Auto-Battle Logik gegen Piraten.
+- [x] Prozedurale Alien-Quests.
+- [x] Reputations-System (A/B Balancing).
+- [x] Auto-Battle Logik gegen Piraten.
 
 ## Phase 5: Deep Systems
 - [ ] Fraktions-Verbesserungsbaum (Boni/Malus Entscheidungen).
