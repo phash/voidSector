@@ -97,6 +97,62 @@ export const SLATE_AREA_RADIUS: Record<number, number> = {
   3: 4,
 };
 
+// --- Phase 4: NPC Ecosystem ---
+
+export const NPC_FACTION_WEIGHTS: Record<string, number> = {
+  independent: 0.30,
+  traders: 0.28,
+  scientists: 0.25,
+  pirates: 0.16,
+  ancients: 0.01,
+};
+
+export const REP_TIERS: Record<string, { min: number; max: number }> = {
+  hostile:    { min: -100, max: -51 },
+  unfriendly: { min: -50, max: -1 },
+  neutral:    { min: 0, max: 0 },
+  friendly:   { min: 1, max: 50 },
+  honored:    { min: 51, max: 100 },
+};
+
+export const REP_PRICE_MODIFIERS: Record<string, number> = {
+  hostile: 1.5,
+  unfriendly: 1.0,
+  neutral: 1.0,
+  friendly: 0.9,
+  honored: 0.75,
+};
+
+export const FACTION_UPGRADES: Record<string, { factionId: string; name: string; effect: string }> = {
+  cargo_expansion:  { factionId: 'traders',    name: 'CARGO EXPANSION',  effect: '+3 cargo capacity' },
+  advanced_scanner: { factionId: 'scientists', name: 'ADVANCED SCANNER', effect: '+1 areaScan radius' },
+  combat_plating:   { factionId: 'pirates',    name: 'COMBAT PLATING',   effect: '+20% combat bonus' },
+  void_drive:       { factionId: 'ancients',   name: 'VOID DRIVE',       effect: '-1 AP movement cost' },
+};
+
+export const BATTLE_AP_COST_FLEE = 2;
+export const BATTLE_CARGO_LOSS_MIN = 0.25;
+export const BATTLE_CARGO_LOSS_MAX = 0.50;
+export const BATTLE_NEGOTIATE_COST_PER_LEVEL = 10;
+export const BATTLE_FLEE_BASE_CHANCE = 0.6;
+export const PIRATE_LEVEL_DISTANCE_DIVISOR = 50;
+export const PIRATE_MAX_LEVEL = 10;
+
+export const PIRATE_BASE_HP = 20;
+export const PIRATE_HP_PER_LEVEL = 10;
+export const PIRATE_BASE_DAMAGE = 5;
+export const PIRATE_DAMAGE_PER_LEVEL = 3;
+
+export const MAX_ACTIVE_QUESTS = 3;
+export const QUEST_EXPIRY_DAYS = 7;
+
+export const SCAN_EVENT_CHANCE = 0.15;
+
+export const XP_LEVELS: Record<number, number> = {
+  1: 0, 2: 100, 3: 300, 4: 600, 5: 1000,
+  6: 1500, 7: 2200, 8: 3000, 9: 4000, 10: 5000,
+};
+
 // Storage tiers
 export const STORAGE_TIERS: Record<number, { capacity: number; upgradeCost: number }> = {
   1: { capacity: 50, upgradeCost: 0 },
@@ -203,6 +259,7 @@ export const MONITORS = {
   LOG: 'LOG',
   TRADE: 'TRADE',
   FACTION: 'FACTION',
+  QUESTS: 'QUESTS',
 } as const;
 
 export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
@@ -215,6 +272,7 @@ export const RIGHT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.BASE_LINK,
   MONITORS.TRADE,
   MONITORS.FACTION,
+  MONITORS.QUESTS,
 ];
 
 export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
@@ -226,6 +284,7 @@ export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.BASE_LINK,
   MONITORS.TRADE,
   MONITORS.FACTION,
+  MONITORS.QUESTS,
 ];
 
 export const MAIN_MONITORS: MonitorId[] = [
@@ -236,6 +295,7 @@ export const MAIN_MONITORS: MonitorId[] = [
   MONITORS.BASE_LINK,
   MONITORS.TRADE,
   MONITORS.FACTION,
+  MONITORS.QUESTS,
 ];
 
 /** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */

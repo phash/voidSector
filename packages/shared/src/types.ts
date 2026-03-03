@@ -385,3 +385,135 @@ export interface FactionDataMessage {
   members: FactionMember[];
   invites: FactionInvite[];
 }
+
+// --- Phase 4: NPC Ecosystem ---
+
+// NPC Factions (not player factions — these are game-world NPC groups)
+export type NpcFactionId = 'traders' | 'scientists' | 'pirates' | 'ancients' | 'independent';
+
+export type ReputationTier = 'hostile' | 'unfriendly' | 'neutral' | 'friendly' | 'honored';
+
+export interface PlayerReputation {
+  factionId: NpcFactionId;
+  reputation: number;
+  tier: ReputationTier;
+}
+
+export interface StationNpc {
+  id: string;
+  name: string;
+  factionId: NpcFactionId;
+  personality: number;
+}
+
+export type QuestType = 'fetch' | 'delivery' | 'scan' | 'bounty';
+export type QuestStatus = 'active' | 'completed' | 'expired' | 'abandoned';
+
+export interface QuestObjective {
+  type: QuestType;
+  description: string;
+  targetX?: number;
+  targetY?: number;
+  resource?: ResourceType;
+  amount?: number;
+  progress?: number;
+  fulfilled: boolean;
+}
+
+export interface Quest {
+  id: string;
+  templateId: string;
+  npcName: string;
+  npcFactionId: NpcFactionId;
+  title: string;
+  description: string;
+  stationX: number;
+  stationY: number;
+  objectives: QuestObjective[];
+  rewards: QuestRewards;
+  status: QuestStatus;
+  acceptedAt: number;
+  expiresAt: number;
+}
+
+export interface QuestRewards {
+  credits: number;
+  xp: number;
+  reputation: number;
+  reputationPenalty?: number;
+  rivalFactionId?: NpcFactionId;
+}
+
+export interface AvailableQuest {
+  templateId: string;
+  npcName: string;
+  npcFactionId: NpcFactionId;
+  title: string;
+  description: string;
+  objectives: QuestObjective[];
+  rewards: QuestRewards;
+  requiredTier: ReputationTier;
+}
+
+export type BattleAction = 'flee' | 'fight' | 'negotiate';
+export type BattleOutcome = 'victory' | 'defeat' | 'escaped' | 'caught' | 'negotiated';
+
+export interface PirateEncounter {
+  pirateLevel: number;
+  pirateHp: number;
+  pirateDamage: number;
+  sectorX: number;
+  sectorY: number;
+  canNegotiate: boolean;
+  negotiateCost: number;
+}
+
+export interface BattleResult {
+  outcome: BattleOutcome;
+  lootCredits?: number;
+  lootResources?: Partial<SectorResources>;
+  cargoLost?: Partial<SectorResources>;
+  repChange?: number;
+  xpGained?: number;
+}
+
+export type ScanEventType = 'pirate_ambush' | 'distress_signal' | 'anomaly_reading' | 'artifact_find';
+export type ScanEventStatus = 'discovered' | 'completed';
+
+export interface ScanEvent {
+  id: string;
+  eventType: ScanEventType;
+  sectorX: number;
+  sectorY: number;
+  status: ScanEventStatus;
+  data: Record<string, unknown>;
+  createdAt: number;
+}
+
+export type UpgradeId = 'cargo_expansion' | 'advanced_scanner' | 'combat_plating' | 'void_drive';
+
+export interface PlayerUpgrade {
+  upgradeId: UpgradeId;
+  active: boolean;
+  unlockedAt: number;
+}
+
+// Messages: Client -> Server
+export interface AcceptQuestMessage { templateId: string; stationX: number; stationY: number; }
+export interface AbandonQuestMessage { questId: string; }
+export interface CompleteQuestMessage { questId: string; }
+export interface BattleActionMessage { action: BattleAction; sectorX: number; sectorY: number; }
+export interface CompleteScanEventMessage { eventId: string; }
+export interface GetStationNpcsMessage { sectorX: number; sectorY: number; }
+export interface GetAvailableQuestsMessage { sectorX: number; sectorY: number; }
+
+// Messages: Server -> Client
+export interface StationNpcsResultMessage { npcs: StationNpc[]; quests: AvailableQuest[]; }
+export interface AcceptQuestResultMessage { success: boolean; error?: string; quest?: Quest; }
+export interface AbandonQuestResultMessage { success: boolean; error?: string; }
+export interface CompleteQuestResultMessage { success: boolean; error?: string; rewards?: QuestRewards; }
+export interface BattleResultMessage { success: boolean; error?: string; encounter?: PirateEncounter; result?: BattleResult; }
+export interface ScanEventDiscoveredMessage { event: ScanEvent; }
+export interface QuestProgressMessage { questId: string; objectives: QuestObjective[]; }
+export interface ReputationUpdateMessage { reputations: PlayerReputation[]; upgrades: PlayerUpgrade[]; }
+export interface ActiveQuestsMessage { quests: Quest[]; }
