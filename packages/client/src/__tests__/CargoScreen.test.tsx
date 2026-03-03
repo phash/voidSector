@@ -1,0 +1,118 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { CargoScreen } from '../components/CargoScreen';
+import { mockStoreState } from '../test/mockStore';
+
+vi.mock('../network/client', () => ({
+  network: {
+    sendJettison: vi.fn(),
+    requestMySlates: vi.fn(),
+    sendActivateSlate: vi.fn(),
+    sendNpcBuyback: vi.fn(),
+    sendCreateSlate: vi.fn(),
+  },
+}));
+
+import { network } from '../network/client';
+
+describe('CargoScreen', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockStoreState({ cargo: { ore: 3, gas: 0, crystal: 1 } });
+  });
+
+  it('shows cargo labels', () => {
+    render(<CargoScreen />);
+    // Multiple elements match /ORE/ (cargo bar + jettison button), so use getAllByText
+    expect(screen.getAllByText(/ORE/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/GAS/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/CRYSTAL/).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows jettison buttons', () => {
+    render(<CargoScreen />);
+    expect(screen.getByText('[JETTISON ORE]')).toBeInTheDocument();
+    expect(screen.getByText('[JETTISON GAS]')).toBeInTheDocument();
+    expect(screen.getByText('[JETTISON CRYSTAL]')).toBeInTheDocument();
+  });
+
+  it('disables jettison when resource is 0', () => {
+    render(<CargoScreen />);
+    // Gas is 0
+    const gasBtn = screen.getByText('[JETTISON GAS]').closest('button');
+    expect(gasBtn).toBeDisabled();
+  });
+
+  it('enables jettison when resource > 0', () => {
+    render(<CargoScreen />);
+    const oreBtn = screen.getByText('[JETTISON ORE]').closest('button');
+    expect(oreBtn).not.toBeDisabled();
+
+    const crystalBtn = screen.getByText('[JETTISON CRYSTAL]').closest('button');
+    expect(crystalBtn).not.toBeDisabled();
+  });
+
+  it('calls sendJettison on click', async () => {
+    render(<CargoScreen />);
+    await userEvent.click(screen.getByText('[JETTISON ORE]'));
+    expect(network.sendJettison).toHaveBeenCalledWith('ore');
+  });
+
+  it('shows CARGO HOLD header', () => {
+    render(<CargoScreen />);
+    expect(screen.getByText(/CARGO HOLD/)).toBeInTheDocument();
+  });
+
+  it('shows capacity info', () => {
+    render(<CargoScreen />);
+    // total = 3 + 0 + 1 = 4, cargoCap for aegis_scout_mk1 = 5
+    expect(screen.getByText(/CAPACITY/)).toBeInTheDocument();
+  });
+
+  it('shows slate count when player has slates', () => {
+    mockStoreState({
+      cargo: { ore: 1, gas: 0, crystal: 0, slates: 2 },
+      mySlates: [
+        {
+          id: 's1',
+          creatorId: 'p1',
+          ownerId: 'p1',
+          slateType: 'sector',
+          sectorData: [{ x: 0, y: 0, type: 'nebula', ore: 10, gas: 5, crystal: 0 }],
+          status: 'available' as const,
+          createdAt: 0,
+        },
+      ],
+      ship: {
+        shipClass: 'aegis_scout_mk1',
+        fuel: 100,
+        maxFuel: 100,
+        jumpRange: 3,
+        cargoCap: 20,
+        scannerLevel: 1,
+      },
+    });
+    render(<CargoScreen />);
+    expect(screen.getByText(/DATA SLATES: 2/)).toBeDefined();
+    expect(screen.getByText(/AKTIVIEREN/)).toBeDefined();
+  });
+
+  it('shows create slate buttons', () => {
+    mockStoreState({
+      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
+      mySlates: [],
+      ship: {
+        shipClass: 'aegis_scout_mk1',
+        fuel: 100,
+        maxFuel: 100,
+        jumpRange: 3,
+        cargoCap: 20,
+        scannerLevel: 1,
+      },
+    });
+    render(<CargoScreen />);
+    expect(screen.getByText(/SEKTOR-SLATE/)).toBeDefined();
+    expect(screen.getByText(/GEBIETS-SLATE/)).toBeDefined();
+  });
+});

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { validateJump, validateScan, validateMine, validateJettison } from '../commands.js';
+import { validateJump, validateScan, validateMine, validateJettison, validateLocalScan, validateAreaScan } from '../commands.js';
 import { createMiningState } from '../mining.js';
+import { createAPState } from '../ap.js';
 import { AP_COSTS } from '@void-sector/shared';
 
 describe('validateJump', () => {
@@ -101,6 +102,59 @@ describe('validateJettison', () => {
 
   it('rejects invalid resource type', () => {
     const result = validateJettison('unobtanium' as any, 10);
+    expect(result.valid).toBe(false);
+  });
+});
+
+describe('validateLocalScan', () => {
+  it('succeeds with sufficient AP', () => {
+    const now = Date.now();
+    const ap = createAPState(now);
+    const result = validateLocalScan(ap, 1, 1);
+    expect(result.valid).toBe(true);
+    expect(result.newAP).toBeDefined();
+  });
+
+  it('fails with insufficient AP', () => {
+    const now = Date.now();
+    const ap = { ...createAPState(now), current: 0 };
+    const result = validateLocalScan(ap, 1, 1);
+    expect(result.valid).toBe(false);
+  });
+
+  it('reports hidden signatures for low scanner level', () => {
+    const now = Date.now();
+    const ap = createAPState(now);
+    const result1 = validateLocalScan(ap, 1, 1);
+    expect(result1.hiddenSignatures).toBe(true);
+    const result3 = validateLocalScan(ap, 1, 3);
+    expect(result3.hiddenSignatures).toBe(false);
+  });
+});
+
+describe('validateAreaScan', () => {
+  it('returns correct radius for scanner level 1', () => {
+    const now = Date.now();
+    const ap = createAPState(now);
+    const result = validateAreaScan(ap, 1);
+    expect(result.valid).toBe(true);
+    expect(result.radius).toBe(2);
+    expect(result.cost).toBe(3);
+  });
+
+  it('returns correct radius for scanner level 3', () => {
+    const now = Date.now();
+    const ap = createAPState(now);
+    const result = validateAreaScan(ap, 3);
+    expect(result.valid).toBe(true);
+    expect(result.radius).toBe(5);
+    expect(result.cost).toBe(8);
+  });
+
+  it('fails with insufficient AP', () => {
+    const now = Date.now();
+    const ap = { ...createAPState(now), current: 2 };
+    const result = validateAreaScan(ap, 1);
     expect(result.valid).toBe(false);
   });
 });

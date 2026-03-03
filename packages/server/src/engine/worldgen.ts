@@ -17,11 +17,11 @@ export function hashCoords(x: number, y: number, worldSeed: number): number {
   h = h ^ (h >>> 13);
   h = Math.imul(h, 0x85ebca6b);
   h = h ^ (h >>> 16);
-  return h >>> 0; // unsigned 32-bit
+  return h | 0; // signed 32-bit (fits PostgreSQL INTEGER)
 }
 
 function sectorTypeFromSeed(seed: number): SectorType {
-  const normalized = seed / 0x100000000; // full 32-bit range to [0, 1)
+  const normalized = (seed >>> 0) / 0x100000000; // treat as unsigned, normalize to [0, 1)
   let cumulative = 0;
   for (const type of SECTOR_TYPES) {
     cumulative += SECTOR_WEIGHTS[type];

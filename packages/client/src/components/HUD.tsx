@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
 
 function SegmentedBar({ current, max, width = 12 }: { current: number; max: number; width?: number }) {
@@ -13,6 +14,39 @@ function SegmentedBar({ current, max, width = 12 }: { current: number; max: numb
 export function StatusBar() {
   const ap = useStore((s) => s.ap);
 
+  // Live-updating AP accounting for regen since last server tick
+  const [displayAP, setDisplayAP] = useState(ap?.current ?? 0);
+
+  useEffect(() => {
+    if (!ap) return;
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - ap.lastTick) / 1000;
+      const regen = Math.min(ap.current + elapsed * ap.regenPerSecond, ap.max);
+      setDisplayAP(Math.floor(regen));
+    }, 500);
+    return () => clearInterval(interval);
+  }, [ap]);
+
+  // Flash animation on AP spend
+  const prevAP = useRef(ap?.current ?? 0);
+  const [flashing, setFlashing] = useState(false);
+
+  useEffect(() => {
+    if (ap && ap.current < prevAP.current) {
+      setFlashing(true);
+      const timer = setTimeout(() => setFlashing(false), 400);
+      prevAP.current = ap.current;
+      return () => clearTimeout(timer);
+    }
+    prevAP.current = ap?.current ?? 0;
+  }, [ap?.current]);
+
+  // Regen timer display
+  const isFull = ap && displayAP >= ap.max;
+  const secondsToFull = ap && !isFull
+    ? Math.ceil((ap.max - displayAP) / ap.regenPerSecond)
+    : 0;
+
   return (
     <div style={{
       padding: '6px 12px',
@@ -23,10 +57,15 @@ export function StatusBar() {
       lineHeight: 1.8,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 16px' }}>
-        <span>
-          AP: {ap ? `${ap.current}/${ap.max}` : '---'}
-          {' '}<SegmentedBar current={ap?.current ?? 0} max={ap?.max ?? 100} />
+        <span className={flashing ? 'ap-flash' : ''}>
+          AP: {ap ? `${displayAP}/${ap.max}` : '---'}
+          {' '}<SegmentedBar current={ap ? displayAP : 0} max={ap?.max ?? 100} />
         </span>
+        {ap && (
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
+            {ap.regenPerSecond}/s | {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `FULL ${secondsToFull}s`}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -37,6 +76,7 @@ export function SectorInfo() {
   const currentSector = useStore((s) => s.currentSector);
   const players = useStore((s) => s.players);
   const playerCount = Object.keys(players).length;
+  const distToOrigin = Math.ceil(Math.sqrt(position.x ** 2 + position.y ** 2));
 
   return (
     <div style={{
@@ -44,13 +84,16 @@ export function SectorInfo() {
       borderTop: '1px solid var(--color-dim)',
       borderBottom: '1px solid var(--color-dim)',
       fontSize: '0.75rem',
-      display: 'flex',
-      justifyContent: 'space-between',
       letterSpacing: '0.1em',
     }}>
-      <span>SECTOR: ({position.x}, {position.y})</span>
-      <span>{currentSector?.type?.toUpperCase() || '---'}</span>
-      <span>PILOTS: {playerCount}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <span>SECTOR: ({position.x}, {position.y})</span>
+        <span>{currentSector?.type?.toUpperCase() || '---'}</span>
+        <span>PILOTS: {playerCount}</span>
+      </div>
+      <div style={{ color: 'var(--color-dim)', fontSize: '0.75rem' }}>
+        ORIGIN: {distToOrigin.toLocaleString()} SECTORS
+      </div>
     </div>
   );
 }

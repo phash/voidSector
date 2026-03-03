@@ -63,6 +63,7 @@
 /* Hardware Bezel Frame */
 .bezel-frame {
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   background: #111;
@@ -71,6 +72,12 @@
   box-shadow:
     inset 0 0 20px rgba(0,0,0,0.8),
     0 0 30px rgba(0,0,0,0.5);
+}
+
+.bezel-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 .bezel-side {
@@ -150,4 +157,233 @@
   z-index: 1;
   width: 100%;
   height: 100%;
+}
+
+.bezel-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 6px 12px;
+  background: var(--color-bezel);
+  border-top: 1px solid #333;
+}
+
+/* TV-style channel selector buttons */
+.channel-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 4px;
+  background: linear-gradient(180deg, #1a1a1a, #131313, #1a1a1a);
+  border-left: 1px solid #2a2a2a;
+}
+
+.channel-btn {
+  position: relative;
+  width: 64px;
+  height: 48px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: rgba(255, 176, 0, 0.4);
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.1s;
+}
+
+.channel-btn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.channel-btn.active {
+  color: #050505;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 4px var(--color-primary);
+}
+
+/* Alert blink animation for channel buttons */
+@keyframes channel-blink {
+  0%, 100% { box-shadow: 0 0 4px var(--color-primary); opacity: 1; }
+  50% { box-shadow: 0 0 12px var(--color-primary); opacity: 0.7; }
+}
+
+.channel-btn.alert {
+  animation: channel-blink 1s ease-in-out infinite;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Alert blink for sidebar bezel border */
+@keyframes bezel-alert-pulse {
+  0%, 100% { border-color: #2a2a2a; }
+  50% { border-color: var(--color-primary); }
+}
+
+.sidebar-bezel.alert {
+  animation: bezel-alert-pulse 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .channel-btn.alert,
+  .sidebar-bezel.alert {
+    animation: none;
+    border-color: var(--color-primary);
+  }
+}
+
+/* 3-column desktop layout */
+.desktop-layout-v2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  height: 100%;
+  gap: 0;
+}
+
+@media (min-width: 1024px) {
+  .desktop-layout-v2 {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .sidebar-left {
+    display: flex;
+    border-right: 2px solid #2a2a2a;
+  }
+
+  .sidebar-right {
+    display: flex;
+    border-left: 2px solid #2a2a2a;
+  }
+}
+
+.sidebar-stack {
+  display: none;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .sidebar-stack {
+    display: flex;
+  }
+}
+
+.sidebar-slot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.sidebar-slot + .sidebar-slot {
+  border-top: 2px solid #2a2a2a;
+}
+
+.sidebar-slot-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Main area split */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.main-upper {
+  flex: 2;
+  display: flex;
+  min-height: 0;
+}
+
+.main-grid {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+.main-detail {
+  width: 320px;
+  min-height: 0;
+  overflow: auto;
+  border-left: 2px solid #2a2a2a;
+}
+
+.main-lower {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border-top: 2px solid #2a2a2a;
+}
+
+.main-fullscreen {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Main area channel bar (horizontal) */
+.main-channel-bar {
+  display: none;
+  gap: 2px;
+  padding: 4px 8px;
+  background: #111;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+@media (min-width: 1024px) {
+  .main-channel-bar {
+    display: flex;
+  }
+}
+
+.channel-btn-small {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: rgba(255, 176, 0, 0.4);
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 4px 12px;
+  transition: all 0.1s;
+}
+
+.channel-btn-small:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.channel-btn-small.active {
+  color: #050505;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.channel-btn-small.alert {
+  animation: channel-blink 1s ease-in-out infinite;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Mobile tab bar — hide on desktop */
+.mobile-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: #111;
+  border-top: 2px solid #2a2a2a;
+}
+
+@media (min-width: 1024px) {
+  .mobile-tabs {
+    display: none;
+  }
 }

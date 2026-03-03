@@ -30,6 +30,7 @@ export interface PlayerData {
   homeBase: Coords;
   xp: number;
   level: number;
+  credits?: number;
 }
 
 export type ShipClass = 'aegis_scout_mk1' | 'void_seeker_mk2';
@@ -71,8 +72,6 @@ export interface JumpMessage {
   targetY: number;
 }
 
-export interface ScanMessage {}
-
 // Messages: Server -> Client
 export interface JumpResultMessage {
   success: boolean;
@@ -83,7 +82,7 @@ export interface JumpResultMessage {
 }
 
 export interface ScanResultMessage {
-  sector: SectorData;
+  sectors: SectorData[];
   apRemaining: number;
 }
 
@@ -106,6 +105,7 @@ export interface CargoState {
   ore: number;
   gas: number;
   crystal: number;
+  slates: number;
 }
 
 export interface MineMessage {
@@ -115,3 +115,405 @@ export interface MineMessage {
 export interface JettisonMessage {
   resource: ResourceType;
 }
+
+// Local scan
+export interface LocalScanResult {
+  resources: SectorResources;
+  rareResources?: Record<string, number>;
+  hiddenObjects?: string[];
+  hiddenSignatures: boolean;
+}
+
+export type LocalScanMessage = Record<string, never>;
+
+export interface LocalScanResultMessage {
+  resources: SectorResources;
+  hiddenSignatures: boolean;
+}
+
+// Structures
+export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post';
+
+export interface Structure {
+  id: string;
+  ownerId: string;
+  type: StructureType;
+  sectorX: number;
+  sectorY: number;
+  createdAt: string;
+}
+
+export interface BaseStructure {
+  id: string;
+  type: StructureType;
+  sectorX: number;
+  sectorY: number;
+  createdAt: string;
+}
+
+export interface BuildMessage {
+  type: StructureType;
+}
+
+export interface BuildResultMessage {
+  success: boolean;
+  error?: string;
+  structure?: Structure;
+}
+
+// Communication
+export type ChatChannel = 'direct' | 'faction' | 'local';
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  channel: ChatChannel;
+  recipientId?: string;
+  content: string;
+  sentAt: number;
+  delayed: boolean;
+}
+
+export interface SendChatMessage {
+  channel: ChatChannel;
+  recipientId?: string;
+  content: string;
+}
+
+// Badges
+export type BadgeType = 'ORIGIN_FIRST' | 'ORIGIN_REACHED';
+
+export interface Badge {
+  playerId: string;
+  badgeType: BadgeType;
+  awardedAt: string;
+}
+
+export interface StorageInventory {
+  ore: number;
+  gas: number;
+  crystal: number;
+}
+
+export interface TransferMessage {
+  resource: ResourceType;
+  amount: number;
+  direction: 'toStorage' | 'fromStorage';
+}
+
+export interface TransferResultMessage {
+  success: boolean;
+  error?: string;
+  cargo?: CargoState;
+  storage?: StorageInventory;
+}
+
+export interface UpgradeStructureMessage {
+  structureId: string;
+}
+
+export interface UpgradeResultMessage {
+  success: boolean;
+  error?: string;
+  newTier?: number;
+  creditsRemaining?: number;
+}
+
+export type TradeOrderType = 'buy' | 'sell';
+
+export interface TradeOrder {
+  id: string;
+  playerId: string;
+  playerName: string;
+  resource: ResourceType;
+  amount: number;
+  pricePerUnit: number;
+  type: TradeOrderType;
+  createdAt: string;
+}
+
+export interface NpcTradeMessage {
+  resource: ResourceType;
+  amount: number;
+  action: 'buy' | 'sell';
+}
+
+export interface NpcTradeResultMessage {
+  success: boolean;
+  error?: string;
+  credits?: number;
+  cargo?: CargoState;
+  storage?: StorageInventory;
+}
+
+export interface PlaceOrderMessage {
+  resource: ResourceType;
+  amount: number;
+  pricePerUnit: number;
+  type: TradeOrderType;
+}
+
+export interface AcceptOrderMessage {
+  orderId: string;
+}
+
+// --- Data Slates ---
+export type SlateType = 'sector' | 'area';
+
+export interface SectorSlateData {
+  x: number;
+  y: number;
+  type: string;
+  ore: number;
+  gas: number;
+  crystal: number;
+}
+
+export interface DataSlate {
+  id: string;
+  creatorId: string;
+  creatorName?: string;
+  ownerId: string;
+  slateType: SlateType;
+  sectorData: SectorSlateData[];
+  status: 'available' | 'listed';
+  createdAt: number;
+}
+
+export interface CreateSlateMessage {
+  slateType: SlateType;
+}
+
+export interface CreateSlateResultMessage {
+  success: boolean;
+  error?: string;
+  slate?: DataSlate;
+  cargo?: CargoState;
+  ap?: number;
+}
+
+export interface ActivateSlateMessage {
+  slateId: string;
+}
+
+export interface ActivateSlateResultMessage {
+  success: boolean;
+  error?: string;
+  sectorsAdded?: number;
+}
+
+export interface NpcBuybackMessage {
+  slateId: string;
+}
+
+export interface NpcBuybackResultMessage {
+  success: boolean;
+  error?: string;
+  credits?: number;
+  creditsEarned?: number;
+}
+
+export interface ListSlateMessage {
+  slateId: string;
+  price: number;
+}
+
+// --- Factions ---
+export type FactionRank = 'leader' | 'officer' | 'member';
+export type FactionJoinMode = 'open' | 'code' | 'invite';
+export type FactionInviteStatus = 'pending' | 'accepted' | 'rejected';
+
+export interface Faction {
+  id: string;
+  name: string;
+  tag: string;
+  leaderId: string;
+  leaderName?: string;
+  joinMode: FactionJoinMode;
+  inviteCode?: string;
+  memberCount?: number;
+  createdAt: number;
+}
+
+export interface FactionMember {
+  playerId: string;
+  playerName: string;
+  rank: FactionRank;
+  joinedAt: number;
+  online?: boolean;
+}
+
+export interface FactionInvite {
+  id: string;
+  factionId: string;
+  factionName: string;
+  factionTag: string;
+  inviterName: string;
+  status: FactionInviteStatus;
+  createdAt: number;
+}
+
+export interface CreateFactionMessage {
+  name: string;
+  tag: string;
+  joinMode: FactionJoinMode;
+}
+
+export interface CreateFactionResultMessage {
+  success: boolean;
+  error?: string;
+  faction?: Faction;
+}
+
+export interface FactionActionMessage {
+  action: 'join' | 'joinCode' | 'leave' | 'invite' | 'kick' | 'promote' | 'demote' | 'setJoinMode' | 'disband';
+  targetPlayerId?: string;
+  targetPlayerName?: string;
+  code?: string;
+  joinMode?: FactionJoinMode;
+}
+
+export interface FactionActionResultMessage {
+  success: boolean;
+  action: string;
+  error?: string;
+}
+
+export interface FactionDataMessage {
+  faction: Faction | null;
+  members: FactionMember[];
+  invites: FactionInvite[];
+}
+
+// --- Phase 4: NPC Ecosystem ---
+
+// NPC Factions (not player factions — these are game-world NPC groups)
+export type NpcFactionId = 'traders' | 'scientists' | 'pirates' | 'ancients' | 'independent';
+
+export type ReputationTier = 'hostile' | 'unfriendly' | 'neutral' | 'friendly' | 'honored';
+
+export interface PlayerReputation {
+  factionId: NpcFactionId;
+  reputation: number;
+  tier: ReputationTier;
+}
+
+export interface StationNpc {
+  id: string;
+  name: string;
+  factionId: NpcFactionId;
+  personality: number;
+}
+
+export type QuestType = 'fetch' | 'delivery' | 'scan' | 'bounty';
+export type QuestStatus = 'active' | 'completed' | 'expired' | 'abandoned';
+
+export interface QuestObjective {
+  type: QuestType;
+  description: string;
+  targetX?: number;
+  targetY?: number;
+  resource?: ResourceType;
+  amount?: number;
+  progress?: number;
+  fulfilled: boolean;
+}
+
+export interface Quest {
+  id: string;
+  templateId: string;
+  npcName: string;
+  npcFactionId: NpcFactionId;
+  title: string;
+  description: string;
+  stationX: number;
+  stationY: number;
+  objectives: QuestObjective[];
+  rewards: QuestRewards;
+  status: QuestStatus;
+  acceptedAt: number;
+  expiresAt: number;
+}
+
+export interface QuestRewards {
+  credits: number;
+  xp: number;
+  reputation: number;
+  reputationPenalty?: number;
+  rivalFactionId?: NpcFactionId;
+}
+
+export interface AvailableQuest {
+  templateId: string;
+  npcName: string;
+  npcFactionId: NpcFactionId;
+  title: string;
+  description: string;
+  objectives: QuestObjective[];
+  rewards: QuestRewards;
+  requiredTier: ReputationTier;
+}
+
+export type BattleAction = 'flee' | 'fight' | 'negotiate';
+export type BattleOutcome = 'victory' | 'defeat' | 'escaped' | 'caught' | 'negotiated';
+
+export interface PirateEncounter {
+  pirateLevel: number;
+  pirateHp: number;
+  pirateDamage: number;
+  sectorX: number;
+  sectorY: number;
+  canNegotiate: boolean;
+  negotiateCost: number;
+}
+
+export interface BattleResult {
+  outcome: BattleOutcome;
+  lootCredits?: number;
+  lootResources?: Partial<SectorResources>;
+  cargoLost?: Partial<SectorResources>;
+  repChange?: number;
+  xpGained?: number;
+}
+
+export type ScanEventType = 'pirate_ambush' | 'distress_signal' | 'anomaly_reading' | 'artifact_find';
+export type ScanEventStatus = 'discovered' | 'completed';
+
+export interface ScanEvent {
+  id: string;
+  eventType: ScanEventType;
+  sectorX: number;
+  sectorY: number;
+  status: ScanEventStatus;
+  data: Record<string, unknown>;
+  createdAt: number;
+}
+
+export type UpgradeId = 'cargo_expansion' | 'advanced_scanner' | 'combat_plating' | 'void_drive';
+
+export interface PlayerUpgrade {
+  upgradeId: UpgradeId;
+  active: boolean;
+  unlockedAt: number;
+}
+
+// Messages: Client -> Server
+export interface AcceptQuestMessage { templateId: string; stationX: number; stationY: number; }
+export interface AbandonQuestMessage { questId: string; }
+export interface CompleteQuestMessage { questId: string; }
+export interface BattleActionMessage { action: BattleAction; sectorX: number; sectorY: number; }
+export interface CompleteScanEventMessage { eventId: string; }
+export interface GetStationNpcsMessage { sectorX: number; sectorY: number; }
+export interface GetAvailableQuestsMessage { sectorX: number; sectorY: number; }
+
+// Messages: Server -> Client
+export interface StationNpcsResultMessage { npcs: StationNpc[]; quests: AvailableQuest[]; }
+export interface AcceptQuestResultMessage { success: boolean; error?: string; quest?: Quest; }
+export interface AbandonQuestResultMessage { success: boolean; error?: string; }
+export interface CompleteQuestResultMessage { success: boolean; error?: string; rewards?: QuestRewards; }
+export interface BattleResultMessage { success: boolean; error?: string; encounter?: PirateEncounter; result?: BattleResult; }
+export interface ScanEventDiscoveredMessage { event: ScanEvent; }
+export interface QuestProgressMessage { questId: string; objectives: QuestObjective[]; }
+export interface ReputationUpdateMessage { reputations: PlayerReputation[]; upgrades: PlayerUpgrade[]; }
+export interface ActiveQuestsMessage { quests: Quest[]; }

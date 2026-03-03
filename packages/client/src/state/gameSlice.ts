@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, ScanEvent } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -58,6 +58,44 @@ export interface GameSlice {
   // Active monitor
   activeMonitor: string;
 
+  // Chat / COMMS
+  chatMessages: ChatMessage[];
+  chatChannel: ChatChannel;
+
+  // Alerts
+  alerts: Record<string, boolean>;
+
+  // Selected sector (radar click)
+  selectedSector: { x: number; y: number } | null;
+
+  // Base
+  baseStructures: any[];
+
+  // Credits
+  credits: number;
+
+  // Storage
+  storage: StorageInventory;
+
+  // Trade orders
+  tradeOrders: TradeOrder[];
+  myOrders: TradeOrder[];
+
+  // Data Slates
+  mySlates: DataSlate[];
+
+  // Faction
+  faction: Faction | null;
+  factionMembers: FactionMember[];
+  factionInvites: FactionInvite[];
+
+  // Phase 4: NPC Ecosystem
+  activeQuests: Quest[];
+  reputations: PlayerReputation[];
+  playerUpgrades: PlayerUpgrade[];
+  activeBattle: PirateEncounter | null;
+  scanEvents: ScanEvent[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
@@ -74,6 +112,26 @@ export interface GameSlice {
   setActiveMonitor: (monitor: string) => void;
   setMining: (mining: MiningState) => void;
   setCargo: (cargo: CargoState) => void;
+  addChatMessage: (msg: ChatMessage) => void;
+  setChatChannel: (channel: ChatChannel) => void;
+  setAlert: (monitorId: string, active: boolean) => void;
+  clearAlert: (monitorId: string) => void;
+  setSelectedSector: (sector: { x: number; y: number } | null) => void;
+  setBaseStructures: (structures: any[]) => void;
+  setCredits: (credits: number) => void;
+  setStorage: (storage: StorageInventory) => void;
+  setTradeOrders: (orders: TradeOrder[]) => void;
+  setMyOrders: (orders: TradeOrder[]) => void;
+  setMySlates: (slates: DataSlate[]) => void;
+  setFaction: (faction: Faction | null) => void;
+  setFactionMembers: (members: FactionMember[]) => void;
+  setFactionInvites: (invites: FactionInvite[]) => void;
+  setActiveQuests: (quests: Quest[]) => void;
+  setReputations: (reps: PlayerReputation[]) => void;
+  setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
+  setActiveBattle: (encounter: PirateEncounter | null) => void;
+  setScanEvents: (events: ScanEvent[]) => void;
+  addScanEvent: (event: ScanEvent) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -89,8 +147,26 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   discoveries: {},
   log: [],
   mining: null,
-  cargo: { ore: 0, gas: 0, crystal: 0 },
+  cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
   activeMonitor: 'NAV-COM',
+  chatMessages: [],
+  chatChannel: 'local' as ChatChannel,
+  alerts: {},
+  selectedSector: null,
+  baseStructures: [],
+  credits: 0,
+  storage: { ore: 0, gas: 0, crystal: 0 },
+  tradeOrders: [],
+  myOrders: [],
+  mySlates: [],
+  faction: null,
+  factionMembers: [],
+  factionInvites: [],
+  activeQuests: [],
+  reputations: [],
+  playerUpgrades: [],
+  activeBattle: null,
+  scanEvents: [],
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -141,4 +217,34 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setActiveMonitor: (activeMonitor) => set({ activeMonitor }),
   setMining: (mining) => set({ mining }),
   setCargo: (cargo) => set({ cargo }),
+
+  addChatMessage: (msg) =>
+    set((s) => ({
+      chatMessages: [...s.chatMessages.slice(-199), msg],
+    })),
+  setChatChannel: (chatChannel) => set({ chatChannel }),
+  setAlert: (monitorId, active) => set((s) => ({
+    alerts: { ...s.alerts, [monitorId]: active },
+  })),
+  clearAlert: (monitorId) => set((s) => {
+    const next = { ...s.alerts };
+    delete next[monitorId];
+    return { alerts: next };
+  }),
+  setSelectedSector: (selectedSector) => set({ selectedSector }),
+  setBaseStructures: (baseStructures) => set({ baseStructures }),
+  setCredits: (credits) => set({ credits }),
+  setStorage: (storage) => set({ storage }),
+  setTradeOrders: (tradeOrders) => set({ tradeOrders }),
+  setMyOrders: (myOrders) => set({ myOrders }),
+  setMySlates: (mySlates) => set({ mySlates }),
+  setFaction: (faction) => set({ faction }),
+  setFactionMembers: (factionMembers) => set({ factionMembers }),
+  setFactionInvites: (factionInvites) => set({ factionInvites }),
+  setActiveQuests: (activeQuests) => set({ activeQuests }),
+  setReputations: (reputations) => set({ reputations }),
+  setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
+  setActiveBattle: (activeBattle) => set({ activeBattle }),
+  setScanEvents: (scanEvents) => set({ scanEvents }),
+  addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
 });

@@ -19,7 +19,7 @@ export default config({
     app.post('/api/register', async (req, res) => {
       try {
         const { username, password } = req.body;
-        if (!username || !password) {
+        if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
           res.status(400).json({ error: 'Username and password required' });
           return;
         }
