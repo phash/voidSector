@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark } from '@void-sector/shared';
+import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord } from '@void-sector/shared';
 import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -63,26 +63,133 @@ export async function getPlayerHomeBase(playerId: string): Promise<{ x: number; 
   return rows[0]?.home_base ?? { x: 0, y: 0 };
 }
 
-export async function getActiveShip(playerId: string): Promise<{
-  shipClass: ShipClass;
-  fuel: number;
-  fuelMax: number;
-} | null> {
+export async function getActiveShip(playerId: string): Promise<ShipRecord | null> {
   const { rows } = await query<{
-    ship_class: string;
+    id: string;
+    owner_id: string;
+    hull_type: string;
+    name: string;
+    modules: ShipModule[];
     fuel: number;
-    fuel_max: number;
+    active: boolean;
+    created_at: string;
   }>(
-    `SELECT ship_class, fuel, fuel_max FROM ships
-     WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
+    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at
+     FROM ships WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
     [playerId]
   );
   if (rows.length === 0) return null;
+  const row = rows[0];
   return {
-    shipClass: rows[0].ship_class as ShipClass,
-    fuel: rows[0].fuel,
-    fuelMax: rows[0].fuel_max,
+    id: row.id,
+    ownerId: row.owner_id,
+    hullType: row.hull_type as HullType,
+    name: row.name,
+    modules: row.modules,
+    active: row.active,
+    createdAt: row.created_at,
   };
+}
+
+export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
+  const { rows } = await query<any>(
+    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at
+     FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
+    [playerId]
+  );
+  return rows.map((row: any) => ({
+    id: row.id,
+    ownerId: row.owner_id,
+    hullType: row.hull_type as HullType,
+    name: row.name,
+    modules: row.modules,
+    active: row.active,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function createShip(
+  playerId: string, hullType: HullType, name: string, initialFuel: number
+): Promise<ShipRecord> {
+  // Deactivate current active ship
+  await query('UPDATE ships SET active = false WHERE owner_id = $1 AND active = true', [playerId]);
+  const { rows } = await query<any>(
+    `INSERT INTO ships (owner_id, hull_type, name, fuel, active)
+     VALUES ($1, $2, $3, $4, true) RETURNING *`,
+    [playerId, hullType, name, initialFuel]
+  );
+  const row = rows[0];
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    hullType: row.hull_type as HullType,
+    name: row.name,
+    modules: row.modules,
+    active: row.active,
+    createdAt: row.created_at,
+  };
+}
+
+export async function switchActiveShip(playerId: string, shipId: string): Promise<boolean> {
+  await query('UPDATE ships SET active = false WHERE owner_id = $1 AND active = true', [playerId]);
+  const { rowCount } = await query(
+    'UPDATE ships SET active = true WHERE id = $1 AND owner_id = $2',
+    [shipId, playerId]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function updateShipModules(shipId: string, modules: ShipModule[]): Promise<void> {
+  await query('UPDATE ships SET modules = $1 WHERE id = $2', [JSON.stringify(modules), shipId]);
+}
+
+export async function renameShip(shipId: string, playerId: string, name: string): Promise<boolean> {
+  const { rowCount } = await query(
+    'UPDATE ships SET name = $1 WHERE id = $2 AND owner_id = $3',
+    [name.slice(0, 20), shipId, playerId]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function renameBase(playerId: string, name: string): Promise<void> {
+  await query('UPDATE players SET base_name = $1 WHERE id = $2', [name.slice(0, 20), playerId]);
+}
+
+export async function getModuleInventory(playerId: string): Promise<string[]> {
+  const { rows } = await query<{ module_inventory: string[] }>(
+    'SELECT module_inventory FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.module_inventory ?? [];
+}
+
+export async function addModuleToInventory(playerId: string, moduleId: string): Promise<void> {
+  await query(
+    `UPDATE players SET module_inventory = module_inventory || $1::jsonb WHERE id = $2`,
+    [JSON.stringify(moduleId), playerId]
+  );
+}
+
+export async function removeModuleFromInventory(playerId: string, moduleId: string): Promise<boolean> {
+  // Remove first occurrence of moduleId from the JSONB array
+  const { rows } = await query<{ module_inventory: string[] }>(
+    'SELECT module_inventory FROM players WHERE id = $1',
+    [playerId]
+  );
+  const inv = rows[0]?.module_inventory ?? [];
+  const idx = inv.indexOf(moduleId);
+  if (idx === -1) return false;
+  inv.splice(idx, 1);
+  await query('UPDATE players SET module_inventory = $1 WHERE id = $2', [JSON.stringify(inv), playerId]);
+  return true;
+}
+
+export async function getPlayerBaseName(playerId: string): Promise<string> {
+  const { rows } = await query<{ base_name: string }>(
+    'SELECT base_name FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.base_name ?? '';
 }
 
 export async function getSector(
