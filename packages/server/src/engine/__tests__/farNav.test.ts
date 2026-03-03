@@ -1,33 +1,33 @@
 import { describe, it, expect } from 'vitest';
 import {
-  FAR_JUMP_AP_DISCOUNT,
+  HYPERJUMP_AP_DISCOUNT,
   AUTOPILOT_STEP_MS,
   STALENESS_DIM_HOURS,
   STALENESS_FADE_DAYS,
   SHIP_CLASSES,
 } from '@void-sector/shared';
 
-describe('Far-Navigation', () => {
+describe('Hyperjump Navigation', () => {
   const scout = SHIP_CLASSES.aegis_scout_mk1;
   const seeker = SHIP_CLASSES.void_seeker_mk2;
 
   describe('cost calculations', () => {
     it('calculates AP cost with discount for scout', () => {
       const distance = 10;
-      const apCost = Math.ceil(distance * scout.apCostJump * FAR_JUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * scout.apCostJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(5);
     });
 
     it('calculates AP cost with discount for seeker', () => {
       const distance = 7;
-      const apCost = Math.ceil(distance * seeker.apCostJump * FAR_JUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * seeker.apCostJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(7);
     });
 
     it('applies ceil to non-integer AP costs', () => {
       const distance = 3;
       // 3 * 1 * 0.5 = 1.5 -> ceil = 2
-      const apCost = Math.ceil(distance * scout.apCostJump * FAR_JUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * scout.apCostJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(2);
     });
 
@@ -45,7 +45,7 @@ describe('Far-Navigation', () => {
   });
 
   describe('route generation (Manhattan X-first)', () => {
-    // Mirrors the route-building logic in SectorRoom.handleFarJump
+    // Mirrors the route-building logic in SectorRoom.handleHyperJump
     function generateRoute(fromX: number, fromY: number, toX: number, toY: number) {
       const steps: { x: number; y: number }[] = [];
       let cx = fromX;
@@ -109,7 +109,7 @@ describe('Far-Navigation', () => {
 
   describe('constants', () => {
     it('has correct AP discount of 50%', () => {
-      expect(FAR_JUMP_AP_DISCOUNT).toBe(0.5);
+      expect(HYPERJUMP_AP_DISCOUNT).toBe(0.5);
     });
 
     it('has correct autopilot step interval', () => {

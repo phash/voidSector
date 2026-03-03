@@ -263,15 +263,26 @@ export async function addDiscovery(
 
 export async function getPlayerDiscoveries(
   playerId: string
-): Promise<Array<{ x: number; y: number; discoveredAt: number }>> {
-  const result = await query<{ sector_x: number; sector_y: number; discovered_at: string }>(
-    'SELECT sector_x, sector_y, discovered_at FROM player_discoveries WHERE player_id = $1',
+): Promise<Array<{ x: number; y: number; discoveredAt: number; type?: string; seed?: number }>> {
+  const result = await query<{
+    sector_x: number;
+    sector_y: number;
+    discovered_at: string;
+    type: string | null;
+    seed: number | null;
+  }>(
+    `SELECT pd.sector_x, pd.sector_y, pd.discovered_at, s.type, s.seed
+     FROM player_discoveries pd
+     LEFT JOIN sectors s ON s.x = pd.sector_x AND s.y = pd.sector_y
+     WHERE pd.player_id = $1`,
     [playerId]
   );
   return result.rows.map((row) => ({
     x: row.sector_x,
     y: row.sector_y,
     discoveredAt: new Date(row.discovered_at).getTime(),
+    ...(row.type ? { type: row.type } : {}),
+    ...(row.seed !== null ? { seed: row.seed } : {}),
   }));
 }
 

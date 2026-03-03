@@ -492,9 +492,9 @@ export const EMERGENCY_WARP_FREE_RADIUS = 200;      // free within 200 Manhattan
 export const EMERGENCY_WARP_CREDIT_PER_SECTOR = 5;   // credits per sector beyond free radius
 export const EMERGENCY_WARP_FUEL_GRANT = 10;          // fuel granted after emergency warp
 
-// Far-Navigation
-export const FAR_JUMP_AP_DISCOUNT = 0.5;   // 50% AP cost for known routes
-export const FAR_JUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate sectors
+// Hyperjump Navigation
+export const HYPERJUMP_AP_DISCOUNT = 0.5;   // 50% AP cost for known routes
+export const HYPERJUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate sectors
 export const AUTOPILOT_STEP_MS = 100;       // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24;      // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7;       // coords-only after 7 days

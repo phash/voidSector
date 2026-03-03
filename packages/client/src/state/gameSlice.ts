@@ -123,7 +123,7 @@ export interface GameSlice {
   // Bookmarks
   bookmarks: Bookmark[];
 
-  // Autopilot / Far-Nav
+  // Autopilot / Hyperjump
   autopilot: AutopilotState | null;
   discoveryTimestamps: Record<string, number>;
 
