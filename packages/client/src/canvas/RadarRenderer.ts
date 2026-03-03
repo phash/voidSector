@@ -16,6 +16,9 @@ export const FRAME_BOTTOM = 24; // space for column numbers (X coordinates)
 export const FRAME_PAD = 8;     // padding on right/top
 
 export function calculateVisibleRadius(canvasW: number, canvasH: number, zoomLevel: number): { radiusX: number; radiusY: number } {
+  if (zoomLevel === 4) {
+    return { radiusX: 1, radiusY: 1 }; // always 3×3
+  }
   const { w, h } = CELL_SIZES[zoomLevel] ?? CELL_SIZES[2];
   const gridW = canvasW - FRAME_LEFT - FRAME_PAD;
   const gridH = canvasH - FRAME_BOTTOM - FRAME_PAD;
@@ -43,12 +46,16 @@ interface RadarState {
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
-  const { w: CELL_W, h: CELL_H, fontSize, coordSize } = CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1];
-  const FONT = `${fontSize}px 'Share Tech Mono', 'Courier New', monospace`;
-  const COORD_FONT = `${coordSize}px 'Share Tech Mono', 'Courier New', monospace`;
   const dpr = window.devicePixelRatio || 1;
   const w = ctx.canvas.width / dpr;
   const h = ctx.canvas.height / dpr;
+  const isDetailView = state.zoomLevel === 4;
+  const cellEntry = isDetailView
+    ? { w: Math.floor((w - FRAME_LEFT - FRAME_PAD) / 3), h: Math.floor((h - FRAME_BOTTOM - FRAME_PAD) / 3), fontSize: 14, coordSize: 10 }
+    : (CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1]);
+  const { w: CELL_W, h: CELL_H, fontSize, coordSize } = cellEntry;
+  const FONT = `${fontSize}px 'Share Tech Mono', 'Courier New', monospace`;
+  const COORD_FONT = `${coordSize}px 'Share Tech Mono', 'Courier New', monospace`;
 
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#050505';
@@ -177,6 +184,32 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.textBaseline = 'bottom';
           ctx.font = COORD_FONT;
           ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H / 2 - 2);
+        }
+      }
+
+      // Zoom-4 detail: resources + discovery age
+      if (isDetailView && sector) {
+        const lineH = 14;
+        ctx.font = `10px 'Share Tech Mono', monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        let detailY = cellY + CELL_H / 2 + 6;
+
+        const res = sector.resources;
+        if (res) {
+          if (res.ore > 0)     { ctx.fillStyle = state.themeColor; ctx.fillText(`Ore: ${res.ore}`,     cellX, detailY); detailY += lineH; }
+          if (res.gas > 0)     { ctx.fillStyle = state.themeColor; ctx.fillText(`Gas: ${res.gas}`,     cellX, detailY); detailY += lineH; }
+          if (res.crystal > 0) { ctx.fillStyle = state.themeColor; ctx.fillText(`Cry: ${res.crystal}`, cellX, detailY); detailY += lineH; }
+        }
+
+        // Discovery age
+        const ts = state.discoveryTimestamps?.[key];
+        if (ts) {
+          const ageMs = Date.now() - ts;
+          const ageH = Math.floor(ageMs / 3600000);
+          const label = ageH < 1 ? '<1h' : ageH < 24 ? `${ageH}h` : `${Math.floor(ageH / 24)}d`;
+          ctx.fillStyle = state.dimColor;
+          ctx.fillText(`~${label} ago`, cellX, detailY);
         }
       }
 

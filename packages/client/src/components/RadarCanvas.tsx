@@ -49,7 +49,7 @@ export function RadarCanvas() {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const current = useStore.getState().zoomLevel;
-      const next = e.deltaY < 0 ? Math.min(3, current + 1) : Math.max(0, current - 1);
+      const next = e.deltaY < 0 ? Math.min(4, current + 1) : Math.max(0, current - 1);
       useStore.getState().setZoomLevel(next);
     };
     canvas.addEventListener('wheel', handleWheel, { passive: false });

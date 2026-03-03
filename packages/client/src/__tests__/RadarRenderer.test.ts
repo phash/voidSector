@@ -36,4 +36,10 @@ describe('calculateVisibleRadius', () => {
     expect(CELL_SIZES[0].w).toBe(48);
     expect(CELL_SIZES[3].w).toBe(96);
   });
+
+  it('zoom level 4 shows 3x3 grid (radius 1)', () => {
+    const { radiusX, radiusY } = calculateVisibleRadius(600, 450, 4);
+    expect(radiusX).toBe(1); // 3 cols = radius 1
+    expect(radiusY).toBe(1); // 3 rows = radius 1
+  });
 });
