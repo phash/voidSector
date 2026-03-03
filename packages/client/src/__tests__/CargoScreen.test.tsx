@@ -7,6 +7,10 @@ import { mockStoreState } from '../test/mockStore';
 vi.mock('../network/client', () => ({
   network: {
     sendJettison: vi.fn(),
+    requestMySlates: vi.fn(),
+    sendActivateSlate: vi.fn(),
+    sendNpcBuyback: vi.fn(),
+    sendCreateSlate: vi.fn(),
   },
 }));
 
@@ -64,5 +68,51 @@ describe('CargoScreen', () => {
     render(<CargoScreen />);
     // total = 3 + 0 + 1 = 4, cargoCap for aegis_scout_mk1 = 5
     expect(screen.getByText(/CAPACITY/)).toBeInTheDocument();
+  });
+
+  it('shows slate count when player has slates', () => {
+    mockStoreState({
+      cargo: { ore: 1, gas: 0, crystal: 0, slates: 2 },
+      mySlates: [
+        {
+          id: 's1',
+          creatorId: 'p1',
+          ownerId: 'p1',
+          slateType: 'sector',
+          sectorData: [{ x: 0, y: 0, type: 'nebula', ore: 10, gas: 5, crystal: 0 }],
+          status: 'available' as const,
+          createdAt: 0,
+        },
+      ],
+      ship: {
+        shipClass: 'aegis_scout_mk1',
+        fuel: 100,
+        maxFuel: 100,
+        jumpRange: 3,
+        cargoCap: 20,
+        scannerLevel: 1,
+      },
+    });
+    render(<CargoScreen />);
+    expect(screen.getByText(/DATA SLATES: 2/)).toBeDefined();
+    expect(screen.getByText(/AKTIVIEREN/)).toBeDefined();
+  });
+
+  it('shows create slate buttons', () => {
+    mockStoreState({
+      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
+      mySlates: [],
+      ship: {
+        shipClass: 'aegis_scout_mk1',
+        fuel: 100,
+        maxFuel: 100,
+        jumpRange: 3,
+        cargoCap: 20,
+        scannerLevel: 1,
+      },
+    });
+    render(<CargoScreen />);
+    expect(screen.getByText(/SEKTOR-SLATE/)).toBeDefined();
+    expect(screen.getByText(/GEBIETS-SLATE/)).toBeDefined();
   });
 });
