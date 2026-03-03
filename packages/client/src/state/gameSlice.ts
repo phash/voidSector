@@ -41,6 +41,7 @@ export interface GameSlice {
   token: string | null;
   playerId: string | null;
   username: string | null;
+  isGuest: boolean;
 
   // Position
   position: Coords;
@@ -134,7 +135,7 @@ export interface GameSlice {
   homeBase: { x: number; y: number };
 
   // Actions
-  setAuth: (token: string, playerId: string, username: string) => void;
+  setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
   setPosition: (pos: Coords) => void;
   setAP: (ap: APState) => void;
@@ -189,6 +190,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   token: safeGetItem('vs_token'),
   playerId: safeGetItem('vs_playerId'),
   username: safeGetItem('vs_username'),
+  isGuest: safeGetItem('vs_isGuest') === 'true',
   position: { x: 0, y: 0 },
   ap: null,
   fuel: null,
@@ -233,18 +235,21 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   baseName: '',
   homeBase: { x: 0, y: 0 },
 
-  setAuth: (token, playerId, username) => {
+  setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
     safeSetItem('vs_playerId', playerId);
     safeSetItem('vs_username', username);
-    set({ token, playerId, username });
+    if (isGuest) safeSetItem('vs_isGuest', 'true');
+    else safeRemoveItem('vs_isGuest');
+    set({ token, playerId, username, isGuest });
   },
 
   clearAuth: () => {
     safeRemoveItem('vs_token');
     safeRemoveItem('vs_playerId');
     safeRemoveItem('vs_username');
-    set({ token: null, playerId: null, username: null });
+    safeRemoveItem('vs_isGuest');
+    set({ token: null, playerId: null, username: null, isGuest: false });
   },
 
   setPosition: (position) => set({ position }),

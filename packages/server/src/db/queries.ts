@@ -29,6 +29,39 @@ export async function createPlayer(
   };
 }
 
+export async function createGuestPlayer(
+  username: string,
+  homeBase: { x: number; y: number } = { x: 0, y: 0 }
+): Promise<PlayerData> {
+  const result = await query<{
+    id: string;
+    username: string;
+    home_base: { x: number; y: number };
+    xp: number;
+    level: number;
+  }>(
+    `INSERT INTO players (username, password_hash, home_base, is_guest, guest_created_at)
+     VALUES ($1, '', $2, TRUE, NOW())
+     RETURNING id, username, home_base, xp, level`,
+    [username, JSON.stringify(homeBase)]
+  );
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    username: row.username,
+    homeBase: row.home_base,
+    xp: row.xp,
+    level: row.level,
+  };
+}
+
+export async function deleteExpiredGuestPlayers(): Promise<number> {
+  const result = await query(
+    `DELETE FROM players WHERE is_guest = TRUE AND guest_created_at < NOW() - INTERVAL '24 hours'`
+  );
+  return result.rowCount ?? 0;
+}
+
 export async function findPlayerByUsername(
   username: string
 ): Promise<(PlayerData & { passwordHash: string }) | null> {

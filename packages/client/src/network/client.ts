@@ -38,6 +38,17 @@ class GameNetwork {
     store.addLogEntry(`Entered sector (${x}, ${y})`);
   }
 
+  async loginAsGuest(): Promise<void> {
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${API_URL}/api/guest`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Guest login failed');
+    const store = useStore.getState();
+    store.setAuth(data.token, data.player.id, data.player.username, true);
+    const pos = data.lastPosition ?? { x: 0, y: 0 };
+    await this.joinSector(pos.x, pos.y);
+  }
+
   private setupRoomListeners(room: Room) {
     // State change: sync players
     (room.state as any).players.onAdd((player: any, sessionId: string) => {
@@ -173,7 +184,12 @@ class GameNetwork {
 
     // Errors
     room.onMessage('error', (data: { code: string; message: string }) => {
-      useStore.getState().addLogEntry(`ERROR: ${data.message}`);
+      const store = useStore.getState();
+      if (data.code === 'GUEST_RESTRICTED') {
+        store.addLogEntry(`GAST-EINSCHRÄNKUNG: ${data.message} — Registriere dich für vollen Zugang!`);
+      } else {
+        store.addLogEntry(`ERROR: ${data.message}`);
+      }
     });
 
     // Mining updates

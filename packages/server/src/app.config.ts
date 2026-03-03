@@ -2,7 +2,8 @@ import toolsPkg from '@colyseus/tools';
 import { monitor } from '@colyseus/monitor';
 import express from 'express';
 import { SectorRoom } from './rooms/SectorRoom.js';
-import { register, login } from './auth.js';
+import { register, login, loginAsGuest } from './auth.js';
+import { deleteExpiredGuestPlayers } from './db/queries.js';
 import { runMigrations } from './db/client.js';
 import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
 
@@ -66,6 +67,20 @@ export default config({
       }
     });
 
+    app.post('/api/guest', async (_req, res) => {
+      try {
+        const result = await loginAsGuest();
+        res.json({
+          token: result.token,
+          player: result.player,
+          lastPosition: { x: result.player.homeBase.x, y: result.player.homeBase.y },
+        });
+      } catch (err) {
+        console.error('Guest login error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
     app.get('/healthz', (_req, res) => {
       res.json({ ok: true });
     });
@@ -75,6 +90,10 @@ export default config({
 
   beforeListen: async () => {
     await runMigrations();
+    const expiredGuests = await deleteExpiredGuestPlayers();
+    if (expiredGuests > 0) {
+      console.log(`Cleaned up ${expiredGuests} expired guest accounts`);
+    }
     console.log('Migrations complete, server starting...');
   },
 });

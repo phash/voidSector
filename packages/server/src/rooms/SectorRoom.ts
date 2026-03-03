@@ -29,6 +29,15 @@ function isPositiveInt(v: unknown): v is number {
   return isInt(v) && v > 0;
 }
 
+function isGuest(client: Client): boolean {
+  return (client.auth as AuthPayload)?.isGuest === true;
+}
+function rejectGuest(client: Client, action: string): boolean {
+  if (!isGuest(client)) return false;
+  client.send('error', { code: 'GUEST_RESTRICTED', message: `${action} ist für Gäste nicht verfügbar` });
+  return true;
+}
+
 const VALID_RESOURCES = ['ore', 'gas', 'crystal'];
 const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post'];
 
@@ -445,6 +454,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     this.onMessage('buyHull', async (client, data: { hullType: string; name?: string }) => {
+      if (rejectGuest(client, 'Schiffskauf')) return;
       const auth = client.auth as AuthPayload;
       const hullDef = HULLS[data.hullType as HullType];
       if (!hullDef) {
@@ -1218,6 +1228,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleBuild(client: Client, data: BuildMessage) {
+    if (rejectGuest(client, 'Bauen')) return;
     if (!data.type || !VALID_STRUCTURE_TYPES.includes(data.type)) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid structure type' });
       return;
@@ -1272,6 +1283,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleChat(client: Client, data: SendChatMessage) {
+    if (isGuest(client) && data.channel === 'faction') {
+      client.send('error', { code: 'GUEST_RESTRICTED', message: 'Fraktions-Chat ist für Gäste nicht verfügbar' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
 
     // Validate channel
@@ -1524,6 +1539,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handlePlaceOrder(client: Client, data: PlaceOrderMessage) {
+    if (rejectGuest(client, 'Markthandel')) return;
     if (!isPositiveInt(data.amount) || !isPositiveInt(data.pricePerUnit) || data.pricePerUnit > 999999) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid amount or price' });
       return;
@@ -1575,6 +1591,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleCreateSlate(client: Client, data: CreateSlateMessage) {
+    if (rejectGuest(client, 'Data Slates erstellen')) return;
     const auth = client.auth as AuthPayload;
     if (!['sector', 'area'].includes(data.slateType)) {
       client.send('createSlateResult', { success: false, error: 'Invalid slate type' });
@@ -1800,6 +1817,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleCreateFaction(client: Client, data: CreateFactionMessage) {
+    if (rejectGuest(client, 'Fraktionen')) return;
     const auth = client.auth as AuthPayload;
 
     if (!data.name || data.name.trim().length < 3 || data.name.trim().length > 64) {
@@ -1835,6 +1853,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleFactionAction(client: Client, data: FactionActionMessage) {
+    if (rejectGuest(client, 'Fraktionen')) return;
     const auth = client.auth as AuthPayload;
     const myFaction = await getPlayerFaction(auth.userId);
 
