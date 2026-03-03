@@ -1,8 +1,54 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
-import { SECTOR_COLORS, FUEL_COST_PER_UNIT, FAR_JUMP_AP_DISCOUNT, FREE_REFUEL_MAX_SHIPS } from '@void-sector/shared';
+import { SECTOR_COLORS, FUEL_COST_PER_UNIT, FAR_JUMP_AP_DISCOUNT, FREE_REFUEL_MAX_SHIPS, REP_PRICE_MODIFIERS } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
+
+function RefuelPanel({ fuel, isFreeRefuel }: {
+  fuel: { current: number; max: number };
+  isFreeRefuel: boolean;
+}) {
+  const [amount, setAmount] = useState(Math.ceil(fuel.max - fuel.current));
+  const reputations = useStore((s) => s.reputations);
+  const currentSector = useStore((s) => s.currentSector);
+
+  // Reputation-based pricing
+  const factionRep = currentSector?.faction
+    ? reputations.find((r: any) => r.factionId === currentSector.faction)
+    : null;
+  const repTier = factionRep?.tier ?? 'neutral';
+  const priceModifier = REP_PRICE_MODIFIERS[repTier] ?? 1.0;
+  const unitCost = isFreeRefuel ? 0 : Math.ceil(FUEL_COST_PER_UNIT * priceModifier);
+  const totalCost = isFreeRefuel ? 0 : Math.ceil(amount * FUEL_COST_PER_UNIT * priceModifier);
+  const tankSpace = Math.ceil(fuel.max - fuel.current);
+
+  return (
+    <div style={{ marginTop: 8, border: '1px solid var(--color-dim)', padding: '6px 8px' }}>
+      <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', marginBottom: 4 }}>
+        REFUEL — {isFreeRefuel ? 'GRATIS' : `${unitCost} CR/u (${repTier.toUpperCase()})`}
+      </div>
+      <input
+        type="range"
+        min={1}
+        max={tankSpace}
+        value={amount}
+        onChange={(e) => setAmount(Number(e.target.value))}
+        style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginTop: 2 }}>
+        <span>+{amount} FUEL</span>
+        <span>{totalCost > 0 ? `${totalCost} CR` : 'GRATIS'}</span>
+      </div>
+      <button
+        className="vs-btn"
+        style={{ width: '100%', marginTop: 4, fontSize: '0.75rem' }}
+        onClick={() => network.sendRefuel(amount)}
+      >
+        [REFUEL]
+      </button>
+    </div>
+  );
+}
 
 export function DetailPanel() {
   const selectedSector = useStore((s) => s.selectedSector);
@@ -96,21 +142,7 @@ export function DetailPanel() {
             const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
             const isFreeRefuel = isHomeBase && shipList.length <= FREE_REFUEL_MAX_SHIPS;
             return (
-              <button
-                onClick={() => network.sendRefuel(fuel.max - fuel.current)}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid #FFB000',
-                  color: '#FFB000',
-                  fontFamily: 'inherit',
-                  fontSize: '0.75em',
-                  padding: '4px 12px',
-                  cursor: 'pointer',
-                  marginTop: 8,
-                }}
-              >
-                REFUEL {isFreeRefuel ? '(GRATIS)' : `(${Math.ceil((fuel.max - fuel.current) * FUEL_COST_PER_UNIT)} CR)`}
-              </button>
+              <RefuelPanel fuel={fuel} isFreeRefuel={isFreeRefuel} />
             );
           })()}
 
