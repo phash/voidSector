@@ -20,7 +20,7 @@ const defaultSector: SectorData = {
   metadata: {},
 };
 
-const defaultCargo: CargoState = { ore: 0, gas: 0, crystal: 0 };
+const defaultCargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0 };
 
 export function mockStoreState(overrides: Partial<StoreState> = {}) {
   const state: Partial<StoreState> = {
@@ -45,6 +45,10 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     storage: { ore: 0, gas: 0, crystal: 0 },
     tradeOrders: [],
     myOrders: [],
+    mySlates: [],
+    faction: null,
+    factionMembers: [],
+    factionInvites: [],
     sidebarSlots: ['SHIP-SYS', 'COMMS'] as [string, string],
     leftSidebarSlots: ['LOG', 'SHIP-SYS'] as [string, string],
     mainMonitorMode: 'split' as 'split' | string,
@@ -53,6 +57,10 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     setSelectedSector: vi.fn(),
     setLeftSidebarSlot: vi.fn(),
     setMainMonitorMode: vi.fn(),
+    setMySlates: vi.fn(),
+    setFaction: vi.fn(),
+    setFactionMembers: vi.fn(),
+    setFactionInvites: vi.fn(),
     screen: 'game' as const,
     theme: 'amber' as const,
     jumpPending: false,
