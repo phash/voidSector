@@ -27,6 +27,8 @@ export interface UISlice {
   mainMonitorMode: 'split' | string;
   autoFollow: boolean;
   detailView: { type: string; data?: Record<string, any> } | null;
+  leftCollapsed: boolean;
+  rightCollapsed: boolean;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -43,6 +45,8 @@ export interface UISlice {
   setMainMonitorMode: (mode: 'split' | string) => void;
   setAutoFollow: (val: boolean) => void;
   setDetailView: (view: { type: string; data?: Record<string, any> } | null) => void;
+  setLeftCollapsed: (val: boolean) => void;
+  setRightCollapsed: (val: boolean) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -59,6 +63,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   mainMonitorMode: 'split' as 'split' | string,
   autoFollow: false,
   detailView: null,
+  leftCollapsed: false,
+  rightCollapsed: false,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -102,4 +108,6 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setMainMonitorMode: (mode) => set({ mainMonitorMode: mode }),
   setAutoFollow: (autoFollow) => set({ autoFollow }),
   setDetailView: (view) => set({ detailView: view }),
+  setLeftCollapsed: (val) => set({ leftCollapsed: val }),
+  setRightCollapsed: (val) => set({ rightCollapsed: val }),
 });
