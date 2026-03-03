@@ -2,6 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { useStore } from '../state/store';
 import { LegendOverlay } from './LegendOverlay';
 import { BezelKnob } from './BezelKnob';
+import { BookmarkBar } from './BookmarkBar';
 import { useMonitorLeds, LedDot } from './MonitorLeds';
 import '../styles/crt.css';
 
@@ -33,6 +34,7 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
             max={20}
             onChange={(v) => setPanOffset({ x: panOffset.x, y: v })}
           />
+          <BookmarkBar />
         </div>
 
         {/* CRT screen area */}

@@ -15,6 +15,7 @@ export function DetailPanel() {
   const jumpGateInfo = useStore((s) => s.jumpGateInfo);
   const scanEvents = useStore((s) => s.scanEvents);
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
+  const bookmarks = useStore((s) => s.bookmarks);
 
   const autoFollow = useStore((s) => s.autoFollow);
 
@@ -160,6 +161,17 @@ export function DetailPanel() {
               ))}
             </>
           )}
+
+          {/* Bookmark button */}
+          <button className="vs-btn" style={{ fontSize: '0.7rem', marginTop: 4 }}
+            onClick={() => {
+              const freeSlot = [1, 2, 3, 4, 5].find(s => !bookmarks.find(b => b.slot === s));
+              if (freeSlot && selectedSector) {
+                network.sendSetBookmark(freeSlot, selectedSector.x, selectedSector.y, sector?.type || '');
+              }
+            }}>
+            [BOOKMARK]
+          </button>
         </>
       ) : (
         <div style={{ opacity: 0.4 }}>UNEXPLORED</div>
