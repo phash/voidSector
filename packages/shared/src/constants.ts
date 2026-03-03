@@ -332,11 +332,11 @@ export const SPAWN_CLUSTER_MAX_PLAYERS = 5;
 
 // Hull-specific pixel patterns for radar rendering (3x3 grids, 1 = filled pixel)
 export const HULL_RADAR_PATTERNS: Record<HullType, number[][]> = {
-  scout:      [[0,1,0], [1,1,1], [0,1,0]],
-  freighter:  [[1,1,0], [1,1,1], [1,1,0]],
-  cruiser:    [[0,1,0], [1,1,1], [1,1,0]],
-  explorer:   [[0,1,0], [1,1,1], [0,1,1]],
-  battleship: [[1,1,1], [1,1,1], [1,1,0]],
+  scout:      [[0,1,0], [1,1,1], [0,1,0]],    // cross — nimble interceptor
+  freighter:  [[1,1,1], [1,1,1], [0,1,0]],    // wide body + single thruster
+  cruiser:    [[1,0,1], [1,1,1], [0,1,0]],    // spread wings + fuselage + tail
+  explorer:   [[0,1,0], [0,1,0], [1,1,1]],    // tall forward sensor array
+  battleship: [[1,1,1], [1,1,1], [1,0,1]],    // heavy armored block + dual thrusters
 };
 
 // UI Symbols for grid rendering
