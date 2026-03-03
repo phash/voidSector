@@ -64,6 +64,8 @@ export function StatusBar() {
       flexWrap: 'wrap',
       gap: '4px 16px',
       alignItems: 'center',
+      minWidth: 0,
+      overflow: 'hidden',
     }}>
       <span className={flashing ? 'ap-flash' : ''}>
         AP: {ap ? `${displayAP}/${ap.max}` : '---'}
@@ -138,8 +140,10 @@ export function SectorInfo() {
       justifyContent: 'space-between',
       flexWrap: 'wrap',
       gap: '2px 12px',
+      minWidth: 0,
+      overflow: 'hidden',
     }}>
-      <span>SECTOR: ({position.x}, {position.y})</span>
+      <span style={{ whiteSpace: 'nowrap' }}>SECTOR: ({position.x}, {position.y})</span>
       <span>{currentSector?.type?.toUpperCase() || '---'}</span>
       <span>PILOTS: {playerCount}</span>
       <span>ORIGIN: {distToOrigin.toLocaleString()}</span>
