@@ -263,19 +263,57 @@
 
   .sidebar-left {
     display: flex;
-    width: 320px;
-    min-width: 320px;
-    max-width: 320px;
+    width: 416px;
+    min-width: 416px;
+    max-width: 416px;
     border-right: 2px solid #2a2a2a;
+    transition: width 200ms ease, min-width 200ms ease;
   }
 
   .sidebar-right {
     display: flex;
-    width: 320px;
-    min-width: 320px;
-    max-width: 320px;
+    width: 416px;
+    min-width: 416px;
+    max-width: 416px;
     border-left: 2px solid #2a2a2a;
+    transition: width 200ms ease, min-width 200ms ease;
   }
+}
+
+/* Collapsed sidebar state */
+@media (min-width: 1024px) {
+  .sidebar-left.collapsed,
+  .sidebar-right.collapsed {
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+  }
+}
+
+/* Hide slot content when collapsed */
+.sidebar-left.collapsed .sidebar-slot-content,
+.sidebar-right.collapsed .sidebar-slot-content {
+  display: none;
+}
+
+/* Sidebar toggle button */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--color-dim);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  width: 100%;
+  transition: color 0.1s;
+}
+
+.sidebar-toggle:hover {
+  color: var(--color-primary);
 }
 
 .sidebar-stack {
@@ -405,4 +443,32 @@
   .mobile-tabs {
     display: none;
   }
+}
+
+/* CRT monitor collapse/expand animations */
+@keyframes crt-collapse {
+  0%   { transform: scaleX(1);    filter: brightness(1); opacity: 1; }
+  50%  { transform: scaleX(0.05); filter: brightness(2); opacity: 1; }
+  100% { transform: scaleX(0);    filter: brightness(0); opacity: 0; }
+}
+
+@keyframes crt-expand {
+  0%   { transform: scaleX(0);    filter: brightness(2); opacity: 0; }
+  50%  { transform: scaleX(0.05); filter: brightness(2); opacity: 1; }
+  100% { transform: scaleX(1);    filter: brightness(1); opacity: 1; }
+}
+
+.sidebar-crt-collapse {
+  animation: crt-collapse 250ms ease-in forwards;
+  transform-origin: left center;
+}
+
+.sidebar-crt-expand {
+  animation: crt-expand 250ms ease-out forwards;
+  transform-origin: left center;
+}
+
+.sidebar-right .sidebar-crt-collapse,
+.sidebar-right .sidebar-crt-expand {
+  transform-origin: right center;
 }
