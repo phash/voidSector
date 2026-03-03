@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage } from '@void-sector/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -274,6 +274,78 @@ class GameNetwork {
       }
     });
 
+    // Data Slate handlers
+    room.onMessage('mySlates', (data: { slates: DataSlate[] }) => {
+      useStore.getState().setMySlates(data.slates);
+    });
+
+    room.onMessage('createSlateResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('DATA SLATE ERSTELLT');
+        if (data.cargo) store.setCargo(data.cargo);
+        if (data.ap) store.setAP(data.ap);
+        this.sectorRoom?.send('getMySlates');
+      } else {
+        store.addLogEntry(`SLATE FEHLER: ${data.error}`);
+      }
+    });
+
+    room.onMessage('activateSlateResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`SLATE AKTIVIERT — ${data.sectorsAdded} Sektoren entdeckt`);
+        this.sectorRoom?.send('getMySlates');
+        this.sectorRoom?.send('getDiscoveries');
+      } else {
+        store.addLogEntry(`AKTIVIERUNG FEHLGESCHLAGEN: ${data.error}`);
+      }
+    });
+
+    room.onMessage('npcBuybackResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`SLATE VERKAUFT — +${data.creditsEarned} CR`);
+        store.setCredits(data.credits);
+        this.sectorRoom?.send('getMySlates');
+      } else {
+        store.addLogEntry(`VERKAUF FEHLGESCHLAGEN: ${data.error}`);
+      }
+    });
+
+    room.onMessage('slateOrderAccepted', (data: any) => {
+      if (data.success) {
+        useStore.getState().addLogEntry('SLATE GEKAUFT');
+        this.sectorRoom?.send('getMySlates');
+      }
+    });
+
+    // Faction handlers
+    room.onMessage('factionData', (data: FactionDataMessage) => {
+      const store = useStore.getState();
+      store.setFaction(data.faction);
+      store.setFactionMembers(data.members);
+      store.setFactionInvites(data.invites);
+    });
+
+    room.onMessage('createFactionResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('FRAKTION GEGRÜNDET');
+      } else {
+        store.addLogEntry(`FEHLER: ${data.error}`);
+      }
+    });
+
+    room.onMessage('factionActionResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`FRAKTION: ${data.action.toUpperCase()} OK`);
+      } else {
+        store.addLogEntry(`FRAKTION FEHLER: ${data.error}`);
+      }
+    });
+
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
@@ -432,6 +504,48 @@ class GameNetwork {
   sendCancelOrder(orderId: string) {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('cancelOrder', { orderId });
+  }
+
+  // Data Slates
+  sendCreateSlate(slateType: 'sector' | 'area') {
+    this.sectorRoom?.send('createSlate', { slateType });
+  }
+
+  requestMySlates() {
+    this.sectorRoom?.send('getMySlates');
+  }
+
+  sendActivateSlate(slateId: string) {
+    this.sectorRoom?.send('activateSlate', { slateId });
+  }
+
+  sendNpcBuyback(slateId: string) {
+    this.sectorRoom?.send('npcBuybackSlate', { slateId });
+  }
+
+  sendListSlate(slateId: string, price: number) {
+    this.sectorRoom?.send('listSlate', { slateId, price });
+  }
+
+  sendAcceptSlateOrder(orderId: string) {
+    this.sectorRoom?.send('acceptSlateOrder', { orderId });
+  }
+
+  // Factions
+  requestFaction() {
+    this.sectorRoom?.send('getFaction');
+  }
+
+  sendCreateFaction(name: string, tag: string, joinMode: string) {
+    this.sectorRoom?.send('createFaction', { name, tag, joinMode });
+  }
+
+  sendFactionAction(action: string, opts: Record<string, any> = {}) {
+    this.sectorRoom?.send('factionAction', { action, ...opts });
+  }
+
+  sendRespondInvite(inviteId: string, accept: boolean) {
+    this.sectorRoom?.send('respondInvite', { inviteId, accept });
   }
 }
 

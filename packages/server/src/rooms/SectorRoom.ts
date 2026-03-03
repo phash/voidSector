@@ -7,12 +7,12 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction } from '../engine/commands.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -169,6 +169,48 @@ export class SectorRoom extends Room<SectorRoomState> {
       const auth = client.auth as AuthPayload;
       const storage = await getStorageInventory(auth.userId);
       client.send('storageUpdate', storage);
+    });
+
+    this.onMessage('createSlate', async (client, data: CreateSlateMessage) => {
+      await this.handleCreateSlate(client, data);
+    });
+
+    this.onMessage('getMySlates', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const slates = await getPlayerSlates(auth.userId);
+      client.send('mySlates', { slates: slates.map(this.mapSlateRow) });
+    });
+
+    this.onMessage('activateSlate', async (client, data: ActivateSlateMessage) => {
+      await this.handleActivateSlate(client, data);
+    });
+
+    this.onMessage('npcBuybackSlate', async (client, data: NpcBuybackMessage) => {
+      await this.handleNpcBuyback(client, data);
+    });
+
+    this.onMessage('listSlate', async (client, data: ListSlateMessage) => {
+      await this.handleListSlate(client, data);
+    });
+
+    this.onMessage('acceptSlateOrder', async (client, data: { orderId: string }) => {
+      await this.handleAcceptSlateOrder(client, data);
+    });
+
+    this.onMessage('createFaction', async (client, data: CreateFactionMessage) => {
+      await this.handleCreateFaction(client, data);
+    });
+
+    this.onMessage('getFaction', async (client) => {
+      await this.sendFactionData(client);
+    });
+
+    this.onMessage('factionAction', async (client, data: FactionActionMessage) => {
+      await this.handleFactionAction(client, data);
+    });
+
+    this.onMessage('respondInvite', async (client, data: { inviteId: string; accept: boolean }) => {
+      await this.handleRespondInvite(client, data);
     });
   }
 
@@ -580,9 +622,29 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
 
-    // Faction channel not yet implemented
     if (data.channel === 'faction') {
-      client.send('error', { code: 'NOT_IMPLEMENTED', message: 'Faction channel coming soon' });
+      const faction = await getPlayerFaction(auth.userId);
+      if (!faction) {
+        client.send('error', { code: 'NO_FACTION', message: 'Not in a faction' });
+        return;
+      }
+      const msg = await saveMessage(auth.userId, null, 'faction', data.content.trim());
+      const chatMsg: ChatMessage = {
+        id: msg.id,
+        senderId: auth.userId,
+        senderName: auth.username,
+        channel: 'faction',
+        content: data.content.trim(),
+        sentAt: new Date(msg.sent_at).getTime(),
+        delayed: false,
+      };
+      const memberIds = await getFactionMembersByPlayerIds(faction.id);
+      for (const c of this.clients) {
+        const cAuth = c.auth as AuthPayload;
+        if (memberIds.includes(cAuth.userId)) {
+          c.send('chatMessage', chatMsg);
+        }
+      }
       return;
     }
 
@@ -778,5 +840,453 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     const order = await createTradeOrder(auth.userId, resource, amount, pricePerUnit, type);
     client.send('orderPlaced', { success: true, orderId: order.id });
+  }
+
+  private mapSlateRow(row: any) {
+    return {
+      id: row.id,
+      creatorId: row.creator_id,
+      creatorName: row.creator_name,
+      ownerId: row.owner_id,
+      slateType: row.slate_type,
+      sectorData: row.sector_data,
+      status: row.status,
+      createdAt: new Date(row.created_at).getTime(),
+    };
+  }
+
+  private async handleCreateSlate(client: Client, data: CreateSlateMessage) {
+    const auth = client.auth as AuthPayload;
+    if (!['sector', 'area'].includes(data.slateType)) {
+      client.send('createSlateResult', { success: false, error: 'Invalid slate type' });
+      return;
+    }
+
+    const ship = this.getShipForClient(client.sessionId);
+    const ap = await getAPState(auth.userId);
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    const cargo = await getPlayerCargo(auth.userId);
+    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+
+    const validation = validateCreateSlate(
+      { ap: currentAP.current, scannerLevel: ship.scannerLevel, cargoTotal, cargoCap: ship.cargoCap },
+      data.slateType
+    );
+    if (!validation.valid) {
+      client.send('createSlateResult', { success: false, error: validation.error });
+      return;
+    }
+
+    // Gather sector data
+    let sectorData: any[];
+    const sectorX = this.state.sector.x;
+    const sectorY = this.state.sector.y;
+
+    if (data.slateType === 'sector') {
+      const sector = await getSector(sectorX, sectorY);
+      const resources = sector?.resources ?? { ore: 0, gas: 0, crystal: 0 };
+      sectorData = [{
+        x: sectorX, y: sectorY,
+        type: sector?.type ?? 'empty',
+        ore: resources.ore ?? 0, gas: resources.gas ?? 0, crystal: resources.crystal ?? 0,
+      }];
+    } else {
+      const radius = validation.radius!;
+      const discoveries = await getPlayerDiscoveries(auth.userId);
+      sectorData = [];
+      for (const disc of discoveries) {
+        if (Math.abs(disc.x - sectorX) <= radius && Math.abs(disc.y - sectorY) <= radius) {
+          const sector = await getSector(disc.x, disc.y);
+          if (sector) {
+            const resources = sector.resources ?? { ore: 0, gas: 0, crystal: 0 };
+            sectorData.push({
+              x: disc.x, y: disc.y,
+              type: sector.type ?? 'empty',
+              ore: resources.ore ?? 0, gas: resources.gas ?? 0, crystal: resources.crystal ?? 0,
+            });
+          }
+        }
+      }
+    }
+
+    if (sectorData.length === 0) {
+      client.send('createSlateResult', { success: false, error: 'No sector data to record' });
+      return;
+    }
+
+    // Deduct AP
+    currentAP.current -= validation.apCost!;
+    await saveAPState(auth.userId, currentAP);
+
+    // Create slate + add to cargo
+    const slate = await createDataSlate(auth.userId, data.slateType, sectorData);
+    await addSlateToCargo(auth.userId);
+    const updatedCargo = await getPlayerCargo(auth.userId);
+
+    client.send('createSlateResult', {
+      success: true,
+      slate: { id: slate.id, slateType: data.slateType, sectorData, status: 'available' },
+      cargo: updatedCargo,
+      ap: currentAP.current,
+    });
+    client.send('apUpdate', currentAP);
+  }
+
+  private async handleActivateSlate(client: Client, data: ActivateSlateMessage) {
+    const auth = client.auth as AuthPayload;
+    const slate = await getSlateById(data.slateId);
+
+    if (!slate || slate.owner_id !== auth.userId) {
+      client.send('activateSlateResult', { success: false, error: 'Slate not found' });
+      return;
+    }
+    if (slate.status !== 'available') {
+      client.send('activateSlateResult', { success: false, error: 'Slate is listed on market' });
+      return;
+    }
+
+    // Add sectors to discoveries
+    const sectors = slate.sector_data as any[];
+    for (const s of sectors) {
+      await addDiscovery(auth.userId, s.x, s.y);
+    }
+
+    // Remove from cargo + delete slate
+    await removeSlateFromCargo(auth.userId);
+    await deleteSlate(data.slateId);
+
+    client.send('activateSlateResult', { success: true, sectorsAdded: sectors.length });
+    const cargo = await getPlayerCargo(auth.userId);
+    client.send('cargoUpdate', cargo);
+  }
+
+  private async handleNpcBuyback(client: Client, data: NpcBuybackMessage) {
+    const auth = client.auth as AuthPayload;
+    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
+    const slate = await getSlateById(data.slateId);
+
+    if (!slate || slate.owner_id !== auth.userId || slate.status !== 'available') {
+      client.send('npcBuybackResult', { success: false, error: 'Slate not found or unavailable' });
+      return;
+    }
+
+    const sectorCount = (slate.sector_data as any[]).length;
+    const validation = validateNpcBuyback(!!tradingPost, sectorCount);
+    if (!validation.valid) {
+      client.send('npcBuybackResult', { success: false, error: validation.error });
+      return;
+    }
+
+    await addCredits(auth.userId, validation.payout!);
+    await removeSlateFromCargo(auth.userId);
+    await deleteSlate(data.slateId);
+
+    const credits = await getPlayerCredits(auth.userId);
+    client.send('npcBuybackResult', { success: true, credits, creditsEarned: validation.payout });
+    const cargo = await getPlayerCargo(auth.userId);
+    client.send('cargoUpdate', cargo);
+  }
+
+  private async handleListSlate(client: Client, data: ListSlateMessage) {
+    const auth = client.auth as AuthPayload;
+    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
+    if (!tradingPost || tradingPost.tier < 2) {
+      client.send('error', { code: 'NO_MARKET', message: 'Need Trading Post Tier 2' });
+      return;
+    }
+
+    const slate = await getSlateById(data.slateId);
+    if (!slate || slate.owner_id !== auth.userId || slate.status !== 'available') {
+      client.send('error', { code: 'INVALID_SLATE', message: 'Slate not found or already listed' });
+      return;
+    }
+
+    await updateSlateStatus(data.slateId, 'listed');
+    await removeSlateFromCargo(auth.userId);
+    await createSlateTradeOrder(auth.userId, data.slateId, data.price);
+
+    client.send('orderPlaced', { success: true });
+    const cargo = await getPlayerCargo(auth.userId);
+    client.send('cargoUpdate', cargo);
+  }
+
+  private async handleAcceptSlateOrder(client: Client, data: { orderId: string }) {
+    const auth = client.auth as AuthPayload;
+    const order = await getTradeOrderById(data.orderId);
+    if (!order || order.fulfilled || order.resource !== 'slate') {
+      client.send('error', { code: 'INVALID_ORDER', message: 'Order not found' });
+      return;
+    }
+
+    const buyerCredits = await getPlayerCredits(auth.userId);
+    if (buyerCredits < order.price_per_unit) {
+      client.send('error', { code: 'INSUFFICIENT_CREDITS', message: 'Not enough credits' });
+      return;
+    }
+
+    const cargo = await getPlayerCargo(auth.userId);
+    const ship = this.getShipForClient(client.sessionId);
+    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+    if (cargoTotal >= ship.cargoCap) {
+      client.send('error', { code: 'CARGO_FULL', message: 'No cargo space' });
+      return;
+    }
+
+    await deductCredits(auth.userId, order.price_per_unit);
+    await addCredits(order.player_id, order.price_per_unit);
+    await updateSlateOwner(order.slate_id, auth.userId);
+    await addSlateToCargo(auth.userId);
+    await fulfillTradeOrder(data.orderId);
+
+    client.send('slateOrderAccepted', { success: true });
+    const updatedCredits = await getPlayerCredits(auth.userId);
+    client.send('creditsUpdate', { credits: updatedCredits });
+    const updatedCargo = await getPlayerCargo(auth.userId);
+    client.send('cargoUpdate', updatedCargo);
+  }
+
+  private async sendFactionData(client: Client) {
+    const auth = client.auth as AuthPayload;
+    const factionRow = await getPlayerFaction(auth.userId);
+
+    if (!factionRow) {
+      const invites = await getPlayerFactionInvites(auth.userId);
+      client.send('factionData', { faction: null, members: [], invites });
+      return;
+    }
+
+    const members = await getFactionMembers(factionRow.id);
+    const invites = await getPlayerFactionInvites(auth.userId);
+
+    client.send('factionData', {
+      faction: {
+        id: factionRow.id,
+        name: factionRow.name,
+        tag: factionRow.tag,
+        leaderId: factionRow.leader_id,
+        leaderName: factionRow.leader_name,
+        joinMode: factionRow.join_mode,
+        inviteCode: factionRow.invite_code,
+        memberCount: Number(factionRow.member_count),
+        createdAt: new Date(factionRow.created_at).getTime(),
+      },
+      members: members.map(m => ({
+        playerId: m.player_id,
+        playerName: m.player_name,
+        rank: m.rank,
+        joinedAt: new Date(m.joined_at).getTime(),
+      })),
+      invites,
+    });
+  }
+
+  private async handleCreateFaction(client: Client, data: CreateFactionMessage) {
+    const auth = client.auth as AuthPayload;
+
+    if (!data.name || data.name.trim().length < 3 || data.name.trim().length > 64) {
+      client.send('createFactionResult', { success: false, error: 'Name must be 3-64 characters' });
+      return;
+    }
+    if (!data.tag || data.tag.trim().length < 3 || data.tag.trim().length > 5) {
+      client.send('createFactionResult', { success: false, error: 'Tag must be 3-5 characters' });
+      return;
+    }
+    if (!['open', 'code', 'invite'].includes(data.joinMode)) {
+      client.send('createFactionResult', { success: false, error: 'Invalid join mode' });
+      return;
+    }
+
+    const existing = await getPlayerFaction(auth.userId);
+    if (existing) {
+      client.send('createFactionResult', { success: false, error: 'Already in a faction' });
+      return;
+    }
+
+    try {
+      await createFaction(auth.userId, data.name.trim(), data.tag.trim().toUpperCase(), data.joinMode);
+      await this.sendFactionData(client);
+      client.send('createFactionResult', { success: true });
+    } catch (err: any) {
+      if (err.code === '23505') {
+        client.send('createFactionResult', { success: false, error: 'Name or tag already taken' });
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  private async handleFactionAction(client: Client, data: FactionActionMessage) {
+    const auth = client.auth as AuthPayload;
+    const myFaction = await getPlayerFaction(auth.userId);
+
+    if (data.action === 'join') {
+      return this.handleJoinFaction(client, auth, data);
+    }
+    if (data.action === 'joinCode') {
+      return this.handleJoinByCode(client, auth, data);
+    }
+    if (data.action === 'leave') {
+      return this.handleLeaveFaction(client, auth, myFaction);
+    }
+
+    if (!myFaction) {
+      client.send('factionActionResult', { success: false, action: data.action, error: 'Not in a faction' });
+      return;
+    }
+
+    const myRank = myFaction.player_rank;
+
+    if (data.action === 'invite') {
+      return this.handleFactionInvite(client, auth, myFaction, data);
+    }
+
+    if (data.action === 'disband') {
+      const v = validateFactionAction('disband', myRank);
+      if (!v.valid) {
+        client.send('factionActionResult', { success: false, action: 'disband', error: v.error });
+        return;
+      }
+      await disbandFaction(myFaction.id);
+      client.send('factionActionResult', { success: true, action: 'disband' });
+      await this.sendFactionData(client);
+      return;
+    }
+
+    if (data.action === 'setJoinMode') {
+      const v = validateFactionAction('setJoinMode', myRank);
+      if (!v.valid) {
+        client.send('factionActionResult', { success: false, action: 'setJoinMode', error: v.error });
+        return;
+      }
+      if (!data.joinMode || !['open', 'code', 'invite'].includes(data.joinMode)) {
+        client.send('factionActionResult', { success: false, action: 'setJoinMode', error: 'Invalid mode' });
+        return;
+      }
+      await updateFactionJoinMode(myFaction.id, data.joinMode);
+      client.send('factionActionResult', { success: true, action: 'setJoinMode' });
+      await this.sendFactionData(client);
+      return;
+    }
+
+    if (!data.targetPlayerId) {
+      client.send('factionActionResult', { success: false, action: data.action, error: 'No target' });
+      return;
+    }
+
+    const targetMembers = await getFactionMembers(myFaction.id);
+    const target = targetMembers.find(m => m.player_id === data.targetPlayerId);
+    if (!target) {
+      client.send('factionActionResult', { success: false, action: data.action, error: 'Target not in faction' });
+      return;
+    }
+
+    const v = validateFactionAction(data.action, myRank, target.rank);
+    if (!v.valid) {
+      client.send('factionActionResult', { success: false, action: data.action, error: v.error });
+      return;
+    }
+
+    if (data.action === 'kick') {
+      await removeFactionMember(myFaction.id, data.targetPlayerId);
+    } else if (data.action === 'promote') {
+      await updateMemberRank(myFaction.id, data.targetPlayerId, 'officer');
+    } else if (data.action === 'demote') {
+      await updateMemberRank(myFaction.id, data.targetPlayerId, 'member');
+    }
+
+    client.send('factionActionResult', { success: true, action: data.action });
+    await this.sendFactionData(client);
+  }
+
+  private async handleJoinFaction(client: Client, auth: AuthPayload, data: FactionActionMessage) {
+    if (!data.targetPlayerId) {
+      client.send('factionActionResult', { success: false, action: 'join', error: 'No faction specified' });
+      return;
+    }
+    const existing = await getPlayerFaction(auth.userId);
+    if (existing) {
+      client.send('factionActionResult', { success: false, action: 'join', error: 'Already in a faction' });
+      return;
+    }
+    const faction = await getFactionById(data.targetPlayerId);
+    if (!faction || faction.join_mode !== 'open') {
+      client.send('factionActionResult', { success: false, action: 'join', error: 'Faction not open' });
+      return;
+    }
+    await addFactionMember(data.targetPlayerId, auth.userId);
+    client.send('factionActionResult', { success: true, action: 'join' });
+    await this.sendFactionData(client);
+  }
+
+  private async handleJoinByCode(client: Client, auth: AuthPayload, data: FactionActionMessage) {
+    if (!data.code) {
+      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'No code' });
+      return;
+    }
+    const existing = await getPlayerFaction(auth.userId);
+    if (existing) {
+      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'Already in a faction' });
+      return;
+    }
+    const faction = await getFactionByCode(data.code.toUpperCase());
+    if (!faction || faction.join_mode !== 'code') {
+      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'Invalid code' });
+      return;
+    }
+    await addFactionMember(faction.id, auth.userId);
+    client.send('factionActionResult', { success: true, action: 'joinCode' });
+    await this.sendFactionData(client);
+  }
+
+  private async handleLeaveFaction(client: Client, auth: AuthPayload, faction: any) {
+    if (!faction) {
+      client.send('factionActionResult', { success: false, action: 'leave', error: 'Not in faction' });
+      return;
+    }
+    if (faction.player_rank === 'leader') {
+      client.send('factionActionResult', { success: false, action: 'leave', error: 'Leader cannot leave — disband instead' });
+      return;
+    }
+    await removeFactionMember(faction.id, auth.userId);
+    client.send('factionActionResult', { success: true, action: 'leave' });
+    await this.sendFactionData(client);
+  }
+
+  private async handleFactionInvite(client: Client, auth: AuthPayload, faction: any, data: FactionActionMessage) {
+    const v = validateFactionAction('invite', faction.player_rank);
+    if (!v.valid) {
+      client.send('factionActionResult', { success: false, action: 'invite', error: v.error });
+      return;
+    }
+    if (!data.targetPlayerName) {
+      client.send('factionActionResult', { success: false, action: 'invite', error: 'No player name' });
+      return;
+    }
+    const targetId = await getPlayerIdByUsername(data.targetPlayerName);
+    if (!targetId) {
+      client.send('factionActionResult', { success: false, action: 'invite', error: 'Player not found' });
+      return;
+    }
+    const targetFaction = await getPlayerFaction(targetId);
+    if (targetFaction) {
+      client.send('factionActionResult', { success: false, action: 'invite', error: 'Player already in a faction' });
+      return;
+    }
+    await createFactionInvite(faction.id, auth.userId, targetId);
+    client.send('factionActionResult', { success: true, action: 'invite' });
+  }
+
+  private async handleRespondInvite(client: Client, data: { inviteId: string; accept: boolean }) {
+    const auth = client.auth as AuthPayload;
+    const invite = await respondToInvite(data.inviteId, auth.userId, data.accept);
+    if (!invite) {
+      client.send('factionActionResult', { success: false, action: 'respondInvite', error: 'Invite not found' });
+      return;
+    }
+    if (data.accept) {
+      await addFactionMember(invite.faction_id, auth.userId);
+    }
+    client.send('factionActionResult', { success: true, action: 'respondInvite' });
+    await this.sendFactionData(client);
   }
 }

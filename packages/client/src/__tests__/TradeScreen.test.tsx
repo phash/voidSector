@@ -11,6 +11,7 @@ vi.mock('../network/client', () => ({
     requestStorage: vi.fn(),
     sendNpcTrade: vi.fn(),
     sendCancelOrder: vi.fn(),
+    requestMySlates: vi.fn(),
   },
 }));
 

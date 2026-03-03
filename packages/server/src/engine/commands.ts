@@ -1,5 +1,9 @@
 import type { APState, MiningState, ResourceType, SectorResources, StructureType, CargoState, StorageInventory } from '@void-sector/shared';
-import { AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, STRUCTURE_COSTS, STRUCTURE_AP_COSTS, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, STORAGE_TIERS } from '@void-sector/shared';
+import {
+  AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, STRUCTURE_COSTS, STRUCTURE_AP_COSTS,
+  NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, STORAGE_TIERS,
+  SLATE_AP_COST_SECTOR, SLATE_AP_COST_AREA, SLATE_AREA_RADIUS, SLATE_NPC_PRICE_PER_SECTOR,
+} from '@void-sector/shared';
 import { spendAP } from './ap.js';
 import { startMining, createMiningState } from './mining.js';
 
@@ -206,4 +210,86 @@ export function validateNpcTrade(
     if (storage[resource] < amount) return { valid: false, error: `Not enough ${resource} in storage`, totalPrice };
     return { valid: true, totalPrice };
   }
+}
+
+// --- Data Slate Validation ---
+
+interface CreateSlateState {
+  ap: number;
+  scannerLevel: number;
+  cargoTotal: number;
+  cargoCap: number;
+}
+
+interface CreateSlateResult {
+  valid: boolean;
+  error?: string;
+  apCost?: number;
+  radius?: number;
+}
+
+export function validateCreateSlate(state: CreateSlateState, slateType: string): CreateSlateResult {
+  const apCost = slateType === 'sector'
+    ? SLATE_AP_COST_SECTOR
+    : SLATE_AP_COST_AREA + (state.scannerLevel - 1);
+
+  if (state.ap < apCost) {
+    return { valid: false, error: `Not enough AP (need ${apCost}, have ${state.ap})` };
+  }
+
+  if (state.cargoTotal >= state.cargoCap) {
+    return { valid: false, error: 'Cargo full — no space for slate' };
+  }
+
+  const radius = slateType === 'area'
+    ? (SLATE_AREA_RADIUS[state.scannerLevel] ?? SLATE_AREA_RADIUS[1])
+    : undefined;
+
+  return { valid: true, apCost, radius };
+}
+
+interface NpcBuybackResult {
+  valid: boolean;
+  error?: string;
+  payout?: number;
+}
+
+export function validateNpcBuyback(hasTradingPost: boolean, sectorCount: number): NpcBuybackResult {
+  if (!hasTradingPost) {
+    return { valid: false, error: 'No trading post — cannot sell to NPC' };
+  }
+  return { valid: true, payout: sectorCount * SLATE_NPC_PRICE_PER_SECTOR };
+}
+
+// --- Faction Validation ---
+
+interface FactionActionResult {
+  valid: boolean;
+  error?: string;
+}
+
+export function validateFactionAction(
+  action: string,
+  actorRank: string,
+  targetRank?: string,
+): FactionActionResult {
+  if (['promote', 'demote', 'disband', 'setJoinMode'].includes(action)) {
+    if (actorRank !== 'leader') {
+      return { valid: false, error: 'Only the faction leader can do this' };
+    }
+    return { valid: true };
+  }
+
+  if (action === 'kick') {
+    if (actorRank === 'leader') return { valid: true };
+    if (actorRank === 'officer' && targetRank === 'member') return { valid: true };
+    return { valid: false, error: 'Insufficient rank to kick this member' };
+  }
+
+  if (action === 'invite') {
+    if (actorRank === 'leader' || actorRank === 'officer') return { valid: true };
+    return { valid: false, error: 'Only leaders and officers can invite' };
+  }
+
+  return { valid: true };
 }

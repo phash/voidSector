@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -81,6 +81,14 @@ export interface GameSlice {
   tradeOrders: TradeOrder[];
   myOrders: TradeOrder[];
 
+  // Data Slates
+  mySlates: DataSlate[];
+
+  // Faction
+  faction: Faction | null;
+  factionMembers: FactionMember[];
+  factionInvites: FactionInvite[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
@@ -107,6 +115,10 @@ export interface GameSlice {
   setStorage: (storage: StorageInventory) => void;
   setTradeOrders: (orders: TradeOrder[]) => void;
   setMyOrders: (orders: TradeOrder[]) => void;
+  setMySlates: (slates: DataSlate[]) => void;
+  setFaction: (faction: Faction | null) => void;
+  setFactionMembers: (members: FactionMember[]) => void;
+  setFactionInvites: (invites: FactionInvite[]) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -122,7 +134,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   discoveries: {},
   log: [],
   mining: null,
-  cargo: { ore: 0, gas: 0, crystal: 0 },
+  cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
   activeMonitor: 'NAV-COM',
   chatMessages: [],
   chatChannel: 'local' as ChatChannel,
@@ -133,6 +145,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   storage: { ore: 0, gas: 0, crystal: 0 },
   tradeOrders: [],
   myOrders: [],
+  mySlates: [],
+  faction: null,
+  factionMembers: [],
+  factionInvites: [],
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -203,4 +219,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setStorage: (storage) => set({ storage }),
   setTradeOrders: (tradeOrders) => set({ tradeOrders }),
   setMyOrders: (myOrders) => set({ myOrders }),
+  setMySlates: (mySlates) => set({ mySlates }),
+  setFaction: (faction) => set({ faction }),
+  setFactionMembers: (factionMembers) => set({ factionMembers }),
+  setFactionInvites: (factionInvites) => set({ factionInvites }),
 });
