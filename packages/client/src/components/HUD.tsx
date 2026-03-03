@@ -14,6 +14,7 @@ function SegmentedBar({ current, max, width = 12 }: { current: number; max: numb
 export function StatusBar() {
   const ap = useStore((s) => s.ap);
   const fuel = useStore((s) => s.fuel);
+  const credits = useStore((s) => s.credits);
 
   // Live-updating AP accounting for regen since last server tick
   const [displayAP, setDisplayAP] = useState(ap?.current ?? 0);
@@ -92,6 +93,8 @@ export function StatusBar() {
           )}
         </>
       )}
+      <span style={{ color: 'var(--color-dim)' }}>|</span>
+      <span>CR: {credits.toLocaleString()}</span>
     </div>
   );
 }
