@@ -87,6 +87,16 @@ export const NPC_PRICES: Record<ResourceType, number> = {
 export const NPC_BUY_SPREAD = 1.2;
 export const NPC_SELL_SPREAD = 0.8;
 
+// Data Slate constants
+export const SLATE_AP_COST_SECTOR = 1;
+export const SLATE_AP_COST_AREA = 3;
+export const SLATE_NPC_PRICE_PER_SECTOR = 5;
+export const SLATE_AREA_RADIUS: Record<number, number> = {
+  1: 2,
+  2: 3,
+  3: 4,
+};
+
 // Storage tiers
 export const STORAGE_TIERS: Record<number, { capacity: number; upgradeCost: number }> = {
   1: { capacity: 50, upgradeCost: 0 },
@@ -192,6 +202,7 @@ export const MONITORS = {
   BASE_LINK: 'BASE-LINK',
   LOG: 'LOG',
   TRADE: 'TRADE',
+  FACTION: 'FACTION',
 } as const;
 
 export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
@@ -203,6 +214,7 @@ export const RIGHT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.COMMS,
   MONITORS.BASE_LINK,
   MONITORS.TRADE,
+  MONITORS.FACTION,
 ];
 
 export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
@@ -213,6 +225,7 @@ export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.COMMS,
   MONITORS.BASE_LINK,
   MONITORS.TRADE,
+  MONITORS.FACTION,
 ];
 
 export const MAIN_MONITORS: MonitorId[] = [
@@ -222,6 +235,7 @@ export const MAIN_MONITORS: MonitorId[] = [
   MONITORS.COMMS,
   MONITORS.BASE_LINK,
   MONITORS.TRADE,
+  MONITORS.FACTION,
 ];
 
 /** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */

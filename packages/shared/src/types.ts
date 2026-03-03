@@ -105,6 +105,7 @@ export interface CargoState {
   ore: number;
   gas: number;
   crystal: number;
+  slates: number;
 }
 
 export interface MineMessage {
@@ -255,4 +256,132 @@ export interface PlaceOrderMessage {
 
 export interface AcceptOrderMessage {
   orderId: string;
+}
+
+// --- Data Slates ---
+export type SlateType = 'sector' | 'area';
+
+export interface SectorSlateData {
+  x: number;
+  y: number;
+  type: string;
+  ore: number;
+  gas: number;
+  crystal: number;
+}
+
+export interface DataSlate {
+  id: string;
+  creatorId: string;
+  creatorName?: string;
+  ownerId: string;
+  slateType: SlateType;
+  sectorData: SectorSlateData[];
+  status: 'available' | 'listed';
+  createdAt: number;
+}
+
+export interface CreateSlateMessage {
+  slateType: SlateType;
+}
+
+export interface CreateSlateResultMessage {
+  success: boolean;
+  error?: string;
+  slate?: DataSlate;
+  cargo?: CargoState;
+  ap?: number;
+}
+
+export interface ActivateSlateMessage {
+  slateId: string;
+}
+
+export interface ActivateSlateResultMessage {
+  success: boolean;
+  error?: string;
+  sectorsAdded?: number;
+}
+
+export interface NpcBuybackMessage {
+  slateId: string;
+}
+
+export interface NpcBuybackResultMessage {
+  success: boolean;
+  error?: string;
+  credits?: number;
+  creditsEarned?: number;
+}
+
+export interface ListSlateMessage {
+  slateId: string;
+  price: number;
+}
+
+// --- Factions ---
+export type FactionRank = 'leader' | 'officer' | 'member';
+export type FactionJoinMode = 'open' | 'code' | 'invite';
+export type FactionInviteStatus = 'pending' | 'accepted' | 'rejected';
+
+export interface Faction {
+  id: string;
+  name: string;
+  tag: string;
+  leaderId: string;
+  leaderName?: string;
+  joinMode: FactionJoinMode;
+  inviteCode?: string;
+  memberCount?: number;
+  createdAt: number;
+}
+
+export interface FactionMember {
+  playerId: string;
+  playerName: string;
+  rank: FactionRank;
+  joinedAt: number;
+  online?: boolean;
+}
+
+export interface FactionInvite {
+  id: string;
+  factionId: string;
+  factionName: string;
+  factionTag: string;
+  inviterName: string;
+  status: FactionInviteStatus;
+  createdAt: number;
+}
+
+export interface CreateFactionMessage {
+  name: string;
+  tag: string;
+  joinMode: FactionJoinMode;
+}
+
+export interface CreateFactionResultMessage {
+  success: boolean;
+  error?: string;
+  faction?: Faction;
+}
+
+export interface FactionActionMessage {
+  action: 'join' | 'joinCode' | 'leave' | 'invite' | 'kick' | 'promote' | 'demote' | 'setJoinMode' | 'disband';
+  targetPlayerId?: string;
+  targetPlayerName?: string;
+  code?: string;
+  joinMode?: FactionJoinMode;
+}
+
+export interface FactionActionResultMessage {
+  success: boolean;
+  action: string;
+  error?: string;
+}
+
+export interface FactionDataMessage {
+  faction: Faction | null;
+  members: FactionMember[];
+  invites: FactionInvite[];
 }
