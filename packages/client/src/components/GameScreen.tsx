@@ -23,28 +23,40 @@ function ShipSysScreen() {
   const ship = useStore((s) => s.ship);
   const colorProfile = useStore((s) => s.colorProfile);
   const setColorProfile = useStore((s) => s.setColorProfile);
+
+  const stats = ship ? [
+    { label: 'DRIVE', value: `RANGE: ${ship.jumpRange}` },
+    { label: 'CARGO', value: `CAP: ${ship.cargoCap}` },
+    { label: 'SCANNER', value: `LVL: ${ship.scannerLevel}` },
+    { label: 'SAFE SLOTS', value: `${ship.safeSlots}` },
+    { label: 'FUEL', value: `MAX: ${ship.fuelMax}` },
+    { label: 'COMM', value: `RANGE: ${SHIP_CLASSES[ship.shipClass].commRange}` },
+  ] : [];
+
   return (
-    <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 2 }}>
-      <div style={{ letterSpacing: '0.2em', marginBottom: '16px' }}>
+    <div style={{ padding: '8px 12px', fontSize: '0.8rem', lineHeight: 1.8 }}>
+      <div style={{ letterSpacing: '0.2em', marginBottom: 8, fontSize: '0.85rem' }}>
         {ship ? SHIP_CLASSES[ship.shipClass].name : 'NO SHIP DATA'}
       </div>
-      <div>ION DRIVE ──── [RANGE: {ship?.jumpRange ?? '?'} SECTORS]</div>
-      <div>CARGO HOLD ─── [CAP: {ship?.cargoCap ?? '?'} UNITS]</div>
-      <div>SCANNER ────── [LEVEL: {ship?.scannerLevel ?? '?'}]</div>
-      <div>SAFE SLOTS ─── [{ship?.safeSlots ?? '?'}]</div>
-      <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-dim)', paddingTop: '8px' }}>
-        SYSTEMS: ONLINE
+      {stats.map(({ label, value }) => (
+        <div key={label} style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>{label}</span>
+          <span style={{ color: 'var(--color-dim)' }}>{value}</span>
+        </div>
+      ))}
+      <div style={{ marginTop: 12, borderTop: '1px solid var(--color-dim)', paddingTop: 8 }}>
+        SYSTEMS: <span style={{ color: '#00FF88' }}>ONLINE</span>
       </div>
       <div style={{ marginTop: 12 }}>
-        <label style={{ fontSize: '0.8rem' }}>DISPLAY PROFILE</label>
+        <label style={{ fontSize: '0.75rem', opacity: 0.6 }}>DISPLAY PROFILE</label>
         <select
           value={colorProfile}
           onChange={(e) => setColorProfile(e.target.value as ColorProfileName)}
           style={{
-            display: 'block', marginTop: 4,
+            display: 'block', marginTop: 4, width: '100%',
             background: 'transparent', border: '1px solid var(--color-primary)',
             color: 'var(--color-primary)', fontFamily: 'var(--font-mono)',
-            padding: '4px 8px',
+            padding: '4px 8px', fontSize: '0.8rem',
           }}
         >
           {Object.keys(COLOR_PROFILES).map(name => (
