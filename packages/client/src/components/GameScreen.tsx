@@ -11,6 +11,7 @@ import { CargoScreen } from './CargoScreen';
 import { CommsScreen } from './CommsScreen';
 import { BaseScreen } from './BaseScreen';
 import { TradeScreen } from './TradeScreen';
+import { FactionScreen } from './FactionScreen';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, SHIP_CLASSES } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
@@ -76,6 +77,7 @@ function renderScreen(monitorId: string) {
     case MONITORS.COMMS: return <CommsScreen />;
     case MONITORS.BASE_LINK: return <BaseScreen />;
     case MONITORS.TRADE: return <TradeScreen />;
+    case MONITORS.FACTION: return <FactionScreen />;
     default: return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
 }
