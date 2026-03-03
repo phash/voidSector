@@ -1,4 +1,4 @@
-import { SYMBOLS, RADAR_RADIUS, SECTOR_COLORS } from '@void-sector/shared';
+import { SYMBOLS, SECTOR_COLORS } from '@void-sector/shared';
 import type { SectorData, Coords, JumpGateInfo, ScanEvent } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
@@ -9,6 +9,13 @@ export const CELL_SIZES = [
   { w: 80, h: 64, fontSize: 16, coordSize: 10 },
   { w: 96, h: 76, fontSize: 18, coordSize: 11 },
 ];
+
+export function calculateVisibleRadius(canvasW: number, canvasH: number, zoomLevel: number): { radiusX: number; radiusY: number } {
+  const { w, h } = CELL_SIZES[zoomLevel] ?? CELL_SIZES[2];
+  const radiusX = Math.max(2, Math.floor(canvasW / w / 2));
+  const radiusY = Math.max(2, Math.floor(canvasH / h / 2));
+  return { radiusX, radiusY };
+}
 
 interface RadarState {
   position: Coords;
@@ -39,7 +46,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
   const centerX = w / 2;
   const centerY = h / 2;
-  const radius = RADAR_RADIUS;
+  const { radiusX, radiusY } = calculateVisibleRadius(w, h, state.zoomLevel);
 
   const viewX = state.position.x + state.panOffset.x;
   const viewY = state.position.y + state.panOffset.y;
@@ -55,8 +62,8 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     ctx.translate(-slideX, -slideY);
   }
 
-  for (let dx = -radius; dx <= radius; dx++) {
-    for (let dy = -radius; dy <= radius; dy++) {
+  for (let dx = -radiusX; dx <= radiusX; dx++) {
+    for (let dy = -radiusY; dy <= radiusY; dy++) {
       const sx = viewX + dx;
       const sy = viewY + dy;
       const cellX = centerX + dx * CELL_W;
@@ -98,10 +105,12 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
       if (isPlayer) {
         drawGlowText(ctx, SYMBOLS.ship, cellX, cellY, state.themeColor, 10);
-        ctx.font = COORD_FONT;
-        ctx.fillStyle = state.themeColor;
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(isHome ? 'HOME BASE' : 'YOU', cellX, cellY + CELL_H / 2 - 2);
+        if (state.zoomLevel >= 1) {
+          ctx.font = COORD_FONT;
+          ctx.fillStyle = state.themeColor;
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(isHome ? 'HOME BASE' : 'YOU', cellX, cellY + CELL_H / 2 - 2);
+        }
       } else if (sector) {
         const symbol = isHome ? SYMBOLS.homeBase : getSectorSymbol(sector.type);
         const sectorColor = isHome
@@ -111,20 +120,24 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         ctx.shadowBlur = 0;
         ctx.fillText(symbol, cellX, cellY);
 
-        ctx.font = COORD_FONT;
-        ctx.fillStyle = sectorColor;
-        ctx.textBaseline = 'bottom';
-        const label = isHome ? 'HOME' : getSectorLabel(sector.type);
-        ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
+        if (state.zoomLevel >= 1) {
+          ctx.font = COORD_FONT;
+          ctx.fillStyle = sectorColor;
+          ctx.textBaseline = 'bottom';
+          const label = isHome ? 'HOME' : getSectorLabel(sector.type);
+          ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
+        }
       } else {
-        ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.15)');
-        ctx.textBaseline = 'bottom';
-        ctx.font = COORD_FONT;
-        ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H / 2 - 2);
+        if (state.zoomLevel >= 1) {
+          ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.15)');
+          ctx.textBaseline = 'bottom';
+          ctx.font = COORD_FONT;
+          ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H / 2 - 2);
+        }
       }
 
-      // Feature dots (jumpgate, scan events)
-      if (sector || isPlayer) {
+      // Feature dots (jumpgate, scan events) — zoom >= 2
+      if (state.zoomLevel >= 2 && (sector || isPlayer)) {
         const features: string[] = [];
         if (state.jumpGateInfo && isPlayer) {
           features.push('#00BFFF'); // cyan for jumpgate
@@ -146,19 +159,21 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
-  // Draw other players
-  const playerList = Object.values(state.players);
-  for (let i = 0; i < playerList.length; i++) {
-    const player = playerList[i];
-    const dx = player.x - viewX;
-    const dy = player.y - viewY;
-    if (Math.abs(dx) <= radius && Math.abs(dy) <= radius && !(player.x === state.position.x && player.y === state.position.y)) {
-      const px = centerX + dx * CELL_W + 12;
-      const py = centerY + dy * CELL_H;
-      ctx.font = FONT;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      drawGlowText(ctx, SYMBOLS.player, px, py, state.themeColor, 6);
+  // Draw other players — zoom >= 3
+  if (state.zoomLevel >= 3) {
+    const playerList = Object.values(state.players);
+    for (let i = 0; i < playerList.length; i++) {
+      const player = playerList[i];
+      const dx = player.x - viewX;
+      const dy = player.y - viewY;
+      if (Math.abs(dx) <= radiusX && Math.abs(dy) <= radiusY && !(player.x === state.position.x && player.y === state.position.y)) {
+        const px = centerX + dx * CELL_W + 12;
+        const py = centerY + dy * CELL_H;
+        ctx.font = FONT;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        drawGlowText(ctx, SYMBOLS.player, px, py, state.themeColor, 6);
+      }
     }
   }
 

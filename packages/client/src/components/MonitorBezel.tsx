@@ -28,8 +28,8 @@ export function MonitorBezel({ children, monitorId, statusLeds = [] }: MonitorBe
           <BezelKnob
             label="PAN"
             value={panOffset.y}
-            min={-3}
-            max={3}
+            min={-20}
+            max={20}
             onChange={(v) => setPanOffset({ x: panOffset.x, y: v })}
           />
         </div>

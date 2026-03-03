@@ -71,8 +71,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setZoomLevel: (level) => set({ zoomLevel: Math.max(0, Math.min(3, level)) }),
   setPanOffset: (offset) => set({
     panOffset: {
-      x: Math.max(-3, Math.min(3, offset.x)),
-      y: Math.max(-3, Math.min(3, offset.y)),
+      x: Math.max(-50, Math.min(50, Math.round(offset.x))),
+      y: Math.max(-50, Math.min(50, Math.round(offset.y))),
     },
   }),
   resetPan: () => set({ panOffset: { x: 0, y: 0 } }),
