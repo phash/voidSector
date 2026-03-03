@@ -6,9 +6,15 @@ ALTER TABLE ships ADD COLUMN IF NOT EXISTS name VARCHAR(20) NOT NULL DEFAULT '';
 ALTER TABLE ships ADD COLUMN IF NOT EXISTS modules JSONB NOT NULL DEFAULT '[]';
 ALTER TABLE ships ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
--- Migrate existing ship_class to hull_type
-UPDATE ships SET hull_type = 'scout' WHERE ship_class = 'aegis_scout_mk1';
-UPDATE ships SET hull_type = 'explorer' WHERE ship_class = 'void_seeker_mk2';
+-- Migrate existing ship_class to hull_type (only if column still exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ships' AND column_name = 'ship_class') THEN
+    UPDATE ships SET hull_type = 'scout' WHERE ship_class = 'aegis_scout_mk1';
+    UPDATE ships SET hull_type = 'explorer' WHERE ship_class = 'void_seeker_mk2';
+  END IF;
+END
+$$;
 
 -- Drop deprecated stat columns (stats now calculated from hull + modules)
 ALTER TABLE ships DROP COLUMN IF EXISTS ship_class;
