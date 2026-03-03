@@ -16,17 +16,19 @@ describe('calculateVisibleRadius', () => {
   });
 
   it('calculates from canvas size and cell size', () => {
-    // 800px wide / 80px per cell = 10 cells visible, radius = 5
+    // (800 - 40) / 80 / 2 = 4.75 → floor = 4 for radiusX
+    // (640 - 28) / 64 / 2 = 4.78 → floor = 4 for radiusY
     const r = calculateVisibleRadius(800, 640, 2); // zoom 2 = 80x64
-    expect(r.radiusX).toBe(5);
-    expect(r.radiusY).toBe(5);
+    expect(r.radiusX).toBe(4);
+    expect(r.radiusY).toBe(4);
   });
 
   it('falls back to zoom level 2 for invalid zoom', () => {
     const r = calculateVisibleRadius(800, 640, 99);
     // Falls back to CELL_SIZES[2] = { w: 80, h: 64 }
-    expect(r.radiusX).toBe(5);
-    expect(r.radiusY).toBe(5);
+    // (800 - 40) / 80 / 2 = 4.75 → floor = 4
+    expect(r.radiusX).toBe(4);
+    expect(r.radiusY).toBe(4);
   });
 
   it('exports CELL_SIZES with all 4 zoom levels', () => {

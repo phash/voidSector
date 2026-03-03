@@ -12,8 +12,10 @@ export const CELL_SIZES = [
 
 export function calculateVisibleRadius(canvasW: number, canvasH: number, zoomLevel: number): { radiusX: number; radiusY: number } {
   const { w, h } = CELL_SIZES[zoomLevel] ?? CELL_SIZES[2];
-  const radiusX = Math.max(2, Math.floor(canvasW / w / 2));
-  const radiusY = Math.max(2, Math.floor(canvasH / h / 2));
+  const gridW = canvasW - 40; // FRAME_LEFT + FRAME_PAD
+  const gridH = canvasH - 28; // FRAME_BOTTOM + FRAME_PAD
+  const radiusX = Math.max(2, Math.floor(gridW / w / 2));
+  const radiusY = Math.max(2, Math.floor(gridH / h / 2));
   return { radiusX, radiusY };
 }
 
@@ -46,9 +48,28 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   ctx.fillStyle = '#050505';
   ctx.fillRect(0, 0, w, h);
 
-  const centerX = w / 2;
-  const centerY = h / 2;
-  const { radiusX, radiusY } = calculateVisibleRadius(w, h, state.zoomLevel);
+  // Coordinate frame margins
+  const FRAME_LEFT = 32;   // space for row numbers (Y coordinates)
+  const FRAME_BOTTOM = 20; // space for column numbers (X coordinates)
+  const FRAME_PAD = 8;     // padding on right/top
+
+  // Grid area bounded to ~80% of canvas
+  const gridLeft = FRAME_LEFT;
+  const gridTop = FRAME_PAD;
+  const gridRight = w - FRAME_PAD;
+  const gridBottom = h - FRAME_BOTTOM;
+  const gridW = gridRight - gridLeft;
+  const gridH = gridBottom - gridTop;
+
+  // Recalculate visible cells based on grid area
+  const visibleCols = Math.max(1, Math.floor(gridW / CELL_W));
+  const visibleRows = Math.max(1, Math.floor(gridH / CELL_H));
+  const radiusX = Math.floor(visibleCols / 2);
+  const radiusY = Math.floor(visibleRows / 2);
+
+  // Grid center within bounded area
+  const gridCenterX = gridLeft + gridW / 2;
+  const gridCenterY = gridTop + gridH / 2;
 
   const viewX = state.position.x + state.panOffset.x;
   const viewY = state.position.y + state.panOffset.y;
@@ -68,8 +89,8 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     for (let dy = -radiusY; dy <= radiusY; dy++) {
       const sx = viewX + dx;
       const sy = viewY + dy;
-      const cellX = centerX + dx * CELL_W;
-      const cellY = centerY + dy * CELL_H;
+      const cellX = gridCenterX + dx * CELL_W;
+      const cellY = gridCenterY + dy * CELL_H;
 
       const key = `${sx}:${sy}`;
       const sector = state.discoveries[key];
@@ -192,8 +213,8 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const dx = player.x - viewX;
       const dy = player.y - viewY;
       if (Math.abs(dx) <= radiusX && Math.abs(dy) <= radiusY && !(player.x === state.position.x && player.y === state.position.y)) {
-        const px = centerX + dx * CELL_W + 12;
-        const py = centerY + dy * CELL_H;
+        const px = gridCenterX + dx * CELL_W + 12;
+        const py = gridCenterY + dy * CELL_H;
         drawHullIcon(ctx, otherPattern, px, py, otherColor, otherPixelSize);
       }
     }
@@ -203,6 +224,39 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   if (animActive && anim.phase === 'slide') {
     ctx.restore();
   }
+
+  // --- Coordinate frame ---
+  ctx.font = COORD_FONT;
+  ctx.fillStyle = state.dimColor;
+
+  // Row labels (left side) — Y galaxy coordinates
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let dy = -radiusY; dy <= radiusY; dy++) {
+    const sy = viewY + dy;
+    const cellY = gridCenterY + dy * CELL_H;
+    ctx.fillText(String(sy), FRAME_LEFT - 4, cellY);
+  }
+
+  // Column labels (bottom) — X galaxy coordinates
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let dx = -radiusX; dx <= radiusX; dx++) {
+    const sx = viewX + dx;
+    const cellX = gridCenterX + dx * CELL_W;
+    ctx.fillText(String(sx), cellX, gridBottom + 3);
+  }
+
+  // Frame border
+  ctx.strokeStyle = state.dimColor.replace(/[\d.]+\)$/, '0.5)');
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(gridLeft - 1, gridTop - 1);
+  ctx.lineTo(gridRight + 1, gridTop - 1);
+  ctx.lineTo(gridRight + 1, gridBottom + 1);
+  ctx.lineTo(gridLeft - 1, gridBottom + 1);
+  ctx.closePath();
+  ctx.stroke();
 
   // Apply glitch overlay based on animation phase
   if (animActive) {
