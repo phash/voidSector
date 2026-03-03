@@ -82,4 +82,15 @@ export async function saveMiningState(playerId: string, state: MiningState): Pro
   });
 }
 
+const FUEL_PREFIX = 'player:fuel:';
+
+export async function getFuelState(userId: string): Promise<number | null> {
+  const val = await redis.get(`${FUEL_PREFIX}${userId}`);
+  return val !== null ? parseFloat(val) : null;
+}
+
+export async function saveFuelState(userId: string, fuel: number): Promise<void> {
+  await redis.set(`${FUEL_PREFIX}${userId}`, fuel.toString());
+}
+
 export { redis };

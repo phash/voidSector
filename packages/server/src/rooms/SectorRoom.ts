@@ -12,10 +12,10 @@ import { generateStationQuests } from '../engine/questgen.js';
 import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkScanEvent } from '../engine/scanEvents.js';
 import { query } from '../db/client.js';
-import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
+import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -238,6 +238,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
       await this.handleCompleteScanEvent(client, data);
     });
+
+    // Phase 5: Fuel
+    this.onMessage('refuel', async (client, data: RefuelMessage) => {
+      await this.handleRefuel(client, data);
+    });
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
@@ -275,6 +280,14 @@ export class SectorRoom extends Room<SectorRoomState> {
       safeSlots: shipStats.safeSlots,
       active: true,
     });
+
+    // Init fuel state in Redis
+    const existingFuel = await getFuelState(auth.userId);
+    if (existingFuel === null) {
+      await saveFuelState(auth.userId, shipStats.fuelMax);
+    }
+    const fuelCurrent = existingFuel ?? shipStats.fuelMax;
+    client.send('fuelUpdate', { current: fuelCurrent, max: shipStats.fuelMax });
 
     // Record discovery
     await addDiscovery(auth.userId, this.state.sector.x, this.state.sector.y);
@@ -382,6 +395,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
+    // Check fuel
+    const ship = this.getShipForClient(client.sessionId);
+    const currentFuel = await getFuelState(auth.userId);
+    const fuelCost = ship.fuelPerJump;
+    if (currentFuel === null || currentFuel < fuelCost) {
+      client.send('jumpResult', { success: false, error: 'Not enough fuel' });
+      return;
+    }
+
     // Check mining state and validate jump (rejects if mining is active)
     const mining = await getMiningState(auth.userId);
     const ap = await getAPState(auth.userId);
@@ -391,7 +413,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.state.sector.y,
       targetX,
       targetY,
-      this.getShipForClient(client.sessionId).jumpRange,
+      ship.jumpRange,
       AP_COSTS.jump,
       mining?.active ?? false,
     );
@@ -400,6 +422,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
     await saveAPState(auth.userId, jumpResult.newAP!);
+
+    // Deduct fuel
+    const newFuel = currentFuel - fuelCost;
+    await saveFuelState(auth.userId, newFuel);
 
     // Load or generate target sector
     let targetSector = await getSector(targetX, targetY);
@@ -435,9 +461,50 @@ export class SectorRoom extends Room<SectorRoomState> {
       success: true,
       newSector: targetSector,
       apRemaining: jumpResult.newAP!.current,
+      fuelRemaining: newFuel,
     });
 
     // Client will leave this room and join the new sector room
+  }
+
+  private async handleRefuel(client: Client, data: RefuelMessage) {
+    const auth = client.auth as AuthPayload;
+
+    // Must be at a station sector
+    if (this.state.sector.sectorType !== 'station') {
+      client.send('refuelResult', { success: false, error: 'Must be at a station to refuel' });
+      return;
+    }
+
+    const ship = this.getShipForClient(client.sessionId);
+    const currentFuel = await getFuelState(auth.userId) ?? 0;
+    const tankSpace = ship.fuelMax - currentFuel;
+
+    if (tankSpace <= 0) {
+      client.send('refuelResult', { success: false, error: 'Fuel tank is full' });
+      return;
+    }
+
+    const amount = Math.min(data.amount, tankSpace);
+    const cost = Math.ceil(amount * FUEL_COST_PER_UNIT);
+
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < cost) {
+      client.send('refuelResult', { success: false, error: 'Not enough credits' });
+      return;
+    }
+
+    await deductCredits(auth.userId, cost);
+    const newFuel = currentFuel + amount;
+    await saveFuelState(auth.userId, newFuel);
+
+    const remainingCredits = await getPlayerCredits(auth.userId);
+
+    client.send('refuelResult', {
+      success: true,
+      fuel: { current: newFuel, max: ship.fuelMax },
+      credits: remainingCredits,
+    });
   }
 
   private async handleLocalScan(client: Client) {
