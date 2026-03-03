@@ -7,12 +7,12 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction } from '../engine/commands.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById } from '../db/queries.js';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds } from '../db/queries.js';
 import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -195,6 +195,22 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     this.onMessage('acceptSlateOrder', async (client, data: { orderId: string }) => {
       await this.handleAcceptSlateOrder(client, data);
+    });
+
+    this.onMessage('createFaction', async (client, data: CreateFactionMessage) => {
+      await this.handleCreateFaction(client, data);
+    });
+
+    this.onMessage('getFaction', async (client) => {
+      await this.sendFactionData(client);
+    });
+
+    this.onMessage('factionAction', async (client, data: FactionActionMessage) => {
+      await this.handleFactionAction(client, data);
+    });
+
+    this.onMessage('respondInvite', async (client, data: { inviteId: string; accept: boolean }) => {
+      await this.handleRespondInvite(client, data);
     });
   }
 
@@ -606,9 +622,29 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
 
-    // Faction channel not yet implemented
     if (data.channel === 'faction') {
-      client.send('error', { code: 'NOT_IMPLEMENTED', message: 'Faction channel coming soon' });
+      const faction = await getPlayerFaction(auth.userId);
+      if (!faction) {
+        client.send('error', { code: 'NO_FACTION', message: 'Not in a faction' });
+        return;
+      }
+      const msg = await saveMessage(auth.userId, null, 'faction', data.content.trim());
+      const chatMsg: ChatMessage = {
+        id: msg.id,
+        senderId: auth.userId,
+        senderName: auth.username,
+        channel: 'faction',
+        content: data.content.trim(),
+        sentAt: new Date(msg.sent_at).getTime(),
+        delayed: false,
+      };
+      const memberIds = await getFactionMembersByPlayerIds(faction.id);
+      for (const c of this.clients) {
+        const cAuth = c.auth as AuthPayload;
+        if (memberIds.includes(cAuth.userId)) {
+          c.send('chatMessage', chatMsg);
+        }
+      }
       return;
     }
 
@@ -1007,5 +1043,250 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('creditsUpdate', { credits: updatedCredits });
     const updatedCargo = await getPlayerCargo(auth.userId);
     client.send('cargoUpdate', updatedCargo);
+  }
+
+  private async sendFactionData(client: Client) {
+    const auth = client.auth as AuthPayload;
+    const factionRow = await getPlayerFaction(auth.userId);
+
+    if (!factionRow) {
+      const invites = await getPlayerFactionInvites(auth.userId);
+      client.send('factionData', { faction: null, members: [], invites });
+      return;
+    }
+
+    const members = await getFactionMembers(factionRow.id);
+    const invites = await getPlayerFactionInvites(auth.userId);
+
+    client.send('factionData', {
+      faction: {
+        id: factionRow.id,
+        name: factionRow.name,
+        tag: factionRow.tag,
+        leaderId: factionRow.leader_id,
+        leaderName: factionRow.leader_name,
+        joinMode: factionRow.join_mode,
+        inviteCode: factionRow.invite_code,
+        memberCount: Number(factionRow.member_count),
+        createdAt: new Date(factionRow.created_at).getTime(),
+      },
+      members: members.map(m => ({
+        playerId: m.player_id,
+        playerName: m.player_name,
+        rank: m.rank,
+        joinedAt: new Date(m.joined_at).getTime(),
+      })),
+      invites,
+    });
+  }
+
+  private async handleCreateFaction(client: Client, data: CreateFactionMessage) {
+    const auth = client.auth as AuthPayload;
+
+    if (!data.name || data.name.trim().length < 3 || data.name.trim().length > 64) {
+      client.send('createFactionResult', { success: false, error: 'Name must be 3-64 characters' });
+      return;
+    }
+    if (!data.tag || data.tag.trim().length < 3 || data.tag.trim().length > 5) {
+      client.send('createFactionResult', { success: false, error: 'Tag must be 3-5 characters' });
+      return;
+    }
+    if (!['open', 'code', 'invite'].includes(data.joinMode)) {
+      client.send('createFactionResult', { success: false, error: 'Invalid join mode' });
+      return;
+    }
+
+    const existing = await getPlayerFaction(auth.userId);
+    if (existing) {
+      client.send('createFactionResult', { success: false, error: 'Already in a faction' });
+      return;
+    }
+
+    try {
+      await createFaction(auth.userId, data.name.trim(), data.tag.trim().toUpperCase(), data.joinMode);
+      await this.sendFactionData(client);
+      client.send('createFactionResult', { success: true });
+    } catch (err: any) {
+      if (err.code === '23505') {
+        client.send('createFactionResult', { success: false, error: 'Name or tag already taken' });
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  private async handleFactionAction(client: Client, data: FactionActionMessage) {
+    const auth = client.auth as AuthPayload;
+    const myFaction = await getPlayerFaction(auth.userId);
+
+    if (data.action === 'join') {
+      return this.handleJoinFaction(client, auth, data);
+    }
+    if (data.action === 'joinCode') {
+      return this.handleJoinByCode(client, auth, data);
+    }
+    if (data.action === 'leave') {
+      return this.handleLeaveFaction(client, auth, myFaction);
+    }
+
+    if (!myFaction) {
+      client.send('factionActionResult', { success: false, action: data.action, error: 'Not in a faction' });
+      return;
+    }
+
+    const myRank = myFaction.player_rank;
+
+    if (data.action === 'invite') {
+      return this.handleFactionInvite(client, auth, myFaction, data);
+    }
+
+    if (data.action === 'disband') {
+      const v = validateFactionAction('disband', myRank);
+      if (!v.valid) {
+        client.send('factionActionResult', { success: false, action: 'disband', error: v.error });
+        return;
+      }
+      await disbandFaction(myFaction.id);
+      client.send('factionActionResult', { success: true, action: 'disband' });
+      await this.sendFactionData(client);
+      return;
+    }
+
+    if (data.action === 'setJoinMode') {
+      const v = validateFactionAction('setJoinMode', myRank);
+      if (!v.valid) {
+        client.send('factionActionResult', { success: false, action: 'setJoinMode', error: v.error });
+        return;
+      }
+      if (!data.joinMode || !['open', 'code', 'invite'].includes(data.joinMode)) {
+        client.send('factionActionResult', { success: false, action: 'setJoinMode', error: 'Invalid mode' });
+        return;
+      }
+      await updateFactionJoinMode(myFaction.id, data.joinMode);
+      client.send('factionActionResult', { success: true, action: 'setJoinMode' });
+      await this.sendFactionData(client);
+      return;
+    }
+
+    if (!data.targetPlayerId) {
+      client.send('factionActionResult', { success: false, action: data.action, error: 'No target' });
+      return;
+    }
+
+    const targetMembers = await getFactionMembers(myFaction.id);
+    const target = targetMembers.find(m => m.player_id === data.targetPlayerId);
+    if (!target) {
+      client.send('factionActionResult', { success: false, action: data.action, error: 'Target not in faction' });
+      return;
+    }
+
+    const v = validateFactionAction(data.action, myRank, target.rank);
+    if (!v.valid) {
+      client.send('factionActionResult', { success: false, action: data.action, error: v.error });
+      return;
+    }
+
+    if (data.action === 'kick') {
+      await removeFactionMember(myFaction.id, data.targetPlayerId);
+    } else if (data.action === 'promote') {
+      await updateMemberRank(myFaction.id, data.targetPlayerId, 'officer');
+    } else if (data.action === 'demote') {
+      await updateMemberRank(myFaction.id, data.targetPlayerId, 'member');
+    }
+
+    client.send('factionActionResult', { success: true, action: data.action });
+    await this.sendFactionData(client);
+  }
+
+  private async handleJoinFaction(client: Client, auth: AuthPayload, data: FactionActionMessage) {
+    if (!data.targetPlayerId) {
+      client.send('factionActionResult', { success: false, action: 'join', error: 'No faction specified' });
+      return;
+    }
+    const existing = await getPlayerFaction(auth.userId);
+    if (existing) {
+      client.send('factionActionResult', { success: false, action: 'join', error: 'Already in a faction' });
+      return;
+    }
+    const faction = await getFactionById(data.targetPlayerId);
+    if (!faction || faction.join_mode !== 'open') {
+      client.send('factionActionResult', { success: false, action: 'join', error: 'Faction not open' });
+      return;
+    }
+    await addFactionMember(data.targetPlayerId, auth.userId);
+    client.send('factionActionResult', { success: true, action: 'join' });
+    await this.sendFactionData(client);
+  }
+
+  private async handleJoinByCode(client: Client, auth: AuthPayload, data: FactionActionMessage) {
+    if (!data.code) {
+      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'No code' });
+      return;
+    }
+    const existing = await getPlayerFaction(auth.userId);
+    if (existing) {
+      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'Already in a faction' });
+      return;
+    }
+    const faction = await getFactionByCode(data.code.toUpperCase());
+    if (!faction || faction.join_mode !== 'code') {
+      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'Invalid code' });
+      return;
+    }
+    await addFactionMember(faction.id, auth.userId);
+    client.send('factionActionResult', { success: true, action: 'joinCode' });
+    await this.sendFactionData(client);
+  }
+
+  private async handleLeaveFaction(client: Client, auth: AuthPayload, faction: any) {
+    if (!faction) {
+      client.send('factionActionResult', { success: false, action: 'leave', error: 'Not in faction' });
+      return;
+    }
+    if (faction.player_rank === 'leader') {
+      client.send('factionActionResult', { success: false, action: 'leave', error: 'Leader cannot leave — disband instead' });
+      return;
+    }
+    await removeFactionMember(faction.id, auth.userId);
+    client.send('factionActionResult', { success: true, action: 'leave' });
+    await this.sendFactionData(client);
+  }
+
+  private async handleFactionInvite(client: Client, auth: AuthPayload, faction: any, data: FactionActionMessage) {
+    const v = validateFactionAction('invite', faction.player_rank);
+    if (!v.valid) {
+      client.send('factionActionResult', { success: false, action: 'invite', error: v.error });
+      return;
+    }
+    if (!data.targetPlayerName) {
+      client.send('factionActionResult', { success: false, action: 'invite', error: 'No player name' });
+      return;
+    }
+    const targetId = await getPlayerIdByUsername(data.targetPlayerName);
+    if (!targetId) {
+      client.send('factionActionResult', { success: false, action: 'invite', error: 'Player not found' });
+      return;
+    }
+    const targetFaction = await getPlayerFaction(targetId);
+    if (targetFaction) {
+      client.send('factionActionResult', { success: false, action: 'invite', error: 'Player already in a faction' });
+      return;
+    }
+    await createFactionInvite(faction.id, auth.userId, targetId);
+    client.send('factionActionResult', { success: true, action: 'invite' });
+  }
+
+  private async handleRespondInvite(client: Client, data: { inviteId: string; accept: boolean }) {
+    const auth = client.auth as AuthPayload;
+    const invite = await respondToInvite(data.inviteId, auth.userId, data.accept);
+    if (!invite) {
+      client.send('factionActionResult', { success: false, action: 'respondInvite', error: 'Invite not found' });
+      return;
+    }
+    if (data.accept) {
+      await addFactionMember(invite.faction_id, auth.userId);
+    }
+    client.send('factionActionResult', { success: true, action: 'respondInvite' });
+    await this.sendFactionData(client);
   }
 }

@@ -260,3 +260,36 @@ export function validateNpcBuyback(hasTradingPost: boolean, sectorCount: number)
   }
   return { valid: true, payout: sectorCount * SLATE_NPC_PRICE_PER_SECTOR };
 }
+
+// --- Faction Validation ---
+
+interface FactionActionResult {
+  valid: boolean;
+  error?: string;
+}
+
+export function validateFactionAction(
+  action: string,
+  actorRank: string,
+  targetRank?: string,
+): FactionActionResult {
+  if (['promote', 'demote', 'disband', 'setJoinMode'].includes(action)) {
+    if (actorRank !== 'leader') {
+      return { valid: false, error: 'Only the faction leader can do this' };
+    }
+    return { valid: true };
+  }
+
+  if (action === 'kick') {
+    if (actorRank === 'leader') return { valid: true };
+    if (actorRank === 'officer' && targetRank === 'member') return { valid: true };
+    return { valid: false, error: 'Insufficient rank to kick this member' };
+  }
+
+  if (action === 'invite') {
+    if (actorRank === 'leader' || actorRank === 'officer') return { valid: true };
+    return { valid: false, error: 'Only leaders and officers can invite' };
+  }
+
+  return { valid: true };
+}
