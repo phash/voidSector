@@ -24,7 +24,11 @@ export function validateJump(
   targetY: number,
   jumpRange: number,
   apCost: number,
+  isMining: boolean = false,
 ): JumpValidation {
+  if (isMining) {
+    return { valid: false, error: 'Cannot jump while mining — stop mining first' };
+  }
   const dx = Math.abs(targetX - currentX);
   const dy = Math.abs(targetY - currentY);
   if (dx > jumpRange || dy > jumpRange || (dx === 0 && dy === 0)) {

@@ -382,23 +382,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
-    // Auto-stop mining before jumping
+    // Check mining state and validate jump (rejects if mining is active)
     const mining = await getMiningState(auth.userId);
-    if (mining.active) {
-      const cargoTotal = await getCargoTotal(auth.userId);
-      const ship = this.getShipForClient(client.sessionId);
-      const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
-      const result = stopMining(mining, cargoSpace);
-      if (result.mined > 0 && result.resource) {
-        await addToCargo(auth.userId, result.resource, result.mined);
-      }
-      await saveMiningState(auth.userId, result.newState);
-      client.send('miningUpdate', result.newState);
-      const cargo = await getPlayerCargo(auth.userId);
-      client.send('cargoUpdate', cargo);
-    }
-
-    // Validate jump
     const ap = await getAPState(auth.userId);
     const jumpResult = validateJump(
       ap,
@@ -408,6 +393,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       targetY,
       this.getShipForClient(client.sessionId).jumpRange,
       AP_COSTS.jump,
+      mining?.active ?? false,
     );
     if (!jumpResult.valid) {
       client.send('jumpResult', { success: false, error: jumpResult.error });
