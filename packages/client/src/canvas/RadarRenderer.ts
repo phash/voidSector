@@ -1,5 +1,5 @@
-import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS } from '@void-sector/shared';
-import type { SectorData, Coords, JumpGateInfo, ScanEvent } from '@void-sector/shared';
+import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS, HULL_RADAR_PATTERNS } from '@void-sector/shared';
+import type { SectorData, Coords, JumpGateInfo, ScanEvent, HullType } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
 
@@ -31,6 +31,7 @@ interface RadarState {
   jumpGateInfo?: JumpGateInfo | null;
   scanEvents?: ScanEvent[];
   discoveryTimestamps?: Record<string, number>;
+  hullType?: HullType;
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
@@ -119,7 +120,10 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       ctx.textBaseline = 'middle';
 
       if (isPlayer) {
-        drawGlowText(ctx, SYMBOLS.ship, cellX, cellY, state.themeColor, 10);
+        const ownHull = state.hullType ?? 'scout';
+        const ownPattern = HULL_RADAR_PATTERNS[ownHull];
+        const ownPixelSize = 2 + state.zoomLevel;
+        drawHullIcon(ctx, ownPattern, cellX, cellY, state.themeColor, ownPixelSize);
         if (state.zoomLevel >= 1) {
           ctx.font = COORD_FONT;
           ctx.fillStyle = state.themeColor;
@@ -179,6 +183,9 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
   // Draw other players — zoom >= 3
   if (state.zoomLevel >= 3) {
+    const otherPattern = HULL_RADAR_PATTERNS.scout;
+    const otherPixelSize = 1 + state.zoomLevel;
+    const otherColor = state.dimColor;
     const playerList = Object.values(state.players);
     for (let i = 0; i < playerList.length; i++) {
       const player = playerList[i];
@@ -187,10 +194,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       if (Math.abs(dx) <= radiusX && Math.abs(dy) <= radiusY && !(player.x === state.position.x && player.y === state.position.y)) {
         const px = centerX + dx * CELL_W + 12;
         const py = centerY + dy * CELL_H;
-        ctx.font = FONT;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        drawGlowText(ctx, SYMBOLS.player, px, py, state.themeColor, 6);
+        drawHullIcon(ctx, otherPattern, px, py, otherColor, otherPixelSize);
       }
     }
   }
@@ -270,6 +274,40 @@ export function drawGlitchOverlay(ctx: CanvasRenderingContext2D, width: number, 
       ctx.fillRect(Math.random() * width, Math.random() * height, 2, 1);
     }
   }
+}
+
+function drawHullIcon(
+  ctx: CanvasRenderingContext2D,
+  pattern: number[][],
+  centerX: number,
+  centerY: number,
+  color: string,
+  pixelSize: number = 2
+) {
+  const rows = pattern.length;
+  const cols = pattern[0].length;
+  const offsetX = centerX - (cols * pixelSize) / 2;
+  const offsetY = centerY - (rows * pixelSize) / 2;
+
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 4;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (pattern[r][c]) {
+        ctx.fillRect(
+          offsetX + c * pixelSize,
+          offsetY + r * pixelSize,
+          pixelSize,
+          pixelSize
+        );
+      }
+    }
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
 }
 
 function drawGlowText(

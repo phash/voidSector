@@ -330,6 +330,15 @@ export const SPAWN_DISTANCE_VARIANCE = 2_000_000;
 export const SPAWN_CLUSTER_RADIUS = 100;
 export const SPAWN_CLUSTER_MAX_PLAYERS = 5;
 
+// Hull-specific pixel patterns for radar rendering (3x3 grids, 1 = filled pixel)
+export const HULL_RADAR_PATTERNS: Record<HullType, number[][]> = {
+  scout:      [[0,1,0], [1,1,1], [0,1,0]],
+  freighter:  [[1,1,0], [1,1,1], [1,1,0]],
+  cruiser:    [[0,1,0], [1,1,1], [1,1,0]],
+  explorer:   [[0,1,0], [1,1,1], [0,1,1]],
+  battleship: [[1,1,1], [1,1,1], [1,1,0]],
+};
+
 // UI Symbols for grid rendering
 export const SYMBOLS = {
   ship: '\u25A0',
