@@ -563,6 +563,51 @@ class GameNetwork {
       }
     });
 
+    // --- Far-Nav / Autopilot ---
+
+    room.onMessage('autopilotStart', (data: { targetX: number; targetY: number; totalSteps: number }) => {
+      useStore.getState().setAutopilot({
+        targetX: data.targetX,
+        targetY: data.targetY,
+        remaining: data.totalSteps,
+        active: true,
+      });
+    });
+
+    room.onMessage('autopilotUpdate', (data: { x: number; y: number; remaining: number }) => {
+      const store = useStore.getState();
+      store.setPosition({ x: data.x, y: data.y });
+      store.setAutopilot({
+        ...(store.autopilot || { targetX: 0, targetY: 0, active: true }),
+        remaining: data.remaining,
+      });
+      // Auto-center camera on ship during autopilot
+      store.resetPan();
+    });
+
+    room.onMessage('autopilotComplete', (data: { x: number; y: number }) => {
+      const store = useStore.getState();
+      store.setAutopilot(null);
+      if (data.x >= 0 && data.y >= 0) {
+        store.setPosition({ x: data.x, y: data.y });
+        store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);
+      } else {
+        store.addLogEntry('Autopilot abgebrochen.');
+      }
+      store.resetPan();
+    });
+
+    room.onMessage('allDiscoveries', (data: { discoveries: { x: number; y: number; discoveredAt: number }[] }) => {
+      const store = useStore.getState();
+      // Merge discovery timestamps
+      const timestamps: Record<string, number> = { ...store.discoveryTimestamps };
+      for (const d of data.discoveries) {
+        const key = `${d.x}:${d.y}`;
+        timestamps[key] = d.discoveredAt;
+      }
+      store.setDiscoveryTimestamps(timestamps);
+    });
+
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
@@ -856,6 +901,15 @@ class GameNetwork {
     this.sectorRoom?.send('setBookmark', { slot, sectorX, sectorY, label });
   }
   sendClearBookmark(slot: number) { this.sectorRoom?.send('clearBookmark', { slot }); }
+
+  // Far-Nav / Autopilot
+  sendFarJump(targetX: number, targetY: number) {
+    this.sectorRoom?.send('farJump', { targetX, targetY });
+  }
+
+  sendCancelAutopilot() {
+    this.sectorRoom?.send('cancelAutopilot');
+  }
 
   sendCreateCustomSlate(data: CreateCustomSlateMessage) {
     if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }

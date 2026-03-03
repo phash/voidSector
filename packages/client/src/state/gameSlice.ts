@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -107,6 +107,10 @@ export interface GameSlice {
   // Bookmarks
   bookmarks: Bookmark[];
 
+  // Autopilot / Far-Nav
+  autopilot: AutopilotState | null;
+  discoveryTimestamps: Record<string, number>;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
@@ -151,6 +155,8 @@ export interface GameSlice {
   setFactionUpgrades: (upgrades: FactionUpgradeState[]) => void;
   setTradeRoutes: (routes: TradeRoute[]) => void;
   setBookmarks: (bookmarks: Bookmark[]) => void;
+  setAutopilot: (state: AutopilotState | null) => void;
+  setDiscoveryTimestamps: (timestamps: Record<string, number>) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -193,6 +199,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   factionUpgrades: [],
   tradeRoutes: [],
   bookmarks: [],
+  autopilot: null,
+  discoveryTimestamps: {},
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -281,4 +289,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setFactionUpgrades: (factionUpgrades) => set({ factionUpgrades }),
   setTradeRoutes: (tradeRoutes) => set({ tradeRoutes }),
   setBookmarks: (bookmarks) => set({ bookmarks }),
+  setAutopilot: (autopilot) => set({ autopilot }),
+  setDiscoveryTimestamps: (discoveryTimestamps) => set({ discoveryTimestamps }),
 });
