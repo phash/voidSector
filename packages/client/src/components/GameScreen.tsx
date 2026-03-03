@@ -15,6 +15,7 @@ import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
 import { BattleResultDialog } from './BattleResultDialog';
+import { DetailViewOverlay } from './DetailViewOverlay';
 import { ModulePanel } from './ModulePanel';
 import { HangarPanel } from './HangarPanel';
 import { useStore } from '../state/store';
@@ -373,10 +374,11 @@ export function GameScreen() {
     <MonitorBezel
       monitorId="NAV-COM"
     >
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
         <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
           <RadarCanvas />
         </div>
+        <DetailViewOverlay />
       </div>
     </MonitorBezel>
   );

@@ -63,6 +63,8 @@ export function DetailPanel() {
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
   const bookmarks = useStore((s) => s.bookmarks);
 
+  const setDetailView = useStore((s) => s.setDetailView);
+
   const autopilot = useStore((s) => s.autopilot);
   const ship = useStore((s) => s.ship);
 
@@ -112,7 +114,19 @@ export function DetailPanel() {
 
       {sector ? (
         <>
-          <div>TYPE ──── <span style={{ color: sectorColor }}>{sector.type.toUpperCase()}</span></div>
+          <div>TYPE ──── <span
+            style={{ color: sectorColor, cursor: 'pointer', textDecoration: 'underline dotted' }}
+            onClick={() => setDetailView({
+              type: isHome ? 'home_base' : sector.type,
+              data: {
+                name: sector.type.toUpperCase(),
+                faction: sector.faction,
+                resources: sector.resources
+                  ? Object.entries(sector.resources).map(([r, a]) => `${r.toUpperCase()} x${a}`).join(', ')
+                  : undefined,
+              },
+            })}
+          >{sector.type.toUpperCase()}</span></div>
           {sector.resources && (
             <>
               <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>RESOURCES</div>
@@ -211,7 +225,13 @@ export function DetailPanel() {
             <>
               <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>SHIPS IN SECTOR</div>
               {playersHere.map((p) => (
-                <div key={p.sessionId}>{p.username}</div>
+                <div
+                  key={p.sessionId}
+                  style={{ cursor: 'pointer', textDecoration: 'underline dotted', color: 'var(--color-primary)' }}
+                  onClick={() => setDetailView({ type: 'ship', data: { name: p.username } })}
+                >
+                  {p.username}
+                </div>
               ))}
             </>
           )}
