@@ -12,6 +12,7 @@ import { CommsScreen } from './CommsScreen';
 import { BaseScreen } from './BaseScreen';
 import { TradeScreen } from './TradeScreen';
 import { FactionScreen } from './FactionScreen';
+import { QuestsScreen } from './QuestsScreen';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, SHIP_CLASSES } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
@@ -78,6 +79,7 @@ function renderScreen(monitorId: string) {
     case MONITORS.BASE_LINK: return <BaseScreen />;
     case MONITORS.TRADE: return <TradeScreen />;
     case MONITORS.FACTION: return <FactionScreen />;
+    case MONITORS.QUESTS: return <QuestsScreen />;
     default: return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
 }
