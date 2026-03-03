@@ -7,12 +7,14 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction } from '../engine/commands.js';
+import { generateStationNpcs, getStationFaction } from '../engine/npcgen.js';
+import { generateStationQuests } from '../engine/questgen.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -212,6 +214,23 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('respondInvite', async (client, data: { inviteId: string; accept: boolean }) => {
       await this.handleRespondInvite(client, data);
     });
+
+    // Phase 4: NPC Ecosystem
+    this.onMessage('getStationNpcs', async (client, data: GetStationNpcsMessage) => {
+      await this.handleGetStationNpcs(client, data);
+    });
+    this.onMessage('acceptQuest', async (client, data: AcceptQuestMessage) => {
+      await this.handleAcceptQuest(client, data);
+    });
+    this.onMessage('abandonQuest', async (client, data: AbandonQuestMessage) => {
+      await this.handleAbandonQuest(client, data);
+    });
+    this.onMessage('getActiveQuests', async (client) => {
+      await this.handleGetActiveQuests(client);
+    });
+    this.onMessage('getReputation', async (client) => {
+      await this.handleGetReputation(client);
+    });
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
@@ -309,6 +328,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       }));
       client.send('chatHistory', history);
     }
+
+    // Phase 4: Send reputation + active quests
+    await this.sendReputationUpdate(client, auth.userId);
+    await this.sendActiveQuests(client, auth.userId);
   }
 
   async onLeave(client: Client, consented: boolean) {
@@ -1288,5 +1311,149 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
     client.send('factionActionResult', { success: true, action: 'respondInvite' });
     await this.sendFactionData(client);
+  }
+
+  // --- Phase 4: NPC Ecosystem Handlers ---
+
+  private async handleGetStationNpcs(client: Client, data: GetStationNpcsMessage) {
+    const auth = client.auth as AuthPayload;
+    const npcs = generateStationNpcs(data.sectorX, data.sectorY);
+    const reps = await getPlayerReputations(auth.userId);
+    const faction = getStationFaction(data.sectorX, data.sectorY);
+    const factionRep = reps.find(r => r.faction_id === faction)?.reputation ?? 0;
+    const tier = getReputationTier(factionRep) as ReputationTier;
+    const dayOfYear = Math.floor(Date.now() / 86400000);
+    const quests = generateStationQuests(data.sectorX, data.sectorY, dayOfYear, tier);
+    client.send('stationNpcsResult', { npcs, quests });
+  }
+
+  private async handleAcceptQuest(client: Client, data: AcceptQuestMessage) {
+    const auth = client.auth as AuthPayload;
+    const count = await getActiveQuestCount(auth.userId);
+    const validation = validateAcceptQuest(count);
+    if (!validation.valid) {
+      client.send('acceptQuestResult', { success: false, error: validation.error });
+      return;
+    }
+
+    // Regenerate quest from template to validate it exists
+    const reps = await getPlayerReputations(auth.userId);
+    const faction = getStationFaction(data.stationX, data.stationY);
+    const factionRep = reps.find(r => r.faction_id === faction)?.reputation ?? 0;
+    const tier = getReputationTier(factionRep) as ReputationTier;
+    const dayOfYear = Math.floor(Date.now() / 86400000);
+    const available = generateStationQuests(data.stationX, data.stationY, dayOfYear, tier);
+    const questTemplate = available.find(q => q.templateId === data.templateId);
+
+    if (!questTemplate) {
+      client.send('acceptQuestResult', { success: false, error: 'Quest not available' });
+      return;
+    }
+
+    const expiresAt = new Date(Date.now() + QUEST_EXPIRY_DAYS * 86400000);
+    const questId = await insertQuest(
+      auth.userId, data.templateId, data.stationX, data.stationY,
+      questTemplate.objectives, questTemplate.rewards, expiresAt,
+    );
+
+    const quest: Quest = {
+      id: questId,
+      templateId: data.templateId,
+      npcName: questTemplate.npcName,
+      npcFactionId: questTemplate.npcFactionId,
+      title: questTemplate.title,
+      description: questTemplate.description,
+      stationX: data.stationX,
+      stationY: data.stationY,
+      objectives: questTemplate.objectives,
+      rewards: questTemplate.rewards,
+      status: 'active',
+      acceptedAt: Date.now(),
+      expiresAt: expiresAt.getTime(),
+    };
+
+    client.send('acceptQuestResult', { success: true, quest });
+    client.send('logEntry', `Quest angenommen: ${quest.title}`);
+  }
+
+  private async handleAbandonQuest(client: Client, data: AbandonQuestMessage) {
+    const auth = client.auth as AuthPayload;
+    const updated = await updateQuestStatus(data.questId, 'abandoned');
+    client.send('abandonQuestResult', { success: updated, error: updated ? undefined : 'Quest not found' });
+    if (updated) {
+      await this.sendActiveQuests(client, auth.userId);
+    }
+  }
+
+  private async handleGetActiveQuests(client: Client) {
+    const auth = client.auth as AuthPayload;
+    await this.sendActiveQuests(client, auth.userId);
+  }
+
+  private async sendActiveQuests(client: Client, playerId: string) {
+    const rows = await getActiveQuests(playerId);
+    const quests: Quest[] = rows.map(r => ({
+      id: r.id,
+      templateId: r.template_id,
+      npcName: '',
+      npcFactionId: 'independent' as NpcFactionId,
+      title: r.template_id,
+      description: '',
+      stationX: r.station_x,
+      stationY: r.station_y,
+      objectives: r.objectives,
+      rewards: r.rewards,
+      status: r.status,
+      acceptedAt: new Date(r.accepted_at).getTime(),
+      expiresAt: new Date(r.expires_at).getTime(),
+    }));
+    client.send('activeQuests', { quests });
+  }
+
+  private async handleGetReputation(client: Client) {
+    const auth = client.auth as AuthPayload;
+    await this.sendReputationUpdate(client, auth.userId);
+  }
+
+  private async sendReputationUpdate(client: Client, playerId: string) {
+    const reps = await getPlayerReputations(playerId);
+    const upgrades = await getPlayerUpgrades(playerId);
+
+    const reputations: PlayerReputation[] = ['traders', 'scientists', 'pirates', 'ancients'].map(fid => {
+      const rep = reps.find(r => r.faction_id === fid)?.reputation ?? 0;
+      return { factionId: fid as NpcFactionId, reputation: rep, tier: getReputationTier(rep) as ReputationTier };
+    });
+
+    const playerUpgrades: PlayerUpgrade[] = upgrades.map(u => ({
+      upgradeId: u.upgrade_id as any,
+      active: u.active,
+      unlockedAt: new Date(u.unlocked_at).getTime(),
+    }));
+
+    client.send('reputationUpdate', { reputations, upgrades: playerUpgrades });
+  }
+
+  private async applyReputationChange(playerId: string, factionId: NpcFactionId, delta: number, client: Client) {
+    const newRep = await setPlayerReputation(playerId, factionId, delta);
+    const tier = getReputationTier(newRep);
+
+    // Check upgrade unlock/deactivation
+    for (const [upgradeId, upgrade] of Object.entries(FACTION_UPGRADES)) {
+      if (upgrade.factionId === factionId) {
+        const shouldBeActive = tier === 'honored';
+        await upsertPlayerUpgrade(playerId, upgradeId, shouldBeActive);
+      }
+    }
+
+    await this.sendReputationUpdate(client, playerId);
+  }
+
+  private async applyXpGain(playerId: string, xp: number, client: Client) {
+    const result = await addPlayerXp(playerId, xp);
+    const newLevel = calculateLevel(result.xp);
+    if (newLevel > result.level) {
+      await setPlayerLevel(playerId, newLevel);
+      client.send('logEntry', `LEVEL UP! Du bist jetzt Level ${newLevel}`);
+    }
   }
 }
