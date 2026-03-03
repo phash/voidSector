@@ -151,9 +151,24 @@ class GameNetwork {
       store.addLogEntry(`Local scan: Ore ${data.resources.ore}, Gas ${data.resources.gas}, Crystal ${data.resources.crystal}`);
     });
 
-    // Discoveries
-    room.onMessage('discoveries', (data: Array<{ x: number; y: number }>) => {
-      useStore.getState().addLogEntry(`Loaded ${data.length} discovered sectors`);
+    // Discoveries (from scan/jump — server sends array of sector coords)
+    room.onMessage('discoveries', (data: Array<{ x: number; y: number; type?: string; seed?: number }>) => {
+      const store = useStore.getState();
+      const sectorData: SectorData[] = [];
+      for (const d of data) {
+        if (d.type) {
+          sectorData.push({
+            x: d.x, y: d.y,
+            type: d.type as SectorData['type'],
+            seed: d.seed ?? 0,
+            resources: { ore: 0, gas: 0, crystal: 0 },
+          });
+        }
+      }
+      if (sectorData.length > 0) {
+        store.addDiscoveries(sectorData);
+      }
+      store.addLogEntry(`Loaded ${data.length} discovered sectors`);
     });
 
     // Errors
@@ -558,10 +573,14 @@ class GameNetwork {
       const store = useStore.getState();
       store.addDistressCall(data);
       store.addLogEntry(`NOTRUF EMPFANGEN — Richtung: ${data.direction}, ~${data.estimatedDistance} Sektoren`);
-      const visible = store.sidebarSlots.includes('LOG')
+      const logVisible = store.sidebarSlots.includes('LOG')
         || store.leftSidebarSlots.includes('LOG')
         || store.mainMonitorMode === 'LOG';
-      if (!visible) store.setAlert('LOG', true);
+      if (!logVisible) store.setAlert('LOG', true);
+      const commsVisible = store.sidebarSlots.includes('COMMS')
+        || store.leftSidebarSlots.includes('COMMS')
+        || store.mainMonitorMode === 'COMMS';
+      if (!commsVisible) store.setAlert('COMMS', true);
     });
 
     // Faction Upgrades
@@ -617,7 +636,7 @@ class GameNetwork {
       }
     });
 
-    // --- Far-Nav / Autopilot ---
+    // --- Hyperjump / Autopilot ---
 
     room.onMessage('autopilotStart', (data: { targetX: number; targetY: number; totalSteps: number }) => {
       useStore.getState().setAutopilot({
@@ -680,30 +699,55 @@ class GameNetwork {
       }
     });
 
-    room.onMessage('allDiscoveries', (data: { discoveries: { x: number; y: number; discoveredAt: number }[] }) => {
+    room.onMessage('allDiscoveries', (data: { discoveries: { x: number; y: number; discoveredAt: number; type?: string; seed?: number }[] }) => {
       const store = useStore.getState();
       // Merge discovery timestamps
       const timestamps: Record<string, number> = { ...store.discoveryTimestamps };
+      const sectorData: SectorData[] = [];
       for (const d of data.discoveries) {
         const key = `${d.x}:${d.y}`;
         timestamps[key] = d.discoveredAt;
+        // Populate fog-of-war map with sector data if available
+        if (d.type) {
+          sectorData.push({
+            x: d.x,
+            y: d.y,
+            type: d.type as SectorData['type'],
+            seed: d.seed ?? 0,
+            resources: { ore: 0, gas: 0, crystal: 0 },
+          });
+        }
       }
       store.setDiscoveryTimestamps(timestamps);
+      if (sectorData.length > 0) {
+        store.addDiscoveries(sectorData);
+      }
     });
 
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
-        useStore.getState().addLogEntry(`Disconnected (code: ${code}) — reconnecting...`);
         const store = useStore.getState();
-        try {
-          await this.joinSector(store.position.x, store.position.y);
-          useStore.getState().addLogEntry('Reconnected');
-        } catch {
-          useStore.getState().addLogEntry('Reconnect failed');
-        } finally {
-          this.reconnecting = false;
+        store.addLogEntry(`VERBINDUNG VERLOREN (Code: ${code}) — Reconnect...`);
+
+        let attempt = 0;
+        const maxRetries = 5;
+        const baseDelay = 1000;
+
+        while (attempt < maxRetries) {
+          attempt++;
+          const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), 15000);
+          await new Promise(r => setTimeout(r, delay));
+          useStore.getState().addLogEntry(`Reconnect Versuch ${attempt}/${maxRetries}...`);
+          try {
+            await this.joinSector(store.position.x, store.position.y);
+            useStore.getState().addLogEntry('VERBINDUNG WIEDERHERGESTELLT');
+            this.reconnecting = false;
+            return;
+          } catch { /* continue */ }
         }
+        useStore.getState().addLogEntry('RECONNECT FEHLGESCHLAGEN — Bitte Seite neu laden');
+        this.reconnecting = false;
       }
     });
   }
@@ -985,9 +1029,9 @@ class GameNetwork {
   }
   sendClearBookmark(slot: number) { this.sectorRoom?.send('clearBookmark', { slot }); }
 
-  // Far-Nav / Autopilot
-  sendFarJump(targetX: number, targetY: number) {
-    this.sectorRoom?.send('farJump', { targetX, targetY });
+  // Hyperjump / Autopilot
+  sendHyperJump(targetX: number, targetY: number) {
+    this.sectorRoom?.send('hyperJump', { targetX, targetY });
   }
 
   sendCancelAutopilot() {

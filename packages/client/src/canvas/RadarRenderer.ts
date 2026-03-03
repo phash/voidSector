@@ -36,6 +36,11 @@ interface RadarState {
   hullType?: HullType;
 }
 
+// Coordinate frame margins (exported for click offset calculation)
+export const FRAME_LEFT = 32;   // space for row numbers (Y coordinates)
+export const FRAME_BOTTOM = 20; // space for column numbers (X coordinates)
+export const FRAME_PAD = 8;     // padding on right/top
+
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   const { w: CELL_W, h: CELL_H, fontSize, coordSize } = CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1];
   const FONT = `${fontSize}px 'Share Tech Mono', 'Courier New', monospace`;
@@ -47,11 +52,6 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#050505';
   ctx.fillRect(0, 0, w, h);
-
-  // Coordinate frame margins
-  const FRAME_LEFT = 32;   // space for row numbers (Y coordinates)
-  const FRAME_BOTTOM = 20; // space for column numbers (X coordinates)
-  const FRAME_PAD = 8;     // padding on right/top
 
   // Grid area bounded to ~80% of canvas
   const gridLeft = FRAME_LEFT;

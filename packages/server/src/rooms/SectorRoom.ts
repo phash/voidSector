@@ -19,8 +19,18 @@ import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '..
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, FAR_JUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, FarJumpMessage, HullType, ShipStats, ShipModule, ShipRecord } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord } from '@void-sector/shared';
+
+function isInt(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v);
+}
+function isPositiveInt(v: unknown): v is number {
+  return isInt(v) && v > 0;
+}
+
+const VALID_RESOURCES = ['ore', 'gas', 'crystal'];
+const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post'];
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -292,9 +302,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('bookmarksUpdate', { bookmarks });
     });
 
-    // Far-nav: far-jump + autopilot
-    this.onMessage('farJump', async (client, data: FarJumpMessage) => {
-      await this.handleFarJump(client, data);
+    // Hyperjump + autopilot
+    this.onMessage('hyperJump', async (client, data: HyperJumpMessage) => {
+      await this.handleHyperJump(client, data);
     });
     this.onMessage('emergencyWarp', async (client) => {
       await this.handleEmergencyWarp(client);
@@ -617,7 +627,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const bookmarks = await getPlayerBookmarks(auth.userId);
     client.send('bookmarksUpdate', { bookmarks });
 
-    // Send all discoveries for far-nav map
+    // Send all discoveries for hyperjump map
     const allDiscoveries = await getPlayerDiscoveries(auth.userId);
     client.send('allDiscoveries', { discoveries: allDiscoveries });
 
@@ -671,6 +681,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleJump(client: Client, data: JumpMessage) {
+    if (!isInt(data.targetX) || !isInt(data.targetY)) {
+      client.send('jumpResult', { success: false, error: 'Invalid coordinates' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
@@ -770,49 +784,53 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Client will leave this room and join the new sector room
   }
 
-  private async handleFarJump(client: Client, data: FarJumpMessage) {
+  private async handleHyperJump(client: Client, data: HyperJumpMessage) {
+    if (!isInt(data.targetX) || !isInt(data.targetY)) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
     // Reject if already in autopilot
     if (this.autopilotTimers.has(client.sessionId)) {
-      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Autopilot already active' });
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Autopilot already active' });
       return;
     }
 
     // Validate target is discovered
     const discovered = await isRouteDiscovered(auth.userId, targetX, targetY);
     if (!discovered) {
-      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Target sector not discovered' });
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Target sector not discovered' });
       return;
     }
 
     // Check mining state (reject if mining is active)
     const mining = await getMiningState(auth.userId);
     if (mining?.active) {
-      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Cannot far-jump while mining' });
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Cannot hyperjump while mining' });
       return;
     }
 
     // Get current position
     const pos = await getPlayerPosition(auth.userId);
     if (!pos) {
-      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Position unknown' });
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Position unknown' });
       return;
     }
     const dx = targetX - pos.x;
     const dy = targetY - pos.y;
     const distance = Math.abs(dx) + Math.abs(dy);
     if (distance <= 1) {
-      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Use normal jump for adjacent sectors' });
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Use normal jump for adjacent sectors' });
       return;
     }
 
     // Get ship stats
     const ship = this.getShipForClient(client.sessionId);
 
-    // Calculate costs with far-jump discount
-    const apCost = Math.ceil(distance * ship.apCostJump * FAR_JUMP_AP_DISCOUNT);
+    // Calculate costs with hyperjump discount
+    const apCost = Math.ceil(distance * ship.apCostJump * HYPERJUMP_AP_DISCOUNT);
     const shipFar = this.getShipForClient(client.sessionId);
     const fuelCost = distance * shipFar.fuelPerJump;
 
@@ -820,14 +838,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     const ap = await getAPState(auth.userId);
     const updated = calculateCurrentAP(ap);
     if (updated.current < apCost) {
-      client.send('error', { code: 'FAR_JUMP_FAIL', message: `Not enough AP (need ${apCost}, have ${updated.current})` });
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: `Not enough AP (need ${apCost}, have ${updated.current})` });
       return;
     }
 
     // Validate fuel
     const currentFuel = await getFuelState(auth.userId);
     if (currentFuel === null || currentFuel < fuelCost) {
-      client.send('error', { code: 'FAR_JUMP_FAIL', message: `Not enough fuel (need ${fuelCost}, have ${currentFuel ?? 0})` });
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: `Not enough fuel (need ${fuelCost}, have ${currentFuel ?? 0})` });
       return;
     }
 
@@ -878,7 +896,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         stepIndex++;
         client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
       } catch (err) {
-        console.error('[FAR_JUMP] Autopilot step error:', err);
+        console.error('[HYPERJUMP] Autopilot step error:', err);
         clearInterval(timer);
         this.autopilotTimers.delete(client.sessionId);
         client.send('autopilotComplete', { x: -1, y: -1 });
@@ -898,6 +916,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleRefuel(client: Client, data: RefuelMessage) {
+    if (!isPositiveInt(data.amount)) {
+      client.send('refuelResult', { success: false, error: 'Invalid amount' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
 
     // Must be at a station or own base
@@ -1113,6 +1135,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleMine(client: Client, data: MineMessage) {
+    if (!data.resource || !VALID_RESOURCES.includes(data.resource)) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { resource } = data;
 
@@ -1192,6 +1218,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleBuild(client: Client, data: BuildMessage) {
+    if (!data.type || !VALID_STRUCTURE_TYPES.includes(data.type)) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid structure type' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
@@ -1310,6 +1340,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleTransfer(client: Client, data: TransferMessage) {
+    if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
+      client.send('transferResult', { success: false, error: 'Invalid transfer parameters' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { resource, amount, direction } = data;
 
@@ -1351,6 +1385,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleNpcTrade(client: Client, data: NpcTradeMessage) {
+    if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
+      client.send('npcTradeResult', { success: false, error: 'Invalid trade parameters' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { resource, amount, action } = data;
 
@@ -1486,17 +1524,20 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handlePlaceOrder(client: Client, data: PlaceOrderMessage) {
+    if (!isPositiveInt(data.amount) || !isPositiveInt(data.pricePerUnit) || data.pricePerUnit > 999999) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid amount or price' });
+      return;
+    }
+    if (!VALID_RESOURCES.includes(data.resource)) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { resource, amount, pricePerUnit, type } = data;
 
     const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
     if (!tradingPost || tradingPost.tier < 2) {
       client.send('error', { code: 'NO_MARKET', message: 'Need Trading Post Tier 2+' });
-      return;
-    }
-
-    if (amount <= 0 || pricePerUnit <= 0) {
-      client.send('error', { code: 'INVALID_ORDER', message: 'Invalid amount or price' });
       return;
     }
 

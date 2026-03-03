@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useCanvas } from '../canvas/useCanvas';
-import { drawRadar, CELL_SIZES } from '../canvas/RadarRenderer';
+import { drawRadar, CELL_SIZES, FRAME_LEFT, FRAME_PAD, FRAME_BOTTOM } from '../canvas/RadarRenderer';
 import { updateJumpAnimation } from '../canvas/JumpAnimation';
 import { useStore } from '../state/store';
 import { COLOR_PROFILES } from '../styles/themes';
@@ -92,15 +92,14 @@ export function RadarCanvas() {
       if (!dragMoved && dragging && canvas) {
         // Click — calculate which cell was clicked
         const rect = canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
         const state = useStore.getState();
         const { w: cellW, h: cellH } = CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1];
-        const cX = rect.width / 2;
-        const cY = rect.height / 2;
-        const dx = Math.round((clickX - cX) / cellW);
-        const dy = Math.round((clickY - cY) / cellH);
+        const gridCenterX = FRAME_LEFT + (rect.width - FRAME_LEFT - FRAME_PAD) / 2;
+        const gridCenterY = FRAME_PAD + (rect.height - FRAME_PAD - FRAME_BOTTOM) / 2;
+        const dx = Math.round((clickX - gridCenterX) / cellW);
+        const dy = Math.round((clickY - gridCenterY) / cellH);
         const viewX = state.position.x + state.panOffset.x;
         const viewY = state.position.y + state.panOffset.y;
         state.setSelectedSector({ x: viewX + dx, y: viewY + dy });

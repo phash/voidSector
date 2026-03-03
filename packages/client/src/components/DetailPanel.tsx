@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
-import { SECTOR_COLORS, FUEL_COST_PER_UNIT, FAR_JUMP_AP_DISCOUNT, FREE_REFUEL_MAX_SHIPS, REP_PRICE_MODIFIERS } from '@void-sector/shared';
+import { SECTOR_COLORS, FUEL_COST_PER_UNIT, HYPERJUMP_AP_DISCOUNT, FREE_REFUEL_MAX_SHIPS, REP_PRICE_MODIFIERS, generateStationName } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 
@@ -119,7 +119,10 @@ export function DetailPanel() {
             onClick={() => setDetailView({
               type: isHome ? 'home_base' : sector.type,
               data: {
-                name: sector.type.toUpperCase(),
+                name: sector.type === 'station'
+                  ? generateStationName(selectedSector.x, selectedSector.y)
+                  : sector.type.toUpperCase(),
+                position: `(${selectedSector.x}, ${selectedSector.y})`,
                 faction: sector.faction,
                 resources: sector.resources
                   ? Object.entries(sector.resources).map(([r, a]) => `${r.toUpperCase()} x${a}`).join(', ')
@@ -247,18 +250,18 @@ export function DetailPanel() {
             [BOOKMARK]
           </button>
 
-          {/* Far Jump button */}
+          {/* Hyperjump button */}
           {(() => {
             const distance = Math.abs(selectedSector.x - position.x) + Math.abs(selectedSector.y - position.y);
             const isAdjacent = distance <= 1;
             if (!isPlayerHere && !isAdjacent && !autopilot?.active) {
               const shipStats = ship?.stats ?? null;
-              const apCost = shipStats ? Math.ceil(distance * shipStats.apCostJump * FAR_JUMP_AP_DISCOUNT) : 0;
+              const apCost = shipStats ? Math.ceil(distance * shipStats.apCostJump * HYPERJUMP_AP_DISCOUNT) : 0;
               const fuelCost = shipStats ? distance : 0;
               return (
                 <button className="vs-btn" style={{ marginTop: 8, display: 'block', width: '100%' }}
-                  onClick={() => network.sendFarJump(selectedSector.x, selectedSector.y)}>
-                  [FAR JUMP ({selectedSector.x}, {selectedSector.y})]
+                  onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}>
+                  [HYPERJUMP ({selectedSector.x}, {selectedSector.y})]
                   {shipStats ? ` ${apCost}AP / ${fuelCost}F` : ''}
                 </button>
               );

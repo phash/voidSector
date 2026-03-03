@@ -14,6 +14,7 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
   const ship = useStore((s) => s.ship);
   const alerts = useStore((s) => s.alerts);
   const autopilot = useStore((s) => (s as Record<string, unknown>).autopilot);
+  const distressCalls = useStore((s) => (s as Record<string, unknown>).distressCalls) as unknown[] | undefined;
 
   switch (monitorId) {
     case 'NAV-COM': {
@@ -60,10 +61,15 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
 
     case 'COMMS': {
       const hasAlert = !!alerts['COMMS'];
-      return [
+      const hasDistress = distressCalls && distressCalls.length > 0;
+      const leds: LedConfig[] = [
         { label: 'SIG', color: 'green' },
         { label: 'MSG', color: hasAlert ? 'yellow' : 'gray', blink: hasAlert },
       ];
+      if (hasDistress) {
+        leds.push({ label: 'SOS', color: 'red', blink: true });
+      }
+      return leds;
     }
 
     case 'QUESTS': {

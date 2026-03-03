@@ -150,6 +150,9 @@ export function DetailViewOverlay() {
         {detailView.data?.name && (
           <div>NAME: <span style={{ color: 'var(--color-primary)' }}>{detailView.data.name}</span></div>
         )}
+        {detailView.data?.position && (
+          <div>POSITION: <span style={{ color: 'var(--color-primary)' }}>{detailView.data.position}</span></div>
+        )}
         {detailView.data?.faction && (
           <div>FACTION: <span style={{ color: 'var(--color-primary)' }}>{detailView.data.faction}</span></div>
         )}
