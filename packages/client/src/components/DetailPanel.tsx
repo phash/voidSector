@@ -21,6 +21,7 @@ export function DetailPanel() {
   const ship = useStore((s) => s.ship);
 
   const autoFollow = useStore((s) => s.autoFollow);
+  const mining = useStore((s) => s.mining);
 
   useEffect(() => {
     if (autoFollow) {
@@ -75,6 +76,18 @@ export function DetailPanel() {
           {isPlayerHere && (
             <div style={{ marginTop: 8, color: 'var(--color-primary)' }}>
               YOU ARE HERE
+            </div>
+          )}
+          {mining?.active && mining.sectorX === sector?.x && mining.sectorY === sector?.y && (
+            <div style={{
+              marginTop: 8,
+              padding: '6px 8px',
+              border: '1px solid var(--color-primary)',
+              fontSize: '0.75rem',
+              animation: 'bezel-alert-pulse 2s infinite',
+            }}>
+              <div>MINING: {mining.resource?.toUpperCase()}</div>
+              <div style={{ color: 'var(--color-dim)' }}>RATE: {mining.rate}u/s</div>
             </div>
           )}
           {isPlayerHere && fuel && fuel.current < fuel.max && (
