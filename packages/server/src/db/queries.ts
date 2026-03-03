@@ -55,6 +55,14 @@ export async function findPlayerByUsername(
   };
 }
 
+export async function getPlayerHomeBase(playerId: string): Promise<{ x: number; y: number }> {
+  const { rows } = await query<{ home_base: { x: number; y: number } }>(
+    'SELECT home_base FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.home_base ?? { x: 0, y: 0 };
+}
+
 export async function getActiveShip(playerId: string): Promise<{
   shipClass: ShipClass;
   fuel: number;

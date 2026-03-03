@@ -1,11 +1,12 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR } from '@void-sector/shared';
 
 export function NavControls() {
   const position = useStore((s) => s.position);
   const jumpPending = useStore((s) => s.jumpPending);
   const ap = useStore((s) => s.ap);
+  const fuel = useStore((s) => s.fuel);
   const mining = useStore((s) => s.mining);
   const autopilot = useStore((s) => s.autopilot);
 
@@ -128,6 +129,35 @@ export function NavControls() {
           letterSpacing: '0.15em',
         }}>
           ⚠ MINING ACTIVE — NAV LOCKED
+        </div>
+      )}
+      {fuel && fuel.current <= 0 && !isMining && (
+        <div style={{
+          marginTop: 8,
+          padding: '8px',
+          border: '1px solid #FF3333',
+          textAlign: 'center',
+          animation: 'bezel-alert-pulse 2s infinite',
+        }}>
+          <div style={{ color: '#FF3333', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '0.15em', marginBottom: 4 }}>
+            NOTWARP VERFÜGBAR
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginBottom: 6 }}>
+            Teleport zur Home Base — {(() => {
+              const dist = Math.abs(position.x) + Math.abs(position.y);
+              if (dist <= EMERGENCY_WARP_FREE_RADIUS) return 'GRATIS';
+              const cost = (dist - EMERGENCY_WARP_FREE_RADIUS) * EMERGENCY_WARP_CREDIT_PER_SECTOR;
+              return `${cost} Credits`;
+            })()}
+          </div>
+          <button
+            className="vs-btn"
+            style={{ borderColor: '#FF3333', color: '#FF3333' }}
+            onClick={() => network.sendEmergencyWarp()}
+            disabled={jumpPending}
+          >
+            [NOTWARP AKTIVIEREN]
+          </button>
         </div>
       )}
     </div>

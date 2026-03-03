@@ -368,6 +368,11 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 // Multi-content sectors
 export const SECTOR_MAX_FEATURES = 3;
 
+// Emergency Warp (Notruf)
+export const EMERGENCY_WARP_FREE_RADIUS = 200;      // free within 200 Manhattan distance of home base
+export const EMERGENCY_WARP_CREDIT_PER_SECTOR = 5;   // credits per sector beyond free radius
+export const EMERGENCY_WARP_FUEL_GRANT = 10;          // fuel granted after emergency warp
+
 // Far-Navigation
 export const FAR_JUMP_AP_DISCOUNT = 0.5;   // 50% AP cost for known routes
 export const FAR_JUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate sectors

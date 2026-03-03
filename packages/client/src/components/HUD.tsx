@@ -69,17 +69,24 @@ export function StatusBar() {
         )}
       </div>
       {fuel && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-          <span style={{ fontSize: '0.75em', color: 'rgba(255,176,0,0.6)' }}>FUEL</span>
-          <div style={{ width: 80, height: 8, background: '#1a1a1a', border: '1px solid rgba(255,176,0,0.3)' }}>
-            <div style={{
-              width: `${(fuel.current / fuel.max) * 100}%`,
-              height: '100%',
-              background: fuel.current < fuel.max * 0.2 ? '#FF3333' : '#FFB000',
-              transition: 'width 0.3s',
-            }} />
-          </div>
-          <span style={{ fontSize: '0.7em' }}>{Math.floor(fuel.current)}/{fuel.max}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 16px', marginTop: 2 }}>
+          <span style={{
+            color: fuel.current <= 0 ? '#FF3333' : fuel.current < fuel.max * 0.2 ? '#FF6644' : undefined,
+            animation: fuel.current <= 0 ? 'bezel-alert-pulse 1s infinite' : undefined,
+          }}>
+            FUEL: {Math.floor(fuel.current)}/{fuel.max}
+            {' '}<SegmentedBar current={fuel.current} max={fuel.max} />
+          </span>
+          {fuel.current <= 0 && (
+            <span style={{ color: '#FF3333', fontSize: '0.75rem', fontWeight: 'bold' }}>
+              TANK LEER
+            </span>
+          )}
+          {fuel.current > 0 && fuel.current < fuel.max * 0.2 && (
+            <span style={{ color: '#FF6644', fontSize: '0.75rem' }}>
+              TREIBSTOFF NIEDRIG
+            </span>
+          )}
         </div>
       )}
     </div>
