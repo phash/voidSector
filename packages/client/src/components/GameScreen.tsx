@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MonitorBezel } from './MonitorBezel';
 import { DesktopLayout } from './DesktopLayout';
 import { DetailPanel } from './DetailPanel';
@@ -15,6 +15,8 @@ import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
 import { BattleResultDialog } from './BattleResultDialog';
+import { ModulePanel } from './ModulePanel';
+import { HangarPanel } from './HangarPanel';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
 import type { HullType, ShipModule, ModuleCategory } from '@void-sector/shared';
@@ -155,7 +157,20 @@ function renderSchematicLine(
   );
 }
 
-function ShipSysScreen() {
+type ShipSysView = 'schematic' | 'modules' | 'hangar';
+
+const shipSysTabStyle = (active: boolean): React.CSSProperties => ({
+  background: active ? 'var(--color-primary)' : 'transparent',
+  color: active ? '#000' : 'var(--color-primary)',
+  border: '1px solid var(--color-primary)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '0.6rem',
+  padding: '2px 6px',
+  cursor: 'pointer',
+  letterSpacing: '0.1em',
+});
+
+function SchematicView() {
   const ship = useStore((s) => s.ship);
   const colorProfile = useStore((s) => s.colorProfile);
   const setColorProfile = useStore((s) => s.setColorProfile);
@@ -195,7 +210,7 @@ function ShipSysScreen() {
 
   return (
     <div style={{
-      padding: '6px 8px',
+      padding: '4px 8px',
       fontFamily: 'var(--font-mono)',
       fontSize: '0.65rem',
       lineHeight: 1.5,
@@ -269,6 +284,40 @@ function ShipSysScreen() {
             <option key={name} value={name}>{name.toUpperCase()}</option>
           ))}
         </select>
+      </div>
+    </div>
+  );
+}
+
+function ShipSysScreen() {
+  const [view, setView] = useState<ShipSysView>('schematic');
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Tab bar */}
+      <div style={{
+        display: 'flex',
+        gap: 2,
+        padding: '4px 6px',
+        borderBottom: '1px solid var(--color-dim)',
+        flexShrink: 0,
+      }}>
+        <button style={shipSysTabStyle(view === 'schematic')} onClick={() => setView('schematic')}>
+          SCHEMATIC
+        </button>
+        <button style={shipSysTabStyle(view === 'modules')} onClick={() => setView('modules')}>
+          MODULE
+        </button>
+        <button style={shipSysTabStyle(view === 'hangar')} onClick={() => setView('hangar')}>
+          HANGAR
+        </button>
+      </div>
+
+      {/* Sub-view content */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        {view === 'schematic' && <SchematicView />}
+        {view === 'modules' && <ModulePanel />}
+        {view === 'hangar' && <HangarPanel />}
       </div>
     </div>
   );
