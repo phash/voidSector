@@ -153,12 +153,14 @@ export async function getPlayerCargo(playerId: string): Promise<CargoState> {
     'SELECT resource, quantity FROM cargo WHERE player_id = $1',
     [playerId]
   );
-  const cargo: CargoState = { ore: 0, gas: 0, crystal: 0 };
+  const cargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0 };
   for (const row of result.rows) {
     if (row.resource in cargo) {
       cargo[row.resource as ResourceType] = row.quantity;
     }
   }
+  const slateRow = result.rows.find(r => r.resource === 'slate');
+  if (slateRow) cargo.slates = slateRow.quantity;
   return cargo;
 }
 
@@ -454,4 +456,125 @@ export async function cancelTradeOrder(orderId: string, playerId: string): Promi
     [orderId, playerId]
   );
   return (rowCount ?? 0) > 0;
+}
+
+// --- Data Slates ---
+
+export async function createDataSlate(
+  creatorId: string,
+  slateType: string,
+  sectorData: any[],
+): Promise<{ id: string }> {
+  const result = await query<{ id: string }>(
+    `INSERT INTO data_slates (creator_id, owner_id, slate_type, sector_data)
+     VALUES ($1, $1, $2, $3::jsonb)
+     RETURNING id`,
+    [creatorId, slateType, JSON.stringify(sectorData)]
+  );
+  return result.rows[0];
+}
+
+export async function getPlayerSlates(playerId: string): Promise<any[]> {
+  const result = await query(
+    `SELECT ds.id, ds.creator_id, ds.owner_id, ds.slate_type, ds.sector_data, ds.status, ds.created_at,
+            p.username as creator_name
+     FROM data_slates ds
+     JOIN players p ON p.id = ds.creator_id
+     WHERE ds.owner_id = $1 AND ds.status = 'available'
+     ORDER BY ds.created_at DESC`,
+    [playerId]
+  );
+  return result.rows;
+}
+
+export async function getSlateById(slateId: string): Promise<any | null> {
+  const result = await query(
+    `SELECT ds.*, p.username as creator_name
+     FROM data_slates ds
+     JOIN players p ON p.id = ds.creator_id
+     WHERE ds.id = $1`,
+    [slateId]
+  );
+  return result.rows[0] || null;
+}
+
+export async function deleteSlate(slateId: string): Promise<boolean> {
+  const result = await query(
+    'DELETE FROM data_slates WHERE id = $1',
+    [slateId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function updateSlateStatus(slateId: string, status: string): Promise<boolean> {
+  const result = await query(
+    'UPDATE data_slates SET status = $2 WHERE id = $1',
+    [slateId, status]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function updateSlateOwner(slateId: string, newOwnerId: string): Promise<boolean> {
+  const result = await query(
+    "UPDATE data_slates SET owner_id = $2, status = 'available' WHERE id = $1",
+    [slateId, newOwnerId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function addSlateToCargo(playerId: string, amount: number = 1): Promise<void> {
+  await query(
+    `INSERT INTO cargo (player_id, resource, quantity)
+     VALUES ($1, 'slate', $2)
+     ON CONFLICT (player_id, resource)
+     DO UPDATE SET quantity = cargo.quantity + $2`,
+    [playerId, amount]
+  );
+}
+
+export async function removeSlateFromCargo(playerId: string, amount: number = 1): Promise<boolean> {
+  const result = await query<{ quantity: number }>(
+    `UPDATE cargo SET quantity = quantity - $2
+     WHERE player_id = $1 AND resource = 'slate' AND quantity >= $2
+     RETURNING quantity`,
+    [playerId, amount]
+  );
+  return result.rows.length > 0;
+}
+
+export async function createSlateTradeOrder(
+  playerId: string,
+  slateId: string,
+  price: number,
+): Promise<{ id: string }> {
+  const result = await query<{ id: string }>(
+    `INSERT INTO trade_orders (player_id, resource, amount, price_per_unit, type, slate_id)
+     VALUES ($1, 'slate', 1, $2, 'sell', $3)
+     RETURNING id`,
+    [playerId, price, slateId]
+  );
+  return result.rows[0];
+}
+
+export async function getSlateTradeOrders(): Promise<any[]> {
+  const result = await query(
+    `SELECT t.id, t.player_id, p.username as player_name, t.price_per_unit,
+            t.slate_id, t.created_at,
+            ds.slate_type, ds.sector_data, ds.creator_id
+     FROM trade_orders t
+     JOIN players p ON p.id = t.player_id
+     JOIN data_slates ds ON ds.id = t.slate_id
+     WHERE t.fulfilled = FALSE AND t.resource = 'slate'
+     ORDER BY t.created_at DESC`,
+    []
+  );
+  return result.rows;
+}
+
+export async function getTradeOrderById(orderId: string): Promise<any | null> {
+  const result = await query(
+    'SELECT * FROM trade_orders WHERE id = $1',
+    [orderId]
+  );
+  return result.rows[0] || null;
 }
