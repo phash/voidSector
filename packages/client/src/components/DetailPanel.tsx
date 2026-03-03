@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/store';
-import { SECTOR_COLORS, FUEL_COST_PER_UNIT } from '@void-sector/shared';
+import { SECTOR_COLORS, FUEL_COST_PER_UNIT, SHIP_CLASSES, FAR_JUMP_AP_DISCOUNT } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 
@@ -16,6 +16,9 @@ export function DetailPanel() {
   const scanEvents = useStore((s) => s.scanEvents);
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
   const bookmarks = useStore((s) => s.bookmarks);
+
+  const autopilot = useStore((s) => s.autopilot);
+  const ship = useStore((s) => s.ship);
 
   const autoFollow = useStore((s) => s.autoFollow);
 
@@ -172,6 +175,25 @@ export function DetailPanel() {
             }}>
             [BOOKMARK]
           </button>
+
+          {/* Far Jump button */}
+          {(() => {
+            const distance = Math.abs(selectedSector.x - position.x) + Math.abs(selectedSector.y - position.y);
+            const isAdjacent = distance <= 1;
+            if (!isPlayerHere && !isAdjacent && !autopilot?.active) {
+              const shipStats = ship ? SHIP_CLASSES[ship.shipClass] : null;
+              const apCost = shipStats ? Math.ceil(distance * shipStats.apCostJump * FAR_JUMP_AP_DISCOUNT) : 0;
+              const fuelCost = shipStats ? distance * shipStats.fuelPerJump : 0;
+              return (
+                <button className="vs-btn" style={{ marginTop: 8, display: 'block', width: '100%' }}
+                  onClick={() => network.sendFarJump(selectedSector.x, selectedSector.y)}>
+                  [FAR JUMP ({selectedSector.x}, {selectedSector.y})]
+                  {shipStats ? ` ${apCost}AP / ${fuelCost}F` : ''}
+                </button>
+              );
+            }
+            return null;
+          })()}
         </>
       ) : (
         <div style={{ opacity: 0.4 }}>UNEXPLORED</div>

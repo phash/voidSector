@@ -34,6 +34,7 @@ export function RadarCanvas() {
       selectedSector: state.selectedSector,
       jumpGateInfo: state.jumpGateInfo,
       scanEvents: state.scanEvents,
+      discoveryTimestamps: state.discoveryTimestamps,
     });
   }, []);
 

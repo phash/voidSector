@@ -7,6 +7,23 @@ export function NavControls() {
   const jumpPending = useStore((s) => s.jumpPending);
   const ap = useStore((s) => s.ap);
   const mining = useStore((s) => s.mining);
+  const autopilot = useStore((s) => s.autopilot);
+
+  if (autopilot?.active) {
+    return (
+      <div style={{ padding: '8px 12px', textAlign: 'center' }}>
+        <div style={{ color: '#FFB000', fontSize: '0.9rem', letterSpacing: '0.15em', marginBottom: 8 }}>
+          AUTOPILOT AKTIV
+        </div>
+        <div style={{ fontSize: '0.8rem', marginBottom: 8 }}>
+          Ziel: ({autopilot.targetX}, {autopilot.targetY}) | Verbleibend: {autopilot.remaining}
+        </div>
+        <button className="vs-btn" onClick={() => network.sendCancelAutopilot()}>
+          [ABBRECHEN]
+        </button>
+      </div>
+    );
+  }
 
   const isMining = mining?.active ?? false;
 

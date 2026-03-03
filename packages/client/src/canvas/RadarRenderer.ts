@@ -1,4 +1,4 @@
-import { SYMBOLS, SECTOR_COLORS } from '@void-sector/shared';
+import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS } from '@void-sector/shared';
 import type { SectorData, Coords, JumpGateInfo, ScanEvent } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
@@ -30,6 +30,7 @@ interface RadarState {
   selectedSector?: { x: number; y: number } | null;
   jumpGateInfo?: JumpGateInfo | null;
   scanEvents?: ScanEvent[];
+  discoveryTimestamps?: Record<string, number>;
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
@@ -74,6 +75,20 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const isPlayer = sx === state.position.x && sy === state.position.y;
       const isCenter = dx === 0 && dy === 0;
       const isHome = sx === 0 && sy === 0;
+
+      // Staleness rendering — dim/fade old discoveries
+      if (sector && !isPlayer) {
+        const discoveryTimestamp = state.discoveryTimestamps?.[key];
+        if (discoveryTimestamp) {
+          const now = Date.now();
+          const hoursSinceDiscovery = (now - discoveryTimestamp) / (1000 * 60 * 60);
+          if (hoursSinceDiscovery > STALENESS_FADE_DAYS * 24) {
+            ctx.globalAlpha = 0.2;
+          } else if (hoursSinceDiscovery > STALENESS_DIM_HOURS) {
+            ctx.globalAlpha = 0.5;
+          }
+        }
+      }
 
       // Cell border
       ctx.strokeStyle = state.dimColor.replace(/[\d.]+\)$/, '0.4)');
@@ -156,6 +171,9 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           drawFeatureDot(ctx, dotStartX - fi * 5, dotY, features[fi]);
         }
       }
+
+      // Reset alpha after each cell (staleness rendering)
+      ctx.globalAlpha = 1.0;
     }
   }
 
