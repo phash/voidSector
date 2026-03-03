@@ -65,3 +65,11 @@ html, body, #root {
 .ap-flash {
   animation: ap-flash 0.4s ease-out;
 }
+
+/* CRT Amber Scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a0a0a; border-left: 1px solid rgba(255, 176, 0, 0.1); }
+::-webkit-scrollbar-thumb { background: rgba(255, 176, 0, 0.3); border: 1px solid rgba(255, 176, 0, 0.15); }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 176, 0, 0.5); }
+::-webkit-scrollbar-corner { background: #0a0a0a; }
+* { scrollbar-width: thin; scrollbar-color: rgba(255, 176, 0, 0.3) #0a0a0a; }
