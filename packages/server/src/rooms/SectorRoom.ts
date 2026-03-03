@@ -620,8 +620,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
-    // Phase 4: Check for scan events in scanned sectors
-    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y })));
+    // Phase 4: Check for scan events in scanned sectors (skip pirate ambush — remote scan can't trigger physical encounters)
+    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y })), false);
 
     client.send('scanResult', { sectors, apRemaining: scanResult.newAP!.current });
 
@@ -1688,13 +1688,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
   }
 
-  private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number }[]) {
+  private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number }[], includeImmediateEvents = true) {
     const auth = client.auth as AuthPayload;
     for (const sector of scannedSectors) {
       const eventResult = checkScanEvent(sector.x, sector.y);
       if (!eventResult.hasEvent || !eventResult.eventType) continue;
 
       if (eventResult.isImmediate && eventResult.eventType === 'pirate_ambush') {
+        if (!includeImmediateEvents) continue;
         const pirateLevel = (eventResult.data?.pirateLevel as number) ?? 1;
         const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
         const encounter = createPirateEncounter(pirateLevel, sector.x, sector.y, pirateRep);

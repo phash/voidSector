@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -94,6 +94,7 @@ export interface GameSlice {
   reputations: PlayerReputation[];
   playerUpgrades: PlayerUpgrade[];
   activeBattle: PirateEncounter | null;
+  lastBattleResult: { encounter: PirateEncounter; result: BattleResult } | null;
   scanEvents: ScanEvent[];
 
   // Phase 5: Deep Systems
@@ -137,6 +138,7 @@ export interface GameSlice {
   setReputations: (reps: PlayerReputation[]) => void;
   setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
   setActiveBattle: (encounter: PirateEncounter | null) => void;
+  setLastBattleResult: (result: { encounter: PirateEncounter; result: BattleResult } | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
   addScanEvent: (event: ScanEvent) => void;
   setJumpGateInfo: (gate: JumpGateInfo | null) => void;
@@ -179,6 +181,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   reputations: [],
   playerUpgrades: [],
   activeBattle: null,
+  lastBattleResult: null,
   scanEvents: [],
   jumpGateInfo: null,
   rescuedSurvivors: [],
@@ -263,6 +266,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setReputations: (reputations) => set({ reputations }),
   setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
   setActiveBattle: (activeBattle) => set({ activeBattle }),
+  setLastBattleResult: (lastBattleResult) => set({ lastBattleResult }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
   setJumpGateInfo: (jumpGateInfo) => set({ jumpGateInfo }),

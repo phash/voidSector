@@ -21,7 +21,7 @@ export function TradeScreen() {
   const tradeOrders = useStore((s) => s.tradeOrders);
   const myOrders = useStore((s) => s.myOrders);
   const mySlates = useStore((s) => s.mySlates);
-  const playerId = useStore((s) => s.player?.id);
+  const playerId = useStore((s) => s.playerId);
   const tradeRoutes = useStore((s) => s.tradeRoutes);
   const [amount, setAmount] = useState(1);
   const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes'>('npc');

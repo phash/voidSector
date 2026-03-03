@@ -6,7 +6,7 @@ import type { ResourceType, DataSlate } from '@void-sector/shared';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
-  const filled = max > 0 ? Math.round((value / max) * width) : 0;
+  const filled = max > 0 ? Math.min(Math.round((value / max) * width), width) : 0;
   const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(width - filled);
   return (
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
@@ -82,7 +82,7 @@ export function CargoScreen() {
                 [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : 'C'}]
                 {slate.slateType === 'custom' && slate.customData
                   ? ` ${slate.customData.label}`
-                  : ` ${slate.sectorData.length} Sektoren`}
+                  : ` ${slate.sectorData?.length ?? 0} Sektoren`}
               </span>
               <button className="vs-btn" style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                 onClick={() => network.sendActivateSlate(slate.id)}>

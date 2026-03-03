@@ -14,6 +14,7 @@ import { TradeScreen } from './TradeScreen';
 import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
+import { BattleResultDialog } from './BattleResultDialog';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, SHIP_CLASSES } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
@@ -193,6 +194,7 @@ export function GameScreen() {
         ))}
       </div>
       <BattleDialog />
+      <BattleResultDialog />
     </div>
   );
 }

@@ -19,7 +19,7 @@ describe('FactionScreen', () => {
       faction: null,
       factionMembers: [],
       factionInvites: [],
-      player: { id: 'p1', username: 'TestPlayer' },
+      playerId: 'p1',
     } as any);
   });
 
@@ -45,7 +45,7 @@ describe('FactionScreen', () => {
         { playerId: 'p1', playerName: 'TestPlayer', rank: 'leader' as const, joinedAt: Date.now() },
         { playerId: 'p2', playerName: 'Member1', rank: 'member' as const, joinedAt: Date.now() },
       ],
-      player: { id: 'p1', username: 'TestPlayer' },
+      playerId: 'p1',
     } as any);
     render(<FactionScreen />);
     expect(screen.getByText(/\[TST\] Test Faction/)).toBeDefined();
@@ -64,7 +64,7 @@ describe('FactionScreen', () => {
         status: 'pending' as const,
         createdAt: Date.now(),
       }],
-      player: { id: 'p1', username: 'TestPlayer' },
+      playerId: 'p1',
     } as any);
     render(<FactionScreen />);
     expect(screen.getByText(/COOL/)).toBeDefined();
@@ -89,7 +89,7 @@ describe('FactionScreen', () => {
         { playerId: 'p1', playerName: 'TestPlayer', rank: 'leader' as const, joinedAt: Date.now() },
         { playerId: 'p2', playerName: 'Member1', rank: 'member' as const, joinedAt: Date.now() },
       ],
-      player: { id: 'p1', username: 'TestPlayer' },
+      playerId: 'p1',
     } as any);
     render(<FactionScreen />);
     expect(screen.getByText(/EINLADEN/)).toBeDefined();

@@ -8,7 +8,7 @@ export function FactionScreen() {
   const faction = useStore((s) => s.faction);
   const members = useStore((s) => s.factionMembers);
   const invites = useStore((s) => s.factionInvites);
-  const playerId = useStore((s) => s.player?.id);
+  const playerId = useStore((s) => s.playerId);
   const factionUpgrades = useStore((s) => s.factionUpgrades);
 
   useEffect(() => {

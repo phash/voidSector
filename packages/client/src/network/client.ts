@@ -420,9 +420,10 @@ class GameNetwork {
 
     room.onMessage('battleResult', (data) => {
       const store = useStore.getState();
+      const encounter = store.activeBattle;
       store.setActiveBattle(null);
-      if (data.success && data.result) {
-        store.addLogEntry(`Kampf: ${data.result.outcome}`);
+      if (data.success && data.result && encounter) {
+        store.setLastBattleResult({ encounter, result: data.result });
       }
     });
 

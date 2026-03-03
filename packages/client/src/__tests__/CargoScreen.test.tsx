@@ -19,7 +19,7 @@ import { network } from '../network/client';
 describe('CargoScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStoreState({ cargo: { ore: 3, gas: 0, crystal: 1 } });
+    mockStoreState({ cargo: { ore: 3, gas: 0, crystal: 1, slates: 0 } });
   });
 
   it('shows cargo labels', () => {
@@ -85,12 +85,9 @@ describe('CargoScreen', () => {
         },
       ],
       ship: {
-        shipClass: 'aegis_scout_mk1',
-        fuel: 100,
-        maxFuel: 100,
-        jumpRange: 3,
-        cargoCap: 20,
-        scannerLevel: 1,
+        id: 'ship1', ownerId: 'p1', shipClass: 'aegis_scout_mk1' as const,
+        fuel: 100, fuelMax: 100, jumpRange: 3, apCostJump: 1,
+        cargoCap: 20, scannerLevel: 1, safeSlots: 1, active: true,
       },
     });
     render(<CargoScreen />);
@@ -103,12 +100,9 @@ describe('CargoScreen', () => {
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
       mySlates: [],
       ship: {
-        shipClass: 'aegis_scout_mk1',
-        fuel: 100,
-        maxFuel: 100,
-        jumpRange: 3,
-        cargoCap: 20,
-        scannerLevel: 1,
+        id: 'ship1', ownerId: 'p1', shipClass: 'aegis_scout_mk1' as const,
+        fuel: 100, fuelMax: 100, jumpRange: 3, apCostJump: 1,
+        cargoCap: 20, scannerLevel: 1, safeSlots: 1, active: true,
       },
     });
     render(<CargoScreen />);
