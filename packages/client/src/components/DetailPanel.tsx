@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/store';
-import { SECTOR_COLORS, FUEL_COST_PER_UNIT, FAR_JUMP_AP_DISCOUNT } from '@void-sector/shared';
+import { SECTOR_COLORS, FUEL_COST_PER_UNIT, FAR_JUMP_AP_DISCOUNT, FREE_REFUEL_MAX_SHIPS } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 
@@ -22,6 +22,8 @@ export function DetailPanel() {
 
   const autoFollow = useStore((s) => s.autoFollow);
   const mining = useStore((s) => s.mining);
+  const shipList = useStore((s) => s.shipList);
+  const homeBase = useStore((s) => s.homeBase);
 
   useEffect(() => {
     if (autoFollow) {
@@ -90,23 +92,27 @@ export function DetailPanel() {
               <div style={{ color: 'var(--color-dim)' }}>RATE: {mining.rate}u/s</div>
             </div>
           )}
-          {isPlayerHere && fuel && fuel.current < fuel.max && (
-            <button
-              onClick={() => network.sendRefuel(fuel.max - fuel.current)}
-              style={{
-                background: 'transparent',
-                border: '1px solid #FFB000',
-                color: '#FFB000',
-                fontFamily: 'inherit',
-                fontSize: '0.75em',
-                padding: '4px 12px',
-                cursor: 'pointer',
-                marginTop: 8,
-              }}
-            >
-              REFUEL ({Math.ceil((fuel.max - fuel.current) * FUEL_COST_PER_UNIT)} CR)
-            </button>
-          )}
+          {isPlayerHere && fuel && fuel.current < fuel.max && (() => {
+            const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
+            const isFreeRefuel = isHomeBase && shipList.length <= FREE_REFUEL_MAX_SHIPS;
+            return (
+              <button
+                onClick={() => network.sendRefuel(fuel.max - fuel.current)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #FFB000',
+                  color: '#FFB000',
+                  fontFamily: 'inherit',
+                  fontSize: '0.75em',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  marginTop: 8,
+                }}
+              >
+                REFUEL {isFreeRefuel ? '(GRATIS)' : `(${Math.ceil((fuel.max - fuel.current) * FUEL_COST_PER_UNIT)} CR)`}
+              </button>
+            );
+          })()}
 
           {/* JumpGate Panel */}
           {isPlayerHere && jumpGateInfo && (

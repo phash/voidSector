@@ -423,6 +423,7 @@ export const SIDEBAR_MONITORS = RIGHT_SIDEBAR_MONITORS;
 
 // Fuel
 export const FUEL_COST_PER_UNIT = 2;
+export const FREE_REFUEL_MAX_SHIPS = 3;
 
 // Faction Upgrade Tree
 export const FACTION_UPGRADE_TIERS: Record<number, {
