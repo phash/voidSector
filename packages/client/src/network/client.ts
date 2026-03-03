@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory } from '@void-sector/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -132,7 +132,9 @@ class GameNetwork {
     room.onMessage('localScanResult', (data: { resources: SectorResources; hiddenSignatures: boolean }) => {
       const store = useStore.getState();
       if (store.currentSector) {
-        store.setCurrentSector({ ...store.currentSector, resources: data.resources });
+        const updatedSector = { ...store.currentSector, resources: data.resources };
+        store.setCurrentSector(updatedSector);
+        store.addDiscoveries([updatedSector]);
       }
       if (data.hiddenSignatures) {
         store.addLogEntry('UNKNOWN SIGNATURES DETECTED — SCANNER UPGRADE REQUIRED');
@@ -208,6 +210,67 @@ class GameNetwork {
         useStore.getState().addLogEntry(`Built ${data.structure?.type} at current sector`);
       } else {
         useStore.getState().addLogEntry(`Build failed: ${data.error}`);
+      }
+    });
+
+    // Credits update
+    room.onMessage('creditsUpdate', (data: { credits: number }) => {
+      useStore.getState().setCredits(data.credits);
+    });
+
+    // Storage update
+    room.onMessage('storageUpdate', (data: StorageInventory) => {
+      useStore.getState().setStorage(data);
+    });
+
+    // Transfer result
+    room.onMessage('transferResult', (data: { success: boolean; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('Transfer complete');
+      } else {
+        store.addLogEntry(`Transfer failed: ${data.error}`);
+      }
+    });
+
+    // NPC trade result
+    room.onMessage('npcTradeResult', (data: { success: boolean; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('Trade complete');
+      } else {
+        store.addLogEntry(`Trade failed: ${data.error}`);
+      }
+    });
+
+    // Upgrade result
+    room.onMessage('upgradeResult', (data: { success: boolean; error?: string; newTier?: number }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`Upgraded to tier ${data.newTier}`);
+      } else {
+        store.addLogEntry(`Upgrade failed: ${data.error}`);
+      }
+    });
+
+    // Trade orders
+    room.onMessage('tradeOrders', (data: { orders: any[] }) => {
+      useStore.getState().setTradeOrders(data.orders);
+    });
+
+    room.onMessage('myOrders', (data: { orders: any[] }) => {
+      useStore.getState().setMyOrders(data.orders);
+    });
+
+    room.onMessage('orderPlaced', (data: { success: boolean }) => {
+      if (data.success) {
+        useStore.getState().addLogEntry('Order placed');
+      }
+    });
+
+    room.onMessage('cancelOrderResult', (data: { success: boolean }) => {
+      if (data.success) {
+        useStore.getState().addLogEntry('Order cancelled');
       }
     });
 
@@ -324,6 +387,51 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('build', { type });
+  }
+
+  sendTransfer(resource: string, amount: number, direction: 'toStorage' | 'fromStorage') {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('transfer', { resource, amount, direction });
+  }
+
+  sendNpcTrade(resource: string, amount: number, action: 'buy' | 'sell') {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('npcTrade', { resource, amount, action });
+  }
+
+  sendUpgradeStructure(structureId: string) {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('upgradeStructure', { structureId });
+  }
+
+  sendPlaceOrder(resource: string, amount: number, pricePerUnit: number, type: 'buy' | 'sell') {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('placeOrder', { resource, amount, pricePerUnit, type });
+  }
+
+  requestTradeOrders() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getTradeOrders', {});
+  }
+
+  requestMyOrders() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getMyOrders', {});
+  }
+
+  requestStorage() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getStorage', {});
+  }
+
+  requestCredits() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getCredits', {});
+  }
+
+  sendCancelOrder(orderId: string) {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('cancelOrder', { orderId });
   }
 }
 

@@ -30,6 +30,7 @@ export interface PlayerData {
   homeBase: Coords;
   xp: number;
   level: number;
+  credits?: number;
 }
 
 export type ShipClass = 'aegis_scout_mk1' | 'void_seeker_mk2';
@@ -130,7 +131,7 @@ export interface LocalScanResultMessage {
 }
 
 // Structures
-export type StructureType = 'comm_relay' | 'mining_station' | 'base';
+export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post';
 
 export interface Structure {
   id: string;
@@ -186,4 +187,72 @@ export interface Badge {
   playerId: string;
   badgeType: BadgeType;
   awardedAt: string;
+}
+
+export interface StorageInventory {
+  ore: number;
+  gas: number;
+  crystal: number;
+}
+
+export interface TransferMessage {
+  resource: ResourceType;
+  amount: number;
+  direction: 'toStorage' | 'fromStorage';
+}
+
+export interface TransferResultMessage {
+  success: boolean;
+  error?: string;
+  cargo?: CargoState;
+  storage?: StorageInventory;
+}
+
+export interface UpgradeStructureMessage {
+  structureId: string;
+}
+
+export interface UpgradeResultMessage {
+  success: boolean;
+  error?: string;
+  newTier?: number;
+  creditsRemaining?: number;
+}
+
+export type TradeOrderType = 'buy' | 'sell';
+
+export interface TradeOrder {
+  id: string;
+  playerId: string;
+  playerName: string;
+  resource: ResourceType;
+  amount: number;
+  pricePerUnit: number;
+  type: TradeOrderType;
+  createdAt: string;
+}
+
+export interface NpcTradeMessage {
+  resource: ResourceType;
+  amount: number;
+  action: 'buy' | 'sell';
+}
+
+export interface NpcTradeResultMessage {
+  success: boolean;
+  error?: string;
+  credits?: number;
+  cargo?: CargoState;
+  storage?: StorageInventory;
+}
+
+export interface PlaceOrderMessage {
+  resource: ResourceType;
+  amount: number;
+  pricePerUnit: number;
+  type: TradeOrderType;
+}
+
+export interface AcceptOrderMessage {
+  orderId: string;
 }

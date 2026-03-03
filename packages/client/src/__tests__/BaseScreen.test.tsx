@@ -6,6 +6,10 @@ import { mockStoreState } from '../test/mockStore';
 vi.mock('../network/client', () => ({
   network: {
     requestBase: vi.fn(),
+    requestStorage: vi.fn(),
+    requestCredits: vi.fn(),
+    sendTransfer: vi.fn(),
+    sendUpgradeStructure: vi.fn(),
   },
 }));
 
@@ -37,5 +41,41 @@ describe('BaseScreen', () => {
     mockStoreState({ baseStructures: [] });
     render(<BaseScreen />);
     expect(screen.getByText(/NO BASE/i)).toBeTruthy();
+  });
+
+  it('shows credits', () => {
+    mockStoreState({
+      baseStructures: [{ id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 }],
+      credits: 250,
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText(/CREDITS: 250/)).toBeTruthy();
+  });
+
+  it('shows storage section when storage built', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 's1', type: 'storage', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      storage: { ore: 10, gas: 5, crystal: 2 },
+      credits: 0,
+    });
+    render(<BaseScreen />);
+    expect(screen.getAllByText(/LAGER/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/ERZ: 10/)).toBeTruthy();
+  });
+
+  it('shows structure list with labels', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'c1', type: 'comm_relay', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 0,
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText('KOMMANDO-KERN')).toBeTruthy();
+    expect(screen.getByText('COMM RELAY')).toBeTruthy();
   });
 });

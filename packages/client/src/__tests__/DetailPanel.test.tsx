@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DetailPanel } from '../components/DetailPanel';
 import { mockStoreState } from '../test/mockStore';
+import { useStore } from '../state/store';
 
 describe('DetailPanel', () => {
   beforeEach(() => {
@@ -76,5 +77,28 @@ describe('DetailPanel', () => {
     });
     render(<DetailPanel />);
     expect(screen.getByText('SpacePilot')).toBeTruthy();
+  });
+
+  it('shows resources after addDiscoveries patches the discoveries record', () => {
+    mockStoreState({
+      selectedSector: { x: 2, y: 3 },
+      discoveries: {
+        '2:3': { x: 2, y: 3, type: 'asteroid_field', seed: 77, discoveredBy: null, discoveredAt: null, metadata: {} },
+      },
+    });
+    // Simulate what the fixed localScanResult handler does:
+    // it calls addDiscoveries with the updated sector including resources
+    useStore.getState().addDiscoveries([{
+      x: 2, y: 3, type: 'asteroid_field', seed: 77,
+      discoveredBy: null, discoveredAt: null, metadata: {},
+      resources: { ore: 120, gas: 45, crystal: 8 },
+    }]);
+    render(<DetailPanel />);
+    expect(screen.getByText(/ORE/)).toBeTruthy();
+    expect(screen.getByText(/120/)).toBeTruthy();
+    expect(screen.getByText(/GAS/)).toBeTruthy();
+    expect(screen.getByText(/45/)).toBeTruthy();
+    expect(screen.getByText(/CRYSTAL/)).toBeTruthy();
+    expect(screen.getByText(/8/)).toBeTruthy();
   });
 });
