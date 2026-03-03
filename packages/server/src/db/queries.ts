@@ -767,3 +767,176 @@ export async function getFactionMembersByPlayerIds(factionId: string): Promise<s
   );
   return result.rows.map(r => r.player_id);
 }
+
+// --- Phase 4: Reputation ---
+
+export async function getPlayerReputations(playerId: string): Promise<{ faction_id: string; reputation: number }[]> {
+  const { rows } = await query<{ faction_id: string; reputation: number }>(
+    `SELECT faction_id, reputation FROM player_reputation WHERE player_id = $1`,
+    [playerId]
+  );
+  return rows;
+}
+
+export async function getPlayerReputation(playerId: string, factionId: string): Promise<number> {
+  const { rows } = await query<{ reputation: number }>(
+    `SELECT reputation FROM player_reputation WHERE player_id = $1 AND faction_id = $2`,
+    [playerId, factionId]
+  );
+  return rows[0]?.reputation ?? 0;
+}
+
+export async function setPlayerReputation(playerId: string, factionId: string, delta: number): Promise<number> {
+  const { rows } = await query<{ reputation: number }>(
+    `INSERT INTO player_reputation (player_id, faction_id, reputation, updated_at)
+     VALUES ($1, $2, GREATEST(-100, LEAST(100, $3)), NOW())
+     ON CONFLICT (player_id, faction_id)
+     DO UPDATE SET reputation = GREATEST(-100, LEAST(100, player_reputation.reputation + $3)),
+                   updated_at = NOW()
+     RETURNING reputation`,
+    [playerId, factionId, delta]
+  );
+  return rows[0].reputation;
+}
+
+// --- Phase 4: Upgrades ---
+
+export async function getPlayerUpgrades(playerId: string): Promise<{ upgrade_id: string; active: boolean; unlocked_at: string }[]> {
+  const { rows } = await query<{ upgrade_id: string; active: boolean; unlocked_at: string }>(
+    `SELECT upgrade_id, active, unlocked_at FROM player_upgrades WHERE player_id = $1`,
+    [playerId]
+  );
+  return rows;
+}
+
+export async function upsertPlayerUpgrade(playerId: string, upgradeId: string, active: boolean): Promise<void> {
+  await query(
+    `INSERT INTO player_upgrades (player_id, upgrade_id, active, unlocked_at)
+     VALUES ($1, $2, $3, NOW())
+     ON CONFLICT (player_id, upgrade_id)
+     DO UPDATE SET active = $3`,
+    [playerId, upgradeId, active]
+  );
+}
+
+// --- Phase 4: Quests ---
+
+export async function getActiveQuests(playerId: string): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT id, template_id, station_x, station_y, objectives, rewards, status, accepted_at, expires_at
+     FROM player_quests
+     WHERE player_id = $1 AND status = 'active'
+     ORDER BY accepted_at DESC`,
+    [playerId]
+  );
+  return rows;
+}
+
+export async function getActiveQuestCount(playerId: string): Promise<number> {
+  const { rows } = await query<{ count: string }>(
+    `SELECT COUNT(*) as count FROM player_quests WHERE player_id = $1 AND status = 'active'`,
+    [playerId]
+  );
+  return parseInt(rows[0].count, 10);
+}
+
+export async function insertQuest(
+  playerId: string, templateId: string, stationX: number, stationY: number,
+  objectives: any, rewards: any, expiresAt: Date,
+): Promise<string> {
+  const { rows } = await query<{ id: string }>(
+    `INSERT INTO player_quests (player_id, template_id, station_x, station_y, objectives, rewards, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id`,
+    [playerId, templateId, stationX, stationY, JSON.stringify(objectives), JSON.stringify(rewards), expiresAt.toISOString()]
+  );
+  return rows[0].id;
+}
+
+export async function updateQuestStatus(questId: string, status: string): Promise<boolean> {
+  const result = await query(
+    `UPDATE player_quests SET status = $2 WHERE id = $1`,
+    [questId, status]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function updateQuestObjectives(questId: string, objectives: any): Promise<boolean> {
+  const result = await query(
+    `UPDATE player_quests SET objectives = $2 WHERE id = $1`,
+    [questId, JSON.stringify(objectives)]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function getQuestById(questId: string, playerId: string): Promise<any | null> {
+  const { rows } = await query(
+    `SELECT id, template_id, station_x, station_y, objectives, rewards, status, accepted_at, expires_at
+     FROM player_quests
+     WHERE id = $1 AND player_id = $2`,
+    [questId, playerId]
+  );
+  return rows[0] ?? null;
+}
+
+// --- Phase 4: Scan Events ---
+
+export async function insertScanEvent(
+  playerId: string, sectorX: number, sectorY: number,
+  eventType: string, data: Record<string, unknown>
+): Promise<string | null> {
+  const { rows } = await query<{ id: string }>(
+    `INSERT INTO scan_events (player_id, sector_x, sector_y, event_type, data)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (player_id, sector_x, sector_y, event_type) DO NOTHING
+     RETURNING id`,
+    [playerId, sectorX, sectorY, eventType, JSON.stringify(data)]
+  );
+  return rows[0]?.id ?? null;
+}
+
+export async function getPlayerScanEvents(playerId: string, status: string = 'discovered'): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT id, sector_x, sector_y, event_type, status, data, created_at
+     FROM scan_events
+     WHERE player_id = $1 AND status = $2
+     ORDER BY created_at DESC`,
+    [playerId, status]
+  );
+  return rows;
+}
+
+export async function completeScanEvent(eventId: string, playerId: string): Promise<boolean> {
+  const result = await query(
+    `UPDATE scan_events SET status = 'completed' WHERE id = $1 AND player_id = $2 AND status = 'discovered'`,
+    [eventId, playerId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+// --- Phase 4: Battle Log ---
+
+export async function insertBattleLog(
+  playerId: string, pirateLevel: number, sectorX: number, sectorY: number,
+  action: string, outcome: string, loot: Record<string, unknown> | null
+): Promise<void> {
+  await query(
+    `INSERT INTO battle_log (player_id, pirate_level, sector_x, sector_y, action, outcome, loot)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [playerId, pirateLevel, sectorX, sectorY, action, outcome, loot ? JSON.stringify(loot) : null]
+  );
+}
+
+// --- Phase 4: XP / Level ---
+
+export async function addPlayerXp(playerId: string, xp: number): Promise<{ xp: number; level: number }> {
+  const { rows } = await query<{ xp: number; level: number }>(
+    `UPDATE players SET xp = xp + $2 WHERE id = $1 RETURNING xp, level`,
+    [playerId, xp]
+  );
+  return rows[0];
+}
+
+export async function setPlayerLevel(playerId: string, level: number): Promise<void> {
+  await query(`UPDATE players SET level = $2 WHERE id = $1`, [playerId, level]);
+}
