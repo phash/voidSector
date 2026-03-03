@@ -259,7 +259,7 @@ export interface AcceptOrderMessage {
 }
 
 // --- Data Slates ---
-export type SlateType = 'sector' | 'area';
+export type SlateType = 'sector' | 'area' | 'custom';
 
 export interface SectorSlateData {
   x: number;
@@ -279,6 +279,7 @@ export interface DataSlate {
   sectorData: SectorSlateData[];
   status: 'available' | 'listed';
   createdAt: number;
+  customData?: CustomSlateData;
 }
 
 export interface CreateSlateMessage {
@@ -517,3 +518,136 @@ export interface ScanEventDiscoveredMessage { event: ScanEvent; }
 export interface QuestProgressMessage { questId: string; objectives: QuestObjective[]; }
 export interface ReputationUpdateMessage { reputations: PlayerReputation[]; upgrades: PlayerUpgrade[]; }
 export interface ActiveQuestsMessage { quests: Quest[]; }
+
+// --- Phase 5: Deep Systems ---
+
+// Fuel
+export interface RefuelMessage { amount: number; }
+export interface RefuelResultMessage { success: boolean; error?: string; fuel?: FuelState; credits?: number; }
+
+// Faction Upgrades (player faction upgrade tree)
+export type FactionUpgradeChoice = 'A' | 'B';
+export interface FactionUpgradeTier {
+  tier: number;
+  optionA: { name: string; effect: string; };
+  optionB: { name: string; effect: string; };
+  cost: number;
+}
+export interface FactionUpgradeState {
+  tier: number;
+  choice: FactionUpgradeChoice;
+  chosenAt: number;
+}
+export interface FactionUpgradeMessage { tier: number; choice: FactionUpgradeChoice; }
+export interface FactionUpgradeResultMessage { success: boolean; error?: string; upgrades?: FactionUpgradeState[]; }
+
+// JumpGates
+export type JumpGateType = 'bidirectional' | 'wormhole';
+export interface JumpGate {
+  id: string;
+  sectorX: number;
+  sectorY: number;
+  targetX: number;
+  targetY: number;
+  gateType: JumpGateType;
+  requiresCode: boolean;
+  requiresMinigame: boolean;
+}
+export interface JumpGateInfo {
+  id: string;
+  gateType: JumpGateType;
+  requiresCode: boolean;
+  requiresMinigame: boolean;
+  hasCode: boolean;
+}
+export interface UseJumpGateMessage { gateId: string; accessCode?: string; }
+export interface UseJumpGateResultMessage {
+  success: boolean;
+  error?: string;
+  requiresMinigame?: boolean;
+  targetX?: number;
+  targetY?: number;
+  fuel?: FuelState;
+}
+export interface FrequencyMatchResultMessage { gateId: string; matched: boolean; }
+
+// Rescue Missions
+export interface RescueSurvivor {
+  id: string;
+  sectorX: number;
+  sectorY: number;
+  survivorCount: number;
+  sourceType: string;
+  rescuedAt: number;
+}
+export interface DistressCall {
+  id: string;
+  direction: string;
+  estimatedDistance: number;
+  receivedAt: number;
+  expiresAt: number;
+  targetX: number;
+  targetY: number;
+}
+export interface RescueMessage { sectorX: number; sectorY: number; }
+export interface RescueResultMessage {
+  success: boolean;
+  error?: string;
+  survivorsRescued?: number;
+  safeSlotsFree?: number;
+}
+export interface DeliverSurvivorsMessage { stationX: number; stationY: number; }
+export interface DeliverSurvivorsResultMessage {
+  success: boolean;
+  error?: string;
+  credits?: number;
+  rep?: number;
+  xp?: number;
+}
+
+// Trade Routes
+export interface TradeRoute {
+  id: string;
+  ownerId: string;
+  tradingPostId: string;
+  targetX: number;
+  targetY: number;
+  sellResource: ResourceType | null;
+  sellAmount: number;
+  buyResource: ResourceType | null;
+  buyAmount: number;
+  cycleMinutes: number;
+  active: boolean;
+  lastCycleAt: number | null;
+}
+export interface ConfigureRouteMessage {
+  tradingPostId: string;
+  targetX: number;
+  targetY: number;
+  sellResource: ResourceType | null;
+  sellAmount: number;
+  buyResource: ResourceType | null;
+  buyAmount: number;
+  cycleMinutes: number;
+}
+export interface ConfigureRouteResultMessage {
+  success: boolean;
+  error?: string;
+  route?: TradeRoute;
+}
+export interface ToggleRouteMessage { routeId: string; active: boolean; }
+export interface DeleteRouteMessage { routeId: string; }
+
+// Custom Data Slates (extends existing SlateType)
+export interface CustomSlateData {
+  label: string;
+  coordinates?: Coords[];
+  codes?: string[];
+  notes?: string;
+}
+export interface CreateCustomSlateMessage {
+  label: string;
+  coordinates?: Coords[];
+  codes?: string[];
+  notes?: string;
+}
