@@ -140,12 +140,28 @@ export async function addDiscovery(
 
 export async function getPlayerDiscoveries(
   playerId: string
-): Promise<Array<{ x: number; y: number }>> {
-  const result = await query<{ sector_x: number; sector_y: number }>(
-    'SELECT sector_x, sector_y FROM player_discoveries WHERE player_id = $1',
+): Promise<Array<{ x: number; y: number; discoveredAt: number }>> {
+  const result = await query<{ sector_x: number; sector_y: number; discovered_at: string }>(
+    'SELECT sector_x, sector_y, discovered_at FROM player_discoveries WHERE player_id = $1',
     [playerId]
   );
-  return result.rows.map((row) => ({ x: row.sector_x, y: row.sector_y }));
+  return result.rows.map((row) => ({
+    x: row.sector_x,
+    y: row.sector_y,
+    discoveredAt: new Date(row.discovered_at).getTime(),
+  }));
+}
+
+export async function isRouteDiscovered(
+  playerId: string,
+  sectorX: number,
+  sectorY: number
+): Promise<boolean> {
+  const result = await query(
+    'SELECT 1 FROM player_discoveries WHERE player_id = $1 AND sector_x = $2 AND sector_y = $3 LIMIT 1',
+    [playerId, sectorX, sectorY]
+  );
+  return result.rows.length > 0;
 }
 
 export async function getPlayerCargo(playerId: string): Promise<CargoState> {
