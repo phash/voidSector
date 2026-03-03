@@ -192,6 +192,14 @@ export async function getPlayerBaseName(playerId: string): Promise<string> {
   return rows[0]?.base_name ?? '';
 }
 
+export async function getPlayerLevel(playerId: string): Promise<number> {
+  const { rows } = await query<{ level: number }>(
+    'SELECT level FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.level ?? 1;
+}
+
 export async function getSector(
   x: number,
   y: number

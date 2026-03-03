@@ -18,9 +18,9 @@ import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, FAR_JUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, FarJumpMessage } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, FAR_JUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, FarJumpMessage, HullType, ShipStats, ShipModule, ShipRecord } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -29,11 +29,11 @@ interface SectorRoomOptions {
 
 export class SectorRoom extends Room<SectorRoomState> {
   autoDispose = true;
-  private clientShips = new Map<string, typeof SHIP_CLASSES[keyof typeof SHIP_CLASSES]>();
+  private clientShips = new Map<string, ShipStats>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
 
-  private getShipForClient(sessionId: string) {
-    return this.clientShips.get(sessionId) ?? SHIP_CLASSES.aegis_scout_mk1;
+  private getShipForClient(sessionId: string): ShipStats {
+    return this.clientShips.get(sessionId) ?? calculateShipStats('scout', []);
   }
 
   private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
@@ -303,6 +303,203 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.handleCancelAutopilot(client);
     });
 
+    // Phase 7: Ship designer
+    this.onMessage('getShips', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const ships = await getPlayerShips(auth.userId);
+      const shipsWithStats = ships.map(s => ({
+        ...s,
+        stats: calculateShipStats(s.hullType, s.modules),
+      }));
+      client.send('shipList', { ships: shipsWithStats });
+    });
+
+    this.onMessage('switchShip', async (client, data: { shipId: string }) => {
+      const auth = client.auth as AuthPayload;
+      // Must be at home base
+      const homeBase = await getPlayerHomeBase(auth.userId);
+      if (this.state.sector.x !== homeBase.x || this.state.sector.y !== homeBase.y) {
+        client.send('error', { code: 'NOT_AT_BASE', message: 'Must be at home base to switch ships' });
+        return;
+      }
+      const success = await switchActiveShip(auth.userId, data.shipId);
+      if (!success) {
+        client.send('error', { code: 'SWITCH_FAIL', message: 'Ship not found' });
+        return;
+      }
+      // Reload new ship stats
+      const newShip = await getActiveShip(auth.userId);
+      if (newShip) {
+        const newStats = calculateShipStats(newShip.hullType, newShip.modules);
+        this.clientShips.set(client.sessionId, newStats);
+        const fuelState = await getFuelState(auth.userId);
+        client.send('shipData', {
+          id: newShip.id, ownerId: auth.userId, hullType: newShip.hullType,
+          name: newShip.name, modules: newShip.modules, stats: newStats,
+          fuel: fuelState ?? newStats.fuelMax, active: true,
+        });
+      }
+    });
+
+    this.onMessage('installModule', async (client, data: { moduleId: string; slotIndex: number }) => {
+      const auth = client.auth as AuthPayload;
+      const ship = await getActiveShip(auth.userId);
+      if (!ship) return;
+      const validation = validateModuleInstall(ship.hullType, ship.modules, data.moduleId, data.slotIndex);
+      if (!validation.valid) {
+        client.send('error', { code: 'INSTALL_FAIL', message: validation.error! });
+        return;
+      }
+      // Remove from inventory
+      const removed = await removeModuleFromInventory(auth.userId, data.moduleId);
+      if (!removed) {
+        client.send('error', { code: 'NO_MODULE', message: 'Module not in inventory' });
+        return;
+      }
+      // Install
+      const newModules: ShipModule[] = [...ship.modules, { moduleId: data.moduleId, slotIndex: data.slotIndex }];
+      await updateShipModules(ship.id, newModules);
+      // Recalculate and send
+      const newStats = calculateShipStats(ship.hullType, newModules);
+      this.clientShips.set(client.sessionId, newStats);
+      client.send('moduleInstalled', { modules: newModules, stats: newStats });
+    });
+
+    this.onMessage('removeModule', async (client, data: { slotIndex: number }) => {
+      const auth = client.auth as AuthPayload;
+      const ship = await getActiveShip(auth.userId);
+      if (!ship) return;
+      const mod = ship.modules.find(m => m.slotIndex === data.slotIndex);
+      if (!mod) {
+        client.send('error', { code: 'EMPTY_SLOT', message: 'No module in that slot' });
+        return;
+      }
+      // Remove from ship
+      const newModules = ship.modules.filter(m => m.slotIndex !== data.slotIndex);
+      await updateShipModules(ship.id, newModules);
+      // Add back to inventory
+      await addModuleToInventory(auth.userId, mod.moduleId);
+      // Recalculate
+      const newStats = calculateShipStats(ship.hullType, newModules);
+      this.clientShips.set(client.sessionId, newStats);
+      client.send('moduleRemoved', { modules: newModules, stats: newStats, returnedModule: mod.moduleId });
+    });
+
+    this.onMessage('buyModule', async (client, data: { moduleId: string }) => {
+      const auth = client.auth as AuthPayload;
+      const moduleDef = MODULES[data.moduleId];
+      if (!moduleDef) {
+        client.send('error', { code: 'UNKNOWN_MODULE', message: 'Unknown module' });
+        return;
+      }
+      // Must be at station or home base
+      const homeBase = await getPlayerHomeBase(auth.userId);
+      const isStation = this.state.sector.sectorType === 'station';
+      const isHomeBase = this.state.sector.x === homeBase.x && this.state.sector.y === homeBase.y;
+      if (!isStation && !isHomeBase) {
+        client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
+        return;
+      }
+      // Check credits
+      const credits = await getPlayerCredits(auth.userId);
+      if (credits < moduleDef.cost.credits) {
+        client.send('error', { code: 'INSUFFICIENT_CREDITS', message: 'Not enough credits' });
+        return;
+      }
+      // Check resource costs from cargo
+      const cargo = await getPlayerCargo(auth.userId);
+      const cargoMap: Record<string, number> = { ore: cargo.ore, gas: cargo.gas, crystal: cargo.crystal };
+      for (const [res, amount] of Object.entries(moduleDef.cost)) {
+        if (res === 'credits') continue;
+        const have = cargoMap[res] ?? 0;
+        if (have < (amount as number)) {
+          client.send('error', { code: 'INSUFFICIENT_RESOURCES', message: `Need ${amount} ${res}` });
+          return;
+        }
+      }
+      // Deduct credits
+      await deductCredits(auth.userId, moduleDef.cost.credits);
+      // Deduct resources from cargo
+      for (const [res, amount] of Object.entries(moduleDef.cost)) {
+        if (res === 'credits' || !amount) continue;
+        await deductCargo(auth.userId, res, amount as number);
+      }
+      // Add to module inventory
+      await addModuleToInventory(auth.userId, data.moduleId);
+      // Send updates
+      const remainingCredits = await getPlayerCredits(auth.userId);
+      client.send('creditsUpdate', { credits: remainingCredits });
+      client.send('buyModuleResult', { success: true, moduleId: data.moduleId });
+      const inventory = await getModuleInventory(auth.userId);
+      client.send('moduleInventory', { modules: inventory });
+    });
+
+    this.onMessage('buyHull', async (client, data: { hullType: string; name?: string }) => {
+      const auth = client.auth as AuthPayload;
+      const hullDef = HULLS[data.hullType as HullType];
+      if (!hullDef) {
+        client.send('error', { code: 'UNKNOWN_HULL', message: 'Unknown hull type' });
+        return;
+      }
+      // Must be at station or home base
+      const homeBase = await getPlayerHomeBase(auth.userId);
+      const isStation = this.state.sector.sectorType === 'station';
+      const isHomeBase = this.state.sector.x === homeBase.x && this.state.sector.y === homeBase.y;
+      if (!isStation && !isHomeBase) {
+        client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
+        return;
+      }
+      // Check level
+      const playerLevel = await getPlayerLevel(auth.userId);
+      if (playerLevel < hullDef.unlockLevel) {
+        client.send('error', { code: 'LEVEL_TOO_LOW', message: `Need level ${hullDef.unlockLevel}` });
+        return;
+      }
+      // Check credits
+      const credits = await getPlayerCredits(auth.userId);
+      if (credits < hullDef.unlockCost) {
+        client.send('error', { code: 'INSUFFICIENT_CREDITS', message: 'Not enough credits' });
+        return;
+      }
+      // Deduct credits
+      if (hullDef.unlockCost > 0) {
+        await deductCredits(auth.userId, hullDef.unlockCost);
+      }
+      // Create new ship (becomes active, old one deactivated)
+      const newShip = await createShip(auth.userId, data.hullType as HullType, data.name?.slice(0, 20) || hullDef.name, hullDef.baseFuel);
+      const newStats = calculateShipStats(newShip.hullType, newShip.modules);
+      this.clientShips.set(client.sessionId, newStats);
+      // Reset fuel
+      await saveFuelState(auth.userId, hullDef.baseFuel);
+      client.send('shipData', {
+        id: newShip.id, ownerId: auth.userId, hullType: newShip.hullType,
+        name: newShip.name, modules: newShip.modules, stats: newStats,
+        fuel: hullDef.baseFuel, active: true,
+      });
+      const remainingCredits = await getPlayerCredits(auth.userId);
+      client.send('creditsUpdate', { credits: remainingCredits });
+    });
+
+    this.onMessage('renameShip', async (client, data: { shipId: string; name: string }) => {
+      const auth = client.auth as AuthPayload;
+      const success = await renameShip(data.shipId, auth.userId, data.name);
+      if (success) {
+        client.send('shipRenamed', { shipId: data.shipId, name: data.name.slice(0, 20) });
+      }
+    });
+
+    this.onMessage('renameBase', async (client, data: { name: string }) => {
+      const auth = client.auth as AuthPayload;
+      await renameBase(auth.userId, data.name);
+      client.send('baseRenamed', { name: data.name.slice(0, 20) });
+    });
+
+    this.onMessage('getModuleInventory', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const inventory = await getModuleInventory(auth.userId);
+      client.send('moduleInventory', { modules: inventory });
+    });
+
     // Trade route processing interval
     this.clock.setInterval(() => {
       this.processTradeRoutes().catch(err => console.error('[TRADE ROUTES] Tick error:', err));
@@ -324,34 +521,33 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Save position
     await savePlayerPosition(auth.userId, this.state.sector.x, this.state.sector.y);
 
-    // Load active ship
-    const activeShip = await getActiveShip(auth.userId);
-    const shipClass = activeShip?.shipClass ?? 'aegis_scout_mk1';
-    const shipStats = SHIP_CLASSES[shipClass];
-    this.clientShips.set(client.sessionId, shipStats);
+    // Load active ship (or create default scout on first login)
+    let shipRecord = await getActiveShip(auth.userId);
+    if (!shipRecord) {
+      shipRecord = await createShip(auth.userId, 'scout', 'AEGIS', HULLS.scout.baseFuel);
+    }
+    const stats = calculateShipStats(shipRecord.hullType, shipRecord.modules);
+    this.clientShips.set(client.sessionId, stats);
 
     // Send ship data to client
+    const fuelState = await getFuelState(auth.userId);
     client.send('shipData', {
-      id: '',
+      id: shipRecord.id,
       ownerId: auth.userId,
-      shipClass,
-      fuel: activeShip?.fuel ?? shipStats.fuelMax,
-      fuelMax: shipStats.fuelMax,
-      jumpRange: shipStats.jumpRange,
-      apCostJump: shipStats.apCostJump,
-      cargoCap: shipStats.cargoCap,
-      scannerLevel: shipStats.scannerLevel,
-      safeSlots: shipStats.safeSlots,
+      hullType: shipRecord.hullType,
+      name: shipRecord.name,
+      modules: shipRecord.modules,
+      stats,
+      fuel: fuelState ?? stats.fuelMax,
       active: true,
     });
 
     // Init fuel state in Redis
-    const existingFuel = await getFuelState(auth.userId);
-    if (existingFuel === null) {
-      await saveFuelState(auth.userId, shipStats.fuelMax);
+    if (fuelState === null) {
+      await saveFuelState(auth.userId, stats.fuelMax);
     }
-    const fuelCurrent = existingFuel ?? shipStats.fuelMax;
-    client.send('fuelUpdate', { current: fuelCurrent, max: shipStats.fuelMax });
+    const fuelCurrent = fuelState ?? stats.fuelMax;
+    client.send('fuelUpdate', { current: fuelCurrent, max: stats.fuelMax });
 
     // Record discovery
     await addDiscovery(auth.userId, this.state.sector.x, this.state.sector.y);
@@ -477,7 +673,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Check fuel
     const ship = this.getShipForClient(client.sessionId);
     const currentFuel = await getFuelState(auth.userId);
-    const fuelCost = ship.fuelPerJump;
+    const fuelCost = 1;
     if (currentFuel === null || currentFuel < fuelCost) {
       client.send('jumpResult', { success: false, error: 'Not enough fuel' });
       return;
@@ -613,7 +809,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Calculate costs with far-jump discount
     const apCost = Math.ceil(distance * ship.apCostJump * FAR_JUMP_AP_DISCOUNT);
-    const fuelCost = distance * ship.fuelPerJump;
+    const fuelCost = distance;
 
     // Validate AP
     const ap = await getAPState(auth.userId);
@@ -2223,7 +2419,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Check safe slots
     const survivors = await getPlayerSurvivors(auth.userId);
-    if (!canRescue(ship.safeSlots, survivors.length)) {
+    const safeSlots = 1; // TODO: derive from hull/modules when safe-slots module added
+    if (!canRescue(safeSlots, survivors.length)) {
       client.send('rescueResult', { success: false, error: 'No free safe slots' });
       return;
     }
@@ -2245,7 +2442,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('rescueResult', {
       success: true,
       survivorsRescued: 1,
-      safeSlotsFree: ship.safeSlots - survivors.length - 1,
+      safeSlotsFree: safeSlots - survivors.length - 1,
     });
     client.send('apUpdate', { current: newAP.current, max: newAP.max });
   }
