@@ -4,6 +4,7 @@ import { LegendOverlay } from './LegendOverlay';
 import { BezelKnob } from './BezelKnob';
 import { BookmarkBar } from './BookmarkBar';
 import { useMonitorLeds, LedDot } from './MonitorLeds';
+import { CrtErrorBoundary } from './CrtErrorBoundary';
 import '../styles/crt.css';
 
 interface MonitorBezelProps {
@@ -45,7 +46,9 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
           <div className="crt-flicker" />
           <div className="crt-vignette" />
           <div className="crt-content" style={{ filter: `brightness(${brightness})` }}>
-            {children}
+            <CrtErrorBoundary monitorId={monitorId}>
+              {children}
+            </CrtErrorBoundary>
           </div>
         </div>
 

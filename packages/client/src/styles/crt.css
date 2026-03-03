@@ -34,6 +34,14 @@
   animation: crt-flicker 0.15s infinite;
 }
 
+@keyframes crt-glitch-bar {
+  0%   { transform: translateX(-50%); opacity: 1; }
+  25%  { transform: translateX(30%); opacity: 0.5; }
+  50%  { transform: translateX(-20%); opacity: 0.8; }
+  75%  { transform: translateX(40%); opacity: 0.3; }
+  100% { transform: translateX(-50%); opacity: 1; }
+}
+
 @keyframes crt-flicker {
   0%   { opacity: 0.27; }
   10%  { opacity: 0.24; }

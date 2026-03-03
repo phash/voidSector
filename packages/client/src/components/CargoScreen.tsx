@@ -19,6 +19,8 @@ export function CargoScreen() {
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const mySlates = useStore((s) => s.mySlates);
+  const credits = useStore((s) => s.credits);
+  const alienCredits = useStore((s) => s.alienCredits);
   const cargoCap = ship?.stats?.cargoCap ?? 5;
   const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
 
@@ -40,8 +42,10 @@ export function CargoScreen() {
         VESSEL: {ship ? HULLS[ship.hullType].name : 'VOID SCOUT'}
       </div>
 
-      <div style={{ fontSize: '0.9rem', marginBottom: '16px' }}>
-        CAPACITY: {total}/{cargoCap}
+      <div style={{ fontSize: '0.9rem', marginBottom: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+        <span>CAPACITY: {total}/{cargoCap}</span>
+        <span>CR: {credits.toLocaleString()}</span>
+        {alienCredits > 0 && <span style={{ color: '#00BFFF' }}>A-CR: {alienCredits.toLocaleString()}</span>}
       </div>
 
       <div style={{ marginBottom: '16px' }}>

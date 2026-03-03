@@ -34,6 +34,7 @@ interface RadarState {
   scanEvents?: ScanEvent[];
   discoveryTimestamps?: Record<string, number>;
   hullType?: HullType;
+  homeBase?: { x: number; y: number };
 }
 
 // Coordinate frame margins (exported for click offset calculation)
@@ -96,7 +97,8 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const sector = state.discoveries[key];
       const isPlayer = sx === state.position.x && sy === state.position.y;
       const isCenter = dx === 0 && dy === 0;
-      const isHome = sx === 0 && sy === 0;
+      const hb = state.homeBase ?? { x: 0, y: 0 };
+      const isHome = sx === hb.x && sy === hb.y;
 
       // Staleness rendering — dim/fade old discoveries
       if (sector && !isPlayer) {

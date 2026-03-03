@@ -91,7 +91,7 @@ export function DetailPanel() {
   const key = `${selectedSector.x}:${selectedSector.y}`;
   const sector = discoveries[key];
   const isPlayerHere = selectedSector.x === position.x && selectedSector.y === position.y;
-  const isHome = selectedSector.x === 0 && selectedSector.y === 0;
+  const isHome = selectedSector.x === homeBase.x && selectedSector.y === homeBase.y;
   const playersHere = Object.values(players).filter(
     (p) => p.x === selectedSector.x && p.y === selectedSector.y
   );

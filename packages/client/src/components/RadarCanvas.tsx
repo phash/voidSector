@@ -36,6 +36,7 @@ export function RadarCanvas() {
       scanEvents: state.scanEvents,
       discoveryTimestamps: state.discoveryTimestamps,
       hullType: state.ship?.hullType,
+      homeBase: state.homeBase,
     });
   }, []);
 

@@ -949,7 +949,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Apply reputation price modifier at stations
     let priceModifier = 1.0;
     if (isStation && !isFreeRefuel) {
-      const sectorFaction = this.state.sector.faction;
+      const sectorFaction = getStationFaction(this.state.sector.x, this.state.sector.y);
       if (sectorFaction) {
         const playerRep = await getPlayerReputation(auth.userId, sectorFaction);
         const tier = getReputationTier(playerRep);
@@ -2482,7 +2482,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Check safe slots
     const survivors = await getPlayerSurvivors(auth.userId);
-    const safeSlots = 1; // TODO: derive from hull/modules when safe-slots module added
+    const ship = this.getShipForClient(client.sessionId);
+    const safeSlots = ship.safeSlots ?? 1;
     if (!canRescue(safeSlots, survivors.length)) {
       client.send('rescueResult', { success: false, error: 'No free safe slots' });
       return;
