@@ -170,7 +170,7 @@ export function CargoScreen() {
             disabled={cargo[res] <= 0}
             onClick={() => network.sendJettison(res)}
           >
-            [JETTISON {res.toUpperCase()}]
+            [ABWERFEN {res.toUpperCase()}]
           </button>
         ))}
       </div>
