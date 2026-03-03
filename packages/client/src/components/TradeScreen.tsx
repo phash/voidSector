@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, MAX_TRADE_ROUTES, TRADE_ROUTE_MIN_CYCLE, TRADE_ROUTE_MAX_CYCLE } from '@void-sector/shared';
+import { NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, MAX_TRADE_ROUTES, TRADE_ROUTE_MIN_CYCLE, TRADE_ROUTE_MAX_CYCLE, SHIP_CLASSES } from '@void-sector/shared';
 import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
 
 const btnStyle: React.CSSProperties = {
@@ -17,33 +17,45 @@ const btnStyle: React.CSSProperties = {
 export function TradeScreen() {
   const credits = useStore((s) => s.credits);
   const storage = useStore((s) => s.storage);
+  const cargo = useStore((s) => s.cargo);
   const baseStructures = useStore((s) => s.baseStructures);
   const tradeOrders = useStore((s) => s.tradeOrders);
   const myOrders = useStore((s) => s.myOrders);
   const mySlates = useStore((s) => s.mySlates);
   const playerId = useStore((s) => s.playerId);
   const tradeRoutes = useStore((s) => s.tradeRoutes);
+  const currentSector = useStore((s) => s.currentSector);
+  const position = useStore((s) => s.position);
+  const ship = useStore((s) => s.ship);
   const [amount, setAmount] = useState(1);
   const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes'>('npc');
 
   const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
   const tier = tradingPost?.tier ?? 0;
 
+  const isStation = currentSector?.type === 'station';
+  const isHomeBase = position.x === 0 && position.y === 0;
+  const canTrade = isStation || isHomeBase;
+
   useEffect(() => {
     network.requestCredits();
-    network.requestStorage();
-    if (tier >= 2) {
-      network.requestTradeOrders();
-      network.requestMyOrders();
-      network.requestMySlates();
+    if (isStation) {
+      // No storage/base data needed at stations
+    } else {
+      network.requestStorage();
+      if (tier >= 2) {
+        network.requestTradeOrders();
+        network.requestMyOrders();
+        network.requestMySlates();
+      }
     }
-  }, [tier]);
+  }, [tier, isStation]);
 
-  if (!tradingPost) {
+  if (!canTrade) {
     return (
       <div style={{ padding: 16, textAlign: 'center', opacity: 0.4, fontSize: '0.8rem' }}>
-        <div style={{ marginBottom: 8 }}>NO TRADING POST</div>
-        <div style={{ fontSize: '0.7rem' }}>Build a Trading Post at your home base.</div>
+        <div style={{ marginBottom: 8 }}>KEIN HANDEL VERFÜGBAR</div>
+        <div style={{ fontSize: '0.7rem' }}>Navigate to a station or your home base to trade.</div>
       </div>
     );
   }
@@ -54,17 +66,22 @@ export function TradeScreen() {
     color: active ? '#050505' : 'var(--color-primary)',
   });
 
+  // At stations: cargo-based trading, NPC tab only
+  // At home base: storage-based trading, all tabs based on trading post tier
+  const cargoCap = ship ? SHIP_CLASSES[ship.shipClass].cargoCap : SHIP_CLASSES.aegis_scout_mk1.cargoCap;
+  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+
   return (
     <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
       <div style={{ letterSpacing: '0.2em', marginBottom: '8px', opacity: 0.6 }}>
-        TRADE — T{tier} | {credits} CR
+        TRADE — {isStation ? 'STATION' : `T${tier}`} | {credits} CR
       </div>
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>NPC HANDEL</button>
-        {tier >= 2 && <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>MARKT</button>}
-        {tier >= 2 && <button style={tabStyle(tab === 'slates')} onClick={() => setTab('slates')}>[SLATES]</button>}
-        {tier >= 3 && <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>ROUTEN</button>}
+        {!isStation && tier >= 2 && <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>MARKT</button>}
+        {!isStation && tier >= 2 && <button style={tabStyle(tab === 'slates')} onClick={() => setTab('slates')}>[SLATES]</button>}
+        {!isStation && tier >= 3 && <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>ROUTEN</button>}
       </div>
 
       <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
@@ -96,13 +113,19 @@ export function TradeScreen() {
               </div>
             );
           })}
-          <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-            LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal}
-          </div>
+          {isStation ? (
+            <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+              CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} ({cargoTotal}/{cargoCap})
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+              LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal}
+            </div>
+          )}
         </div>
       )}
 
-      {tab === 'market' && tier >= 2 && (
+      {tab === 'market' && !isStation && tier >= 2 && (
         <div>
           <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
             MARKT ORDERS
@@ -133,7 +156,7 @@ export function TradeScreen() {
         </div>
       )}
 
-      {tab === 'slates' && (
+      {tab === 'slates' && !isStation && (
         <div>
           <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '8px' }}>SLATE MARKTPLATZ</div>
 
@@ -204,7 +227,7 @@ export function TradeScreen() {
         </div>
       )}
 
-      {tab === 'routes' && tier >= 3 && (
+      {tab === 'routes' && !isStation && tier >= 3 && (
         <div>
           <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
             HANDELSROUTEN ({tradeRoutes.length}/{MAX_TRADE_ROUTES})
@@ -217,7 +240,7 @@ export function TradeScreen() {
               marginBottom: 6,
               fontSize: '0.75rem',
             }}>
-              <div>ROUTE → [{route.targetX},{route.targetY}]</div>
+              <div>ROUTE &rarr; [{route.targetX},{route.targetY}]</div>
               {route.sellResource && <div>SELL: {route.sellAmount}x {route.sellResource.toUpperCase()}</div>}
               {route.buyResource && <div>BUY: {route.buyAmount}x {route.buyResource.toUpperCase()}</div>}
               <div>ZYKLUS: {route.cycleMinutes} MIN | {route.active ? 'AKTIV' : 'PAUSIERT'}</div>

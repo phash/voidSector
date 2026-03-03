@@ -9,7 +9,7 @@ import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
 import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateNpcCargoTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkScanEvent } from '../engine/scanEvents.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
@@ -1138,50 +1138,87 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     const player = await findPlayerByUsername(auth.username);
     if (!player) return;
-    if (this.state.sector.x !== player.homeBase.x || this.state.sector.y !== player.homeBase.y) {
-      client.send('npcTradeResult', { success: false, error: 'Must be at home base' });
+
+    const isStation = this.state.sector.sectorType === 'station';
+    const isHomeBase = this.state.sector.x === player.homeBase.x &&
+                       this.state.sector.y === player.homeBase.y;
+    if (!isStation && !isHomeBase) {
+      client.send('npcTradeResult', { success: false, error: 'Must be at a station or home base' });
       return;
     }
 
-    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
-    if (!tradingPost) {
-      client.send('npcTradeResult', { success: false, error: 'No trading post built' });
-      return;
-    }
-
-    const storageStruct = await getPlayerStructure(auth.userId, 'storage');
-    const storageTier = storageStruct?.tier ?? 1;
     const currentCredits = await getPlayerCredits(auth.userId);
-    const storage = await getStorageInventory(auth.userId);
-
-    const result = validateNpcTrade(action, resource, amount, currentCredits, storage, storageTier);
-    if (!result.valid) {
-      client.send('npcTradeResult', { success: false, error: result.error });
-      return;
-    }
 
     // Apply faction trade price bonus (discount on buy prices)
     const bonuses = await this.getPlayerBonuses(auth.userId);
-    if (action === 'buy') {
-      result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
-    }
 
-    if (action === 'sell') {
-      await updateStorageResource(auth.userId, resource, -amount);
-      const newCredits = await addCredits(auth.userId, result.totalPrice);
-      const updatedStorage = await getStorageInventory(auth.userId);
-      client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
-      client.send('creditsUpdate', { credits: newCredits });
-      client.send('storageUpdate', updatedStorage);
+    if (isStation) {
+      // Station trade: use cargo
+      const cargo = await getPlayerCargo(auth.userId);
+      const cargoTotal = await getCargoTotal(auth.userId);
+      const shipStats = this.getShipForClient(client.sessionId);
+
+      const result = validateNpcCargoTrade(action, resource, amount, currentCredits, cargo, cargoTotal, shipStats.cargoCap);
+      if (!result.valid) {
+        client.send('npcTradeResult', { success: false, error: result.error });
+        return;
+      }
+
+      if (action === 'buy') {
+        result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
+      }
+
+      if (action === 'sell') {
+        const deducted = await deductCargo(auth.userId, resource, amount);
+        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Cargo changed' }); return; }
+        const newCredits = await addCredits(auth.userId, result.totalPrice);
+        const updatedCargo = await getPlayerCargo(auth.userId);
+        client.send('npcTradeResult', { success: true, credits: newCredits });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('cargoUpdate', updatedCargo);
+      } else {
+        const deducted = await deductCredits(auth.userId, result.totalPrice);
+        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
+        await addToCargo(auth.userId, resource, amount);
+        const newCredits = await getPlayerCredits(auth.userId);
+        const updatedCargo = await getPlayerCargo(auth.userId);
+        client.send('npcTradeResult', { success: true, credits: newCredits });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('cargoUpdate', updatedCargo);
+      }
     } else {
-      const deducted = await deductCredits(auth.userId, result.totalPrice);
-      if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
-      await updateStorageResource(auth.userId, resource, amount);
-      const newCredits = await getPlayerCredits(auth.userId);
-      const updatedStorage = await getStorageInventory(auth.userId);
-      client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
-      client.send('creditsUpdate', { credits: newCredits });
-      client.send('storageUpdate', updatedStorage);
+      // Home base trade: use storage
+      const storageStruct = await getPlayerStructure(auth.userId, 'storage');
+      const storageTier = storageStruct?.tier ?? 1;
+      const storage = await getStorageInventory(auth.userId);
+
+      const result = validateNpcTrade(action, resource, amount, currentCredits, storage, storageTier);
+      if (!result.valid) {
+        client.send('npcTradeResult', { success: false, error: result.error });
+        return;
+      }
+
+      if (action === 'buy') {
+        result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
+      }
+
+      if (action === 'sell') {
+        await updateStorageResource(auth.userId, resource, -amount);
+        const newCredits = await addCredits(auth.userId, result.totalPrice);
+        const updatedStorage = await getStorageInventory(auth.userId);
+        client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('storageUpdate', updatedStorage);
+      } else {
+        const deducted = await deductCredits(auth.userId, result.totalPrice);
+        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
+        await updateStorageResource(auth.userId, resource, amount);
+        const newCredits = await getPlayerCredits(auth.userId);
+        const updatedStorage = await getStorageInventory(auth.userId);
+        client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('storageUpdate', updatedStorage);
+      }
     }
   }
 

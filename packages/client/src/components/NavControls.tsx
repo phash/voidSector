@@ -101,7 +101,7 @@ export function NavControls() {
           [AREA SCAN]
         </button>
         <button className="vs-btn" disabled title="Coming soon">[MINE]</button>
-        <button className="vs-btn" disabled title="Coming soon">[MARKET]</button>
+
       </div>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
         <button className="vs-btn" onClick={() => network.sendBuild('comm_relay')}
