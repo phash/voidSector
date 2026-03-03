@@ -7,14 +7,15 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
-import { generateStationNpcs, getStationFaction } from '../engine/npcgen.js';
+import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, getReputationTier, calculateLevel } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
+import { checkScanEvent } from '../engine/scanEvents.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -231,6 +232,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getReputation', async (client) => {
       await this.handleGetReputation(client);
     });
+    this.onMessage('battleAction', async (client, data: BattleActionMessage) => {
+      await this.handleBattleAction(client, data);
+    });
+    this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
+      await this.handleCompleteScanEvent(client, data);
+    });
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
@@ -434,6 +441,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
+    // Phase 4: Check quest progress for arrive/fetch/delivery
+    await this.checkQuestProgress(client, auth.userId, 'arrive', { sectorX: targetX, sectorY: targetY });
+
     // Tell client to switch rooms
     client.send('jumpResult', {
       success: true,
@@ -466,6 +476,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       hiddenSignatures: result.hiddenSignatures,
     });
     client.send('apUpdate', result.newAP!);
+
+    // Phase 4: Check for scan events
+    await this.checkAndEmitScanEvents(client, [{ x: this.state.sector.x, y: this.state.sector.y }]);
   }
 
   private async handleAreaScan(client: Client) {
@@ -501,7 +514,15 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
+    // Phase 4: Check for scan events in scanned sectors
+    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y })));
+
     client.send('scanResult', { sectors, apRemaining: scanResult.newAP!.current });
+
+    // Phase 4: Check quest progress for scan quests
+    for (const s of sectors) {
+      await this.checkQuestProgress(client, auth.userId, 'scan', { sectorX: s.x, sectorY: s.y });
+    }
   }
 
   private async handleMine(client: Client, data: MineMessage) {
@@ -1454,6 +1475,243 @@ export class SectorRoom extends Room<SectorRoomState> {
     if (newLevel > result.level) {
       await setPlayerLevel(playerId, newLevel);
       client.send('logEntry', `LEVEL UP! Du bist jetzt Level ${newLevel}`);
+    }
+  }
+
+  private async handleBattleAction(client: Client, data: BattleActionMessage) {
+    const auth = client.auth as AuthPayload;
+    const ship = this.getShipForClient(client.sessionId);
+    const ap = await getAPState(auth.userId);
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    const credits = await getPlayerCredits(auth.userId);
+    const cargo = await getPlayerCargo(auth.userId);
+    const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
+
+    const pirateLevel = getPirateLevel(data.sectorX, data.sectorY);
+    const encounter = createPirateEncounter(pirateLevel, data.sectorX, data.sectorY, pirateRep);
+
+    // Ship attack power (base from ship class + combat_plating upgrade)
+    let shipAttack = 10;
+    const upgrades = await getPlayerUpgrades(auth.userId);
+    if (upgrades.some(u => u.upgrade_id === 'combat_plating' && u.active)) {
+      shipAttack = Math.round(shipAttack * 1.2);
+    }
+
+    const battleSeed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17);
+    const validation = validateBattleAction(
+      data.action, currentAP, encounter, credits, cargo, shipAttack, battleSeed,
+    );
+
+    if (!validation.valid) {
+      client.send('battleResult', { success: false, error: validation.error });
+      return;
+    }
+
+    const result = validation.result!;
+
+    // Apply AP cost (flee)
+    if (validation.newAP) {
+      await saveAPState(auth.userId, validation.newAP);
+      client.send('apUpdate', validation.newAP);
+    }
+
+    // Apply outcomes
+    if (result.outcome === 'victory' && result.lootCredits) {
+      await addCredits(auth.userId, result.lootCredits);
+      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+      if (result.lootResources) {
+        for (const [res, amount] of Object.entries(result.lootResources)) {
+          if (amount && amount > 0) await addToCargo(auth.userId, res, amount);
+        }
+        client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+      }
+    }
+
+    if (result.outcome === 'defeat' && result.cargoLost) {
+      for (const [res, amount] of Object.entries(result.cargoLost)) {
+        if (amount && amount > 0) await deductCargo(auth.userId, res, amount);
+      }
+      client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    }
+
+    if (result.outcome === 'negotiated') {
+      await deductCredits(auth.userId, encounter.negotiateCost);
+      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    }
+
+    // Reputation changes
+    if (result.repChange) {
+      await this.applyReputationChange(auth.userId, 'pirates', result.repChange, client);
+    }
+
+    // XP
+    if (result.xpGained) {
+      await this.applyXpGain(auth.userId, result.xpGained, client);
+    }
+
+    // Log battle
+    await insertBattleLog(auth.userId, pirateLevel, data.sectorX, data.sectorY, data.action, result.outcome, result.lootResources ?? null);
+
+    client.send('battleResult', { success: true, encounter, result });
+
+    // Log entry
+    const outcomeMessages: Record<string, string> = {
+      victory: `SIEG! Piraten besiegt. +${result.lootCredits ?? 0} CR`,
+      defeat: 'NIEDERLAGE. Cargo verloren.',
+      escaped: 'Erfolgreich geflohen!',
+      caught: 'Flucht fehlgeschlagen — Kampf erzwungen.',
+      negotiated: `Verhandelt. -${encounter.negotiateCost} CR`,
+    };
+    client.send('logEntry', outcomeMessages[result.outcome] ?? `Kampf: ${result.outcome}`);
+
+    // Check bounty quests
+    if (result.outcome === 'victory') {
+      await this.checkQuestProgress(client, auth.userId, 'battle_won', { sectorX: data.sectorX, sectorY: data.sectorY });
+    }
+  }
+
+  private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number }[]) {
+    const auth = client.auth as AuthPayload;
+    for (const sector of scannedSectors) {
+      const eventResult = checkScanEvent(sector.x, sector.y);
+      if (!eventResult.hasEvent || !eventResult.eventType) continue;
+
+      if (eventResult.isImmediate && eventResult.eventType === 'pirate_ambush') {
+        const pirateLevel = (eventResult.data?.pirateLevel as number) ?? 1;
+        const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
+        const encounter = createPirateEncounter(pirateLevel, sector.x, sector.y, pirateRep);
+        client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
+        client.send('logEntry', `WARNUNG: Piraten-Hinterhalt bei (${sector.x}, ${sector.y})!`);
+      } else {
+        const eventId = await insertScanEvent(
+          auth.userId, sector.x, sector.y,
+          eventResult.eventType, eventResult.data ?? {},
+        );
+        if (eventId) {
+          client.send('scanEventDiscovered', {
+            event: {
+              id: eventId,
+              eventType: eventResult.eventType,
+              sectorX: sector.x,
+              sectorY: sector.y,
+              status: 'discovered',
+              data: eventResult.data ?? {},
+              createdAt: Date.now(),
+            },
+          });
+          const eventNames: Record<string, string> = {
+            distress_signal: 'Notsignal',
+            anomaly_reading: 'Anomalie',
+            artifact_find: 'Artefakt-Signal',
+          };
+          client.send('logEntry', `${eventNames[eventResult.eventType] ?? 'Event'} entdeckt bei (${sector.x}, ${sector.y})`);
+        }
+      }
+    }
+  }
+
+  private async handleCompleteScanEvent(client: Client, data: CompleteScanEventMessage) {
+    const auth = client.auth as AuthPayload;
+    const events = await getPlayerScanEvents(auth.userId, 'discovered');
+    const event = events.find(e => e.id === data.eventId);
+
+    if (!event) {
+      client.send('logEntry', 'Event nicht gefunden.');
+      return;
+    }
+
+    const completed = await completeScanEvent(data.eventId, auth.userId);
+    if (!completed) return;
+
+    // Apply rewards based on event type
+    const eventData = event.data as Record<string, number>;
+    if (eventData.rewardCredits) {
+      await addCredits(auth.userId, eventData.rewardCredits);
+      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    }
+    if (eventData.rewardXp) {
+      await this.applyXpGain(auth.userId, eventData.rewardXp, client);
+    }
+    if (eventData.rewardRep) {
+      const repFaction = event.event_type === 'anomaly_reading' ? 'scientists'
+        : event.event_type === 'artifact_find' ? 'ancients'
+        : 'traders';
+      await this.applyReputationChange(auth.userId, repFaction as NpcFactionId, eventData.rewardRep, client);
+    }
+
+    client.send('logEntry', `Event abgeschlossen! +${eventData.rewardCredits ?? 0} CR`);
+  }
+
+  private async checkQuestProgress(client: Client, playerId: string, action: string, context: Record<string, any>) {
+    const rows = await getActiveQuests(playerId);
+    for (const row of rows) {
+      const objectives = row.objectives as QuestObjective[];
+      let updated = false;
+
+      for (const obj of objectives) {
+        if (obj.fulfilled) continue;
+
+        if (obj.type === 'scan' && action === 'scan' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
+          obj.fulfilled = true;
+          updated = true;
+        }
+
+        if (obj.type === 'fetch' && action === 'arrive' && context.sectorX === row.station_x && context.sectorY === row.station_y) {
+          const cargo = await getPlayerCargo(playerId);
+          if (obj.resource && obj.amount && ((cargo as any)[obj.resource] ?? 0) >= obj.amount) {
+            obj.fulfilled = true;
+            updated = true;
+          }
+        }
+
+        if (obj.type === 'delivery' && action === 'arrive' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
+          obj.fulfilled = true;
+          updated = true;
+        }
+
+        if (obj.type === 'bounty' && action === 'battle_won' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
+          obj.fulfilled = true;
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        await updateQuestObjectives(row.id, objectives);
+        client.send('questProgress', { questId: row.id, objectives });
+
+        if (objectives.every(o => o.fulfilled)) {
+          await updateQuestStatus(row.id, 'completed');
+          const rewards = row.rewards;
+
+          if (rewards.credits) {
+            await addCredits(playerId, rewards.credits);
+            client.send('creditsUpdate', { credits: await getPlayerCredits(playerId) });
+          }
+          if (rewards.xp) await this.applyXpGain(playerId, rewards.xp, client);
+          if (rewards.reputation) {
+            // Determine quest faction from template_id prefix
+            const factionId = row.template_id.split('_')[0] as string;
+            const validFactions = ['traders', 'scientists', 'pirates', 'ancients'];
+            if (validFactions.includes(factionId)) {
+              await this.applyReputationChange(playerId, factionId as NpcFactionId, rewards.reputation, client);
+            }
+          }
+          if (rewards.reputationPenalty && rewards.rivalFactionId) {
+            await this.applyReputationChange(playerId, rewards.rivalFactionId as NpcFactionId, -rewards.reputationPenalty, client);
+          }
+
+          // Deduct fetch resources from cargo
+          for (const obj of objectives) {
+            if (obj.type === 'fetch' && obj.resource && obj.amount) {
+              await deductCargo(playerId, obj.resource, obj.amount);
+            }
+          }
+          client.send('cargoUpdate', await getPlayerCargo(playerId));
+
+          client.send('logEntry', `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`);
+          await this.sendActiveQuests(client, playerId);
+        }
+      }
     }
   }
 }
