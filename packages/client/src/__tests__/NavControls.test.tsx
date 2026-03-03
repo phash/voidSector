@@ -11,6 +11,7 @@ vi.mock('../network/client', () => ({
     sendLocalScan: vi.fn(),
     sendAreaScan: vi.fn(),
     sendBuild: vi.fn(),
+    sendCancelAutopilot: vi.fn(),
   },
 }));
 
@@ -100,5 +101,70 @@ describe('NavControls', () => {
 
     await userEvent.click(screen.getByText('[BUILD BASE]'));
     expect(network.sendBuild).toHaveBeenCalledWith('base');
+  });
+
+  it('shows autopilot UI when autopilot is active', () => {
+    mockStoreState({
+      autopilot: { targetX: 5, targetY: -3, remaining: 8, active: true },
+    });
+    render(<NavControls />);
+    expect(screen.getByText(/AUTOPILOT AKTIV/)).toBeInTheDocument();
+    expect(screen.getByText(/5, -3/)).toBeInTheDocument();
+    expect(screen.getByText(/ABBRECHEN/)).toBeInTheDocument();
+  });
+
+  it('shows remaining jump count during autopilot', () => {
+    mockStoreState({
+      autopilot: { targetX: 10, targetY: 20, remaining: 3, active: true },
+    });
+    render(<NavControls />);
+    expect(screen.getByText(/Verbleibend: 3/)).toBeInTheDocument();
+  });
+
+  it('hides nav buttons during autopilot', () => {
+    mockStoreState({
+      autopilot: { targetX: 5, targetY: -3, remaining: 8, active: true },
+    });
+    render(<NavControls />);
+    // Normal nav buttons should NOT be present
+    expect(screen.queryByText('↑')).toBeNull();
+    expect(screen.queryByText('↓')).toBeNull();
+    expect(screen.queryByText('←')).toBeNull();
+    expect(screen.queryByText('→')).toBeNull();
+  });
+
+  it('hides scan and build buttons during autopilot', () => {
+    mockStoreState({
+      autopilot: { targetX: 5, targetY: -3, remaining: 8, active: true },
+    });
+    render(<NavControls />);
+    expect(screen.queryByText('[LOCAL SCAN]')).toBeNull();
+    expect(screen.queryByText('[AREA SCAN]')).toBeNull();
+    expect(screen.queryByText('[BUILD RELAY]')).toBeNull();
+  });
+
+  it('calls sendCancelAutopilot on ABBRECHEN click', async () => {
+    mockStoreState({
+      autopilot: { targetX: 5, targetY: -3, remaining: 8, active: true },
+    });
+    render(<NavControls />);
+    await userEvent.click(screen.getByText('[ABBRECHEN]'));
+    expect(network.sendCancelAutopilot).toHaveBeenCalled();
+  });
+
+  it('shows normal controls when autopilot is null', () => {
+    mockStoreState({ autopilot: null });
+    render(<NavControls />);
+    expect(screen.getByText('↑')).toBeInTheDocument();
+    expect(screen.queryByText(/AUTOPILOT AKTIV/)).toBeNull();
+  });
+
+  it('shows normal controls when autopilot is inactive', () => {
+    mockStoreState({
+      autopilot: { targetX: 5, targetY: -3, remaining: 0, active: false },
+    });
+    render(<NavControls />);
+    expect(screen.getByText('↑')).toBeInTheDocument();
+    expect(screen.queryByText(/AUTOPILOT AKTIV/)).toBeNull();
   });
 });
