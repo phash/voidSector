@@ -17,10 +17,10 @@ import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { query } from '../db/client.js';
-import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
+import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, FAR_JUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, FarJumpMessage } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -30,6 +30,7 @@ interface SectorRoomOptions {
 export class SectorRoom extends Room<SectorRoomState> {
   autoDispose = true;
   private clientShips = new Map<string, typeof SHIP_CLASSES[keyof typeof SHIP_CLASSES]>();
+  private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
 
   private getShipForClient(sessionId: string) {
     return this.clientShips.get(sessionId) ?? SHIP_CLASSES.aegis_scout_mk1;
@@ -291,6 +292,14 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('bookmarksUpdate', { bookmarks });
     });
 
+    // Far-nav: far-jump + autopilot
+    this.onMessage('farJump', async (client, data: FarJumpMessage) => {
+      await this.handleFarJump(client, data);
+    });
+    this.onMessage('cancelAutopilot', async (client) => {
+      this.handleCancelAutopilot(client);
+    });
+
     // Trade route processing interval
     this.clock.setInterval(() => {
       this.processTradeRoutes().catch(err => console.error('[TRADE ROUTES] Tick error:', err));
@@ -446,6 +455,13 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
+    // Clean up autopilot timer
+    const autopilotTimer = this.autopilotTimers.get(client.sessionId);
+    if (autopilotTimer) {
+      clearInterval(autopilotTimer);
+      this.autopilotTimers.delete(client.sessionId);
+    }
+
     this.clientShips.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
@@ -549,6 +565,132 @@ export class SectorRoom extends Room<SectorRoomState> {
     await this.checkAndEmitDistressCalls(client, auth.userId, targetX, targetY);
 
     // Client will leave this room and join the new sector room
+  }
+
+  private async handleFarJump(client: Client, data: FarJumpMessage) {
+    const auth = client.auth as AuthPayload;
+    const { targetX, targetY } = data;
+
+    // Reject if already in autopilot
+    if (this.autopilotTimers.has(client.sessionId)) {
+      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Autopilot already active' });
+      return;
+    }
+
+    // Validate target is discovered
+    const discovered = await isRouteDiscovered(auth.userId, targetX, targetY);
+    if (!discovered) {
+      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Target sector not discovered' });
+      return;
+    }
+
+    // Check mining state (reject if mining is active)
+    const mining = await getMiningState(auth.userId);
+    if (mining?.active) {
+      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Cannot far-jump while mining' });
+      return;
+    }
+
+    // Get current position
+    const pos = await getPlayerPosition(auth.userId);
+    if (!pos) {
+      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Position unknown' });
+      return;
+    }
+    const dx = targetX - pos.x;
+    const dy = targetY - pos.y;
+    const distance = Math.abs(dx) + Math.abs(dy);
+    if (distance <= 1) {
+      client.send('error', { code: 'FAR_JUMP_FAIL', message: 'Use normal jump for adjacent sectors' });
+      return;
+    }
+
+    // Get ship stats
+    const ship = this.getShipForClient(client.sessionId);
+
+    // Calculate costs with far-jump discount
+    const apCost = Math.ceil(distance * ship.apCostJump * FAR_JUMP_AP_DISCOUNT);
+    const fuelCost = distance * ship.fuelPerJump;
+
+    // Validate AP
+    const ap = await getAPState(auth.userId);
+    const updated = calculateCurrentAP(ap);
+    if (updated.current < apCost) {
+      client.send('error', { code: 'FAR_JUMP_FAIL', message: `Not enough AP (need ${apCost}, have ${updated.current})` });
+      return;
+    }
+
+    // Validate fuel
+    const currentFuel = await getFuelState(auth.userId);
+    if (currentFuel === null || currentFuel < fuelCost) {
+      client.send('error', { code: 'FAR_JUMP_FAIL', message: `Not enough fuel (need ${fuelCost}, have ${currentFuel ?? 0})` });
+      return;
+    }
+
+    // Deduct AP upfront
+    const newAP = { ...updated, current: updated.current - apCost };
+    await saveAPState(auth.userId, newAP);
+    client.send('apUpdate', newAP);
+
+    // Deduct fuel upfront
+    const newFuel = currentFuel - fuelCost;
+    await saveFuelState(auth.userId, newFuel);
+    client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
+
+    // Build step list (Manhattan path: X first, then Y)
+    const steps: { x: number; y: number }[] = [];
+    let cx = pos.x;
+    let cy = pos.y;
+    const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+    const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+    for (let i = 0; i < Math.abs(dx); i++) { cx += stepX; steps.push({ x: cx, y: cy }); }
+    for (let i = 0; i < Math.abs(dy); i++) { cy += stepY; steps.push({ x: cx, y: cy }); }
+
+    // Start autopilot
+    let stepIndex = 0;
+    client.send('autopilotStart', { targetX, targetY, totalSteps: steps.length });
+
+    const timer = setInterval(async () => {
+      try {
+        if (stepIndex >= steps.length) {
+          clearInterval(timer);
+          this.autopilotTimers.delete(client.sessionId);
+          // Save final position and record discovery
+          await savePlayerPosition(auth.userId, targetX, targetY);
+          await addDiscovery(auth.userId, targetX, targetY);
+          // Load or generate target sector
+          let targetSector = await getSector(targetX, targetY);
+          if (!targetSector) {
+            targetSector = generateSector(targetX, targetY, auth.userId);
+            await saveSector(targetSector);
+          }
+          client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
+          return;
+        }
+        const step = steps[stepIndex];
+        // Save position and record discovery for intermediate step
+        await savePlayerPosition(auth.userId, step.x, step.y);
+        await addDiscovery(auth.userId, step.x, step.y);
+        stepIndex++;
+        client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
+      } catch (err) {
+        console.error('[FAR_JUMP] Autopilot step error:', err);
+        clearInterval(timer);
+        this.autopilotTimers.delete(client.sessionId);
+        client.send('autopilotComplete', { x: -1, y: -1 });
+      }
+    }, AUTOPILOT_STEP_MS);
+
+    this.autopilotTimers.set(client.sessionId, timer);
+  }
+
+  private handleCancelAutopilot(client: Client) {
+    const timer = this.autopilotTimers.get(client.sessionId);
+    if (timer) {
+      clearInterval(timer);
+      this.autopilotTimers.delete(client.sessionId);
+      client.send('autopilotComplete', { x: -1, y: -1 });
+    }
   }
 
   private async handleRefuel(client: Client, data: RefuelMessage) {
