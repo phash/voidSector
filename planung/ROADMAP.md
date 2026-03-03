@@ -14,8 +14,8 @@
 
 ## Phase 3: Handel & Multiplayer
 - [x] Marktplatz-System: Items zum Verkauf einstellen.
-- [ ] Karten-Handel: "Data Slates" von Sektoren erstellen und traden.
-- [ ] Fraktions-System: Gründung und gemeinsamer Chat.
+- [x] Karten-Handel: "Data Slates" von Sektoren erstellen und traden.
+- [x] Fraktions-System: Gründung und gemeinsamer Chat.
 
 ## Phase 4: NPC-Ökosystem
 - [ ] Prozedurale Alien-Quests.
