@@ -7,6 +7,7 @@ export function NavControls() {
   const jumpPending = useStore((s) => s.jumpPending);
   const ap = useStore((s) => s.ap);
   const fuel = useStore((s) => s.fuel);
+  const ship = useStore((s) => s.ship);
   const mining = useStore((s) => s.mining);
   const autopilot = useStore((s) => s.autopilot);
 
@@ -46,7 +47,7 @@ export function NavControls() {
       <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
         <button
           className="vs-btn"
-          title={`Jump: ${AP_COSTS.jump} AP`}
+          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
           onClick={() => jump(0, -1)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -55,7 +56,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${AP_COSTS.jump} AP`}
+          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
           onClick={() => jump(-1, 0)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -64,7 +65,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${AP_COSTS.jump} AP`}
+          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
           onClick={() => jump(0, 1)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -73,7 +74,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${AP_COSTS.jump} AP`}
+          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
           onClick={() => jump(1, 0)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}

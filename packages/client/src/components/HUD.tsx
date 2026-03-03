@@ -14,6 +14,7 @@ function SegmentedBar({ current, max, width = 12 }: { current: number; max: numb
 export function StatusBar() {
   const ap = useStore((s) => s.ap);
   const fuel = useStore((s) => s.fuel);
+  const ship = useStore((s) => s.ship);
   const credits = useStore((s) => s.credits);
   const alienCredits = useStore((s) => s.alienCredits);
 
@@ -92,6 +93,9 @@ export function StatusBar() {
               TREIBSTOFF NIEDRIG
             </span>
           )}
+          <span style={{ fontSize: '0.7rem', color: 'var(--color-dim)' }}>
+            {ship?.stats.fuelPerJump ?? 1}/J
+          </span>
         </>
       )}
       <span style={{ color: 'var(--color-dim)' }}>|</span>

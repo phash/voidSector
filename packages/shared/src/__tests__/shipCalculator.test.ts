@@ -50,6 +50,17 @@ describe('calculateShipStats', () => {
     expect(stats.hp).toBe(150);
     expect(stats.cargoCap).toBe(5);
   });
+
+  it('should include fuelPerJump in calculated stats', () => {
+    const stats = calculateShipStats('scout', []);
+    expect(stats.fuelPerJump).toBe(1);
+  });
+
+  it('should have higher fuelPerJump for heavy hulls', () => {
+    const freighterStats = calculateShipStats('freighter', []);
+    const scoutStats = calculateShipStats('scout', []);
+    expect(freighterStats.fuelPerJump).toBeGreaterThan(scoutStats.fuelPerJump);
+  });
 });
 
 describe('validateModuleInstall', () => {

@@ -690,6 +690,7 @@ export interface HullDefinition {
   baseCargo: number;
   baseJumpRange: number;
   baseApPerJump: number;
+  baseFuelPerJump: number;
   baseHp: number;
   baseCommRange: number;
   baseScannerLevel: number;
@@ -717,6 +718,7 @@ export interface ShipStats {
   cargoCap: number;
   jumpRange: number;
   apCostJump: number;
+  fuelPerJump: number;
   hp: number;
   commRange: number;
   scannerLevel: number;

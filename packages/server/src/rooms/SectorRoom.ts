@@ -677,7 +677,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Check fuel
     const ship = this.getShipForClient(client.sessionId);
     const currentFuel = await getFuelState(auth.userId);
-    const fuelCost = 1;
+    const fuelCost = ship.fuelPerJump;
     if (currentFuel === null || currentFuel < fuelCost) {
       client.send('jumpResult', { success: false, error: 'Not enough fuel' });
       return;
@@ -813,7 +813,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Calculate costs with far-jump discount
     const apCost = Math.ceil(distance * ship.apCostJump * FAR_JUMP_AP_DISCOUNT);
-    const fuelCost = distance;
+    const shipFar = this.getShipForClient(client.sessionId);
+    const fuelCost = distance * shipFar.fuelPerJump;
 
     // Validate AP
     const ap = await getAPState(auth.userId);

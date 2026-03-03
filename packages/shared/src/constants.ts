@@ -210,31 +210,31 @@ export const SHIP_CLASSES: Record<ShipClass, {
 export const HULLS: Record<HullType, HullDefinition> = {
   scout: {
     name: 'VOID SCOUT', size: 'small', slots: 3,
-    baseFuel: 80, baseCargo: 3, baseJumpRange: 5, baseApPerJump: 1,
+    baseFuel: 80, baseCargo: 3, baseJumpRange: 5, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 50, baseCommRange: 50, baseScannerLevel: 1,
     unlockLevel: 1, unlockCost: 0,
   },
   freighter: {
     name: 'VOID FREIGHTER', size: 'medium', slots: 4,
-    baseFuel: 120, baseCargo: 15, baseJumpRange: 3, baseApPerJump: 2,
+    baseFuel: 120, baseCargo: 15, baseJumpRange: 3, baseApPerJump: 2, baseFuelPerJump: 2,
     baseHp: 80, baseCommRange: 75, baseScannerLevel: 1,
     unlockLevel: 3, unlockCost: 500,
   },
   cruiser: {
     name: 'VOID CRUISER', size: 'medium', slots: 4,
-    baseFuel: 150, baseCargo: 8, baseJumpRange: 4, baseApPerJump: 1,
+    baseFuel: 150, baseCargo: 8, baseJumpRange: 4, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 100, baseCommRange: 100, baseScannerLevel: 1,
     unlockLevel: 4, unlockCost: 1000,
   },
   explorer: {
     name: 'VOID EXPLORER', size: 'large', slots: 5,
-    baseFuel: 200, baseCargo: 10, baseJumpRange: 6, baseApPerJump: 1,
+    baseFuel: 200, baseCargo: 10, baseJumpRange: 6, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 70, baseCommRange: 150, baseScannerLevel: 2,
     unlockLevel: 5, unlockCost: 2000,
   },
   battleship: {
     name: 'VOID BATTLESHIP', size: 'large', slots: 5,
-    baseFuel: 180, baseCargo: 5, baseJumpRange: 2, baseApPerJump: 2,
+    baseFuel: 180, baseCargo: 5, baseJumpRange: 2, baseApPerJump: 2, baseFuelPerJump: 3,
     baseHp: 150, baseCommRange: 75, baseScannerLevel: 1,
     unlockLevel: 6, unlockCost: 3000,
   },

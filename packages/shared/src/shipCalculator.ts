@@ -8,6 +8,7 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
     cargoCap: hull.baseCargo,
     jumpRange: hull.baseJumpRange,
     apCostJump: hull.baseApPerJump,
+    fuelPerJump: hull.baseFuelPerJump,
     hp: hull.baseHp,
     commRange: hull.baseCommRange,
     scannerLevel: hull.baseScannerLevel,

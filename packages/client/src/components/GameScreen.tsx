@@ -255,6 +255,7 @@ function SchematicView() {
             <span>CARGO: <span style={{ color: 'var(--color-primary)' }}>{stats.cargoCap}</span></span>
             <span>JUMP: <span style={{ color: 'var(--color-primary)' }}>{stats.jumpRange}</span></span>
             <span>AP/J: <span style={{ color: 'var(--color-primary)' }}>{stats.apCostJump}</span></span>
+            <span>FUEL/J: <span style={{ color: 'var(--color-primary)' }}>{stats.fuelPerJump}</span></span>
             <span>SCAN: <span style={{ color: 'var(--color-primary)' }}>{stats.scannerLevel}</span></span>
             <span>HP: <span style={{ color: 'var(--color-primary)' }}>{stats.hp}</span></span>
             <span>COMM: <span style={{ color: 'var(--color-primary)' }}>{stats.commRange}</span></span>
