@@ -438,6 +438,19 @@ export async function getPlayerStructure(
   return rows[0] ?? null;
 }
 
+export async function playerHasBaseAtSector(
+  playerId: string, sectorX: number, sectorY: number
+): Promise<boolean> {
+  const { rows } = await query(
+    `SELECT 1 FROM structures
+     WHERE owner_id = $1 AND type = 'base'
+       AND sector_x = $2 AND sector_y = $3
+     LIMIT 1`,
+    [playerId, sectorX, sectorY]
+  );
+  return rows.length > 0;
+}
+
 export async function createTradeOrder(
   playerId: string, resource: string, amount: number, pricePerUnit: number, type: 'buy' | 'sell'
 ): Promise<{ id: string }> {

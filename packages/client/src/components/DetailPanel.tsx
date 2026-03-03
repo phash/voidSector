@@ -77,7 +77,7 @@ export function DetailPanel() {
               YOU ARE HERE
             </div>
           )}
-          {isPlayerHere && sector?.type === 'station' && fuel && fuel.current < fuel.max && (
+          {isPlayerHere && fuel && fuel.current < fuel.max && (
             <button
               onClick={() => network.sendRefuel(fuel.max - fuel.current)}
               style={{
