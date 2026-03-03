@@ -50,32 +50,35 @@ export function StatusBar() {
 
   return (
     <div style={{
-      padding: '6px 12px',
+      padding: '4px 12px',
       borderTop: '1px solid var(--color-dim)',
       borderBottom: '1px solid var(--color-dim)',
-      fontSize: '0.7rem',
+      fontSize: '0.8rem',
       letterSpacing: '0.08em',
       lineHeight: 1.8,
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '4px 16px',
+      alignItems: 'center',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 16px' }}>
-        <span className={flashing ? 'ap-flash' : ''}>
-          AP: {ap ? `${displayAP}/${ap.max}` : '---'}
-          {' '}<SegmentedBar current={ap ? displayAP : 0} max={ap?.max ?? 100} />
+      <span className={flashing ? 'ap-flash' : ''}>
+        AP: {ap ? `${displayAP}/${ap.max}` : '---'}
+        {' '}<SegmentedBar current={ap ? displayAP : 0} max={ap?.max ?? 100} width={8} />
+      </span>
+      {ap && (
+        <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
+          {ap.regenPerSecond}/s {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `FULL ${secondsToFull}s`}
         </span>
-        {ap && (
-          <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
-            {ap.regenPerSecond}/s | {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `FULL ${secondsToFull}s`}
-          </span>
-        )}
-      </div>
+      )}
+      <span style={{ color: 'var(--color-dim)' }}>|</span>
       {fuel && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 16px', marginTop: 2 }}>
+        <>
           <span style={{
             color: fuel.current <= 0 ? '#FF3333' : fuel.current < fuel.max * 0.2 ? '#FF6644' : undefined,
             animation: fuel.current <= 0 ? 'bezel-alert-pulse 1s infinite' : undefined,
           }}>
             FUEL: {Math.floor(fuel.current)}/{fuel.max}
-            {' '}<SegmentedBar current={fuel.current} max={fuel.max} />
+            {' '}<SegmentedBar current={fuel.current} max={fuel.max} width={8} />
           </span>
           {fuel.current <= 0 && (
             <span style={{ color: '#FF3333', fontSize: '0.75rem', fontWeight: 'bold' }}>
@@ -87,7 +90,7 @@ export function StatusBar() {
               TREIBSTOFF NIEDRIG
             </span>
           )}
-        </div>
+        </>
       )}
     </div>
   );
@@ -102,20 +105,21 @@ export function SectorInfo() {
 
   return (
     <div style={{
-      padding: '6px 12px',
+      padding: '3px 12px',
       borderTop: '1px solid var(--color-dim)',
       borderBottom: '1px solid var(--color-dim)',
       fontSize: '0.75rem',
       letterSpacing: '0.1em',
+      color: 'var(--color-dim)',
+      display: 'flex',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '2px 12px',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span>SECTOR: ({position.x}, {position.y})</span>
-        <span>{currentSector?.type?.toUpperCase() || '---'}</span>
-        <span>PILOTS: {playerCount}</span>
-      </div>
-      <div style={{ color: 'var(--color-dim)', fontSize: '0.75rem' }}>
-        ORIGIN: {distToOrigin.toLocaleString()} SECTORS
-      </div>
+      <span>SECTOR: ({position.x}, {position.y})</span>
+      <span>{currentSector?.type?.toUpperCase() || '---'}</span>
+      <span>PILOTS: {playerCount}</span>
+      <span>ORIGIN: {distToOrigin.toLocaleString()}</span>
     </div>
   );
 }
