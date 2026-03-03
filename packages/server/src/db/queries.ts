@@ -499,6 +499,30 @@ export async function deductCredits(playerId: string, amount: number): Promise<b
   return (rowCount ?? 0) > 0;
 }
 
+export async function getAlienCredits(playerId: string): Promise<number> {
+  const { rows } = await query<{ alien_credits: number }>(
+    'SELECT alien_credits FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.alien_credits ?? 0;
+}
+
+export async function addAlienCredits(playerId: string, amount: number): Promise<number> {
+  const { rows } = await query<{ alien_credits: number }>(
+    'UPDATE players SET alien_credits = alien_credits + $2 WHERE id = $1 RETURNING alien_credits',
+    [playerId, amount]
+  );
+  return rows[0]?.alien_credits ?? 0;
+}
+
+export async function deductAlienCredits(playerId: string, amount: number): Promise<boolean> {
+  const { rows } = await query<{ alien_credits: number }>(
+    'UPDATE players SET alien_credits = alien_credits - $2 WHERE id = $1 AND alien_credits >= $2 RETURNING alien_credits',
+    [playerId, amount]
+  );
+  return rows.length > 0;
+}
+
 export async function getStorageInventory(playerId: string): Promise<{ ore: number; gas: number; crystal: number }> {
   const { rows } = await query<{ ore: number; gas: number; crystal: number }>(
     'SELECT ore, gas, crystal FROM storage_inventory WHERE player_id = $1',

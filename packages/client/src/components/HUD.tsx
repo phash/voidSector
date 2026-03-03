@@ -15,6 +15,7 @@ export function StatusBar() {
   const ap = useStore((s) => s.ap);
   const fuel = useStore((s) => s.fuel);
   const credits = useStore((s) => s.credits);
+  const alienCredits = useStore((s) => s.alienCredits);
 
   // Live-updating AP accounting for regen since last server tick
   const [displayAP, setDisplayAP] = useState(ap?.current ?? 0);
@@ -95,6 +96,14 @@ export function StatusBar() {
       )}
       <span style={{ color: 'var(--color-dim)' }}>|</span>
       <span>CR: {credits.toLocaleString()}</span>
+      {alienCredits > 0 && (
+        <>
+          <span style={{ color: 'var(--color-dim)' }}>|</span>
+          <span style={{ color: '#00BFFF' }}>
+            A-CR: {alienCredits.toLocaleString()}
+          </span>
+        </>
+      )}
     </div>
   );
 }

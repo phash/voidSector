@@ -32,30 +32,30 @@ describe('CargoScreen', () => {
 
   it('shows jettison buttons', () => {
     render(<CargoScreen />);
-    expect(screen.getByText('[JETTISON ORE]')).toBeInTheDocument();
-    expect(screen.getByText('[JETTISON GAS]')).toBeInTheDocument();
-    expect(screen.getByText('[JETTISON CRYSTAL]')).toBeInTheDocument();
+    expect(screen.getByText('[ABWERFEN ORE]')).toBeInTheDocument();
+    expect(screen.getByText('[ABWERFEN GAS]')).toBeInTheDocument();
+    expect(screen.getByText('[ABWERFEN CRYSTAL]')).toBeInTheDocument();
   });
 
   it('disables jettison when resource is 0', () => {
     render(<CargoScreen />);
     // Gas is 0
-    const gasBtn = screen.getByText('[JETTISON GAS]').closest('button');
+    const gasBtn = screen.getByText('[ABWERFEN GAS]').closest('button');
     expect(gasBtn).toBeDisabled();
   });
 
   it('enables jettison when resource > 0', () => {
     render(<CargoScreen />);
-    const oreBtn = screen.getByText('[JETTISON ORE]').closest('button');
+    const oreBtn = screen.getByText('[ABWERFEN ORE]').closest('button');
     expect(oreBtn).not.toBeDisabled();
 
-    const crystalBtn = screen.getByText('[JETTISON CRYSTAL]').closest('button');
+    const crystalBtn = screen.getByText('[ABWERFEN CRYSTAL]').closest('button');
     expect(crystalBtn).not.toBeDisabled();
   });
 
   it('calls sendJettison on click', async () => {
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('[JETTISON ORE]'));
+    await userEvent.click(screen.getByText('[ABWERFEN ORE]'));
     expect(network.sendJettison).toHaveBeenCalledWith('ore');
   });
 

@@ -31,6 +31,7 @@ export interface PlayerData {
   xp: number;
   level: number;
   credits?: number;
+  alienCredits?: number;
 }
 
 export type ShipClass = 'aegis_scout_mk1' | 'void_seeker_mk2';

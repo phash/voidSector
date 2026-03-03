@@ -88,6 +88,7 @@ export interface GameSlice {
 
   // Credits
   credits: number;
+  alienCredits: number;
 
   // Storage
   storage: StorageInventory;
@@ -205,6 +206,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   selectedSector: null,
   baseStructures: [],
   credits: 0,
+  alienCredits: 0,
   storage: { ore: 0, gas: 0, crystal: 0 },
   tradeOrders: [],
   myOrders: [],

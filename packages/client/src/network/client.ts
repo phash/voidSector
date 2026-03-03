@@ -294,6 +294,11 @@ class GameNetwork {
       useStore.getState().setCredits(data.credits);
     });
 
+    // Alien credits update
+    room.onMessage('alienCreditsUpdate', (data: { alienCredits: number }) => {
+      useStore.setState({ alienCredits: data.alienCredits });
+    });
+
     // Storage update
     room.onMessage('storageUpdate', (data: StorageInventory) => {
       useStore.getState().setStorage(data);
