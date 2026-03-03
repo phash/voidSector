@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass } from '@void-sector/shared';
+import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark } from '@void-sector/shared';
 import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -1132,4 +1132,27 @@ export async function getActiveTradeRoutes(): Promise<Array<{
      FROM trade_routes WHERE active = TRUE`
   );
   return rows;
+}
+
+// --- Bookmarks ---
+
+export async function getPlayerBookmarks(playerId: string): Promise<Bookmark[]> {
+  const result = await query<{ slot: number; sector_x: number; sector_y: number; label: string }>(
+    'SELECT slot, sector_x, sector_y, label FROM player_bookmarks WHERE player_id = $1 ORDER BY slot',
+    [playerId]
+  );
+  return result.rows.map(r => ({ slot: r.slot, sectorX: r.sector_x, sectorY: r.sector_y, label: r.label }));
+}
+
+export async function setPlayerBookmark(playerId: string, slot: number, sectorX: number, sectorY: number, label: string): Promise<void> {
+  await query(
+    `INSERT INTO player_bookmarks (player_id, slot, sector_x, sector_y, label)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (player_id, slot) DO UPDATE SET sector_x = $3, sector_y = $4, label = $5`,
+    [playerId, slot, sectorX, sectorY, label]
+  );
+}
+
+export async function clearPlayerBookmark(playerId: string, slot: number): Promise<void> {
+  await query('DELETE FROM player_bookmarks WHERE player_id = $1 AND slot = $2', [playerId, slot]);
 }

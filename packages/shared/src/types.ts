@@ -651,3 +651,14 @@ export interface CreateCustomSlateMessage {
   codes?: string[];
   notes?: string;
 }
+
+// --- Bookmarks ---
+export interface Bookmark {
+  slot: number;
+  sectorX: number;
+  sectorY: number;
+  label: string;
+}
+
+export interface SetBookmarkMessage { slot: number; sectorX: number; sectorY: number; label: string; }
+export interface ClearBookmarkMessage { slot: number; }
