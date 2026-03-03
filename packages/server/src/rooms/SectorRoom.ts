@@ -14,6 +14,7 @@ import { checkScanEvent } from '../engine/scanEvents.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
+import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
@@ -32,6 +33,13 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   private getShipForClient(sessionId: string) {
     return this.clientShips.get(sessionId) ?? SHIP_CLASSES.aegis_scout_mk1;
+  }
+
+  private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
+    const faction = await getPlayerFaction(playerId);
+    if (!faction) return calculateBonuses([]);
+    const upgrades = await getFactionUpgrades(faction.id);
+    return calculateBonuses(upgrades.map(u => ({ tier: u.tier, choice: u.choice as 'A' | 'B' })));
   }
 
   static async onAuth(token: string) {
@@ -591,7 +599,9 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     await saveAPState(auth.userId, scanResult.newAP!);
 
-    const radius = scanResult.radius;
+    // Apply faction scan radius bonus
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    const radius = scanResult.radius + bonuses.scanRadiusBonus;
     const sectorX = this.state.sector.x;
     const sectorY = this.state.sector.y;
     const sectors: SectorData[] = [];
@@ -648,6 +658,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('error', { code: 'MINE_FAILED', message: result.error! });
       return;
     }
+
+    // Apply faction mining bonus
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    result.state!.rate *= bonuses.miningRateMultiplier;
 
     await saveMiningState(auth.userId, result.state!);
     client.send('miningUpdate', result.state!);
@@ -881,6 +895,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     if (!result.valid) {
       client.send('npcTradeResult', { success: false, error: result.error });
       return;
+    }
+
+    // Apply faction trade price bonus (discount on buy prices)
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    if (action === 'buy') {
+      result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
     }
 
     if (action === 'sell') {
@@ -1586,12 +1606,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     const pirateLevel = getPirateLevel(data.sectorX, data.sectorY);
     const encounter = createPirateEncounter(pirateLevel, data.sectorX, data.sectorY, pirateRep);
 
-    // Ship attack power (base from ship class + combat_plating upgrade)
+    // Ship attack power (base from ship class + combat_plating upgrade + faction bonus)
     let shipAttack = 10;
     const upgrades = await getPlayerUpgrades(auth.userId);
     if (upgrades.some(u => u.upgrade_id === 'combat_plating' && u.active)) {
       shipAttack = Math.round(shipAttack * 1.2);
     }
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    shipAttack = Math.round(shipAttack * bonuses.combatMultiplier);
 
     const battleSeed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17);
     const validation = validateBattleAction(
