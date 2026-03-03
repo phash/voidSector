@@ -19,6 +19,8 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
   const setZoomLevel = useStore((s) => s.setZoomLevel);
   const panOffset = useStore((s) => s.panOffset);
   const setPanOffset = useStore((s) => s.setPanOffset);
+  const autoFollow = useStore((s) => s.autoFollow);
+  const setAutoFollow = useStore((s) => s.setAutoFollow);
   const [showLegend, setShowLegend] = useState(false);
 
   return (
@@ -75,8 +77,22 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
           max={1.5}
           onChange={setBrightness}
         />
+        {monitorId === 'NAV-COM' && (
+          <button
+            className="vs-btn"
+            onClick={() => setAutoFollow(!autoFollow)}
+            style={{
+              fontSize: '0.65rem',
+              padding: '2px 6px',
+              borderColor: autoFollow ? '#00FF88' : 'var(--color-dim)',
+              color: autoFollow ? '#00FF88' : 'var(--color-dim)',
+            }}
+          >
+            [{autoFollow ? 'AUTO' : 'MANUAL'}]
+          </button>
+        )}
         <button className="vs-btn" onClick={() => setShowLegend(true)}
-          style={{ fontSize: '0.7rem', padding: '4px 8px', marginLeft: 'auto' }}>
+          style={{ fontSize: '0.7rem', padding: '4px 8px', marginLeft: monitorId === 'NAV-COM' ? undefined : 'auto' }}>
           [?]
         </button>
       </div>
