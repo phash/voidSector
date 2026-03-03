@@ -578,3 +578,192 @@ export async function getTradeOrderById(orderId: string): Promise<any | null> {
   );
   return result.rows[0] || null;
 }
+
+// --- Factions ---
+
+export async function createFaction(
+  leaderId: string,
+  name: string,
+  tag: string,
+  joinMode: string,
+): Promise<{ id: string; invite_code: string | null }> {
+  const inviteCode = joinMode === 'code'
+    ? Math.random().toString(36).substring(2, 10).toUpperCase()
+    : null;
+
+  const result = await query<{ id: string; invite_code: string | null }>(
+    `INSERT INTO factions (name, tag, leader_id, join_mode, invite_code)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, invite_code`,
+    [name, tag, leaderId, joinMode, inviteCode]
+  );
+  const faction = result.rows[0];
+
+  await query(
+    `INSERT INTO faction_members (faction_id, player_id, rank)
+     VALUES ($1, $2, 'leader')`,
+    [faction.id, leaderId]
+  );
+
+  return faction;
+}
+
+export async function getFactionById(factionId: string): Promise<any | null> {
+  const result = await query(
+    `SELECT f.*, p.username as leader_name,
+            (SELECT COUNT(*) FROM faction_members WHERE faction_id = f.id) as member_count
+     FROM factions f
+     JOIN players p ON p.id = f.leader_id
+     WHERE f.id = $1`,
+    [factionId]
+  );
+  return result.rows[0] || null;
+}
+
+export async function getPlayerFaction(playerId: string): Promise<any | null> {
+  const result = await query(
+    `SELECT f.*, p.username as leader_name, fm.rank as player_rank,
+            (SELECT COUNT(*) FROM faction_members WHERE faction_id = f.id) as member_count
+     FROM faction_members fm
+     JOIN factions f ON f.id = fm.faction_id
+     JOIN players p ON p.id = f.leader_id
+     WHERE fm.player_id = $1`,
+    [playerId]
+  );
+  return result.rows[0] || null;
+}
+
+export async function getFactionMembers(factionId: string): Promise<any[]> {
+  const result = await query(
+    `SELECT fm.player_id, p.username as player_name, fm.rank, fm.joined_at
+     FROM faction_members fm
+     JOIN players p ON p.id = fm.player_id
+     WHERE fm.faction_id = $1
+     ORDER BY
+       CASE fm.rank WHEN 'leader' THEN 0 WHEN 'officer' THEN 1 ELSE 2 END,
+       fm.joined_at`,
+    [factionId]
+  );
+  return result.rows;
+}
+
+export async function addFactionMember(
+  factionId: string,
+  playerId: string,
+  rank: string = 'member',
+): Promise<void> {
+  await query(
+    `INSERT INTO faction_members (faction_id, player_id, rank)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (faction_id, player_id) DO NOTHING`,
+    [factionId, playerId, rank]
+  );
+}
+
+export async function removeFactionMember(factionId: string, playerId: string): Promise<boolean> {
+  const result = await query(
+    'DELETE FROM faction_members WHERE faction_id = $1 AND player_id = $2',
+    [factionId, playerId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function updateMemberRank(
+  factionId: string,
+  playerId: string,
+  newRank: string,
+): Promise<boolean> {
+  const result = await query(
+    'UPDATE faction_members SET rank = $3 WHERE faction_id = $1 AND player_id = $2',
+    [factionId, playerId, newRank]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function updateFactionJoinMode(
+  factionId: string,
+  joinMode: string,
+): Promise<{ invite_code: string | null }> {
+  const inviteCode = joinMode === 'code'
+    ? Math.random().toString(36).substring(2, 10).toUpperCase()
+    : null;
+  await query(
+    'UPDATE factions SET join_mode = $2, invite_code = $3 WHERE id = $1',
+    [factionId, joinMode, inviteCode]
+  );
+  return { invite_code: inviteCode };
+}
+
+export async function getFactionByCode(code: string): Promise<any | null> {
+  const result = await query(
+    `SELECT f.*, p.username as leader_name
+     FROM factions f
+     JOIN players p ON p.id = f.leader_id
+     WHERE f.invite_code = $1`,
+    [code]
+  );
+  return result.rows[0] || null;
+}
+
+export async function disbandFaction(factionId: string): Promise<void> {
+  await query('DELETE FROM factions WHERE id = $1', [factionId]);
+}
+
+export async function createFactionInvite(
+  factionId: string,
+  inviterId: string,
+  inviteeId: string,
+): Promise<{ id: string }> {
+  const result = await query<{ id: string }>(
+    `INSERT INTO faction_invites (faction_id, inviter_id, invitee_id)
+     VALUES ($1, $2, $3)
+     RETURNING id`,
+    [factionId, inviterId, inviteeId]
+  );
+  return result.rows[0];
+}
+
+export async function getPlayerFactionInvites(playerId: string): Promise<any[]> {
+  const result = await query(
+    `SELECT fi.id, fi.faction_id, f.name as faction_name, f.tag as faction_tag,
+            p.username as inviter_name, fi.status, fi.created_at
+     FROM faction_invites fi
+     JOIN factions f ON f.id = fi.faction_id
+     JOIN players p ON p.id = fi.inviter_id
+     WHERE fi.invitee_id = $1 AND fi.status = 'pending'
+     ORDER BY fi.created_at DESC`,
+    [playerId]
+  );
+  return result.rows;
+}
+
+export async function respondToInvite(
+  inviteId: string,
+  playerId: string,
+  accept: boolean,
+): Promise<any | null> {
+  const status = accept ? 'accepted' : 'rejected';
+  const result = await query(
+    `UPDATE faction_invites SET status = $3
+     WHERE id = $1 AND invitee_id = $2 AND status = 'pending'
+     RETURNING faction_id`,
+    [inviteId, playerId, status]
+  );
+  return result.rows[0] || null;
+}
+
+export async function getPlayerIdByUsername(username: string): Promise<string | null> {
+  const result = await query<{ id: string }>(
+    'SELECT id FROM players WHERE username = $1',
+    [username]
+  );
+  return result.rows[0]?.id || null;
+}
+
+export async function getFactionMembersByPlayerIds(factionId: string): Promise<string[]> {
+  const result = await query<{ player_id: string }>(
+    'SELECT player_id FROM faction_members WHERE faction_id = $1',
+    [factionId]
+  );
+  return result.rows.map(r => r.player_id);
+}
