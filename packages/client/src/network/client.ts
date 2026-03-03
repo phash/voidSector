@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark } from '@void-sector/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -525,6 +525,11 @@ class GameNetwork {
       }
     });
 
+    // Bookmarks
+    room.onMessage('bookmarksUpdate', (data: { bookmarks: Bookmark[] }) => {
+      useStore.getState().setBookmarks(data.bookmarks);
+    });
+
     // Trade Routes
     room.onMessage('tradeRoutesUpdate', (data: TradeRoute[]) => {
       useStore.getState().setTradeRoutes(data);
@@ -844,6 +849,13 @@ class GameNetwork {
     if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
     this.sectorRoom.send('deleteRoute', { routeId });
   }
+
+  // Bookmarks
+  requestBookmarks() { this.sectorRoom?.send('getBookmarks'); }
+  sendSetBookmark(slot: number, sectorX: number, sectorY: number, label: string) {
+    this.sectorRoom?.send('setBookmark', { slot, sectorX, sectorY, label });
+  }
+  sendClearBookmark(slot: number) { this.sectorRoom?.send('clearBookmark', { slot }); }
 
   sendCreateCustomSlate(data: CreateCustomSlateMessage) {
     if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
