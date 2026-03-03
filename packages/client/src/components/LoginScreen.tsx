@@ -32,7 +32,8 @@ export function LoginScreen() {
         return;
       }
       setAuth(data.token, data.player.id, data.player.username);
-      await network.joinSector(0, 0);
+      const pos = data.lastPosition ?? { x: 0, y: 0 };
+      await network.joinSector(pos.x, pos.y);
       setScreen('game');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection failed');

@@ -33,6 +33,7 @@ class GameNetwork {
 
     this.setupRoomListeners(this.sectorRoom);
     store.setPosition({ x, y });
+    store.resetPan();
     store.addLogEntry(`Entered sector (${x}, ${y})`);
   }
 
