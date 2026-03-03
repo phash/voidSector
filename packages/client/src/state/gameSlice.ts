@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, ScanEvent } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute } from '@void-sector/shared';
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -96,6 +96,13 @@ export interface GameSlice {
   activeBattle: PirateEncounter | null;
   scanEvents: ScanEvent[];
 
+  // Phase 5: Deep Systems
+  jumpGateInfo: JumpGateInfo | null;
+  rescuedSurvivors: RescueSurvivor[];
+  distressCalls: DistressCall[];
+  factionUpgrades: FactionUpgradeState[];
+  tradeRoutes: TradeRoute[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
@@ -132,6 +139,12 @@ export interface GameSlice {
   setActiveBattle: (encounter: PirateEncounter | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
   addScanEvent: (event: ScanEvent) => void;
+  setJumpGateInfo: (gate: JumpGateInfo | null) => void;
+  setRescuedSurvivors: (survivors: RescueSurvivor[]) => void;
+  addDistressCall: (call: DistressCall) => void;
+  removeDistressCall: (id: string) => void;
+  setFactionUpgrades: (upgrades: FactionUpgradeState[]) => void;
+  setTradeRoutes: (routes: TradeRoute[]) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -167,6 +180,11 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   playerUpgrades: [],
   activeBattle: null,
   scanEvents: [],
+  jumpGateInfo: null,
+  rescuedSurvivors: [],
+  distressCalls: [],
+  factionUpgrades: [],
+  tradeRoutes: [],
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -247,4 +265,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setActiveBattle: (activeBattle) => set({ activeBattle }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
+  setJumpGateInfo: (jumpGateInfo) => set({ jumpGateInfo }),
+  setRescuedSurvivors: (rescuedSurvivors) => set({ rescuedSurvivors }),
+  addDistressCall: (call) => set((s) => ({ distressCalls: [...s.distressCalls, call] })),
+  removeDistressCall: (id) => set((s) => ({ distressCalls: s.distressCalls.filter(d => d.id !== id) })),
+  setFactionUpgrades: (factionUpgrades) => set({ factionUpgrades }),
+  setTradeRoutes: (tradeRoutes) => set({ tradeRoutes }),
 });

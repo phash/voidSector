@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import type { FactionJoinMode } from '@void-sector/shared';
+import { FACTION_UPGRADE_TIERS } from '@void-sector/shared';
+import type { FactionJoinMode, FactionUpgradeChoice } from '@void-sector/shared';
 
 export function FactionScreen() {
   const faction = useStore((s) => s.faction);
   const members = useStore((s) => s.factionMembers);
   const invites = useStore((s) => s.factionInvites);
   const playerId = useStore((s) => s.player?.id);
+  const factionUpgrades = useStore((s) => s.factionUpgrades);
 
   useEffect(() => {
     network.requestFaction();
@@ -80,6 +82,56 @@ export function FactionScreen() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* Upgrade Tree */}
+      <div style={{
+        borderTop: '1px solid var(--color-dim)',
+        paddingTop: '8px',
+        marginBottom: '8px',
+      }}>
+        <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '6px', letterSpacing: '0.1em' }}>VERBESSERUNGSBAUM</div>
+        {[1, 2, 3].map(tier => {
+          const tierDef = FACTION_UPGRADE_TIERS[tier];
+          const chosen = factionUpgrades.find(u => u.tier === tier);
+          const prevChosen = tier === 1 || factionUpgrades.some(u => u.tier === tier - 1);
+
+          return (
+            <div key={tier} style={{ marginBottom: 12, opacity: prevChosen ? 1 : 0.3 }}>
+              <div style={{ fontSize: '0.75rem', marginBottom: 4, opacity: 0.6 }}>
+                TIER {tier} — {tierDef.cost} CR
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {(['A', 'B'] as FactionUpgradeChoice[]).map(choice => {
+                  const opt = choice === 'A' ? tierDef.optionA : tierDef.optionB;
+                  const isChosen = chosen?.choice === choice;
+                  const isOtherChosen = chosen && chosen.choice !== choice;
+                  return (
+                    <button
+                      key={choice}
+                      disabled={!!chosen || !isLeader || !prevChosen}
+                      onClick={() => network.sendFactionUpgrade(tier, choice)}
+                      style={{
+                        flex: 1,
+                        background: isChosen ? 'rgba(255,176,0,0.2)' : 'transparent',
+                        border: `1px solid ${isChosen ? '#FFB000' : 'rgba(255,176,0,0.3)'}`,
+                        color: isOtherChosen ? 'rgba(255,176,0,0.3)' : '#FFB000',
+                        padding: '6px',
+                        fontFamily: 'inherit',
+                        fontSize: '0.75rem',
+                        cursor: chosen || !isLeader ? 'default' : 'pointer',
+                        textDecoration: isOtherChosen ? 'line-through' : 'none',
+                      }}
+                    >
+                      <div>{opt.name}</div>
+                      <div style={{ fontSize: '0.65rem', opacity: 0.6 }}>{opt.effect}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div style={{

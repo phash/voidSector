@@ -32,6 +32,17 @@ describe('validateJump', () => {
     expect(result.valid).toBe(false);
     expect(result.error).toContain('AP');
   });
+
+  it('rejects jump while mining is active', () => {
+    const result = validateJump(fullAP, 0, 0, 1, 0, 4, AP_COSTS.jump, true);
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('mining');
+  });
+
+  it('allows jump when not mining', () => {
+    const result = validateJump(fullAP, 0, 0, 1, 0, 4, AP_COSTS.jump, false);
+    expect(result.valid).toBe(true);
+  });
 });
 
 describe('validateScan', () => {

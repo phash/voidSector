@@ -1,5 +1,5 @@
 import { SYMBOLS, RADAR_RADIUS, SECTOR_COLORS } from '@void-sector/shared';
-import type { SectorData, Coords } from '@void-sector/shared';
+import type { SectorData, Coords, JumpGateInfo, ScanEvent } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
 
@@ -21,6 +21,8 @@ interface RadarState {
   panOffset: { x: number; y: number };
   jumpAnimation?: JumpAnimationState | null;
   selectedSector?: { x: number; y: number } | null;
+  jumpGateInfo?: JumpGateInfo | null;
+  scanEvents?: ScanEvent[];
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
@@ -120,6 +122,27 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         ctx.font = COORD_FONT;
         ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H / 2 - 2);
       }
+
+      // Feature dots (jumpgate, scan events)
+      if (sector || isPlayer) {
+        const features: string[] = [];
+        if (state.jumpGateInfo && isPlayer) {
+          features.push('#00BFFF'); // cyan for jumpgate
+        }
+        if (state.scanEvents) {
+          const sectorEvents = state.scanEvents.filter(
+            e => e.sectorX === sx && e.sectorY === sy && e.status === 'discovered'
+          );
+          for (const ev of sectorEvents) {
+            features.push(ev.eventType === 'distress_signal' ? '#FF3333' : '#FF00FF');
+          }
+        }
+        const dotY = cellY - CELL_H / 2 + 4;
+        const dotStartX = cellX + CELL_W / 2 - 5;
+        for (let fi = 0; fi < features.length; fi++) {
+          drawFeatureDot(ctx, dotStartX - fi * 5, dotY, features[fi]);
+        }
+      }
     }
   }
 
@@ -180,6 +203,13 @@ function getSectorLabel(type: string): string {
     case 'empty': return 'EMPTY';
     default: return type.toUpperCase();
   }
+}
+
+function drawFeatureDot(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, 2, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 export function drawGlitchOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, intensity: number) {

@@ -940,3 +940,196 @@ export async function addPlayerXp(playerId: string, xp: number): Promise<{ xp: n
 export async function setPlayerLevel(playerId: string, level: number): Promise<void> {
   await query(`UPDATE players SET level = $2 WHERE id = $1`, [playerId, level]);
 }
+
+// --- Phase 5: Faction Upgrades ---
+
+export async function getFactionUpgrades(factionId: string): Promise<Array<{ tier: number; choice: string; chosenAt: string }>> {
+  const { rows } = await query<{ tier: number; choice: string; chosenAt: string }>(
+    `SELECT tier, choice, chosen_at as "chosenAt" FROM faction_upgrades WHERE faction_id = $1 ORDER BY tier`,
+    [factionId]
+  );
+  return rows;
+}
+
+export async function setFactionUpgrade(factionId: string, tier: number, choice: string, chosenBy: string): Promise<void> {
+  await query(
+    `INSERT INTO faction_upgrades (faction_id, tier, choice, chosen_by) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (faction_id, tier) DO NOTHING`,
+    [factionId, tier, choice, chosenBy]
+  );
+}
+
+// --- Phase 5: JumpGates ---
+
+export async function getJumpGate(sectorX: number, sectorY: number): Promise<any | null> {
+  const { rows } = await query(
+    `SELECT id, sector_x as "sectorX", sector_y as "sectorY", target_x as "targetX", target_y as "targetY",
+     gate_type as "gateType", requires_code as "requiresCode", requires_minigame as "requiresMinigame", access_code as "accessCode"
+     FROM jumpgates WHERE sector_x = $1 AND sector_y = $2`,
+    [sectorX, sectorY]
+  );
+  return rows[0] ?? null;
+}
+
+export async function insertJumpGate(gate: {
+  id: string; sectorX: number; sectorY: number; targetX: number; targetY: number;
+  gateType: string; requiresCode: boolean; requiresMinigame: boolean; accessCode: string | null;
+}): Promise<void> {
+  await query(
+    `INSERT INTO jumpgates (id, sector_x, sector_y, target_x, target_y, gate_type, requires_code, requires_minigame, access_code)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (sector_x, sector_y) DO NOTHING`,
+    [gate.id, gate.sectorX, gate.sectorY, gate.targetX, gate.targetY, gate.gateType, gate.requiresCode, gate.requiresMinigame, gate.accessCode]
+  );
+}
+
+export async function playerHasGateCode(playerId: string, gateId: string): Promise<boolean> {
+  const { rows } = await query(
+    `SELECT 1 FROM gate_codes WHERE player_id = $1 AND gate_id = $2`,
+    [playerId, gateId]
+  );
+  return rows.length > 0;
+}
+
+export async function addGateCode(playerId: string, gateId: string): Promise<void> {
+  await query(
+    `INSERT INTO gate_codes (player_id, gate_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+    [playerId, gateId]
+  );
+}
+
+// --- Phase 5: Rescued Survivors ---
+
+export async function getPlayerSurvivors(playerId: string): Promise<Array<{ id: string; originX: number; originY: number; survivorCount: number; sourceType: string }>> {
+  const { rows } = await query<{ id: string; originX: number; originY: number; survivorCount: number; sourceType: string }>(
+    `SELECT id, origin_x as "originX", origin_y as "originY", survivor_count as "survivorCount", source_type as "sourceType"
+     FROM rescued_survivors WHERE player_id = $1`,
+    [playerId]
+  );
+  return rows;
+}
+
+export async function insertRescuedSurvivor(id: string, playerId: string, originX: number, originY: number, count: number, sourceType: string): Promise<void> {
+  await query(
+    `INSERT INTO rescued_survivors (id, player_id, origin_x, origin_y, survivor_count, source_type) VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id, playerId, originX, originY, count, sourceType]
+  );
+}
+
+export async function deletePlayerSurvivors(playerId: string): Promise<number> {
+  const result = await query(`DELETE FROM rescued_survivors WHERE player_id = $1`, [playerId]);
+  return result.rowCount ?? 0;
+}
+
+// --- Phase 5: Distress Calls ---
+
+export async function insertDistressCall(id: string, targetX: number, targetY: number, survivorCount: number, expiresAt: Date): Promise<void> {
+  await query(
+    `INSERT INTO distress_calls (id, target_x, target_y, survivor_count, expires_at) VALUES ($1, $2, $3, $4, $5)`,
+    [id, targetX, targetY, survivorCount, expiresAt]
+  );
+}
+
+export async function insertPlayerDistressCall(playerId: string, distressId: string, direction: string, estimatedDistance: number): Promise<void> {
+  await query(
+    `INSERT INTO player_distress_calls (player_id, distress_id, direction, estimated_distance) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+    [playerId, distressId, direction, estimatedDistance]
+  );
+}
+
+export async function getPlayerDistressCalls(playerId: string): Promise<Array<{
+  distressId: string; direction: string; estimatedDistance: number; receivedAt: string;
+  targetX: number; targetY: number; expiresAt: string; completed: boolean;
+}>> {
+  const { rows } = await query<{
+    distressId: string; direction: string; estimatedDistance: number; receivedAt: string;
+    targetX: number; targetY: number; expiresAt: string; completed: boolean;
+  }>(
+    `SELECT pdc.distress_id as "distressId", pdc.direction, pdc.estimated_distance as "estimatedDistance",
+     pdc.received_at as "receivedAt", pdc.completed,
+     dc.target_x as "targetX", dc.target_y as "targetY", dc.expires_at as "expiresAt"
+     FROM player_distress_calls pdc
+     JOIN distress_calls dc ON dc.id = pdc.distress_id
+     WHERE pdc.player_id = $1 AND pdc.completed = FALSE AND dc.expires_at > NOW()`,
+    [playerId]
+  );
+  return rows;
+}
+
+export async function completeDistressCall(playerId: string, distressId: string): Promise<void> {
+  await query(
+    `UPDATE player_distress_calls SET completed = TRUE WHERE player_id = $1 AND distress_id = $2`,
+    [playerId, distressId]
+  );
+}
+
+// --- Phase 5: Trade Routes ---
+
+export async function getPlayerTradeRoutes(playerId: string): Promise<Array<{
+  id: string; ownerId: string; tradingPostId: string; targetX: number; targetY: number;
+  sellResource: string | null; sellAmount: number; buyResource: string | null; buyAmount: number;
+  cycleMinutes: number; active: boolean; lastCycleAt: string | null;
+}>> {
+  const { rows } = await query<{
+    id: string; ownerId: string; tradingPostId: string; targetX: number; targetY: number;
+    sellResource: string | null; sellAmount: number; buyResource: string | null; buyAmount: number;
+    cycleMinutes: number; active: boolean; lastCycleAt: string | null;
+  }>(
+    `SELECT id, owner_id as "ownerId", trading_post_id as "tradingPostId",
+     target_x as "targetX", target_y as "targetY",
+     sell_resource as "sellResource", sell_amount as "sellAmount",
+     buy_resource as "buyResource", buy_amount as "buyAmount",
+     cycle_minutes as "cycleMinutes", active, last_cycle_at as "lastCycleAt"
+     FROM trade_routes WHERE owner_id = $1 ORDER BY created_at`,
+    [playerId]
+  );
+  return rows;
+}
+
+export async function insertTradeRoute(route: {
+  id: string; ownerId: string; tradingPostId: string;
+  targetX: number; targetY: number;
+  sellResource: string | null; sellAmount: number;
+  buyResource: string | null; buyAmount: number;
+  cycleMinutes: number;
+}): Promise<void> {
+  await query(
+    `INSERT INTO trade_routes (id, owner_id, trading_post_id, target_x, target_y,
+     sell_resource, sell_amount, buy_resource, buy_amount, cycle_minutes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [route.id, route.ownerId, route.tradingPostId, route.targetX, route.targetY,
+     route.sellResource, route.sellAmount, route.buyResource, route.buyAmount, route.cycleMinutes]
+  );
+}
+
+export async function updateTradeRouteActive(routeId: string, active: boolean): Promise<void> {
+  await query(`UPDATE trade_routes SET active = $2 WHERE id = $1`, [routeId, active]);
+}
+
+export async function updateTradeRouteLastCycle(routeId: string): Promise<void> {
+  await query(`UPDATE trade_routes SET last_cycle_at = NOW() WHERE id = $1`, [routeId]);
+}
+
+export async function deleteTradeRoute(routeId: string, ownerId: string): Promise<boolean> {
+  const result = await query(`DELETE FROM trade_routes WHERE id = $1 AND owner_id = $2`, [routeId, ownerId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function getActiveTradeRoutes(): Promise<Array<{
+  id: string; ownerId: string; tradingPostId: string; targetX: number; targetY: number;
+  sellResource: string | null; sellAmount: number; buyResource: string | null; buyAmount: number;
+  cycleMinutes: number; active: boolean; lastCycleAt: string | null;
+}>> {
+  const { rows } = await query<{
+    id: string; ownerId: string; tradingPostId: string; targetX: number; targetY: number;
+    sellResource: string | null; sellAmount: number; buyResource: string | null; buyAmount: number;
+    cycleMinutes: number; active: boolean; lastCycleAt: string | null;
+  }>(
+    `SELECT id, owner_id as "ownerId", trading_post_id as "tradingPostId",
+     target_x as "targetX", target_y as "targetY",
+     sell_resource as "sellResource", sell_amount as "sellAmount",
+     buy_resource as "buyResource", buy_amount as "buyAmount",
+     cycle_minutes as "cycleMinutes", active, last_cycle_at as "lastCycleAt"
+     FROM trade_routes WHERE active = TRUE`
+  );
+  return rows;
+}

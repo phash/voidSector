@@ -300,3 +300,70 @@ export const MAIN_MONITORS: MonitorId[] = [
 
 /** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */
 export const SIDEBAR_MONITORS = RIGHT_SIDEBAR_MONITORS;
+
+// --- Phase 5: Deep Systems ---
+
+// Fuel
+export const FUEL_COST_PER_UNIT = 2;
+
+// Faction Upgrade Tree
+export const FACTION_UPGRADE_TIERS: Record<number, {
+  optionA: { name: string; effect: string; };
+  optionB: { name: string; effect: string; };
+  cost: number;
+}> = {
+  1: {
+    optionA: { name: 'MINING BOOST', effect: '+15% mining rate' },
+    optionB: { name: 'CARGO EXPANSION', effect: '+3 cargo capacity' },
+    cost: 500,
+  },
+  2: {
+    optionA: { name: 'SCAN RANGE', effect: '+1 area scan radius' },
+    optionB: { name: 'AP REGEN', effect: '+20% AP regeneration' },
+    cost: 1500,
+  },
+  3: {
+    optionA: { name: 'COMBAT BONUS', effect: '+15% combat bonus' },
+    optionB: { name: 'TRADE DISCOUNT', effect: '-10% NPC trade prices' },
+    cost: 5000,
+  },
+};
+
+// JumpGates
+export const JUMPGATE_CHANCE = 0.02;
+export const JUMPGATE_SALT = 777;
+export const JUMPGATE_FUEL_COST = 1;
+export const JUMPGATE_MIN_RANGE = 50;
+export const JUMPGATE_MAX_RANGE = 10000;
+export const JUMPGATE_CODE_LENGTH = 8;
+export const JUMPGATE_MINIGAME_CHANCE = 0.3;
+export const JUMPGATE_CODE_CHANCE = 0.5;
+export const FREQUENCY_MATCH_THRESHOLD = 0.9;
+
+// Rescue Missions
+export const RESCUE_AP_COST = 5;
+export const RESCUE_DELIVER_AP_COST = 3;
+export const RESCUE_EXPIRY_MINUTES = 30;
+export const DISTRESS_CALL_CHANCE = 0.08;
+export const DISTRESS_DIRECTION_VARIANCE = 0.3;
+export const RESCUE_REWARDS = {
+  scan_event: { credits: 50, rep: 10, xp: 25 },
+  npc_quest: { credits: 80, rep: 15, xp: 40 },
+  comm_distress: { credits: 100, rep: 20, xp: 50 },
+} as const;
+
+// Trade Routes
+export const MAX_TRADE_ROUTES = 3;
+export const TRADE_ROUTE_MIN_CYCLE = 15;
+export const TRADE_ROUTE_MAX_CYCLE = 120;
+export const TRADE_ROUTE_FUEL_PER_DISTANCE = 0.5;
+
+// Custom Data Slates
+export const CUSTOM_SLATE_AP_COST = 2;
+export const CUSTOM_SLATE_CREDIT_COST = 5;
+export const CUSTOM_SLATE_MAX_COORDS = 20;
+export const CUSTOM_SLATE_MAX_CODES = 10;
+export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
+
+// Multi-content sectors
+export const SECTOR_MAX_FEATURES = 3;

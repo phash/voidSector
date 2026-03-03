@@ -11,11 +11,16 @@ import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engin
 import { generateStationQuests } from '../engine/questgen.js';
 import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkScanEvent } from '../engine/scanEvents.js';
+import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
+import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
+import { calculateBonuses } from '../engine/factionBonuses.js';
+import type { FactionBonuses } from '../engine/factionBonuses.js';
+import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { query } from '../db/client.js';
-import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult } from '@void-sector/shared';
+import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice } from '@void-sector/shared';
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -28,6 +33,13 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   private getShipForClient(sessionId: string) {
     return this.clientShips.get(sessionId) ?? SHIP_CLASSES.aegis_scout_mk1;
+  }
+
+  private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
+    const faction = await getPlayerFaction(playerId);
+    if (!faction) return calculateBonuses([]);
+    const upgrades = await getFactionUpgrades(faction.id);
+    return calculateBonuses(upgrades.map(u => ({ tier: u.tier, choice: u.choice as 'A' | 'B' })));
   }
 
   static async onAuth(token: string) {
@@ -238,6 +250,26 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
       await this.handleCompleteScanEvent(client, data);
     });
+
+    // Phase 5: Fuel
+    this.onMessage('refuel', async (client, data: RefuelMessage) => {
+      await this.handleRefuel(client, data);
+    });
+
+    // Phase 5: Deep Systems
+    this.onMessage('useJumpGate', (client, data) => this.handleUseJumpGate(client, data));
+    this.onMessage('frequencyMatch', (client, data) => this.handleFrequencyMatch(client, data));
+    this.onMessage('rescue', (client, data) => this.handleRescue(client, data));
+    this.onMessage('deliverSurvivors', (client, data) => this.handleDeliverSurvivors(client, data));
+    this.onMessage('factionUpgrade', (client, data) => this.handleFactionUpgrade(client, data));
+    this.onMessage('configureRoute', (client, data) => this.handleConfigureRoute(client, data));
+    this.onMessage('toggleRoute', (client, data) => this.handleToggleRoute(client, data));
+    this.onMessage('deleteRoute', (client, data) => this.handleDeleteRoute(client, data));
+
+    // Trade route processing interval
+    this.clock.setInterval(() => {
+      this.processTradeRoutes().catch(err => console.error('[TRADE ROUTES] Tick error:', err));
+    }, 60000);
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
@@ -275,6 +307,14 @@ export class SectorRoom extends Room<SectorRoomState> {
       safeSlots: shipStats.safeSlots,
       active: true,
     });
+
+    // Init fuel state in Redis
+    const existingFuel = await getFuelState(auth.userId);
+    if (existingFuel === null) {
+      await saveFuelState(auth.userId, shipStats.fuelMax);
+    }
+    const fuelCurrent = existingFuel ?? shipStats.fuelMax;
+    client.send('fuelUpdate', { current: fuelCurrent, max: shipStats.fuelMax });
 
     // Record discovery
     await addDiscovery(auth.userId, this.state.sector.x, this.state.sector.y);
@@ -382,23 +422,17 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
-    // Auto-stop mining before jumping
-    const mining = await getMiningState(auth.userId);
-    if (mining.active) {
-      const cargoTotal = await getCargoTotal(auth.userId);
-      const ship = this.getShipForClient(client.sessionId);
-      const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
-      const result = stopMining(mining, cargoSpace);
-      if (result.mined > 0 && result.resource) {
-        await addToCargo(auth.userId, result.resource, result.mined);
-      }
-      await saveMiningState(auth.userId, result.newState);
-      client.send('miningUpdate', result.newState);
-      const cargo = await getPlayerCargo(auth.userId);
-      client.send('cargoUpdate', cargo);
+    // Check fuel
+    const ship = this.getShipForClient(client.sessionId);
+    const currentFuel = await getFuelState(auth.userId);
+    const fuelCost = ship.fuelPerJump;
+    if (currentFuel === null || currentFuel < fuelCost) {
+      client.send('jumpResult', { success: false, error: 'Not enough fuel' });
+      return;
     }
 
-    // Validate jump
+    // Check mining state and validate jump (rejects if mining is active)
+    const mining = await getMiningState(auth.userId);
     const ap = await getAPState(auth.userId);
     const jumpResult = validateJump(
       ap,
@@ -406,14 +440,19 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.state.sector.y,
       targetX,
       targetY,
-      this.getShipForClient(client.sessionId).jumpRange,
+      ship.jumpRange,
       AP_COSTS.jump,
+      mining?.active ?? false,
     );
     if (!jumpResult.valid) {
       client.send('jumpResult', { success: false, error: jumpResult.error });
       return;
     }
     await saveAPState(auth.userId, jumpResult.newAP!);
+
+    // Deduct fuel
+    const newFuel = currentFuel - fuelCost;
+    await saveFuelState(auth.userId, newFuel);
 
     // Load or generate target sector
     let targetSector = await getSector(targetX, targetY);
@@ -444,14 +483,79 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Phase 4: Check quest progress for arrive/fetch/delivery
     await this.checkQuestProgress(client, auth.userId, 'arrive', { sectorX: targetX, sectorY: targetY });
 
+    // Phase 5: Check for JumpGate at target sector
+    let gateInfo = null;
+    if (checkJumpGate(targetX, targetY)) {
+      let gate = await getJumpGate(targetX, targetY);
+      if (!gate) {
+        const gateData = generateGateTarget(targetX, targetY);
+        const gateId = `gate_${targetX}_${targetY}`;
+        await insertJumpGate({ id: gateId, sectorX: targetX, sectorY: targetY, ...gateData });
+        gate = { id: gateId, sectorX: targetX, sectorY: targetY, ...gateData };
+      }
+      const hasCode = gate.requiresCode ? await playerHasGateCode(auth.userId, gate.id) : true;
+      gateInfo = {
+        id: gate.id,
+        gateType: gate.gateType,
+        requiresCode: gate.requiresCode,
+        requiresMinigame: gate.requiresMinigame,
+        hasCode,
+      };
+    }
+
     // Tell client to switch rooms
     client.send('jumpResult', {
       success: true,
       newSector: targetSector,
       apRemaining: jumpResult.newAP!.current,
+      fuelRemaining: newFuel,
+      gateInfo,
     });
 
+    // Phase 5: Check for distress calls in comm range
+    await this.checkAndEmitDistressCalls(client, auth.userId, targetX, targetY);
+
     // Client will leave this room and join the new sector room
+  }
+
+  private async handleRefuel(client: Client, data: RefuelMessage) {
+    const auth = client.auth as AuthPayload;
+
+    // Must be at a station sector
+    if (this.state.sector.sectorType !== 'station') {
+      client.send('refuelResult', { success: false, error: 'Must be at a station to refuel' });
+      return;
+    }
+
+    const ship = this.getShipForClient(client.sessionId);
+    const currentFuel = await getFuelState(auth.userId) ?? 0;
+    const tankSpace = ship.fuelMax - currentFuel;
+
+    if (tankSpace <= 0) {
+      client.send('refuelResult', { success: false, error: 'Fuel tank is full' });
+      return;
+    }
+
+    const amount = Math.min(data.amount, tankSpace);
+    const cost = Math.ceil(amount * FUEL_COST_PER_UNIT);
+
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < cost) {
+      client.send('refuelResult', { success: false, error: 'Not enough credits' });
+      return;
+    }
+
+    await deductCredits(auth.userId, cost);
+    const newFuel = currentFuel + amount;
+    await saveFuelState(auth.userId, newFuel);
+
+    const remainingCredits = await getPlayerCredits(auth.userId);
+
+    client.send('refuelResult', {
+      success: true,
+      fuel: { current: newFuel, max: ship.fuelMax },
+      credits: remainingCredits,
+    });
   }
 
   private async handleLocalScan(client: Client) {
@@ -495,7 +599,9 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     await saveAPState(auth.userId, scanResult.newAP!);
 
-    const radius = scanResult.radius;
+    // Apply faction scan radius bonus
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    const radius = scanResult.radius + bonuses.scanRadiusBonus;
     const sectorX = this.state.sector.x;
     const sectorY = this.state.sector.y;
     const sectors: SectorData[] = [];
@@ -552,6 +658,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('error', { code: 'MINE_FAILED', message: result.error! });
       return;
     }
+
+    // Apply faction mining bonus
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    result.state!.rate *= bonuses.miningRateMultiplier;
 
     await saveMiningState(auth.userId, result.state!);
     client.send('miningUpdate', result.state!);
@@ -785,6 +895,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     if (!result.valid) {
       client.send('npcTradeResult', { success: false, error: result.error });
       return;
+    }
+
+    // Apply faction trade price bonus (discount on buy prices)
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    if (action === 'buy') {
+      result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
     }
 
     if (action === 'sell') {
@@ -1490,12 +1606,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     const pirateLevel = getPirateLevel(data.sectorX, data.sectorY);
     const encounter = createPirateEncounter(pirateLevel, data.sectorX, data.sectorY, pirateRep);
 
-    // Ship attack power (base from ship class + combat_plating upgrade)
+    // Ship attack power (base from ship class + combat_plating upgrade + faction bonus)
     let shipAttack = 10;
     const upgrades = await getPlayerUpgrades(auth.userId);
     if (upgrades.some(u => u.upgrade_id === 'combat_plating' && u.active)) {
       shipAttack = Math.round(shipAttack * 1.2);
     }
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    shipAttack = Math.round(shipAttack * bonuses.combatMultiplier);
 
     const battleSeed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17);
     const validation = validateBattleAction(
@@ -1711,6 +1829,379 @@ export class SectorRoom extends Room<SectorRoomState> {
           client.send('logEntry', `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`);
           await this.sendActiveQuests(client, playerId);
         }
+      }
+    }
+  }
+
+  // ─── Phase 5: Jump Gate Handlers ──────────────────────────────────
+
+  private async handleUseJumpGate(client: Client, data: UseJumpGateMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const { gateId, accessCode } = data;
+
+    const gate = await getJumpGate(this.state.sector.x, this.state.sector.y);
+    if (!gate || gate.id !== gateId) {
+      client.send('useJumpGateResult', { success: false, error: 'No gate at this location' });
+      return;
+    }
+
+    // Check code
+    if (gate.requiresCode) {
+      const hasCode = await playerHasGateCode(auth.userId, gateId);
+      if (!hasCode) {
+        if (!accessCode || accessCode !== gate.accessCode) {
+          client.send('useJumpGateResult', { success: false, error: 'Invalid access code' });
+          return;
+        }
+        await addGateCode(auth.userId, gateId);
+      }
+    }
+
+    // Check minigame requirement
+    if (gate.requiresMinigame) {
+      client.send('useJumpGateResult', { success: true, requiresMinigame: true });
+      return;
+    }
+
+    // Deduct fuel
+    const currentFuel = await getFuelState(auth.userId);
+    if (currentFuel === null || currentFuel < JUMPGATE_FUEL_COST) {
+      client.send('useJumpGateResult', { success: false, error: 'Not enough fuel' });
+      return;
+    }
+    await saveFuelState(auth.userId, currentFuel - JUMPGATE_FUEL_COST);
+
+    client.send('useJumpGateResult', {
+      success: true,
+      targetX: gate.targetX,
+      targetY: gate.targetY,
+      fuel: { current: currentFuel - JUMPGATE_FUEL_COST, max: this.getShipForClient(client.sessionId).fuelMax },
+    });
+  }
+
+  private async handleFrequencyMatch(client: Client, data: { gateId: string; matched: boolean }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+
+    if (!data.matched) {
+      client.send('useJumpGateResult', { success: false, error: 'Frequency match failed' });
+      return;
+    }
+
+    const gate = await getJumpGate(this.state.sector.x, this.state.sector.y);
+    if (!gate || gate.id !== data.gateId) {
+      client.send('useJumpGateResult', { success: false, error: 'Gate not found' });
+      return;
+    }
+
+    const currentFuel = await getFuelState(auth.userId);
+    if (currentFuel === null || currentFuel < JUMPGATE_FUEL_COST) {
+      client.send('useJumpGateResult', { success: false, error: 'Not enough fuel' });
+      return;
+    }
+    await saveFuelState(auth.userId, currentFuel - JUMPGATE_FUEL_COST);
+
+    client.send('useJumpGateResult', {
+      success: true,
+      targetX: gate.targetX,
+      targetY: gate.targetY,
+      fuel: { current: currentFuel - JUMPGATE_FUEL_COST, max: this.getShipForClient(client.sessionId).fuelMax },
+    });
+  }
+
+  // ─── Phase 5: Rescue Handlers ─────────────────────────────────────
+
+  private async handleRescue(client: Client, data: RescueMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const ship = this.getShipForClient(client.sessionId);
+
+    // Must be at the sector
+    if (data.sectorX !== this.state.sector.x || data.sectorY !== this.state.sector.y) {
+      client.send('rescueResult', { success: false, error: 'Not at rescue location' });
+      return;
+    }
+
+    // Check safe slots
+    const survivors = await getPlayerSurvivors(auth.userId);
+    if (!canRescue(ship.safeSlots, survivors.length)) {
+      client.send('rescueResult', { success: false, error: 'No free safe slots' });
+      return;
+    }
+
+    // Check AP
+    const ap = await getAPState(auth.userId);
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    if (currentAP.current < RESCUE_AP_COST) {
+      client.send('rescueResult', { success: false, error: 'Not enough AP' });
+      return;
+    }
+    const newAP = { ...currentAP, current: currentAP.current - RESCUE_AP_COST };
+    await saveAPState(auth.userId, newAP);
+
+    // Add survivor
+    const id = `rescue_${auth.userId}_${Date.now()}`;
+    await insertRescuedSurvivor(id, auth.userId, data.sectorX, data.sectorY, 1, 'scan_event');
+
+    client.send('rescueResult', {
+      success: true,
+      survivorsRescued: 1,
+      safeSlotsFree: ship.safeSlots - survivors.length - 1,
+    });
+    client.send('apUpdate', { current: newAP.current, max: newAP.max });
+  }
+
+  private async handleDeliverSurvivors(client: Client, data: DeliverSurvivorsMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+
+    // Must be at a station
+    if (this.state.sector.sectorType !== 'station') {
+      client.send('deliverSurvivorsResult', { success: false, error: 'Must be at a station' });
+      return;
+    }
+
+    const survivors = await getPlayerSurvivors(auth.userId);
+    if (survivors.length === 0) {
+      client.send('deliverSurvivorsResult', { success: false, error: 'No survivors to deliver' });
+      return;
+    }
+
+    // Calculate rewards
+    let totalCredits = 0, totalRep = 0, totalXp = 0;
+    for (const s of survivors) {
+      const reward = calculateRescueReward(s.sourceType as 'scan_event' | 'npc_quest' | 'comm_distress');
+      totalCredits += reward.credits * s.survivorCount;
+      totalRep += reward.rep * s.survivorCount;
+      totalXp += reward.xp * s.survivorCount;
+    }
+
+    await deletePlayerSurvivors(auth.userId);
+    await addCredits(auth.userId, totalCredits);
+    await this.applyXpGain(auth.userId, totalXp, client);
+
+    client.send('deliverSurvivorsResult', {
+      success: true,
+      credits: totalCredits,
+      rep: totalRep,
+      xp: totalXp,
+    });
+  }
+
+  // ─── Phase 5: Faction Upgrade Handler ─────────────────────────────
+
+  private async handleFactionUpgrade(client: Client, data: FactionUpgradeMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const { tier, choice } = data;
+
+    // Validate tier exists
+    const tierDef = FACTION_UPGRADE_TIERS[tier];
+    if (!tierDef) {
+      client.send('factionUpgradeResult', { success: false, error: 'Invalid tier' });
+      return;
+    }
+
+    // Must be in a faction as leader
+    const faction = await getPlayerFaction(auth.userId);
+    if (!faction) {
+      client.send('factionUpgradeResult', { success: false, error: 'Not in a faction' });
+      return;
+    }
+
+    const members = await getFactionMembers(faction.id);
+    const member = members.find((m: any) => m.player_id === auth.userId);
+    if (!member || member.rank !== 'leader') {
+      client.send('factionUpgradeResult', { success: false, error: 'Only faction leader can upgrade' });
+      return;
+    }
+
+    // Check prerequisites (previous tiers must be chosen)
+    const existing = await getFactionUpgrades(faction.id);
+    if (tier > 1 && !existing.some((u: any) => u.tier === tier - 1)) {
+      client.send('factionUpgradeResult', { success: false, error: `Tier ${tier - 1} must be chosen first` });
+      return;
+    }
+    if (existing.some((u: any) => u.tier === tier)) {
+      client.send('factionUpgradeResult', { success: false, error: 'Tier already chosen' });
+      return;
+    }
+
+    // Check credits
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < tierDef.cost) {
+      client.send('factionUpgradeResult', { success: false, error: 'Not enough credits' });
+      return;
+    }
+
+    await deductCredits(auth.userId, tierDef.cost);
+    await setFactionUpgrade(faction.id, tier, choice, auth.userId);
+
+    const upgrades = await getFactionUpgrades(faction.id);
+    client.send('factionUpgradeResult', {
+      success: true,
+      upgrades: upgrades.map((u: any) => ({ tier: u.tier, choice: u.choice as FactionUpgradeChoice, chosenAt: Date.now() })),
+    });
+  }
+
+  // ─── Phase 5: Trade Route Handlers ────────────────────────────────
+
+  private async handleConfigureRoute(client: Client, data: ConfigureRouteMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+
+    // Validate trading post
+    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
+    if (!tradingPost) {
+      client.send('configureRouteResult', { success: false, error: 'Trading post not found' });
+      return;
+    }
+
+    // Validate config
+    const routes = await getPlayerTradeRoutes(auth.userId);
+    const validation = validateRouteConfig({ cycleMinutes: data.cycleMinutes, routeCount: routes.length });
+    if (!validation.valid) {
+      client.send('configureRouteResult', { success: false, error: validation.error });
+      return;
+    }
+
+    const id = `route_${auth.userId}_${Date.now()}`;
+    await insertTradeRoute({
+      id,
+      ownerId: auth.userId,
+      tradingPostId: tradingPost.id,
+      targetX: data.targetX,
+      targetY: data.targetY,
+      sellResource: data.sellResource,
+      sellAmount: data.sellAmount,
+      buyResource: data.buyResource,
+      buyAmount: data.buyAmount,
+      cycleMinutes: data.cycleMinutes,
+    });
+
+    const route = {
+      id,
+      ownerId: auth.userId,
+      tradingPostId: tradingPost.id,
+      targetX: data.targetX,
+      targetY: data.targetY,
+      sellResource: data.sellResource,
+      sellAmount: data.sellAmount,
+      buyResource: data.buyResource,
+      buyAmount: data.buyAmount,
+      cycleMinutes: data.cycleMinutes,
+      active: true,
+      lastCycleAt: null,
+    };
+
+    client.send('configureRouteResult', { success: true, route });
+  }
+
+  private async handleToggleRoute(client: Client, data: ToggleRouteMessage): Promise<void> {
+    await updateTradeRouteActive(data.routeId, data.active);
+    client.send('toggleRouteResult', { success: true });
+  }
+
+  private async handleDeleteRoute(client: Client, data: DeleteRouteMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const deleted = await deleteTradeRoute(data.routeId, auth.userId);
+    client.send('deleteRouteResult', { success: deleted, error: deleted ? undefined : 'Route not found' });
+  }
+
+  // ─── Phase 5: Distress Call Detection ─────────────────────────────
+
+  private async checkAndEmitDistressCalls(client: Client, userId: string, playerX: number, playerY: number): Promise<void> {
+    const ship = this.getShipForClient(client.sessionId);
+    const commRange = ship.commRange;
+
+    // Check nearby sectors for distress calls
+    const searchRadius = Math.ceil(commRange / 10);
+    for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+      for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+        const sx = playerX + dx;
+        const sy = playerY + dy;
+        if (dx === 0 && dy === 0) continue;
+
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > commRange) continue;
+
+        if (checkDistressCall(sx, sy)) {
+          const distressId = `distress_${sx}_${sy}`;
+          const expiresAt = new Date(Date.now() + RESCUE_EXPIRY_MINUTES * 60 * 1000);
+
+          try {
+            await insertDistressCall(distressId, sx, sy, 1, expiresAt);
+          } catch { /* already exists */ }
+
+          const callData = generateDistressCallData(playerX, playerY, sx, sy);
+          await insertPlayerDistressCall(userId, distressId, callData.direction, callData.estimatedDistance);
+
+          client.send('distressCallReceived', {
+            id: distressId,
+            direction: callData.direction,
+            estimatedDistance: callData.estimatedDistance,
+            receivedAt: Date.now(),
+            expiresAt: expiresAt.getTime(),
+            targetX: sx,
+            targetY: sy,
+          });
+        }
+      }
+    }
+  }
+
+  // ─── Phase 5: Trade Route Processor ───────────────────────────────
+
+  private async processTradeRoutes(): Promise<void> {
+    const routes = await getActiveTradeRoutes();
+    for (const route of routes) {
+      const lastCycle = route.lastCycleAt ? new Date(route.lastCycleAt).getTime() : null;
+      if (!isRouteCycleDue(lastCycle, route.cycleMinutes)) continue;
+
+      try {
+        // Get owner's trading post
+        const tradingPost = await getPlayerStructure(route.ownerId, 'trading_post');
+        if (!tradingPost) {
+          await updateTradeRouteActive(route.id, false);
+          continue;
+        }
+
+        // Calculate fuel cost
+        const fuelCost = calculateRouteFuelCost(tradingPost.sector_x, tradingPost.sector_y, route.targetX, route.targetY);
+        const currentFuel = await getFuelState(route.ownerId);
+        if (!currentFuel || currentFuel < fuelCost) {
+          await updateTradeRouteActive(route.id, false);
+          continue;
+        }
+
+        // Execute sell
+        if (route.sellResource && route.sellAmount > 0) {
+          const storage = await getStorageInventory(route.ownerId);
+          if (storage) {
+            const available = storage[route.sellResource as keyof typeof storage] || 0;
+            const sellQty = Math.min(route.sellAmount, available);
+            if (sellQty > 0) {
+              const price = NPC_PRICES[route.sellResource as ResourceType] * NPC_SELL_SPREAD;
+              await addCredits(route.ownerId, Math.floor(sellQty * price));
+              await updateStorageResource(route.ownerId, route.sellResource, -sellQty);
+            }
+          }
+        }
+
+        // Execute buy
+        if (route.buyResource && route.buyAmount > 0) {
+          const credits = await getPlayerCredits(route.ownerId);
+          const price = NPC_PRICES[route.buyResource as ResourceType] * NPC_BUY_SPREAD;
+          const affordable = Math.floor(credits / price);
+          const buyQty = Math.min(route.buyAmount, affordable);
+          if (buyQty > 0) {
+            await deductCredits(route.ownerId, Math.floor(buyQty * price));
+            await updateStorageResource(route.ownerId, route.buyResource, buyQty);
+          }
+        }
+
+        // Deduct fuel
+        await saveFuelState(route.ownerId, currentFuel - fuelCost);
+
+        // Update last cycle
+        await updateTradeRouteLastCycle(route.id);
+      } catch (err) {
+        console.error(`[TRADE ROUTE] Error processing ${route.id}:`, err);
       }
     }
   }

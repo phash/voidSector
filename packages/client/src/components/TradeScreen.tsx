@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD } from '@void-sector/shared';
-import type { ResourceType, DataSlate } from '@void-sector/shared';
+import { NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, MAX_TRADE_ROUTES, TRADE_ROUTE_MIN_CYCLE, TRADE_ROUTE_MAX_CYCLE } from '@void-sector/shared';
+import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
 
 const btnStyle: React.CSSProperties = {
   background: 'transparent',
@@ -22,8 +22,9 @@ export function TradeScreen() {
   const myOrders = useStore((s) => s.myOrders);
   const mySlates = useStore((s) => s.mySlates);
   const playerId = useStore((s) => s.player?.id);
+  const tradeRoutes = useStore((s) => s.tradeRoutes);
   const [amount, setAmount] = useState(1);
-  const [tab, setTab] = useState<'npc' | 'market' | 'slates'>('npc');
+  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes'>('npc');
 
   const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
   const tier = tradingPost?.tier ?? 0;
@@ -63,6 +64,7 @@ export function TradeScreen() {
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>NPC HANDEL</button>
         {tier >= 2 && <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>MARKT</button>}
         {tier >= 2 && <button style={tabStyle(tab === 'slates')} onClick={() => setTab('slates')}>[SLATES]</button>}
+        {tier >= 3 && <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>ROUTEN</button>}
       </div>
 
       <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
@@ -148,7 +150,7 @@ export function TradeScreen() {
                   flexWrap: 'wrap',
                 }}>
                   <span style={{ opacity: 0.7 }}>
-                    [{slate.slateType === 'sector' ? 'S' : 'A'}] {slate.sectorData.length} Sektoren
+                    [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : 'C'}] {slate.sectorData.length} Sektoren
                   </span>
                   <input
                     type="number"
@@ -201,6 +203,129 @@ export function TradeScreen() {
           )}
         </div>
       )}
+
+      {tab === 'routes' && tier >= 3 && (
+        <div>
+          <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
+            HANDELSROUTEN ({tradeRoutes.length}/{MAX_TRADE_ROUTES})
+          </div>
+
+          {tradeRoutes.map(route => (
+            <div key={route.id} style={{
+              border: '1px solid rgba(255,176,0,0.2)',
+              padding: 6,
+              marginBottom: 6,
+              fontSize: '0.75rem',
+            }}>
+              <div>ROUTE → [{route.targetX},{route.targetY}]</div>
+              {route.sellResource && <div>SELL: {route.sellAmount}x {route.sellResource.toUpperCase()}</div>}
+              {route.buyResource && <div>BUY: {route.buyAmount}x {route.buyResource.toUpperCase()}</div>}
+              <div>ZYKLUS: {route.cycleMinutes} MIN | {route.active ? 'AKTIV' : 'PAUSIERT'}</div>
+              <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                <button style={btnStyle} onClick={() => network.sendToggleRoute(route.id, !route.active)}>
+                  {route.active ? 'PAUSE' : 'START'}
+                </button>
+                <button style={{ ...btnStyle, borderColor: '#FF3333', color: '#FF3333' }}
+                  onClick={() => network.sendDeleteRoute(route.id)}>
+                  LÖSCHEN
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {tradeRoutes.length === 0 && (
+            <div style={{ opacity: 0.4, marginBottom: 8 }}>KEINE ROUTEN</div>
+          )}
+
+          {tradeRoutes.length < MAX_TRADE_ROUTES && <NewRouteForm />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NewRouteForm() {
+  const [targetX, setTargetX] = useState(0);
+  const [targetY, setTargetY] = useState(0);
+  const [sellRes, setSellRes] = useState<ResourceType | ''>('');
+  const [sellAmt, setSellAmt] = useState(1);
+  const [buyRes, setBuyRes] = useState<ResourceType | ''>('');
+  const [buyAmt, setBuyAmt] = useState(1);
+  const [cycle, setCycle] = useState(30);
+
+  // Find trading post from baseStructures
+  const baseStructures = useStore((s) => s.baseStructures);
+  const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
+
+  const handleSubmit = () => {
+    if (!tradingPost) return;
+    const config: ConfigureRouteMessage = {
+      tradingPostId: tradingPost.id,
+      targetX,
+      targetY,
+      sellResource: sellRes || null,
+      sellAmount: sellRes ? sellAmt : 0,
+      buyResource: buyRes || null,
+      buyAmount: buyRes ? buyAmt : 0,
+      cycleMinutes: cycle,
+    };
+    network.sendConfigureRoute(config);
+  };
+
+  return (
+    <div style={{ borderTop: '1px solid var(--color-dim)', paddingTop: 8, fontSize: '0.7rem' }}>
+      <div style={{ marginBottom: 4, opacity: 0.6 }}>NEUE ROUTE</div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
+        <label>ZIEL X:</label>
+        <input type="number" value={targetX} onChange={e => setTargetX(parseInt(e.target.value) || 0)}
+          className="vs-input" style={{ width: 60 }} />
+        <label>Y:</label>
+        <input type="number" value={targetY} onChange={e => setTargetY(parseInt(e.target.value) || 0)}
+          className="vs-input" style={{ width: 60 }} />
+      </div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
+        <label>SELL:</label>
+        <select className="vs-input" value={sellRes} onChange={e => setSellRes(e.target.value as ResourceType | '')}>
+          <option value="">---</option>
+          <option value="ore">ORE</option>
+          <option value="gas">GAS</option>
+          <option value="crystal">CRYSTAL</option>
+        </select>
+        <input type="number" min={1} value={sellAmt} onChange={e => setSellAmt(Math.max(1, parseInt(e.target.value) || 1))}
+          className="vs-input" style={{ width: 40 }} />
+      </div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
+        <label>BUY:</label>
+        <select className="vs-input" value={buyRes} onChange={e => setBuyRes(e.target.value as ResourceType | '')}>
+          <option value="">---</option>
+          <option value="ore">ORE</option>
+          <option value="gas">GAS</option>
+          <option value="crystal">CRYSTAL</option>
+        </select>
+        <input type="number" min={1} value={buyAmt} onChange={e => setBuyAmt(Math.max(1, parseInt(e.target.value) || 1))}
+          className="vs-input" style={{ width: 40 }} />
+      </div>
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 6 }}>
+        <label>ZYKLUS:</label>
+        <input type="number" min={TRADE_ROUTE_MIN_CYCLE} max={TRADE_ROUTE_MAX_CYCLE} value={cycle}
+          onChange={e => setCycle(Math.min(TRADE_ROUTE_MAX_CYCLE, Math.max(TRADE_ROUTE_MIN_CYCLE, parseInt(e.target.value) || 30)))}
+          className="vs-input" style={{ width: 50 }} />
+        <span>MIN</span>
+      </div>
+      <button
+        onClick={handleSubmit}
+        style={{
+          background: 'transparent',
+          border: '1px solid var(--color-primary)',
+          color: 'var(--color-primary)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.65rem',
+          padding: '3px 8px',
+          cursor: 'pointer',
+        }}
+      >
+        ROUTE ERSTELLEN
+      </button>
     </div>
   );
 }

@@ -1,11 +1,28 @@
+import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
-import { SECTOR_COLORS } from '@void-sector/shared';
+import { SECTOR_COLORS, FUEL_COST_PER_UNIT } from '@void-sector/shared';
+import { network } from '../network/client';
+import { JumpGatePanel } from './JumpGatePanel';
 
 export function DetailPanel() {
   const selectedSector = useStore((s) => s.selectedSector);
   const discoveries = useStore((s) => s.discoveries);
   const position = useStore((s) => s.position);
   const players = useStore((s) => s.players);
+  const setSelectedSector = useStore((s) => s.setSelectedSector);
+
+  const fuel = useStore((s) => s.fuel);
+  const jumpGateInfo = useStore((s) => s.jumpGateInfo);
+  const scanEvents = useStore((s) => s.scanEvents);
+  const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
+
+  const [autoFollow, setAutoFollow] = useState(false);
+
+  useEffect(() => {
+    if (autoFollow) {
+      setSelectedSector({ x: position.x, y: position.y });
+    }
+  }, [autoFollow, position.x, position.y, setSelectedSector]);
 
   if (!selectedSector) {
     return (
@@ -30,10 +47,31 @@ export function DetailPanel() {
       : SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty)
     : 'var(--color-dim)';
 
+  const sectorScanEvents = scanEvents.filter(
+    e => e.sectorX === selectedSector.x && e.sectorY === selectedSector.y && e.status === 'discovered'
+  );
+
   return (
     <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
-      <div style={{ letterSpacing: '0.2em', marginBottom: 8, color: sectorColor }}>
-        SECTOR ({selectedSector.x}, {selectedSector.y})
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ letterSpacing: '0.2em', color: sectorColor }}>
+          SECTOR ({selectedSector.x}, {selectedSector.y})
+        </div>
+        <button
+          onClick={() => setAutoFollow(!autoFollow)}
+          style={{
+            background: autoFollow ? 'rgba(255, 176, 0, 0.2)' : 'transparent',
+            border: '1px solid var(--color-primary)',
+            color: 'var(--color-primary)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.65rem',
+            padding: '2px 8px',
+            cursor: 'pointer',
+            letterSpacing: '0.1em',
+          }}
+        >
+          {autoFollow ? '\u25CF AUTO' : '\u25CB AUTO'}
+        </button>
       </div>
 
       {sector ? (
@@ -52,6 +90,85 @@ export function DetailPanel() {
               YOU ARE HERE
             </div>
           )}
+          {isPlayerHere && sector?.type === 'station' && fuel && fuel.current < fuel.max && (
+            <button
+              onClick={() => network.sendRefuel(fuel.max - fuel.current)}
+              style={{
+                background: 'transparent',
+                border: '1px solid #FFB000',
+                color: '#FFB000',
+                fontFamily: 'inherit',
+                fontSize: '0.75em',
+                padding: '4px 12px',
+                cursor: 'pointer',
+                marginTop: 8,
+              }}
+            >
+              REFUEL ({Math.ceil((fuel.max - fuel.current) * FUEL_COST_PER_UNIT)} CR)
+            </button>
+          )}
+
+          {/* JumpGate Panel */}
+          {isPlayerHere && jumpGateInfo && (
+            <JumpGatePanel gate={jumpGateInfo} />
+          )}
+
+          {/* Rescue button - distress signal scan event at this sector */}
+          {isPlayerHere && scanEvents.some(e =>
+            e.sectorX === selectedSector.x && e.sectorY === selectedSector.y &&
+            e.eventType === 'distress_signal' && e.status === 'discovered'
+          ) && (
+            <button
+              onClick={() => network.sendRescue(selectedSector.x, selectedSector.y)}
+              style={{
+                background: 'transparent',
+                border: '1px solid #FF3333',
+                color: '#FF3333',
+                fontFamily: 'inherit',
+                fontSize: '0.75em',
+                padding: '4px 12px',
+                cursor: 'pointer',
+                marginTop: 8,
+                display: 'block',
+              }}
+            >
+              BERGEN (5 AP)
+            </button>
+          )}
+
+          {/* Deliver survivors at station */}
+          {isPlayerHere && sector?.type === 'station' && rescuedSurvivors.length > 0 && (
+            <button
+              onClick={() => network.sendDeliverSurvivors(selectedSector.x, selectedSector.y)}
+              style={{
+                background: 'transparent',
+                border: '1px solid #00FF88',
+                color: '#00FF88',
+                fontFamily: 'inherit',
+                fontSize: '0.75em',
+                padding: '4px 12px',
+                cursor: 'pointer',
+                marginTop: 8,
+                display: 'block',
+              }}
+            >
+              ÜBERLEBENDE ABLIEFERN ({rescuedSurvivors.length})
+            </button>
+          )}
+
+          {/* Multi-content features */}
+          {(jumpGateInfo || sectorScanEvents.length > 0) && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.7em', letterSpacing: '0.1em' }}>FEATURES</div>
+              {jumpGateInfo && <div style={{ color: '#00BFFF' }}>◆ JUMPGATE ({jumpGateInfo.gateType})</div>}
+              {sectorScanEvents.map(e => (
+                <div key={e.id} style={{ color: e.eventType === 'distress_signal' ? '#FF3333' : '#FF00FF' }}>
+                  ◆ {e.eventType === 'distress_signal' ? 'DISTRESS SIGNAL' : e.eventType.toUpperCase().replace('_', ' ')}
+                </div>
+              ))}
+            </div>
+          )}
+
           {playersHere.length > 0 && (
             <>
               <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>SHIPS IN SECTOR</div>
