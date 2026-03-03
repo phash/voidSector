@@ -124,16 +124,18 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
       }
 
-      // Coordinates label
-      ctx.font = COORD_FONT;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      if (sector || isPlayer) {
-        ctx.fillStyle = state.dimColor;
-      } else {
-        ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.25)');
+      // Coordinates label — only at zoom >= 1 (frame handles coords at zoom 0)
+      if (state.zoomLevel >= 1) {
+        ctx.font = COORD_FONT;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        if (sector || isPlayer) {
+          ctx.fillStyle = state.dimColor;
+        } else {
+          ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.25)');
+        }
+        ctx.fillText(`(${sx},${sy})`, cellX, cellY - CELL_H / 2 + 3);
       }
-      ctx.fillText(`(${sx},${sy})`, cellX, cellY - CELL_H / 2 + 3);
 
       // Sector content
       ctx.font = FONT;
@@ -197,6 +199,18 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         }
       }
 
+      // Structure indicator — zoom >= 2
+      if (state.zoomLevel >= 2 && sector) {
+        const hasStructure = (sector as any).structures?.length > 0 || sector.type === 'station';
+        if (hasStructure && !isPlayer) {
+          ctx.font = `${coordSize + 2}px 'Share Tech Mono', monospace`;
+          ctx.fillStyle = '#FFB000';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText('◊', cellX - CELL_W / 2 + 3, cellY - CELL_H / 2 + 3);
+        }
+      }
+
       // Reset alpha after each cell (staleness rendering)
       ctx.globalAlpha = 1.0;
     }
@@ -216,6 +230,15 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         const px = gridCenterX + dx * CELL_W + 12;
         const py = gridCenterY + dy * CELL_H;
         drawHullIcon(ctx, otherPattern, px, py, otherColor, otherPixelSize);
+        // Player username at zoom 3
+        const displayName = player.username?.slice(0, 8) ?? '';
+        if (displayName) {
+          ctx.font = COORD_FONT;
+          ctx.fillStyle = otherColor;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(displayName, px + 10, py);
+        }
       }
     }
   }
