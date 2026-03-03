@@ -32,6 +32,8 @@ export function RadarCanvas() {
       panOffset: state.panOffset,
       jumpAnimation,
       selectedSector: state.selectedSector,
+      jumpGateInfo: state.jumpGateInfo,
+      scanEvents: state.scanEvents,
     });
   }, []);
 
