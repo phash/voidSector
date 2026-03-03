@@ -85,9 +85,9 @@ describe('CargoScreen', () => {
         },
       ],
       ship: {
-        id: 'ship1', ownerId: 'p1', shipClass: 'aegis_scout_mk1' as const,
-        fuel: 100, fuelMax: 100, jumpRange: 3, apCostJump: 1,
-        cargoCap: 20, scannerLevel: 1, safeSlots: 1, active: true,
+        id: 'ship1', ownerId: 'p1', hullType: 'scout' as const,
+        name: 'Test Ship', modules: [], fuel: 100, active: true,
+        stats: { fuelMax: 100, cargoCap: 20, jumpRange: 3, apCostJump: 1, hp: 50, commRange: 50, scannerLevel: 1, damageMod: 0 },
       },
     });
     render(<CargoScreen />);
@@ -100,9 +100,9 @@ describe('CargoScreen', () => {
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
       mySlates: [],
       ship: {
-        id: 'ship1', ownerId: 'p1', shipClass: 'aegis_scout_mk1' as const,
-        fuel: 100, fuelMax: 100, jumpRange: 3, apCostJump: 1,
-        cargoCap: 20, scannerLevel: 1, safeSlots: 1, active: true,
+        id: 'ship1', ownerId: 'p1', hullType: 'scout' as const,
+        name: 'Test Ship', modules: [], fuel: 100, active: true,
+        stats: { fuelMax: 100, cargoCap: 20, jumpRange: 3, apCostJump: 1, hp: 50, commRange: 50, scannerLevel: 1, damageMod: 0 },
       },
     });
     render(<CargoScreen />);

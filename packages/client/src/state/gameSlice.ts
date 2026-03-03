@@ -1,5 +1,20 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType } from '@void-sector/shared';
+
+/**
+ * Extended ship data as sent by the server in the new ship designer system.
+ * Combines ShipRecord fields with computed stats and current fuel.
+ */
+export interface ClientShipData {
+  id: string;
+  ownerId: string;
+  hullType: HullType;
+  name: string;
+  modules: ShipModule[];
+  stats: ShipStats;
+  fuel: number;
+  active: boolean;
+}
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -34,8 +49,8 @@ export interface GameSlice {
   ap: APState | null;
   fuel: FuelState | null;
 
-  // Ship
-  ship: ShipData | null;
+  // Ship (new designer format)
+  ship: ClientShipData | null;
 
   // Current sector
   currentSector: SectorData | null;
@@ -111,13 +126,19 @@ export interface GameSlice {
   autopilot: AutopilotState | null;
   discoveryTimestamps: Record<string, number>;
 
+  // Ship designer
+  shipList: (ShipRecord & { stats: ShipStats })[];
+  moduleInventory: string[];
+  baseName: string;
+  homeBase: { x: number; y: number };
+
   // Actions
   setAuth: (token: string, playerId: string, username: string) => void;
   clearAuth: () => void;
   setPosition: (pos: Coords) => void;
   setAP: (ap: APState) => void;
   setFuel: (fuel: FuelState) => void;
-  setShip: (ship: ShipData) => void;
+  setShip: (ship: ClientShipData) => void;
   setCurrentSector: (sector: SectorData) => void;
   setPlayer: (sessionId: string, player: PlayerPresence) => void;
   removePlayer: (sessionId: string) => void;
@@ -157,6 +178,10 @@ export interface GameSlice {
   setBookmarks: (bookmarks: Bookmark[]) => void;
   setAutopilot: (state: AutopilotState | null) => void;
   setDiscoveryTimestamps: (timestamps: Record<string, number>) => void;
+  setShipList: (ships: (ShipRecord & { stats: ShipStats })[]) => void;
+  setModuleInventory: (modules: string[]) => void;
+  setBaseName: (name: string) => void;
+  setHomeBase: (coords: { x: number; y: number }) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -201,6 +226,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   bookmarks: [],
   autopilot: null,
   discoveryTimestamps: {},
+  shipList: [],
+  moduleInventory: [],
+  baseName: '',
+  homeBase: { x: 0, y: 0 },
 
   setAuth: (token, playerId, username) => {
     safeSetItem('vs_token', token);
@@ -291,4 +320,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setBookmarks: (bookmarks) => set({ bookmarks }),
   setAutopilot: (autopilot) => set({ autopilot }),
   setDiscoveryTimestamps: (discoveryTimestamps) => set({ discoveryTimestamps }),
+  setShipList: (shipList) => set({ shipList }),
+  setModuleInventory: (moduleInventory) => set({ moduleInventory }),
+  setBaseName: (baseName) => set({ baseName }),
+  setHomeBase: (homeBase) => set({ homeBase }),
 });

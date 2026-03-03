@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { SHIP_CLASSES, RESOURCE_TYPES, SLATE_AP_COST_SECTOR, CUSTOM_SLATE_AP_COST, CUSTOM_SLATE_CREDIT_COST, CUSTOM_SLATE_MAX_NOTES_LENGTH } from '@void-sector/shared';
+import { RESOURCE_TYPES, SLATE_AP_COST_SECTOR, CUSTOM_SLATE_AP_COST, CUSTOM_SLATE_CREDIT_COST, CUSTOM_SLATE_MAX_NOTES_LENGTH, HULLS } from '@void-sector/shared';
 import type { ResourceType, DataSlate } from '@void-sector/shared';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -19,7 +19,7 @@ export function CargoScreen() {
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const mySlates = useStore((s) => s.mySlates);
-  const cargoCap = ship ? SHIP_CLASSES[ship.shipClass].cargoCap : SHIP_CLASSES.aegis_scout_mk1.cargoCap;
+  const cargoCap = ship?.stats?.cargoCap ?? 5;
   const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
 
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -37,7 +37,7 @@ export function CargoScreen() {
       </div>
 
       <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
-        VESSEL: {ship ? SHIP_CLASSES[ship.shipClass].name : 'VOID SCOUT MK. I'}
+        VESSEL: {ship ? HULLS[ship.hullType].name : 'VOID SCOUT'}
       </div>
 
       <div style={{ fontSize: '0.9rem', marginBottom: '16px' }}>

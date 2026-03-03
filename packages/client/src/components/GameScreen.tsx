@@ -16,7 +16,7 @@ import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
 import { BattleResultDialog } from './BattleResultDialog';
 import { useStore } from '../state/store';
-import { MONITORS, MAIN_MONITORS, SHIP_CLASSES } from '@void-sector/shared';
+import { MONITORS, MAIN_MONITORS, HULLS } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 function ShipSysScreen() {
@@ -24,19 +24,21 @@ function ShipSysScreen() {
   const colorProfile = useStore((s) => s.colorProfile);
   const setColorProfile = useStore((s) => s.setColorProfile);
 
-  const stats = ship ? [
-    { label: 'DRIVE', value: `RANGE: ${ship.jumpRange}` },
-    { label: 'CARGO', value: `CAP: ${ship.cargoCap}` },
-    { label: 'SCANNER', value: `LVL: ${ship.scannerLevel}` },
-    { label: 'SAFE SLOTS', value: `${ship.safeSlots}` },
-    { label: 'FUEL', value: `MAX: ${ship.fuelMax}` },
-    { label: 'COMM', value: `RANGE: ${SHIP_CLASSES[ship.shipClass].commRange}` },
+  const shipStats = ship?.stats;
+  const hull = ship ? HULLS[ship.hullType] : null;
+  const stats = ship && shipStats ? [
+    { label: 'DRIVE', value: `RANGE: ${shipStats.jumpRange}` },
+    { label: 'CARGO', value: `CAP: ${shipStats.cargoCap}` },
+    { label: 'SCANNER', value: `LVL: ${shipStats.scannerLevel}` },
+    { label: 'HP', value: `${shipStats.hp}` },
+    { label: 'FUEL', value: `MAX: ${shipStats.fuelMax}` },
+    { label: 'COMM', value: `RANGE: ${shipStats.commRange}` },
   ] : [];
 
   return (
     <div style={{ padding: '8px 12px', fontSize: '0.8rem', lineHeight: 1.8 }}>
       <div style={{ letterSpacing: '0.2em', marginBottom: 8, fontSize: '0.85rem' }}>
-        {ship ? SHIP_CLASSES[ship.shipClass].name : 'NO SHIP DATA'}
+        {ship && hull ? `${hull.name} — ${ship.name}` : 'NO SHIP DATA'}
       </div>
       {stats.map(({ label, value }) => (
         <div key={label} style={{ display: 'flex', justifyContent: 'space-between' }}>

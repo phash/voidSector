@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, MAX_TRADE_ROUTES, TRADE_ROUTE_MIN_CYCLE, TRADE_ROUTE_MAX_CYCLE, SHIP_CLASSES } from '@void-sector/shared';
+import { NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, MAX_TRADE_ROUTES, TRADE_ROUTE_MIN_CYCLE, TRADE_ROUTE_MAX_CYCLE } from '@void-sector/shared';
 import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
 
 const btnStyle: React.CSSProperties = {
@@ -27,6 +27,7 @@ export function TradeScreen() {
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
   const ship = useStore((s) => s.ship);
+  const homeBase = useStore((s) => s.homeBase);
   const [amount, setAmount] = useState(1);
   const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes'>('npc');
 
@@ -34,7 +35,7 @@ export function TradeScreen() {
   const tier = tradingPost?.tier ?? 0;
 
   const isStation = currentSector?.type === 'station';
-  const isHomeBase = position.x === 0 && position.y === 0;
+  const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
   const canTrade = isStation || isHomeBase;
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export function TradeScreen() {
 
   // At stations: cargo-based trading, NPC tab only
   // At home base: storage-based trading, all tabs based on trading post tier
-  const cargoCap = ship ? SHIP_CLASSES[ship.shipClass].cargoCap : SHIP_CLASSES.aegis_scout_mk1.cargoCap;
+  const cargoCap = ship?.stats?.cargoCap ?? 5;
   const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
 
   return (

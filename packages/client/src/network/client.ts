@@ -1,6 +1,7 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark } from '@void-sector/shared';
+import type { ClientShipData } from '../state/gameSlice';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -181,14 +182,61 @@ class GameNetwork {
       useStore.getState().setCargo(data);
     });
 
-    // Ship data
-    room.onMessage('shipData', (data: ShipData) => {
+    // Ship data (new designer format: id, ownerId, hullType, name, modules, stats, fuel, active)
+    room.onMessage('shipData', (data: ClientShipData) => {
       useStore.getState().setShip(data);
     });
 
     // Fuel updates
     room.onMessage('fuelUpdate', (data: FuelState) => {
       useStore.getState().setFuel(data);
+    });
+
+    // --- Ship designer messages ---
+
+    room.onMessage('shipList', (data: { ships: any[] }) => {
+      useStore.setState({ shipList: data.ships });
+    });
+
+    room.onMessage('moduleInventory', (data: { modules: string[] }) => {
+      useStore.setState({ moduleInventory: data.modules });
+    });
+
+    room.onMessage('moduleInstalled', (data: { modules: any[]; stats: any }) => {
+      const ship = useStore.getState().ship;
+      if (ship) {
+        useStore.setState({
+          ship: { ...ship, modules: data.modules, stats: data.stats },
+        });
+      }
+    });
+
+    room.onMessage('moduleRemoved', (data: { modules: any[]; stats: any; returnedModule: string }) => {
+      const ship = useStore.getState().ship;
+      if (ship) {
+        useStore.setState({
+          ship: { ...ship, modules: data.modules, stats: data.stats },
+        });
+      }
+      const inv = useStore.getState().moduleInventory;
+      useStore.setState({ moduleInventory: [...inv, data.returnedModule] });
+    });
+
+    room.onMessage('buyModuleResult', (data: { success: boolean; moduleId: string }) => {
+      if (data.success) {
+        useStore.getState().addLogEntry(`Module ${data.moduleId} purchased`);
+      }
+    });
+
+    room.onMessage('shipRenamed', (data: { shipId: string; name: string }) => {
+      const ship = useStore.getState().ship;
+      if (ship && ship.id === data.shipId) {
+        useStore.setState({ ship: { ...ship, name: data.name } });
+      }
+    });
+
+    room.onMessage('baseRenamed', (data: { name: string }) => {
+      useStore.setState({ baseName: data.name });
     });
 
     room.onMessage('refuelResult', (data: { success: boolean; error?: string; fuel?: FuelState; credits?: number }) => {
@@ -953,6 +1001,34 @@ class GameNetwork {
     if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
     this.sectorRoom.send('createCustomSlate', data);
   }
+
+  // --- Ship designer ---
+
+  sendGetShips() { this.sectorRoom?.send('getShips'); }
+
+  sendSwitchShip(shipId: string) { this.sectorRoom?.send('switchShip', { shipId }); }
+
+  sendInstallModule(shipId: string, moduleId: string, slotIndex: number) {
+    this.sectorRoom?.send('installModule', { shipId, moduleId, slotIndex });
+  }
+
+  sendRemoveModule(shipId: string, slotIndex: number) {
+    this.sectorRoom?.send('removeModule', { shipId, slotIndex });
+  }
+
+  sendBuyModule(moduleId: string) { this.sectorRoom?.send('buyModule', { moduleId }); }
+
+  sendBuyHull(hullType: string, name: string) {
+    this.sectorRoom?.send('buyHull', { hullType, name });
+  }
+
+  sendRenameShip(shipId: string, name: string) {
+    this.sectorRoom?.send('renameShip', { shipId, name });
+  }
+
+  sendRenameBase(name: string) { this.sectorRoom?.send('renameBase', { name }); }
+
+  sendGetModuleInventory() { this.sectorRoom?.send('getModuleInventory'); }
 }
 
 export const network = new GameNetwork();

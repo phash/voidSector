@@ -1,5 +1,5 @@
 import { useStore } from '../state/store';
-import { SHIP_CLASSES } from '@void-sector/shared';
+// Ship stats accessed via ship.stats from store
 
 export interface LedConfig {
   label: string;
@@ -48,7 +48,7 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
       let capColor: LedConfig['color'] = 'green';
       if (ship) {
         const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
-        const cap = SHIP_CLASSES[ship.shipClass].cargoCap;
+        const cap = ship.stats?.cargoCap ?? 5;
         const pct = cap > 0 ? total / cap : 0;
         if (pct >= 1) capColor = 'red';
         else if (pct > 0.7) capColor = 'yellow';
