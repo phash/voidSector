@@ -10,10 +10,15 @@ export const CELL_SIZES = [
   { w: 96, h: 76, fontSize: 18, coordSize: 11 },
 ];
 
+// Coordinate frame margins (exported for click offset calculation)
+export const FRAME_LEFT = 40;   // space for row numbers (Y coordinates)
+export const FRAME_BOTTOM = 24; // space for column numbers (X coordinates)
+export const FRAME_PAD = 8;     // padding on right/top
+
 export function calculateVisibleRadius(canvasW: number, canvasH: number, zoomLevel: number): { radiusX: number; radiusY: number } {
   const { w, h } = CELL_SIZES[zoomLevel] ?? CELL_SIZES[2];
-  const gridW = canvasW - 40; // FRAME_LEFT + FRAME_PAD
-  const gridH = canvasH - 28; // FRAME_BOTTOM + FRAME_PAD
+  const gridW = canvasW - FRAME_LEFT - FRAME_PAD;
+  const gridH = canvasH - FRAME_BOTTOM - FRAME_PAD;
   const radiusX = Math.max(2, Math.floor(gridW / w / 2));
   const radiusY = Math.max(2, Math.floor(gridH / h / 2));
   return { radiusX, radiusY };
@@ -36,11 +41,6 @@ interface RadarState {
   hullType?: HullType;
   homeBase?: { x: number; y: number };
 }
-
-// Coordinate frame margins (exported for click offset calculation)
-export const FRAME_LEFT = 32;   // space for row numbers (Y coordinates)
-export const FRAME_BOTTOM = 20; // space for column numbers (X coordinates)
-export const FRAME_PAD = 8;     // padding on right/top
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   const { w: CELL_W, h: CELL_H, fontSize, coordSize } = CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1];
@@ -260,7 +260,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   for (let dy = -radiusY; dy <= radiusY; dy++) {
     const sy = viewY + dy;
     const cellY = gridCenterY + dy * CELL_H;
-    ctx.fillText(String(sy), FRAME_LEFT - 4, cellY);
+    ctx.fillText(String(sy), FRAME_LEFT - 8, cellY);
   }
 
   // Column labels (bottom) — X galaxy coordinates
@@ -269,7 +269,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   for (let dx = -radiusX; dx <= radiusX; dx++) {
     const sx = viewX + dx;
     const cellX = gridCenterX + dx * CELL_W;
-    ctx.fillText(String(sx), cellX, gridBottom + 3);
+    ctx.fillText(String(sx), cellX, gridBottom + 4);
   }
 
   // Frame border
