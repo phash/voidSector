@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage, FuelState } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage } from '@void-sector/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -445,6 +445,118 @@ class GameNetwork {
       useStore.getState().addLogEntry(typeof data === 'string' ? data : data.message ?? '');
     });
 
+    // --- Phase 5: Deep Systems ---
+
+    // JumpGate info (sent when entering a sector with a gate)
+    room.onMessage('jumpGateInfo', (data: JumpGateInfo) => {
+      useStore.getState().setJumpGateInfo(data);
+    });
+
+    room.onMessage('useJumpGateResult', (data: UseJumpGateResultMessage) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.setJumpGateInfo(null);
+        if (data.fuel) store.setFuel(data.fuel);
+        store.addLogEntry(`JUMPGATE — Teleportiert nach (${data.targetX}, ${data.targetY})`);
+      } else if (data.requiresMinigame) {
+        store.addLogEntry('JUMPGATE — Frequenz-Matching erforderlich');
+      } else {
+        store.addLogEntry(`JUMPGATE FEHLER: ${data.error}`);
+      }
+    });
+
+    room.onMessage('frequencyMatchResult', (data: FrequencyMatchResultMessage) => {
+      const store = useStore.getState();
+      if (data.matched) {
+        store.addLogEntry('FREQUENZ-MATCH ERFOLGREICH — Gate aktiviert');
+      } else {
+        store.addLogEntry('FREQUENZ-MATCH FEHLGESCHLAGEN');
+      }
+    });
+
+    // Rescue
+    room.onMessage('rescueResult', (data: RescueResultMessage) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`${data.survivorsRescued} ÜBERLEBENDE GEBORGEN — ${data.safeSlotsFree} Slots frei`);
+      } else {
+        store.addLogEntry(`RETTUNG FEHLGESCHLAGEN: ${data.error}`);
+      }
+    });
+
+    room.onMessage('deliverSurvivorsResult', (data: DeliverSurvivorsResultMessage) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.setRescuedSurvivors([]);
+        if (data.credits !== undefined) store.setCredits(data.credits);
+        store.addLogEntry(`ÜBERLEBENDE ABGELIEFERT — +${data.credits} CR, +${data.rep} REP, +${data.xp} XP`);
+      } else {
+        store.addLogEntry(`ABLIEFERUNG FEHLGESCHLAGEN: ${data.error}`);
+      }
+    });
+
+    room.onMessage('rescuedSurvivorsUpdate', (data: RescueSurvivor[]) => {
+      useStore.getState().setRescuedSurvivors(data);
+    });
+
+    room.onMessage('distressCallReceived', (data: DistressCall) => {
+      const store = useStore.getState();
+      store.addDistressCall(data);
+      store.addLogEntry(`NOTRUF EMPFANGEN — Richtung: ${data.direction}, ~${data.estimatedDistance} Sektoren`);
+      const visible = store.sidebarSlots.includes('LOG')
+        || store.leftSidebarSlots.includes('LOG')
+        || store.mainMonitorMode === 'LOG';
+      if (!visible) store.setAlert('LOG', true);
+    });
+
+    // Faction Upgrades
+    room.onMessage('factionUpgradesUpdate', (data: FactionUpgradeState[]) => {
+      useStore.getState().setFactionUpgrades(data);
+    });
+
+    room.onMessage('factionUpgradeResult', (data: FactionUpgradeResultMessage) => {
+      const store = useStore.getState();
+      if (data.success && data.upgrades) {
+        store.setFactionUpgrades(data.upgrades);
+        store.addLogEntry('FRAKTIONS-UPGRADE AKTIVIERT');
+      } else {
+        store.addLogEntry(`UPGRADE FEHLER: ${data.error}`);
+      }
+    });
+
+    // Trade Routes
+    room.onMessage('tradeRoutesUpdate', (data: TradeRoute[]) => {
+      useStore.getState().setTradeRoutes(data);
+    });
+
+    room.onMessage('configureRouteResult', (data: ConfigureRouteResultMessage) => {
+      const store = useStore.getState();
+      if (data.success && data.route) {
+        store.setTradeRoutes([...store.tradeRoutes, data.route]);
+        store.addLogEntry('HANDELSROUTE KONFIGURIERT');
+      } else {
+        store.addLogEntry(`ROUTEN-FEHLER: ${data.error}`);
+      }
+    });
+
+    room.onMessage('toggleRouteResult', (data: { success: boolean; error?: string; routeId?: string; active?: boolean }) => {
+      const store = useStore.getState();
+      if (data.success && data.routeId !== undefined) {
+        const updated = store.tradeRoutes.map(r =>
+          r.id === data.routeId ? { ...r, active: data.active! } : r
+        );
+        store.setTradeRoutes(updated);
+      }
+    });
+
+    room.onMessage('deleteRouteResult', (data: { success: boolean; error?: string; routeId?: string }) => {
+      const store = useStore.getState();
+      if (data.success && data.routeId) {
+        store.setTradeRoutes(store.tradeRoutes.filter(r => r.id !== data.routeId));
+        store.addLogEntry('HANDELSROUTE GELÖSCHT');
+      }
+    });
+
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
@@ -688,6 +800,53 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('refuel', { amount });
+  }
+
+  // --- Phase 5: Deep Systems ---
+
+  sendUseJumpGate(gateId: string, accessCode?: string) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('useJumpGate', { gateId, accessCode });
+  }
+
+  sendFrequencyMatch(gateId: string, matched: boolean) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('frequencyMatch', { gateId, matched });
+  }
+
+  sendRescue(sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('rescue', { sectorX, sectorY });
+  }
+
+  sendDeliverSurvivors(stationX: number, stationY: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('deliverSurvivors', { stationX, stationY });
+  }
+
+  sendFactionUpgrade(tier: number, choice: FactionUpgradeChoice) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('factionUpgrade', { tier, choice });
+  }
+
+  sendConfigureRoute(config: ConfigureRouteMessage) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('configureRoute', config);
+  }
+
+  sendToggleRoute(routeId: string, active: boolean) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('toggleRoute', { routeId, active });
+  }
+
+  sendDeleteRoute(routeId: string) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('deleteRoute', { routeId });
+  }
+
+  sendCreateCustomSlate(data: CreateCustomSlateMessage) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('createCustomSlate', data);
   }
 }
 
