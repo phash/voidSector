@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage, FuelState } from '@void-sector/shared';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -78,8 +78,15 @@ class GameNetwork {
       error?: string;
       newSector?: SectorData;
       apRemaining?: number;
+      fuelRemaining?: number;
     }) => {
       useStore.getState().setJumpPending(false);
+      if (data.fuelRemaining !== undefined) {
+        const currentFuel = useStore.getState().fuel;
+        if (currentFuel) {
+          useStore.setState({ fuel: { ...currentFuel, current: data.fuelRemaining } });
+        }
+      }
       if (data.success && data.newSector) {
         const store = useStore.getState();
         const dx = data.newSector.x - store.position.x;
@@ -176,6 +183,26 @@ class GameNetwork {
     // Ship data
     room.onMessage('shipData', (data: ShipData) => {
       useStore.getState().setShip(data);
+    });
+
+    // Fuel updates
+    room.onMessage('fuelUpdate', (data: FuelState) => {
+      useStore.getState().setFuel(data);
+    });
+
+    room.onMessage('refuelResult', (data: { success: boolean; error?: string; fuel?: FuelState; credits?: number }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        if (data.fuel) {
+          store.setFuel(data.fuel);
+        }
+        if (data.credits !== undefined) {
+          store.setCredits(data.credits);
+        }
+        store.addLogEntry('Refueled successfully');
+      } else {
+        store.addLogEntry(`Refuel failed: ${data.error}`);
+      }
     });
 
     // Chat messages
@@ -653,6 +680,14 @@ class GameNetwork {
   requestReputation() {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('getReputation', {});
+  }
+
+  sendRefuel(amount: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('refuel', { amount });
   }
 }
 

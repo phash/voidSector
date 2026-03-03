@@ -13,6 +13,7 @@ function SegmentedBar({ current, max, width = 12 }: { current: number; max: numb
 
 export function StatusBar() {
   const ap = useStore((s) => s.ap);
+  const fuel = useStore((s) => s.fuel);
 
   // Live-updating AP accounting for regen since last server tick
   const [displayAP, setDisplayAP] = useState(ap?.current ?? 0);
@@ -67,6 +68,20 @@ export function StatusBar() {
           </span>
         )}
       </div>
+      {fuel && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+          <span style={{ fontSize: '0.75em', color: 'rgba(255,176,0,0.6)' }}>FUEL</span>
+          <div style={{ width: 80, height: 8, background: '#1a1a1a', border: '1px solid rgba(255,176,0,0.3)' }}>
+            <div style={{
+              width: `${(fuel.current / fuel.max) * 100}%`,
+              height: '100%',
+              background: fuel.current < fuel.max * 0.2 ? '#FF3333' : '#FFB000',
+              transition: 'width 0.3s',
+            }} />
+          </div>
+          <span style={{ fontSize: '0.7em' }}>{Math.floor(fuel.current)}/{fuel.max}</span>
+        </div>
+      )}
     </div>
   );
 }

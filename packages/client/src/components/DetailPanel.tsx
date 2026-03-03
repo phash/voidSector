@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
-import { SECTOR_COLORS } from '@void-sector/shared';
+import { SECTOR_COLORS, FUEL_COST_PER_UNIT } from '@void-sector/shared';
+import { network } from '../network/client';
 
 export function DetailPanel() {
   const selectedSector = useStore((s) => s.selectedSector);
@@ -8,6 +9,8 @@ export function DetailPanel() {
   const position = useStore((s) => s.position);
   const players = useStore((s) => s.players);
   const setSelectedSector = useStore((s) => s.setSelectedSector);
+
+  const fuel = useStore((s) => s.fuel);
 
   const [autoFollow, setAutoFollow] = useState(false);
 
@@ -78,6 +81,23 @@ export function DetailPanel() {
             <div style={{ marginTop: 8, color: 'var(--color-primary)' }}>
               YOU ARE HERE
             </div>
+          )}
+          {isPlayerHere && sector?.type === 'station' && fuel && fuel.current < fuel.max && (
+            <button
+              onClick={() => network.sendRefuel(fuel.max - fuel.current)}
+              style={{
+                background: 'transparent',
+                border: '1px solid #FFB000',
+                color: '#FFB000',
+                fontFamily: 'inherit',
+                fontSize: '0.75em',
+                padding: '4px 12px',
+                cursor: 'pointer',
+                marginTop: 8,
+              }}
+            >
+              REFUEL ({Math.ceil((fuel.max - fuel.current) * FUEL_COST_PER_UNIT)} CR)
+            </button>
           )}
           {playersHere.length > 0 && (
             <>
