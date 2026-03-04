@@ -41,6 +41,7 @@ export interface UISlice {
   moreOverlayOpen: boolean;
   scanAnimation: ScanAnimationState | null;
   scanPending: boolean;
+  activeProgram: string;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -66,6 +67,7 @@ export interface UISlice {
   startScanAnimation: (type: 'local' | 'area') => void;
   clearScanAnimation: () => void;
   setScanPending: (pending: boolean) => void;
+  setActiveProgram: (program: string) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -90,6 +92,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   moreOverlayOpen: false,
   scanAnimation: null,
   scanPending: false,
+  activeProgram: safeGetItem('vs-active-program') || 'NAV-COM',
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -148,4 +151,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   startScanAnimation: (type) => set({ scanAnimation: createScanAnimation(type), scanPending: true }),
   clearScanAnimation: () => set({ scanAnimation: null, scanPending: false }),
   setScanPending: (pending) => set({ scanPending: pending }),
+  setActiveProgram: (program) => {
+    safeSetItem('vs-active-program', program);
+    set({ activeProgram: program });
+  },
 });

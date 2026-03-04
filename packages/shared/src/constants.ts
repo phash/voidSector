@@ -1077,6 +1077,36 @@ export const MAIN_ONLY_MONITORS: ReadonlySet<MonitorId> = new Set([
 /** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */
 export const SIDEBAR_MONITORS = RIGHT_SIDEBAR_MONITORS;
 
+/** Programs selectable in Section 1 of the cockpit layout (#107) */
+export const COCKPIT_PROGRAMS: MonitorId[] = [
+  MONITORS.NAV_COM,
+  MONITORS.MINING,
+  MONITORS.CARGO,
+  MONITORS.BASE_LINK,
+  MONITORS.TRADE,
+  MONITORS.FACTION,
+  MONITORS.QUESTS,
+  MONITORS.TECH,
+  MONITORS.QUAD_MAP,
+  MONITORS.LOG,
+];
+
+/** Short labels for cockpit program buttons */
+export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
+  'NAV-COM': 'NAV',
+  'MINING': 'MIN',
+  'CARGO': 'CRG',
+  'BASE-LINK': 'BAS',
+  'TRADE': 'TRD',
+  'FACTION': 'FAC',
+  'QUESTS': 'QST',
+  'TECH': 'TEC',
+  'QUAD-MAP': 'MAP',
+  'LOG': 'LOG',
+  'MODULES': 'MOD',
+  'HANGAR': 'HNG',
+};
+
 // --- Phase 5: Deep Systems ---
 
 // Fuel
