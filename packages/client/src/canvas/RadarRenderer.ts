@@ -321,7 +321,14 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     ctx.restore();
   }
 
-  // --- Coordinate frame ---
+  // --- Coordinate frame (tightly wraps actual cells) ---
+  const totalCellsW = (2 * radiusX + 1) * CELL_W;
+  const totalCellsH = (2 * radiusY + 1) * CELL_H;
+  const frameLeft = gridCenterX - totalCellsW / 2;
+  const frameTop = gridCenterY - totalCellsH / 2;
+  const frameRight = gridCenterX + totalCellsW / 2;
+  const frameBottom = gridCenterY + totalCellsH / 2;
+
   ctx.font = COORD_FONT;
   ctx.fillStyle = state.dimColor;
 
@@ -331,7 +338,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   for (let dy = -radiusY; dy <= radiusY; dy++) {
     const sy = viewY + dy;
     const cellY = gridCenterY + dy * CELL_H;
-    ctx.fillText(String(sy), FRAME_LEFT - 8, cellY);
+    ctx.fillText(String(sy), frameLeft - 8, cellY);
   }
 
   // Column labels (bottom) — X galaxy coordinates
@@ -340,17 +347,17 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   for (let dx = -radiusX; dx <= radiusX; dx++) {
     const sx = viewX + dx;
     const cellX = gridCenterX + dx * CELL_W;
-    ctx.fillText(String(sx), cellX, gridBottom + 4);
+    ctx.fillText(String(sx), cellX, frameBottom + 4);
   }
 
-  // Frame border
+  // Frame border — tightly wraps the cell grid
   ctx.strokeStyle = state.dimColor.replace(/[\d.]+\)$/, '0.5)');
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(gridLeft - 1, gridTop - 1);
-  ctx.lineTo(gridRight + 1, gridTop - 1);
-  ctx.lineTo(gridRight + 1, gridBottom + 1);
-  ctx.lineTo(gridLeft - 1, gridBottom + 1);
+  ctx.moveTo(frameLeft - 1, frameTop - 1);
+  ctx.lineTo(frameRight + 1, frameTop - 1);
+  ctx.lineTo(frameRight + 1, frameBottom + 1);
+  ctx.lineTo(frameLeft - 1, frameBottom + 1);
   ctx.closePath();
   ctx.stroke();
 

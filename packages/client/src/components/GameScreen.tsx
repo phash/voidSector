@@ -209,7 +209,7 @@ function SchematicView() {
             onChange={(e) => setColorProfile(e.target.value as ColorProfileName)}
             style={{
               display: 'block', marginTop: 4, width: '100%',
-              background: 'transparent', border: '1px solid var(--color-primary)',
+              background: '#050505', border: '1px solid var(--color-primary)',
               color: 'var(--color-primary)', fontFamily: 'var(--font-mono)',
               padding: '4px 8px', fontSize: '0.8rem',
             }}
@@ -294,7 +294,7 @@ function SchematicView() {
           onChange={(e) => setColorProfile(e.target.value as ColorProfileName)}
           style={{
             display: 'block', marginTop: 2, width: '100%',
-            background: 'transparent', border: '1px solid var(--color-primary)',
+            background: '#050505', border: '1px solid var(--color-primary)',
             color: 'var(--color-primary)', fontFamily: 'var(--font-mono)',
             padding: '3px 6px', fontSize: '0.7rem',
           }}
