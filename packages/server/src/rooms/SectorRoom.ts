@@ -5,7 +5,7 @@ const { Room, ServerError } = colyseus;
 import { SectorRoomState, PlayerSchema } from './schema/SectorState.js';
 import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
-import { calculateCurrentAP } from '../engine/ap.js';
+import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
 import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
@@ -14,13 +14,14 @@ import { checkScanEvent } from '../engine/scanEvents.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
+import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../engine/combatV2.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State } from '@void-sector/shared';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -39,7 +40,7 @@ function rejectGuest(client: Client, action: string): boolean {
 }
 
 const VALID_RESOURCES = ['ore', 'gas', 'crystal'];
-const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post'];
+const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon'];
 
 function sanitizeChat(text: string): string {
   return text
@@ -56,6 +57,7 @@ interface SectorRoomOptions {
 export class SectorRoom extends Room<SectorRoomState> {
   autoDispose = true;
   private clientShips = new Map<string, ShipStats>();
+  private combatV2States = new Map<string, CombatV2State>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
   private rateLimits = new Map<string, Map<string, number>>();
 
@@ -283,6 +285,18 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('battleAction', async (client, data: BattleActionMessage) => {
       await this.handleBattleAction(client, data);
+    });
+    this.onMessage('combatV2Action', async (client, data: CombatV2ActionMessage) => {
+      await this.handleCombatV2Action(client, data);
+    });
+    this.onMessage('combatV2Flee', async (client, data: CombatV2FleeMessage) => {
+      await this.handleCombatV2Flee(client, data);
+    });
+    this.onMessage('installDefense', async (client, data: { defenseType: string }) => {
+      await this.handleInstallDefense(client, data);
+    });
+    this.onMessage('repairStation', async (client, data: { sectorX: number; sectorY: number }) => {
+      await this.handleRepairStation(client, data);
     });
     this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
       await this.handleCompleteScanEvent(client, data);
@@ -2350,6 +2364,217 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
   }
 
+  private async handleCombatV2Action(client: Client, data: CombatV2ActionMessage) {
+    const auth = client.auth as AuthPayload;
+    const sessionId = client.sessionId;
+    const state = this.combatV2States.get(sessionId);
+
+    if (!state || state.status !== 'active') {
+      client.send('combatV2Result', { success: false, error: 'No active combat' });
+      return;
+    }
+
+    const validTactics = ['assault', 'balanced', 'defensive'];
+    const validSpecials = ['aim', 'evade', 'none'];
+    if (!validTactics.includes(data.tactic) || !validSpecials.includes(data.specialAction)) {
+      client.send('combatV2Result', { success: false, error: 'Invalid tactic or action' });
+      return;
+    }
+
+    const ship = this.getShipForClient(sessionId);
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+    const seed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17 + state.currentRound * 7);
+
+    const result = resolveRound(
+      state, ship, data.tactic as any, data.specialAction as any,
+      bonuses.combatMultiplier, seed,
+    );
+
+    this.combatV2States.set(sessionId, result.state);
+
+    if (result.state.status !== 'active') {
+      this.combatV2States.delete(sessionId);
+      const finalResult = combatV2ToResult(result.state, seed);
+
+      // Apply outcomes
+      if (result.state.status === 'victory') {
+        if (finalResult.lootCredits) {
+          await addCredits(auth.userId, finalResult.lootCredits);
+        }
+        if (finalResult.lootResources) {
+          for (const [resource, amount] of Object.entries(finalResult.lootResources)) {
+            if (amount > 0) await addToCargo(auth.userId, resource, amount);
+          }
+        }
+      }
+      if (finalResult.repChange) {
+        await this.applyReputationChange(auth.userId, 'pirates', finalResult.repChange, client);
+      }
+
+      await insertBattleLogV2(
+        auth.userId, state.encounter.pirateLevel,
+        data.sectorX, data.sectorY,
+        'combat_v2', result.state.status,
+        finalResult.lootResources ?? null,
+        result.state.currentRound, result.state.rounds,
+        result.state.playerHp,
+      );
+
+      client.send('combatV2Result', {
+        success: true,
+        round: result.round,
+        state: result.state,
+        finalResult,
+      });
+      return;
+    }
+
+    client.send('combatV2Result', {
+      success: true,
+      round: result.round,
+      state: result.state,
+    });
+  }
+
+  private async handleCombatV2Flee(client: Client, data: CombatV2FleeMessage) {
+    const auth = client.auth as AuthPayload;
+    const sessionId = client.sessionId;
+    const state = this.combatV2States.get(sessionId);
+
+    if (!state || state.status !== 'active') {
+      client.send('combatV2Result', { success: false, error: 'No active combat' });
+      return;
+    }
+
+    const ap = await getAPState(auth.userId);
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    const newAP = spendAP(currentAP, BATTLE_AP_COST_FLEE);
+    if (!newAP) {
+      client.send('combatV2Result', { success: false, error: 'Nicht genug AP zum Fliehen (2 AP)' });
+      return;
+    }
+
+    const ship = this.getShipForClient(sessionId);
+    const seed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17);
+    const fleeResult = attemptFlee(state, ship, seed);
+
+    await saveAPState(auth.userId, newAP);
+    client.send('apUpdate', newAP);
+
+    if (fleeResult.escaped) {
+      this.combatV2States.delete(sessionId);
+      client.send('combatV2Result', {
+        success: true,
+        state: fleeResult.state,
+        finalResult: { outcome: 'escaped' },
+      });
+    } else {
+      this.combatV2States.set(sessionId, fleeResult.state);
+      client.send('combatV2Result', {
+        success: true,
+        state: fleeResult.state,
+        finalResult: { outcome: 'caught' },
+      });
+    }
+  }
+
+  private async handleInstallDefense(client: Client, data: { defenseType: string }) {
+    if (rejectGuest(client, 'Verteidigung bauen')) return;
+    if (!this.checkRate(client.sessionId, 'build', 2000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
+    const auth = client.auth as AuthPayload;
+    const def = STATION_DEFENSE_DEFS[data.defenseType];
+    if (!def) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Unknown defense type' });
+      return;
+    }
+
+    const sectorX = this.state.sector.x;
+    const sectorY = this.state.sector.y;
+    const structures = await getPlayerStructuresInSector(auth.userId, sectorX, sectorY);
+    const hasBase = structures.some(s => s.type === 'base');
+    if (!hasBase) {
+      client.send('installDefenseResult', { success: false, error: 'Keine Basis in diesem Sektor' });
+      return;
+    }
+
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < def.cost.credits) {
+      client.send('installDefenseResult', { success: false, error: 'Nicht genug Credits' });
+      return;
+    }
+    const cargo = await getPlayerCargo(auth.userId);
+    for (const [resource, amount] of Object.entries(def.cost)) {
+      if (resource === 'credits') continue;
+      if ((cargo[resource as keyof typeof cargo] ?? 0) < (amount ?? 0)) {
+        client.send('installDefenseResult', { success: false, error: `Nicht genug ${resource}` });
+        return;
+      }
+    }
+
+    // Deduct resources
+    await deductCredits(auth.userId, def.cost.credits);
+    for (const [resource, amount] of Object.entries(def.cost)) {
+      if (resource === 'credits' || !amount) continue;
+      await deductCargo(auth.userId, resource, amount);
+    }
+
+    try {
+      const result = await installStationDefense(auth.userId, sectorX, sectorY, data.defenseType);
+      client.send('installDefenseResult', { success: true, defenseType: data.defenseType, id: result.id });
+      const updatedCargo = await getPlayerCargo(auth.userId);
+      client.send('cargoUpdate', updatedCargo);
+      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    } catch (err: any) {
+      if (err.code === '23505') {
+        client.send('installDefenseResult', { success: false, error: 'Verteidigung bereits installiert' });
+        return;
+      }
+      client.send('installDefenseResult', { success: false, error: 'Installation fehlgeschlagen' });
+    }
+  }
+
+  private async handleRepairStation(client: Client, data: { sectorX: number; sectorY: number }) {
+    if (rejectGuest(client, 'Reparieren')) return;
+    const auth = client.auth as AuthPayload;
+
+    const hp = await getStructureHp(auth.userId, data.sectorX, data.sectorY);
+    if (!hp) {
+      client.send('repairResult', { success: false, error: 'Keine Basis gefunden' });
+      return;
+    }
+    if (hp.currentHp >= hp.maxHp) {
+      client.send('repairResult', { success: false, error: 'Basis ist nicht beschädigt' });
+      return;
+    }
+
+    const hpToRepair = hp.maxHp - hp.currentHp;
+    const costCredits = hpToRepair * STATION_REPAIR_CR_PER_HP;
+    const costOre = hpToRepair * STATION_REPAIR_ORE_PER_HP;
+
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < costCredits) {
+      client.send('repairResult', { success: false, error: `Kosten: ${costCredits} CR, ${costOre} Erz — nicht genug Credits` });
+      return;
+    }
+    const cargo = await getPlayerCargo(auth.userId);
+    if ((cargo.ore ?? 0) < costOre) {
+      client.send('repairResult', { success: false, error: `Kosten: ${costCredits} CR, ${costOre} Erz — nicht genug Erz` });
+      return;
+    }
+
+    await deductCredits(auth.userId, costCredits);
+    await deductCargo(auth.userId, 'ore', costOre);
+    await updateStructureHp(auth.userId, data.sectorX, data.sectorY, hp.maxHp);
+
+    client.send('repairResult', { success: true, newHp: hp.maxHp, maxHp: hp.maxHp });
+    const updatedCargo = await getPlayerCargo(auth.userId);
+    client.send('cargoUpdate', updatedCargo);
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+  }
+
   private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number }[], includeImmediateEvents = true) {
     const auth = client.auth as AuthPayload;
     for (const sector of scannedSectors) {
@@ -2362,6 +2587,13 @@ export class SectorRoom extends Room<SectorRoomState> {
         const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
         const encounter = createPirateEncounter(pirateLevel, sector.x, sector.y, pirateRep);
         client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
+        // Init combat v2 state
+        if (FEATURE_COMBAT_V2) {
+          const combatShip = this.getShipForClient(client.sessionId);
+          const combatState = initCombatV2(encounter, combatShip);
+          this.combatV2States.set(client.sessionId, combatState);
+          client.send('combatV2Init', { state: combatState });
+        }
         client.send('logEntry', `WARNUNG: Piraten-Hinterhalt bei (${sector.x}, ${sector.y})!`);
       } else {
         const eventId = await insertScanEvent(

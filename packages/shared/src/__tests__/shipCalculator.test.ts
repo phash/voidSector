@@ -61,6 +61,63 @@ describe('calculateShipStats', () => {
     const scoutStats = calculateShipStats('scout', []);
     expect(freighterStats.fuelPerJump).toBeGreaterThan(scoutStats.fuelPerJump);
   });
+
+  it('returns zero combat stats with no modules', () => {
+    const stats = calculateShipStats('scout', []);
+    expect(stats.shieldHp).toBe(0);
+    expect(stats.shieldRegen).toBe(0);
+    expect(stats.weaponAttack).toBe(0);
+    expect(stats.weaponType).toBe('none');
+    expect(stats.weaponPiercing).toBe(0);
+    expect(stats.pointDefense).toBe(0);
+    expect(stats.ecmReduction).toBe(0);
+  });
+
+  it('adds weapon stats from laser module', () => {
+    const stats = calculateShipStats('scout', [{ moduleId: 'laser_mk2', slotIndex: 0 }]);
+    expect(stats.weaponAttack).toBe(16);
+    expect(stats.weaponType).toBe('laser');
+  });
+
+  it('adds shield stats from shield module', () => {
+    const stats = calculateShipStats('cruiser', [{ moduleId: 'shield_mk1', slotIndex: 0 }]);
+    expect(stats.shieldHp).toBe(30);
+    expect(stats.shieldRegen).toBe(3);
+  });
+
+  it('sets piercing from railgun', () => {
+    const stats = calculateShipStats('battleship', [{ moduleId: 'railgun_mk2', slotIndex: 0 }]);
+    expect(stats.weaponAttack).toBe(22);
+    expect(stats.weaponPiercing).toBe(0.50);
+    expect(stats.weaponType).toBe('railgun');
+  });
+
+  it('adds point defense and ecm', () => {
+    const stats = calculateShipStats('cruiser', [
+      { moduleId: 'point_defense', slotIndex: 0 },
+      { moduleId: 'ecm_suite', slotIndex: 1 },
+    ]);
+    expect(stats.pointDefense).toBe(0.60);
+    expect(stats.ecmReduction).toBe(0.15);
+  });
+
+  it('combines weapon + shield + armor', () => {
+    const stats = calculateShipStats('battleship', [
+      { moduleId: 'laser_mk3', slotIndex: 0 },
+      { moduleId: 'shield_mk2', slotIndex: 1 },
+      { moduleId: 'armor_mk2', slotIndex: 2 },
+    ]);
+    expect(stats.weaponAttack).toBe(28);
+    expect(stats.shieldHp).toBe(60);
+    expect(stats.hp).toBe(150 + 50); // battleship base + armor
+    expect(stats.damageMod).toBe(0.90); // 1.0 + (-0.10)
+  });
+
+  it('preserves existing stat behavior', () => {
+    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk1', slotIndex: 0 }]);
+    expect(stats.jumpRange).toBe(5 + 1); // scout base (5) + drive_mk1 (+1)
+    expect(stats.weaponAttack).toBe(0);
+  });
 });
 
 describe('validateModuleInstall', () => {

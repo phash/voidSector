@@ -13,6 +13,14 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
     commRange: hull.baseCommRange,
     scannerLevel: hull.baseScannerLevel,
     damageMod: 1.0,
+    // Combat v2
+    shieldHp: 0,
+    shieldRegen: 0,
+    weaponAttack: 0,
+    weaponType: 'none',
+    weaponPiercing: 0,
+    pointDefense: 0,
+    ecmReduction: 0,
   };
 
   for (const mod of modules) {
@@ -20,7 +28,9 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
     if (!def) continue;
     for (const [key, value] of Object.entries(def.effects)) {
       if (key === 'damageMod') {
-        stats.damageMod += value as number; // additive: 1.0 + (-0.25) = 0.75
+        stats.damageMod += value as number;
+      } else if (key === 'weaponType') {
+        stats.weaponType = value as ShipStats['weaponType'];
       } else {
         (stats as any)[key] += value as number;
       }

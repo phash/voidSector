@@ -14,11 +14,13 @@ import { TradeScreen } from './TradeScreen';
 import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
+import { CombatV2Dialog } from './CombatV2Dialog';
 import { BattleResultDialog } from './BattleResultDialog';
 import { DetailViewOverlay } from './DetailViewOverlay';
 import { ModulePanel } from './ModulePanel';
 import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
+import { StationCombatOverlay } from './StationCombatOverlay';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
 import type { HullType, ShipModule, ModuleCategory } from '@void-sector/shared';
@@ -32,6 +34,9 @@ const SLOT_LABELS: Record<ModuleCategory, string> = {
   scanner: 'SCN',
   armor: 'ARM',
   special: 'SPC',
+  weapon: 'WPN',
+  shield: 'SHD',
+  defense: 'DEF',
 };
 
 const CATEGORY_DISPLAY: Record<ModuleCategory, string> = {
@@ -40,6 +45,9 @@ const CATEGORY_DISPLAY: Record<ModuleCategory, string> = {
   scanner: 'SCANNER',
   armor: 'ARMOR',
   special: 'SPECIAL',
+  weapon: 'WEAPON',
+  shield: 'SHIELD',
+  defense: 'DEFENSE',
 };
 
 function getSlotLabel(modules: ShipModule[], slotIndex: number): { label: string; filled: boolean } {
@@ -476,6 +484,8 @@ export function GameScreen() {
         ))}
       </div>
       <BattleDialog />
+      <CombatV2Dialog />
+      <StationCombatOverlay />
       <BattleResultDialog />
       <HelpOverlay />
     </div>

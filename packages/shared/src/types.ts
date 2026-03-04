@@ -120,7 +120,7 @@ export interface LocalScanResultMessage {
 }
 
 // Structures
-export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post';
+export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post' | 'defense_turret' | 'station_shield' | 'ion_cannon';
 
 export interface Structure {
   id: string;
@@ -466,6 +466,87 @@ export interface BattleResult {
   xpGained?: number;
 }
 
+// Combat v2 types
+export type WeaponType = 'laser' | 'railgun' | 'missile' | 'emp' | 'none';
+export type CombatTactic = 'assault' | 'balanced' | 'defensive';
+export type SpecialAction = 'aim' | 'evade' | 'none';
+
+export interface CombatRound {
+  round: number;
+  tactic: CombatTactic;
+  specialAction: SpecialAction;
+  playerAttack: number;
+  enemyAttack: number;
+  playerShieldDmg: number;
+  playerHullDmg: number;
+  enemyShieldDmg: number;
+  enemyHullDmg: number;
+  playerShieldAfter: number;
+  playerHpAfter: number;
+  enemyShieldAfter: number;
+  enemyHpAfter: number;
+  specialEffects: string[];
+}
+
+export interface CombatV2State {
+  encounter: PirateEncounter;
+  currentRound: number;
+  maxRounds: number;
+  playerHp: number;
+  playerMaxHp: number;
+  playerShield: number;
+  playerMaxShield: number;
+  playerShieldRegen: number;
+  enemyHp: number;
+  enemyMaxHp: number;
+  enemyShield: number;
+  enemyMaxShield: number;
+  rounds: CombatRound[];
+  specialActionsUsed: { aim: boolean; evade: boolean };
+  empDisableRounds: number;
+  status: 'active' | 'victory' | 'defeat' | 'escaped' | 'auto_flee';
+}
+
+export interface CombatV2ActionMessage {
+  tactic: CombatTactic;
+  specialAction: SpecialAction;
+  sectorX: number;
+  sectorY: number;
+}
+
+export interface CombatV2FleeMessage {
+  sectorX: number;
+  sectorY: number;
+}
+
+export interface CombatV2RoundResult {
+  success: boolean;
+  error?: string;
+  round?: CombatRound;
+  state?: CombatV2State;
+  finalResult?: BattleResult;
+}
+
+// Station combat
+export interface StationDefense {
+  id: number;
+  userId: string;
+  sectorX: number;
+  sectorY: number;
+  defenseType: string;
+  installedAt: number;
+}
+
+export interface StationCombatEvent {
+  stationId: string;
+  sectorX: number;
+  sectorY: number;
+  attackerLevel: number;
+  stationHpBefore: number;
+  outcome: 'defended' | 'damaged' | 'destroyed';
+  hpLost: number;
+}
+
 export type ScanEventType = 'pirate_ambush' | 'distress_signal' | 'anomaly_reading' | 'artifact_find';
 export type ScanEventStatus = 'discovered' | 'completed';
 
@@ -666,7 +747,7 @@ export interface AutopilotCompleteMessage { x: number; y: number; }
 // --- Phase 7: Ship Designer ---
 export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
 export type HullSize = 'small' | 'medium' | 'large';
-export type ModuleCategory = 'drive' | 'cargo' | 'scanner' | 'armor' | 'special';
+export type ModuleCategory = 'drive' | 'cargo' | 'scanner' | 'armor' | 'special' | 'weapon' | 'shield' | 'defense';
 export type ModuleTier = 1 | 2 | 3;
 
 export interface HullDefinition {
@@ -710,6 +791,14 @@ export interface ShipStats {
   commRange: number;
   scannerLevel: number;
   damageMod: number;
+  // Combat v2
+  shieldHp: number;
+  shieldRegen: number;
+  weaponAttack: number;
+  weaponType: WeaponType;
+  weaponPiercing: number;
+  pointDefense: number;
+  ecmReduction: number;
 }
 
 export interface ShipRecord {

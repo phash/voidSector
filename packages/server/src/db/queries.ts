@@ -1411,3 +1411,92 @@ export async function addDiscoveriesBatch(
     [playerId, xs, ys]
   );
 }
+
+// Combat v2: Station defense queries
+
+export async function getStationDefenses(
+  userId: string, sectorX: number, sectorY: number,
+): Promise<Array<{ id: number; defenseType: string; installedAt: number }>> {
+  const result = await query(
+    'SELECT id, defense_type AS "defenseType", installed_at AS "installedAt" FROM station_defenses WHERE user_id = $1 AND sector_x = $2 AND sector_y = $3',
+    [userId, sectorX, sectorY],
+  );
+  return result.rows;
+}
+
+export async function installStationDefense(
+  userId: string, sectorX: number, sectorY: number, defenseType: string,
+): Promise<{ id: number }> {
+  const result = await query(
+    `INSERT INTO station_defenses (user_id, sector_x, sector_y, defense_type)
+     VALUES ($1, $2, $3, $4) RETURNING id`,
+    [userId, sectorX, sectorY, defenseType],
+  );
+  return result.rows[0];
+}
+
+export async function removeStationDefense(
+  userId: string, sectorX: number, sectorY: number, defenseType: string,
+): Promise<boolean> {
+  const result = await query(
+    'DELETE FROM station_defenses WHERE user_id = $1 AND sector_x = $2 AND sector_y = $3 AND defense_type = $4',
+    [userId, sectorX, sectorY, defenseType],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function getStructureHp(
+  userId: string, sectorX: number, sectorY: number,
+): Promise<{ currentHp: number; maxHp: number } | null> {
+  const result = await query(
+    `SELECT current_hp AS "currentHp", max_hp AS "maxHp" FROM structures
+     WHERE owner_id = $1 AND sector_x = $2 AND sector_y = $3 AND type = 'base'`,
+    [userId, sectorX, sectorY],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function updateStructureHp(
+  userId: string, sectorX: number, sectorY: number, newHp: number,
+): Promise<void> {
+  await query(
+    `UPDATE structures SET current_hp = $4, damaged_at = CASE WHEN $4 < max_hp THEN (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT ELSE damaged_at END
+     WHERE owner_id = $1 AND sector_x = $2 AND sector_y = $3 AND type = 'base'`,
+    [userId, sectorX, sectorY, newHp],
+  );
+}
+
+export async function insertStationBattleLog(
+  userId: string, sectorX: number, sectorY: number,
+  attackerLevel: number, outcome: string, hpLost: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO station_battle_log (user_id, sector_x, sector_y, attacker_level, outcome, hp_lost)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [userId, sectorX, sectorY, attackerLevel, outcome, hpLost],
+  );
+}
+
+export async function insertBattleLogV2(
+  playerId: string, pirateLevel: number, sectorX: number, sectorY: number,
+  action: string, outcome: string, loot: Record<string, unknown> | null,
+  roundsPlayed: number, roundDetails: unknown[], playerHpEnd: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO battle_log (player_id, pirate_level, sector_x, sector_y, action, outcome, loot, rounds_played, round_details, player_hp_end)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [playerId, pirateLevel, sectorX, sectorY, action, outcome,
+     loot ? JSON.stringify(loot) : null, roundsPlayed,
+     JSON.stringify(roundDetails), playerHpEnd],
+  );
+}
+
+export async function getPlayerStructuresInSector(
+  userId: string, sectorX: number, sectorY: number,
+): Promise<Array<{ id: string; type: string }>> {
+  const result = await query(
+    'SELECT id, type FROM structures WHERE owner_id = $1 AND sector_x = $2 AND sector_y = $3',
+    [userId, sectorX, sectorY],
+  );
+  return result.rows;
+}

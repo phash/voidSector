@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
@@ -526,6 +526,35 @@ class GameNetwork {
       store.addLogEntry(`PIRATEN-HINTERHALT bei (${data.sectorX}, ${data.sectorY})!`);
     });
 
+    room.onMessage('combatV2Init', (data: { state: CombatV2State }) => {
+      useStore.getState().setActiveCombatV2(data.state);
+    });
+
+    room.onMessage('combatV2Result', (data: CombatV2RoundResult) => {
+      const store = useStore.getState();
+      if (data.state) {
+        store.setActiveCombatV2(data.state.status === 'active' ? data.state : null);
+      }
+      if (data.finalResult) {
+        const encounter = store.activeBattle ?? store.activeCombatV2?.encounter;
+        if (encounter) {
+          store.setLastBattleResult({ encounter, result: data.finalResult as any });
+        }
+        store.setActiveCombatV2(null);
+        store.setActiveBattle(null);
+      }
+    });
+
+    room.onMessage('stationUnderAttack', (data: StationCombatEvent) => {
+      useStore.getState().setStationCombatEvent(data);
+      useStore.getState().addLogEntry(`STATION UNTER ANGRIFF in (${data.sectorX}, ${data.sectorY})!`);
+    });
+
+    room.onMessage('stationDefended', (data: StationCombatEvent) => {
+      useStore.getState().setStationCombatEvent(null);
+      useStore.getState().addLogEntry('Station erfolgreich verteidigt!');
+    });
+
     room.onMessage('scanEventDiscovered', (data) => {
       const store = useStore.getState();
       store.addScanEvent(data.event);
@@ -989,6 +1018,26 @@ class GameNetwork {
   sendBattleAction(action: string, sectorX: number, sectorY: number) {
     if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
     this.sectorRoom.send('battleAction', { action, sectorX, sectorY });
+  }
+
+  sendCombatV2Action(tactic: string, specialAction: string, sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('combatV2Action', { tactic, specialAction, sectorX, sectorY });
+  }
+
+  sendCombatV2Flee(sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
+  }
+
+  sendInstallDefense(defenseType: string) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('installDefense', { defenseType });
+  }
+
+  sendRepairStation(sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('repairStation', { sectorX, sectorY });
   }
 
   sendCompleteScanEvent(eventId: string) {

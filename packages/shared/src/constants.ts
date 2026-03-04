@@ -59,6 +59,9 @@ export const STRUCTURE_COSTS: Record<StructureType, Record<ResourceType, number>
   base: { ore: 50, gas: 30, crystal: 25 },
   storage: { ore: 20, gas: 10, crystal: 5 },
   trading_post: { ore: 30, gas: 20, crystal: 15 },
+  defense_turret: { ore: 40, gas: 10, crystal: 20 },
+  station_shield: { ore: 30, gas: 25, crystal: 30 },
+  ion_cannon: { ore: 60, gas: 30, crystal: 40 },
 };
 
 export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
@@ -67,6 +70,9 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
   base: 25,
   storage: 10,
   trading_post: 15,
+  defense_turret: 20,
+  station_shield: 20,
+  ion_cannon: 25,
 };
 
 export const RELAY_RANGES: Record<StructureType, number> = {
@@ -75,6 +81,9 @@ export const RELAY_RANGES: Record<StructureType, number> = {
   base: 1000,
   storage: 0,
   trading_post: 0,
+  defense_turret: 0,
+  station_shield: 0,
+  ion_cannon: 0,
 };
 
 // NPC Trade Prices (base prices per unit in credits)
@@ -142,6 +151,51 @@ export const PIRATE_BASE_HP = 20;
 export const PIRATE_HP_PER_LEVEL = 10;
 export const PIRATE_BASE_DAMAGE = 5;
 export const PIRATE_DAMAGE_PER_LEVEL = 3;
+
+// Combat v2 — Feature flag
+export const FEATURE_COMBAT_V2 = true;
+
+// Combat v2 — Tactic multipliers
+export const TACTIC_MODS: Record<string, { dmg: number; def: number }> = {
+  assault:   { dmg: 1.30, def: 0.80 },
+  balanced:  { dmg: 1.00, def: 1.00 },
+  defensive: { dmg: 0.75, def: 1.35 },
+};
+
+// Combat v2 — Special actions
+export const AIM_ACCURACY_BONUS = 0.50;
+export const AIM_DISABLE_CHANCE = 0.35;
+export const AIM_DISABLE_ROUNDS = 2;
+export const EVADE_CHANCE = 0.50;
+export const EMP_HIT_CHANCE = 0.75;
+export const EMP_DISABLE_ROUNDS = 2;
+
+// Combat v2 — General
+export const COMBAT_V2_MAX_ROUNDS = 5;
+export const COMBAT_V2_ROLL_MIN = 0.85;
+export const COMBAT_V2_ROLL_MAX = 1.15;
+
+// Station defense
+export const STATION_BASE_HP = 500;
+export const STATION_REPAIR_CR_PER_HP = 5;
+export const STATION_REPAIR_ORE_PER_HP = 1;
+export const STATION_COMBAT_MAX_ROUNDS = 10;
+
+export const STATION_DEFENSE_DEFS: Record<string, {
+  damage?: number;
+  shieldHp?: number;
+  shieldRegen?: number;
+  oncePer?: 'combat';
+  bypassShields?: boolean;
+  cost: { credits: number; ore?: number; crystal?: number; gas?: number };
+}> = {
+  defense_turret_mk1: { damage: 15, cost: { credits: 500, ore: 50 } },
+  defense_turret_mk2: { damage: 30, cost: { credits: 1500, ore: 100, crystal: 20 } },
+  defense_turret_mk3: { damage: 50, cost: { credits: 4000, ore: 200, crystal: 60 } },
+  station_shield_mk1: { shieldHp: 150, shieldRegen: 10, cost: { credits: 1000, crystal: 50 } },
+  station_shield_mk2: { shieldHp: 350, shieldRegen: 25, cost: { credits: 3000, crystal: 100, gas: 30 } },
+  ion_cannon: { damage: 80, oncePer: 'combat', bypassShields: true, cost: { credits: 8000, ore: 300, crystal: 100, gas: 50 } },
+};
 
 export const MAX_ACTIVE_QUESTS = 3;
 export const QUEST_EXPIRY_DAYS = 7;
@@ -312,6 +366,87 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'ARMOR PLATING MK.III', displayName: 'ARM MK.III',
     effects: { hp: 100, damageMod: -0.25 },
     cost: { credits: 800, ore: 50, crystal: 25 },
+  },
+  // Weapon modules
+  laser_mk1: {
+    id: 'laser_mk1', category: 'weapon', tier: 1,
+    name: 'PULS-LASER MK.I', displayName: 'LASER MK.I',
+    effects: { weaponAttack: 8, weaponType: 'laser' as any },
+    cost: { credits: 150, crystal: 10 },
+  },
+  laser_mk2: {
+    id: 'laser_mk2', category: 'weapon', tier: 2,
+    name: 'PULS-LASER MK.II', displayName: 'LASER MK.II',
+    effects: { weaponAttack: 16, weaponType: 'laser' as any },
+    cost: { credits: 450, crystal: 25, gas: 10 },
+  },
+  laser_mk3: {
+    id: 'laser_mk3', category: 'weapon', tier: 3,
+    name: 'PULS-LASER MK.III', displayName: 'LASER MK.III',
+    effects: { weaponAttack: 28, weaponType: 'laser' as any },
+    cost: { credits: 1200, crystal: 50, gas: 20 },
+  },
+  railgun_mk1: {
+    id: 'railgun_mk1', category: 'weapon', tier: 1,
+    name: 'RAIL-KANONE MK.I', displayName: 'RAIL MK.I',
+    effects: { weaponAttack: 12, weaponPiercing: 0.30, weaponType: 'railgun' as any },
+    cost: { credits: 300, ore: 30, crystal: 15 },
+  },
+  railgun_mk2: {
+    id: 'railgun_mk2', category: 'weapon', tier: 2,
+    name: 'RAIL-KANONE MK.II', displayName: 'RAIL MK.II',
+    effects: { weaponAttack: 22, weaponPiercing: 0.50, weaponType: 'railgun' as any },
+    cost: { credits: 900, ore: 60, crystal: 30 },
+  },
+  missile_mk1: {
+    id: 'missile_mk1', category: 'weapon', tier: 1,
+    name: 'RAKETEN-POD MK.I', displayName: 'RAKET MK.I',
+    effects: { weaponAttack: 18, weaponType: 'missile' as any },
+    cost: { credits: 250, ore: 20, crystal: 5 },
+  },
+  missile_mk2: {
+    id: 'missile_mk2', category: 'weapon', tier: 2,
+    name: 'RAKETEN-POD MK.II', displayName: 'RAKET MK.II',
+    effects: { weaponAttack: 30, weaponType: 'missile' as any },
+    cost: { credits: 750, ore: 40, crystal: 15 },
+  },
+  emp_array: {
+    id: 'emp_array', category: 'weapon', tier: 2,
+    name: 'EMP-EMITTER', displayName: 'EMP',
+    effects: { weaponAttack: 0, weaponType: 'emp' as any },
+    cost: { credits: 500, crystal: 20, gas: 20 },
+  },
+  // Shield modules
+  shield_mk1: {
+    id: 'shield_mk1', category: 'shield', tier: 1,
+    name: 'SCHILD-GEN MK.I', displayName: 'SHLD MK.I',
+    effects: { shieldHp: 30, shieldRegen: 3 },
+    cost: { credits: 200, crystal: 15 },
+  },
+  shield_mk2: {
+    id: 'shield_mk2', category: 'shield', tier: 2,
+    name: 'SCHILD-GEN MK.II', displayName: 'SHLD MK.II',
+    effects: { shieldHp: 60, shieldRegen: 6 },
+    cost: { credits: 600, crystal: 35, gas: 10 },
+  },
+  shield_mk3: {
+    id: 'shield_mk3', category: 'shield', tier: 3,
+    name: 'SCHILD-GEN MK.III', displayName: 'SHLD MK.III',
+    effects: { shieldHp: 100, shieldRegen: 12 },
+    cost: { credits: 1500, crystal: 70, gas: 25 },
+  },
+  // Defensive modules
+  point_defense: {
+    id: 'point_defense', category: 'defense', tier: 2,
+    name: 'PUNKT-VERTEIDIGUNG', displayName: 'PD',
+    effects: { pointDefense: 0.60 },
+    cost: { credits: 350, ore: 20, crystal: 10 },
+  },
+  ecm_suite: {
+    id: 'ecm_suite', category: 'defense', tier: 2,
+    name: 'ECM-SUITE', displayName: 'ECM',
+    effects: { ecmReduction: 0.15 },
+    cost: { credits: 400, crystal: 25, gas: 15 },
   },
 };
 
