@@ -190,20 +190,27 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       // Coordinates label — only at zoom >= 1 (frame handles coords at zoom 0)
       if (state.zoomLevel >= 1) {
         ctx.font = COORD_FONT;
-        ctx.textAlign = 'center';
+        // Zoom 2-3: left-align to avoid collision with player icons on right
+        const coordLeftAlign = state.zoomLevel >= 2 && !isDetailView;
+        ctx.textAlign = coordLeftAlign ? 'left' : 'center';
         ctx.textBaseline = 'top';
         if (sector || isPlayer) {
           ctx.fillStyle = state.dimColor;
         } else {
           ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.25)');
         }
-        ctx.fillText(`(${innerCoord(sx)},${innerCoord(sy)})`, cellX, cellY - CELL_H / 2 + 3);
+        const coordX = coordLeftAlign ? cellX - CELL_W / 2 + 3 : cellX;
+        ctx.fillText(`(${innerCoord(sx)},${innerCoord(sy)})`, coordX, cellY - CELL_H / 2 + 3);
       }
 
       // Sector content
       ctx.font = FONT;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+
+      // Zoom 2-3: left-align bottom labels to avoid collision with player icons
+      const labelLeftAlign = state.zoomLevel >= 2 && !isDetailView;
+      const labelX = labelLeftAlign ? cellX - CELL_W / 2 + 3 : cellX;
 
       if (isPlayer) {
         const ownHull = state.hullType ?? 'scout';
@@ -213,8 +220,9 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         if (state.zoomLevel >= 1) {
           ctx.font = COORD_FONT;
           ctx.fillStyle = state.themeColor;
+          ctx.textAlign = labelLeftAlign ? 'left' : 'center';
           ctx.textBaseline = 'bottom';
-          ctx.fillText(isHome ? 'HOME BASE' : 'YOU', cellX, cellY + CELL_H / 2 - 2);
+          ctx.fillText(isHome ? 'HOME BASE' : 'YOU', labelX, cellY + CELL_H / 2 - 2);
         }
       } else if (sector) {
         if (sector.type === 'empty' && (sector as any).environment !== 'black_hole' && !isHome) {
@@ -237,17 +245,19 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           if (state.zoomLevel >= 1) {
             ctx.font = COORD_FONT;
             ctx.fillStyle = sectorColor;
+            ctx.textAlign = labelLeftAlign ? 'left' : 'center';
             ctx.textBaseline = 'bottom';
             const label = isHome ? 'HOME' : getSectorLabel(sector.type, (sector as any).environment);
-            ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
+            ctx.fillText(label, labelX, cellY + CELL_H / 2 - 2);
           }
         }
       } else {
         if (state.zoomLevel >= 1) {
           ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.15)');
+          ctx.textAlign = labelLeftAlign ? 'left' : 'center';
           ctx.textBaseline = 'bottom';
           ctx.font = COORD_FONT;
-          ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H / 2 - 2);
+          ctx.fillText('UNEXPLORED', labelX, cellY + CELL_H / 2 - 2);
         }
       }
 
@@ -311,22 +321,22 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         }
       }
 
-      // Resource fill indicator dots
+      // Resource fill indicator dots — left edge, vertically stacked
       if (sector?.resources && state.zoomLevel >= 1) {
         const res = sector.resources;
-        const dotY = cellY + CELL_H / 2 - 8;
         const dotSpacing = 4;
         const dotR = 1.5;
+        const dotBaseX = cellX - CELL_W / 2 + 5;
 
-        // Helper to draw 3-dot indicator
-        const drawDots = (baseX: number, value: number, maxValue: number, color: string) => {
+        // Helper to draw 3-dot indicator (horizontal row)
+        const drawDots = (baseX: number, baseY: number, value: number, maxValue: number, color: string) => {
           if (maxValue <= 0) return;
           const pct = Math.min(1, value / maxValue);
           if (pct >= 1) {
             // Full: solid bar
             ctx.fillStyle = color;
             ctx.globalAlpha = 0.9;
-            ctx.fillRect(baseX, dotY - 1, dotSpacing * 2 + dotR * 2, 2);
+            ctx.fillRect(baseX, baseY - 1, dotSpacing * 2 + dotR * 2, 2);
             ctx.globalAlpha = 1;
             return;
           }
@@ -335,22 +345,36 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
             ctx.fillStyle = color;
             ctx.globalAlpha = d < active ? 0.8 : 0.15;
             ctx.beginPath();
-            ctx.arc(baseX + d * dotSpacing, dotY, dotR, 0, Math.PI * 2);
+            ctx.arc(baseX + d * dotSpacing, baseY, dotR, 0, Math.PI * 2);
             ctx.fill();
           }
           ctx.globalAlpha = 1;
         };
 
-        // Left dots: primary resource (ore or gas, whichever > 0)
-        const primaryVal = res.ore > 0 ? res.ore : res.gas;
-        const primaryMax = primaryVal; // Use current as max (undepleted = 100%)
-        if (primaryVal > 0) {
-          drawDots(cellX - 8, primaryVal, primaryMax, state.themeColor);
+        // Count how many resource types are present
+        const hasOre = res.ore > 0;
+        const hasGas = res.gas > 0;
+        const hasCrystal = res.crystal > 0;
+        const rowCount = (hasOre ? 1 : 0) + (hasGas ? 1 : 0) + (hasCrystal ? 1 : 0);
+        const rowSpacing = 5;
+        const totalHeight = (rowCount - 1) * rowSpacing;
+        let rowY = cellY - totalHeight / 2;
+
+        // Ore: top row
+        if (hasOre) {
+          drawDots(dotBaseX, rowY, res.ore, res.ore, state.themeColor);
+          rowY += rowSpacing;
         }
 
-        // Right dots: crystal
-        if (res.crystal > 0) {
-          drawDots(cellX + 4, res.crystal, res.crystal, '#66CCFF');
+        // Gas: middle row
+        if (hasGas) {
+          drawDots(dotBaseX, rowY, res.gas, res.gas, state.themeColor);
+          rowY += rowSpacing;
+        }
+
+        // Crystal: bottom row
+        if (hasCrystal) {
+          drawDots(dotBaseX, rowY, res.crystal, res.crystal, '#66CCFF');
         }
       }
 
@@ -398,28 +422,35 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
-  // Draw other players — zoom >= 3
-  if (state.zoomLevel >= 3) {
+  // Draw other players — zoom >= 2
+  if (state.zoomLevel >= 2) {
     const otherPattern = HULL_RADAR_PATTERNS.scout;
     const otherPixelSize = 1 + state.zoomLevel;
-    const otherColor = state.dimColor;
+    const otherColor = '#FFDD22';
     const playerList = Object.values(state.players);
+    // Only draw one icon per sector — track which sectors already have an icon
+    const drawnSectors = new Set<string>();
     for (let i = 0; i < playerList.length; i++) {
       const player = playerList[i];
       const dx = player.x - viewX;
       const dy = player.y - viewY;
       if (Math.abs(dx) <= radiusX && Math.abs(dy) <= radiusY && !(player.x === state.position.x && player.y === state.position.y)) {
+        const sectorKey = `${player.x}:${player.y}`;
+        if (drawnSectors.has(sectorKey)) continue;
+        drawnSectors.add(sectorKey);
         const px = gridCenterX + dx * CELL_W + 12;
         const py = gridCenterY + dy * CELL_H;
         drawHullIcon(ctx, otherPattern, px, py, otherColor, otherPixelSize);
-        // Player username at zoom 3
-        const displayName = player.username?.slice(0, 8) ?? '';
-        if (displayName) {
-          ctx.font = COORD_FONT;
-          ctx.fillStyle = otherColor;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(displayName, px + 10, py);
+        // Player username at zoom >= 3
+        if (state.zoomLevel >= 3) {
+          const displayName = player.username?.slice(0, 8) ?? '';
+          if (displayName) {
+            ctx.font = COORD_FONT;
+            ctx.fillStyle = otherColor;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(displayName, px + 10, py);
+          }
         }
       }
     }

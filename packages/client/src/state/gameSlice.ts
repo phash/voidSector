@@ -39,6 +39,39 @@ function safeRemoveItem(key: string): void {
   try { localStorage.removeItem(key); } catch { /* noop */ }
 }
 
+export interface PlayerStats {
+  sectorsScanned: number;
+  quadrantsVisited: string[];    // "qx:qy" keys
+  quadrantsFirstDiscovered: number;
+  stationsVisited: string[];     // "x:y" keys
+  playersEncountered: number;
+}
+
+const PLAYER_STATS_KEY = 'vs-player-stats';
+
+const defaultPlayerStats: PlayerStats = {
+  sectorsScanned: 0,
+  quadrantsVisited: [],
+  quadrantsFirstDiscovered: 0,
+  stationsVisited: [],
+  playersEncountered: 0,
+};
+
+function loadPlayerStats(): PlayerStats {
+  const raw = safeGetItem(PLAYER_STATS_KEY);
+  if (!raw) return { ...defaultPlayerStats };
+  try {
+    const parsed = JSON.parse(raw);
+    return { ...defaultPlayerStats, ...parsed };
+  } catch {
+    return { ...defaultPlayerStats };
+  }
+}
+
+function savePlayerStats(stats: PlayerStats): void {
+  safeSetItem(PLAYER_STATS_KEY, JSON.stringify(stats));
+}
+
 export interface PlayerPresence {
   sessionId: string;
   username: string;
@@ -204,6 +237,9 @@ export interface GameSlice {
   // Direct chat pre-selection (from context menu)
   directChatRecipient: { id: string; name: string } | null;
 
+  // Player stats (logbuch)
+  playerStats: PlayerStats;
+
   // Quadrant system
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
   currentQuadrant: { qx: number; qy: number; name?: string | null } | null;
@@ -284,6 +320,8 @@ export interface GameSlice {
   setSelectedCargoItem: (item: string | null) => void;
   setSelectedQuest: (questId: string | null) => void;
   setDirectChatRecipient: (recipient: { id: string; name: string } | null) => void;
+  incrementStat: (key: keyof PlayerStats) => void;
+  addToStatSet: (key: 'quadrantsVisited' | 'stationsVisited', value: string) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -353,6 +391,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   selectedCargoItem: null,
   selectedQuest: null,
   directChatRecipient: null,
+  playerStats: loadPlayerStats(),
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
@@ -509,4 +548,22 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setSelectedCargoItem: (selectedCargoItem) => set({ selectedCargoItem }),
   setSelectedQuest: (selectedQuest) => set({ selectedQuest }),
   setDirectChatRecipient: (directChatRecipient) => set({ directChatRecipient }),
+
+  incrementStat: (key) =>
+    set((s) => {
+      const current = s.playerStats[key];
+      if (typeof current !== 'number') return s;
+      const next = { ...s.playerStats, [key]: current + 1 };
+      savePlayerStats(next);
+      return { playerStats: next };
+    }),
+
+  addToStatSet: (key, value) =>
+    set((s) => {
+      const arr = s.playerStats[key];
+      if (arr.includes(value)) return s;
+      const next = { ...s.playerStats, [key]: [...arr, value] };
+      savePlayerStats(next);
+      return { playerStats: next };
+    }),
 });

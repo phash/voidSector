@@ -93,22 +93,41 @@ class GameNetwork {
   private setupRoomListeners(room: Room) {
     // State change: sync players
     (room.state as any).players.onAdd((player: any, sessionId: string) => {
-      useStore.getState().setPlayer(sessionId, {
+      const store = useStore.getState();
+      store.setPlayer(sessionId, {
         sessionId,
         username: player.username,
         x: player.x,
         y: player.y,
         connected: player.connected,
       });
+      // Alert if another player enters our sector
+      if (player.x === store.position.x && player.y === store.position.y) {
+        store.addLogEntry(`KONTAKT: ${player.username} betritt Sektor`);
+        if (!isMonitorVisible('NAV-COM')) {
+          store.setAlert('NAV-COM', true);
+        }
+      }
       // Track position changes within the quadrant room
       player.onChange(() => {
-        useStore.getState().setPlayer(sessionId, {
+        const s = useStore.getState();
+        const prev = s.players[sessionId];
+        s.setPlayer(sessionId, {
           sessionId,
           username: player.username,
           x: player.x,
           y: player.y,
           connected: player.connected,
         });
+        // Alert if player moved INTO our sector
+        const wasInSector = prev && prev.x === s.position.x && prev.y === s.position.y;
+        const nowInSector = player.x === s.position.x && player.y === s.position.y;
+        if (!wasInSector && nowInSector) {
+          s.addLogEntry(`KONTAKT: ${player.username} betritt Sektor`);
+          if (!isMonitorVisible('NAV-COM')) {
+            s.setAlert('NAV-COM', true);
+          }
+        }
       });
     });
 
@@ -125,6 +144,10 @@ class GameNetwork {
       if (sector.type === 'nebula') store.showTip('first_nebula');
       else if (sector.type === 'station') store.showTip('first_station');
       else if (sector.type === 'asteroid_field') store.showTip('first_asteroid');
+      // Stats: track station visits
+      if (sector.type === 'station') {
+        store.addToStatSet('stationsVisited', `${sector.x}:${sector.y}`);
+      }
     });
 
     // AP updates
@@ -192,6 +215,8 @@ class GameNetwork {
       store.addLogEntry(
         `Scan complete: ${data.sectors.length} sectors revealed`
       );
+      // Stats: count area scan
+      store.incrementStat('sectorsScanned');
       // Alert LOG if interesting sectors found
       const hasInteresting = data.sectors.some(
         (s) => s.type === 'pirate' || s.type === 'anomaly' || s.type === 'station'
@@ -216,6 +241,15 @@ class GameNetwork {
         store.addLogEntry('UNKNOWN SIGNATURES DETECTED — SCANNER UPGRADE REQUIRED');
       }
       store.addLogEntry(`Local scan: Ore ${data.resources.ore}, Gas ${data.resources.gas}, Crystal ${data.resources.crystal}`);
+      // Stats: count scan
+      store.incrementStat('sectorsScanned');
+      // Stats: check for players in same sector
+      const playersHere = Object.values(store.players).filter(
+        p => p.x === store.position.x && p.y === store.position.y
+      );
+      if (playersHere.length > 0) {
+        store.incrementStat('playersEncountered');
+      }
     });
 
     // Discoveries (from scan/jump — server sends array of sector coords)
@@ -1021,13 +1055,16 @@ class GameNetwork {
     // --- Quadrant System ---
 
     room.onMessage('quadrantInfo', (data: { qx: number; qy: number; name?: string | null }) => {
-      useStore.getState().setCurrentQuadrant(data);
+      const store = useStore.getState();
+      store.setCurrentQuadrant(data);
+      store.addToStatSet('quadrantsVisited', `${data.qx}:${data.qy}`);
     });
 
     room.onMessage('firstContact', (data: FirstContactEvent) => {
       const store = useStore.getState();
       store.setFirstContactEvent(data);
       store.addLogEntry(`[QUADRANT] First contact: ${data.quadrant.name ?? data.autoName}`);
+      store.incrementStat('quadrantsFirstDiscovered');
     });
 
     room.onMessage('knownQuadrants', (data: { quadrants: Array<{ qx: number; qy: number; learnedAt: string }> }) => {

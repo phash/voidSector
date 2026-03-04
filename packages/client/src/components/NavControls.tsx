@@ -45,69 +45,70 @@ export function NavControls() {
 
   return (
     <div style={{ padding: '8px 12px' }}>
-      {/* Arrow-key layout: ↑ top center, ← · → middle, ↓ bottom center */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, justifyItems: 'center', marginBottom: 8, maxWidth: 140, margin: '0 auto 8px' }}>
-        <div />
-        <button
-          className="vs-btn"
-          title="Jump: 1 AP, 0 Fuel"
-          onClick={() => jump(0, -1)}
-          disabled={jumpPending || isMining || scanPending || !canJump}
-          style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
-        >
-          ↑
-        </button>
-        <div />
-        <button
-          className="vs-btn"
-          title="Jump: 1 AP, 0 Fuel"
-          onClick={() => jump(-1, 0)}
-          disabled={jumpPending || isMining || scanPending || !canJump}
-          style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
-        >
-          ←
-        </button>
-        <div />
-        <button
-          className="vs-btn"
-          title="Jump: 1 AP, 0 Fuel"
-          onClick={() => jump(1, 0)}
-          disabled={jumpPending || isMining || scanPending || !canJump}
-          style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
-        >
-          →
-        </button>
-        <div />
-        <button
-          className="vs-btn"
-          title="Jump: 1 AP, 0 Fuel"
-          onClick={() => jump(0, 1)}
-          disabled={jumpPending || isMining || scanPending || !canJump}
-          style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
-        >
-          ↓
-        </button>
-        <div />
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-        <button
-          className="vs-btn"
-          title={`Local Scan: ${AP_COSTS_LOCAL_SCAN} AP`}
-          onClick={() => network.sendLocalScan()}
-          disabled={jumpPending || isMining || scanPending}
-          style={isMining || scanPending ? miningDisabledStyle : (!canLocalScan ? insufficientStyle : undefined)}
-        >
-          [LOCAL SCAN]
-        </button>
-        <button
-          className="vs-btn"
-          title={`Area Scan: ${AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3} AP`}
-          onClick={() => network.sendAreaScan()}
-          disabled={jumpPending || isMining || scanPending}
-          style={isMining || scanPending ? miningDisabledStyle : (!canAreaScan ? insufficientStyle : undefined)}
-        >
-          [AREA SCAN]
-        </button>
+      {/* D-Pad + Scan: d-pad left, scan buttons stacked right */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+        {/* D-Pad: ↑ centered top, ← ↓ → bottom row */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <button
+            className="vs-btn"
+            title="Jump: 1 AP, 0 Fuel"
+            onClick={() => jump(0, -1)}
+            disabled={jumpPending || isMining || scanPending || !canJump}
+            style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+          >
+            ↑
+          </button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              className="vs-btn"
+              title="Jump: 1 AP, 0 Fuel"
+              onClick={() => jump(-1, 0)}
+              disabled={jumpPending || isMining || scanPending || !canJump}
+              style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+            >
+              ←
+            </button>
+            <button
+              className="vs-btn"
+              title="Jump: 1 AP, 0 Fuel"
+              onClick={() => jump(0, 1)}
+              disabled={jumpPending || isMining || scanPending || !canJump}
+              style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+            >
+              ↓
+            </button>
+            <button
+              className="vs-btn"
+              title="Jump: 1 AP, 0 Fuel"
+              onClick={() => jump(1, 0)}
+              disabled={jumpPending || isMining || scanPending || !canJump}
+              style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+            >
+              →
+            </button>
+          </div>
+        </div>
+        {/* Scan buttons stacked vertically */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
+          <button
+            className="vs-btn"
+            title={`Local Scan: ${AP_COSTS_LOCAL_SCAN} AP`}
+            onClick={() => network.sendLocalScan()}
+            disabled={jumpPending || isMining || scanPending}
+            style={isMining || scanPending ? miningDisabledStyle : (!canLocalScan ? insufficientStyle : undefined)}
+          >
+            [LOCAL SCAN]
+          </button>
+          <button
+            className="vs-btn"
+            title={`Area Scan: ${AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3} AP`}
+            onClick={() => network.sendAreaScan()}
+            disabled={jumpPending || isMining || scanPending}
+            style={isMining || scanPending ? miningDisabledStyle : (!canAreaScan ? insufficientStyle : undefined)}
+          >
+            [AREA SCAN]
+          </button>
+        </div>
       </div>
       {hyperdrive && hyperdrive.maxCharge > 0 && (
         <div style={{
