@@ -1,4 +1,4 @@
-import type { APState, MiningState, ResourceType, SectorResources, StructureType, CargoState, StorageInventory, BattleAction, BattleOutcome, BattleResult, PirateEncounter } from '@void-sector/shared';
+import type { APState, MiningState, ResourceType, MineableResourceType, SectorResources, StructureType, CargoState, StorageInventory, BattleAction, BattleOutcome, BattleResult, PirateEncounter } from '@void-sector/shared';
 import {
   AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, STRUCTURE_COSTS, STRUCTURE_AP_COSTS,
   NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, STORAGE_TIERS,
@@ -113,7 +113,7 @@ export interface JettisonValidation {
 }
 
 export function validateJettison(resource: ResourceType, currentAmount: number): JettisonValidation {
-  if (!['ore', 'gas', 'crystal'].includes(resource)) {
+  if (!['ore', 'gas', 'crystal', 'artefact'].includes(resource)) {
     return { valid: false, error: 'Invalid resource type' };
   }
   if (currentAmount <= 0) {
@@ -162,18 +162,18 @@ export function validateTransfer(
   resource: ResourceType,
   amount: number,
   cargo: CargoState,
-  storage: { ore: number; gas: number; crystal: number },
+  storage: { ore: number; gas: number; crystal: number; artefact: number },
   storageTier: number,
 ): TransferValidation {
   if (amount <= 0) return { valid: false, error: 'Amount must be positive' };
-  if (!['ore', 'gas', 'crystal'].includes(resource)) return { valid: false, error: 'Invalid resource' };
+  if (!['ore', 'gas', 'crystal', 'artefact'].includes(resource)) return { valid: false, error: 'Invalid resource' };
 
   const tierConfig = STORAGE_TIERS[storageTier];
   if (!tierConfig) return { valid: false, error: 'Invalid storage tier' };
 
   if (direction === 'toStorage') {
     if (cargo[resource] < amount) return { valid: false, error: `Not enough ${resource} in cargo` };
-    const storageTotal = storage.ore + storage.gas + storage.crystal;
+    const storageTotal = storage.ore + storage.gas + storage.crystal + storage.artefact;
     if (storageTotal + amount > tierConfig.capacity) {
       return { valid: false, error: `Storage full (${storageTotal}/${tierConfig.capacity})` };
     }
@@ -195,26 +195,27 @@ export function validateNpcTrade(
   resource: ResourceType,
   amount: number,
   credits: number,
-  storage: { ore: number; gas: number; crystal: number },
+  storage: { ore: number; gas: number; crystal: number; artefact: number },
   storageTier: number,
 ): NpcTradeValidation {
   if (amount <= 0) return { valid: false, error: 'Amount must be positive', totalPrice: 0 };
+  if (resource === 'artefact') return { valid: false, error: 'Artefakte können nicht an NPCs gehandelt werden', totalPrice: 0 };
   if (!['ore', 'gas', 'crystal'].includes(resource)) return { valid: false, error: 'Invalid resource', totalPrice: 0 };
 
-  const basePrice = NPC_PRICES[resource];
+  const basePrice = NPC_PRICES[resource as MineableResourceType];
   const tierConfig = STORAGE_TIERS[storageTier];
 
   if (action === 'buy') {
     const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);
     if (credits < totalPrice) return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
-    const storageTotal = storage.ore + storage.gas + storage.crystal;
+    const storageTotal = storage.ore + storage.gas + storage.crystal + storage.artefact;
     if (storageTotal + amount > tierConfig.capacity) {
       return { valid: false, error: 'Storage full', totalPrice };
     }
     return { valid: true, totalPrice };
   } else {
     const totalPrice = Math.floor(basePrice * NPC_SELL_SPREAD * amount);
-    if (storage[resource] < amount) return { valid: false, error: `Not enough ${resource} in storage`, totalPrice };
+    if (storage[resource as MineableResourceType] < amount) return { valid: false, error: `Not enough ${resource} in storage`, totalPrice };
     return { valid: true, totalPrice };
   }
 }
@@ -224,14 +225,15 @@ export function validateNpcCargoTrade(
   resource: ResourceType,
   amount: number,
   credits: number,
-  cargo: { ore: number; gas: number; crystal: number },
+  cargo: { ore: number; gas: number; crystal: number; artefact: number },
   cargoTotal: number,
   cargoCap: number,
 ): NpcTradeValidation {
   if (amount <= 0) return { valid: false, error: 'Amount must be positive', totalPrice: 0 };
+  if (resource === 'artefact') return { valid: false, error: 'Artefakte können nicht an NPCs gehandelt werden', totalPrice: 0 };
   if (!['ore', 'gas', 'crystal'].includes(resource)) return { valid: false, error: 'Invalid resource', totalPrice: 0 };
 
-  const basePrice = NPC_PRICES[resource];
+  const basePrice = NPC_PRICES[resource as MineableResourceType];
 
   if (action === 'buy') {
     const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);

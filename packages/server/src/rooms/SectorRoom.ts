@@ -39,7 +39,8 @@ function rejectGuest(client: Client, action: string): boolean {
   return true;
 }
 
-const VALID_RESOURCES = ['ore', 'gas', 'crystal'];
+const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
+const VALID_TRANSFER_RESOURCES = ['ore', 'gas', 'crystal', 'artefact'];
 const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon'];
 
 function sanitizeChat(text: string): string {
@@ -458,7 +459,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
       // Check resource costs from cargo
       const cargo = await getPlayerCargo(auth.userId);
-      const cargoMap: Record<string, number> = { ore: cargo.ore, gas: cargo.gas, crystal: cargo.crystal };
+      const cargoMap: Record<string, number> = { ore: cargo.ore, gas: cargo.gas, crystal: cargo.crystal, artefact: cargo.artefact };
       for (const [res, amount] of Object.entries(moduleDef.cost)) {
         if (res === 'credits') continue;
         const have = cargoMap[res] ?? 0;
@@ -1246,7 +1247,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   private async handleMine(client: Client, data: MineMessage) {
     if (!this.checkRate(client.sessionId, 'mine', 500)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
-    if (!data.resource || !VALID_RESOURCES.includes(data.resource)) {
+    if (!data.resource || !VALID_MINE_RESOURCES.includes(data.resource)) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
       return;
     }
@@ -1472,7 +1473,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   private async handleTransfer(client: Client, data: TransferMessage) {
     if (!this.checkRate(client.sessionId, 'transfer', 500)) { client.send('transferResult', { success: false, error: 'Too fast' }); return; }
-    if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
+    if (!isPositiveInt(data.amount) || !VALID_TRANSFER_RESOURCES.includes(data.resource)) {
       client.send('transferResult', { success: false, error: 'Invalid transfer parameters' });
       return;
     }
@@ -1521,7 +1522,11 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('npcTradeResult', { success: false, error: 'Too fast — please wait' });
       return;
     }
-    if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
+    if (data.resource === 'artefact') {
+      client.send('npcTradeResult', { success: false, error: 'Artefakte können nicht an NPCs gehandelt werden' });
+      return;
+    }
+    if (!isPositiveInt(data.amount) || !VALID_MINE_RESOURCES.includes(data.resource)) {
       client.send('npcTradeResult', { success: false, error: 'Invalid trade parameters' });
       return;
     }
@@ -1665,7 +1670,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid amount or price' });
       return;
     }
-    if (!VALID_RESOURCES.includes(data.resource)) {
+    if (!VALID_MINE_RESOURCES.includes(data.resource)) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
       return;
     }
@@ -1723,7 +1728,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
     const cargo = await getPlayerCargo(auth.userId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
     const validation = validateCreateSlate(
       { ap: currentAP.current, scannerLevel: ship.scannerLevel, cargoTotal, cargoCap: ship.cargoCap },
@@ -1883,7 +1888,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     const cargo = await getPlayerCargo(auth.userId);
     const ship = this.getShipForClient(client.sessionId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
     if (cargoTotal >= ship.cargoCap) {
       client.send('error', { code: 'CARGO_FULL', message: 'No cargo space' });
       return;
