@@ -13,6 +13,11 @@ function safeSetItem(key: string, value: string): void {
   try { localStorage.setItem(key, value); } catch { /* quota exceeded or private mode */ }
 }
 
+function safeJsonParse<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try { return JSON.parse(raw); } catch { return fallback; }
+}
+
 export interface UISlice {
   screen: Screen;
   theme: ThemeColor;
@@ -58,8 +63,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   zoomLevel: 2,
   panOffset: { x: 0, y: 0 },
   jumpAnimation: null,
-  sidebarSlots: JSON.parse(safeGetItem('vs-sidebar-slots') || '["SHIP-SYS","COMMS"]') as [string, string],
-  leftSidebarSlots: JSON.parse(safeGetItem('vs-left-sidebar-slots') || '["LOG","SHIP-SYS"]') as [string, string],
+  sidebarSlots: safeJsonParse<[string, string]>(safeGetItem('vs-sidebar-slots'), ['SHIP-SYS', 'COMMS']),
+  leftSidebarSlots: safeJsonParse<[string, string]>(safeGetItem('vs-left-sidebar-slots'), ['LOG', 'SHIP-SYS']),
   mainMonitorMode: 'split' as 'split' | string,
   autoFollow: false,
   detailView: null,

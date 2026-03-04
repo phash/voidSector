@@ -1376,3 +1376,38 @@ export async function setPlayerBookmark(playerId: string, slot: number, sectorX:
 export async function clearPlayerBookmark(playerId: string, slot: number): Promise<void> {
   await query('DELETE FROM player_bookmarks WHERE player_id = $1 AND slot = $2', [playerId, slot]);
 }
+
+export async function getSectorsInRange(
+  cx: number, cy: number, radius: number
+): Promise<SectorData[]> {
+  const result = await query<any>(
+    `SELECT x, y, type, seed, discovered_by, discovered_at, metadata, resources
+     FROM sectors
+     WHERE x BETWEEN $1 AND $2 AND y BETWEEN $3 AND $4`,
+    [cx - radius, cx + radius, cy - radius, cy + radius]
+  );
+  return result.rows.map((r: any) => ({
+    x: r.x,
+    y: r.y,
+    type: r.type,
+    seed: r.seed,
+    discoveredBy: r.discovered_by,
+    discoveredAt: r.discovered_at,
+    metadata: r.metadata ?? {},
+    resources: r.resources,
+  }));
+}
+
+export async function addDiscoveriesBatch(
+  playerId: string, coords: { x: number; y: number }[]
+): Promise<void> {
+  if (coords.length === 0) return;
+  const xs = coords.map(c => c.x);
+  const ys = coords.map(c => c.y);
+  await query(
+    `INSERT INTO discoveries (player_id, sector_x, sector_y)
+     SELECT $1, unnest($2::int[]), unnest($3::int[])
+     ON CONFLICT DO NOTHING`,
+    [playerId, xs, ys]
+  );
+}

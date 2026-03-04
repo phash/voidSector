@@ -114,8 +114,8 @@ export function DetailPanel() {
 
       {sector ? (
         <>
-          <div>TYPE ──── <span
-            style={{ color: sectorColor, cursor: 'pointer', textDecoration: 'underline dotted' }}
+          <div>TYPE ──── <button
+            style={{ background: 'none', border: 'none', color: sectorColor, cursor: 'pointer', textDecoration: 'underline dotted', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }}
             onClick={() => setDetailView({
               type: isHome ? 'home_base' : sector.type,
               data: {
@@ -130,7 +130,7 @@ export function DetailPanel() {
                 stationVariant: sector.metadata?.stationVariant as string | undefined,
               },
             })}
-          >{sector.type.toUpperCase()}</span></div>
+          >{sector.type.toUpperCase()}</button></div>
           {sector.resources && (
             <>
               <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>RESOURCES</div>
@@ -247,13 +247,13 @@ export function DetailPanel() {
             <>
               <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>SHIPS IN SECTOR</div>
               {playersHere.map((p) => (
-                <div
+                <button
                   key={p.sessionId}
-                  style={{ cursor: 'pointer', textDecoration: 'underline dotted', color: 'var(--color-primary)' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline dotted', color: 'var(--color-primary)', fontFamily: 'inherit', fontSize: 'inherit', padding: 0, display: 'block' }}
                   onClick={() => setDetailView({ type: 'ship', data: { name: p.username } })}
                 >
                   {p.username}
-                </div>
+                </button>
               ))}
             </>
           )}
