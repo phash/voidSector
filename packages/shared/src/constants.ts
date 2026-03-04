@@ -331,6 +331,13 @@ export const SPAWN_CLUSTER_RADIUS = 300; // wider clusters so group members have
 export const SPAWN_CLUSTER_MAX_PLAYERS = 5;
 export const ANCIENT_STATION_CHANCE = 0.15; // 15% of stations are ancient/special variants
 
+// Nebula zone system — seed-based blob generation
+export const NEBULA_ZONE_GRID = 300;    // coarse grid spacing (sectors) for nebula zone centers
+export const NEBULA_ZONE_CHANCE = 0.08; // 8% of grid cells become nebula centers
+export const NEBULA_ZONE_MIN_RADIUS = 15; // minimum zone radius in sectors
+export const NEBULA_ZONE_MAX_RADIUS = 50; // maximum zone radius in sectors
+export const NEBULA_SAFE_ORIGIN = 200;  // no nebula zones within this many sectors of origin
+
 // Hull-specific pixel patterns for radar rendering (3x3 grids, 1 = filled pixel)
 export const HULL_RADAR_PATTERNS: Record<HullType, number[][]> = {
   scout:      [[0,1,0], [1,1,1], [0,1,0]],    // cross — nimble interceptor

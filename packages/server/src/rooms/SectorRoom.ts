@@ -836,6 +836,18 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
 
+    // Nebula zones block hyperjump in both directions
+    const sourceSector = await getSector(pos.x, pos.y);
+    if (sourceSector?.type === 'nebula') {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump from nebula sector' });
+      return;
+    }
+    const targetSectorNebula = await getSector(targetX, targetY);
+    if (targetSectorNebula?.type === 'nebula') {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump into nebula sector' });
+      return;
+    }
+
     // Get ship stats
     const ship = this.getShipForClient(client.sessionId);
 
@@ -1117,6 +1129,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     const radius = scanResult.radius + bonuses.scanRadiusBonus;
     const sectorX = this.state.sector.x;
     const sectorY = this.state.sector.y;
+
+    // Nebula interference: area scan is blocked inside nebula sectors
+    const currentSectorData = await getSector(sectorX, sectorY);
+    if (currentSectorData?.type === 'nebula') {
+      client.send('error', { code: 'SCAN_FAIL', message: 'Nebula interference: only local scan available in nebula sectors' });
+      return;
+    }
+
     const sectors: SectorData[] = [];
 
     for (let dx = -radius; dx <= radius; dx++) {
