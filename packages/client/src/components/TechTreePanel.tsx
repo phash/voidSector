@@ -13,6 +13,7 @@ const CATEGORY_LABELS: Record<ModuleCategory, string> = {
   shield: 'SCHILD',
   defense: 'VERTEIDIGUNG',
   special: 'SPEZIAL',
+  mining: 'BERGBAU',
 };
 
 const CATEGORY_ORDER: ModuleCategory[] = [

@@ -44,6 +44,7 @@ const SLOT_LABELS: Record<ModuleCategory, string> = {
   weapon: 'WPN',
   shield: 'SHD',
   defense: 'DEF',
+  mining: 'MNG',
 };
 
 const CATEGORY_DISPLAY: Record<ModuleCategory, string> = {
@@ -55,6 +56,7 @@ const CATEGORY_DISPLAY: Record<ModuleCategory, string> = {
   weapon: 'WEAPON',
   shield: 'SHIELD',
   defense: 'DEFENSE',
+  mining: 'MINING',
 };
 
 function getSlotLabel(modules: ShipModule[], slotIndex: number): { label: string; filled: boolean } {

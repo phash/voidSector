@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { StatusBar, SectorInfo } from '../components/HUD';
 import { mockStoreState } from '../test/mockStore';
