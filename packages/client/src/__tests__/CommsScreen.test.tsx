@@ -22,18 +22,18 @@ describe('CommsScreen', () => {
       chatMessages: [
         {
           id: '1', senderId: 's1', senderName: 'PhashX',
-          channel: 'local' as const, content: 'Hello sector!',
+          channel: 'quadrant' as const, content: 'Hello sector!',
           sentAt: Date.now(), delayed: false,
         },
       ],
-      chatChannel: 'local' as const,
+      chatChannel: 'quadrant' as const,
       alerts: {},
     });
   });
 
   it('displays channel indicator from store', () => {
     render(<CommsScreen />);
-    expect(screen.getByText('LOCAL')).toBeInTheDocument();
+    expect(screen.getByText('QUADRANT')).toBeInTheDocument();
     expect(screen.getByText(/CHANNEL:/)).toBeInTheDocument();
   });
 
@@ -48,20 +48,20 @@ describe('CommsScreen', () => {
     const input = screen.getByPlaceholderText('Type message...');
     await userEvent.type(input, 'Test message');
     await userEvent.click(screen.getByText('[SEND]'));
-    expect(network.sendChat).toHaveBeenCalledWith('local', 'Test message');
+    expect(network.sendChat).toHaveBeenCalledWith('quadrant', 'Test message');
   });
 
   it('sends message on Enter key', async () => {
     render(<CommsScreen />);
     const input = screen.getByPlaceholderText('Type message...');
     await userEvent.type(input, 'Test{Enter}');
-    expect(network.sendChat).toHaveBeenCalledWith('local', 'Test');
+    expect(network.sendChat).toHaveBeenCalledWith('quadrant', 'Test');
   });
 
   it('shows NO MESSAGES when channel is empty', () => {
     mockStoreState({
       chatMessages: [],
-      chatChannel: 'local' as const,
+      chatChannel: 'quadrant' as const,
       alerts: {},
     });
     render(<CommsScreen />);
@@ -85,12 +85,12 @@ describe('CommsScreen', () => {
   it('does not display duplicate messages when same id is added twice', () => {
     const msg = {
       id: 'dup-1', senderId: 's1', senderName: 'PhashX',
-      channel: 'local' as const, content: 'Duplicate test',
+      channel: 'quadrant' as const, content: 'Duplicate test',
       sentAt: Date.now(), delayed: false,
     };
     mockStoreState({
       chatMessages: [msg],
-      chatChannel: 'local' as const,
+      chatChannel: 'quadrant' as const,
       alerts: {},
     });
 
@@ -107,7 +107,7 @@ describe('CommsScreen', () => {
       chatMessages: [
         {
           id: '1', senderId: 's1', senderName: 'PhashX',
-          channel: 'local' as const, content: 'Local message',
+          channel: 'quadrant' as const, content: 'Quadrant message',
           sentAt: Date.now(), delayed: false,
         },
         {
@@ -121,7 +121,7 @@ describe('CommsScreen', () => {
     });
     render(<CommsScreen />);
     expect(screen.getByText(/Direct message/)).toBeInTheDocument();
-    expect(screen.queryByText(/Local message/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Quadrant message/)).not.toBeInTheDocument();
   });
 
   // --- New channel tests ---
@@ -156,7 +156,7 @@ describe('CommsScreen', () => {
         },
         {
           id: '2', senderId: 's2', senderName: 'Player2',
-          channel: 'local' as const, content: 'Local hello',
+          channel: 'quadrant' as const, content: 'Quadrant hello',
           sentAt: Date.now(), delayed: false,
         },
       ],
@@ -165,7 +165,7 @@ describe('CommsScreen', () => {
     });
     render(<CommsScreen />);
     expect(screen.getByText(/Sector hello/)).toBeInTheDocument();
-    expect(screen.queryByText(/Local hello/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Quadrant hello/)).not.toBeInTheDocument();
   });
 
   it('filters quadrant channel messages', () => {
@@ -218,7 +218,7 @@ describe('CommsScreen', () => {
     it('does not show CONTACTS button on other channels', () => {
       mockStoreState({
         chatMessages: [],
-        chatChannel: 'local' as const,
+        chatChannel: 'quadrant' as const,
         alerts: {},
       });
       render(<CommsScreen />);

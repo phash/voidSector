@@ -82,7 +82,7 @@ describe('CockpitLayout', () => {
     mockStoreState({
       activeProgram: 'NAV-COM',
       alerts: {},
-      chatChannel: 'local',
+      chatChannel: 'quadrant',
       monitorPower: {},
       zoomLevel: 2,
       panOffset: { x: 0, y: 0 },
@@ -154,7 +154,7 @@ describe('CockpitLayout', () => {
     mockStoreState({
       activeProgram: 'CARGO',
       alerts: {},
-      chatChannel: 'local',
+      chatChannel: 'quadrant',
       monitorPower: {},
       zoomLevel: 2,
       panOffset: { x: 0, y: 0 },
@@ -170,7 +170,7 @@ describe('CockpitLayout', () => {
     mockStoreState({
       activeProgram: 'UNKNOWN',
       alerts: {},
-      chatChannel: 'local',
+      chatChannel: 'quadrant',
       monitorPower: {},
       zoomLevel: 2,
       panOffset: { x: 0, y: 0 },
@@ -185,7 +185,7 @@ describe('CockpitLayout', () => {
     mockStoreState({
       activeProgram: 'NAV-COM',
       alerts: {},
-      chatChannel: 'local',
+      chatChannel: 'quadrant',
       monitorPower: { DETAIL: false },
       zoomLevel: 2,
       panOffset: { x: 0, y: 0 },
@@ -202,7 +202,7 @@ describe('CockpitLayout', () => {
     render(<CockpitLayout renderScreen={mockRenderScreen} />);
     expect(screen.getByTestId('hw-channels')).toBeInTheDocument();
     expect(screen.getByTestId('hw-channel-direct')).toBeInTheDocument();
-    expect(screen.getByTestId('hw-channel-local')).toBeInTheDocument();
+    expect(screen.getByTestId('hw-channel-quadrant')).toBeInTheDocument();
   });
 
   it('renders D-Pad in section 2 hardware strip', () => {
@@ -230,7 +230,7 @@ describe('CockpitLayout', () => {
       mockStoreState({
         activeProgram: program,
         alerts: {},
-        chatChannel: 'local',
+        chatChannel: 'quadrant',
         monitorPower: {},
         zoomLevel: 2,
         panOffset: { x: 0, y: 0 },

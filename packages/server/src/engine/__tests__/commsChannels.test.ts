@@ -180,9 +180,9 @@ describe('channel routing logic', () => {
 });
 
 describe('ChatChannel type expansion', () => {
-  it('supports all five channel types', () => {
-    const channels: ChatChannel[] = ['direct', 'faction', 'local', 'sector', 'quadrant'];
-    expect(channels).toHaveLength(5);
+  it('supports all four channel types', () => {
+    const channels: ChatChannel[] = ['direct', 'faction', 'sector', 'quadrant'];
+    expect(channels).toHaveLength(4);
     // Each channel should be a valid string
     for (const ch of channels) {
       expect(typeof ch).toBe('string');
@@ -190,7 +190,7 @@ describe('ChatChannel type expansion', () => {
   });
 
   it('VALID_CHANNELS includes sector and quadrant', () => {
-    const VALID_CHANNELS = ['local', 'direct', 'faction', 'sector', 'quadrant'] as const;
+    const VALID_CHANNELS = ['direct', 'faction', 'sector', 'quadrant'] as const;
     expect(VALID_CHANNELS).toContain('sector');
     expect(VALID_CHANNELS).toContain('quadrant');
   });

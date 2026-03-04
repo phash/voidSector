@@ -126,7 +126,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
         </div>
         <div className="cockpit-hw-strip">
           <HardwareControls
-            channels={['direct', 'faction', 'local', 'sector', 'quadrant']}
+            channels={['quadrant', 'sector', 'faction', 'direct']}
             activeChannel={chatChannel}
             onChannel={(ch) => setChatChannel(ch as ChatChannel)}
           />

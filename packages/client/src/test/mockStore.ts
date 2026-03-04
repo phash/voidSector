@@ -161,7 +161,7 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     jumpPending: false,
     activeProgram: 'NAV-COM',
     setActiveProgram: vi.fn(),
-    chatChannel: 'local' as const,
+    chatChannel: 'quadrant' as const,
     setChatChannel: vi.fn(),
     zoomLevel: 2,
     setZoomLevel: vi.fn(),

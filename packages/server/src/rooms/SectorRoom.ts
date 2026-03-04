@@ -2533,17 +2533,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
     const auth = client.auth as AuthPayload;
 
-    // Nebula interference blocks local chat
-    if (data.channel === 'local') {
-      const sectorData = await getSector(this._px(client.sessionId), this._py(client.sessionId));
-      if (sectorData?.type === 'nebula') {
-        client.send('error', { code: 'NEBULA_INTERFERENCE', message: 'Nebel-Interferenz: Kommunikation gestört' });
-        return;
-      }
-    }
-
     // Validate channel
-    const VALID_CHANNELS = ['local', 'direct', 'faction', 'sector', 'quadrant'] as const;
+    const VALID_CHANNELS = ['direct', 'faction', 'sector', 'quadrant'] as const;
     if (!VALID_CHANNELS.includes(data.channel as any)) {
       client.send('error', { code: 'INVALID_CHANNEL', message: 'Unknown channel' });
       return;
@@ -2595,11 +2586,14 @@ export class SectorRoom extends Room<SectorRoomState> {
       delayed: false,
     };
 
-    if (data.channel === 'local') {
-      this.broadcast('chatMessage', chatMsg);
-    } else if (data.channel === 'sector') {
-      // Broadcast to all players in the same sector (this room)
-      this.broadcast('chatMessage', chatMsg);
+    if (data.channel === 'sector') {
+      const senderX = this._px(client.sessionId);
+      const senderY = this._py(client.sessionId);
+      for (const c of this.clients) {
+        if (this._px(c.sessionId) === senderX && this._py(c.sessionId) === senderY) {
+          c.send('chatMessage', chatMsg);
+        }
+      }
       // Also emit to commsBus for other rooms at the same coordinates
       const { qx, qy } = sectorToQuadrant(this._px(client.sessionId), this._py(client.sessionId));
       commsBus.broadcast({
