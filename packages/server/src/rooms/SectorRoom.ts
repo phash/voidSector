@@ -14,6 +14,8 @@ import { checkScanEvent } from '../engine/scanEvents.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
+import { calculateAutopilotPath, calculateAutopilotCosts, getNextSegment, STEP_INTERVAL_MS, STEP_INTERVAL_MIN_MS } from '../engine/autopilot.js';
+import { hashCoords, isInBlackHoleCluster } from '../engine/worldgen.js';
 import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../engine/combatV2.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellToStation, calculateCurrentStock, getStationLevel, calculatePrice } from '../engine/npcStationEngine.js';
@@ -25,8 +27,8 @@ import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState, getHyperdriveState, setHyperdriveState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate, saveAutopilotRoute, getActiveAutopilotRoute, updateAutopilotStep, pauseAutopilotRoute, cancelAutopilotRoute, completeAutopilotRoute } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch, WORLD_SEED, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
 import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, HyperdriveState, ResearchState, ProcessedItemType } from '@void-sector/shared';
 import type { FirstContactEvent } from '@void-sector/shared';
 import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../engine/quadrantEngine.js';
@@ -361,7 +363,13 @@ export class SectorRoom extends Room<SectorRoomState> {
       await this.handleEmergencyWarp(client);
     });
     this.onMessage('cancelAutopilot', async (client) => {
-      this.handleCancelAutopilot(client);
+      await this.handleCancelAutopilot(client);
+    });
+    this.onMessage('startAutopilot', async (client, data) => {
+      await this.handleStartAutopilot(client, data);
+    });
+    this.onMessage('getAutopilotStatus', async (client) => {
+      await this.handleGetAutopilotStatus(client);
     });
 
     // Phase 7: Ship designer
@@ -1044,6 +1052,23 @@ export class SectorRoom extends Room<SectorRoomState> {
           lastTick: hdState.lastTick,
         });
       }
+
+      // Resume active autopilot route if one exists
+      try {
+        const activeRoute = await getActiveAutopilotRoute(auth.userId);
+        if (activeRoute && activeRoute.currentStep < activeRoute.totalSteps) {
+          client.send('autopilotStart', {
+            targetX: activeRoute.targetX,
+            targetY: activeRoute.targetY,
+            totalSteps: activeRoute.totalSteps,
+            currentStep: activeRoute.currentStep,
+            resumed: true,
+          });
+          this.startAutopilotTimer(client, auth, activeRoute.path, activeRoute.currentStep, activeRoute.useHyperjump, stats);
+        }
+      } catch (err) {
+        console.error('[JOIN] Autopilot resume error:', err);
+      }
     } catch (err) {
       console.error('[JOIN] Error:', err);
       client.send('error', { code: 'JOIN_FAILED', message: 'Failed to join sector' });
@@ -1083,11 +1108,17 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
-    // Clean up autopilot timer
+    // Clean up autopilot timer and pause DB route for resume on rejoin
     const autopilotTimer = this.autopilotTimers.get(client.sessionId);
     if (autopilotTimer) {
       clearInterval(autopilotTimer);
       this.autopilotTimers.delete(client.sessionId);
+      try {
+        const auth = client.auth as AuthPayload;
+        await pauseAutopilotRoute(auth.userId);
+      } catch {
+        // Don't block leave on autopilot pause failure
+      }
     }
 
     this.clientShips.delete(client.sessionId);
@@ -1509,13 +1540,352 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
   }
 
-  private handleCancelAutopilot(client: Client) {
+  private async handleCancelAutopilot(client: Client) {
     const timer = this.autopilotTimers.get(client.sessionId);
     if (timer) {
       clearInterval(timer);
       this.autopilotTimers.delete(client.sessionId);
-      client.send('autopilotComplete', { x: -1, y: -1 });
     }
+    const auth = client.auth as AuthPayload;
+    try {
+      await cancelAutopilotRoute(auth.userId);
+    } catch {
+      // best-effort DB cancellation
+    }
+    client.send('autopilotCancelled', { success: true });
+    client.send('autopilotComplete', { x: -1, y: -1 });
+  }
+
+  /**
+   * Start a new autopilot route: validate target, compute path + cost preview,
+   * store in DB, and begin stepping.
+   */
+  private async handleStartAutopilot(
+    client: Client,
+    data: { targetX: number; targetY: number; useHyperjump?: boolean },
+  ) {
+    if (!this.checkRate(client.sessionId, 'startAutopilot', 1000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
+    const { targetX, targetY } = data;
+    const useHyperjump = data.useHyperjump ?? false;
+
+    if (!isInt(targetX) || !isInt(targetY) ||
+        Math.abs(targetX) > MAX_COORD || Math.abs(targetY) > MAX_COORD) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
+      return;
+    }
+
+    const auth = client.auth as AuthPayload;
+
+    // Reject if already in autopilot
+    if (this.autopilotTimers.has(client.sessionId)) {
+      client.send('error', { code: 'AUTOPILOT_FAIL', message: 'Autopilot already active' });
+      return;
+    }
+
+    // Reject guests
+    if (rejectGuest(client, 'Autopilot')) return;
+
+    // Validate target is discovered
+    const discovered = await isRouteDiscovered(auth.userId, targetX, targetY);
+    if (!discovered) {
+      client.send('error', { code: 'AUTOPILOT_FAIL', message: 'Target sector not discovered' });
+      return;
+    }
+
+    // Check mining state
+    const mining = await getMiningState(auth.userId);
+    if (mining?.active) {
+      client.send('error', { code: 'AUTOPILOT_FAIL', message: 'Cannot start autopilot while mining' });
+      return;
+    }
+
+    // Get current position
+    const pos = await getPlayerPosition(auth.userId);
+    if (!pos) {
+      client.send('error', { code: 'AUTOPILOT_FAIL', message: 'Position unknown' });
+      return;
+    }
+
+    if (pos.x === targetX && pos.y === targetY) {
+      client.send('error', { code: 'AUTOPILOT_FAIL', message: 'Already at target' });
+      return;
+    }
+
+    const ship = this.getShipForClient(client.sessionId);
+
+    // Calculate path with black-hole avoidance
+    const isBlackHole = (x: number, y: number): boolean => {
+      if (isInBlackHoleCluster(x, y)) return true;
+      const dist = Math.max(Math.abs(x), Math.abs(y));
+      if (dist > BLACK_HOLE_MIN_DISTANCE) {
+        const seed = hashCoords(x, y, WORLD_SEED);
+        const bhRoll = (seed >>> 0) / 0x100000000;
+        if (bhRoll < BLACK_HOLE_SPAWN_CHANCE) return true;
+      }
+      return false;
+    };
+
+    const path = calculateAutopilotPath(
+      { x: pos.x, y: pos.y },
+      { x: targetX, y: targetY },
+      isBlackHole,
+    );
+
+    if (path.length === 0) {
+      client.send('error', { code: 'AUTOPILOT_FAIL', message: 'No path found' });
+      return;
+    }
+
+    // Calculate cost preview
+    const costs = calculateAutopilotCosts(path, ship, useHyperjump);
+
+    // Validate AP
+    const ap = await getAPState(auth.userId);
+    const updated = calculateCurrentAP(ap);
+    if (updated.current < ship.apCostJump) {
+      client.send('error', { code: 'AUTOPILOT_FAIL', message: 'Not enough AP to start' });
+      return;
+    }
+
+    // Validate fuel if using hyperjump
+    if (useHyperjump) {
+      const fuel = await getFuelState(auth.userId);
+      if (fuel === null || fuel < 1) {
+        client.send('error', { code: 'AUTOPILOT_FAIL', message: 'Not enough fuel for hyperjump' });
+        return;
+      }
+    }
+
+    // Save route to DB
+    const now = Date.now();
+    await saveAutopilotRoute(auth.userId, targetX, targetY, useHyperjump, path, now);
+
+    // Send preview + start
+    client.send('autopilotStart', {
+      targetX,
+      targetY,
+      totalSteps: path.length,
+      currentStep: 0,
+      costs,
+      resumed: false,
+    });
+
+    // Begin stepping
+    this.startAutopilotTimer(client, auth, path, 0, useHyperjump, ship);
+  }
+
+  /**
+   * Return current autopilot progress.
+   */
+  private async handleGetAutopilotStatus(client: Client) {
+    const auth = client.auth as AuthPayload;
+    const route = await getActiveAutopilotRoute(auth.userId);
+    if (!route) {
+      client.send('autopilotStatus', { active: false });
+      return;
+    }
+    const ship = this.getShipForClient(client.sessionId);
+    const remaining = route.totalSteps - route.currentStep;
+    const costs = calculateAutopilotCosts(
+      route.path.slice(route.currentStep),
+      ship,
+      route.useHyperjump,
+    );
+    client.send('autopilotStatus', {
+      active: true,
+      targetX: route.targetX,
+      targetY: route.targetY,
+      currentStep: route.currentStep,
+      totalSteps: route.totalSteps,
+      remaining,
+      eta: costs.estimatedTime,
+      useHyperjump: route.useHyperjump,
+    });
+  }
+
+  /**
+   * Start (or resume) the autopilot interval timer for a client.
+   * Each tick applies one segment of movement, deducts resources
+   * incrementally, and persists progress to DB.
+   */
+  private startAutopilotTimer(
+    client: Client,
+    auth: AuthPayload,
+    path: Array<{ x: number; y: number }>,
+    startStep: number,
+    useHyperjump: boolean,
+    ship: ShipStats,
+  ) {
+    let currentStep = startStep;
+    const speed = ship.engineSpeed;
+    const tickMs = useHyperjump && speed > 0
+      ? Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / speed))
+      : STEP_INTERVAL_MS;
+
+    const timer = setInterval(async () => {
+      try {
+        // Check if route is complete
+        if (currentStep >= path.length) {
+          clearInterval(timer);
+          this.autopilotTimers.delete(client.sessionId);
+          const target = path[path.length - 1];
+          await completeAutopilotRoute(auth.userId);
+          await savePlayerPosition(auth.userId, target.x, target.y);
+          await addDiscovery(auth.userId, target.x, target.y);
+
+          // Load or generate target sector
+          let targetSector = await getSector(target.x, target.y);
+          if (!targetSector) {
+            targetSector = generateSector(target.x, target.y, auth.userId);
+            await saveSector(targetSector);
+          }
+
+          client.send('autopilotComplete', { x: target.x, y: target.y, sector: targetSector });
+
+          // Quadrant first-contact detection
+          await this.checkFirstContact(client, auth, target.x, target.y);
+
+          // Auto-refuel at station if FEATURE_HYPERDRIVE_V2 is enabled
+          if (FEATURE_HYPERDRIVE_V2 &&
+              (targetSector.contents?.includes('station') || targetSector.sectorType === 'station')) {
+            await this.tryAutoRefuel(client, auth, ship);
+          }
+          return;
+        }
+
+        // Get current AP + fuel
+        const ap = await getAPState(auth.userId);
+        const updatedAP = calculateCurrentAP(ap);
+
+        // Determine the next segment
+        let hyperdriveCharge = 0;
+        if (useHyperjump && FEATURE_HYPERDRIVE_V2) {
+          const hdState = await getHyperdriveState(auth.userId);
+          if (hdState) {
+            hyperdriveCharge = calculateCurrentCharge(hdState);
+          }
+        } else if (useHyperjump) {
+          // V1: treat charge as remaining fuel
+          const fuel = await getFuelState(auth.userId);
+          hyperdriveCharge = fuel ?? 0;
+        }
+
+        const segment = getNextSegment(
+          path,
+          currentStep,
+          useHyperjump ? hyperdriveCharge : 0,
+          useHyperjump ? speed : 0,
+        );
+
+        if (segment.moves.length === 0) {
+          // Path exhausted or no charge — should not happen if currentStep < path.length
+          // Pause the route
+          clearInterval(timer);
+          this.autopilotTimers.delete(client.sessionId);
+          await pauseAutopilotRoute(auth.userId);
+          client.send('autopilotPaused', { reason: 'no_charge', currentStep });
+          return;
+        }
+
+        // Calculate resource costs for this segment
+        const apCost = segment.isHyperjump
+          ? Math.max(1, Math.ceil(segment.moves.length * ship.apCostJump * 0.5))
+          : segment.moves.length * ship.apCostJump;
+
+        if (updatedAP.current < apCost) {
+          // Not enough AP — pause
+          clearInterval(timer);
+          this.autopilotTimers.delete(client.sessionId);
+          await pauseAutopilotRoute(auth.userId);
+          client.send('autopilotPaused', { reason: 'ap_exhausted', currentStep });
+          return;
+        }
+
+        let fuelCost = 0;
+        if (segment.isHyperjump) {
+          const hullType = this.clientHullTypes.get(client.sessionId) ?? 'scout';
+          const hullMul = HULL_FUEL_MULTIPLIER[hullType] ?? 1.0;
+          fuelCost = Math.max(1, Math.ceil(
+            HYPERJUMP_FUEL_PER_SECTOR * segment.moves.length * hullMul * (1 - ship.hyperdriveFuelEfficiency),
+          ));
+
+          const currentFuel = await getFuelState(auth.userId);
+          if (currentFuel === null || currentFuel < fuelCost) {
+            clearInterval(timer);
+            this.autopilotTimers.delete(client.sessionId);
+            await pauseAutopilotRoute(auth.userId);
+            client.send('autopilotPaused', { reason: 'fuel_exhausted', currentStep });
+            return;
+          }
+        }
+
+        // Deduct AP
+        const newAP = { ...updatedAP, current: updatedAP.current - apCost };
+        await saveAPState(auth.userId, newAP);
+        client.send('apUpdate', newAP);
+
+        // Deduct fuel
+        if (fuelCost > 0) {
+          const currentFuel = await getFuelState(auth.userId) ?? 0;
+          const newFuel = Math.max(0, currentFuel - fuelCost);
+          await saveFuelState(auth.userId, newFuel);
+          client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
+        }
+
+        // Spend hyperdrive charge if V2
+        if (segment.isHyperjump && FEATURE_HYPERDRIVE_V2) {
+          const hdState = await getHyperdriveState(auth.userId);
+          if (hdState) {
+            const now = Date.now();
+            const newHd = spendCharge(hdState, segment.moves.length, now);
+            if (newHd) {
+              await setHyperdriveState(auth.userId, newHd);
+              client.send('hyperdriveUpdate', {
+                charge: newHd.charge,
+                maxCharge: newHd.maxCharge,
+                regenPerSecond: newHd.regenPerSecond,
+                lastTick: newHd.lastTick,
+              });
+            }
+          }
+        }
+
+        // Apply movement for each move in the segment
+        const lastMove = segment.moves[segment.moves.length - 1];
+        for (const move of segment.moves) {
+          await savePlayerPosition(auth.userId, move.x, move.y);
+          await addDiscovery(auth.userId, move.x, move.y);
+        }
+        currentStep += segment.moves.length;
+
+        // Persist step progress to DB
+        await updateAutopilotStep(auth.userId, currentStep, Date.now());
+
+        // Send progress update to client
+        client.send('autopilotUpdate', {
+          x: lastMove.x,
+          y: lastMove.y,
+          remaining: path.length - currentStep,
+          currentStep,
+          totalSteps: path.length,
+        });
+      } catch (err) {
+        console.error('[AUTOPILOT] Step error:', err);
+        clearInterval(timer);
+        this.autopilotTimers.delete(client.sessionId);
+        try {
+          await pauseAutopilotRoute(auth.userId);
+        } catch {
+          // best-effort
+        }
+        client.send('autopilotPaused', { reason: 'error', currentStep });
+      }
+    }, tickMs);
+
+    this.autopilotTimers.set(client.sessionId, timer);
   }
 
   /**
