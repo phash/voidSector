@@ -89,6 +89,11 @@ export interface FuelState {
   max: number;
 }
 
+export interface AutoRefuelConfig {
+  enabled: boolean;
+  maxPricePerUnit: number;
+}
+
 export interface APState {
   current: number;
   max: number;

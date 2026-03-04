@@ -942,13 +942,31 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 export const SECTOR_MAX_FEATURES = 3;
 
 // Emergency Warp (Notruf)
+/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
 export const EMERGENCY_WARP_FREE_RADIUS = 200;      // free within 200 Manhattan distance of home base
+/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
 export const EMERGENCY_WARP_CREDIT_PER_SECTOR = 5;   // credits per sector beyond free radius
+/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
 export const EMERGENCY_WARP_FUEL_GRANT = 10;          // fuel granted after emergency warp
+export const FEATURE_EMERGENCY_WARP = false;
 
 // Hyperjump Navigation
 export const HYPERJUMP_AP_DISCOUNT = 0.5;   // 50% AP cost for known routes (legacy)
 export const HYPERJUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate sectors
+
+// --- Fuel Rework (#94): only hyperjumps cost fuel ---
+export const HYPERJUMP_FUEL_PER_SECTOR = 1;   // base fuel cost per sector of hyperjump distance
+export const SCAN_FUEL_COST = 0;               // scans are free (#94)
+export const MINE_FUEL_COST = 0;               // mining is free (#94)
+
+// Hull-specific fuel multiplier for hyperjumps
+export const HULL_FUEL_MULTIPLIER: Record<HullType, number> = {
+  scout: 0.8,
+  freighter: 1.2,
+  cruiser: 1.0,
+  explorer: 0.9,
+  battleship: 1.5,
+};
 
 // Normal jump constants
 export const JUMP_NORMAL_AP_COST = 1;
