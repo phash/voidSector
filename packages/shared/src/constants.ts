@@ -1073,6 +1073,20 @@ export const SIDEBAR_MONITORS = RIGHT_SIDEBAR_MONITORS;
 export const FUEL_COST_PER_UNIT = 2;
 export const FREE_REFUEL_MAX_SHIPS = 3;
 
+// Per-station reputation fuel price modifiers (more granular than faction REP_PRICE_MODIFIERS)
+// Takes a reputation score (-100..+100) and returns a price multiplier.
+export function getFuelRepPriceModifier(reputation: number): number {
+  if (reputation < -50) return 2.0;   // hostile
+  if (reputation < -10) return 1.3;   // unfriendly
+  if (reputation <= 25) return 1.0;   // neutral
+  if (reputation <= 50) return 0.85;  // friendly
+  return 0.65;                         // honored
+}
+
+// Station reputation gains
+export const STATION_REP_VISIT = 1;
+export const STATION_REP_TRADE = 2;
+
 // Faction Upgrade Tree
 export const FACTION_UPGRADE_TIERS: Record<number, {
   optionA: { name: string; effect: string; };

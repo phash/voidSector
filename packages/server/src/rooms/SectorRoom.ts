@@ -27,8 +27,8 @@ import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState, getHyperdriveState, setHyperdriveState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate, saveAutopilotRoute, getActiveAutopilotRoute, updateAutopilotStep, pauseAutopilotRoute, cancelAutopilotRoute, completeAutopilotRoute } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HULL_PRICES, STATION_SHIPYARD_LEVEL_THRESHOLD, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch, WORLD_SEED, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate, saveAutopilotRoute, getActiveAutopilotRoute, updateAutopilotStep, pauseAutopilotRoute, cancelAutopilotRoute, completeAutopilotRoute, getPlayerStationRep, updatePlayerStationRep } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, getFuelRepPriceModifier, STATION_REP_VISIT, STATION_REP_TRADE, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HULL_PRICES, STATION_SHIPYARD_LEVEL_THRESHOLD, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch, WORLD_SEED, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
 import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, HyperdriveState, ResearchState, ProcessedItemType } from '@void-sector/shared';
 import type { FirstContactEvent } from '@void-sector/shared';
 import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../engine/quadrantEngine.js';
@@ -1042,9 +1042,10 @@ export class SectorRoom extends Room<SectorRoomState> {
         activeResearch: activeResearch,
       });
 
-      // Record NPC station visit for XP
+      // Record NPC station visit for XP and per-station reputation
       if (this.state.sector.sectorType === 'station') {
         recordVisit(this.state.sector.x, this.state.sector.y).catch(() => {});
+        updatePlayerStationRep(auth.userId, this.state.sector.x, this.state.sector.y, STATION_REP_VISIT).catch(() => {});
 
         // Auto-refuel at station when FEATURE_HYPERDRIVE_V2 is enabled
         if (FEATURE_HYPERDRIVE_V2) {
@@ -1905,6 +1906,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   /**
    * Auto-refuel at a station: top up fuel to max using credits.
    * Only runs when FEATURE_HYPERDRIVE_V2 is enabled.
+   * Applies the better of station-rep vs faction-rep price modifier.
    */
   private async tryAutoRefuel(client: Client, auth: AuthPayload, ship: ShipStats): Promise<void> {
     try {
@@ -1912,8 +1914,22 @@ export class SectorRoom extends Room<SectorRoomState> {
       const tankSpace = ship.fuelMax - currentFuel;
       if (tankSpace <= 0) return;
 
+      // Calculate price modifier using station/faction rep
+      const sx = this.state.sector.x;
+      const sy = this.state.sector.y;
+      let modifier = 1.0;
+      const sectorFaction = getStationFaction(sx, sy);
+      if (sectorFaction) {
+        const factionRep = await getPlayerReputation(auth.userId, sectorFaction);
+        const tier = getReputationTier(factionRep);
+        modifier = REP_PRICE_MODIFIERS[tier] ?? 1.0;
+      }
+      const stationRep = await getPlayerStationRep(auth.userId, sx, sy);
+      const stationModifier = getFuelRepPriceModifier(stationRep);
+      modifier = Math.min(modifier, stationModifier);
+
       const credits = await getPlayerCredits(auth.userId);
-      const cost = tankSpace * FUEL_COST_PER_UNIT;
+      const cost = Math.ceil(tankSpace * FUEL_COST_PER_UNIT * modifier);
       if (credits < cost) return; // silently skip if can't afford full refuel
 
       await deductCredits(auth.userId, cost);
@@ -1960,15 +1976,27 @@ export class SectorRoom extends Room<SectorRoomState> {
     const playerShips = await getPlayerShips(auth.userId);
     const isFreeRefuel = hasBaseHere && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
 
-    // Apply reputation price modifier at stations
+    // Apply reputation price modifier at stations — use the better of station-rep vs faction-rep
     let priceModifier = 1.0;
     if (isStation && !isFreeRefuel) {
-      const sectorFaction = getStationFaction(this.state.sector.x, this.state.sector.y);
+      const sx = this.state.sector.x;
+      const sy = this.state.sector.y;
+
+      // Faction reputation modifier
+      const sectorFaction = getStationFaction(sx, sy);
+      let factionModifier = 1.0;
       if (sectorFaction) {
-        const playerRep = await getPlayerReputation(auth.userId, sectorFaction);
-        const tier = getReputationTier(playerRep);
-        priceModifier = REP_PRICE_MODIFIERS[tier] ?? 1.0;
+        const factionRep = await getPlayerReputation(auth.userId, sectorFaction);
+        const tier = getReputationTier(factionRep);
+        factionModifier = REP_PRICE_MODIFIERS[tier] ?? 1.0;
       }
+
+      // Per-station reputation modifier (more granular)
+      const stationRep = await getPlayerStationRep(auth.userId, sx, sy);
+      const stationModifier = getFuelRepPriceModifier(stationRep);
+
+      // Use the better (lower) modifier
+      priceModifier = Math.min(factionModifier, stationModifier);
     }
 
     const cost = isFreeRefuel ? 0 : Math.ceil(amount * FUEL_COST_PER_UNIT * priceModifier);
@@ -2531,6 +2559,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
         const newCredits = await addCredits(auth.userId, sellCheck.price);
         await recordTrade(sx, sy, amount);
+        updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
         const updatedCargo = await getPlayerCargo(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
@@ -2570,6 +2599,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
         const newCredits = await getPlayerCredits(auth.userId);
         await recordTrade(sx, sy, amount);
+        updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
         const updatedCargo = await getPlayerCargo(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });

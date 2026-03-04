@@ -1738,3 +1738,25 @@ export async function completeAutopilotRoute(userId: string): Promise<void> {
     [userId]
   );
 }
+
+// --- Per-Station Reputation ---
+
+export async function getPlayerStationRep(playerId: string, stationX: number, stationY: number): Promise<number> {
+  const { rows } = await query<{ reputation: number }>(
+    `SELECT reputation FROM player_station_reputation WHERE player_id = $1 AND station_x = $2 AND station_y = $3`,
+    [playerId, stationX, stationY]
+  );
+  return rows[0]?.reputation ?? 0;
+}
+
+export async function updatePlayerStationRep(playerId: string, stationX: number, stationY: number, delta: number): Promise<number> {
+  const { rows } = await query<{ reputation: number }>(
+    `INSERT INTO player_station_reputation (player_id, station_x, station_y, reputation)
+     VALUES ($1, $2, $3, GREATEST(-100, LEAST(100, $4)))
+     ON CONFLICT (player_id, station_x, station_y)
+     DO UPDATE SET reputation = GREATEST(-100, LEAST(100, player_station_reputation.reputation + $4))
+     RETURNING reputation`,
+    [playerId, stationX, stationY, delta]
+  );
+  return rows[0].reputation;
+}
