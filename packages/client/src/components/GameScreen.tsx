@@ -14,6 +14,7 @@ import { TradeScreen } from './TradeScreen';
 import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
+import { CombatV2Dialog } from './CombatV2Dialog';
 import { BattleResultDialog } from './BattleResultDialog';
 import { DetailViewOverlay } from './DetailViewOverlay';
 import { ModulePanel } from './ModulePanel';
@@ -476,6 +477,7 @@ export function GameScreen() {
         ))}
       </div>
       <BattleDialog />
+      <CombatV2Dialog />
       <BattleResultDialog />
       <HelpOverlay />
     </div>
