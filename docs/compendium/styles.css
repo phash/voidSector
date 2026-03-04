@@ -1,0 +1,551 @@
+/* ============================================================
+   voidSector UI Compendium — CRT Terminal Stylesheet
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-primary: #FFB000;
+  --color-dim: rgba(255, 176, 0, 0.6);
+  --color-bg: #050505;
+  --color-danger: #FF3333;
+  --color-success: #00FF88;
+  --color-info: #00CCFF;
+  --color-bezel: #1a1a1a;
+  --font-mono: 'Share Tech Mono', 'Courier New', Courier, monospace;
+  font-size: 16px;
+}
+
+html, body {
+  height: 100%;
+  background: #000;
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  line-height: 1.7;
+}
+
+/* --- CRT Wrapper --- */
+.crt-page {
+  position: relative;
+  min-height: 100vh;
+  background: var(--color-bg);
+  overflow-x: hidden;
+}
+
+/* Scanlines overlay */
+.crt-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background:
+    linear-gradient(
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.25) 50%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.03)
+    );
+  background-size: 100% 3px, 3px 100%;
+}
+
+/* Vignette overlay */
+.crt-page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 70%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+}
+
+/* Flicker animation */
+@keyframes crt-flicker {
+  0%   { opacity: 0.97; }
+  10%  { opacity: 0.94; }
+  20%  { opacity: 0.99; }
+  30%  { opacity: 1.00; }
+  40%  { opacity: 0.96; }
+  50%  { opacity: 0.95; }
+  60%  { opacity: 1.00; }
+  70%  { opacity: 0.98; }
+  80%  { opacity: 0.97; }
+  90%  { opacity: 0.93; }
+  100% { opacity: 0.97; }
+}
+
+.crt-page {
+  animation: crt-flicker 0.15s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-page { animation: none; }
+  .crt-page::before { display: none; }
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a0a0a; border-left: 1px solid rgba(255, 176, 0, 0.1); }
+::-webkit-scrollbar-thumb { background: rgba(255, 176, 0, 0.3); border: 1px solid rgba(255, 176, 0, 0.15); }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 176, 0, 0.5); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255, 176, 0, 0.3) #0a0a0a; }
+
+/* --- Layout --- */
+.compendium-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+/* --- Header --- */
+.compendium-header {
+  text-align: center;
+  padding: 40px 0 32px;
+  border-bottom: 1px solid rgba(255, 176, 0, 0.2);
+  margin-bottom: 32px;
+}
+
+.compendium-header h1 {
+  font-size: 1.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-shadow: 0 0 12px rgba(255, 176, 0, 0.4);
+  margin-bottom: 8px;
+  font-weight: normal;
+}
+
+.compendium-header .subtitle {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: var(--color-dim);
+}
+
+.compendium-header .version {
+  font-size: 0.65rem;
+  color: rgba(255, 176, 0, 0.3);
+  margin-top: 4px;
+  letter-spacing: 0.15em;
+}
+
+/* --- Table of Contents --- */
+.toc {
+  border: 1px solid rgba(255, 176, 0, 0.2);
+  padding: 16px 20px;
+  margin-bottom: 32px;
+}
+
+.toc-title {
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: var(--color-primary);
+  margin-bottom: 12px;
+}
+
+.toc a {
+  display: block;
+  color: var(--color-dim);
+  text-decoration: none;
+  font-size: 0.8rem;
+  padding: 3px 0;
+  letter-spacing: 0.05em;
+  transition: color 0.1s;
+}
+
+.toc a:hover {
+  color: var(--color-primary);
+  text-shadow: 0 0 6px rgba(255, 176, 0, 0.3);
+}
+
+.toc a::before {
+  content: '> ';
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.toc a:hover::before {
+  opacity: 1;
+}
+
+/* --- Section Headers --- */
+h2 {
+  font-size: 1.1rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-shadow: 0 0 8px rgba(255, 176, 0, 0.3);
+  margin: 40px 0 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 176, 0, 0.15);
+  font-weight: normal;
+}
+
+h3 {
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 24px 0 8px;
+  font-weight: normal;
+}
+
+h4 {
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: var(--color-dim);
+  margin: 16px 0 6px;
+  font-weight: normal;
+}
+
+/* --- Paragraphs --- */
+p {
+  font-size: 0.8rem;
+  color: var(--color-dim);
+  margin-bottom: 10px;
+  line-height: 1.8;
+}
+
+/* --- Code blocks --- */
+code {
+  background: rgba(255, 176, 0, 0.08);
+  border: 1px solid rgba(255, 176, 0, 0.15);
+  padding: 1px 6px;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+}
+
+pre {
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 176, 0, 0.15);
+  padding: 12px 16px;
+  overflow-x: auto;
+  margin: 8px 0 16px;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  color: var(--color-dim);
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* --- Component cards --- */
+.component-card {
+  border: 1px solid rgba(255, 176, 0, 0.15);
+  padding: 16px;
+  margin-bottom: 16px;
+  background: rgba(255, 176, 0, 0.02);
+}
+
+.component-card .card-header {
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.component-card .card-file {
+  font-size: 0.65rem;
+  color: rgba(255, 176, 0, 0.3);
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.component-card .card-props {
+  font-size: 0.7rem;
+  color: var(--color-dim);
+  margin-bottom: 6px;
+}
+
+.component-card .card-desc {
+  font-size: 0.75rem;
+  color: var(--color-dim);
+  line-height: 1.7;
+}
+
+/* --- Monitor table --- */
+.monitor-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 20px;
+  font-size: 0.75rem;
+}
+
+.monitor-table th {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 176, 0, 0.3);
+  color: var(--color-primary);
+  letter-spacing: 0.1em;
+  font-weight: normal;
+}
+
+.monitor-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 176, 0, 0.08);
+  color: var(--color-dim);
+  vertical-align: top;
+}
+
+.monitor-table tr:hover td {
+  color: var(--color-primary);
+  background: rgba(255, 176, 0, 0.03);
+}
+
+/* --- Color swatch --- */
+.color-swatch-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 12px 0 20px;
+}
+
+.color-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 176, 0, 0.15);
+  min-width: 140px;
+  flex: 1;
+}
+
+.swatch-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.swatch-name {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--color-dim);
+}
+
+.swatch-hex {
+  font-size: 0.65rem;
+  color: rgba(255, 176, 0, 0.4);
+}
+
+/* --- Effect demo --- */
+.effect-demo {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  background: #050505;
+  border: 1px solid rgba(255, 176, 0, 0.15);
+  margin: 8px 0 16px;
+  overflow: hidden;
+}
+
+.effect-demo .demo-label {
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  font-size: 0.6rem;
+  color: rgba(255, 176, 0, 0.3);
+  z-index: 2;
+}
+
+/* Scanlines demo */
+.demo-scanlines {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.25) 50%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.03)
+    );
+  background-size: 100% 3px, 3px 100%;
+}
+
+/* Glitch bar demo */
+@keyframes demo-glitch-bar {
+  0%,  80% { transform: translateY(-100%); opacity: 0; }
+  85%       { transform: translateY(0%);   opacity: 0.35; filter: hue-rotate(20deg); }
+  92%       { transform: translateY(60%);  opacity: 0.25; }
+  100%      { transform: translateY(110%); opacity: 0; }
+}
+
+.demo-glitch-bar {
+  position: absolute;
+  left: 0; right: 0;
+  height: 3px;
+  z-index: 1;
+  background: linear-gradient(
+    transparent 0%,
+    rgba(255, 200, 60, 0.5) 40%,
+    rgba(255, 220, 80, 0.6) 50%,
+    rgba(255, 200, 60, 0.5) 60%,
+    transparent 100%
+  );
+  animation: demo-glitch-bar 6s linear infinite;
+}
+
+/* Vignette demo */
+.demo-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+/* Noise demo */
+@keyframes demo-noise {
+  0%   { background-position: 0 0; }
+  25%  { background-position: -5% -10%; }
+  50%  { background-position: -15% 5%; }
+  75%  { background-position: 7% -25%; }
+  100% { background-position: 0 0; }
+}
+
+.demo-noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 120px 120px;
+  animation: demo-noise 0.15s steps(1) infinite;
+}
+
+/* Flicker demo */
+@keyframes demo-flicker {
+  0%   { opacity: 0.27; }
+  20%  { opacity: 0.39; }
+  40%  { opacity: 0.26; }
+  60%  { opacity: 0.30; }
+  80%  { opacity: 0.43; }
+  100% { opacity: 0.27; }
+}
+
+.demo-flicker {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 16, 16, 0.1);
+  animation: demo-flicker 0.15s infinite;
+}
+
+/* --- LED demo --- */
+.led-demo-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.led-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.led-label {
+  font-size: 0.7rem;
+  color: var(--color-dim);
+  margin-left: 4px;
+}
+
+/* --- Layout diagram --- */
+.layout-diagram {
+  border: 1px solid rgba(255, 176, 0, 0.2);
+  padding: 16px;
+  font-size: 0.65rem;
+  color: var(--color-dim);
+  white-space: pre;
+  line-height: 1.4;
+  overflow-x: auto;
+  margin: 12px 0 20px;
+  background: #0a0a0a;
+}
+
+/* --- UX Report section --- */
+.ux-report {
+  border: 2px solid var(--color-danger);
+  padding: 20px;
+  margin-top: 40px;
+  background: rgba(255, 51, 51, 0.03);
+}
+
+.ux-report h2 {
+  color: var(--color-danger);
+  text-shadow: 0 0 8px rgba(255, 51, 51, 0.3);
+  border-bottom-color: rgba(255, 51, 51, 0.2);
+}
+
+.ux-report h3 {
+  color: #FF6644;
+}
+
+.ux-finding {
+  border-left: 3px solid rgba(255, 51, 51, 0.4);
+  padding: 8px 12px;
+  margin: 10px 0;
+  background: rgba(255, 51, 51, 0.03);
+}
+
+.ux-finding .severity {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+
+.severity-high { color: #FF3333; }
+.severity-medium { color: #FFB000; }
+.severity-low { color: #00CCFF; }
+
+/* --- Footer --- */
+.compendium-footer {
+  text-align: center;
+  padding: 24px 0;
+  margin-top: 40px;
+  border-top: 1px solid rgba(255, 176, 0, 0.1);
+  font-size: 0.65rem;
+  color: rgba(255, 176, 0, 0.2);
+  letter-spacing: 0.15em;
+}
+
+/* --- Responsive --- */
+@media (max-width: 640px) {
+  .compendium-container {
+    padding: 16px 12px 60px;
+  }
+  .color-swatch-row {
+    flex-direction: column;
+  }
+  .monitor-table {
+    font-size: 0.65rem;
+  }
+}

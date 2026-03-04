@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>voidSector Spielkompendium &mdash; Gameplay Reference</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="crt-page">
+<div class="compendium-container">
+
+  <!-- ============================================================ -->
+  <!-- HEADER                                                        -->
+  <!-- ============================================================ -->
+  <header class="compendium-header">
+    <h1>voidSector Spielkompendium</h1>
+    <div class="subtitle">GAMEPLAY REFERENCE &mdash; BALANCING &amp; SPIELDESIGN</div>
+    <div class="version">Stand: 2026-03-04 &mdash; master (alle Issues geschlossen) &mdash; 1237-Zeilen constants.ts, 1126 Tests (612 Server, 323 Client, 191 Shared)</div>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- TABLE OF CONTENTS                                             -->
+  <!-- ============================================================ -->
+  <nav class="toc">
+    <div class="toc-title">// INHALTSVERZEICHNIS</div>
+    <a href="#s01">01. Universum &amp; Weltgenerierung</a>
+    <a href="#s02">02. Quadranten-System</a>
+    <a href="#s03">03. Sektortypen</a>
+    <a href="#s04">04. Ressourcen</a>
+    <a href="#s05">05. Aktionspunkte (AP)</a>
+    <a href="#s06">06. Raumschiffe</a>
+    <a href="#s07">07. Schiffsmodule</a>
+    <a href="#s08">08. Tech Tree &amp; Forschungssystem</a>
+    <a href="#s09">09. Combat v2 &mdash; Taktisches Kampfsystem</a>
+    <a href="#s10">10. Station Defense &mdash; Basisverteidigung</a>
+    <a href="#s11">11. Strukturen (Basisbau)</a>
+    <a href="#s12">12. Factory &amp; Produktion</a>
+    <a href="#s13">13. Kontor (Einkaufskontor)</a>
+    <a href="#s14">14. NPC-Fraktionen &amp; Reputation</a>
+    <a href="#s15">15. NPC-Stationslevel</a>
+    <a href="#s16">16. Data Slates</a>
+    <a href="#s17">17. Kampfsystem (Legacy/Auto-Battle)</a>
+    <a href="#s18">18. Quests</a>
+    <a href="#s19">19. Treibstoffsystem</a>
+    <a href="#s20">20. XP &amp; Level-System</a>
+    <a href="#s21">21. Kommunikation &amp; Comms-Reichweite</a>
+    <a href="#s22">22. JumpGate-System</a>
+    <a href="#s23">23. Rettungsmissionen</a>
+    <a href="#s24">24. Handelsrouten</a>
+    <a href="#s25">25. Bookmarks</a>
+    <a href="#s26">26. Admin-Konsole</a>
+    <a href="#s27">27. Monitorsystem</a>
+    <a href="#s28">28. Notwarp (Emergency Warp)</a>
+    <a href="#s29">29. Balancing-Notizen &amp; TODOs</a>
+    <a href="#s30">30. UX-Report: Bekannte Inkonsistenzen</a>
+  </nav>
+
+  <!-- ============================================================ -->
+  <!-- 01. UNIVERSUM & WELTGENERIERUNG                               -->
+  <!-- ============================================================ -->
+  <section id="s01">
+    <h2>01. Universum &amp; Weltgenerierung</h2>
+
+    <h3>Koordinatensystem</h3>
+    <p>Das Universum ist ein unendliches 2D-Gitter. Koordinaten werden zweistellig dargestellt:</p>
+    <pre><code>[QUAD:INNER]  &rarr;  z.B. [03E8:0042]</code></pre>
+    <p>
+      <strong>QUAD</strong> (hex): <code>Math.floor(x / 10_000)</code> &mdash; Quadrant im Universum<br>
+      <strong>INNER</strong> (dez): <code>x % 10_000</code> &mdash; Lokale Position im Quadranten<br>
+      Spieler spawnen in <strong>Clustern</strong> ab Distanz <code>10_000_000</code> vom Ursprung.<br>
+      Cluster-Radius: 300 Sektoren, max. 5 Spieler pro Cluster.
+    </p>
+
+    <h3>Weltseed</h3>
+    <pre><code>WORLD_SEED = 77</code></pre>
+    <p>Alle Sektoren werden deterministisch aus <code>hashCoords(x, y, WORLD_SEED)</code> generiert. Gleicher Seed = gleiche Karte.</p>
+
+    <h3>Sektor-Dichte (45 % non-leer)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Sektortyp</th><th>Gewicht</th><th>Anteil</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>empty</td><td>0.55</td><td>~55 %</td></tr>
+        <tr><td>asteroid_field</td><td>0.15</td><td>~15 %</td></tr>
+        <tr><td>nebula</td><td>0.10</td><td>~10 %</td></tr>
+        <tr><td>anomaly</td><td>0.08</td><td>~8 %</td></tr>
+        <tr><td>pirate</td><td>0.07</td><td>~7 %</td></tr>
+        <tr><td>station</td><td>0.05</td><td>~5 %</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Umgebungssystem (Environment + Content)</h3>
+    <p>Sektoren bestehen seit dem Multi-Content-Update aus zwei Schichten:</p>
+    <p>
+      <strong>Environment</strong> (<code>SectorEnvironment</code>): <code>empty</code>, <code>nebula</code>, <code>black_hole</code><br>
+      <strong>Content</strong> (<code>SectorContent</code>): <code>asteroid_field</code>, <code>station</code>, <code>anomaly</code>, <code>pirate_zone</code>, <code>home_base</code>, <code>player_base</code>
+    </p>
+    <p>Ein Sektor kann bis zu <strong>3 Contents</strong> gleichzeitig enthalten (<code>SECTOR_MAX_FEATURES = 3</code>).</p>
+
+    <h3>Umgebungsmodifikatoren</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Umgebung</th><th>Effekt</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>nebula</td><td>Scanner-Malus -1, Piraten -30 %</td></tr>
+        <tr><td>empty</td><td>Treibstoffkosten -20 %</td></tr>
+        <tr><td>black_hole</td><td>Spawn-Chance 0.5 %, min. Distanz 50</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Nebel-Zonen</h3>
+    <p>Seed-basierte Blob-Generierung fuer grossflaechige Nebel:</p>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Grid-Abstand</td><td>300 Sektoren</td></tr>
+        <tr><td>Entstehungschance</td><td>8 % pro Grid-Zelle</td></tr>
+        <tr><td>Min. Radius</td><td>15 Sektoren</td></tr>
+        <tr><td>Max. Radius</td><td>50 Sektoren</td></tr>
+        <tr><td>Sicherheitszone</td><td>200 Sektoren um Ursprung</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 02. QUADRANTEN-SYSTEM                                         -->
+  <!-- ============================================================ -->
+  <section id="s02">
+    <h2>02. Quadranten-System</h2>
+    <p>Jeder Quadrant umfasst <strong>10.000 x 10.000</strong> Sektoren (<code>QUADRANT_SIZE = 10_000</code>).</p>
+
+    <h3>Erstkontakt-Benennung</h3>
+    <p>Betritt ein Spieler einen neuen Quadranten, wird ein <strong>First-Contact-Event</strong> ausgeloest:</p>
+    <p>
+      Automatischer Silben-basierter Name wird generiert (2-4 Silben + Suffix).<br>
+      Entdecker hat ein <strong>60-Sekunden-Zeitfenster</strong> zur Benennung.<br>
+      Namensregeln: 3-24 Zeichen, nur Buchstaben/Zahlen/Leerzeichen/Bindestriche/Apostrophe.<br>
+      Doppelte Namen sind nicht erlaubt.
+    </p>
+
+    <h3>Quadranten-Konfiguration</h3>
+    <p>Jeder Quadrant erhaelt deterministisch variierende Parameter:</p>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Bereich</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>resourceFactor</td><td>0.5 &ndash; 1.5</td><td>Ressourcen-Multiplikator</td></tr>
+        <tr><td>stationDensity</td><td>0.5 &ndash; 1.5</td><td>Stationsdichte</td></tr>
+        <tr><td>pirateDensity</td><td>0.5 &ndash; 1.5</td><td>Piratendichte</td></tr>
+        <tr><td>nebulaThreshold</td><td>0.5 &ndash; 1.5</td><td>Nebel-Schwelle</td></tr>
+        <tr><td>emptyRatio</td><td>0.5 &ndash; 1.5</td><td>Leerraum-Anteil</td></tr>
+      </tbody>
+    </table>
+
+    <h3>QUAD-MAP Monitor</h3>
+    <p>Dedizierter Monitor zur Visualisierung der Quadranten-Karte mit Canvas-Rendering.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 03. SEKTORTYPEN                                               -->
+  <!-- ============================================================ -->
+  <section id="s03">
+    <h2>03. Sektortypen</h2>
+
+    <h3><code>empty</code> &mdash; Leerer Sektor</h3>
+    <p>
+      <strong>Farbe:</strong> Amber <code>#FFB000</code><br>
+      <strong>Ressourcen:</strong> Ore 5, Gas 5, Crystal 5 (sehr gering)<br>
+      <strong>Symbol:</strong> <code>&middot;</code><br>
+      <strong>Besonderheiten:</strong> Keine
+    </p>
+
+    <h3><code>asteroid_field</code> &mdash; Asteroidenfeld</h3>
+    <p>
+      <strong>Farbe:</strong> Orange <code>#FF8C00</code><br>
+      <strong>Ressourcen:</strong> Ore 20, Gas 2, Crystal 3<br>
+      <strong>Symbol:</strong> <code>&#9619;</code><br>
+      <strong>Besonderheiten:</strong> Primaere Erz-Quelle. Scan-Ereignisse moeglich.
+    </p>
+
+    <h3><code>nebula</code> &mdash; Nebel</h3>
+    <p>
+      <strong>Farbe:</strong> Blau <code>#00BFFF</code><br>
+      <strong>Ressourcen:</strong> Ore 2, Gas 20, Crystal 3<br>
+      <strong>Symbol:</strong> <code>&#9618;</code><br>
+      <strong>Besonderheiten:</strong> Primaere Gas-Quelle. Scanner-Malus -1.
+    </p>
+    <p>
+      Nebel-Sektoren verbergen Inhalte bei Area-Scans (Fog). Hyperjump in/aus Nebel blockiert (Interferenz).
+    </p>
+    <p>
+      Visuelle Darstellung: Lila Wolken-Overlay mit animierten Partikel-Wisps auf dem Radar.
+    </p>
+
+    <h3><code>station</code> &mdash; Raumstation</h3>
+    <p>
+      <strong>Farbe:</strong> Gruen <code>#00FF88</code><br>
+      <strong>Ressourcen:</strong> Keine (Handelsposten)<br>
+      <strong>Symbol:</strong> <code>&#9651;</code><br>
+      <strong>Besonderheiten:</strong> NPC-Handel, Reparatur, Schiffs-Upgrades, Ueberlebende abliefern.
+      Station-Namen sind deterministisch aus Koordinaten generiert.
+      15 % der Stationen sind Ancient/Spezial-Varianten.
+    </p>
+
+    <h3><code>anomaly</code> &mdash; Anomalie</h3>
+    <p>
+      <strong>Farbe:</strong> Magenta <code>#FF00FF</code><br>
+      <strong>Ressourcen:</strong> Ore 3, Gas 3, Crystal 20<br>
+      <strong>Symbol:</strong> <code>&#9671;</code><br>
+      <strong>Besonderheiten:</strong> Primaere Kristall-Quelle. Hohe XP-Boni. Seltene Scan-Ereignisse.
+    </p>
+
+    <h3><code>pirate</code> &mdash; Piraten-Sektor</h3>
+    <p>
+      <strong>Farbe:</strong> Rot <code>#FF3333</code><br>
+      <strong>Ressourcen:</strong> Ore 8, Gas 3, Crystal 8<br>
+      <strong>Symbol:</strong> <code>&#9760;</code><br>
+      <strong>Besonderheiten:</strong> Automatischer Kampf beim Betreten. Piraten-Level skaliert mit Distanz vom Ursprung.
+    </p>
+
+    <h3><code>home_base</code> &mdash; Heimatbasis (Spezial)</h3>
+    <p>
+      <strong>Farbe:</strong> Weiss <code>#FFFFFF</code><br>
+      <strong>Symbol:</strong> <code>&#8962;</code><br>
+      <strong>Besonderheiten:</strong> Einmaliger Sektor pro Spieler. Gratis-Betankung (bis 3 Schiffe), Storage, Construction.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 04. RESSOURCEN                                                -->
+  <!-- ============================================================ -->
+  <section id="s04">
+    <h2>04. Ressourcen</h2>
+
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Ressource</th><th>Symbol</th><th>Primaerquelle</th><th>NPC-Basispreis</th><th>Mining-Rate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Ore</td><td>&#9935;</td><td>asteroid_field</td><td>10 CR/u</td><td>0.1 u/s</td></tr>
+        <tr><td>Gas</td><td>&#9830;</td><td>nebula</td><td>15 CR/u</td><td>0.1 u/s</td></tr>
+        <tr><td>Crystal</td><td>&#9672;</td><td>anomaly</td><td>25 CR/u</td><td>0.1 u/s</td></tr>
+        <tr><td>Artefakt</td><td>&#10043;</td><td>Scan-Events</td><td>&mdash; (nicht handelbar)</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      <strong>NPC-Kauf-Spread:</strong> +20 % (&times;1.2 &mdash; Stationen verkaufen teurer)<br>
+      <strong>NPC-Verkauf-Spread:</strong> -20 % (&times;0.8 &mdash; Stationen kaufen billiger)
+    </p>
+
+    <h3>Artefakt-Dropchancen</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Quelle</th><th>Chance</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>artifact_find Event</td><td>50 %</td></tr>
+        <tr><td>anomaly_reading</td><td>8 %</td></tr>
+        <tr><td>Piraten-Sieg</td><td>3 %</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 05. AKTIONSPUNKTE (AP)                                        -->
+  <!-- ============================================================ -->
+  <section id="s05">
+    <h2>05. Aktionspunkte (AP)</h2>
+
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Max AP</td><td>100</td></tr>
+        <tr><td>Start AP</td><td>100</td></tr>
+        <tr><td>Regen</td><td>0.5 AP/s (1 AP alle 2s)</td></tr>
+        <tr><td>Jump-Kosten</td><td>1&ndash;2 AP/Sprung (hull-abhaengig)</td></tr>
+        <tr><td>Scan</td><td>3 AP (lokal: 1 AP)</td></tr>
+        <tr><td>Area-Scan</td><td>3&ndash;8 AP (scanner-abhaengig)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Scanner-Level &amp; Area-Scan</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Level</th><th>AP-Kosten</th><th>Radius</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>3 AP</td><td>2</td></tr>
+        <tr><td>2</td><td>5 AP</td><td>3</td></tr>
+        <tr><td>3</td><td>8 AP</td><td>5</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 06. RAUMSCHIFFE                                               -->
+  <!-- ============================================================ -->
+  <section id="s06">
+    <h2>06. Raumschiffe</h2>
+
+    <h3>Huelltypen</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr>
+          <th>Hull</th><th>Name</th><th>Groesse</th><th>Slots</th><th>Fuel</th><th>Cargo</th>
+          <th>Jump</th><th>AP/J</th><th>Fuel/J</th><th>HP</th><th>Scanner</th><th>CommRange</th><th>Speed</th><th>Unlock</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>scout</td><td>VOID SCOUT</td><td>small</td><td>3</td><td>80</td><td>3</td><td>5</td><td>1</td><td>1</td><td>50</td><td>1</td><td>50</td><td>2</td><td>Lv.1 / gratis</td></tr>
+        <tr><td>freighter</td><td>VOID FREIGHTER</td><td>medium</td><td>4</td><td>120</td><td>15</td><td>3</td><td>2</td><td>2</td><td>80</td><td>1</td><td>75</td><td>1</td><td>Lv.3 / 500 CR</td></tr>
+        <tr><td>cruiser</td><td>VOID CRUISER</td><td>medium</td><td>4</td><td>150</td><td>8</td><td>4</td><td>1</td><td>1</td><td>100</td><td>1</td><td>100</td><td>2</td><td>Lv.4 / 1000 CR</td></tr>
+        <tr><td>explorer</td><td>VOID EXPLORER</td><td>large</td><td>5</td><td>200</td><td>10</td><td>6</td><td>1</td><td>1</td><td>70</td><td>2</td><td>150</td><td>2</td><td>Lv.5 / 2000 CR</td></tr>
+        <tr><td>battleship</td><td>VOID BATTLESHIP</td><td>large</td><td>5</td><td>180</td><td>5</td><td>2</td><td>2</td><td>3</td><td>150</td><td>1</td><td>75</td><td>1</td><td>Lv.6 / 3000 CR</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Empfehlung Balancing:</strong></p>
+    <p>
+      Scout: Schnell, wenig Cargo &mdash; Erstkontakt-Schiff<br>
+      Freighter: Traege aber maximales Cargo &mdash; Handelsspezialist<br>
+      Cruiser: Ausgeglichen &mdash; Kampf + Exploration<br>
+      Explorer: Maximale Reichweite + Scanfelder &mdash; Kartograf<br>
+      Battleship: Maximale HP, kurze Reichweite &mdash; Tank/Veteran
+    </p>
+
+    <h3>Radar-Pixelicons (3&times;3)</h3>
+    <pre><code>Scout:       Explorer:
+ .&#9608;.           .&#9608;.
+ &#9608;&#9608;&#9608;           .&#9608;.
+ .&#9608;.           &#9608;&#9608;&#9608;
+
+Freighter:   Battleship:
+ &#9608;&#9608;&#9608;           &#9608;&#9608;&#9608;
+ &#9608;&#9608;&#9608;           &#9608;&#9608;&#9608;
+ .&#9608;.           &#9608;.&#9608;
+
+Cruiser:
+ &#9608;.&#9608;
+ &#9608;&#9608;&#9608;
+ .&#9608;.</code></pre>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 07. SCHIFFSMODULE                                             -->
+  <!-- ============================================================ -->
+  <section id="s07">
+    <h2>07. Schiffsmodule</h2>
+
+    <h3>Drive &mdash; Antriebssysteme</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Tier</th><th>Effekte</th><th>Kosten</th><th>Forschung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>drive_mk1</td><td>ION DRIVE MK.I</td><td>1</td><td>+1 Jump, +1 Speed</td><td>100 CR, 10 Ore</td><td>&mdash;</td></tr>
+        <tr><td>drive_mk2</td><td>ION DRIVE MK.II</td><td>2</td><td>+2 Jump, +2 Speed, -0.2 AP/J</td><td>300 CR, 20 Ore, 5 Cry</td><td>200 CR, 15 Ore (5 Min)</td></tr>
+        <tr><td>drive_mk3</td><td>ION DRIVE MK.III</td><td>3</td><td>+3 Jump, +3 Speed, -0.5 AP/J</td><td>800 CR, 40 Ore, 15 Cry</td><td>500 CR, 30 Ore, 10 Cry, 2 Art (12 Min)</td></tr>
+        <tr><td>void_drive</td><td>VOID DRIVE</td><td>3</td><td>+6 Jump, +5 Speed, -3 Fuel/J</td><td>2000 CR, 5 Art</td><td>2000 CR, 10 Art (30 Min) &mdash; Ancients honored</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Cargo &mdash; Lagerkapazitaet</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Tier</th><th>Effekte</th><th>Kosten</th><th>Forschung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>cargo_mk1</td><td>CARGO BAY MK.I</td><td>1</td><td>+5 Cargo</td><td>80 CR</td><td>&mdash;</td></tr>
+        <tr><td>cargo_mk2</td><td>CARGO BAY MK.II</td><td>2</td><td>+12 Cargo, +1 Safe-Slot</td><td>250 CR, 15 Ore</td><td>150 CR, 10 Ore (5 Min)</td></tr>
+        <tr><td>cargo_mk3</td><td>CARGO BAY MK.III</td><td>3</td><td>+25 Cargo, +2 Safe-Slot, +20 Fuel</td><td>600 CR, 30 Ore, 10 Gas</td><td>400 CR, 25 Ore, 1 Art (10 Min)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Scanner &mdash; Scansysteme</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Tier</th><th>Effekte</th><th>Kosten</th><th>Forschung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>scanner_mk1</td><td>SCANNER MK.I</td><td>1</td><td>+1 Scan-Level</td><td>120 CR, 5 Cry</td><td>&mdash;</td></tr>
+        <tr><td>scanner_mk2</td><td>SCANNER MK.II</td><td>2</td><td>+1 Scan-Level, +50 Komm</td><td>350 CR, 15 Cry</td><td>200 CR, 10 Cry (5 Min)</td></tr>
+        <tr><td>scanner_mk3</td><td>SCANNER MK.III</td><td>3</td><td>+2 Scan-Level, +100 Komm, +3% Art-Chance</td><td>900 CR, 30 Cry, 10 Gas</td><td>600 CR, 20 Cry, 3 Art (15 Min)</td></tr>
+        <tr><td>quantum_scanner</td><td>QUANTUM-SCANNER</td><td>3</td><td>+3 Scan-Level, +200 Komm, +5% Art-Chance</td><td>1500 CR, 50 Cry</td><td>1500 CR, 50 Cry, 8 Art (25 Min)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Armor &mdash; Panzerung</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Tier</th><th>Effekte</th><th>Kosten</th><th>Forschung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>armor_mk1</td><td>ARMOR PLATING MK.I</td><td>1</td><td>+25 HP</td><td>100 CR, 15 Ore</td><td>&mdash;</td></tr>
+        <tr><td>armor_mk2</td><td>ARMOR PLATING MK.II</td><td>2</td><td>+50 HP, -10% Schaden</td><td>300 CR, 30 Ore, 10 Cry</td><td>200 CR, 20 Ore (5 Min)</td></tr>
+        <tr><td>armor_mk3</td><td>ARMOR PLATING MK.III</td><td>3</td><td>+100 HP, -25% Schaden</td><td>800 CR, 50 Ore, 25 Cry</td><td>500 CR, 40 Ore, 2 Art (12 Min)</td></tr>
+        <tr><td>nano_armor</td><td>NANO-PANZERUNG</td><td>3</td><td>+150 HP, -35% Schaden</td><td>1800 CR, 50 Ore, 50 Cry</td><td>1800 CR, 50 Ore, 50 Cry, 15 Art (30 Min)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Waffen (Combat v2)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Tier</th><th>Typ</th><th>ATK</th><th>Spezial</th><th>Kosten</th><th>Forschung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>laser_mk1</td><td>PULS-LASER MK.I</td><td>1</td><td>laser</td><td>8</td><td>&mdash;</td><td>150 CR, 10 Cry</td><td>200 CR, 10 Cry (5 Min)</td></tr>
+        <tr><td>laser_mk2</td><td>PULS-LASER MK.II</td><td>2</td><td>laser</td><td>16</td><td>&mdash;</td><td>450 CR, 25 Cry, 10 Gas</td><td>600 CR, 25 Cry, 10 Gas (10 Min)</td></tr>
+        <tr><td>laser_mk3</td><td>PULS-LASER MK.III</td><td>3</td><td>laser</td><td>28</td><td>&mdash;</td><td>1200 CR, 50 Cry, 20 Gas</td><td>1500 CR, 50 Cry, 20 Gas (18 Min)</td></tr>
+        <tr><td>railgun_mk1</td><td>RAIL-KANONE MK.I</td><td>1</td><td>railgun</td><td>12</td><td>30% Panzerbrechend</td><td>300 CR, 30 Ore, 15 Cry</td><td>400 CR, 30 Ore, 15 Cry (8 Min)</td></tr>
+        <tr><td>railgun_mk2</td><td>RAIL-KANONE MK.II</td><td>2</td><td>railgun</td><td>22</td><td>50% Panzerbrechend</td><td>900 CR, 60 Ore, 30 Cry</td><td>1000 CR, 60 Ore, 30 Cry, 1 Art (15 Min)</td></tr>
+        <tr><td>missile_mk1</td><td>RAKETEN-POD MK.I</td><td>1</td><td>missile</td><td>18</td><td>&mdash;</td><td>250 CR, 20 Ore, 5 Cry</td><td>300 CR, 20 Ore, 5 Cry (7 Min)</td></tr>
+        <tr><td>missile_mk2</td><td>RAKETEN-POD MK.II</td><td>2</td><td>missile</td><td>30</td><td>&mdash;</td><td>750 CR, 40 Ore, 15 Cry</td><td>900 CR, 40 Ore, 15 Cry (12 Min)</td></tr>
+        <tr><td>emp_array</td><td>EMP-EMITTER</td><td>2</td><td>emp</td><td>0</td><td>EMP (kein Schaden)</td><td>500 CR, 20 Cry, 20 Gas</td><td>600 CR, 20 Cry, 20 Gas, 2 Art (12 Min)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Schilde (Combat v2)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Tier</th><th>Schild-HP</th><th>Regen/Runde</th><th>Kosten</th><th>Forschung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>shield_mk1</td><td>SCHILD-GEN MK.I</td><td>1</td><td>30</td><td>3</td><td>200 CR, 15 Cry</td><td>300 CR, 15 Cry (7 Min)</td></tr>
+        <tr><td>shield_mk2</td><td>SCHILD-GEN MK.II</td><td>2</td><td>60</td><td>6</td><td>600 CR, 35 Cry, 10 Gas</td><td>700 CR, 35 Cry, 10 Gas, 2 Art (15 Min)</td></tr>
+        <tr><td>shield_mk3</td><td>SCHILD-GEN MK.III</td><td>3</td><td>100</td><td>12</td><td>1500 CR, 70 Cry, 25 Gas</td><td>1500 CR, 70 Cry, 25 Gas (20 Min)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Verteidigungs-Module (Combat v2)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Tier</th><th>Effekt</th><th>Kosten</th><th>Forschung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>point_defense</td><td>PUNKT-VERTEIDIGUNG</td><td>2</td><td>60% Raketen-Abfang</td><td>350 CR, 20 Ore, 10 Cry</td><td>400 CR, 20 Ore, 10 Cry (8 Min)</td></tr>
+        <tr><td>ecm_suite</td><td>ECM-SUITE</td><td>2</td><td>-15% feindl. Genauigkeit</td><td>400 CR, 25 Cry, 15 Gas</td><td>500 CR, 25 Cry, 15 Gas (10 Min)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 08. TECH TREE & FORSCHUNGSSYSTEM                              -->
+  <!-- ============================================================ -->
+  <section id="s08">
+    <h2>08. Tech Tree &amp; Forschungssystem</h2>
+
+    <h3>Grundprinzip</h3>
+    <p>
+      Tier-1-Module sind <strong>frei kaufbar</strong> (kein Research noetig).<br>
+      Tier-2- und Tier-3-Module muessen <strong>erforscht</strong> werden.<br>
+      Forschung benoetigt: Credits, Ressourcen und teils <strong>Artefakte</strong>.<br>
+      Nur <strong>eine</strong> aktive Forschung gleichzeitig moeglich.<br>
+      Forschungstick: 1 Minute (<code>RESEARCH_TICK_MS = 60_000</code>).
+    </p>
+
+    <h3>Voraussetzungen (Prerequisite-Ketten)</h3>
+    <pre><code>drive_mk1 &rarr; drive_mk2 &rarr; drive_mk3 &rarr; void_drive (Ancients honored)
+cargo_mk1 &rarr; cargo_mk2 &rarr; cargo_mk3
+scanner_mk1 &rarr; scanner_mk2 &rarr; scanner_mk3 &rarr; quantum_scanner
+armor_mk1 &rarr; armor_mk2 &rarr; armor_mk3 &rarr; nano_armor
+                        &rarr; point_defense
+              scanner_mk2 &rarr; ecm_suite
+laser_mk1 &rarr; laser_mk2 &rarr; laser_mk3
+           &rarr; railgun_mk1 &rarr; railgun_mk2
+             laser_mk2 &rarr; emp_array
+missile_mk1 &rarr; missile_mk2
+armor_mk1 &rarr; shield_mk1 &rarr; shield_mk2 &rarr; shield_mk3</code></pre>
+
+    <h3>Blueprints</h3>
+    <p>Blueprints koennen ueber Scan-Events (<code>blueprint_find</code>) gefunden werden. Ein Blueprint schaltet ein Modul <strong>ohne Forschung</strong> frei.</p>
+
+    <h3>Research Lab</h3>
+    <p>Gebaeude an der Spielerbasis. Baukosten: 25 AP, 30 Ore, 25 Gas, 30 Crystal.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 09. COMBAT V2                                                 -->
+  <!-- ============================================================ -->
+  <section id="s09">
+    <h2>09. Combat v2 &mdash; Taktisches Kampfsystem</h2>
+    <p>Feature-Flag: <code>FEATURE_COMBAT_V2 = true</code> (standardmaessig aktiv)</p>
+
+    <h3>Grundmechanik</h3>
+    <p>
+      <strong>5 Runden</strong> pro Kampf (<code>COMBAT_V2_MAX_ROUNDS = 5</code>).<br>
+      Jede Runde: Spieler waehlt <strong>Taktik</strong> + <strong>Spezial-Aktion</strong>.<br>
+      Schadenswurf: &times;0.85 bis &times;1.15 Zufallsfaktor.<br>
+      Schilde absorbieren Schaden vor HP.<br>
+      Schildregeneration pro Runde.
+    </p>
+
+    <h3>Taktiken</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Taktik</th><th>Schadens-Mod</th><th>Verteidigungs-Mod</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>assault</td><td>&times;1.30</td><td>&times;0.80</td></tr>
+        <tr><td>balanced</td><td>&times;1.00</td><td>&times;1.00</td></tr>
+        <tr><td>defensive</td><td>&times;0.75</td><td>&times;1.35</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Spezial-Aktionen (einmal pro Kampf)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Aktion</th><th>Effekt</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>aim</td><td>+50% Genauigkeit, 35% Chance Waffe fuer 2 Runden zu deaktivieren</td></tr>
+        <tr><td>evade</td><td>50% Chance Schaden komplett zu vermeiden</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Waffen-Mechaniken</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Typ</th><th>Besonderheit</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>laser</td><td>Zuverlaessig, keine Spezialeffekte</td></tr>
+        <tr><td>railgun</td><td>30&ndash;50% Panzerbrechend (ignoriert Schilde)</td></tr>
+        <tr><td>missile</td><td>Hoher Schaden, aber durch Punkt-Verteidigung abfangbar</td></tr>
+        <tr><td>emp</td><td>75% Trefferchance, deaktiviert Waffen fuer 2 Runden</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Kampfergebnis</h3>
+    <p>
+      Nach 5 Runden oder HP = 0:<br>
+      <strong>Sieg:</strong> Loot (Credits, Ressourcen, Artefakte)<br>
+      <strong>Niederlage:</strong> 25&ndash;50% Cargo-Verlust<br>
+      <strong>Auto-Flee:</strong> Nach Runde 5 flieht der Spieler automatisch
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 10. STATION DEFENSE                                           -->
+  <!-- ============================================================ -->
+  <section id="s10">
+    <h2>10. Station Defense &mdash; Basisverteidigung</h2>
+    <p>Spieler-Basen koennen mit Verteidigungsanlagen geschuetzt werden.</p>
+
+    <h3>Verteidigungsstrukturen</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Typ</th><th>Baukosten (Struktur)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>defense_turret</td><td>20 AP, 40 Ore, 10 Gas, 20 Cry</td></tr>
+        <tr><td>station_shield</td><td>20 AP, 30 Ore, 25 Gas, 30 Cry</td></tr>
+        <tr><td>ion_cannon</td><td>25 AP, 60 Ore, 30 Gas, 40 Cry</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Verteidigungsmodule (installiert in Strukturen)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Schaden</th><th>Schild-HP</th><th>Regen</th><th>Spezial</th><th>Kosten</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>defense_turret_mk1</td><td>15</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>500 CR, 50 Ore</td></tr>
+        <tr><td>defense_turret_mk2</td><td>30</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>1500 CR, 100 Ore, 20 Cry</td></tr>
+        <tr><td>defense_turret_mk3</td><td>50</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>4000 CR, 200 Ore, 60 Cry</td></tr>
+        <tr><td>station_shield_mk1</td><td>&mdash;</td><td>150</td><td>10</td><td>&mdash;</td><td>1000 CR, 50 Cry</td></tr>
+        <tr><td>station_shield_mk2</td><td>&mdash;</td><td>350</td><td>25</td><td>&mdash;</td><td>3000 CR, 100 Cry, 30 Gas</td></tr>
+        <tr><td>ion_cannon</td><td>80</td><td>&mdash;</td><td>&mdash;</td><td>1&times;/Kampf, ignoriert Schilde</td><td>8000 CR, 300 Ore, 100 Cry, 50 Gas</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Station-Kampf-Parameter</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Basis-HP</td><td>500</td></tr>
+        <tr><td>Reparatur-Kosten</td><td>5 CR/HP + 1 Ore/HP</td></tr>
+        <tr><td>Max. Runden</td><td>10</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 11. STRUKTUREN (BASISBAU)                                     -->
+  <!-- ============================================================ -->
+  <section id="s11">
+    <h2>11. Strukturen (Basisbau)</h2>
+
+    <h3>Baukosten</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Struktur</th><th>AP</th><th>Ore</th><th>Gas</th><th>Crystal</th><th>Funktion</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>comm_relay</td><td>5 AP</td><td>5</td><td>0</td><td>2</td><td>Kommunikations-Reichweite +500</td></tr>
+        <tr><td>mining_station</td><td>15 AP</td><td>30</td><td>15</td><td>10</td><td>Automatisches Mining am Sektor</td></tr>
+        <tr><td>base</td><td>25 AP</td><td>50</td><td>30</td><td>25</td><td>Heimatbasis-Erweiterung (+1000 Komm)</td></tr>
+        <tr><td>storage</td><td>10 AP</td><td>20</td><td>10</td><td>5</td><td>Storage-Gebaeude (Tier 1&ndash;3)</td></tr>
+        <tr><td>trading_post</td><td>15 AP</td><td>30</td><td>20</td><td>15</td><td>Handelsposten (Tier 1&ndash;3)</td></tr>
+        <tr><td>defense_turret</td><td>20 AP</td><td>40</td><td>10</td><td>20</td><td>Geschuetzturm-Plattform</td></tr>
+        <tr><td>station_shield</td><td>20 AP</td><td>30</td><td>25</td><td>30</td><td>Schild-Generator-Plattform</td></tr>
+        <tr><td>ion_cannon</td><td>25 AP</td><td>60</td><td>30</td><td>40</td><td>Ionenkanone-Plattform</td></tr>
+        <tr><td>factory</td><td>20 AP</td><td>40</td><td>20</td><td>15</td><td>Produktionsanlage</td></tr>
+        <tr><td>research_lab</td><td>25 AP</td><td>30</td><td>25</td><td>30</td><td>Forschungslabor</td></tr>
+        <tr><td>kontor</td><td>15 AP</td><td>20</td><td>10</td><td>10</td><td>Einkaufskontor (Kaufauftraege)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Progressive Basisbauphasen</h3>
+    <p>
+      Baustellen verarbeiten Ressourcen mit einer Geschwindigkeit von <strong>1 Ressource pro 2 Sekunden</strong> (lazy evaluation).
+      Basis benoetigt <strong>60 Ressourcen</strong> zum Abschluss (Standard).
+    </p>
+
+    <h3>Storage-Tiers</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Tier</th><th>Kapazitaet</th><th>Upgrade-Kosten</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>50</td><td>gratis</td></tr>
+        <tr><td>2</td><td>150</td><td>200 CR</td></tr>
+        <tr><td>3</td><td>500</td><td>1000 CR</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Trading-Post-Tiers</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Tier</th><th>Name</th><th>Upgrade-Kosten</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>NPC TRADE</td><td>gratis</td></tr>
+        <tr><td>2</td><td>MARKTPLATZ</td><td>500 CR</td></tr>
+        <tr><td>3</td><td>AUTO-TRADE</td><td>3000 CR</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 12. FACTORY & PRODUKTION                                      -->
+  <!-- ============================================================ -->
+  <section id="s12">
+    <h2>12. Factory &amp; Produktion</h2>
+    <p>Die Factory verarbeitet Basisressourcen (Ore, Gas, Crystal) aus dem Storage zu verarbeiteten Guetern.</p>
+
+    <h3>Produktionsrezepte</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Rezept-ID</th><th>Output</th><th>Inputs</th><th>Zykluszeit</th><th>Research-Gate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>fuel_cell_basic</td><td>1&times; Fuel Cell</td><td>2 Ore, 3 Gas</td><td>120s</td><td>&mdash;</td></tr>
+        <tr><td>alloy_plate_basic</td><td>1&times; Alloy Plate</td><td>3 Ore, 1 Crystal</td><td>180s</td><td>&mdash;</td></tr>
+        <tr><td>circuit_board_t1</td><td>1&times; Circuit Board</td><td>2 Crystal, 2 Gas</td><td>240s</td><td>circuit_board_t1</td></tr>
+        <tr><td>void_shard_t1</td><td>1&times; Void Shard</td><td>3 Crystal, 2 Ore</td><td>300s</td><td>void_shard_t1</td></tr>
+        <tr><td>bio_extract_t1</td><td>1&times; Bio Extract</td><td>4 Gas, 1 Crystal</td><td>360s</td><td>bio_extract_t1</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Funktionsweise</h3>
+    <p>
+      Factory bezieht Ressourcen automatisch aus dem angeschlossenen <strong>Storage</strong>.<br>
+      Produktion laeuft als <strong>Lazy Evaluation</strong> (kein Tick-Loop).<br>
+      Fertige Produkte lagern im Factory-internen Inventar.<br>
+      Transfer zum Spieler-Cargo manuell.<br>
+      Rezepte mit <code>researchRequired</code> muessen vorher im Research Lab erforscht werden.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 13. KONTOR                                                    -->
+  <!-- ============================================================ -->
+  <section id="s13">
+    <h2>13. Kontor (Einkaufskontor)</h2>
+    <p>Das Kontor ermoeglicht <strong>Kaufauftraege</strong> (Buy Orders) an Spieler-Basen:</p>
+
+    <h3>Mechanik</h3>
+    <p>
+      Spieler erstellt Kaufauftrag: Item-Typ, Menge, Preis/Einheit.<br>
+      <strong>Budget-Reservierung:</strong> Credits werden bei Auftrags-Erstellung abgezogen.<br>
+      Andere Spieler koennen Auftraege mit Cargo befuellen und Credits erhalten.<br>
+      Stornierung: Nicht befuellte Menge wird als Credits zurueckerstattet.<br>
+      Selbstbefuellung ist nicht erlaubt.
+    </p>
+
+    <h3>Auftrags-Felder</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Feld</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>itemType</td><td>Ressource/Item-Typ</td></tr>
+        <tr><td>amountWanted</td><td>Gewuenschte Menge</td></tr>
+        <tr><td>amountFilled</td><td>Bereits gelieferte Menge</td></tr>
+        <tr><td>pricePerUnit</td><td>Preis pro Einheit (in Credits)</td></tr>
+        <tr><td>budgetReserved</td><td>Reserviertes Budget (Menge &times; Preis)</td></tr>
+        <tr><td>expiresAt</td><td>Ablaufdatum (optional, aktuell null)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 14. NPC-FRAKTIONEN & REPUTATION                               -->
+  <!-- ============================================================ -->
+  <section id="s14">
+    <h2>14. NPC-Fraktionen &amp; Reputation</h2>
+
+    <h3>Fraktionen</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Gewicht</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>independent</td><td>30 %</td><td>Freie Haendler, keine Bindung</td></tr>
+        <tr><td>traders</td><td>28 %</td><td>Handelsfokus, kaufen/verkaufen viel</td></tr>
+        <tr><td>scientists</td><td>25 %</td><td>Forschung, Scanner-Upgrades</td></tr>
+        <tr><td>pirates</td><td>16 %</td><td>Feindlich, aber mit Verhandlungsbonus</td></tr>
+        <tr><td>ancients</td><td>1 %</td><td>Extrem selten, Void-Technologie</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Reputations-Tiers</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Tier</th><th>Bereich</th><th>Preismodifikator</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>hostile</td><td>-100 .. -51</td><td>+50 %</td><td>Angriff on sight</td></tr>
+        <tr><td>unfriendly</td><td>-50 .. -1</td><td>+0 %</td><td>Misstrauisch</td></tr>
+        <tr><td>neutral</td><td>0</td><td>+0 %</td><td>Standard</td></tr>
+        <tr><td>friendly</td><td>+1 .. +50</td><td>-10 %</td><td>Rabatt</td></tr>
+        <tr><td>honored</td><td>+51 .. +100</td><td>-25 %</td><td>Max. Rabatt + Upgrade-Zugang</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Fraktions-Upgrades (bei <code>honored</code>)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>ID</th><th>Fraktion</th><th>Effekt</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>cargo_expansion</td><td>traders</td><td>+3 Ladekapazitaet</td></tr>
+        <tr><td>advanced_scanner</td><td>scientists</td><td>+1 Area-Scan-Radius</td></tr>
+        <tr><td>combat_plating</td><td>pirates</td><td>+20 % Kampfbonus</td></tr>
+        <tr><td>void_drive</td><td>ancients</td><td>-1 AP pro Bewegung</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Spieler-Fraktions-Upgrade-Baum (3 Tiers)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Tier</th><th>Option A</th><th>Option B</th><th>Kosten</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>MINING BOOST +15%</td><td>CARGO EXPANSION +3</td><td>500 CR</td></tr>
+        <tr><td>2</td><td>SCAN RANGE +1</td><td>AP REGEN +20%</td><td>1500 CR</td></tr>
+        <tr><td>3</td><td>COMBAT BONUS +15%</td><td>TRADE DISCOUNT -10%</td><td>5000 CR</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 15. NPC-STATIONSLEVEL                                         -->
+  <!-- ============================================================ -->
+  <section id="s15">
+    <h2>15. NPC-Stationslevel</h2>
+    <p>Stationen haben ein dynamisches Level-System basierend auf Spieler-Interaktion.</p>
+
+    <h3>Level-Stufen</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Level</th><th>Name</th><th>Max Stock</th><th>XP-Schwelle</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Outpost</td><td>200</td><td>0</td></tr>
+        <tr><td>2</td><td>Station</td><td>500</td><td>500</td></tr>
+        <tr><td>3</td><td>Hub</td><td>1.200</td><td>2.000</td></tr>
+        <tr><td>4</td><td>Port</td><td>3.000</td><td>6.000</td></tr>
+        <tr><td>5</td><td>Megastation</td><td>8.000</td><td>15.000</td></tr>
+      </tbody>
+    </table>
+
+    <h3>XP-Quellen</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Aktion</th><th>XP</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Besuch (visit)</td><td>+5 XP</td></tr>
+        <tr><td>Handel (pro Einheit)</td><td>+1 XP</td></tr>
+        <tr><td>Quest-Abschluss</td><td>+15 XP</td></tr>
+        <tr><td>XP-Zerfall</td><td>-1 XP/Stunde</td></tr>
+      </tbody>
+    </table>
+    <p>XP faellt nie unter die Schwelle des aktuellen Levels (kein Abstieg).</p>
+
+    <h3>Dynamische Preisgestaltung</h3>
+    <p>
+      Preis haengt vom Fuellstand ab:<br>
+      100% Stock &rarr; 1&times; Basispreis<br>
+      0% Stock &rarr; 2&times; Basispreis<br>
+      Formel: <code>Math.round(basePrice * (2 - stockRatio))</code>
+    </p>
+
+    <h3>Inventar-Dynamik</h3>
+    <p>
+      Restock-Rate: 2% des Max-Stocks pro Stunde<br>
+      Verbrauchsrate: 1.5% des Max-Stocks pro Stunde<br>
+      Start-Fuellstand: 50-80% (deterministisch aus Seed)
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 16. DATA SLATES                                               -->
+  <!-- ============================================================ -->
+  <section id="s16">
+    <h2>16. Data Slates</h2>
+    <p>Data Slates sind handelbare Kartenausschnitte.</p>
+
+    <h3>Slate-Typen</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Typ</th><th>AP-Kosten</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>sector</td><td>1 AP</td><td>Einzelsektor-Kartendaten</td></tr>
+        <tr><td>area</td><td>3 AP</td><td>Flaechenscan (Radius 2-4, abh. von Scanner-Level)</td></tr>
+        <tr><td>custom</td><td>2 AP</td><td>Benutzerdefiniert (Koordinaten, Codes, Notizen)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Area-Scan-Radius (Slate)</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Scanner-Level</th><th>Radius</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>2</td></tr>
+        <tr><td>2</td><td>3</td></tr>
+        <tr><td>3</td><td>4</td></tr>
+      </tbody>
+    </table>
+
+    <h3>NPC-Rueckkauf</h3>
+    <p>Stationen kaufen Slates zurueck: <strong>5 CR pro enthaltenem Sektor</strong> (<code>SLATE_NPC_PRICE_PER_SECTOR</code>).</p>
+
+    <h3>Custom Slates</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>AP-Kosten</td><td>2</td></tr>
+        <tr><td>Credit-Kosten</td><td>5 CR</td></tr>
+        <tr><td>Max. Koordinaten</td><td>20</td></tr>
+        <tr><td>Max. Codes</td><td>10</td></tr>
+        <tr><td>Max. Notizlaenge</td><td>500 Zeichen</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 17. KAMPFSYSTEM (LEGACY)                                      -->
+  <!-- ============================================================ -->
+  <section id="s17">
+    <h2>17. Kampfsystem (Legacy/Auto-Battle)</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Basis-Piraten-HP</td><td>20 + 10&times; Level</td></tr>
+        <tr><td>Basis-Schaden</td><td>5 + 3&times; Level</td></tr>
+        <tr><td>Piraten-Level</td><td>floor(distanz / 50), max 10</td></tr>
+        <tr><td>Fliehen-Chance</td><td>60 % Basis</td></tr>
+        <tr><td>Fliehen-AP-Kosten</td><td>2 AP</td></tr>
+        <tr><td>Verhandeln-Kosten</td><td>10 CR &times; Piraten-Level</td></tr>
+        <tr><td>Cargo-Verlust bei Niederlage</td><td>25&ndash;50 % des Cargos</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 18. QUESTS                                                    -->
+  <!-- ============================================================ -->
+  <section id="s18">
+    <h2>18. Quests</h2>
+
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Max. aktive Quests</td><td>3</td></tr>
+        <tr><td>Quest-Ablauf</td><td>7 Tage</td></tr>
+        <tr><td>Quest-Typen</td><td>fetch, delivery, scan, bounty</td></tr>
+        <tr><td>Quest-Rotation</td><td>taeglich (stationsabhaengig)</td></tr>
+        <tr><td>Scan-Ereignis-Chance</td><td>umgebungsabhaengig (1.2% leer, 30% Nebel, +Quadrantenrand-Bonus)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Scan-Event-Typen</h3>
+    <p>Die Scan-Event-Typen bleiben unveraendert:</p>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Event-Typ</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>pirate_ambush</td><td>Piraten-Ueberfall</td></tr>
+        <tr><td>distress_signal</td><td>Notsignal (Rettungsmission)</td></tr>
+        <tr><td>anomaly_reading</td><td>Anomalie-Messung (+Artefakt)</td></tr>
+        <tr><td>artifact_find</td><td>Artefaktfund (50% Chance)</td></tr>
+        <tr><td>blueprint_find</td><td>Bauplan-Fund</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 19. TREIBSTOFFSYSTEM                                          -->
+  <!-- ============================================================ -->
+  <section id="s19">
+    <h2>19. Treibstoffsystem</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Kosten pro Einheit</td><td>2 CR/u (<code>FUEL_COST_PER_UNIT</code>)</td></tr>
+        <tr><td>Gratis-Betankung</td><td>bis 3 Schiffe an Heimatbasis</td></tr>
+        <tr><td>Reputations-Rabatt</td><td>honored: 25 %, friendly: 10 %</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 20. XP & LEVEL-SYSTEM                                         -->
+  <!-- ============================================================ -->
+  <section id="s20">
+    <h2>20. XP &amp; Level-System</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Level</th><th>XP-Schwelle</th><th>Freischaltungen</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>0</td><td>VOID SCOUT (gratis)</td></tr>
+        <tr><td>2</td><td>100</td><td>&mdash;</td></tr>
+        <tr><td>3</td><td>300</td><td>VOID FREIGHTER (500 CR)</td></tr>
+        <tr><td>4</td><td>600</td><td>VOID CRUISER (1000 CR)</td></tr>
+        <tr><td>5</td><td>1000</td><td>VOID EXPLORER (2000 CR)</td></tr>
+        <tr><td>6</td><td>1500</td><td>VOID BATTLESHIP (3000 CR)</td></tr>
+        <tr><td>7</td><td>2200</td><td>&mdash;</td></tr>
+        <tr><td>8</td><td>3000</td><td>&mdash;</td></tr>
+        <tr><td>9</td><td>4000</td><td>&mdash;</td></tr>
+        <tr><td>10</td><td>5000</td><td>Max Level</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 21. KOMMUNIKATION & COMMS-REICHWEITE                          -->
+  <!-- ============================================================ -->
+  <section id="s21">
+    <h2>21. Kommunikation &amp; Comms-Reichweite</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Schiff</th><th>Basis CommRange</th><th>Mit SCN MK.I</th><th>Mit SCN MK.II</th><th>Mit SCN MK.III</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>scout</td><td>50</td><td>100</td><td>150</td><td>250</td></tr>
+        <tr><td>freighter</td><td>75</td><td>125</td><td>175</td><td>275</td></tr>
+        <tr><td>cruiser</td><td>100</td><td>150</td><td>200</td><td>300</td></tr>
+        <tr><td>explorer</td><td>150</td><td>200</td><td>250</td><td>350</td></tr>
+        <tr><td>battleship</td><td>75</td><td>125</td><td>175</td><td>275</td></tr>
+      </tbody>
+    </table>
+
+    <p>Relay-Reichweiten: <code>comm_relay</code> +500, <code>base</code> +1000.</p>
+
+    <h3>Chat-Kanaele</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Kanal</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>direct</td><td>Direktnachricht an einen Spieler</td></tr>
+        <tr><td>faction</td><td>Fraktions-Chat</td></tr>
+        <tr><td>local</td><td>Lokaler Sektor-Chat</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 22. JUMPGATE-SYSTEM                                           -->
+  <!-- ============================================================ -->
+  <section id="s22">
+    <h2>22. JumpGate-System</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Spawn-Chance</td><td>2% der Sektoren</td></tr>
+        <tr><td>Fuel-Kosten</td><td>1 Einheit</td></tr>
+        <tr><td>Reichweite</td><td>50 &ndash; 10.000 Sektoren</td></tr>
+        <tr><td>Code-Laenge</td><td>8 Zeichen</td></tr>
+        <tr><td>Minigame-Chance</td><td>30%</td></tr>
+        <tr><td>Code-Chance</td><td>50%</td></tr>
+        <tr><td>Frequenz-Schwelle</td><td>90% Uebereinstimmung</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      <strong>Normale Gates:</strong> Bidirektional zwischen zwei Sektoren<br>
+      <strong>Wormholes:</strong> Zufaelliger Zielsektor (unbekannt bis Scan)<br>
+      <strong>Frequenz-Minigame:</strong> Kalibrierung fuer guenstigere Spruenge<br>
+      <strong>HYPERJUMP:</strong> Direktsprung zu entfernten Sektoren
+    </p>
+
+    <h3>Hyperjump-Kosten</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Basis-AP</td><td>5</td></tr>
+        <tr><td>AP pro Speed-Stufe</td><td>-1 AP</td></tr>
+        <tr><td>Minimum-AP</td><td>1</td></tr>
+        <tr><td>Fuel-Distanz-Faktor</td><td>0.1</td></tr>
+        <tr><td>Fuel-Max-Faktor</td><td>2.0</td></tr>
+        <tr><td>Piraten-Fuel-Malus</td><td>+50%</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 23. RETTUNGSMISSIONEN                                         -->
+  <!-- ============================================================ -->
+  <section id="s23">
+    <h2>23. Rettungsmissionen</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Rettungs-AP</td><td>5 AP</td></tr>
+        <tr><td>Ablieferungs-AP</td><td>3 AP</td></tr>
+        <tr><td>Ablauf</td><td>30 Minuten</td></tr>
+        <tr><td>Notsignal-Chance</td><td>8% pro Scan</td></tr>
+        <tr><td>Richtungs-Varianz</td><td>0.3</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Belohnungen</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Quelle</th><th>Credits</th><th>Rep</th><th>XP</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Scan-Event</td><td>50</td><td>10</td><td>25</td></tr>
+        <tr><td>NPC-Quest</td><td>80</td><td>15</td><td>40</td></tr>
+        <tr><td>Komm-Notsignal</td><td>100</td><td>20</td><td>50</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 24. HANDELSROUTEN                                             -->
+  <!-- ============================================================ -->
+  <section id="s24">
+    <h2>24. Handelsrouten</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Max. Routen</td><td>3</td></tr>
+        <tr><td>Min. Zykluszeit</td><td>15 Minuten</td></tr>
+        <tr><td>Max. Zykluszeit</td><td>120 Minuten</td></tr>
+        <tr><td>Fuel pro Distanz</td><td>0.5</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 25. BOOKMARKS                                                 -->
+  <!-- ============================================================ -->
+  <section id="s25">
+    <h2>25. Bookmarks</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Slot</th><th>Name</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td>HOME</td><td>Heimatbasis (automatisch)</td></tr>
+        <tr><td>1&ndash;5</td><td>&mdash;</td><td>Benutzerdefinierte Wegpunkte</td></tr>
+        <tr><td>6</td><td>SHIP</td><td>Aktuelle Schiffsposition (auto)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Farben im Radar:</p>
+    <p>
+      HOME: <code>#33FF33</code><br>
+      Slot 1: <code>#FF6644</code> (rot-orange)<br>
+      Slot 2: <code>#44AAFF</code> (blau)<br>
+      Slot 3: <code>#FFDD22</code> (gelb)<br>
+      Slot 4: <code>#44FF88</code> (gruen)<br>
+      Slot 5: <code>#FF44FF</code> (magenta)
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 26. ADMIN-KONSOLE                                             -->
+  <!-- ============================================================ -->
+  <section id="s26">
+    <h2>26. Admin-Konsole</h2>
+    <p>REST-API unter <code>/admin/</code> mit Bearer-Token-Authentifizierung (<code>ADMIN_TOKEN</code>).</p>
+
+    <h3>Endpunkte</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Methode</th><th>Pfad</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>GET</td><td>/admin/players</td><td>Alle Spieler auflisten</td></tr>
+        <tr><td>GET</td><td>/admin/players/:id</td><td>Einzelnen Spieler abrufen</td></tr>
+        <tr><td>POST</td><td>/admin/quests</td><td>Admin-Quest erstellen (JSON/YAML)</td></tr>
+        <tr><td>GET</td><td>/admin/quests</td><td>Quests auflisten (Filter: status)</td></tr>
+        <tr><td>GET</td><td>/admin/quests/:id</td><td>Einzelne Quest abrufen</td></tr>
+        <tr><td>PATCH</td><td>/admin/quests/:id</td><td>Quest-Status aendern</td></tr>
+        <tr><td>POST</td><td>/admin/messages</td><td>Broadcast-Nachricht senden</td></tr>
+        <tr><td>GET</td><td>/admin/messages</td><td>Nachrichten auflisten (limit)</td></tr>
+        <tr><td>GET</td><td>/admin/messages/:id/replies</td><td>Antworten auf Nachricht abrufen</td></tr>
+        <tr><td>GET</td><td>/admin/events</td><td>Event-Log abrufen (limit)</td></tr>
+        <tr><td>GET</td><td>/admin/stats</td><td>Server-Statistiken</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Admin-Quest-Scopes</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Scope</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>universal</td><td>Fuer alle Spieler sichtbar</td></tr>
+        <tr><td>individual</td><td>Nur fuer bestimmte Spieler (targetPlayers)</td></tr>
+        <tr><td>sector</td><td>An einen bestimmten Sektor gebunden</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Admin-Broadcast</h3>
+    <p>Nachrichten werden ueber einen internen EventBus (<code>adminBus</code>) an alle aktiven SectorRoom-Instanzen gesendet. Unterstuetzte Scopes: <code>universal</code> und <code>individual</code>.</p>
+
+    <h3>Admin-HTML-Konsole</h3>
+    <p>Unter <code>/admin/console.html</code> liegt eine CRT-stilisierte Web-Oberflaeche mit Scanline-Overlay fuer die direkte Admin-Steuerung.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 27. MONITORSYSTEM                                             -->
+  <!-- ============================================================ -->
+  <section id="s27">
+    <h2>27. Monitorsystem</h2>
+    <p>Das UI besteht aus mehreren Monitoren im CRT-Stil:</p>
+
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Monitor-ID</th><th>Beschreibung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>NAV-COM</td><td>Radar + Navigation (Haupt-Monitor)</td></tr>
+        <tr><td>SHIP-SYS</td><td>Schiffssystem-Uebersicht</td></tr>
+        <tr><td>MINING</td><td>Mining-Steuerung</td></tr>
+        <tr><td>CARGO</td><td>Fracht- und Inventarverwaltung</td></tr>
+        <tr><td>COMMS</td><td>Kommunikation</td></tr>
+        <tr><td>BASE-LINK</td><td>Basisbau und -verwaltung</td></tr>
+        <tr><td>LOG</td><td>Aktivitaetsprotokoll</td></tr>
+        <tr><td>TRADE</td><td>Handel (NPC + Marktplatz)</td></tr>
+        <tr><td>FACTION</td><td>Fraktionsverwaltung</td></tr>
+        <tr><td>QUESTS</td><td>Quest-Uebersicht</td></tr>
+        <tr><td>TECH</td><td>Forschungsbaum und Module</td></tr>
+        <tr><td>QUAD-MAP</td><td>Quadranten-Karte</td></tr>
+      </tbody>
+    </table>
+
+    <h3>MAIN_ONLY_MONITORS</h3>
+    <p>
+      Die folgenden Monitore werden bei Klick in der Sidebar automatisch im Hauptbereich geoeffnet:
+      <code>CARGO</code>, <code>TECH</code>, <code>TRADE</code>, <code>FACTION</code>, <code>QUESTS</code>, <code>QUAD-MAP</code>.
+    </p>
+
+    <h3>Scan-Animation</h3>
+    <p>
+      Local- und Area-Scans loesen eine Puls-Animation mit CRT-Effekten und wechselndem Statustext aus.
+    </p>
+
+    <h3>Hintergrund-Highlight</h3>
+    <p>
+      Nicht-leere entdeckte Sektoren zeigen einen farbigen Hintergrund (8% Opazitaet) auf dem Radar.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 28. NOTWARP                                                   -->
+  <!-- ============================================================ -->
+  <section id="s28">
+    <h2>28. Notwarp (Emergency Warp)</h2>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Parameter</th><th>Wert</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Gratis-Radius</td><td>200 Manhattan-Distanz zur Basis</td></tr>
+        <tr><td>Kosten ausserhalb</td><td>5 CR/Sektor</td></tr>
+        <tr><td>Fuel-Bonus nach Warp</td><td>10 Einheiten</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 29. BALANCING-NOTIZEN & TODOS                                 -->
+  <!-- ============================================================ -->
+  <section id="s29">
+    <h2>29. Balancing-Notizen &amp; TODOs</h2>
+
+    <h3>Bekannte Schwaechen</h3>
+    <p>
+      <code>fuelPerJump</code> ist aktuell in HULLS konfiguriert (1-3), aber die SHIP_CLASSES (Legacy) nutzen andere Werte.<br>
+      <code>safeSlots</code> hardcoded auf 1 (wird jetzt durch safeSlotBonus-Module erweitert).<br>
+      Spawn-Chance near origin gering (kein Guard fuer Ursprungsbereich).<br>
+      UNIQUE constraint fuer Strukturen wirft DB-Fehler statt saubere Fehlermeldung.
+    </p>
+
+    <h3>Geplante Erweiterungen</h3>
+    <p>
+      <strong>Mobile (#49):</strong> Touch-freundlichere UI (siehe UX-Report unten)<br>
+      <strong>Gastautorisierung (#31):</strong> 24h-Gastzugaenge ohne Registration
+    </p>
+
+    <h3>Abgeschlossene Erweiterungen</h3>
+    <p>
+      SVG-Artwork (CRT-Amber-Wireframe-Stil) fuer Items (8), Aliens (4) und Stationen (5) integriert.
+    </p>
+
+    <h3>Balancing-Prioritaeten</h3>
+    <p>
+      1. <strong>Treibstoff-Kosten</strong> bei langen Reisen zu niedrig (battleship fuelPerJump=3 aber kurze Reichweite)<br>
+      2. <strong>Kristall ausgewogener</strong> &mdash; Anomalien jetzt 8% statt frueher 0.36%, Armor dennoch teuer<br>
+      3. <strong>Fraktions-Upgrade &ldquo;void_drive&rdquo;</strong> sehr maechtig (-1 AP/Move, +6 Jump, +5 Speed, -3 Fuel/Jump)<br>
+      4. <strong>Piratenlevel</strong> ab Distanz 500 = Level 10 Piraten &rarr; sehr frueh Maximum erreicht<br>
+      5. <strong>NPC-Station-Zerfall</strong> (1 XP/h) unkritisch &mdash; aktive Stationen steigen schnell
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 30. UX-REPORT                                                 -->
+  <!-- ============================================================ -->
+  <section id="s30" class="ux-report">
+    <h2>30. UX-Report: Bekannte Inkonsistenzen</h2>
+
+    <h3>Sprachmischung DE/EN</h3>
+    <div class="ux-finding">
+      <p>Die Codebasis mischt durchgehend deutsche und englische Begriffe:</p>
+      <p>
+        <strong>Modul-Labels in constants.ts:</strong> Deutsche Beschreibungen (<code>Sprungweite</code>, <code>Frachtraum</code>, <code>Schadensreduktion</code>, <code>Panzerbrechend</code>, <code>Komm-Reichweite</code>, <code>Artefakt-Chance</code>) gemischt mit englischen Begriffen (<code>Engine-Speed</code>, <code>Safe-Slot</code>, <code>Fuel-Tank</code>, <code>ATK</code>, <code>EMP</code>, <code>HP</code>).<br>
+        <strong>UI-Strings:</strong> Monitornamen sind englisch (<code>NAV-COM</code>, <code>SHIP-SYS</code>, <code>TRADE</code>), waehrend Ingame-Texte teilweise deutsch sind (<code>MARKTPLATZ</code>, <code>AUTO-TRADE</code>).<br>
+        <strong>Struktur-Namen:</strong> <code>kontor</code> (Deutsch), <code>comm_relay</code> / <code>mining_station</code> / <code>trading_post</code> (Englisch).<br>
+        <strong>NPC-Stationslevel:</strong> Englische Namen (<code>Outpost</code>, <code>Station</code>, <code>Hub</code>, <code>Port</code>, <code>Megastation</code>).<br>
+        <strong>Fraktions-Upgrade-Baum:</strong> Komplett englische Option-Namen (<code>MINING BOOST</code>, <code>CARGO EXPANSION</code>, <code>SCAN RANGE</code>).
+      </p>
+      <p><strong>Empfehlung:</strong> Einheitliche Sprache fuer alle spieler-sichtbaren Texte festlegen. Vorschlag: Englisch als Spielsprache (passt zum Sci-Fi-Setting), Deutsch nur fuer Kompendium/Doku.</p>
+    </div>
+
+    <h3>Bezel-Asymmetrie: Sidebar vs. Main Monitor</h3>
+    <div class="ux-finding">
+      <p>
+        <strong>MonitorBezel</strong> (Haupt-Monitor): Vollstaendiger Rahmen mit Knobs (Helligkeit, Zoom), Legend-Overlay, BookmarkBar, Power-Button, Nebula-Noise-Effekt.<br>
+        <strong>SidebarBezel:</strong> Minimaler Rahmen mit vertikalem Label, LED-Dots, Alert-State, aber <strong>keine Knobs, kein Power-Button, kein Legend-Overlay</strong>.<br>
+        Die beiden Bezel-Komponenten teilen keinen gemeinsamen Code &rarr; Duplikation und inkonsistente Aesthetik.<br>
+        Sidebar-LEDs nutzen <code>minWidth: 20</code> + <code>fontSize: 0.45rem</code> (Inline-Styles), Main-Bezel nutzt CSS-Klassen.
+      </p>
+      <p><strong>Empfehlung:</strong> Unified-Bezel-Komponente (#93) mit konfigurierbarer Komplexitaet (minimal/standard/full).</p>
+    </div>
+
+    <h3>Fehlende Mobile-Screens</h3>
+    <div class="ux-finding">
+      <p>Die Mobile-Tab-Leiste (<code>MOBILE_TABS</code> in <code>GameScreen.tsx</code>) enthaelt aktuell <strong>8 Tabs</strong>:</p>
+      <pre><code>NAV, SHIP, MINE, CARGO, COMMS, BASE, TECH, QUAD</code></pre>
+      <p><strong>Fehlende Monitore auf Mobile:</strong></p>
+      <p>
+        <strong>TRADE</strong> &mdash; Kein mobiler Zugang zu NPC-Handel und Marktplatz<br>
+        <strong>FACTION</strong> &mdash; Keine Fraktionsverwaltung auf Mobile<br>
+        <strong>QUESTS</strong> &mdash; Keine Quest-Uebersicht auf Mobile<br>
+        <strong>LOG</strong> &mdash; Kein Aktivitaetslog auf Mobile
+      </p>
+      <p><strong>Empfehlung:</strong> Context-Aware Mobile Tabs (#49, #20) mit dynamischer Tab-Leiste basierend auf aktuellem Kontext (z.B. TRADE erscheint automatisch an Stationen, QUESTS bei aktiven Quests).</p>
+    </div>
+
+    <h3>Sonstige UI-Inkonsistenzen</h3>
+    <div class="ux-finding">
+      <p>
+        <strong>FrequencyMinigame:</strong> Nutzt Mouse-Events, Touch-Events fehlen (#22).<br>
+        <strong>Mobile Zoom:</strong> Kein Pinch-to-Zoom auf dem Radar implementiert (#21).<br>
+        <strong>Bezel auf Mobile:</strong> Knobs und dekorative Elemente nehmen zu viel Platz ein (#23).
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FOOTER                                                        -->
+  <!-- ============================================================ -->
+  <footer class="compendium-footer">
+    Dieses Dokument wird bei groesseren Inhalts-Updates aktualisiert.
+  </footer>
+
+</div><!-- /compendium-container -->
+</div><!-- /crt-page -->
+</body>
+</html>

@@ -16,7 +16,7 @@
   <header class="compendium-header">
     <h1>voidSector UI Compendium</h1>
     <div class="subtitle">INTERFACE SYSTEMS TECHNICAL REFERENCE</div>
-    <div class="version">REVISION 1.0 &mdash; COMBAT-V2 ERA &mdash; 355 TESTS PASSING</div>
+    <div class="version">REVISION 2.0 &mdash; ALL ISSUES CLOSED &mdash; 1,126 TESTS PASSING</div>
   </header>
 
   <!-- ============================================================ -->
@@ -107,11 +107,11 @@
           <td><code>CARGO</code></td>
           <td>CargoScreen</td>
           <td>
-            Cargo inventory display. Shows ore, gas, crystal, data slates, artefacts.
-            Capacity indicator with color-coded warnings (green/yellow/red). Includes
-            transfer and jettison controls.
+            Cargo inventory display. Shows ore, gas, crystal, data slates, artefacts with
+            CRT-amber SVG artwork icons. Capacity indicator with color-coded warnings
+            (green/yellow/red). Includes transfer and jettison controls.
           </td>
-          <td>Both</td>
+          <td>Main only</td>
           <td>Yes</td>
         </tr>
         <tr>
@@ -144,7 +144,7 @@
             listings (Trading Post), credits economy. Price display with supply/demand
             indicators.
           </td>
-          <td>Both</td>
+          <td>Main only</td>
           <td>Yes</td>
         </tr>
         <tr>
@@ -155,7 +155,7 @@
             member list, rank management. Reputation display for NPC factions
             (Traders/Scientists/Pirates/Ancients, -100..+100 scale).
           </td>
-          <td>Both</td>
+          <td>Main only</td>
           <td>Yes</td>
         </tr>
         <tr>
@@ -166,7 +166,7 @@
             delivery, scan, bounty. Shows active quests, objectives, rewards, and
             completion status. Alert LED blinks when new quests are available.
           </td>
-          <td>Both</td>
+          <td>Main only</td>
           <td>Yes</td>
         </tr>
         <tr>
@@ -177,7 +177,7 @@
             bonuses to mining/scan/trade/combat. Visual tree display showing unlocked
             and available upgrades. Mobile tab icon: &#x2697;.
           </td>
-          <td>Both</td>
+          <td>Main only</td>
           <td>Yes</td>
         </tr>
         <tr>
@@ -189,7 +189,7 @@
             First-contact dialog system for newly discovered quadrants.
             Mobile tab icon: &#x25A6;.
           </td>
-          <td>Both</td>
+          <td>Main only</td>
           <td>Yes</td>
         </tr>
       </tbody>
@@ -203,10 +203,17 @@
     </p>
     <pre><code>LEFT_SIDEBAR_MONITORS:  LOG, SHIP-SYS, MINING, CARGO, COMMS, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP
 RIGHT_SIDEBAR_MONITORS: SHIP-SYS, MINING, CARGO, COMMS, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP
-MAIN_MONITORS:          NAV-COM, MINING, CARGO, COMMS, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP</code></pre>
+MAIN_MONITORS:          NAV-COM, MINING, CARGO, COMMS, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP
+MAIN_ONLY_MONITORS:     CARGO, TECH, TRADE, FACTION, QUESTS, QUAD-MAP</code></pre>
     <p>
       Note: LOG is left-sidebar only. NAV-COM is main-area only (split or fullscreen).
       SHIP-SYS is sidebar-only (not available in main area).
+    </p>
+    <p>
+      Main-only monitors redirect to the main area when clicked in sidebar channel buttons.
+      This prevents large content (trade tables, tech trees, quest lists) from being squeezed
+      into sidebar slots. Toggle behavior: clicking an active main-only monitor returns to
+      split (NAV) view.
     </p>
 
     <h3>Mobile Tabs</h3>
@@ -221,6 +228,29 @@ COMMS (COMMS)  |  BASE (BASE-LINK)  |  TECH (TECH)    |  QUAD (QUAD-MAP)</code><
       Each tab shows an icon and a short label. Active tab has a bottom highlight bar
       with glow effect. Alert state triggers a blink animation.
     </p>
+
+    <h3>Scan Animation System</h3>
+    <p>
+      Scan visual effects are driven by a state machine in
+      <code>packages/client/src/canvas/ScanAnimation.ts</code>, following the same pattern
+      as <code>JumpAnimation.ts</code>.
+    </p>
+    <div class="component-card">
+      <div class="card-header">ScanAnimation State Machine</div>
+      <div class="card-file">packages/client/src/canvas/ScanAnimation.ts</div>
+      <div class="card-desc">
+        <strong>State:</strong> <code>ScanAnimationState</code> with type (<code>'local'</code> | <code>'area'</code>),
+        pulseCount, progress, totalDuration.
+        <br><br><strong>Scan types:</strong>
+        <br>&bull; <strong>Local scan:</strong> Cell-by-cell pulse within visible grid, 2s duration
+        <br>&bull; <strong>Area scan:</strong> Expanding concentric rings from center, 3s duration, range based on scanner level
+        <br><br><strong>CRT effects during scan:</strong>
+        <br>&bull; Horizontal glitch scanlines
+        <br>&bull; Blinking &quot;SCANNING...&quot; status text
+        <br><br><strong>UI lockout:</strong> Movement and scan buttons are disabled during scan animation
+        (<code>scanPending</code> state in UISlice).
+      </div>
+    </div>
   </section>
 
   <!-- ============================================================ -->
@@ -601,6 +631,9 @@ background-size: 100% 3px, 3px 100%;</code></pre>
         <br>&bull; Hull icons rendered as pixel-art patterns (from <code>HULL_RADAR_PATTERNS</code>)
         <br>&bull; Feature dots: cyan (#00BFFF) for jumpgate, red (#FF3333) for distress, magenta (#FF00FF) for other events
         <br>&bull; Structure indicator: diamond symbol (&loz;) in top-left corner, amber colored
+        <br>&bull; Background highlight: Non-empty discovered sectors show a colored fill at 8% opacity (sector type color)
+        <br>&bull; Nebula cloud overlay: Purple radial gradient (#8844CC &rarr; #5522AA) with animated particle wisps (6 wisps per nebula cell, sinusoidal drift)
+        <br>&bull; Nav target line: Dashed line from player position to nav target (when set)
         <br><br><strong>Jump animation:</strong> 3-phase, 800ms total
         <br>1. Glitch phase (200ms): scanline displacement + static noise
         <br>2. Slide phase (400ms): grid translates in jump direction
@@ -669,6 +702,22 @@ background-size: 100% 3px, 3px 100%;</code></pre>
         <br>&bull; <code>updateJumpAnimation(state, now)</code> &mdash; advance state based on elapsed time
         <br>&bull; During slide phase: canvas translates by <code>direction * progress * cellSize</code>
         <br>&bull; Glitch overlay intensity scales with phase progress
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">ScanAnimation</div>
+      <div class="card-file">packages/client/src/canvas/ScanAnimation.ts</div>
+      <div class="card-desc">
+        State machine for scan visual effects, following the JumpAnimation pattern.
+        <br>&bull; <code>ScanAnimationState</code>: active, type (<code>'local'</code> | <code>'area'</code>), pulseCount, progress, startTime, totalDuration
+        <br>&bull; <code>createScanAnimation(type)</code>: initialize from scan type
+        <br>&bull; <code>updateScanAnimation(state, now)</code>: advance state based on elapsed time
+        <br>&bull; <code>drawScanOverlay(ctx, w, h, centerX, centerY, cellSize, state, scanRange)</code>: render scan effects
+        <br><br><strong>Scan types:</strong>
+        <br>&bull; <strong>Area scan:</strong> Expanding pulse rings with amber glow, one ring per scanner range unit
+        <br>&bull; <strong>Local scan:</strong> Sequential cell highlighting within visible grid
+        <br>&bull; <strong>Both types:</strong> Horizontal glitch scanlines + blinking &quot;SCANNING...&quot; / &quot;SCAN COMPLETE&quot; text
       </div>
     </div>
   </section>
@@ -792,10 +841,11 @@ background-size: 100% 3px, 3px 100%;</code></pre>
       <div class="card-header">DetailViewOverlay</div>
       <div class="card-file">packages/client/src/components/DetailViewOverlay.tsx</div>
       <div class="card-desc">
-        ASCII art detail view for sector types. Overlaid on the radar canvas when
-        <code>detailView</code> state is set. Shows large ASCII art representations
-        of stations (standard and ancient), asteroid fields, and other sector types.
-        Positioned absolutely within the radar area.
+        Shows sector detail views. Station types display CRT-amber SVG schematic artwork
+        when available (via <code>getStationArtwork()</code>), falling back to ASCII art.
+        Alien encounters show SVG alien artwork (via <code>getAlienArtwork()</code>).
+        17 total SVG artworks: 8 items, 4 aliens, 5 stations. Overlaid on the radar canvas
+        when <code>detailView</code> state is set. Positioned absolutely within the radar area.
       </div>
     </div>
 
@@ -810,6 +860,16 @@ background-size: 100% 3px, 3px 100%;</code></pre>
         <br>&bull; Shows module details from <code>MODULES</code> constant
         <br>&bull; [ACTIVATE] and [DISMISS] actions
         <br>&bull; Uses <code>role="dialog" aria-modal="true"</code>
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">Nav Target</div>
+      <div class="card-desc">
+        Nav target is set via radar click on <code>selectedSector</code>. When a nav target
+        is active, RadarRenderer draws a dashed line from the player position to the target
+        sector. There is no dedicated NavTargetPanel component; target state is managed
+        through the existing <code>selectedSector</code> and autopilot system in the game slice.
       </div>
     </div>
   </section>
@@ -932,7 +992,14 @@ background-size: 100% 3px, 3px 100%;</code></pre>
   detailView: { type: string; data?: Record&lt;string, any&gt; } | null;
   leftCollapsed: boolean;
   rightCollapsed: boolean;
-}</code></pre>
+  scanAnimation: ScanAnimationState | null;  // Active scan animation
+  scanPending: boolean;                       // Movement locked during scan
+}
+
+/* Scan animation actions */
+startScanAnimation(type: 'local' | 'area'): void;
+clearScanAnimation(): void;
+setScanPending(pending: boolean): void;</code></pre>
 
     <h3>GameSlice (gameSlice.ts) &mdash; UI-relevant fields</h3>
     <pre><code>/* Monitor routing */
@@ -1066,15 +1133,17 @@ clearAlert(monitorId)           // Clear alert flag</code></pre>
     </div>
 
     <div class="ux-finding">
-      <div class="severity severity-low">SEVERITY: LOW</div>
+      <div class="severity severity-low">SEVERITY: LOW &mdash; PARTIALLY RESOLVED</div>
       <p>
         <strong>Finding:</strong> Mobile tab bar exposes only 8 of 12 monitors.
         LOG, TRADE, FACTION, and QUESTS are not accessible on mobile. Players on
         mobile devices cannot view event logs, trade, manage factions, or check quests.
       </p>
       <p>
-        <strong>Recommendation:</strong> Add a &quot;more&quot; tab or implement a scrollable
-        tab bar to expose all 12 monitors on mobile.
+        <strong>Update:</strong> The <code>MAIN_ONLY_MONITORS</code> system now redirects
+        large monitors (CARGO, TECH, TRADE, FACTION, QUESTS, QUAD-MAP) to the main area
+        when clicked in sidebar channel buttons, partially addressing the sidebar overflow.
+        Mobile still has the 8-tab limitation.
       </p>
     </div>
 
@@ -1144,13 +1213,27 @@ clearAlert(monitorId)           // Clear alert flag</code></pre>
         noticing the alert existed.
       </p>
     </div>
+
+    <div class="ux-finding">
+      <div class="severity severity-low">SEVERITY: LOW</div>
+      <p>
+        <strong>Finding:</strong> SVG artwork is imported using Vite <code>?url</code> syntax.
+        The artwork uses hardcoded CRT-amber colors (#FFB000 on #050505) and will not respond
+        to color profile changes.
+      </p>
+      <p>
+        <strong>Impact:</strong> When a player selects Green Phosphor, Ice Blue, or High Contrast
+        color profiles, SVG artwork in DetailViewOverlay and CargoScreen will remain amber,
+        creating visual inconsistency with the rest of the UI.
+      </p>
+    </div>
   </section>
 
   <!-- ============================================================ -->
   <!-- FOOTER                                                        -->
   <!-- ============================================================ -->
   <footer class="compendium-footer">
-    VOIDSECTOR UI COMPENDIUM // END OF DOCUMENT // REVISION 1.0
+    VOIDSECTOR UI COMPENDIUM // END OF DOCUMENT // REVISION 2.0
   </footer>
 
 </div><!-- .compendium-container -->
