@@ -40,6 +40,7 @@ function rejectGuest(client: Client, action: string): boolean {
 
 const VALID_RESOURCES = ['ore', 'gas', 'crystal'];
 const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post'];
+const MAX_COORD = 9999;
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -50,6 +51,16 @@ export class SectorRoom extends Room<SectorRoomState> {
   autoDispose = true;
   private clientShips = new Map<string, ShipStats>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
+  private rateLimits = new Map<string, Map<string, number>>();
+
+  private checkRate(sessionId: string, action: string, intervalMs: number): boolean {
+    let map = this.rateLimits.get(sessionId);
+    if (!map) { map = new Map(); this.rateLimits.set(sessionId, map); }
+    const last = map.get(action) ?? 0;
+    if (Date.now() - last < intervalMs) return false;
+    map.set(action, Date.now());
+    return true;
+  }
 
   private getShipForClient(sessionId: string): ShipStats {
     return this.clientShips.get(sessionId) ?? calculateShipStats('scout', []);
@@ -686,12 +697,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
 
     this.clientShips.delete(client.sessionId);
+    this.rateLimits.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
   }
 
   private async handleJump(client: Client, data: JumpMessage) {
-    if (!isInt(data.targetX) || !isInt(data.targetY)) {
+    if (!isInt(data.targetX) || !isInt(data.targetY) ||
+        Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
+      console.warn(`[SECURITY] handleJump invalid coords from ${(client.auth as AuthPayload)?.username}: (${data.targetX},${data.targetY})`);
       client.send('jumpResult', { success: false, error: 'Invalid coordinates' });
       return;
     }
@@ -795,7 +809,9 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleHyperJump(client: Client, data: HyperJumpMessage) {
-    if (!isInt(data.targetX) || !isInt(data.targetY)) {
+    if (!isInt(data.targetX) || !isInt(data.targetY) ||
+        Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
+      console.warn(`[SECURITY] handleHyperJump invalid coords from ${(client.auth as AuthPayload)?.username}: (${data.targetX},${data.targetY})`);
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
       return;
     }
@@ -1303,6 +1319,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleChat(client: Client, data: SendChatMessage) {
+    if (!this.checkRate(client.sessionId, 'chat', 500)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Zu viele Nachrichten — bitte kurz warten' });
+      return;
+    }
     if (isGuest(client) && data.channel === 'faction') {
       client.send('error', { code: 'GUEST_RESTRICTED', message: 'Fraktions-Chat ist für Gäste nicht verfügbar' });
       return;
@@ -1420,6 +1440,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleNpcTrade(client: Client, data: NpcTradeMessage) {
+    if (!this.checkRate(client.sessionId, 'npcTrade', 250)) {
+      client.send('npcTradeResult', { success: false, error: 'Too fast — please wait' });
+      return;
+    }
     if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
       client.send('npcTradeResult', { success: false, error: 'Invalid trade parameters' });
       return;
