@@ -1,4 +1,5 @@
 import { useStore } from '../state/store';
+import { SectorArtwork } from './SectorArtwork';
 
 const panelStyle: React.CSSProperties = {
   padding: '12px',
@@ -31,6 +32,10 @@ export function TradeDetailPanel() {
 
   return (
     <div style={panelStyle}>
+      <SectorArtwork
+        sectorType="station"
+        stationVariant={(currentSector?.metadata as any)?.stationVariant}
+      />
       <div style={{
         fontSize: '0.75rem',
         fontWeight: 'bold',

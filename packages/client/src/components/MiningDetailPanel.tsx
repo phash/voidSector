@@ -1,4 +1,5 @@
 import { useStore } from '../state/store';
+import { SectorArtwork } from './SectorArtwork';
 
 const panelStyle: React.CSSProperties = {
   padding: '12px',
@@ -31,6 +32,7 @@ export function MiningDetailPanel() {
 
   return (
     <div style={panelStyle}>
+      <SectorArtwork sectorType={currentSector?.type ?? 'empty'} />
       <div style={{
         fontSize: '0.75rem',
         fontWeight: 'bold',
