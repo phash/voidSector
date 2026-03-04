@@ -9,12 +9,53 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voidsector"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    restart: unless-stopped
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "2567:2567"
+    environment:
+      DATABASE_URL: postgres://voidsector:voidsector_dev@postgres:5432/voidsector
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: voidsector-dev-secret
+      PORT: "2567"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "3201:3201"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://client:3201
+    depends_on:
+      - client
+      - server
     restart: unless-stopped
 
 volumes:
