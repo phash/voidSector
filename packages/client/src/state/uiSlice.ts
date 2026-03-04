@@ -25,6 +25,10 @@ export interface UISlice {
   sidebarSlots: [string, string];
   leftSidebarSlots: [string, string];
   mainMonitorMode: 'split' | string;
+  autoFollow: boolean;
+  detailView: { type: string; data?: Record<string, any> } | null;
+  leftCollapsed: boolean;
+  rightCollapsed: boolean;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -39,6 +43,10 @@ export interface UISlice {
   setSidebarSlot: (index: 0 | 1, monitor: string) => void;
   setLeftSidebarSlot: (index: 0 | 1, monitor: string) => void;
   setMainMonitorMode: (mode: 'split' | string) => void;
+  setAutoFollow: (val: boolean) => void;
+  setDetailView: (view: { type: string; data?: Record<string, any> } | null) => void;
+  setLeftCollapsed: (val: boolean) => void;
+  setRightCollapsed: (val: boolean) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -53,6 +61,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   sidebarSlots: JSON.parse(safeGetItem('vs-sidebar-slots') || '["SHIP-SYS","COMMS"]') as [string, string],
   leftSidebarSlots: JSON.parse(safeGetItem('vs-left-sidebar-slots') || '["LOG","SHIP-SYS"]') as [string, string],
   mainMonitorMode: 'split' as 'split' | string,
+  autoFollow: false,
+  detailView: null,
+  leftCollapsed: false,
+  rightCollapsed: false,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -68,12 +80,15 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     safeSetItem('vs-color-profile', profile);
     set({ colorProfile: profile });
   },
-  setZoomLevel: (level) => set({ zoomLevel: Math.max(0, Math.min(3, level)) }),
-  setPanOffset: (offset) => set({
-    panOffset: {
-      x: Math.max(-3, Math.min(3, offset.x)),
-      y: Math.max(-3, Math.min(3, offset.y)),
-    },
+  setZoomLevel: (level) => set({ zoomLevel: Math.max(0, Math.min(4, level)) }),
+  setPanOffset: (offset) => set((s) => {
+    if (s.zoomLevel === 4) return {}; // no pan in 3×3 detail view
+    return {
+      panOffset: {
+        x: Math.max(-50, Math.min(50, Math.round(offset.x))),
+        y: Math.max(-50, Math.min(50, Math.round(offset.y))),
+      },
+    };
   }),
   resetPan: () => set({ panOffset: { x: 0, y: 0 } }),
   startJumpAnimation: (dx, dy) => set({ jumpAnimation: createJumpAnimation(dx, dy) }),
@@ -91,4 +106,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     return { leftSidebarSlots: slots };
   }),
   setMainMonitorMode: (mode) => set({ mainMonitorMode: mode }),
+  setAutoFollow: (autoFollow) => set({ autoFollow }),
+  setDetailView: (view) => set({ detailView: view }),
+  setLeftCollapsed: (val) => set({ leftCollapsed: val }),
+  setRightCollapsed: (val) => set({ rightCollapsed: val }),
 });

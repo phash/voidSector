@@ -1,4 +1,4 @@
-import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS } from '@void-sector/shared';
+import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN } from '@void-sector/shared';
 import type { SectorData, SectorType, SectorResources, ResourceType } from '@void-sector/shared';
 
 /**
@@ -45,13 +45,65 @@ function generateResources(type: SectorType, seed: number): SectorResources {
   return resources;
 }
 
+/**
+ * Determines whether a coordinate falls inside a seed-based nebula zone.
+ * Nebula zones are organic blobs generated on a coarse grid; zone centers
+ * further than NEBULA_SAFE_ORIGIN from the origin are potential nebula seeds.
+ */
+export function isInNebulaZone(x: number, y: number): boolean {
+  const grid = NEBULA_ZONE_GRID;
+  const gridX = Math.round(x / grid);
+  const gridY = Math.round(y / grid);
+
+  for (let dgx = -1; dgx <= 1; dgx++) {
+    for (let dgy = -1; dgy <= 1; dgy++) {
+      const cx = (gridX + dgx) * grid;
+      const cy = (gridY + dgy) * grid;
+
+      // Keep a safe zone around the origin
+      if (cx * cx + cy * cy < NEBULA_SAFE_ORIGIN * NEBULA_SAFE_ORIGIN) continue;
+
+      // Use XOR-mixed seed so nebula zones are uncorrelated with normal sector types
+      const centerSeed = hashCoords(cx, cy, WORLD_SEED ^ 0xa5a5a5a5);
+      const roll = (centerSeed >>> 0) / 0x100000000;
+
+      if (roll < NEBULA_ZONE_CHANCE) {
+        const radiusFraction = hashSecondary(centerSeed);
+        const radius = NEBULA_ZONE_MIN_RADIUS + radiusFraction * (NEBULA_ZONE_MAX_RADIUS - NEBULA_ZONE_MIN_RADIUS);
+        const dx = x - cx;
+        const dy = y - cy;
+        if (dx * dx + dy * dy < radius * radius) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Secondary hash for metadata decisions (uses different mixing than primary)
+function hashSecondary(seed: number): number {
+  let h = seed ^ 0xdeadbeef;
+  h = Math.imul(h, 0x9e3779b9);
+  h = h ^ (h >>> 16);
+  return (h >>> 0) / 0x100000000; // 0..1
+}
+
 export function generateSector(
   x: number,
   y: number,
   discoveredBy: string | null
 ): SectorData {
   const seed = hashCoords(x, y, WORLD_SEED);
-  const type = sectorTypeFromSeed(seed);
+  // Nebula zones override individual sector types (zones trump random distribution)
+  const type = isInNebulaZone(x, y) ? 'nebula' : sectorTypeFromSeed(seed);
+
+  // Special metadata: some stations are ancient variants
+  const metadata: Record<string, unknown> = {};
+  if (type === 'station') {
+    const secondaryRoll = hashSecondary(seed);
+    if (secondaryRoll < ANCIENT_STATION_CHANCE) {
+      metadata.stationVariant = 'ancient';
+    }
+  }
 
   return {
     x,
@@ -61,6 +113,6 @@ export function generateSector(
     resources: generateResources(type, seed),
     discoveredBy,
     discoveredAt: null,
-    metadata: {},
+    metadata,
   };
 }

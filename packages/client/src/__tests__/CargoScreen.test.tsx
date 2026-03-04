@@ -19,7 +19,7 @@ import { network } from '../network/client';
 describe('CargoScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStoreState({ cargo: { ore: 3, gas: 0, crystal: 1 } });
+    mockStoreState({ cargo: { ore: 3, gas: 0, crystal: 1, slates: 0 } });
   });
 
   it('shows cargo labels', () => {
@@ -32,30 +32,30 @@ describe('CargoScreen', () => {
 
   it('shows jettison buttons', () => {
     render(<CargoScreen />);
-    expect(screen.getByText('[JETTISON ORE]')).toBeInTheDocument();
-    expect(screen.getByText('[JETTISON GAS]')).toBeInTheDocument();
-    expect(screen.getByText('[JETTISON CRYSTAL]')).toBeInTheDocument();
+    expect(screen.getByText('[ABWERFEN ORE]')).toBeInTheDocument();
+    expect(screen.getByText('[ABWERFEN GAS]')).toBeInTheDocument();
+    expect(screen.getByText('[ABWERFEN CRYSTAL]')).toBeInTheDocument();
   });
 
   it('disables jettison when resource is 0', () => {
     render(<CargoScreen />);
     // Gas is 0
-    const gasBtn = screen.getByText('[JETTISON GAS]').closest('button');
+    const gasBtn = screen.getByText('[ABWERFEN GAS]').closest('button');
     expect(gasBtn).toBeDisabled();
   });
 
   it('enables jettison when resource > 0', () => {
     render(<CargoScreen />);
-    const oreBtn = screen.getByText('[JETTISON ORE]').closest('button');
+    const oreBtn = screen.getByText('[ABWERFEN ORE]').closest('button');
     expect(oreBtn).not.toBeDisabled();
 
-    const crystalBtn = screen.getByText('[JETTISON CRYSTAL]').closest('button');
+    const crystalBtn = screen.getByText('[ABWERFEN CRYSTAL]').closest('button');
     expect(crystalBtn).not.toBeDisabled();
   });
 
   it('calls sendJettison on click', async () => {
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('[JETTISON ORE]'));
+    await userEvent.click(screen.getByText('[ABWERFEN ORE]'));
     expect(network.sendJettison).toHaveBeenCalledWith('ore');
   });
 
@@ -85,12 +85,9 @@ describe('CargoScreen', () => {
         },
       ],
       ship: {
-        shipClass: 'aegis_scout_mk1',
-        fuel: 100,
-        maxFuel: 100,
-        jumpRange: 3,
-        cargoCap: 20,
-        scannerLevel: 1,
+        id: 'ship1', ownerId: 'p1', hullType: 'scout' as const,
+        name: 'Test Ship', modules: [], fuel: 100, active: true,
+        stats: { fuelMax: 100, cargoCap: 20, jumpRange: 3, apCostJump: 1, hp: 50, commRange: 50, scannerLevel: 1, damageMod: 0 },
       },
     });
     render(<CargoScreen />);
@@ -103,12 +100,9 @@ describe('CargoScreen', () => {
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
       mySlates: [],
       ship: {
-        shipClass: 'aegis_scout_mk1',
-        fuel: 100,
-        maxFuel: 100,
-        jumpRange: 3,
-        cargoCap: 20,
-        scannerLevel: 1,
+        id: 'ship1', ownerId: 'p1', hullType: 'scout' as const,
+        name: 'Test Ship', modules: [], fuel: 100, active: true,
+        stats: { fuelMax: 100, cargoCap: 20, jumpRange: 3, apCostJump: 1, hp: 50, commRange: 50, scannerLevel: 1, damageMod: 0 },
       },
     });
     render(<CargoScreen />);

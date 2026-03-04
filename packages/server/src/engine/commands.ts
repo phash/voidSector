@@ -219,6 +219,34 @@ export function validateNpcTrade(
   }
 }
 
+export function validateNpcCargoTrade(
+  action: 'buy' | 'sell',
+  resource: ResourceType,
+  amount: number,
+  credits: number,
+  cargo: { ore: number; gas: number; crystal: number },
+  cargoTotal: number,
+  cargoCap: number,
+): NpcTradeValidation {
+  if (amount <= 0) return { valid: false, error: 'Amount must be positive', totalPrice: 0 };
+  if (!['ore', 'gas', 'crystal'].includes(resource)) return { valid: false, error: 'Invalid resource', totalPrice: 0 };
+
+  const basePrice = NPC_PRICES[resource];
+
+  if (action === 'buy') {
+    const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);
+    if (credits < totalPrice) return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
+    if (cargoTotal + amount > cargoCap) {
+      return { valid: false, error: 'Cargo full', totalPrice };
+    }
+    return { valid: true, totalPrice };
+  } else {
+    const totalPrice = Math.floor(basePrice * NPC_SELL_SPREAD * amount);
+    if (cargo[resource] < amount) return { valid: false, error: `Not enough ${resource} in cargo`, totalPrice };
+    return { valid: true, totalPrice };
+  }
+}
+
 // --- Data Slate Validation ---
 
 interface CreateSlateState {

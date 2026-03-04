@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { createPlayer, findPlayerByUsername } from './db/queries.js';
+import { createPlayer, createGuestPlayer, findPlayerByUsername } from './db/queries.js';
 import { generateSpawnPosition, assignToCluster } from './engine/spawn.js';
 import type { PlayerData } from '@void-sector/shared';
 
@@ -13,6 +13,7 @@ const SALT_ROUNDS = 10;
 export interface AuthPayload {
   userId: string;
   username: string;
+  isGuest?: boolean;
 }
 
 export async function register(
@@ -46,6 +47,20 @@ export async function login(
     { userId: player.id, username: player.username } satisfies AuthPayload,
     JWT_SECRET,
     { expiresIn: '7d' },
+  );
+  return { player, token };
+}
+
+export async function loginAsGuest(): Promise<{ player: PlayerData; token: string }> {
+  const hex = Math.random().toString(16).slice(2, 6).toUpperCase();
+  const username = `GAST-${hex}`;
+  const spawnPos = generateSpawnPosition();
+  const cluster = await assignToCluster(spawnPos.x, spawnPos.y);
+  const player = await createGuestPlayer(username, { x: cluster.x, y: cluster.y });
+  const token = jwt.sign(
+    { userId: player.id, username: player.username, isGuest: true } satisfies AuthPayload,
+    JWT_SECRET,
+    { expiresIn: '24h' },
   );
   return { player, token };
 }

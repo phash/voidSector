@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { SidebarBezel } from './SidebarBezel';
 import { ChannelButtons } from './ChannelButtons';
@@ -18,14 +19,47 @@ export function DesktopLayout({ gridArea, detailArea, controlsArea, mainChannelB
   const mainMode = useStore((s) => s.mainMonitorMode);
   const alerts = useStore((s) => s.alerts);
 
+  const leftCollapsed = useStore((s) => s.leftCollapsed);
+  const rightCollapsed = useStore((s) => s.rightCollapsed);
+  const setLeftCollapsed = useStore((s) => s.setLeftCollapsed);
+  const setRightCollapsed = useStore((s) => s.setRightCollapsed);
+
+  const [leftAnimating, setLeftAnimating] = useState(false);
+  const [rightAnimating, setRightAnimating] = useState(false);
+
+  function toggleLeft() {
+    setLeftAnimating(true);
+    setTimeout(() => {
+      setLeftCollapsed(!leftCollapsed);
+      setLeftAnimating(false);
+    }, 250);
+  }
+
+  function toggleRight() {
+    setRightAnimating(true);
+    setTimeout(() => {
+      setRightCollapsed(!rightCollapsed);
+      setRightAnimating(false);
+    }, 250);
+  }
+
   return (
     <div className="desktop-layout-v2">
       {/* Left sidebar */}
-      <div className="sidebar-stack sidebar-left">
+      <div className={`sidebar-stack sidebar-left${leftCollapsed ? ' collapsed' : ''}`}>
+        <button
+          className="sidebar-toggle"
+          onClick={toggleLeft}
+          title={leftCollapsed ? 'Sidebar einblenden' : 'Sidebar ausblenden'}
+        >
+          {leftCollapsed ? '▶' : '◀'}
+        </button>
         {([0, 1] as const).map((slotIndex) => (
           <div key={slotIndex} className="sidebar-slot">
-            <ChannelButtons slotIndex={slotIndex} side="left" monitors={LEFT_SIDEBAR_MONITORS} />
-            <div className="sidebar-slot-content">
+            {!leftCollapsed && (
+              <ChannelButtons slotIndex={slotIndex} side="left" monitors={LEFT_SIDEBAR_MONITORS} />
+            )}
+            <div className={`sidebar-slot-content${leftAnimating ? (leftCollapsed ? ' sidebar-crt-expand' : ' sidebar-crt-collapse') : ''}`}>
               <SidebarBezel monitorId={leftSlots[slotIndex]} alert={!!alerts[leftSlots[slotIndex]]}>
                 {renderScreen(leftSlots[slotIndex])}
               </SidebarBezel>
@@ -51,17 +85,26 @@ export function DesktopLayout({ gridArea, detailArea, controlsArea, mainChannelB
       </div>
 
       {/* Right sidebar */}
-      <div className="sidebar-stack sidebar-right">
+      <div className={`sidebar-stack sidebar-right${rightCollapsed ? ' collapsed' : ''}`}>
         {([0, 1] as const).map((slotIndex) => (
           <div key={slotIndex} className="sidebar-slot">
-            <div className="sidebar-slot-content">
+            <div className={`sidebar-slot-content${rightAnimating ? (rightCollapsed ? ' sidebar-crt-expand' : ' sidebar-crt-collapse') : ''}`}>
               <SidebarBezel monitorId={rightSlots[slotIndex]} alert={!!alerts[rightSlots[slotIndex]]}>
                 {renderScreen(rightSlots[slotIndex])}
               </SidebarBezel>
             </div>
-            <ChannelButtons slotIndex={slotIndex} side="right" monitors={RIGHT_SIDEBAR_MONITORS} />
+            {!rightCollapsed && (
+              <ChannelButtons slotIndex={slotIndex} side="right" monitors={RIGHT_SIDEBAR_MONITORS} />
+            )}
           </div>
         ))}
+        <button
+          className="sidebar-toggle"
+          onClick={toggleRight}
+          title={rightCollapsed ? 'Sidebar einblenden' : 'Sidebar ausblenden'}
+        >
+          {rightCollapsed ? '◀' : '▶'}
+        </button>
       </div>
     </div>
   );

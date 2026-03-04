@@ -61,12 +61,13 @@ describe('MonitorBezel', () => {
     expect(screen.getByText('RADAR LEGEND')).toBeInTheDocument();
   });
 
-  it('renders status LEDs when provided', () => {
+  it('renders LEDs from useMonitorLeds hook', () => {
     render(
-      <MonitorBezel monitorId="TEST" statusLeds={[{ label: 'PWR', active: true }]}>
+      <MonitorBezel monitorId="SHIP-SYS">
         <div>content</div>
       </MonitorBezel>
     );
     expect(screen.getByText('PWR')).toBeInTheDocument();
+    expect(screen.getByText('FUEL')).toBeInTheDocument();
   });
 });

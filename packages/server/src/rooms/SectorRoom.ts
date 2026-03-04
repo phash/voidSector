@@ -9,7 +9,7 @@ import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
 import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateNpcCargoTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkScanEvent } from '../engine/scanEvents.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
@@ -17,10 +17,30 @@ import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { query } from '../db/client.js';
-import { getAPState, saveAPState, savePlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SHIP_CLASSES, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice } from '@void-sector/shared';
+import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord } from '@void-sector/shared';
+
+function isInt(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v);
+}
+function isPositiveInt(v: unknown): v is number {
+  return isInt(v) && v > 0;
+}
+
+function isGuest(client: Client): boolean {
+  return (client.auth as AuthPayload)?.isGuest === true;
+}
+function rejectGuest(client: Client, action: string): boolean {
+  if (!isGuest(client)) return false;
+  client.send('error', { code: 'GUEST_RESTRICTED', message: `${action} ist für Gäste nicht verfügbar` });
+  return true;
+}
+
+const VALID_RESOURCES = ['ore', 'gas', 'crystal'];
+const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post'];
+const MAX_COORD = 9999;
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -29,10 +49,21 @@ interface SectorRoomOptions {
 
 export class SectorRoom extends Room<SectorRoomState> {
   autoDispose = true;
-  private clientShips = new Map<string, typeof SHIP_CLASSES[keyof typeof SHIP_CLASSES]>();
+  private clientShips = new Map<string, ShipStats>();
+  private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
+  private rateLimits = new Map<string, Map<string, number>>();
 
-  private getShipForClient(sessionId: string) {
-    return this.clientShips.get(sessionId) ?? SHIP_CLASSES.aegis_scout_mk1;
+  private checkRate(sessionId: string, action: string, intervalMs: number): boolean {
+    let map = this.rateLimits.get(sessionId);
+    if (!map) { map = new Map(); this.rateLimits.set(sessionId, map); }
+    const last = map.get(action) ?? 0;
+    if (Date.now() - last < intervalMs) return false;
+    map.set(action, Date.now());
+    return true;
+  }
+
+  private getShipForClient(sessionId: string): ShipStats {
+    return this.clientShips.get(sessionId) ?? calculateShipStats('scout', []);
   }
 
   private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
@@ -266,6 +297,240 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('toggleRoute', (client, data) => this.handleToggleRoute(client, data));
     this.onMessage('deleteRoute', (client, data) => this.handleDeleteRoute(client, data));
 
+    // Bookmarks
+    this.onMessage('getBookmarks', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const bookmarks = await getPlayerBookmarks(auth.userId);
+      client.send('bookmarksUpdate', { bookmarks });
+    });
+
+    this.onMessage('setBookmark', async (client, data: SetBookmarkMessage) => {
+      const auth = client.auth as AuthPayload;
+      if (data.slot < 1 || data.slot > 5) {
+        client.send('error', { code: 'INVALID_SLOT', message: 'Bookmark slot must be 1-5' });
+        return;
+      }
+      await setPlayerBookmark(auth.userId, data.slot, data.sectorX, data.sectorY, data.label);
+      const bookmarks = await getPlayerBookmarks(auth.userId);
+      client.send('bookmarksUpdate', { bookmarks });
+    });
+
+    this.onMessage('clearBookmark', async (client, data: ClearBookmarkMessage) => {
+      const auth = client.auth as AuthPayload;
+      await clearPlayerBookmark(auth.userId, data.slot);
+      const bookmarks = await getPlayerBookmarks(auth.userId);
+      client.send('bookmarksUpdate', { bookmarks });
+    });
+
+    // Hyperjump + autopilot
+    this.onMessage('hyperJump', async (client, data: HyperJumpMessage) => {
+      await this.handleHyperJump(client, data);
+    });
+    this.onMessage('emergencyWarp', async (client) => {
+      await this.handleEmergencyWarp(client);
+    });
+    this.onMessage('cancelAutopilot', async (client) => {
+      this.handleCancelAutopilot(client);
+    });
+
+    // Phase 7: Ship designer
+    this.onMessage('getShips', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const ships = await getPlayerShips(auth.userId);
+      const shipsWithStats = ships.map(s => ({
+        ...s,
+        stats: calculateShipStats(s.hullType, s.modules),
+      }));
+      client.send('shipList', { ships: shipsWithStats });
+    });
+
+    this.onMessage('switchShip', async (client, data: { shipId: string }) => {
+      const auth = client.auth as AuthPayload;
+      // Must be at home base
+      const homeBase = await getPlayerHomeBase(auth.userId);
+      if (this.state.sector.x !== homeBase.x || this.state.sector.y !== homeBase.y) {
+        client.send('error', { code: 'NOT_AT_BASE', message: 'Must be at home base to switch ships' });
+        return;
+      }
+      const success = await switchActiveShip(auth.userId, data.shipId);
+      if (!success) {
+        client.send('error', { code: 'SWITCH_FAIL', message: 'Ship not found' });
+        return;
+      }
+      // Reload new ship stats
+      const newShip = await getActiveShip(auth.userId);
+      if (newShip) {
+        const newStats = calculateShipStats(newShip.hullType, newShip.modules);
+        this.clientShips.set(client.sessionId, newStats);
+        const fuelState = await getFuelState(auth.userId);
+        client.send('shipData', {
+          id: newShip.id, ownerId: auth.userId, hullType: newShip.hullType,
+          name: newShip.name, modules: newShip.modules, stats: newStats,
+          fuel: fuelState ?? newStats.fuelMax, active: true,
+        });
+      }
+    });
+
+    this.onMessage('installModule', async (client, data: { moduleId: string; slotIndex: number }) => {
+      const auth = client.auth as AuthPayload;
+      const ship = await getActiveShip(auth.userId);
+      if (!ship) return;
+      const validation = validateModuleInstall(ship.hullType, ship.modules, data.moduleId, data.slotIndex);
+      if (!validation.valid) {
+        client.send('error', { code: 'INSTALL_FAIL', message: validation.error! });
+        return;
+      }
+      // Remove from inventory
+      const removed = await removeModuleFromInventory(auth.userId, data.moduleId);
+      if (!removed) {
+        client.send('error', { code: 'NO_MODULE', message: 'Module not in inventory' });
+        return;
+      }
+      // Install
+      const newModules: ShipModule[] = [...ship.modules, { moduleId: data.moduleId, slotIndex: data.slotIndex }];
+      await updateShipModules(ship.id, newModules);
+      // Recalculate and send
+      const newStats = calculateShipStats(ship.hullType, newModules);
+      this.clientShips.set(client.sessionId, newStats);
+      client.send('moduleInstalled', { modules: newModules, stats: newStats });
+    });
+
+    this.onMessage('removeModule', async (client, data: { slotIndex: number }) => {
+      const auth = client.auth as AuthPayload;
+      const ship = await getActiveShip(auth.userId);
+      if (!ship) return;
+      const mod = ship.modules.find(m => m.slotIndex === data.slotIndex);
+      if (!mod) {
+        client.send('error', { code: 'EMPTY_SLOT', message: 'No module in that slot' });
+        return;
+      }
+      // Remove from ship
+      const newModules = ship.modules.filter(m => m.slotIndex !== data.slotIndex);
+      await updateShipModules(ship.id, newModules);
+      // Add back to inventory
+      await addModuleToInventory(auth.userId, mod.moduleId);
+      // Recalculate
+      const newStats = calculateShipStats(ship.hullType, newModules);
+      this.clientShips.set(client.sessionId, newStats);
+      client.send('moduleRemoved', { modules: newModules, stats: newStats, returnedModule: mod.moduleId });
+    });
+
+    this.onMessage('buyModule', async (client, data: { moduleId: string }) => {
+      const auth = client.auth as AuthPayload;
+      const moduleDef = MODULES[data.moduleId];
+      if (!moduleDef) {
+        client.send('error', { code: 'UNKNOWN_MODULE', message: 'Unknown module' });
+        return;
+      }
+      // Must be at station or home base
+      const homeBase = await getPlayerHomeBase(auth.userId);
+      const isStation = this.state.sector.sectorType === 'station';
+      const isHomeBase = this.state.sector.x === homeBase.x && this.state.sector.y === homeBase.y;
+      if (!isStation && !isHomeBase) {
+        client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
+        return;
+      }
+      // Check credits
+      const credits = await getPlayerCredits(auth.userId);
+      if (credits < moduleDef.cost.credits) {
+        client.send('error', { code: 'INSUFFICIENT_CREDITS', message: 'Not enough credits' });
+        return;
+      }
+      // Check resource costs from cargo
+      const cargo = await getPlayerCargo(auth.userId);
+      const cargoMap: Record<string, number> = { ore: cargo.ore, gas: cargo.gas, crystal: cargo.crystal };
+      for (const [res, amount] of Object.entries(moduleDef.cost)) {
+        if (res === 'credits') continue;
+        const have = cargoMap[res] ?? 0;
+        if (have < (amount as number)) {
+          client.send('error', { code: 'INSUFFICIENT_RESOURCES', message: `Need ${amount} ${res}` });
+          return;
+        }
+      }
+      // Deduct credits
+      await deductCredits(auth.userId, moduleDef.cost.credits);
+      // Deduct resources from cargo
+      for (const [res, amount] of Object.entries(moduleDef.cost)) {
+        if (res === 'credits' || !amount) continue;
+        await deductCargo(auth.userId, res, amount as number);
+      }
+      // Add to module inventory
+      await addModuleToInventory(auth.userId, data.moduleId);
+      // Send updates
+      const remainingCredits = await getPlayerCredits(auth.userId);
+      client.send('creditsUpdate', { credits: remainingCredits });
+      client.send('buyModuleResult', { success: true, moduleId: data.moduleId });
+      const inventory = await getModuleInventory(auth.userId);
+      client.send('moduleInventory', { modules: inventory });
+    });
+
+    this.onMessage('buyHull', async (client, data: { hullType: string; name?: string }) => {
+      if (rejectGuest(client, 'Schiffskauf')) return;
+      const auth = client.auth as AuthPayload;
+      const hullDef = HULLS[data.hullType as HullType];
+      if (!hullDef) {
+        client.send('error', { code: 'UNKNOWN_HULL', message: 'Unknown hull type' });
+        return;
+      }
+      // Must be at station or home base
+      const homeBase = await getPlayerHomeBase(auth.userId);
+      const isStation = this.state.sector.sectorType === 'station';
+      const isHomeBase = this.state.sector.x === homeBase.x && this.state.sector.y === homeBase.y;
+      if (!isStation && !isHomeBase) {
+        client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
+        return;
+      }
+      // Check level
+      const playerLevel = await getPlayerLevel(auth.userId);
+      if (playerLevel < hullDef.unlockLevel) {
+        client.send('error', { code: 'LEVEL_TOO_LOW', message: `Need level ${hullDef.unlockLevel}` });
+        return;
+      }
+      // Check credits
+      const credits = await getPlayerCredits(auth.userId);
+      if (credits < hullDef.unlockCost) {
+        client.send('error', { code: 'INSUFFICIENT_CREDITS', message: 'Not enough credits' });
+        return;
+      }
+      // Deduct credits
+      if (hullDef.unlockCost > 0) {
+        await deductCredits(auth.userId, hullDef.unlockCost);
+      }
+      // Create new ship (becomes active, old one deactivated)
+      const newShip = await createShip(auth.userId, data.hullType as HullType, data.name?.slice(0, 20) || hullDef.name, hullDef.baseFuel);
+      const newStats = calculateShipStats(newShip.hullType, newShip.modules);
+      this.clientShips.set(client.sessionId, newStats);
+      // Reset fuel
+      await saveFuelState(auth.userId, hullDef.baseFuel);
+      client.send('shipData', {
+        id: newShip.id, ownerId: auth.userId, hullType: newShip.hullType,
+        name: newShip.name, modules: newShip.modules, stats: newStats,
+        fuel: hullDef.baseFuel, active: true,
+      });
+      const remainingCredits = await getPlayerCredits(auth.userId);
+      client.send('creditsUpdate', { credits: remainingCredits });
+    });
+
+    this.onMessage('renameShip', async (client, data: { shipId: string; name: string }) => {
+      const auth = client.auth as AuthPayload;
+      const success = await renameShip(data.shipId, auth.userId, data.name);
+      if (success) {
+        client.send('shipRenamed', { shipId: data.shipId, name: data.name.slice(0, 20) });
+      }
+    });
+
+    this.onMessage('renameBase', async (client, data: { name: string }) => {
+      const auth = client.auth as AuthPayload;
+      await renameBase(auth.userId, data.name);
+      client.send('baseRenamed', { name: data.name.slice(0, 20) });
+    });
+
+    this.onMessage('getModuleInventory', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const inventory = await getModuleInventory(auth.userId);
+      client.send('moduleInventory', { modules: inventory });
+    });
+
     // Trade route processing interval
     this.clock.setInterval(() => {
       this.processTradeRoutes().catch(err => console.error('[TRADE ROUTES] Tick error:', err));
@@ -287,34 +552,33 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Save position
     await savePlayerPosition(auth.userId, this.state.sector.x, this.state.sector.y);
 
-    // Load active ship
-    const activeShip = await getActiveShip(auth.userId);
-    const shipClass = activeShip?.shipClass ?? 'aegis_scout_mk1';
-    const shipStats = SHIP_CLASSES[shipClass];
-    this.clientShips.set(client.sessionId, shipStats);
+    // Load active ship (or create default scout on first login)
+    let shipRecord = await getActiveShip(auth.userId);
+    if (!shipRecord) {
+      shipRecord = await createShip(auth.userId, 'scout', 'AEGIS', HULLS.scout.baseFuel);
+    }
+    const stats = calculateShipStats(shipRecord.hullType, shipRecord.modules);
+    this.clientShips.set(client.sessionId, stats);
 
     // Send ship data to client
+    const fuelState = await getFuelState(auth.userId);
     client.send('shipData', {
-      id: '',
+      id: shipRecord.id,
       ownerId: auth.userId,
-      shipClass,
-      fuel: activeShip?.fuel ?? shipStats.fuelMax,
-      fuelMax: shipStats.fuelMax,
-      jumpRange: shipStats.jumpRange,
-      apCostJump: shipStats.apCostJump,
-      cargoCap: shipStats.cargoCap,
-      scannerLevel: shipStats.scannerLevel,
-      safeSlots: shipStats.safeSlots,
+      hullType: shipRecord.hullType,
+      name: shipRecord.name,
+      modules: shipRecord.modules,
+      stats,
+      fuel: fuelState ?? stats.fuelMax,
       active: true,
     });
 
     // Init fuel state in Redis
-    const existingFuel = await getFuelState(auth.userId);
-    if (existingFuel === null) {
-      await saveFuelState(auth.userId, shipStats.fuelMax);
+    if (fuelState === null) {
+      await saveFuelState(auth.userId, stats.fuelMax);
     }
-    const fuelCurrent = existingFuel ?? shipStats.fuelMax;
-    client.send('fuelUpdate', { current: fuelCurrent, max: shipStats.fuelMax });
+    const fuelCurrent = fuelState ?? stats.fuelMax;
+    client.send('fuelUpdate', { current: fuelCurrent, max: stats.fuelMax });
 
     // Record discovery
     await addDiscovery(auth.userId, this.state.sector.x, this.state.sector.y);
@@ -332,6 +596,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Send credits
     const credits = await getPlayerCredits(auth.userId);
     client.send('creditsUpdate', { credits });
+
+    // Send alien credits
+    const alienCredits = await getAlienCredits(auth.userId);
+    client.send('alienCreditsUpdate', { alienCredits });
 
     // Send storage
     const storageInv = await getStorageInventory(auth.userId);
@@ -376,6 +644,14 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('chatHistory', history);
     }
 
+    // Send bookmarks
+    const bookmarks = await getPlayerBookmarks(auth.userId);
+    client.send('bookmarksUpdate', { bookmarks });
+
+    // Send all discoveries for hyperjump map
+    const allDiscoveries = await getPlayerDiscoveries(auth.userId);
+    client.send('allDiscoveries', { discoveries: allDiscoveries });
+
     // Phase 4: Send reputation + active quests
     await this.sendReputationUpdate(client, auth.userId);
     await this.sendActiveQuests(client, auth.userId);
@@ -413,12 +689,26 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
+    // Clean up autopilot timer
+    const autopilotTimer = this.autopilotTimers.get(client.sessionId);
+    if (autopilotTimer) {
+      clearInterval(autopilotTimer);
+      this.autopilotTimers.delete(client.sessionId);
+    }
+
     this.clientShips.delete(client.sessionId);
+    this.rateLimits.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
   }
 
   private async handleJump(client: Client, data: JumpMessage) {
+    if (!isInt(data.targetX) || !isInt(data.targetY) ||
+        Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
+      console.warn(`[SECURITY] handleJump invalid coords from ${(client.auth as AuthPayload)?.username}: (${data.targetX},${data.targetY})`);
+      client.send('jumpResult', { success: false, error: 'Invalid coordinates' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
@@ -518,12 +808,165 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Client will leave this room and join the new sector room
   }
 
+  private async handleHyperJump(client: Client, data: HyperJumpMessage) {
+    if (!isInt(data.targetX) || !isInt(data.targetY) ||
+        Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
+      console.warn(`[SECURITY] handleHyperJump invalid coords from ${(client.auth as AuthPayload)?.username}: (${data.targetX},${data.targetY})`);
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
+      return;
+    }
+    const auth = client.auth as AuthPayload;
+    const { targetX, targetY } = data;
+
+    // Reject if already in autopilot
+    if (this.autopilotTimers.has(client.sessionId)) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Autopilot already active' });
+      return;
+    }
+
+    // Validate target is discovered
+    const discovered = await isRouteDiscovered(auth.userId, targetX, targetY);
+    if (!discovered) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Target sector not discovered' });
+      return;
+    }
+
+    // Check mining state (reject if mining is active)
+    const mining = await getMiningState(auth.userId);
+    if (mining?.active) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Cannot hyperjump while mining' });
+      return;
+    }
+
+    // Get current position
+    const pos = await getPlayerPosition(auth.userId);
+    if (!pos) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Position unknown' });
+      return;
+    }
+    const dx = targetX - pos.x;
+    const dy = targetY - pos.y;
+    const distance = Math.abs(dx) + Math.abs(dy);
+    if (distance <= 1) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Use normal jump for adjacent sectors' });
+      return;
+    }
+
+    // Nebula zones block hyperjump in both directions
+    const sourceSector = await getSector(pos.x, pos.y);
+    if (sourceSector?.type === 'nebula') {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump from nebula sector' });
+      return;
+    }
+    const targetSectorNebula = await getSector(targetX, targetY);
+    if (targetSectorNebula?.type === 'nebula') {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump into nebula sector' });
+      return;
+    }
+
+    // Get ship stats
+    const ship = this.getShipForClient(client.sessionId);
+
+    // Calculate costs with hyperjump discount
+    const apCost = Math.ceil(distance * ship.apCostJump * HYPERJUMP_AP_DISCOUNT);
+    const shipFar = this.getShipForClient(client.sessionId);
+    const fuelCost = distance * shipFar.fuelPerJump;
+
+    // Validate AP
+    const ap = await getAPState(auth.userId);
+    const updated = calculateCurrentAP(ap);
+    if (updated.current < apCost) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: `Not enough AP (need ${apCost}, have ${updated.current})` });
+      return;
+    }
+
+    // Validate fuel
+    const currentFuel = await getFuelState(auth.userId);
+    if (currentFuel === null || currentFuel < fuelCost) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: `Not enough fuel (need ${fuelCost}, have ${currentFuel ?? 0})` });
+      return;
+    }
+
+    // Deduct AP upfront
+    const newAP = { ...updated, current: updated.current - apCost };
+    await saveAPState(auth.userId, newAP);
+    client.send('apUpdate', newAP);
+
+    // Deduct fuel upfront
+    const newFuel = currentFuel - fuelCost;
+    await saveFuelState(auth.userId, newFuel);
+    client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
+
+    // Build step list (Manhattan path: X first, then Y)
+    const steps: { x: number; y: number }[] = [];
+    let cx = pos.x;
+    let cy = pos.y;
+    const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+    const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+    for (let i = 0; i < Math.abs(dx); i++) { cx += stepX; steps.push({ x: cx, y: cy }); }
+    for (let i = 0; i < Math.abs(dy); i++) { cy += stepY; steps.push({ x: cx, y: cy }); }
+
+    // Start autopilot
+    let stepIndex = 0;
+    client.send('autopilotStart', { targetX, targetY, totalSteps: steps.length });
+
+    const timer = setInterval(async () => {
+      try {
+        if (stepIndex >= steps.length) {
+          clearInterval(timer);
+          this.autopilotTimers.delete(client.sessionId);
+          // Save final position and record discovery
+          await savePlayerPosition(auth.userId, targetX, targetY);
+          await addDiscovery(auth.userId, targetX, targetY);
+          // Load or generate target sector
+          let targetSector = await getSector(targetX, targetY);
+          if (!targetSector) {
+            targetSector = generateSector(targetX, targetY, auth.userId);
+            await saveSector(targetSector);
+          }
+          client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
+          return;
+        }
+        const step = steps[stepIndex];
+        // Save position and record discovery for intermediate step
+        await savePlayerPosition(auth.userId, step.x, step.y);
+        await addDiscovery(auth.userId, step.x, step.y);
+        stepIndex++;
+        client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
+      } catch (err) {
+        console.error('[HYPERJUMP] Autopilot step error:', err);
+        clearInterval(timer);
+        this.autopilotTimers.delete(client.sessionId);
+        client.send('autopilotComplete', { x: -1, y: -1 });
+      }
+    }, AUTOPILOT_STEP_MS);
+
+    this.autopilotTimers.set(client.sessionId, timer);
+  }
+
+  private handleCancelAutopilot(client: Client) {
+    const timer = this.autopilotTimers.get(client.sessionId);
+    if (timer) {
+      clearInterval(timer);
+      this.autopilotTimers.delete(client.sessionId);
+      client.send('autopilotComplete', { x: -1, y: -1 });
+    }
+  }
+
   private async handleRefuel(client: Client, data: RefuelMessage) {
+    if (!isPositiveInt(data.amount)) {
+      client.send('refuelResult', { success: false, error: 'Invalid amount' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
 
-    // Must be at a station sector
-    if (this.state.sector.sectorType !== 'station') {
-      client.send('refuelResult', { success: false, error: 'Must be at a station to refuel' });
+    // Must be at a station or own base
+    const isStation = this.state.sector.sectorType === 'station';
+    const hasBaseHere = await playerHasBaseAtSector(
+      auth.userId, this.state.sector.x, this.state.sector.y
+    );
+    if (!isStation && !hasBaseHere) {
+      client.send('refuelResult', { success: false, error: 'Must be at a station or your base to refuel' });
       return;
     }
 
@@ -537,15 +980,32 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
 
     const amount = Math.min(data.amount, tankSpace);
-    const cost = Math.ceil(amount * FUEL_COST_PER_UNIT);
 
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < cost) {
-      client.send('refuelResult', { success: false, error: 'Not enough credits' });
-      return;
+    const playerShips = await getPlayerShips(auth.userId);
+    const isFreeRefuel = hasBaseHere && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
+
+    // Apply reputation price modifier at stations
+    let priceModifier = 1.0;
+    if (isStation && !isFreeRefuel) {
+      const sectorFaction = getStationFaction(this.state.sector.x, this.state.sector.y);
+      if (sectorFaction) {
+        const playerRep = await getPlayerReputation(auth.userId, sectorFaction);
+        const tier = getReputationTier(playerRep);
+        priceModifier = REP_PRICE_MODIFIERS[tier] ?? 1.0;
+      }
     }
 
-    await deductCredits(auth.userId, cost);
+    const cost = isFreeRefuel ? 0 : Math.ceil(amount * FUEL_COST_PER_UNIT * priceModifier);
+
+    if (cost > 0) {
+      const credits = await getPlayerCredits(auth.userId);
+      if (credits < cost) {
+        client.send('refuelResult', { success: false, error: 'Not enough credits' });
+        return;
+      }
+      await deductCredits(auth.userId, cost);
+    }
+
     const newFuel = currentFuel + amount;
     await saveFuelState(auth.userId, newFuel);
 
@@ -554,6 +1014,87 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('refuelResult', {
       success: true,
       fuel: { current: newFuel, max: ship.fuelMax },
+      credits: remainingCredits,
+    });
+  }
+
+  private async handleEmergencyWarp(client: Client) {
+    const auth = client.auth as AuthPayload;
+
+    // Only available when fuel is empty
+    const ship = this.getShipForClient(client.sessionId);
+    const currentFuel = await getFuelState(auth.userId) ?? 0;
+    if (currentFuel > 0) {
+      client.send('emergencyWarpResult', { success: false, error: 'Emergency warp only available when fuel is empty' });
+      return;
+    }
+
+    // Reject if autopilot is active
+    if (this.autopilotTimers.has(client.sessionId)) {
+      client.send('emergencyWarpResult', { success: false, error: 'Cannot warp during autopilot' });
+      return;
+    }
+
+    // Reject if mining is active
+    const mining = await getMiningState(auth.userId);
+    if (mining?.active) {
+      client.send('emergencyWarpResult', { success: false, error: 'Cannot warp while mining' });
+      return;
+    }
+
+    // Get home base coordinates
+    const homeBase = await getPlayerHomeBase(auth.userId);
+    const currentX = this.state.sector.x;
+    const currentY = this.state.sector.y;
+    const distance = Math.abs(homeBase.x - currentX) + Math.abs(homeBase.y - currentY);
+
+    // Already at home base
+    if (distance === 0) {
+      client.send('emergencyWarpResult', { success: false, error: 'Already at home base' });
+      return;
+    }
+
+    // Calculate cost — free within radius, credits per sector beyond
+    let creditCost = 0;
+    if (distance > EMERGENCY_WARP_FREE_RADIUS) {
+      creditCost = (distance - EMERGENCY_WARP_FREE_RADIUS) * EMERGENCY_WARP_CREDIT_PER_SECTOR;
+      const credits = await getPlayerCredits(auth.userId);
+      if (credits < creditCost) {
+        client.send('emergencyWarpResult', {
+          success: false,
+          error: `Not enough credits (need ${creditCost}, have ${credits})`,
+        });
+        return;
+      }
+      await deductCredits(auth.userId, creditCost);
+    }
+
+    // Load or generate home base sector
+    let targetSector = await getSector(homeBase.x, homeBase.y);
+    if (!targetSector) {
+      targetSector = generateSector(homeBase.x, homeBase.y, auth.userId);
+      await saveSector(targetSector);
+    }
+
+    // Grant emergency fuel
+    await saveFuelState(auth.userId, EMERGENCY_WARP_FUEL_GRANT);
+    client.send('fuelUpdate', { current: EMERGENCY_WARP_FUEL_GRANT, max: ship.fuelMax });
+
+    // Save new position
+    await savePlayerPosition(auth.userId, homeBase.x, homeBase.y);
+
+    // Record discovery of home sector
+    await addDiscovery(auth.userId, homeBase.x, homeBase.y);
+
+    // Get remaining credits
+    const remainingCredits = await getPlayerCredits(auth.userId);
+
+    // Send result — client will handle room switch like a jump
+    client.send('emergencyWarpResult', {
+      success: true,
+      newSector: targetSector,
+      fuelGranted: EMERGENCY_WARP_FUEL_GRANT,
+      creditCost,
       credits: remainingCredits,
     });
   }
@@ -604,6 +1145,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     const radius = scanResult.radius + bonuses.scanRadiusBonus;
     const sectorX = this.state.sector.x;
     const sectorY = this.state.sector.y;
+
+    // Nebula interference: area scan is blocked inside nebula sectors
+    const currentSectorData = await getSector(sectorX, sectorY);
+    if (currentSectorData?.type === 'nebula') {
+      client.send('error', { code: 'SCAN_FAIL', message: 'Nebula interference: only local scan available in nebula sectors' });
+      return;
+    }
+
     const sectors: SectorData[] = [];
 
     for (let dx = -radius; dx <= radius; dx++) {
@@ -620,8 +1169,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
 
-    // Phase 4: Check for scan events in scanned sectors
-    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y })));
+    // Phase 4: Check for scan events in scanned sectors (skip pirate ambush — remote scan can't trigger physical encounters)
+    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y })), false);
 
     client.send('scanResult', { sectors, apRemaining: scanResult.newAP!.current });
 
@@ -632,6 +1181,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleMine(client: Client, data: MineMessage) {
+    if (!data.resource || !VALID_RESOURCES.includes(data.resource)) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { resource } = data;
 
@@ -711,6 +1264,11 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleBuild(client: Client, data: BuildMessage) {
+    if (rejectGuest(client, 'Bauen')) return;
+    if (!data.type || !VALID_STRUCTURE_TYPES.includes(data.type)) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid structure type' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
@@ -761,6 +1319,14 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleChat(client: Client, data: SendChatMessage) {
+    if (!this.checkRate(client.sessionId, 'chat', 500)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Zu viele Nachrichten — bitte kurz warten' });
+      return;
+    }
+    if (isGuest(client) && data.channel === 'faction') {
+      client.send('error', { code: 'GUEST_RESTRICTED', message: 'Fraktions-Chat ist für Gäste nicht verfügbar' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
 
     // Validate channel
@@ -829,6 +1395,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleTransfer(client: Client, data: TransferMessage) {
+    if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
+      client.send('transferResult', { success: false, error: 'Invalid transfer parameters' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { resource, amount, direction } = data;
 
@@ -870,55 +1440,100 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleNpcTrade(client: Client, data: NpcTradeMessage) {
+    if (!this.checkRate(client.sessionId, 'npcTrade', 250)) {
+      client.send('npcTradeResult', { success: false, error: 'Too fast — please wait' });
+      return;
+    }
+    if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
+      client.send('npcTradeResult', { success: false, error: 'Invalid trade parameters' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { resource, amount, action } = data;
 
     const player = await findPlayerByUsername(auth.username);
     if (!player) return;
-    if (this.state.sector.x !== player.homeBase.x || this.state.sector.y !== player.homeBase.y) {
-      client.send('npcTradeResult', { success: false, error: 'Must be at home base' });
+
+    const isStation = this.state.sector.sectorType === 'station';
+    const isHomeBase = this.state.sector.x === player.homeBase.x &&
+                       this.state.sector.y === player.homeBase.y;
+    if (!isStation && !isHomeBase) {
+      client.send('npcTradeResult', { success: false, error: 'Must be at a station or home base' });
       return;
     }
 
-    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
-    if (!tradingPost) {
-      client.send('npcTradeResult', { success: false, error: 'No trading post built' });
-      return;
-    }
-
-    const storageStruct = await getPlayerStructure(auth.userId, 'storage');
-    const storageTier = storageStruct?.tier ?? 1;
     const currentCredits = await getPlayerCredits(auth.userId);
-    const storage = await getStorageInventory(auth.userId);
-
-    const result = validateNpcTrade(action, resource, amount, currentCredits, storage, storageTier);
-    if (!result.valid) {
-      client.send('npcTradeResult', { success: false, error: result.error });
-      return;
-    }
 
     // Apply faction trade price bonus (discount on buy prices)
     const bonuses = await this.getPlayerBonuses(auth.userId);
-    if (action === 'buy') {
-      result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
-    }
 
-    if (action === 'sell') {
-      await updateStorageResource(auth.userId, resource, -amount);
-      const newCredits = await addCredits(auth.userId, result.totalPrice);
-      const updatedStorage = await getStorageInventory(auth.userId);
-      client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
-      client.send('creditsUpdate', { credits: newCredits });
-      client.send('storageUpdate', updatedStorage);
+    if (isStation) {
+      // Station trade: use cargo
+      const cargo = await getPlayerCargo(auth.userId);
+      const cargoTotal = await getCargoTotal(auth.userId);
+      const shipStats = this.getShipForClient(client.sessionId);
+
+      const result = validateNpcCargoTrade(action, resource, amount, currentCredits, cargo, cargoTotal, shipStats.cargoCap);
+      if (!result.valid) {
+        client.send('npcTradeResult', { success: false, error: result.error });
+        return;
+      }
+
+      if (action === 'buy') {
+        result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
+      }
+
+      if (action === 'sell') {
+        const deducted = await deductCargo(auth.userId, resource, amount);
+        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Cargo changed' }); return; }
+        const newCredits = await addCredits(auth.userId, result.totalPrice);
+        const updatedCargo = await getPlayerCargo(auth.userId);
+        client.send('npcTradeResult', { success: true, credits: newCredits });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('cargoUpdate', updatedCargo);
+      } else {
+        const deducted = await deductCredits(auth.userId, result.totalPrice);
+        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
+        await addToCargo(auth.userId, resource, amount);
+        const newCredits = await getPlayerCredits(auth.userId);
+        const updatedCargo = await getPlayerCargo(auth.userId);
+        client.send('npcTradeResult', { success: true, credits: newCredits });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('cargoUpdate', updatedCargo);
+      }
     } else {
-      const deducted = await deductCredits(auth.userId, result.totalPrice);
-      if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
-      await updateStorageResource(auth.userId, resource, amount);
-      const newCredits = await getPlayerCredits(auth.userId);
-      const updatedStorage = await getStorageInventory(auth.userId);
-      client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
-      client.send('creditsUpdate', { credits: newCredits });
-      client.send('storageUpdate', updatedStorage);
+      // Home base trade: use storage
+      const storageStruct = await getPlayerStructure(auth.userId, 'storage');
+      const storageTier = storageStruct?.tier ?? 1;
+      const storage = await getStorageInventory(auth.userId);
+
+      const result = validateNpcTrade(action, resource, amount, currentCredits, storage, storageTier);
+      if (!result.valid) {
+        client.send('npcTradeResult', { success: false, error: result.error });
+        return;
+      }
+
+      if (action === 'buy') {
+        result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
+      }
+
+      if (action === 'sell') {
+        await updateStorageResource(auth.userId, resource, -amount);
+        const newCredits = await addCredits(auth.userId, result.totalPrice);
+        const updatedStorage = await getStorageInventory(auth.userId);
+        client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('storageUpdate', updatedStorage);
+      } else {
+        const deducted = await deductCredits(auth.userId, result.totalPrice);
+        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
+        await updateStorageResource(auth.userId, resource, amount);
+        const newCredits = await getPlayerCredits(auth.userId);
+        const updatedStorage = await getStorageInventory(auth.userId);
+        client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('storageUpdate', updatedStorage);
+      }
     }
   }
 
@@ -968,17 +1583,21 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handlePlaceOrder(client: Client, data: PlaceOrderMessage) {
+    if (rejectGuest(client, 'Markthandel')) return;
+    if (!isPositiveInt(data.amount) || !isPositiveInt(data.pricePerUnit) || data.pricePerUnit > 999999) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid amount or price' });
+      return;
+    }
+    if (!VALID_RESOURCES.includes(data.resource)) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const { resource, amount, pricePerUnit, type } = data;
 
     const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
     if (!tradingPost || tradingPost.tier < 2) {
       client.send('error', { code: 'NO_MARKET', message: 'Need Trading Post Tier 2+' });
-      return;
-    }
-
-    if (amount <= 0 || pricePerUnit <= 0) {
-      client.send('error', { code: 'INVALID_ORDER', message: 'Invalid amount or price' });
       return;
     }
 
@@ -1016,6 +1635,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleCreateSlate(client: Client, data: CreateSlateMessage) {
+    if (rejectGuest(client, 'Data Slates erstellen')) return;
     const auth = client.auth as AuthPayload;
     if (!['sector', 'area'].includes(data.slateType)) {
       client.send('createSlateResult', { success: false, error: 'Invalid slate type' });
@@ -1241,6 +1861,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleCreateFaction(client: Client, data: CreateFactionMessage) {
+    if (rejectGuest(client, 'Fraktionen')) return;
     const auth = client.auth as AuthPayload;
 
     if (!data.name || data.name.trim().length < 3 || data.name.trim().length > 64) {
@@ -1276,6 +1897,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleFactionAction(client: Client, data: FactionActionMessage) {
+    if (rejectGuest(client, 'Fraktionen')) return;
     const auth = client.auth as AuthPayload;
     const myFaction = await getPlayerFaction(auth.userId);
 
@@ -1688,13 +2310,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
   }
 
-  private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number }[]) {
+  private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number }[], includeImmediateEvents = true) {
     const auth = client.auth as AuthPayload;
     for (const sector of scannedSectors) {
       const eventResult = checkScanEvent(sector.x, sector.y);
       if (!eventResult.hasEvent || !eventResult.eventType) continue;
 
       if (eventResult.isImmediate && eventResult.eventType === 'pirate_ambush') {
+        if (!includeImmediateEvents) continue;
         const pirateLevel = (eventResult.data?.pirateLevel as number) ?? 1;
         const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
         const encounter = createPirateEncounter(pirateLevel, sector.x, sector.y, pirateRep);
@@ -1922,7 +2545,9 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Check safe slots
     const survivors = await getPlayerSurvivors(auth.userId);
-    if (!canRescue(ship.safeSlots, survivors.length)) {
+    const ship = this.getShipForClient(client.sessionId);
+    const safeSlots = ship.safeSlots ?? 1;
+    if (!canRescue(safeSlots, survivors.length)) {
       client.send('rescueResult', { success: false, error: 'No free safe slots' });
       return;
     }
@@ -1944,7 +2569,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('rescueResult', {
       success: true,
       survivorsRescued: 1,
-      safeSlotsFree: ship.safeSlots - survivors.length - 1,
+      safeSlotsFree: safeSlots - survivors.length - 1,
     });
     client.send('apUpdate', { current: newAP.current, max: newAP.max });
   }

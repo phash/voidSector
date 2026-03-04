@@ -22,7 +22,7 @@ describe('BaseScreen', () => {
         { id: '1', type: 'base', sector_x: 0, sector_y: 0, created_at: '2026-01-01' },
         { id: '2', type: 'comm_relay', sector_x: 0, sector_y: 0, created_at: '2026-01-02' },
       ],
-      cargo: { ore: 10, gas: 5, crystal: 3 },
+      cargo: { ore: 10, gas: 5, crystal: 3, slates: 0 },
     });
   });
 

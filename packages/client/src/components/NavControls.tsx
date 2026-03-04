@@ -1,12 +1,31 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR } from '@void-sector/shared';
 
 export function NavControls() {
   const position = useStore((s) => s.position);
   const jumpPending = useStore((s) => s.jumpPending);
   const ap = useStore((s) => s.ap);
+  const fuel = useStore((s) => s.fuel);
+  const ship = useStore((s) => s.ship);
   const mining = useStore((s) => s.mining);
+  const autopilot = useStore((s) => s.autopilot);
+
+  if (autopilot?.active) {
+    return (
+      <div style={{ padding: '8px 12px', textAlign: 'center' }}>
+        <div style={{ color: '#FFB000', fontSize: '0.9rem', letterSpacing: '0.15em', marginBottom: 8 }}>
+          AUTOPILOT AKTIV
+        </div>
+        <div style={{ fontSize: '0.8rem', marginBottom: 8 }}>
+          Ziel: ({autopilot.targetX}, {autopilot.targetY}) | Verbleibend: {autopilot.remaining}
+        </div>
+        <button className="vs-btn" onClick={() => network.sendCancelAutopilot()}>
+          [ABBRECHEN]
+        </button>
+      </div>
+    );
+  }
 
   const isMining = mining?.active ?? false;
 
@@ -28,7 +47,7 @@ export function NavControls() {
       <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
         <button
           className="vs-btn"
-          title={`Jump: ${AP_COSTS.jump} AP`}
+          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
           onClick={() => jump(0, -1)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -37,7 +56,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${AP_COSTS.jump} AP`}
+          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
           onClick={() => jump(-1, 0)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -46,7 +65,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${AP_COSTS.jump} AP`}
+          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
           onClick={() => jump(0, 1)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -55,7 +74,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${AP_COSTS.jump} AP`}
+          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
           onClick={() => jump(1, 0)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -83,7 +102,7 @@ export function NavControls() {
           [AREA SCAN]
         </button>
         <button className="vs-btn" disabled title="Coming soon">[MINE]</button>
-        <button className="vs-btn" disabled title="Coming soon">[MARKET]</button>
+
       </div>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
         <button className="vs-btn" onClick={() => network.sendBuild('comm_relay')}
@@ -111,6 +130,35 @@ export function NavControls() {
           letterSpacing: '0.15em',
         }}>
           ⚠ MINING ACTIVE — NAV LOCKED
+        </div>
+      )}
+      {fuel && fuel.current <= 0 && !isMining && (
+        <div style={{
+          marginTop: 8,
+          padding: '8px',
+          border: '1px solid #FF3333',
+          textAlign: 'center',
+          animation: 'bezel-alert-pulse 2s infinite',
+        }}>
+          <div style={{ color: '#FF3333', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '0.15em', marginBottom: 4 }}>
+            NOTWARP VERFÜGBAR
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginBottom: 6 }}>
+            Teleport zur Home Base — {(() => {
+              const dist = Math.abs(position.x) + Math.abs(position.y);
+              if (dist <= EMERGENCY_WARP_FREE_RADIUS) return 'GRATIS';
+              const cost = (dist - EMERGENCY_WARP_FREE_RADIUS) * EMERGENCY_WARP_CREDIT_PER_SECTOR;
+              return `${cost} Credits`;
+            })()}
+          </div>
+          <button
+            className="vs-btn"
+            style={{ borderColor: '#FF3333', color: '#FF3333' }}
+            onClick={() => network.sendEmergencyWarp()}
+            disabled={jumpPending}
+          >
+            [NOTWARP AKTIVIEREN]
+          </button>
         </div>
       )}
     </div>

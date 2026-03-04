@@ -31,6 +31,7 @@ export interface PlayerData {
   xp: number;
   level: number;
   credits?: number;
+  alienCredits?: number;
 }
 
 export type ShipClass = 'aegis_scout_mk1' | 'void_seeker_mk2';
@@ -650,4 +651,86 @@ export interface CreateCustomSlateMessage {
   coordinates?: Coords[];
   codes?: string[];
   notes?: string;
+}
+
+// --- Bookmarks ---
+export interface Bookmark {
+  slot: number;
+  sectorX: number;
+  sectorY: number;
+  label: string;
+}
+
+export interface SetBookmarkMessage { slot: number; sectorX: number; sectorY: number; label: string; }
+export interface ClearBookmarkMessage { slot: number; }
+
+// --- Hyperjump / Autopilot ---
+export interface AutopilotState {
+  targetX: number;
+  targetY: number;
+  remaining: number;
+  active: boolean;
+}
+
+export interface HyperJumpMessage { targetX: number; targetY: number; }
+export interface AutopilotUpdateMessage { x: number; y: number; remaining: number; }
+export interface AutopilotCompleteMessage { x: number; y: number; }
+
+// --- Phase 7: Ship Designer ---
+export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
+export type HullSize = 'small' | 'medium' | 'large';
+export type ModuleCategory = 'drive' | 'cargo' | 'scanner' | 'armor' | 'special';
+export type ModuleTier = 1 | 2 | 3;
+
+export interface HullDefinition {
+  name: string;
+  size: HullSize;
+  slots: number;
+  baseFuel: number;
+  baseCargo: number;
+  baseJumpRange: number;
+  baseApPerJump: number;
+  baseFuelPerJump: number;
+  baseHp: number;
+  baseCommRange: number;
+  baseScannerLevel: number;
+  unlockLevel: number;
+  unlockCost: number;
+}
+
+export interface ModuleDefinition {
+  id: string;
+  category: ModuleCategory;
+  tier: ModuleTier;
+  name: string;
+  displayName: string;
+  effects: Partial<ShipStats>;
+  cost: { credits: number; ore?: number; gas?: number; crystal?: number };
+}
+
+export interface ShipModule {
+  moduleId: string;
+  slotIndex: number;
+}
+
+export interface ShipStats {
+  fuelMax: number;
+  cargoCap: number;
+  jumpRange: number;
+  apCostJump: number;
+  fuelPerJump: number;
+  hp: number;
+  commRange: number;
+  scannerLevel: number;
+  damageMod: number;
+}
+
+export interface ShipRecord {
+  id: string;
+  ownerId: string;
+  hullType: HullType;
+  name: string;
+  modules: ShipModule[];
+  active: boolean;
+  createdAt: string;
 }

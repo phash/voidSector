@@ -14,6 +14,10 @@ function SegmentedBar({ current, max, width = 12 }: { current: number; max: numb
 export function StatusBar() {
   const ap = useStore((s) => s.ap);
   const fuel = useStore((s) => s.fuel);
+  const ship = useStore((s) => s.ship);
+  const credits = useStore((s) => s.credits);
+  const alienCredits = useStore((s) => s.alienCredits);
+  const isGuest = useStore((s) => s.isGuest);
 
   // Live-updating AP accounting for regen since last server tick
   const [displayAP, setDisplayAP] = useState(ap?.current ?? 0);
@@ -50,37 +54,68 @@ export function StatusBar() {
 
   return (
     <div style={{
-      padding: '6px 12px',
+      padding: '4px 12px',
       borderTop: '1px solid var(--color-dim)',
       borderBottom: '1px solid var(--color-dim)',
-      fontSize: '0.7rem',
+      fontSize: '0.8rem',
       letterSpacing: '0.08em',
       lineHeight: 1.8,
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '4px 16px',
+      alignItems: 'center',
+      minWidth: 0,
+      overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px 16px' }}>
-        <span className={flashing ? 'ap-flash' : ''}>
-          AP: {ap ? `${displayAP}/${ap.max}` : '---'}
-          {' '}<SegmentedBar current={ap ? displayAP : 0} max={ap?.max ?? 100} />
+      <span className={flashing ? 'ap-flash' : ''}>
+        AP: {ap ? `${displayAP}/${ap.max}` : '---'}
+        {' '}<SegmentedBar current={ap ? displayAP : 0} max={ap?.max ?? 100} width={8} />
+      </span>
+      {ap && (
+        <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
+          {ap.regenPerSecond}/s {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `FULL ${secondsToFull}s`}
         </span>
-        {ap && (
-          <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
-            {ap.regenPerSecond}/s | {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `FULL ${secondsToFull}s`}
-          </span>
-        )}
-      </div>
+      )}
+      <span style={{ color: 'var(--color-dim)' }}>|</span>
       {fuel && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-          <span style={{ fontSize: '0.75em', color: 'rgba(255,176,0,0.6)' }}>FUEL</span>
-          <div style={{ width: 80, height: 8, background: '#1a1a1a', border: '1px solid rgba(255,176,0,0.3)' }}>
-            <div style={{
-              width: `${(fuel.current / fuel.max) * 100}%`,
-              height: '100%',
-              background: fuel.current < fuel.max * 0.2 ? '#FF3333' : '#FFB000',
-              transition: 'width 0.3s',
-            }} />
-          </div>
-          <span style={{ fontSize: '0.7em' }}>{Math.floor(fuel.current)}/{fuel.max}</span>
-        </div>
+        <>
+          <span style={{
+            color: fuel.current <= 0 ? '#FF3333' : fuel.current < fuel.max * 0.2 ? '#FF6644' : undefined,
+            animation: fuel.current <= 0 ? 'bezel-alert-pulse 1s infinite' : undefined,
+          }}>
+            FUEL: {Math.floor(fuel.current)}/{fuel.max}
+            {' '}<SegmentedBar current={fuel.current} max={fuel.max} width={8} />
+          </span>
+          {fuel.current <= 0 && (
+            <span style={{ color: '#FF3333', fontSize: '0.75rem', fontWeight: 'bold' }}>
+              TANK LEER
+            </span>
+          )}
+          {fuel.current > 0 && fuel.current < fuel.max * 0.2 && (
+            <span style={{ color: '#FF6644', fontSize: '0.75rem' }}>
+              TREIBSTOFF NIEDRIG
+            </span>
+          )}
+          <span style={{ fontSize: '0.7rem', color: 'var(--color-dim)' }}>
+            {ship?.stats.fuelPerJump ?? 1}/J
+          </span>
+        </>
+      )}
+      <span style={{ color: 'var(--color-dim)' }}>|</span>
+      <span>CR: {credits.toLocaleString()}</span>
+      {alienCredits > 0 && (
+        <>
+          <span style={{ color: 'var(--color-dim)' }}>|</span>
+          <span style={{ color: '#00BFFF' }}>
+            A-CR: {alienCredits.toLocaleString()}
+          </span>
+        </>
+      )}
+      {isGuest && (
+        <>
+          <span style={{ color: 'var(--color-dim)' }}>|</span>
+          <span style={{ color: '#FFAA00', fontWeight: 'bold' }}>[GAST]</span>
+        </>
       )}
     </div>
   );
@@ -95,20 +130,23 @@ export function SectorInfo() {
 
   return (
     <div style={{
-      padding: '6px 12px',
+      padding: '3px 12px',
       borderTop: '1px solid var(--color-dim)',
       borderBottom: '1px solid var(--color-dim)',
       fontSize: '0.75rem',
       letterSpacing: '0.1em',
+      color: 'var(--color-dim)',
+      display: 'flex',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '2px 12px',
+      minWidth: 0,
+      overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span>SECTOR: ({position.x}, {position.y})</span>
-        <span>{currentSector?.type?.toUpperCase() || '---'}</span>
-        <span>PILOTS: {playerCount}</span>
-      </div>
-      <div style={{ color: 'var(--color-dim)', fontSize: '0.75rem' }}>
-        ORIGIN: {distToOrigin.toLocaleString()} SECTORS
-      </div>
+      <span style={{ whiteSpace: 'nowrap' }}>SECTOR: ({position.x}, {position.y})</span>
+      <span>{currentSector?.type?.toUpperCase() || '---'}</span>
+      <span>PILOTS: {playerCount}</span>
+      <span>ORIGIN: {distToOrigin.toLocaleString()}</span>
     </div>
   );
 }

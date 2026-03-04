@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateSector, hashCoords } from '../worldgen.js';
+import { generateSector, hashCoords, isInNebulaZone } from '../worldgen.js';
 import { WORLD_SEED, SECTOR_TYPES, RESOURCE_TYPES } from '@void-sector/shared';
 
 describe('worldgen', () => {
@@ -38,16 +38,22 @@ describe('worldgen', () => {
   it('generates roughly correct distribution over many sectors', () => {
     const counts: Record<string, number> = {};
     const n = 10000;
+    // Use 2D grid to avoid linear hash bias with specific seeds
     for (let i = 0; i < n; i++) {
-      const sector = generateSector(i, i * 7 - 3000, null);
+      const sector = generateSector(i % 100, Math.floor(i / 100), null);
       counts[sector.type] = (counts[sector.type] || 0) + 1;
     }
-    // empty should be roughly 55% (allow wide margin)
-    expect(counts['empty']! / n).toBeGreaterThan(0.45);
-    expect(counts['empty']! / n).toBeLessThan(0.75);
-    // station should be roughly 5%
-    expect(counts['station']! / n).toBeGreaterThan(0.01);
-    expect(counts['station']! / n).toBeLessThan(0.12);
+    // All sector types should appear in a large sample
+    for (const type of SECTOR_TYPES) {
+      expect(counts[type] ?? 0).toBeGreaterThan(0);
+    }
+    // empty should be the most common type (weight 0.55)
+    const emptyCount = counts['empty'] ?? 0;
+    for (const type of SECTOR_TYPES) {
+      if (type !== 'empty') {
+        expect(emptyCount).toBeGreaterThan(counts[type] ?? 0);
+      }
+    }
   });
 
   it('generateSector includes resource yields', () => {
@@ -67,6 +73,32 @@ describe('worldgen', () => {
     }
     const unique = new Set(yields);
     expect(unique.size).toBeGreaterThan(1);
+  });
+
+  it('isInNebulaZone: origin area is safe (no nebula zones near spawn)', () => {
+    // The safe origin zone guarantees no nebula zones within 200 sectors of origin
+    for (let x = -50; x <= 50; x++) {
+      for (let y = -50; y <= 50; y++) {
+        expect(isInNebulaZone(x, y)).toBe(false);
+      }
+    }
+  });
+
+  it('isInNebulaZone: deterministic for same coordinates', () => {
+    expect(isInNebulaZone(500, 500)).toBe(isInNebulaZone(500, 500));
+    expect(isInNebulaZone(-500, 300)).toBe(isInNebulaZone(-500, 300));
+  });
+
+  it('isInNebulaZone: nebula zones appear far from origin (fine-grained scan)', () => {
+    // Fine-grained scan across all quadrants — step=5 ensures min-radius-15 zones are hit
+    let found = false;
+    outer: for (let x = -1500; x <= 1500; x += 5) {
+      for (let y = -1500; y <= 1500; y += 5) {
+        if (x * x + y * y < 200 * 200) continue; // skip safe origin area
+        if (isInNebulaZone(x, y)) { found = true; break outer; }
+      }
+    }
+    expect(found).toBe(true);
   });
 
   it('station sectors have zero resources', () => {

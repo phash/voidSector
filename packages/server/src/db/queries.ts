@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass } from '@void-sector/shared';
+import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord } from '@void-sector/shared';
 import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -29,6 +29,39 @@ export async function createPlayer(
   };
 }
 
+export async function createGuestPlayer(
+  username: string,
+  homeBase: { x: number; y: number } = { x: 0, y: 0 }
+): Promise<PlayerData> {
+  const result = await query<{
+    id: string;
+    username: string;
+    home_base: { x: number; y: number };
+    xp: number;
+    level: number;
+  }>(
+    `INSERT INTO players (username, password_hash, home_base, is_guest, guest_created_at)
+     VALUES ($1, '', $2, TRUE, NOW())
+     RETURNING id, username, home_base, xp, level`,
+    [username, JSON.stringify(homeBase)]
+  );
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    username: row.username,
+    homeBase: row.home_base,
+    xp: row.xp,
+    level: row.level,
+  };
+}
+
+export async function deleteExpiredGuestPlayers(): Promise<number> {
+  const result = await query(
+    `DELETE FROM players WHERE is_guest = TRUE AND guest_created_at < NOW() - INTERVAL '24 hours'`
+  );
+  return result.rowCount ?? 0;
+}
+
 export async function findPlayerByUsername(
   username: string
 ): Promise<(PlayerData & { passwordHash: string }) | null> {
@@ -55,26 +88,149 @@ export async function findPlayerByUsername(
   };
 }
 
-export async function getActiveShip(playerId: string): Promise<{
-  shipClass: ShipClass;
-  fuel: number;
-  fuelMax: number;
-} | null> {
+export async function getPlayerHomeBase(playerId: string): Promise<{ x: number; y: number }> {
+  const { rows } = await query<{ home_base: { x: number; y: number } }>(
+    'SELECT home_base FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.home_base ?? { x: 0, y: 0 };
+}
+
+export async function getActiveShip(playerId: string): Promise<ShipRecord | null> {
   const { rows } = await query<{
-    ship_class: string;
+    id: string;
+    owner_id: string;
+    hull_type: string;
+    name: string;
+    modules: ShipModule[];
     fuel: number;
-    fuel_max: number;
+    active: boolean;
+    created_at: string;
   }>(
-    `SELECT ship_class, fuel, fuel_max FROM ships
-     WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
+    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at
+     FROM ships WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
     [playerId]
   );
   if (rows.length === 0) return null;
+  const row = rows[0];
   return {
-    shipClass: rows[0].ship_class as ShipClass,
-    fuel: rows[0].fuel,
-    fuelMax: rows[0].fuel_max,
+    id: row.id,
+    ownerId: row.owner_id,
+    hullType: row.hull_type as HullType,
+    name: row.name,
+    modules: row.modules,
+    active: row.active,
+    createdAt: row.created_at,
   };
+}
+
+export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
+  const { rows } = await query<any>(
+    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at
+     FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
+    [playerId]
+  );
+  return rows.map((row: any) => ({
+    id: row.id,
+    ownerId: row.owner_id,
+    hullType: row.hull_type as HullType,
+    name: row.name,
+    modules: row.modules,
+    active: row.active,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function createShip(
+  playerId: string, hullType: HullType, name: string, initialFuel: number
+): Promise<ShipRecord> {
+  // Deactivate current active ship
+  await query('UPDATE ships SET active = false WHERE owner_id = $1 AND active = true', [playerId]);
+  const { rows } = await query<any>(
+    `INSERT INTO ships (owner_id, hull_type, name, fuel, active)
+     VALUES ($1, $2, $3, $4, true) RETURNING *`,
+    [playerId, hullType, name, initialFuel]
+  );
+  const row = rows[0];
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    hullType: row.hull_type as HullType,
+    name: row.name,
+    modules: row.modules,
+    active: row.active,
+    createdAt: row.created_at,
+  };
+}
+
+export async function switchActiveShip(playerId: string, shipId: string): Promise<boolean> {
+  await query('UPDATE ships SET active = false WHERE owner_id = $1 AND active = true', [playerId]);
+  const { rowCount } = await query(
+    'UPDATE ships SET active = true WHERE id = $1 AND owner_id = $2',
+    [shipId, playerId]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function updateShipModules(shipId: string, modules: ShipModule[]): Promise<void> {
+  await query('UPDATE ships SET modules = $1 WHERE id = $2', [JSON.stringify(modules), shipId]);
+}
+
+export async function renameShip(shipId: string, playerId: string, name: string): Promise<boolean> {
+  const { rowCount } = await query(
+    'UPDATE ships SET name = $1 WHERE id = $2 AND owner_id = $3',
+    [name.slice(0, 20), shipId, playerId]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+export async function renameBase(playerId: string, name: string): Promise<void> {
+  await query('UPDATE players SET base_name = $1 WHERE id = $2', [name.slice(0, 20), playerId]);
+}
+
+export async function getModuleInventory(playerId: string): Promise<string[]> {
+  const { rows } = await query<{ module_inventory: string[] }>(
+    'SELECT module_inventory FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.module_inventory ?? [];
+}
+
+export async function addModuleToInventory(playerId: string, moduleId: string): Promise<void> {
+  await query(
+    `UPDATE players SET module_inventory = module_inventory || $1::jsonb WHERE id = $2`,
+    [JSON.stringify(moduleId), playerId]
+  );
+}
+
+export async function removeModuleFromInventory(playerId: string, moduleId: string): Promise<boolean> {
+  // Remove first occurrence of moduleId from the JSONB array
+  const { rows } = await query<{ module_inventory: string[] }>(
+    'SELECT module_inventory FROM players WHERE id = $1',
+    [playerId]
+  );
+  const inv = rows[0]?.module_inventory ?? [];
+  const idx = inv.indexOf(moduleId);
+  if (idx === -1) return false;
+  inv.splice(idx, 1);
+  await query('UPDATE players SET module_inventory = $1 WHERE id = $2', [JSON.stringify(inv), playerId]);
+  return true;
+}
+
+export async function getPlayerBaseName(playerId: string): Promise<string> {
+  const { rows } = await query<{ base_name: string }>(
+    'SELECT base_name FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.base_name ?? '';
+}
+
+export async function getPlayerLevel(playerId: string): Promise<number> {
+  const { rows } = await query<{ level: number }>(
+    'SELECT level FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.level ?? 1;
 }
 
 export async function getSector(
@@ -140,12 +296,39 @@ export async function addDiscovery(
 
 export async function getPlayerDiscoveries(
   playerId: string
-): Promise<Array<{ x: number; y: number }>> {
-  const result = await query<{ sector_x: number; sector_y: number }>(
-    'SELECT sector_x, sector_y FROM player_discoveries WHERE player_id = $1',
+): Promise<Array<{ x: number; y: number; discoveredAt: number; type?: string; seed?: number }>> {
+  const result = await query<{
+    sector_x: number;
+    sector_y: number;
+    discovered_at: string;
+    type: string | null;
+    seed: number | null;
+  }>(
+    `SELECT pd.sector_x, pd.sector_y, pd.discovered_at, s.type, s.seed
+     FROM player_discoveries pd
+     LEFT JOIN sectors s ON s.x = pd.sector_x AND s.y = pd.sector_y
+     WHERE pd.player_id = $1`,
     [playerId]
   );
-  return result.rows.map((row) => ({ x: row.sector_x, y: row.sector_y }));
+  return result.rows.map((row) => ({
+    x: row.sector_x,
+    y: row.sector_y,
+    discoveredAt: new Date(row.discovered_at).getTime(),
+    ...(row.type ? { type: row.type } : {}),
+    ...(row.seed !== null ? { seed: row.seed } : {}),
+  }));
+}
+
+export async function isRouteDiscovered(
+  playerId: string,
+  sectorX: number,
+  sectorY: number
+): Promise<boolean> {
+  const result = await query(
+    'SELECT 1 FROM player_discoveries WHERE player_id = $1 AND sector_x = $2 AND sector_y = $3 LIMIT 1',
+    [playerId, sectorX, sectorY]
+  );
+  return result.rows.length > 0;
 }
 
 export async function getPlayerCargo(playerId: string): Promise<CargoState> {
@@ -360,6 +543,30 @@ export async function deductCredits(playerId: string, amount: number): Promise<b
   return (rowCount ?? 0) > 0;
 }
 
+export async function getAlienCredits(playerId: string): Promise<number> {
+  const { rows } = await query<{ alien_credits: number }>(
+    'SELECT alien_credits FROM players WHERE id = $1',
+    [playerId]
+  );
+  return rows[0]?.alien_credits ?? 0;
+}
+
+export async function addAlienCredits(playerId: string, amount: number): Promise<number> {
+  const { rows } = await query<{ alien_credits: number }>(
+    'UPDATE players SET alien_credits = alien_credits + $2 WHERE id = $1 RETURNING alien_credits',
+    [playerId, amount]
+  );
+  return rows[0]?.alien_credits ?? 0;
+}
+
+export async function deductAlienCredits(playerId: string, amount: number): Promise<boolean> {
+  const { rows } = await query<{ alien_credits: number }>(
+    'UPDATE players SET alien_credits = alien_credits - $2 WHERE id = $1 AND alien_credits >= $2 RETURNING alien_credits',
+    [playerId, amount]
+  );
+  return rows.length > 0;
+}
+
 export async function getStorageInventory(playerId: string): Promise<{ ore: number; gas: number; crystal: number }> {
   const { rows } = await query<{ ore: number; gas: number; crystal: number }>(
     'SELECT ore, gas, crystal FROM storage_inventory WHERE player_id = $1',
@@ -412,6 +619,19 @@ export async function getPlayerStructure(
     [playerId, type]
   );
   return rows[0] ?? null;
+}
+
+export async function playerHasBaseAtSector(
+  playerId: string, sectorX: number, sectorY: number
+): Promise<boolean> {
+  const { rows } = await query(
+    `SELECT 1 FROM structures
+     WHERE owner_id = $1 AND type = 'base'
+       AND sector_x = $2 AND sector_y = $3
+     LIMIT 1`,
+    [playerId, sectorX, sectorY]
+  );
+  return rows.length > 0;
 }
 
 export async function createTradeOrder(
@@ -1132,4 +1352,27 @@ export async function getActiveTradeRoutes(): Promise<Array<{
      FROM trade_routes WHERE active = TRUE`
   );
   return rows;
+}
+
+// --- Bookmarks ---
+
+export async function getPlayerBookmarks(playerId: string): Promise<Bookmark[]> {
+  const result = await query<{ slot: number; sector_x: number; sector_y: number; label: string }>(
+    'SELECT slot, sector_x, sector_y, label FROM player_bookmarks WHERE player_id = $1 ORDER BY slot',
+    [playerId]
+  );
+  return result.rows.map(r => ({ slot: r.slot, sectorX: r.sector_x, sectorY: r.sector_y, label: r.label }));
+}
+
+export async function setPlayerBookmark(playerId: string, slot: number, sectorX: number, sectorY: number, label: string): Promise<void> {
+  await query(
+    `INSERT INTO player_bookmarks (player_id, slot, sector_x, sector_y, label)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (player_id, slot) DO UPDATE SET sector_x = $3, sector_y = $4, label = $5`,
+    [playerId, slot, sectorX, sectorY, label]
+  );
+}
+
+export async function clearPlayerBookmark(playerId: string, slot: number): Promise<void> {
+  await query('DELETE FROM player_bookmarks WHERE player_id = $1 AND slot = $2', [playerId, slot]);
 }

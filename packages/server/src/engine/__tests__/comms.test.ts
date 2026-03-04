@@ -56,4 +56,20 @@ describe('canCommunicate', () => {
       []
     )).toBe(true);
   });
+
+  it('single relay with large range bridges both players', () => {
+    expect(canCommunicate(
+      { x: 0, y: 0, commRange: 50 },
+      { x: 2000, y: 0, commRange: 50 },
+      [{ x: 1000, y: 0, range: 1100 }]
+    )).toBe(true);
+  });
+
+  it('relay with tiny range cannot help distant players', () => {
+    expect(canCommunicate(
+      { x: 0, y: 0, commRange: 50 },
+      { x: 2000, y: 0, commRange: 50 },
+      [{ x: 5000, y: 0, range: 10 }] // relay is too far AND has tiny range
+    )).toBe(false);
+  });
 });

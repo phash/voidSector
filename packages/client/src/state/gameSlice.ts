@@ -1,5 +1,20 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, ShipData, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType } from '@void-sector/shared';
+
+/**
+ * Extended ship data as sent by the server in the new ship designer system.
+ * Combines ShipRecord fields with computed stats and current fuel.
+ */
+export interface ClientShipData {
+  id: string;
+  ownerId: string;
+  hullType: HullType;
+  name: string;
+  modules: ShipModule[];
+  stats: ShipStats;
+  fuel: number;
+  active: boolean;
+}
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -26,6 +41,7 @@ export interface GameSlice {
   token: string | null;
   playerId: string | null;
   username: string | null;
+  isGuest: boolean;
 
   // Position
   position: Coords;
@@ -34,8 +50,8 @@ export interface GameSlice {
   ap: APState | null;
   fuel: FuelState | null;
 
-  // Ship
-  ship: ShipData | null;
+  // Ship (new designer format)
+  ship: ClientShipData | null;
 
   // Current sector
   currentSector: SectorData | null;
@@ -73,6 +89,7 @@ export interface GameSlice {
 
   // Credits
   credits: number;
+  alienCredits: number;
 
   // Storage
   storage: StorageInventory;
@@ -94,6 +111,7 @@ export interface GameSlice {
   reputations: PlayerReputation[];
   playerUpgrades: PlayerUpgrade[];
   activeBattle: PirateEncounter | null;
+  lastBattleResult: { encounter: PirateEncounter; result: BattleResult } | null;
   scanEvents: ScanEvent[];
 
   // Phase 5: Deep Systems
@@ -103,13 +121,26 @@ export interface GameSlice {
   factionUpgrades: FactionUpgradeState[];
   tradeRoutes: TradeRoute[];
 
+  // Bookmarks
+  bookmarks: Bookmark[];
+
+  // Autopilot / Hyperjump
+  autopilot: AutopilotState | null;
+  discoveryTimestamps: Record<string, number>;
+
+  // Ship designer
+  shipList: (ShipRecord & { stats: ShipStats })[];
+  moduleInventory: string[];
+  baseName: string;
+  homeBase: { x: number; y: number };
+
   // Actions
-  setAuth: (token: string, playerId: string, username: string) => void;
+  setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
   setPosition: (pos: Coords) => void;
   setAP: (ap: APState) => void;
   setFuel: (fuel: FuelState) => void;
-  setShip: (ship: ShipData) => void;
+  setShip: (ship: ClientShipData) => void;
   setCurrentSector: (sector: SectorData) => void;
   setPlayer: (sessionId: string, player: PlayerPresence) => void;
   removePlayer: (sessionId: string) => void;
@@ -137,6 +168,7 @@ export interface GameSlice {
   setReputations: (reps: PlayerReputation[]) => void;
   setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
   setActiveBattle: (encounter: PirateEncounter | null) => void;
+  setLastBattleResult: (result: { encounter: PirateEncounter; result: BattleResult } | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
   addScanEvent: (event: ScanEvent) => void;
   setJumpGateInfo: (gate: JumpGateInfo | null) => void;
@@ -145,12 +177,20 @@ export interface GameSlice {
   removeDistressCall: (id: string) => void;
   setFactionUpgrades: (upgrades: FactionUpgradeState[]) => void;
   setTradeRoutes: (routes: TradeRoute[]) => void;
+  setBookmarks: (bookmarks: Bookmark[]) => void;
+  setAutopilot: (state: AutopilotState | null) => void;
+  setDiscoveryTimestamps: (timestamps: Record<string, number>) => void;
+  setShipList: (ships: (ShipRecord & { stats: ShipStats })[]) => void;
+  setModuleInventory: (modules: string[]) => void;
+  setBaseName: (name: string) => void;
+  setHomeBase: (coords: { x: number; y: number }) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
   token: safeGetItem('vs_token'),
   playerId: safeGetItem('vs_playerId'),
   username: safeGetItem('vs_username'),
+  isGuest: safeGetItem('vs_isGuest') === 'true',
   position: { x: 0, y: 0 },
   ap: null,
   fuel: null,
@@ -168,6 +208,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   selectedSector: null,
   baseStructures: [],
   credits: 0,
+  alienCredits: 0,
   storage: { ore: 0, gas: 0, crystal: 0 },
   tradeOrders: [],
   myOrders: [],
@@ -179,25 +220,36 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   reputations: [],
   playerUpgrades: [],
   activeBattle: null,
+  lastBattleResult: null,
   scanEvents: [],
   jumpGateInfo: null,
   rescuedSurvivors: [],
   distressCalls: [],
   factionUpgrades: [],
   tradeRoutes: [],
+  bookmarks: [],
+  autopilot: null,
+  discoveryTimestamps: {},
+  shipList: [],
+  moduleInventory: [],
+  baseName: '',
+  homeBase: { x: 0, y: 0 },
 
-  setAuth: (token, playerId, username) => {
+  setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
     safeSetItem('vs_playerId', playerId);
     safeSetItem('vs_username', username);
-    set({ token, playerId, username });
+    if (isGuest) safeSetItem('vs_isGuest', 'true');
+    else safeRemoveItem('vs_isGuest');
+    set({ token, playerId, username, isGuest });
   },
 
   clearAuth: () => {
     safeRemoveItem('vs_token');
     safeRemoveItem('vs_playerId');
     safeRemoveItem('vs_username');
-    set({ token: null, playerId: null, username: null });
+    safeRemoveItem('vs_isGuest');
+    set({ token: null, playerId: null, username: null, isGuest: false });
   },
 
   setPosition: (position) => set({ position }),
@@ -263,6 +315,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setReputations: (reputations) => set({ reputations }),
   setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
   setActiveBattle: (activeBattle) => set({ activeBattle }),
+  setLastBattleResult: (lastBattleResult) => set({ lastBattleResult }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
   setJumpGateInfo: (jumpGateInfo) => set({ jumpGateInfo }),
@@ -271,4 +324,11 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   removeDistressCall: (id) => set((s) => ({ distressCalls: s.distressCalls.filter(d => d.id !== id) })),
   setFactionUpgrades: (factionUpgrades) => set({ factionUpgrades }),
   setTradeRoutes: (tradeRoutes) => set({ tradeRoutes }),
+  setBookmarks: (bookmarks) => set({ bookmarks }),
+  setAutopilot: (autopilot) => set({ autopilot }),
+  setDiscoveryTimestamps: (discoveryTimestamps) => set({ discoveryTimestamps }),
+  setShipList: (shipList) => set({ shipList }),
+  setModuleInventory: (moduleInventory) => set({ moduleInventory }),
+  setBaseName: (baseName) => set({ baseName }),
+  setHomeBase: (homeBase) => set({ homeBase }),
 });

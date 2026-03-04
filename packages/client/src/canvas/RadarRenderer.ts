@@ -1,7 +1,16 @@
-import { SYMBOLS, RADAR_RADIUS, SECTOR_COLORS } from '@void-sector/shared';
-import type { SectorData, Coords, JumpGateInfo, ScanEvent } from '@void-sector/shared';
+import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS, HULL_RADAR_PATTERNS } from '@void-sector/shared';
+import type { SectorData, Coords, JumpGateInfo, ScanEvent, HullType, Bookmark } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
+
+const BOOKMARK_COLORS: Record<number, string> = {
+  0: '#33FF33',   // HOME — green
+  1: '#FF6644',   // Slot 1 — red-orange
+  2: '#44AAFF',   // Slot 2 — blue
+  3: '#FFDD22',   // Slot 3 — yellow
+  4: '#44FF88',   // Slot 4 — teal
+  5: '#FF44FF',   // Slot 5 — magenta
+};
 
 export const CELL_SIZES = [
   { w: 48, h: 38, fontSize: 12, coordSize: 8 },
@@ -9,6 +18,23 @@ export const CELL_SIZES = [
   { w: 80, h: 64, fontSize: 16, coordSize: 10 },
   { w: 96, h: 76, fontSize: 18, coordSize: 11 },
 ];
+
+// Coordinate frame margins (exported for click offset calculation)
+export const FRAME_LEFT = 40;   // space for row numbers (Y coordinates)
+export const FRAME_BOTTOM = 24; // space for column numbers (X coordinates)
+export const FRAME_PAD = 8;     // padding on right/top
+
+export function calculateVisibleRadius(canvasW: number, canvasH: number, zoomLevel: number): { radiusX: number; radiusY: number } {
+  if (zoomLevel === 4) {
+    return { radiusX: 1, radiusY: 1 }; // always 3×3
+  }
+  const { w, h } = CELL_SIZES[zoomLevel] ?? CELL_SIZES[2];
+  const gridW = canvasW - FRAME_LEFT - FRAME_PAD;
+  const gridH = canvasH - FRAME_BOTTOM - FRAME_PAD;
+  const radiusX = Math.max(2, Math.floor(gridW / w / 2));
+  const radiusY = Math.max(2, Math.floor(gridH / h / 2));
+  return { radiusX, radiusY };
+}
 
 interface RadarState {
   position: Coords;
@@ -23,23 +49,52 @@ interface RadarState {
   selectedSector?: { x: number; y: number } | null;
   jumpGateInfo?: JumpGateInfo | null;
   scanEvents?: ScanEvent[];
+  discoveryTimestamps?: Record<string, number>;
+  hullType?: HullType;
+  homeBase?: { x: number; y: number };
+  bookmarks?: Bookmark[];
+  animTime?: number;
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
-  const { w: CELL_W, h: CELL_H, fontSize, coordSize } = CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1];
-  const FONT = `${fontSize}px 'Share Tech Mono', 'Courier New', monospace`;
-  const COORD_FONT = `${coordSize}px 'Share Tech Mono', 'Courier New', monospace`;
   const dpr = window.devicePixelRatio || 1;
   const w = ctx.canvas.width / dpr;
   const h = ctx.canvas.height / dpr;
+  const isDetailView = state.zoomLevel === 4;
+  const cellEntry = isDetailView
+    ? { w: Math.floor((w - FRAME_LEFT - FRAME_PAD) / 3), h: Math.floor((h - FRAME_BOTTOM - FRAME_PAD) / 3), fontSize: 20, coordSize: 10 }
+    : (CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1]);
+  const { w: CELL_W, h: CELL_H, fontSize, coordSize } = cellEntry;
+  const FONT = `${fontSize}px 'Share Tech Mono', 'Courier New', monospace`;
+  const COORD_FONT = `${coordSize}px 'Share Tech Mono', 'Courier New', monospace`;
+
+  // Build bookmark lookup: "x,y" → slot number
+  const bookmarkMap = new Map<string, number>();
+  for (const bm of (state.bookmarks ?? [])) {
+    bookmarkMap.set(`${bm.sectorX},${bm.sectorY}`, bm.slot);
+  }
 
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#050505';
   ctx.fillRect(0, 0, w, h);
 
-  const centerX = w / 2;
-  const centerY = h / 2;
-  const radius = RADAR_RADIUS;
+  // Grid area bounded to ~80% of canvas
+  const gridLeft = FRAME_LEFT;
+  const gridTop = FRAME_PAD;
+  const gridRight = w - FRAME_PAD;
+  const gridBottom = h - FRAME_BOTTOM;
+  const gridW = gridRight - gridLeft;
+  const gridH = gridBottom - gridTop;
+
+  // Recalculate visible cells based on grid area
+  const visibleCols = Math.max(1, Math.floor(gridW / CELL_W));
+  const visibleRows = Math.max(1, Math.floor(gridH / CELL_H));
+  const radiusX = Math.floor(visibleCols / 2);
+  const radiusY = Math.floor(visibleRows / 2);
+
+  // Grid center within bounded area
+  const gridCenterX = gridLeft + gridW / 2;
+  const gridCenterY = gridTop + gridH / 2;
 
   const viewX = state.position.x + state.panOffset.x;
   const viewY = state.position.y + state.panOffset.y;
@@ -55,41 +110,76 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     ctx.translate(-slideX, -slideY);
   }
 
-  for (let dx = -radius; dx <= radius; dx++) {
-    for (let dy = -radius; dy <= radius; dy++) {
+  for (let dx = -radiusX; dx <= radiusX; dx++) {
+    for (let dy = -radiusY; dy <= radiusY; dy++) {
       const sx = viewX + dx;
       const sy = viewY + dy;
-      const cellX = centerX + dx * CELL_W;
-      const cellY = centerY + dy * CELL_H;
+      const cellX = gridCenterX + dx * CELL_W;
+      const cellY = gridCenterY + dy * CELL_H;
 
       const key = `${sx}:${sy}`;
       const sector = state.discoveries[key];
       const isPlayer = sx === state.position.x && sy === state.position.y;
       const isCenter = dx === 0 && dy === 0;
-      const isHome = sx === 0 && sy === 0;
+      const hb = state.homeBase ?? { x: 0, y: 0 };
+      const isHome = sx === hb.x && sy === hb.y;
+
+      // Staleness rendering — dim/fade old discoveries
+      if (sector && !isPlayer) {
+        const discoveryTimestamp = state.discoveryTimestamps?.[key];
+        if (discoveryTimestamp) {
+          const now = Date.now();
+          const hoursSinceDiscovery = (now - discoveryTimestamp) / (1000 * 60 * 60);
+          if (hoursSinceDiscovery > STALENESS_FADE_DAYS * 24) {
+            ctx.globalAlpha = 0.2;
+          } else if (hoursSinceDiscovery > STALENESS_DIM_HOURS) {
+            ctx.globalAlpha = 0.5;
+          }
+        }
+      }
 
       // Cell border
       ctx.strokeStyle = state.dimColor.replace(/[\d.]+\)$/, '0.4)');
       ctx.lineWidth = 2;
       ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
 
+      // Bookmark border (colored per slot)
+      const bmSlot = bookmarkMap.get(`${sx},${sy}`);
+      if (bmSlot !== undefined && BOOKMARK_COLORS[bmSlot]) {
+        ctx.strokeStyle = BOOKMARK_COLORS[bmSlot];
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
+      }
+
+      // Pulsing player border
+      if (isPlayer) {
+        const t = state.animTime ?? 0;
+        const pulse = 0.6 + 0.4 * Math.sin(t / 400);
+        const alpha = Math.round(pulse * 255).toString(16).padStart(2, '0');
+        ctx.strokeStyle = state.themeColor + alpha;
+        ctx.lineWidth = 3 + pulse * 1.5;
+        ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
+      }
+
       // Selected cell highlight
-      if (state.selectedSector && sx === state.selectedSector.x && sy === state.selectedSector.y) {
+      if (state.selectedSector && sx === state.selectedSector.x && sy === state.selectedSector.y && !isPlayer) {
         ctx.strokeStyle = state.themeColor;
         ctx.lineWidth = 3;
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
       }
 
-      // Coordinates label
-      ctx.font = COORD_FONT;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      if (sector || isPlayer) {
-        ctx.fillStyle = state.dimColor;
-      } else {
-        ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.25)');
+      // Coordinates label — only at zoom >= 1 (frame handles coords at zoom 0)
+      if (state.zoomLevel >= 1) {
+        ctx.font = COORD_FONT;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        if (sector || isPlayer) {
+          ctx.fillStyle = state.dimColor;
+        } else {
+          ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.25)');
+        }
+        ctx.fillText(`(${sx},${sy})`, cellX, cellY - CELL_H / 2 + 3);
       }
-      ctx.fillText(`(${sx},${sy})`, cellX, cellY - CELL_H / 2 + 3);
 
       // Sector content
       ctx.font = FONT;
@@ -97,11 +187,16 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       ctx.textBaseline = 'middle';
 
       if (isPlayer) {
-        drawGlowText(ctx, SYMBOLS.ship, cellX, cellY, state.themeColor, 10);
-        ctx.font = COORD_FONT;
-        ctx.fillStyle = state.themeColor;
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(isHome ? 'HOME BASE' : 'YOU', cellX, cellY + CELL_H / 2 - 2);
+        const ownHull = state.hullType ?? 'scout';
+        const ownPattern = HULL_RADAR_PATTERNS[ownHull];
+        const ownPixelSize = isDetailView ? Math.max(8, 2 + state.zoomLevel) : 2 + state.zoomLevel;
+        drawHullIcon(ctx, ownPattern, cellX, cellY, state.themeColor, ownPixelSize);
+        if (state.zoomLevel >= 1) {
+          ctx.font = COORD_FONT;
+          ctx.fillStyle = state.themeColor;
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(isHome ? 'HOME BASE' : 'YOU', cellX, cellY + CELL_H / 2 - 2);
+        }
       } else if (sector) {
         const symbol = isHome ? SYMBOLS.homeBase : getSectorSymbol(sector.type);
         const sectorColor = isHome
@@ -111,20 +206,51 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         ctx.shadowBlur = 0;
         ctx.fillText(symbol, cellX, cellY);
 
-        ctx.font = COORD_FONT;
-        ctx.fillStyle = sectorColor;
-        ctx.textBaseline = 'bottom';
-        const label = isHome ? 'HOME' : getSectorLabel(sector.type);
-        ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
+        if (state.zoomLevel >= 1) {
+          ctx.font = COORD_FONT;
+          ctx.fillStyle = sectorColor;
+          ctx.textBaseline = 'bottom';
+          const label = isHome ? 'HOME' : getSectorLabel(sector.type);
+          ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
+        }
       } else {
-        ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.15)');
-        ctx.textBaseline = 'bottom';
-        ctx.font = COORD_FONT;
-        ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H / 2 - 2);
+        if (state.zoomLevel >= 1) {
+          ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.15)');
+          ctx.textBaseline = 'bottom';
+          ctx.font = COORD_FONT;
+          ctx.fillText('UNEXPLORED', cellX, cellY + CELL_H / 2 - 2);
+        }
       }
 
-      // Feature dots (jumpgate, scan events)
-      if (sector || isPlayer) {
+      // Zoom-4 detail: resources + discovery age
+      if (isDetailView && sector) {
+        const lineH = 16;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        let detailY = cellY + CELL_H / 2 + 6;
+
+        const res = sector.resources;
+        if (res) {
+          ctx.font = `13px 'Share Tech Mono', monospace`;
+          if (res.ore > 0)     { ctx.fillStyle = state.themeColor; ctx.fillText(`Ore: ${res.ore}`,     cellX, detailY); detailY += lineH; }
+          if (res.gas > 0)     { ctx.fillStyle = state.themeColor; ctx.fillText(`Gas: ${res.gas}`,     cellX, detailY); detailY += lineH; }
+          if (res.crystal > 0) { ctx.fillStyle = state.themeColor; ctx.fillText(`Cry: ${res.crystal}`, cellX, detailY); detailY += lineH; }
+        }
+
+        // Discovery age
+        const ts = state.discoveryTimestamps?.[key];
+        if (ts) {
+          ctx.font = `12px 'Share Tech Mono', monospace`;
+          const ageMs = Date.now() - ts;
+          const ageH = Math.floor(ageMs / 3600000);
+          const label = ageH < 1 ? '<1h' : ageH < 24 ? `${ageH}h` : `${Math.floor(ageH / 24)}d`;
+          ctx.fillStyle = state.dimColor;
+          ctx.fillText(`~${label} ago`, cellX, detailY);
+        }
+      }
+
+      // Feature dots (jumpgate, scan events) — zoom >= 2
+      if (state.zoomLevel >= 2 && (sector || isPlayer)) {
         const features: string[] = [];
         if (state.jumpGateInfo && isPlayer) {
           features.push('#00BFFF'); // cyan for jumpgate
@@ -143,22 +269,48 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           drawFeatureDot(ctx, dotStartX - fi * 5, dotY, features[fi]);
         }
       }
+
+      // Structure indicator — zoom >= 2
+      if (state.zoomLevel >= 2 && sector) {
+        const hasStructure = (sector as any).structures?.length > 0 || sector.type === 'station';
+        if (hasStructure && !isPlayer) {
+          ctx.font = `${coordSize + 2}px 'Share Tech Mono', monospace`;
+          ctx.fillStyle = '#FFB000';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText('◊', cellX - CELL_W / 2 + 3, cellY - CELL_H / 2 + 3);
+        }
+      }
+
+      // Reset alpha after each cell (staleness rendering)
+      ctx.globalAlpha = 1.0;
     }
   }
 
-  // Draw other players
-  const playerList = Object.values(state.players);
-  for (let i = 0; i < playerList.length; i++) {
-    const player = playerList[i];
-    const dx = player.x - viewX;
-    const dy = player.y - viewY;
-    if (Math.abs(dx) <= radius && Math.abs(dy) <= radius && !(player.x === state.position.x && player.y === state.position.y)) {
-      const px = centerX + dx * CELL_W + 12;
-      const py = centerY + dy * CELL_H;
-      ctx.font = FONT;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      drawGlowText(ctx, SYMBOLS.player, px, py, state.themeColor, 6);
+  // Draw other players — zoom >= 3
+  if (state.zoomLevel >= 3) {
+    const otherPattern = HULL_RADAR_PATTERNS.scout;
+    const otherPixelSize = 1 + state.zoomLevel;
+    const otherColor = state.dimColor;
+    const playerList = Object.values(state.players);
+    for (let i = 0; i < playerList.length; i++) {
+      const player = playerList[i];
+      const dx = player.x - viewX;
+      const dy = player.y - viewY;
+      if (Math.abs(dx) <= radiusX && Math.abs(dy) <= radiusY && !(player.x === state.position.x && player.y === state.position.y)) {
+        const px = gridCenterX + dx * CELL_W + 12;
+        const py = gridCenterY + dy * CELL_H;
+        drawHullIcon(ctx, otherPattern, px, py, otherColor, otherPixelSize);
+        // Player username at zoom 3
+        const displayName = player.username?.slice(0, 8) ?? '';
+        if (displayName) {
+          ctx.font = COORD_FONT;
+          ctx.fillStyle = otherColor;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(displayName, px + 10, py);
+        }
+      }
     }
   }
 
@@ -166,6 +318,39 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   if (animActive && anim.phase === 'slide') {
     ctx.restore();
   }
+
+  // --- Coordinate frame ---
+  ctx.font = COORD_FONT;
+  ctx.fillStyle = state.dimColor;
+
+  // Row labels (left side) — Y galaxy coordinates
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let dy = -radiusY; dy <= radiusY; dy++) {
+    const sy = viewY + dy;
+    const cellY = gridCenterY + dy * CELL_H;
+    ctx.fillText(String(sy), FRAME_LEFT - 8, cellY);
+  }
+
+  // Column labels (bottom) — X galaxy coordinates
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let dx = -radiusX; dx <= radiusX; dx++) {
+    const sx = viewX + dx;
+    const cellX = gridCenterX + dx * CELL_W;
+    ctx.fillText(String(sx), cellX, gridBottom + 4);
+  }
+
+  // Frame border
+  ctx.strokeStyle = state.dimColor.replace(/[\d.]+\)$/, '0.5)');
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(gridLeft - 1, gridTop - 1);
+  ctx.lineTo(gridRight + 1, gridTop - 1);
+  ctx.lineTo(gridRight + 1, gridBottom + 1);
+  ctx.lineTo(gridLeft - 1, gridBottom + 1);
+  ctx.closePath();
+  ctx.stroke();
 
   // Apply glitch overlay based on animation phase
   if (animActive) {
@@ -237,6 +422,40 @@ export function drawGlitchOverlay(ctx: CanvasRenderingContext2D, width: number, 
       ctx.fillRect(Math.random() * width, Math.random() * height, 2, 1);
     }
   }
+}
+
+function drawHullIcon(
+  ctx: CanvasRenderingContext2D,
+  pattern: number[][],
+  centerX: number,
+  centerY: number,
+  color: string,
+  pixelSize: number = 2
+) {
+  const rows = pattern.length;
+  const cols = pattern[0].length;
+  const offsetX = centerX - (cols * pixelSize) / 2;
+  const offsetY = centerY - (rows * pixelSize) / 2;
+
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 4;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (pattern[r][c]) {
+        ctx.fillRect(
+          offsetX + c * pixelSize,
+          offsetY + r * pixelSize,
+          pixelSize,
+          pixelSize
+        );
+      }
+    }
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
 }
 
 function drawGlowText(

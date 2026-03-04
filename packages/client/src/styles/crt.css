@@ -34,6 +34,50 @@
   animation: crt-flicker 0.15s infinite;
 }
 
+/* Glitch bar: horizontal distortion stripe scrolling top→bottom */
+@keyframes crt-glitch-bar {
+  0%,  80% { transform: translateY(-100%); opacity: 0; }
+  85%       { transform: translateY(0%);   opacity: 0.35; filter: hue-rotate(20deg); }
+  92%       { transform: translateY(60%);  opacity: 0.25; }
+  100%      { transform: translateY(110%); opacity: 0; }
+}
+
+/* Glitch bar 2: slightly offset timing */
+@keyframes crt-glitch-bar2 {
+  0%,  60% { transform: translateY(-100%); opacity: 0; }
+  65%       { transform: translateY(20%);  opacity: 0.2; filter: hue-rotate(-15deg); }
+  75%       { transform: translateY(90%);  opacity: 0.15; }
+  80%       { transform: translateY(110%); opacity: 0; }
+  100%      { transform: translateY(110%); opacity: 0; }
+}
+
+/* CRT noise overlay — for nebula interference */
+@keyframes crt-noise {
+  0%   { background-position: 0 0; }
+  10%  { background-position: -5% -10%; }
+  20%  { background-position: -15% 5%; }
+  30%  { background-position: 7% -25%; }
+  40%  { background-position: -5% 25%; }
+  50%  { background-position: -15% 10%; }
+  60%  { background-position: 15% 0; }
+  70%  { background-position: 0 15%; }
+  80%  { background-position: 3% 35%; }
+  90%  { background-position: -10% 10%; }
+  100% { background-position: 0 0; }
+}
+
+/* Program-switch flicker */
+@keyframes crt-switch-flicker {
+  0%   { opacity: 1; filter: brightness(1); }
+  10%  { opacity: 0; filter: brightness(3); }
+  20%  { opacity: 1; filter: brightness(0.5); }
+  35%  { opacity: 0.3; filter: brightness(2); }
+  50%  { opacity: 1; filter: brightness(1); }
+  65%  { opacity: 0.7; filter: brightness(1.5); }
+  80%  { opacity: 0.95; filter: brightness(0.8); }
+  100% { opacity: 1; filter: brightness(1); }
+}
+
 @keyframes crt-flicker {
   0%   { opacity: 0.27; }
   10%  { opacity: 0.24; }
@@ -55,23 +99,31 @@
   z-index: 9;
   background: radial-gradient(
     ellipse at center,
-    transparent 65%,
-    rgba(0, 0, 0, 0.3) 100%
+    transparent 75%,
+    rgba(0, 0, 0, 0.06) 100%
   );
 }
 
-/* Hardware Bezel Frame */
+/* Hardware Bezel Frame — 3D TV-style monitor */
 .bezel-frame {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
-  background: #111;
-  border: 3px solid #2a2a2a;
-  border-radius: 8px;
+  background: linear-gradient(145deg, #1e1e1e 0%, #141414 50%, #0e0e0e 100%);
+  border-radius: 10px;
+  /* 3D bevel effect: light from top-left */
+  border-top: 3px solid #3a3a3a;
+  border-left: 3px solid #333;
+  border-bottom: 3px solid #080808;
+  border-right: 3px solid #0a0a0a;
   box-shadow:
-    inset 0 0 20px rgba(0,0,0,0.8),
-    0 0 30px rgba(0,0,0,0.5);
+    inset 0 0 20px rgba(0,0,0,0.9),
+    /* outer 3D depth */
+    5px 5px 12px rgba(0,0,0,0.9),
+    -1px -1px 4px rgba(60,55,50,0.25),
+    /* screen glow */
+    inset 0 2px 6px rgba(0,0,0,0.6);
 }
 
 .bezel-main {
@@ -157,6 +209,8 @@
   z-index: 1;
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .bezel-bottom {
@@ -237,34 +291,90 @@
   }
 }
 
+/* Mobile content area — full-screen active monitor on small screens */
+.mobile-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .mobile-content {
+    display: none;
+  }
+}
+
 /* 3-column desktop layout */
 .desktop-layout-v2 {
-  display: grid;
-  grid-template-columns: 1fr;
-  height: 100%;
-  gap: 0;
+  display: none; /* hidden on mobile, shown on desktop */
 }
 
 @media (min-width: 1024px) {
   .desktop-layout-v2 {
+    display: grid;
     grid-template-columns: auto 1fr auto;
+    height: 100%;
+    gap: 0;
+    overflow: hidden;
   }
+}
 
+@media (min-width: 1024px) {
   .sidebar-left {
     display: flex;
-    width: 320px;
-    min-width: 320px;
-    max-width: 320px;
+    width: 416px;
+    min-width: 416px;
+    max-width: 416px;
     border-right: 2px solid #2a2a2a;
+    transition: width 200ms ease, min-width 200ms ease;
   }
 
   .sidebar-right {
     display: flex;
-    width: 320px;
-    min-width: 320px;
-    max-width: 320px;
+    width: 416px;
+    min-width: 416px;
+    max-width: 416px;
     border-left: 2px solid #2a2a2a;
+    transition: width 200ms ease, min-width 200ms ease;
   }
+}
+
+/* Collapsed sidebar state */
+@media (min-width: 1024px) {
+  .sidebar-left.collapsed,
+  .sidebar-right.collapsed {
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+  }
+}
+
+/* Hide slot content when collapsed */
+.sidebar-left.collapsed .sidebar-slot-content,
+.sidebar-right.collapsed .sidebar-slot-content {
+  display: none;
+}
+
+/* Sidebar toggle button */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--color-dim);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  width: 100%;
+  transition: color 0.1s;
+}
+
+.sidebar-toggle:hover {
+  color: var(--color-primary);
 }
 
 .sidebar-stack {
@@ -299,6 +409,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .main-upper {
@@ -324,6 +435,7 @@
 .main-lower {
   flex: 1;
   min-height: 0;
+  max-height: 40%;
   overflow: auto;
   border-top: 2px solid #2a2a2a;
 }
@@ -384,12 +496,213 @@
   display: flex;
   gap: 2px;
   padding: 4px;
-  background: #111;
+  background: #0d0d0d;
   border-top: 2px solid #2a2a2a;
+  flex-shrink: 0;
+}
+
+.mobile-tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 8px 2px;
+  min-height: 52px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #555;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
+  position: relative;
+}
+
+.mobile-tab-btn.active {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.mobile-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+  box-shadow: 0 0 4px var(--color-primary);
+}
+
+.mobile-tab-btn.alert {
+  animation: channel-blink 1s ease-in-out infinite;
+}
+
+.mobile-tab-icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.mobile-tab-label {
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
 }
 
 @media (min-width: 1024px) {
   .mobile-tabs {
     display: none;
+  }
+}
+
+/* CRT monitor collapse/expand animations */
+@keyframes crt-collapse {
+  0%   { transform: scaleX(1);    filter: brightness(1); opacity: 1; }
+  50%  { transform: scaleX(0.05); filter: brightness(2); opacity: 1; }
+  100% { transform: scaleX(0);    filter: brightness(0); opacity: 0; }
+}
+
+@keyframes crt-expand {
+  0%   { transform: scaleX(0);    filter: brightness(2); opacity: 0; }
+  50%  { transform: scaleX(0.05); filter: brightness(2); opacity: 1; }
+  100% { transform: scaleX(1);    filter: brightness(1); opacity: 1; }
+}
+
+.sidebar-crt-collapse {
+  animation: crt-collapse 250ms ease-in forwards;
+  transform-origin: left center;
+}
+
+.sidebar-crt-expand {
+  animation: crt-expand 250ms ease-out forwards;
+  transform-origin: left center;
+}
+
+.sidebar-right .sidebar-crt-collapse,
+.sidebar-right .sidebar-crt-expand {
+  transform-origin: right center;
+}
+
+/* ── CRT Glitch Bars ── */
+.crt-glitch-bar {
+  position: absolute;
+  left: 0; right: 0;
+  height: 3px;
+  pointer-events: none;
+  z-index: 13;
+  background: linear-gradient(
+    transparent 0%,
+    rgba(255, 200, 60, 0.5) 40%,
+    rgba(255, 220, 80, 0.6) 50%,
+    rgba(255, 200, 60, 0.5) 60%,
+    transparent 100%
+  );
+  animation: crt-glitch-bar 12s linear infinite;
+}
+
+.crt-glitch-bar-2 {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  pointer-events: none;
+  z-index: 13;
+  background: linear-gradient(
+    transparent 0%,
+    rgba(100, 255, 200, 0.3) 50%,
+    transparent 100%
+  );
+  animation: crt-glitch-bar2 18s linear infinite;
+  animation-delay: -7s;
+}
+
+/* ── CRT Noise (nebula interference) ── */
+.crt-noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 14;
+  opacity: 0.08;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 120px 120px;
+  animation: crt-noise 0.15s steps(1) infinite;
+}
+
+/* ── Monitor ON/OFF Power Switch ── */
+.bezel-power-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-top: auto;
+  padding: 4px 2px;
+}
+
+.bezel-power-label {
+  font-size: 0.4rem;
+  letter-spacing: 0.15em;
+  color: rgba(255, 176, 0, 0.3);
+  text-transform: uppercase;
+}
+
+.bezel-power-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid #444;
+  background: radial-gradient(circle at 35% 35%, #555, #222);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.1s;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 1px 0 rgba(80,80,80,0.3);
+}
+
+.bezel-power-btn:hover {
+  border-color: #666;
+  background: radial-gradient(circle at 35% 35%, #666, #333);
+}
+
+.bezel-power-btn.on {
+  background: radial-gradient(circle at 35% 35%, var(--color-primary), rgba(150, 100, 0, 0.8));
+  border-color: var(--color-primary);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.4),
+    0 0 6px var(--color-primary),
+    0 0 12px rgba(255, 176, 0, 0.3);
+}
+
+/* ── Monitor OFF screen ── */
+.crt-monitor-off {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crt-monitor-off-text {
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  color: rgba(255, 176, 0, 0.15);
+  font-family: var(--font-mono);
+}
+
+/* ── Program-switch flicker ── */
+.crt-switch-flicker {
+  animation: crt-switch-flicker 0.3s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-glitch-bar,
+  .crt-glitch-bar-2,
+  .crt-noise {
+    animation: none;
   }
 }

@@ -7,6 +7,7 @@
 }
 
 :root {
+  font-size: 18px;
   --color-primary: #FFB000;
   --color-dim: rgba(255, 176, 0, 0.6);
   --color-bg: #050505;
@@ -18,9 +19,19 @@
   --font-mono: 'Share Tech Mono', 'Courier New', Courier, monospace;
 }
 
-html, body, #root {
+html, body {
   height: 100%;
   width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #000;
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+}
+
+#root {
+  position: fixed;
+  inset: 0;
   overflow: hidden;
   background: #000;
   color: var(--color-primary);

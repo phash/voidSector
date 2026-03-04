@@ -10,6 +10,7 @@ export function LoginScreen() {
   const [error, setError] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
 
   const setAuth = useStore((s) => s.setAuth);
   const setScreen = useStore((s) => s.setScreen);
@@ -32,7 +33,8 @@ export function LoginScreen() {
         return;
       }
       setAuth(data.token, data.player.id, data.player.username);
-      await network.joinSector(0, 0);
+      const pos = data.lastPosition ?? { x: 0, y: 0 };
+      await network.joinSector(pos.x, pos.y);
       setScreen('game');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection failed');
@@ -94,6 +96,32 @@ export function LoginScreen() {
           {isRegister ? 'HAVE ACCOUNT? LOGIN' : 'NEW PILOT? REGISTER'}
         </button>
       </form>
+      <div style={{ marginTop: '24px', width: '100%', maxWidth: '300px', textAlign: 'center' }}>
+        <div style={{ borderTop: '1px solid var(--color-dim)', marginBottom: '16px' }} />
+        <button
+          type="button"
+          className="vs-btn"
+          disabled={guestLoading || loading}
+          onClick={async () => {
+            setError('');
+            setGuestLoading(true);
+            try {
+              await network.loginAsGuest();
+              setScreen('game');
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Guest login failed');
+            } finally {
+              setGuestLoading(false);
+            }
+          }}
+          style={{ opacity: 0.7, width: '100%' }}
+        >
+          {guestLoading ? 'CONNECTING...' : '[ GAST SPIELEN ]'}
+        </button>
+        <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginTop: '6px' }}>
+          Kein Account nötig — 24h Testzugang
+        </div>
+      </div>
     </div>
   );
 }

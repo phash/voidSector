@@ -1,16 +1,52 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { SHIP_CLASSES, RESOURCE_TYPES, SLATE_AP_COST_SECTOR, CUSTOM_SLATE_AP_COST, CUSTOM_SLATE_CREDIT_COST, CUSTOM_SLATE_MAX_NOTES_LENGTH } from '@void-sector/shared';
+import { RESOURCE_TYPES, SLATE_AP_COST_SECTOR, CUSTOM_SLATE_AP_COST, CUSTOM_SLATE_CREDIT_COST, CUSTOM_SLATE_MAX_NOTES_LENGTH, HULLS } from '@void-sector/shared';
 import type { ResourceType, DataSlate } from '@void-sector/shared';
+
+const RESOURCE_ART: Record<string, string[]> = {
+  ore: [
+    ' ╱▓▓▓╲ ',
+    '│◆░◆░◆│',
+    '│░◆░◆░│',
+    ' ╲▓▓▓╱ ',
+  ],
+  gas: [
+    ' ≋≋≋≋≋ ',
+    '≋ PLASMA≋',
+    '≋≋≋≋≋≋≋',
+    ' ≈≈≈≈≈ ',
+  ],
+  crystal: [
+    '  /◇◇\ ',
+    ' /◇◇◇◇\ ',
+    ' \◇◇◇◇/ ',
+    '  \◇◇/ ',
+  ],
+  slates: [
+    '┌──────┐',
+    '│══════│',
+    '│══DATA│',
+    '└──────┘',
+  ],
+};
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
-  const filled = max > 0 ? Math.round((value / max) * width) : 0;
+  const filled = max > 0 ? Math.min(Math.round((value / max) * width), width) : 0;
   const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(width - filled);
+  const art = RESOURCE_ART[label.toLowerCase().trim()];
   return (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
-      {label.padEnd(10)} {bar} {String(value).padStart(3)}
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      {art && (
+        <div style={{ fontSize: '0.6rem', lineHeight: 1.2, color: 'var(--color-dim)', opacity: 0.7, flexShrink: 0 }}>
+          {art.map((line, i) => <div key={i} style={{ whiteSpace: 'pre' }}>{line}</div>)}
+        </div>
+      )}
+      <div>
+        <div>{label.padEnd(10)}</div>
+        <div>{bar} {String(value).padStart(3)}</div>
+      </div>
     </div>
   );
 }
@@ -19,7 +55,9 @@ export function CargoScreen() {
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const mySlates = useStore((s) => s.mySlates);
-  const cargoCap = ship ? SHIP_CLASSES[ship.shipClass].cargoCap : SHIP_CLASSES.aegis_scout_mk1.cargoCap;
+  const credits = useStore((s) => s.credits);
+  const alienCredits = useStore((s) => s.alienCredits);
+  const cargoCap = ship?.stats?.cargoCap ?? 5;
   const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
 
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -37,11 +75,13 @@ export function CargoScreen() {
       </div>
 
       <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
-        VESSEL: {ship ? SHIP_CLASSES[ship.shipClass].name : 'VOID SCOUT MK. I'}
+        VESSEL: {ship ? HULLS[ship.hullType].name : 'VOID SCOUT'}
       </div>
 
-      <div style={{ fontSize: '0.9rem', marginBottom: '16px' }}>
-        CAPACITY: {total}/{cargoCap}
+      <div style={{ fontSize: '0.9rem', marginBottom: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+        <span>CAPACITY: {total}/{cargoCap}</span>
+        <span>CR: {credits.toLocaleString()}</span>
+        {alienCredits > 0 && <span style={{ color: '#00BFFF' }}>A-CR: {alienCredits.toLocaleString()}</span>}
       </div>
 
       <div style={{ marginBottom: '16px' }}>
@@ -82,7 +122,7 @@ export function CargoScreen() {
                 [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : 'C'}]
                 {slate.slateType === 'custom' && slate.customData
                   ? ` ${slate.customData.label}`
-                  : ` ${slate.sectorData.length} Sektoren`}
+                  : ` ${slate.sectorData?.length ?? 0} Sektoren`}
               </span>
               <button className="vs-btn" style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                 onClick={() => network.sendActivateSlate(slate.id)}>
@@ -170,7 +210,7 @@ export function CargoScreen() {
             disabled={cargo[res] <= 0}
             onClick={() => network.sendJettison(res)}
           >
-            [JETTISON {res.toUpperCase()}]
+            [ABWERFEN {res.toUpperCase()}]
           </button>
         ))}
       </div>

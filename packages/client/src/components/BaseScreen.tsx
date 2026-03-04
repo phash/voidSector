@@ -3,6 +3,17 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { STORAGE_TIERS, TRADING_POST_TIERS } from '@void-sector/shared';
 
+const inputStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: '1px solid var(--color-dim)',
+  color: 'var(--color-primary)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '0.7rem',
+  padding: '2px 4px',
+  width: '100%',
+  maxWidth: 140,
+};
+
 const STRUCTURE_LABELS: Record<string, string> = {
   base: 'KOMMANDO-KERN',
   comm_relay: 'COMM RELAY',
@@ -26,7 +37,10 @@ export function BaseScreen() {
   const cargo = useStore((s) => s.cargo);
   const storage = useStore((s) => s.storage);
   const credits = useStore((s) => s.credits);
+  const baseName = useStore((s) => s.baseName);
   const [transferAmount, setTransferAmount] = useState(1);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
 
   useEffect(() => {
     network.requestBase();
@@ -35,6 +49,14 @@ export function BaseScreen() {
   }, []);
 
   const hasBase = baseStructures.some((s: any) => s.type === 'base');
+
+  const handleRenameBase = () => {
+    if (renameValue.trim() && renameValue.length <= 20) {
+      network.sendRenameBase(renameValue.trim());
+      setRenaming(false);
+      setRenameValue('');
+    }
+  };
   const storageStruct = baseStructures.find((s: any) => s.type === 'storage');
   const tradingPostStruct = baseStructures.find((s: any) => s.type === 'trading_post');
   const storageTier = storageStruct?.tier ?? 0;
@@ -43,9 +65,44 @@ export function BaseScreen() {
 
   return (
     <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
-      <div style={{ letterSpacing: '0.2em', marginBottom: '12px', opacity: 0.6 }}>
+      <div style={{ letterSpacing: '0.2em', marginBottom: '4px', opacity: 0.6 }}>
         BASE-LINK — {hasBase ? 'CONNECTED' : 'NO SIGNAL'}
       </div>
+
+      {hasBase && (
+        <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+          {renaming ? (
+            <>
+              <input
+                style={inputStyle}
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value.slice(0, 20))}
+                onKeyDown={(e) => e.key === 'Enter' && handleRenameBase()}
+                maxLength={20}
+                autoFocus
+                placeholder="Basisname..."
+              />
+              <button style={btnStyle} onClick={handleRenameBase}>OK</button>
+              <button style={btnStyle} onClick={() => setRenaming(false)}>X</button>
+            </>
+          ) : (
+            <>
+              <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>
+                {baseName || 'HEIMATBASIS'}
+              </span>
+              <button
+                style={btnStyle}
+                onClick={() => {
+                  setRenaming(true);
+                  setRenameValue(baseName || '');
+                }}
+              >
+                UMBENENNEN
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <div style={{ marginBottom: 8 }}>CREDITS: {credits}</div>
 

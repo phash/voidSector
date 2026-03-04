@@ -1,6 +1,7 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, ShipData, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark } from '@void-sector/shared';
+import type { ClientShipData } from '../state/gameSlice';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
@@ -33,7 +34,19 @@ class GameNetwork {
 
     this.setupRoomListeners(this.sectorRoom);
     store.setPosition({ x, y });
+    store.resetPan();
     store.addLogEntry(`Entered sector (${x}, ${y})`);
+  }
+
+  async loginAsGuest(): Promise<void> {
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${API_URL}/api/guest`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Guest login failed');
+    const store = useStore.getState();
+    store.setAuth(data.token, data.player.id, data.player.username, true);
+    const pos = data.lastPosition ?? { x: 0, y: 0 };
+    await this.joinSector(pos.x, pos.y);
   }
 
   private setupRoomListeners(room: Room) {
@@ -65,6 +78,10 @@ class GameNetwork {
       };
       useStore.getState().setCurrentSector(sector);
       useStore.getState().addDiscoveries([sector]);
+      // Sector type help tips
+      if (sector.type === 'nebula') useStore.getState().showTip('first_nebula');
+      else if (sector.type === 'station') useStore.getState().showTip('first_station');
+      else if (sector.type === 'asteroid_field') useStore.getState().showTip('first_asteroid');
     });
 
     // AP updates
@@ -149,14 +166,34 @@ class GameNetwork {
       store.addLogEntry(`Local scan: Ore ${data.resources.ore}, Gas ${data.resources.gas}, Crystal ${data.resources.crystal}`);
     });
 
-    // Discoveries
-    room.onMessage('discoveries', (data: Array<{ x: number; y: number }>) => {
-      useStore.getState().addLogEntry(`Loaded ${data.length} discovered sectors`);
+    // Discoveries (from scan/jump — server sends array of sector coords)
+    room.onMessage('discoveries', (data: Array<{ x: number; y: number; type?: string; seed?: number }>) => {
+      const store = useStore.getState();
+      const sectorData: SectorData[] = [];
+      for (const d of data) {
+        if (d.type) {
+          sectorData.push({
+            x: d.x, y: d.y,
+            type: d.type as SectorData['type'],
+            seed: d.seed ?? 0,
+            resources: { ore: 0, gas: 0, crystal: 0 },
+          });
+        }
+      }
+      if (sectorData.length > 0) {
+        store.addDiscoveries(sectorData);
+      }
+      store.addLogEntry(`Loaded ${data.length} discovered sectors`);
     });
 
     // Errors
     room.onMessage('error', (data: { code: string; message: string }) => {
-      useStore.getState().addLogEntry(`ERROR: ${data.message}`);
+      const store = useStore.getState();
+      if (data.code === 'GUEST_RESTRICTED') {
+        store.addLogEntry(`GAST-EINSCHRÄNKUNG: ${data.message} — Registriere dich für vollen Zugang!`);
+      } else {
+        store.addLogEntry(`ERROR: ${data.message}`);
+      }
     });
 
     // Mining updates
@@ -180,14 +217,62 @@ class GameNetwork {
       useStore.getState().setCargo(data);
     });
 
-    // Ship data
-    room.onMessage('shipData', (data: ShipData) => {
+    // Ship data (new designer format: id, ownerId, hullType, name, modules, stats, fuel, active)
+    room.onMessage('shipData', (data: ClientShipData) => {
       useStore.getState().setShip(data);
     });
 
     // Fuel updates
     room.onMessage('fuelUpdate', (data: FuelState) => {
       useStore.getState().setFuel(data);
+      if (data.current < data.max * 0.15) useStore.getState().showTip('low_fuel');
+    });
+
+    // --- Ship designer messages ---
+
+    room.onMessage('shipList', (data: { ships: any[] }) => {
+      useStore.setState({ shipList: data.ships });
+    });
+
+    room.onMessage('moduleInventory', (data: { modules: string[] }) => {
+      useStore.setState({ moduleInventory: data.modules });
+    });
+
+    room.onMessage('moduleInstalled', (data: { modules: any[]; stats: any }) => {
+      const ship = useStore.getState().ship;
+      if (ship) {
+        useStore.setState({
+          ship: { ...ship, modules: data.modules, stats: data.stats },
+        });
+      }
+    });
+
+    room.onMessage('moduleRemoved', (data: { modules: any[]; stats: any; returnedModule: string }) => {
+      const ship = useStore.getState().ship;
+      if (ship) {
+        useStore.setState({
+          ship: { ...ship, modules: data.modules, stats: data.stats },
+        });
+      }
+      const inv = useStore.getState().moduleInventory;
+      useStore.setState({ moduleInventory: [...inv, data.returnedModule] });
+    });
+
+    room.onMessage('buyModuleResult', (data: { success: boolean; moduleId: string }) => {
+      if (data.success) {
+        useStore.getState().addLogEntry(`Module ${data.moduleId} purchased`);
+      }
+    });
+
+    room.onMessage('shipRenamed', (data: { shipId: string; name: string }) => {
+      const ship = useStore.getState().ship;
+      if (ship && ship.id === data.shipId) {
+        useStore.setState({ ship: { ...ship, name: data.name } });
+      }
+    });
+
+    room.onMessage('baseRenamed', (data: { name: string }) => {
+      useStore.setState({ baseName: data.name });
     });
 
     room.onMessage('refuelResult', (data: { success: boolean; error?: string; fuel?: FuelState; credits?: number }) => {
@@ -243,6 +328,11 @@ class GameNetwork {
     // Credits update
     room.onMessage('creditsUpdate', (data: { credits: number }) => {
       useStore.getState().setCredits(data.credits);
+    });
+
+    // Alien credits update
+    room.onMessage('alienCreditsUpdate', (data: { alienCredits: number }) => {
+      useStore.setState({ alienCredits: data.alienCredits });
     });
 
     // Storage update
@@ -420,9 +510,10 @@ class GameNetwork {
 
     room.onMessage('battleResult', (data) => {
       const store = useStore.getState();
+      const encounter = store.activeBattle;
       store.setActiveBattle(null);
-      if (data.success && data.result) {
-        store.addLogEntry(`Kampf: ${data.result.outcome}`);
+      if (data.success && data.result && encounter) {
+        store.setLastBattleResult({ encounter, result: data.result });
       }
     });
 
@@ -439,6 +530,11 @@ class GameNetwork {
         || store.leftSidebarSlots.includes('QUESTS')
         || store.mainMonitorMode === 'QUESTS';
       if (!visible) store.setAlert('QUESTS', true);
+      // Context-sensitive help tips
+      const eventType = data.event?.eventType;
+      if (eventType === 'distress_signal') store.showTip('first_distress');
+      else if (eventType === 'pirate_ambush') store.showTip('first_pirate');
+      else if (eventType === 'anomaly_reading') store.showTip('first_anomaly');
     });
 
     room.onMessage('logEntry', (data) => {
@@ -503,10 +599,14 @@ class GameNetwork {
       const store = useStore.getState();
       store.addDistressCall(data);
       store.addLogEntry(`NOTRUF EMPFANGEN — Richtung: ${data.direction}, ~${data.estimatedDistance} Sektoren`);
-      const visible = store.sidebarSlots.includes('LOG')
+      const logVisible = store.sidebarSlots.includes('LOG')
         || store.leftSidebarSlots.includes('LOG')
         || store.mainMonitorMode === 'LOG';
-      if (!visible) store.setAlert('LOG', true);
+      if (!logVisible) store.setAlert('LOG', true);
+      const commsVisible = store.sidebarSlots.includes('COMMS')
+        || store.leftSidebarSlots.includes('COMMS')
+        || store.mainMonitorMode === 'COMMS';
+      if (!commsVisible) store.setAlert('COMMS', true);
     });
 
     // Faction Upgrades
@@ -522,6 +622,11 @@ class GameNetwork {
       } else {
         store.addLogEntry(`UPGRADE FEHLER: ${data.error}`);
       }
+    });
+
+    // Bookmarks
+    room.onMessage('bookmarksUpdate', (data: { bookmarks: Bookmark[] }) => {
+      useStore.getState().setBookmarks(data.bookmarks);
     });
 
     // Trade Routes
@@ -557,19 +662,118 @@ class GameNetwork {
       }
     });
 
+    // --- Hyperjump / Autopilot ---
+
+    room.onMessage('autopilotStart', (data: { targetX: number; targetY: number; totalSteps: number }) => {
+      useStore.getState().setAutopilot({
+        targetX: data.targetX,
+        targetY: data.targetY,
+        remaining: data.totalSteps,
+        active: true,
+      });
+    });
+
+    room.onMessage('autopilotUpdate', (data: { x: number; y: number; remaining: number }) => {
+      const store = useStore.getState();
+      store.setPosition({ x: data.x, y: data.y });
+      store.setAutopilot({
+        ...(store.autopilot || { targetX: 0, targetY: 0, active: true }),
+        remaining: data.remaining,
+      });
+      // Auto-center camera on ship during autopilot
+      store.resetPan();
+    });
+
+    room.onMessage('autopilotComplete', (data: { x: number; y: number }) => {
+      const store = useStore.getState();
+      store.setAutopilot(null);
+      if (data.x >= 0 && data.y >= 0) {
+        store.setPosition({ x: data.x, y: data.y });
+        store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);
+      } else {
+        store.addLogEntry('Autopilot abgebrochen.');
+      }
+      store.resetPan();
+    });
+
+    room.onMessage('emergencyWarpResult', (data: {
+      success: boolean;
+      error?: string;
+      newSector?: SectorData;
+      fuelGranted?: number;
+      creditCost?: number;
+      credits?: number;
+    }) => {
+      if (data.success && data.newSector) {
+        const store = useStore.getState();
+        store.startJumpAnimation(0, 0);
+        const newSector = data.newSector;
+        const costMsg = data.creditCost && data.creditCost > 0
+          ? ` (Kosten: ${data.creditCost} Credits)`
+          : ' (GRATIS)';
+        setTimeout(async () => {
+          store.addDiscoveries([newSector]);
+          store.addLogEntry(`NOTWARP zur Basis (${newSector.x}, ${newSector.y})${costMsg}`);
+          if (data.credits !== undefined) {
+            useStore.setState({ credits: data.credits });
+          }
+          await this.joinSector(newSector.x, newSector.y);
+          useStore.getState().clearJumpAnimation();
+        }, 800);
+      } else {
+        useStore.getState().addLogEntry(`Notwarp fehlgeschlagen: ${data.error}`);
+      }
+    });
+
+    room.onMessage('allDiscoveries', (data: { discoveries: { x: number; y: number; discoveredAt: number; type?: string; seed?: number }[] }) => {
+      const store = useStore.getState();
+      // Merge discovery timestamps
+      const timestamps: Record<string, number> = { ...store.discoveryTimestamps };
+      const sectorData: SectorData[] = [];
+      for (const d of data.discoveries) {
+        const key = `${d.x}:${d.y}`;
+        timestamps[key] = d.discoveredAt;
+        // Populate fog-of-war map with sector data if available
+        if (d.type) {
+          sectorData.push({
+            x: d.x,
+            y: d.y,
+            type: d.type as SectorData['type'],
+            seed: d.seed ?? 0,
+            resources: { ore: 0, gas: 0, crystal: 0 },
+          });
+        }
+      }
+      store.setDiscoveryTimestamps(timestamps);
+      if (sectorData.length > 0) {
+        store.addDiscoveries(sectorData);
+      }
+    });
+
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
-        useStore.getState().addLogEntry(`Disconnected (code: ${code}) — reconnecting...`);
         const store = useStore.getState();
-        try {
-          await this.joinSector(store.position.x, store.position.y);
-          useStore.getState().addLogEntry('Reconnected');
-        } catch {
-          useStore.getState().addLogEntry('Reconnect failed');
-        } finally {
-          this.reconnecting = false;
+        store.addLogEntry(`VERBINDUNG VERLOREN (Code: ${code}) — Reconnect...`);
+
+        let attempt = 0;
+        const maxRetries = 5;
+        const baseDelay = 1000;
+
+        while (attempt < maxRetries) {
+          attempt++;
+          const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), 15000);
+          await new Promise(r => setTimeout(r, delay));
+          useStore.getState().addLogEntry(`Reconnect Versuch ${attempt}/${maxRetries}...`);
+          try {
+            await this.joinSector(store.position.x, store.position.y);
+            useStore.getState().addLogEntry('VERBINDUNG WIEDERHERGESTELLT');
+            this.reconnecting = false;
+            return;
+          } catch { /* continue */ }
         }
+        useStore.getState().addLogEntry('RECONNECT FEHLGESCHLAGEN — Bitte Seite neu laden');
+        this.reconnecting = false;
       }
     });
   }
@@ -844,10 +1048,62 @@ class GameNetwork {
     this.sectorRoom.send('deleteRoute', { routeId });
   }
 
+  // Bookmarks
+  requestBookmarks() { this.sectorRoom?.send('getBookmarks'); }
+  sendSetBookmark(slot: number, sectorX: number, sectorY: number, label: string) {
+    this.sectorRoom?.send('setBookmark', { slot, sectorX, sectorY, label });
+  }
+  sendClearBookmark(slot: number) { this.sectorRoom?.send('clearBookmark', { slot }); }
+
+  // Hyperjump / Autopilot
+  sendHyperJump(targetX: number, targetY: number) {
+    this.sectorRoom?.send('hyperJump', { targetX, targetY });
+  }
+
+  sendCancelAutopilot() {
+    this.sectorRoom?.send('cancelAutopilot');
+  }
+
+  sendEmergencyWarp() {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
+      return;
+    }
+    this.sectorRoom.send('emergencyWarp');
+  }
+
   sendCreateCustomSlate(data: CreateCustomSlateMessage) {
     if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
     this.sectorRoom.send('createCustomSlate', data);
   }
+
+  // --- Ship designer ---
+
+  sendGetShips() { this.sectorRoom?.send('getShips'); }
+
+  sendSwitchShip(shipId: string) { this.sectorRoom?.send('switchShip', { shipId }); }
+
+  sendInstallModule(shipId: string, moduleId: string, slotIndex: number) {
+    this.sectorRoom?.send('installModule', { shipId, moduleId, slotIndex });
+  }
+
+  sendRemoveModule(shipId: string, slotIndex: number) {
+    this.sectorRoom?.send('removeModule', { shipId, slotIndex });
+  }
+
+  sendBuyModule(moduleId: string) { this.sectorRoom?.send('buyModule', { moduleId }); }
+
+  sendBuyHull(hullType: string, name: string) {
+    this.sectorRoom?.send('buyHull', { hullType, name });
+  }
+
+  sendRenameShip(shipId: string, name: string) {
+    this.sectorRoom?.send('renameShip', { shipId, name });
+  }
+
+  sendRenameBase(name: string) { this.sectorRoom?.send('renameBase', { name }); }
+
+  sendGetModuleInventory() { this.sectorRoom?.send('getModuleInventory'); }
 }
 
 export const network = new GameNetwork();
