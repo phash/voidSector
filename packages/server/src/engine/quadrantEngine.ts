@@ -93,6 +93,8 @@ export async function getOrCreateQuadrant(qx: number, qy: number, discoveredByPl
   return quadrant;
 }
 
+export const QUADRANT_NAMING_WINDOW_MS = 60_000;
+
 export async function nameQuadrant(qx: number, qy: number, name: string, playerId: string): Promise<{ success: boolean; error?: string }> {
   const validation = validateQuadrantName(name);
   if (!validation.valid) return { success: false, error: validation.error };
@@ -100,6 +102,14 @@ export async function nameQuadrant(qx: number, qy: number, name: string, playerI
   const quadrant = await getQuadrant(qx, qy);
   if (!quadrant) return { success: false, error: 'Quadrant not found' };
   if (quadrant.discoveredBy !== playerId) return { success: false, error: 'Only the discoverer can name a quadrant' };
+
+  // Enforce 60-second naming window from discovery time
+  if (quadrant.discoveredAt) {
+    const elapsed = Date.now() - new Date(quadrant.discoveredAt).getTime();
+    if (elapsed > QUADRANT_NAMING_WINDOW_MS) {
+      return { success: false, error: 'Naming window expired (60s)' };
+    }
+  }
 
   const nameExists = await quadrantNameExists(name);
   if (nameExists) return { success: false, error: 'Name already taken' };

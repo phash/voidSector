@@ -261,19 +261,22 @@ describe('getOrCreateQuadrant', () => {
 // nameQuadrant
 // ---------------------------------------------------------------------------
 describe('nameQuadrant', () => {
-  const baseQuadrant: QuadrantData = {
-    qx: 1, qy: 2, seed: 123,
-    name: 'AutoName-3', discoveredBy: 'player-1',
-    discoveredAt: '2026-01-01T00:00:00.000Z',
-    config: {
-      seed: 123,
-      resourceFactor: 1.0,
-      stationDensity: 1.0,
-      pirateDensity: 1.0,
-      nebulaThreshold: 1.0,
-      emptyRatio: 1.0,
-    },
-  };
+  function recentQuadrant(overrides: Partial<QuadrantData> = {}): QuadrantData {
+    return {
+      qx: 1, qy: 2, seed: 123,
+      name: 'AutoName-3', discoveredBy: 'player-1',
+      discoveredAt: new Date(Date.now() - 10_000).toISOString(), // 10s ago (within window)
+      config: {
+        seed: 123,
+        resourceFactor: 1.0,
+        stationDensity: 1.0,
+        pirateDensity: 1.0,
+        nebulaThreshold: 1.0,
+        emptyRatio: 1.0,
+      },
+      ...overrides,
+    };
+  }
 
   it('validates name before checking DB', async () => {
     const result = await nameQuadrant(1, 2, '', 'player-1');
@@ -290,22 +293,31 @@ describe('nameQuadrant', () => {
   });
 
   it('fails if player is not the discoverer', async () => {
-    mockGetQuadrant.mockResolvedValueOnce(baseQuadrant);
+    mockGetQuadrant.mockResolvedValueOnce(recentQuadrant());
     const result = await nameQuadrant(1, 2, 'NewName', 'player-2');
     expect(result.success).toBe(false);
     expect(result.error).toContain('discoverer');
   });
 
+  it('fails if naming window expired (60s)', async () => {
+    mockGetQuadrant.mockResolvedValueOnce(recentQuadrant({
+      discoveredAt: new Date(Date.now() - 61_000).toISOString(),
+    }));
+    const result = await nameQuadrant(1, 2, 'TooLate', 'player-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Naming window expired');
+  });
+
   it('fails if name already taken', async () => {
-    mockGetQuadrant.mockResolvedValueOnce(baseQuadrant);
+    mockGetQuadrant.mockResolvedValueOnce(recentQuadrant());
     mockQuadrantNameExists.mockResolvedValueOnce(true);
     const result = await nameQuadrant(1, 2, 'TakenName', 'player-1');
     expect(result.success).toBe(false);
     expect(result.error).toContain('taken');
   });
 
-  it('succeeds with valid name from discoverer', async () => {
-    mockGetQuadrant.mockResolvedValueOnce(baseQuadrant);
+  it('succeeds with valid name from discoverer within window', async () => {
+    mockGetQuadrant.mockResolvedValueOnce(recentQuadrant());
     mockQuadrantNameExists.mockResolvedValueOnce(false);
     mockUpdateQuadrantName.mockResolvedValueOnce(undefined);
 

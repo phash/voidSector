@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../../db/quadrantQueries.js', () => ({
   getQuadrant: vi.fn(),
@@ -16,15 +16,17 @@ import {
   getPlayerKnownQuadrants,
   getAllDiscoveredQuadrants,
   upsertQuadrant,
+  quadrantNameExists,
+  updateQuadrantName,
 } from '../../db/quadrantQueries.js';
 import {
   sectorToQuadrant,
   getOrCreateQuadrant,
   nameQuadrant,
   generateQuadrantName,
+  QUADRANT_NAMING_WINDOW_MS,
 } from '../quadrantEngine.js';
-import { validateNameQuadrant, validateGetKnownQuadrants } from '../commands.js';
-import type { QuadrantData, QuadrantConfig, FirstContactEvent } from '@void-sector/shared';
+import type { QuadrantData, FirstContactEvent } from '@void-sector/shared';
 import { QUADRANT_SIZE } from '@void-sector/shared';
 
 const mockGetQuadrant = vi.mocked(getQuadrant);
@@ -32,6 +34,8 @@ const mockAddPlayerKnownQuadrant = vi.mocked(addPlayerKnownQuadrant);
 const mockGetPlayerKnownQuadrants = vi.mocked(getPlayerKnownQuadrants);
 const mockGetAllDiscoveredQuadrants = vi.mocked(getAllDiscoveredQuadrants);
 const mockUpsertQuadrant = vi.mocked(upsertQuadrant);
+const mockQuadrantNameExists = vi.mocked(quadrantNameExists);
+const mockUpdateQuadrantName = vi.mocked(updateQuadrantName);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -147,122 +151,80 @@ describe('FirstContactEvent structure', () => {
 });
 
 // ---------------------------------------------------------------------------
-// validateNameQuadrant (commands.ts)
+// nameQuadrant 60-second naming window
 // ---------------------------------------------------------------------------
-describe('validateNameQuadrant', () => {
-  it('accepts valid inputs', () => {
-    const result = validateNameQuadrant(1, 2, 'Nebula Prime');
-    expect(result.valid).toBe(true);
-  });
-
-  it('rejects non-integer qx', () => {
-    expect(validateNameQuadrant(1.5, 2, 'Test')).toEqual({
-      valid: false,
-      error: expect.stringContaining('quadrant X'),
+describe('nameQuadrant 60-second naming window', () => {
+  it('succeeds within 60-second window', async () => {
+    const recentQuadrant = makeQuadrant({
+      qx: 1, qy: 2, discoveredBy: 'player-1',
+      discoveredAt: new Date(Date.now() - 30_000).toISOString(), // 30s ago
     });
-    expect(validateNameQuadrant('a', 2, 'Test')).toEqual({
-      valid: false,
-      error: expect.stringContaining('quadrant X'),
-    });
-    expect(validateNameQuadrant(undefined, 2, 'Test')).toEqual({
-      valid: false,
-      error: expect.stringContaining('quadrant X'),
-    });
-  });
-
-  it('rejects non-integer qy', () => {
-    expect(validateNameQuadrant(1, 2.5, 'Test')).toEqual({
-      valid: false,
-      error: expect.stringContaining('quadrant Y'),
-    });
-    expect(validateNameQuadrant(1, null, 'Test')).toEqual({
-      valid: false,
-      error: expect.stringContaining('quadrant Y'),
-    });
-  });
-
-  it('rejects non-string or empty name', () => {
-    expect(validateNameQuadrant(1, 2, '')).toEqual({
-      valid: false,
-      error: expect.stringContaining('non-empty string'),
-    });
-    expect(validateNameQuadrant(1, 2, 123)).toEqual({
-      valid: false,
-      error: expect.stringContaining('non-empty string'),
-    });
-    expect(validateNameQuadrant(1, 2, null)).toEqual({
-      valid: false,
-      error: expect.stringContaining('non-empty string'),
-    });
-  });
-
-  it('accepts zero coordinates', () => {
-    const result = validateNameQuadrant(0, 0, 'Origin');
-    expect(result.valid).toBe(true);
-  });
-
-  it('accepts negative coordinates', () => {
-    const result = validateNameQuadrant(-5, -3, 'Far Reach');
-    expect(result.valid).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// validateGetKnownQuadrants (commands.ts)
-// ---------------------------------------------------------------------------
-describe('validateGetKnownQuadrants', () => {
-  it('accepts valid player ID', () => {
-    const result = validateGetKnownQuadrants('player-123');
-    expect(result.valid).toBe(true);
-  });
-
-  it('rejects empty player ID', () => {
-    const result = validateGetKnownQuadrants('');
-    expect(result.valid).toBe(false);
-  });
-
-  it('rejects non-string player ID', () => {
-    expect(validateGetKnownQuadrants(123)).toEqual({
-      valid: false,
-      error: expect.stringContaining('player ID'),
-    });
-    expect(validateGetKnownQuadrants(null)).toEqual({
-      valid: false,
-      error: expect.stringContaining('player ID'),
-    });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// nameQuadrant integration
-// ---------------------------------------------------------------------------
-describe('nameQuadrant integration', () => {
-  const baseQuadrant = makeQuadrant({ qx: 1, qy: 2, discoveredBy: 'player-1' });
-
-  it('succeeds for discoverer with valid name', async () => {
-    mockGetQuadrant.mockResolvedValueOnce(baseQuadrant);
-    vi.mocked(await import('../../db/quadrantQueries.js')).quadrantNameExists.mockResolvedValueOnce(false);
+    mockGetQuadrant.mockResolvedValueOnce(recentQuadrant);
+    mockQuadrantNameExists.mockResolvedValueOnce(false);
+    mockUpdateQuadrantName.mockResolvedValueOnce(undefined);
 
     const result = await nameQuadrant(1, 2, 'New Name', 'player-1');
     expect(result.success).toBe(true);
   });
 
-  it('fails for non-discoverer', async () => {
-    mockGetQuadrant.mockResolvedValueOnce(baseQuadrant);
+  it('fails after 60-second window expires', async () => {
+    const oldQuadrant = makeQuadrant({
+      qx: 1, qy: 2, discoveredBy: 'player-1',
+      discoveredAt: new Date(Date.now() - 61_000).toISOString(), // 61s ago
+    });
+    mockGetQuadrant.mockResolvedValueOnce(oldQuadrant);
+
+    const result = await nameQuadrant(1, 2, 'New Name', 'player-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Naming window expired');
+  });
+
+  it('fails at exactly 60 seconds + 1ms', async () => {
+    const borderlineQuadrant = makeQuadrant({
+      qx: 1, qy: 2, discoveredBy: 'player-1',
+      discoveredAt: new Date(Date.now() - QUADRANT_NAMING_WINDOW_MS - 1).toISOString(),
+    });
+    mockGetQuadrant.mockResolvedValueOnce(borderlineQuadrant);
+
+    const result = await nameQuadrant(1, 2, 'Border Name', 'player-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Naming window expired');
+  });
+
+  it('succeeds at exactly 59 seconds', async () => {
+    const justInTimeQuadrant = makeQuadrant({
+      qx: 1, qy: 2, discoveredBy: 'player-1',
+      discoveredAt: new Date(Date.now() - 59_000).toISOString(), // 59s ago
+    });
+    mockGetQuadrant.mockResolvedValueOnce(justInTimeQuadrant);
+    mockQuadrantNameExists.mockResolvedValueOnce(false);
+    mockUpdateQuadrantName.mockResolvedValueOnce(undefined);
+
+    const result = await nameQuadrant(1, 2, 'Just In Time', 'player-1');
+    expect(result.success).toBe(true);
+  });
+
+  it('exports QUADRANT_NAMING_WINDOW_MS as 60000', () => {
+    expect(QUADRANT_NAMING_WINDOW_MS).toBe(60_000);
+  });
+
+  it('still validates name before checking window', async () => {
+    const result = await nameQuadrant(1, 2, '', 'player-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('at least');
+    expect(mockGetQuadrant).not.toHaveBeenCalled();
+  });
+
+  it('still checks discoverer before checking window', async () => {
+    const recentQuadrant = makeQuadrant({
+      qx: 1, qy: 2, discoveredBy: 'player-1',
+      discoveredAt: new Date(Date.now() - 10_000).toISOString(), // 10s ago
+    });
+    mockGetQuadrant.mockResolvedValueOnce(recentQuadrant);
+
     const result = await nameQuadrant(1, 2, 'New Name', 'player-2');
     expect(result.success).toBe(false);
     expect(result.error).toContain('discoverer');
-  });
-
-  it('fails for empty name', async () => {
-    const result = await nameQuadrant(1, 2, '', 'player-1');
-    expect(result.success).toBe(false);
-  });
-
-  it('fails for name too short', async () => {
-    const result = await nameQuadrant(1, 2, 'ab', 'player-1');
-    expect(result.success).toBe(false);
-    expect(result.error).toContain('at least');
   });
 
   it('fails when quadrant not found', async () => {

@@ -468,39 +468,3 @@ export function getReputationTier(reputation: number): string {
   if (reputation <= 50) return 'friendly';
   return 'honored';
 }
-
-// --- Quadrant Command Validation ---
-
-export interface NameQuadrantValidation {
-  valid: boolean;
-  error?: string;
-}
-
-export function validateNameQuadrant(
-  qx: unknown,
-  qy: unknown,
-  name: unknown,
-): NameQuadrantValidation {
-  if (typeof qx !== 'number' || !Number.isInteger(qx)) {
-    return { valid: false, error: 'Invalid quadrant X coordinate' };
-  }
-  if (typeof qy !== 'number' || !Number.isInteger(qy)) {
-    return { valid: false, error: 'Invalid quadrant Y coordinate' };
-  }
-  if (typeof name !== 'string' || name.trim().length === 0) {
-    return { valid: false, error: 'Name must be a non-empty string' };
-  }
-  return { valid: true };
-}
-
-export interface GetKnownQuadrantsValidation {
-  valid: boolean;
-  error?: string;
-}
-
-export function validateGetKnownQuadrants(playerId: unknown): GetKnownQuadrantsValidation {
-  if (typeof playerId !== 'string' || playerId.length === 0) {
-    return { valid: false, error: 'Invalid player ID' };
-  }
-  return { valid: true };
-}
