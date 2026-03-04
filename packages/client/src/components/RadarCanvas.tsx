@@ -60,15 +60,20 @@ export function RadarCanvas() {
 
     drawRadar(ctx, radarState);
 
-    // Draw scan overlay after radar
+    // Draw scan overlay after radar — centered on player (offset by pan)
     if (scanAnimation?.active) {
       const w = ctx.canvas.width;
       const h = ctx.canvas.height;
-      const cellSize = CELL_SIZES[state.zoomLevel]?.w ?? 64;
-      const centerX = FRAME_LEFT + (w - FRAME_LEFT - FRAME_PAD) / 2;
-      const centerY = FRAME_PAD + (h - FRAME_PAD - FRAME_BOTTOM) / 2;
+      const cellEntry = CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1];
+      const cellW = cellEntry.w;
+      const cellH = cellEntry.h;
+      const gridCenterX = FRAME_LEFT + (w - FRAME_LEFT - FRAME_PAD) / 2;
+      const gridCenterY = FRAME_PAD + (h - FRAME_PAD - FRAME_BOTTOM) / 2;
+      // Player is at grid center minus pan offset (pan moves the viewport, not the player)
+      const playerCenterX = gridCenterX - state.panOffset.x * cellW;
+      const playerCenterY = gridCenterY - state.panOffset.y * cellH;
       const scanRange = state.ship?.stats?.scannerLevel ?? 3;
-      drawScanOverlay(ctx, w, h, centerX, centerY, cellSize, scanAnimation, scanRange);
+      drawScanOverlay(ctx, w, h, playerCenterX, playerCenterY, cellW, scanAnimation, scanRange);
     }
   }, []);
 

@@ -45,6 +45,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   const setPanOffset = useStore((s) => s.setPanOffset);
   const chatChannel = useStore((s) => s.chatChannel);
   const setChatChannel = useStore((s) => s.setChatChannel);
+  const channelAlerts = useStore((s) => s.channelAlerts);
   const detailPowerOn = useStore((s) => s.monitorPower['DETAIL'] ?? true);
   const setMonitorPower = useStore((s) => s.setMonitorPower);
 
@@ -130,6 +131,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
             channels={['quadrant', 'sector', 'faction', 'direct']}
             activeChannel={chatChannel}
             onChannel={(ch) => setChatChannel(ch as ChatChannel)}
+            channelAlerts={channelAlerts}
           />
         </div>
       </div>

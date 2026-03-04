@@ -1001,6 +1001,14 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Send sector data to client
       client.send('sectorData', sectorData);
 
+      // Send quadrant info (name + coords)
+      const quadrantData = await getQuadrant(this.quadrantX, this.quadrantY);
+      client.send('quadrantInfo', {
+        qx: this.quadrantX,
+        qy: this.quadrantY,
+        name: quadrantData?.name ?? null,
+      });
+
       // Save position
       await savePlayerPosition(auth.userId, sectorX, sectorY);
 
@@ -1404,18 +1412,20 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleHyperJump(client: Client, data: HyperJumpMessage) {
+    const auth = client.auth as AuthPayload;
+    console.log(`[HYPERJUMP] ${auth.username} attempting jump to (${data.targetX},${data.targetY})`);
     if (!this.checkRate(client.sessionId, 'hyperJump', 1000)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
     if (!isInt(data.targetX) || !isInt(data.targetY) ||
         Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
-      console.warn(`[SECURITY] handleHyperJump invalid coords from ${(client.auth as AuthPayload)?.username}: (${data.targetX},${data.targetY})`);
+      console.warn(`[SECURITY] handleHyperJump invalid coords from ${auth.username}: (${data.targetX},${data.targetY})`);
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
       return;
     }
-    const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
     // Reject if already in autopilot
     if (this.autopilotTimers.has(client.sessionId)) {
+      console.log(`[HYPERJUMP] ${auth.username} rejected: autopilot active`);
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Autopilot already active' });
       return;
     }
@@ -1423,9 +1433,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Validate target is discovered
     const discovered = await isRouteDiscovered(auth.userId, targetX, targetY);
     if (!discovered) {
+      console.log(`[HYPERJUMP] ${auth.username} target (${targetX},${targetY}) NOT discovered — rejecting (userId=${auth.userId})`);
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Target sector not discovered' });
       return;
     }
+    console.log(`[HYPERJUMP] ${auth.username} target discovered, proceeding...`);
 
     // Nebula blocking: can't hyperjump into or out of nebula
     const currentSectorData = await getSector(this._px(client.sessionId), this._py(client.sessionId));
@@ -2449,6 +2461,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private async handleJettison(client: Client, data: JettisonMessage) {
+    if (rejectGuest(client, 'Abwerfen')) return;
     const auth = client.auth as AuthPayload;
     const { resource } = data;
 
@@ -2461,9 +2474,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
 
-    await jettisonCargo(auth.userId, resource);
+    const jettisoned = await jettisonCargo(auth.userId, resource);
     const updatedCargo = await getPlayerCargo(auth.userId);
     client.send('cargoUpdate', updatedCargo);
+    client.send('logEntry', `FRACHT ABGEWORFEN: ${jettisoned} ${resource.toUpperCase()}`);
   }
 
   private async handleBuild(client: Client, data: BuildMessage) {
@@ -2655,14 +2669,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
 
     const storageStruct = await getPlayerStructure(auth.userId, 'storage');
-    if (!storageStruct) {
-      client.send('transferResult', { success: false, error: 'No storage built' });
-      return;
-    }
+    // Home base always provides basic tier 1 storage, even without a storage structure
+    const storageTier = storageStruct?.tier ?? 1;
 
     const currentCargo = await getPlayerCargo(auth.userId);
     const storage = await getStorageInventory(auth.userId);
-    const result = validateTransfer(direction, resource, amount, currentCargo, storage, storageStruct.tier);
+    const result = validateTransfer(direction, resource, amount, currentCargo, storage, storageTier);
     if (!result.valid) {
       client.send('transferResult', { success: false, error: result.error });
       return;

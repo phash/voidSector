@@ -1,5 +1,6 @@
 import toolsPkg from '@colyseus/tools';
 import { monitor } from '@colyseus/monitor';
+import { WebSocketTransport } from '@colyseus/ws-transport';
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -17,6 +18,12 @@ const __dirname = dirname(__filename);
 const config = (toolsPkg as any).default ?? toolsPkg;
 
 export default config({
+  initializeTransport: (options: any) => new WebSocketTransport({
+    ...options,
+    pingInterval: 10000,   // 10s (default: 3s) — more tolerant for cloudflare tunnels
+    pingMaxRetries: 3,     // 3 retries (default: 2)
+  }),
+
   initializeGameServer: (gameServer) => {
     gameServer.define('sector', SectorRoom)
       .filterBy(['quadrantX', 'quadrantY']);
@@ -66,7 +73,7 @@ export default config({
         res.json({
           token: result.token,
           player: result.player,
-          lastPosition: lastPos ?? { x: 0, y: 0 },
+          lastPosition: lastPos ?? { x: result.player.homeBase.x, y: result.player.homeBase.y },
         });
       } catch (err) {
         console.error('Login error:', err);

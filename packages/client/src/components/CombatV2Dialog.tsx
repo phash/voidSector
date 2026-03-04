@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { innerCoord } from '@void-sector/shared';
 import type { CombatTactic, SpecialAction, CombatRound } from '@void-sector/shared';
 
 function HpBar({ current, max, label, color }: {
@@ -100,7 +101,7 @@ export function CombatV2Dialog() {
         borderBottom: '1px solid var(--color-primary)', paddingBottom: 8,
         width: '100%', maxWidth: 600, textAlign: 'center',
       }}>
-        KAMPF-SYSTEM v2 &bull; SEKTOR ({encounter.sectorX}, {encounter.sectorY}) &bull; RUNDE {currentRound}/{maxRounds}
+        KAMPF-SYSTEM v2 &bull; SEKTOR ({innerCoord(encounter.sectorX)}, {innerCoord(encounter.sectorY)}) &bull; RUNDE {currentRound}/{maxRounds}
       </div>
 
       {/* Ship panels */}

@@ -77,7 +77,7 @@ describe('DetailPanel', () => {
       },
     });
     render(<DetailPanel />);
-    expect(screen.getByText('SpacePilot')).toBeTruthy();
+    expect(screen.getByText(/SpacePilot/)).toBeTruthy();
   });
 
   it('shows resources after addDiscoveries patches the discoveries record', () => {

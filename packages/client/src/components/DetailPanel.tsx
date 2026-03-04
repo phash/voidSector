@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
-import { SECTOR_COLORS, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, REP_PRICE_MODIFIERS, generateStationName, calcHyperjumpAP, calcHyperjumpFuel } from '@void-sector/shared';
+import { SECTOR_COLORS, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, REP_PRICE_MODIFIERS, generateStationName, calcHyperjumpAP, calcHyperjumpFuel, innerCoord } from '@void-sector/shared';
+import type { ChatChannel } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
+
+type DrillDown = { type: 'player'; username: string; sessionId: string } | { type: 'station'; name: string } | null;
 
 function RefuelPanel({ fuel, isFreeRefuel }: {
   fuel: { current: number; max: number };
@@ -74,11 +77,18 @@ export function DetailPanel() {
   const shipList = useStore((s) => s.shipList);
   const homeBase = useStore((s) => s.homeBase);
 
+  const [drillDown, setDrillDown] = useState<DrillDown>(null);
+
   useEffect(() => {
     if (autoFollow) {
       setSelectedSector({ x: position.x, y: position.y });
     }
   }, [autoFollow, position.x, position.y, setSelectedSector]);
+
+  // Reset drill-down when sector changes
+  useEffect(() => {
+    setDrillDown(null);
+  }, [selectedSector?.x, selectedSector?.y]);
 
   if (!selectedSector) {
     return (
@@ -107,10 +117,74 @@ export function DetailPanel() {
     e => e.sectorX === selectedSector.x && e.sectorY === selectedSector.y && e.status === 'discovered'
   );
 
+  // Drill-down: player detail view
+  if (drillDown?.type === 'player') {
+    const startDirectMessage = () => {
+      useStore.setState({
+        chatChannel: 'direct' as ChatChannel,
+        directChatRecipient: { id: drillDown.sessionId, name: drillDown.username },
+      });
+    };
+    return (
+      <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
+        <button className="vs-btn" style={{ fontSize: '0.7rem', marginBottom: 8 }}
+          onClick={() => setDrillDown(null)}>
+          [ZURÜCK]
+        </button>
+        <div style={{ letterSpacing: '0.2em', color: 'var(--color-primary)', marginBottom: 8 }}>
+          SCHIFF: {drillDown.username}
+        </div>
+        <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginBottom: 12 }}>
+          POSITION: ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <button className="vs-btn" style={{ fontSize: '0.7rem' }} onClick={startDirectMessage}>
+            [NACHRICHT SENDEN]
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Drill-down: station detail view
+  if (drillDown?.type === 'station' && sector) {
+    const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
+    const isStation = sector.type === 'station' || (sector as any).contents?.includes('station');
+    const isFreeRefuel = isHomeBase && shipList.length <= FREE_REFUEL_MAX_SHIPS;
+    return (
+      <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
+        <button className="vs-btn" style={{ fontSize: '0.7rem', marginBottom: 8 }}
+          onClick={() => setDrillDown(null)}>
+          [ZURÜCK]
+        </button>
+        <div style={{ letterSpacing: '0.2em', color: sectorColor, marginBottom: 8 }}>
+          {drillDown.name}
+        </div>
+        {sector.type === 'station' && (
+          <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginBottom: 4 }}>
+            FACTION: {(sector as any).faction ?? 'INDEPENDENT'}
+          </div>
+        )}
+        {isPlayerHere && fuel && fuel.current < fuel.max && (isStation || isHomeBase) && (
+          <RefuelPanel fuel={fuel} isFreeRefuel={isFreeRefuel} />
+        )}
+        {isPlayerHere && jumpGateInfo && (
+          <JumpGatePanel gate={jumpGateInfo} />
+        )}
+        {isPlayerHere && sector?.type === 'station' && rescuedSurvivors.length > 0 && (
+          <button className="vs-btn" style={{ fontSize: '0.7rem', marginTop: 8, borderColor: '#00FF88', color: '#00FF88' }}
+            onClick={() => network.sendDeliverSurvivors(selectedSector.x, selectedSector.y)}>
+            [ÜBERLEBENDE ABLIEFERN ({rescuedSurvivors.length})]
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
       <div style={{ letterSpacing: '0.2em', color: sectorColor, marginBottom: 8 }}>
-        SECTOR ({selectedSector.x}, {selectedSector.y})
+        SECTOR ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})
       </div>
 
       {sector ? (
@@ -162,15 +236,7 @@ export function DetailPanel() {
               <div style={{ color: 'var(--color-dim)' }}>RATE: {mining.rate}u/s</div>
             </div>
           )}
-          {isPlayerHere && fuel && fuel.current < fuel.max && (() => {
-            const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
-            const isFreeRefuel = isHomeBase && shipList.length <= FREE_REFUEL_MAX_SHIPS;
-            return (
-              <RefuelPanel fuel={fuel} isFreeRefuel={isFreeRefuel} />
-            );
-          })()}
-
-          {/* JumpGate Panel */}
+          {/* JumpGate visible on main view too */}
           {isPlayerHere && jumpGateInfo && (
             <JumpGatePanel gate={jumpGateInfo} />
           )}
@@ -195,26 +261,6 @@ export function DetailPanel() {
               }}
             >
               BERGEN (5 AP)
-            </button>
-          )}
-
-          {/* Deliver survivors at station */}
-          {isPlayerHere && sector?.type === 'station' && rescuedSurvivors.length > 0 && (
-            <button
-              onClick={() => network.sendDeliverSurvivors(selectedSector.x, selectedSector.y)}
-              style={{
-                background: 'transparent',
-                border: '1px solid #00FF88',
-                color: '#00FF88',
-                fontFamily: 'inherit',
-                fontSize: '0.75em',
-                padding: '4px 12px',
-                cursor: 'pointer',
-                marginTop: 8,
-                display: 'block',
-              }}
-            >
-              ÜBERLEBENDE ABLIEFERN ({rescuedSurvivors.length})
             </button>
           )}
 
@@ -249,19 +295,54 @@ export function DetailPanel() {
             </div>
           )}
 
-          {playersHere.length > 0 && (
-            <>
-              <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>SHIPS IN SECTOR</div>
+          {/* Sector elements list */}
+          {(sector.type === 'station' || (sector as any).contents?.includes('station') || isHome || playersHere.length > 0) && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ letterSpacing: '0.15em', opacity: 0.6, marginBottom: 4 }}>OBJEKTE IM SEKTOR</div>
+              {(sector.type === 'station' || (sector as any).contents?.includes('station')) && (
+                <button
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#00BFFF', fontFamily: 'inherit', fontSize: 'inherit', padding: '2px 0', display: 'block' }}
+                  onClick={() => setDrillDown({ type: 'station', name: generateStationName(selectedSector.x, selectedSector.y) })}
+                >
+                  ◆ {generateStationName(selectedSector.x, selectedSector.y)}
+                </button>
+              )}
+              {isHome && (
+                <button
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: SECTOR_COLORS.home_base, fontFamily: 'inherit', fontSize: 'inherit', padding: '2px 0', display: 'block' }}
+                  onClick={() => setDrillDown({ type: 'station', name: 'HOME BASE' })}
+                >
+                  ◆ HOME BASE
+                </button>
+              )}
               {playersHere.map((p) => (
                 <button
                   key={p.sessionId}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline dotted', color: 'var(--color-primary)', fontFamily: 'inherit', fontSize: 'inherit', padding: 0, display: 'block' }}
-                  onClick={() => setDetailView({ type: 'ship', data: { name: p.username } })}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', fontFamily: 'inherit', fontSize: 'inherit', padding: '2px 0', display: 'block' }}
+                  onClick={() => setDrillDown({ type: 'player', username: p.username, sessionId: p.sessionId })}
                 >
-                  {p.username}
+                  ◆ {p.username}
                 </button>
               ))}
-            </>
+            </div>
+          )}
+
+          {/* Build buttons - only when player is here */}
+          {isPlayerHere && (
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
+              <button className="vs-btn" onClick={() => network.sendBuild('comm_relay')}
+                title="5 Ore, 2 Crystal, 5 AP" style={{ fontSize: '0.7rem' }}>
+                [BUILD RELAY]
+              </button>
+              <button className="vs-btn" onClick={() => network.sendBuild('mining_station')}
+                title="30 Ore, 15 Gas, 10 Crystal, 15 AP" style={{ fontSize: '0.7rem' }}>
+                [BUILD STATION]
+              </button>
+              <button className="vs-btn" onClick={() => network.sendBuild('base')}
+                title="50 Ore, 30 Gas, 25 Crystal, 25 AP" style={{ fontSize: '0.7rem' }}>
+                [BUILD BASE]
+              </button>
+            </div>
           )}
 
           {/* Bookmark button */}
@@ -286,7 +367,7 @@ export function DetailPanel() {
               return (
                 <button className="vs-btn" style={{ marginTop: 8, display: 'block', width: '100%' }}
                   onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}>
-                  [HYPERJUMP ({selectedSector.x}, {selectedSector.y})]
+                  [HYPERJUMP ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})]
                   {shipStats ? ` ${apCost}AP / ${fuelCost}F` : ''}
                 </button>
               );

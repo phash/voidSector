@@ -1,5 +1,6 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { innerCoord } from '@void-sector/shared';
 
 export function BookmarkBar() {
   const bookmarks = useStore((s) => s.bookmarks);
@@ -37,7 +38,7 @@ export function BookmarkBar() {
             }}
             disabled={!bm}
           >
-            {bm ? `${slot}: ${bm.label || `(${bm.sectorX},${bm.sectorY})`}` : `${slot}: ---`}
+            {bm ? `${slot}: ${bm.label || `(${innerCoord(bm.sectorX)},${innerCoord(bm.sectorY)})`}` : `${slot}: ---`}
           </button>
         );
       })}

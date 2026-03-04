@@ -28,13 +28,8 @@ export interface UISlice {
   zoomLevel: number;
   panOffset: { x: number; y: number };
   jumpAnimation: JumpAnimationState | null;
-  sidebarSlots: [string, string];
-  leftSidebarSlots: [string, string];
-  mainMonitorMode: 'split' | string;
   autoFollow: boolean;
   detailView: { type: string; data?: Record<string, any> } | null;
-  leftCollapsed: boolean;
-  rightCollapsed: boolean;
   monitorPower: Record<string, boolean>;
   monitorChromeVisible: Record<string, boolean>;
   monitorModes: Record<string, string>;
@@ -54,13 +49,8 @@ export interface UISlice {
   resetPan: () => void;
   startJumpAnimation: (dx: number, dy: number, distance?: number) => void;
   clearJumpAnimation: () => void;
-  setSidebarSlot: (index: 0 | 1, monitor: string) => void;
-  setLeftSidebarSlot: (index: 0 | 1, monitor: string) => void;
-  setMainMonitorMode: (mode: 'split' | string) => void;
   setAutoFollow: (val: boolean) => void;
   setDetailView: (view: { type: string; data?: Record<string, any> } | null) => void;
-  setLeftCollapsed: (val: boolean) => void;
-  setRightCollapsed: (val: boolean) => void;
   setMonitorPower: (monitorId: string, on: boolean) => void;
   setMonitorChromeVisible: (monitorId: string, visible: boolean) => void;
   setMonitorMode: (monitorId: string, mode: string) => void;
@@ -82,13 +72,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   zoomLevel: 2,
   panOffset: { x: 0, y: 0 },
   jumpAnimation: null,
-  sidebarSlots: safeJsonParse<[string, string]>(safeGetItem('vs-sidebar-slots'), ['SHIP-SYS', 'COMMS']),
-  leftSidebarSlots: safeJsonParse<[string, string]>(safeGetItem('vs-left-sidebar-slots'), ['LOG', 'SHIP-SYS']),
-  mainMonitorMode: 'split' as 'split' | string,
   autoFollow: false,
   detailView: null,
-  leftCollapsed: false,
-  rightCollapsed: false,
   monitorPower: {},
   monitorChromeVisible: {},
   monitorModes: {},
@@ -125,23 +110,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   resetPan: () => set({ panOffset: { x: 0, y: 0 } }),
   startJumpAnimation: (dx, dy, distance?) => set({ jumpAnimation: createJumpAnimation(dx, dy, distance) }),
   clearJumpAnimation: () => set({ jumpAnimation: null }),
-  setSidebarSlot: (index, monitor) => set((s) => {
-    const slots = [...s.sidebarSlots] as [string, string];
-    slots[index] = monitor;
-    safeSetItem('vs-sidebar-slots', JSON.stringify(slots));
-    return { sidebarSlots: slots };
-  }),
-  setLeftSidebarSlot: (index, monitor) => set((s) => {
-    const slots = [...s.leftSidebarSlots] as [string, string];
-    slots[index] = monitor;
-    safeSetItem('vs-left-sidebar-slots', JSON.stringify(slots));
-    return { leftSidebarSlots: slots };
-  }),
-  setMainMonitorMode: (mode) => set({ mainMonitorMode: mode }),
   setAutoFollow: (autoFollow) => set({ autoFollow }),
   setDetailView: (view) => set({ detailView: view }),
-  setLeftCollapsed: (val) => set({ leftCollapsed: val }),
-  setRightCollapsed: (val) => set({ rightCollapsed: val }),
   setMonitorPower: (monitorId, on) => set((s) => ({
     monitorPower: { ...s.monitorPower, [monitorId]: on },
   })),

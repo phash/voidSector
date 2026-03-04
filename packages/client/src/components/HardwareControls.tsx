@@ -23,6 +23,8 @@ interface HardwareControlsProps {
   channels?: string[];
   activeChannel?: string;
   onChannel?: (channel: string) => void;
+  /** Per-channel alert state */
+  channelAlerts?: Record<string, boolean>;
 }
 
 export function HardwareControls(props: HardwareControlsProps) {
@@ -30,7 +32,7 @@ export function HardwareControls(props: HardwareControlsProps) {
     dpad, onDpad,
     zoom, zoomValue = 2, onZoom, zoomMin = 0, zoomMax = 4,
     power, powerOn, onPower,
-    channels, activeChannel, onChannel,
+    channels, activeChannel, onChannel, channelAlerts,
   } = props;
 
   return (
@@ -77,7 +79,7 @@ export function HardwareControls(props: HardwareControlsProps) {
           {channels.map((ch) => (
             <button
               key={ch}
-              className={`hw-channel-btn${activeChannel === ch ? ' active' : ''}`}
+              className={`hw-channel-btn${activeChannel === ch ? ' active' : ''}${channelAlerts?.[ch] && activeChannel !== ch ? ' alert' : ''}`}
               data-testid={`hw-channel-${ch}`}
               onClick={() => onChannel?.(ch)}
             >

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { innerCoord } from '@void-sector/shared';
 
 const PIRATE_ART = [
   '    ╱╲  ╱╲    ',
@@ -72,7 +73,7 @@ export function BattleDialog() {
           {enemyArt.join('\n')}
         </pre>
         <div style={{ color: '#FFB000', marginBottom: '12px' }}>
-          <div>Sektor: ({sectorX}, {sectorY})</div>
+          <div>Sektor: ({innerCoord(sectorX)}, {innerCoord(sectorY)})</div>
           <div>{isAncient ? 'Alien-Level' : 'Piraten-Level'}: {pirateLevel}</div>
           <div>HP: {pirateHp} | DMG: {pirateDamage}</div>
         </div>

@@ -9,8 +9,7 @@ vi.mock('../network/client', () => ({
   network: {},
 }));
 
-const EXTRA_PROGRAMS = ['MODULES', 'HANGAR'];
-const ALL_PROGRAMS = [...COCKPIT_PROGRAMS, ...EXTRA_PROGRAMS];
+const ALL_PROGRAMS = COCKPIT_PROGRAMS;
 
 describe('ProgramSelector', () => {
   const setActiveProgram = vi.fn();
@@ -24,11 +23,11 @@ describe('ProgramSelector', () => {
     });
   });
 
-  it('renders all 12 program buttons', () => {
+  it('renders all 10 program buttons (excluding COMMS and SHIP-SYS)', () => {
     render(<ProgramSelector />);
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(ALL_PROGRAMS.length);
-    expect(ALL_PROGRAMS.length).toBe(12);
+    expect(ALL_PROGRAMS.length).toBe(10);
   });
 
   it('renders a button for each program', () => {

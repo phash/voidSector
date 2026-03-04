@@ -1,6 +1,6 @@
 import { query } from './client.js';
 import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord, JumpGateMapEntry } from '@void-sector/shared';
-import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS, RESOURCE_REGEN_PER_MINUTE, CRYSTAL_REGEN_PER_MINUTE } from '@void-sector/shared';
+import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS, RESOURCE_REGEN_PER_MINUTE, CRYSTAL_REGEN_PER_MINUTE, RESOURCE_REGEN_DELAY_MINUTES } from '@void-sector/shared';
 
 export async function createPlayer(
   username: string,
@@ -73,7 +73,7 @@ export async function findPlayerByUsername(
     xp: number;
     level: number;
   }>(
-    'SELECT id, username, password_hash, home_base, xp, level FROM players WHERE username = $1',
+    'SELECT id, username, password_hash, home_base, xp, level FROM players WHERE LOWER(username) = LOWER($1)',
     [username]
   );
   if (result.rows.length === 0) return null;
@@ -260,14 +260,17 @@ export async function getSector(
   const meta = row.metadata || {};
   let resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
 
-  // Apply resource regeneration if sector was mined
+  // Apply resource regeneration if sector was mined (with 5-minute delay)
   if (row.last_mined && (row.max_ore > 0 || row.max_gas > 0 || row.max_crystal > 0)) {
     const elapsedMinutes = (Date.now() - Number(row.last_mined)) / 60000;
-    resources = {
-      ore: Math.min(row.max_ore, resources.ore + Math.floor(elapsedMinutes * RESOURCE_REGEN_PER_MINUTE)),
-      gas: Math.min(row.max_gas, resources.gas + Math.floor(elapsedMinutes * RESOURCE_REGEN_PER_MINUTE)),
-      crystal: Math.min(row.max_crystal, resources.crystal + Math.floor(elapsedMinutes * CRYSTAL_REGEN_PER_MINUTE)),
-    };
+    const regenMinutes = Math.max(0, elapsedMinutes - RESOURCE_REGEN_DELAY_MINUTES);
+    if (regenMinutes > 0) {
+      resources = {
+        ore: Math.min(row.max_ore, resources.ore + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE)),
+        gas: Math.min(row.max_gas, resources.gas + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE)),
+        crystal: Math.min(row.max_crystal, resources.crystal + Math.floor(regenMinutes * CRYSTAL_REGEN_PER_MINUTE)),
+      };
+    }
   }
 
   return {
@@ -1464,14 +1467,17 @@ export async function getSectorsInRange(
     const meta = r.metadata || {};
     let resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
 
-    // Apply resource regeneration if sector was mined
+    // Apply resource regeneration if sector was mined (with 5-minute delay)
     if (r.last_mined && (r.max_ore > 0 || r.max_gas > 0 || r.max_crystal > 0)) {
       const elapsedMinutes = (Date.now() - Number(r.last_mined)) / 60000;
-      resources = {
-        ore: Math.min(r.max_ore, resources.ore + Math.floor(elapsedMinutes * RESOURCE_REGEN_PER_MINUTE)),
-        gas: Math.min(r.max_gas, resources.gas + Math.floor(elapsedMinutes * RESOURCE_REGEN_PER_MINUTE)),
-        crystal: Math.min(r.max_crystal, resources.crystal + Math.floor(elapsedMinutes * CRYSTAL_REGEN_PER_MINUTE)),
-      };
+      const regenMinutes = Math.max(0, elapsedMinutes - RESOURCE_REGEN_DELAY_MINUTES);
+      if (regenMinutes > 0) {
+        resources = {
+          ore: Math.min(r.max_ore, resources.ore + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE)),
+          gas: Math.min(r.max_gas, resources.gas + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE)),
+          crystal: Math.min(r.max_crystal, resources.crystal + Math.floor(regenMinutes * CRYSTAL_REGEN_PER_MINUTE)),
+        };
+      }
     }
 
     return {

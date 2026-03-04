@@ -25,13 +25,22 @@ cd packages/shared && npx vitest run    # 191 tests
 - Conventional commits: `feat:`, `fix:`, `test:`, `docs:`
 
 ## Architecture
-- **Server**: Colyseus rooms (SectorRoom per sector), PostgreSQL (queries.ts), Redis (AP state)
+- **Server**: Colyseus rooms (SectorRoom per quadrant, QUADRANT_SIZE=10,000), PostgreSQL (queries.ts), Redis (AP state)
 - **Client**: React + Zustand (gameSlice + uiSlice), Canvas radar (RadarRenderer), singleton GameNetwork
 - **Shared**: types.ts + constants.ts, consumed by both packages
+
+## Cockpit Layout (6 Sections)
+- **Sec 1** (`cockpit-sec1`): Program Selector — 12-button vertical strip (NAV-COM, RADAR, SCAN, etc.)
+- **Sec 2** (`cockpit-sec2`): Main Monitor — primary content display with UnifiedBezel
+- **Sec 3** (`cockpit-sec3`): Detail Monitor — context-sensitive detail panel per program
+- **Sec 4** (`cockpit-sec4`): Settings — ShipStatusPanel + CombatStatusPanel + SettingsPanel
+- **Sec 5** (`cockpit-sec5`): Navigation — SectorInfo + StatusBar + NavControls + HardwareControls
+- **Sec 6** (`cockpit-sec6`): Comms — CommsScreen
 
 ## Key Patterns
 - AP system: lazy evaluation, no server tick loop — calculated on each action
 - World gen: deterministic seed-based (`hashCoords(x, y, worldSeed)`)
+- Rooms: per-quadrant (not per-sector). Intra-quadrant moves use `moveSector` message, cross-quadrant moves require room leave/join. `playerSectorData` cache tracks per-player sector data.
 - Network: message-based (client sends command, server responds with result)
 - State: Zustand with `useStore.setState()` for shallow merges
 - Tests: Vitest everywhere. Client uses jsdom + RTL + jest-canvas-mock (via jest-shim.ts)
@@ -97,3 +106,8 @@ Monitor rework (#107): 6-section cockpit layout replacing 3-column sidebar desig
 CockpitLayout grid (program selector, main+detail monitors, settings, navigation, comms).
 12 selectable programs, 4 new detail panels (Cargo, Trade, Mining, Quests), TestPattern canvas,
 HardwareControls (D-Pad, zoom, power, channels). Desktop uses cockpit, mobile unchanged.
+
+Quadrant room refactor: Changed from per-sector rooms (`sector_x_y`) to per-quadrant rooms
+(`quadrant_qx_qy`, QUADRANT_SIZE=10,000). filterBy(['quadrantX','quadrantY']).
+Intra-quadrant sector changes via `moveSector` message (no room transition).
+Cross-quadrant moves via `crossQuadrant` flag in jumpResult → full room leave/join.

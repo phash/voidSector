@@ -1,6 +1,6 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { RESOURCE_TYPES } from '@void-sector/shared';
+import { RESOURCE_TYPES, innerCoord } from '@void-sector/shared';
 import type { MineableResourceType } from '@void-sector/shared';
 
 function ResourceBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -21,6 +21,7 @@ export function MiningScreen() {
 
   const resources = currentSector?.resources || { ore: 0, gas: 0, crystal: 0 };
   const maxYield = Math.max(resources.ore, resources.gas, resources.crystal, 1);
+  const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
@@ -29,8 +30,14 @@ export function MiningScreen() {
       </div>
 
       <div style={{ fontSize: '0.85rem', marginBottom: '12px' }}>
-        SECTOR ({position.x}, {position.y}) — {currentSector?.type?.toUpperCase() || 'UNKNOWN'}
+        SECTOR ({innerCoord(position.x)}, {innerCoord(position.y)}) — {currentSector?.type?.toUpperCase() || 'UNKNOWN'}
       </div>
+
+      {!hasResources && !mining?.active && (
+        <div style={{ fontSize: '0.8rem', color: 'var(--color-dim)', marginBottom: '12px' }}>
+          KEINE RESSOURCEN IN DIESEM SEKTOR. NAVIGIERE ZU EINEM ASTEROIDENFELD ODER NEBEL.
+        </div>
+      )}
 
       <div style={{ marginBottom: '16px' }}>
         <ResourceBar label="ORE" value={resources.ore} max={maxYield} />

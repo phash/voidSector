@@ -90,6 +90,7 @@ export interface GameSlice {
   chatMessages: ChatMessage[];
   chatChannel: ChatChannel;
   recentContacts: Array<{ id: string; name: string }>;
+  channelAlerts: Record<string, boolean>;
 
   // Alerts
   alerts: Record<string, boolean>;
@@ -205,7 +206,7 @@ export interface GameSlice {
 
   // Quadrant system
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
-  currentQuadrant: { qx: number; qy: number } | null;
+  currentQuadrant: { qx: number; qy: number; name?: string | null } | null;
   firstContactEvent: FirstContactEvent | null;
 
   // Actions
@@ -228,6 +229,8 @@ export interface GameSlice {
   addChatMessage: (msg: ChatMessage) => void;
   setChatChannel: (channel: ChatChannel) => void;
   addRecentContact: (id: string, name: string) => void;
+  setChannelAlert: (channel: string, active: boolean) => void;
+  clearChannelAlert: (channel: string) => void;
   setAlert: (monitorId: string, active: boolean) => void;
   clearAlert: (monitorId: string) => void;
   setSelectedSector: (sector: { x: number; y: number } | null) => void;
@@ -270,7 +273,7 @@ export interface GameSlice {
   setFactoryState: (data: GameSlice['factoryState']) => void;
   setKontorOrders: (orders: GameSlice['kontorOrders']) => void;
   setKnownQuadrants: (quadrants: Array<{ qx: number; qy: number; learnedAt: string }>) => void;
-  setCurrentQuadrant: (q: { qx: number; qy: number } | null) => void;
+  setCurrentQuadrant: (q: { qx: number; qy: number; name?: string | null } | null) => void;
   setFirstContactEvent: (event: FirstContactEvent | null) => void;
   setHyperdriveState: (state: HyperdriveState | null) => void;
   setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
@@ -303,6 +306,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   chatMessages: [],
   chatChannel: 'quadrant' as ChatChannel,
   recentContacts: [],
+  channelAlerts: {},
   alerts: {},
   selectedSector: null,
   baseStructures: [],
@@ -427,13 +431,25 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       if (s.chatMessages.some(m => m.id === msg.id)) return s;
       return { chatMessages: [...s.chatMessages.slice(-199), msg] };
     }),
-  setChatChannel: (chatChannel) => set({ chatChannel }),
+  setChatChannel: (chatChannel) => set((s) => {
+    const next = { ...s.channelAlerts };
+    delete next[chatChannel];
+    return { chatChannel, channelAlerts: next };
+  }),
   addRecentContact: (id, name) =>
     set((s) => {
       const MAX_CONTACTS = 20;
       const filtered = s.recentContacts.filter(c => c.id !== id);
       return { recentContacts: [{ id, name }, ...filtered].slice(0, MAX_CONTACTS) };
     }),
+  setChannelAlert: (channel, active) => set((s) => ({
+    channelAlerts: { ...s.channelAlerts, [channel]: active },
+  })),
+  clearChannelAlert: (channel) => set((s) => {
+    const next = { ...s.channelAlerts };
+    delete next[channel];
+    return { channelAlerts: next };
+  }),
   setAlert: (monitorId, active) => set((s) => ({
     alerts: { ...s.alerts, [monitorId]: active },
   })),

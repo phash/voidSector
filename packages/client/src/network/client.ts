@@ -15,6 +15,16 @@ function sectorToQuadrant(x: number, y: number): { qx: number; qy: number } {
   return { qx: Math.floor(x / QUADRANT_SIZE), qy: Math.floor(y / QUADRANT_SIZE) };
 }
 
+/** Check if a monitor is currently visible (desktop activeProgram or mobile activeMonitor).
+ * COMMS is always visible on desktop (dedicated Section 6). */
+function isMonitorVisible(monitorId: string): boolean {
+  const store = useStore.getState();
+  if (store.activeProgram === monitorId || store.activeMonitor === monitorId) return true;
+  // COMMS is always visible in the cockpit layout (Section 6)
+  if (monitorId === 'COMMS') return true;
+  return false;
+}
+
 class GameNetwork {
   private client: Client | null = null;
   private sectorRoom: Room | null = null;
@@ -187,10 +197,7 @@ class GameNetwork {
         (s) => s.type === 'pirate' || s.type === 'anomaly' || s.type === 'station'
       );
       if (hasInteresting) {
-        const logVisible = store.sidebarSlots.includes('LOG')
-          || store.leftSidebarSlots.includes('LOG')
-          || store.mainMonitorMode === 'LOG';
-        if (!logVisible) {
+        if (!isMonitorVisible('LOG')) {
           store.setAlert('LOG', true);
         }
       }
@@ -256,10 +263,7 @@ class GameNetwork {
       store.setMining(data);
       // Alert when mining completes (was active, now not)
       if (wasMining && !data.active) {
-        const visible = store.sidebarSlots.includes('MINING')
-          || store.leftSidebarSlots.includes('MINING')
-          || store.mainMonitorMode === 'MINING';
-        if (!visible) {
+        if (!isMonitorVisible('MINING')) {
           store.setAlert('MINING', true);
         }
       }
@@ -398,11 +402,12 @@ class GameNetwork {
       const store = useStore.getState();
       store.addChatMessage(data);
       // Alert if COMMS is not visible in any sidebar slot or main
-      const visible = store.sidebarSlots.includes('COMMS')
-        || store.leftSidebarSlots.includes('COMMS')
-        || store.mainMonitorMode === 'COMMS';
-      if (!visible) {
+      if (!isMonitorVisible('COMMS')) {
         store.setAlert('COMMS', true);
+      }
+      // Per-channel alert if message is on a different channel than active
+      if (data.channel && data.channel !== store.chatChannel) {
+        store.setChannelAlert(data.channel, true);
       }
     });
 
@@ -613,10 +618,7 @@ class GameNetwork {
       );
       store.setActiveQuests(quests);
       store.addLogEntry('Quest-Fortschritt aktualisiert');
-      const visible = store.sidebarSlots.includes('QUESTS')
-        || store.leftSidebarSlots.includes('QUESTS')
-        || store.mainMonitorMode === 'QUESTS';
-      if (!visible) store.setAlert('QUESTS', true);
+      if (!isMonitorVisible('QUESTS')) store.setAlert('QUESTS', true);
     });
 
     room.onMessage('reputationUpdate', (data) => {
@@ -672,10 +674,7 @@ class GameNetwork {
     room.onMessage('scanEventDiscovered', (data) => {
       const store = useStore.getState();
       store.addScanEvent(data.event);
-      const visible = store.sidebarSlots.includes('QUESTS')
-        || store.leftSidebarSlots.includes('QUESTS')
-        || store.mainMonitorMode === 'QUESTS';
-      if (!visible) store.setAlert('QUESTS', true);
+      if (!isMonitorVisible('QUESTS')) store.setAlert('QUESTS', true);
       // Context-sensitive help tips
       const eventType = data.event?.eventType;
       if (eventType === 'distress_signal') store.showTip('first_distress');
@@ -749,14 +748,8 @@ class GameNetwork {
       const store = useStore.getState();
       store.addDistressCall(data);
       store.addLogEntry(`NOTRUF EMPFANGEN — Richtung: ${data.direction}, ~${data.estimatedDistance} Sektoren`);
-      const logVisible = store.sidebarSlots.includes('LOG')
-        || store.leftSidebarSlots.includes('LOG')
-        || store.mainMonitorMode === 'LOG';
-      if (!logVisible) store.setAlert('LOG', true);
-      const commsVisible = store.sidebarSlots.includes('COMMS')
-        || store.leftSidebarSlots.includes('COMMS')
-        || store.mainMonitorMode === 'COMMS';
-      if (!commsVisible) store.setAlert('COMMS', true);
+      if (!isMonitorVisible('LOG')) store.setAlert('LOG', true);
+      if (!isMonitorVisible('COMMS')) store.setAlert('COMMS', true);
     });
 
     // Faction Upgrades
@@ -1012,10 +1005,7 @@ class GameNetwork {
         sentAt: Date.parse(data.createdAt),
         delayed: false,
       });
-      const visible = store.sidebarSlots.includes('COMMS')
-        || store.leftSidebarSlots.includes('COMMS')
-        || store.mainMonitorMode === 'COMMS';
-      if (!visible) {
+      if (!isMonitorVisible('COMMS')) {
         store.setAlert('COMMS', true);
       }
     });
@@ -1023,15 +1013,16 @@ class GameNetwork {
     room.onMessage('adminQuestOffer', (data: AdminQuestNotification) => {
       const store = useStore.getState();
       store.addLogEntry(`New quest available: ${data.title}`);
-      const visible = store.sidebarSlots.includes('QUESTS')
-        || store.leftSidebarSlots.includes('QUESTS')
-        || store.mainMonitorMode === 'QUESTS';
-      if (!visible) {
+      if (!isMonitorVisible('QUESTS')) {
         store.setAlert('QUESTS', true);
       }
     });
 
     // --- Quadrant System ---
+
+    room.onMessage('quadrantInfo', (data: { qx: number; qy: number; name?: string | null }) => {
+      useStore.getState().setCurrentQuadrant(data);
+    });
 
     room.onMessage('firstContact', (data: FirstContactEvent) => {
       const store = useStore.getState();

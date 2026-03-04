@@ -2,18 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { createStore } from 'zustand';
 import { createUISlice } from '../state/uiSlice';
 
-describe('UISlice sidebar collapse', () => {
-  it('defaults to both sidebars expanded', () => {
+describe('UISlice monitor power', () => {
+  it('defaults monitors to powered on', () => {
     const store = createStore(createUISlice);
-    expect(store.getState().leftCollapsed).toBe(false);
-    expect(store.getState().rightCollapsed).toBe(false);
+    expect(store.getState().monitorPower['DETAIL'] ?? true).toBe(true);
   });
 
-  it('toggles left sidebar independently', () => {
+  it('toggles monitor power independently', () => {
     const store = createStore(createUISlice);
-    store.getState().setLeftCollapsed(true);
-    expect(store.getState().leftCollapsed).toBe(true);
-    expect(store.getState().rightCollapsed).toBe(false);
+    store.getState().setMonitorPower('DETAIL', false);
+    expect(store.getState().monitorPower['DETAIL']).toBe(false);
   });
 });
 

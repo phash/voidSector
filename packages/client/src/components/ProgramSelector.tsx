@@ -1,14 +1,12 @@
 import { useStore } from '../state/store';
 import { COCKPIT_PROGRAMS, COCKPIT_PROGRAM_LABELS } from '@void-sector/shared';
 
-const EXTRA_PROGRAMS = ['MODULES', 'HANGAR'];
-
 export function ProgramSelector() {
   const activeProgram = useStore((s) => s.activeProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const alerts = useStore((s) => s.alerts);
 
-  const allPrograms = [...COCKPIT_PROGRAMS, ...EXTRA_PROGRAMS];
+  const allPrograms = COCKPIT_PROGRAMS;
 
   return (
     <div className="program-selector" data-testid="program-selector">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { innerCoord } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc } from '@void-sector/shared';
 
 export function QuestsScreen() {
@@ -181,7 +182,7 @@ export function QuestsScreen() {
             return (
               <div key={e.id} style={{ border: '1px solid rgba(255,176,0,0.3)', padding: '4px', marginBottom: '4px' }}>
                 <div style={{ color: '#FF00FF' }}>{typeLabels[e.eventType] ?? e.eventType}</div>
-                <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>Sektor ({e.sectorX}, {e.sectorY})</div>
+                <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>Sektor ({innerCoord(e.sectorX)}, {innerCoord(e.sectorY)})</div>
                 <button
                   onClick={() => network.sendCompleteScanEvent(e.id)}
                   style={{ background: '#1a1a1a', color: '#00FF88', border: '1px solid #00FF88', padding: '1px 4px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '10px', marginTop: '2px' }}
@@ -239,7 +240,7 @@ export function QuestsScreen() {
                 }}>
                   <div>{s.survivorCount} Überlebende</div>
                   <div style={{ fontSize: '10px', opacity: 0.5 }}>
-                    Geborgen bei ({s.sectorX}, {s.sectorY})
+                    Geborgen bei ({innerCoord(s.sectorX)}, {innerCoord(s.sectorY)})
                   </div>
                 </div>
               ))}

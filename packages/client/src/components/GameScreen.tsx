@@ -133,8 +133,22 @@ function BaseSplitScreen() {
 
 // Full NavCom screen (used when main is switched to NAV-COM in fullscreen mode)
 function NavComScreen() {
+  const q = useStore((s) => s.currentQuadrant);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {q && (
+        <div style={{
+          padding: '2px 6px',
+          fontSize: '0.65rem',
+          color: 'var(--color-dim)',
+          borderBottom: '1px solid var(--color-dim)',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}>
+          [{q.qx}][{q.qy}]{q.name ? ` ${q.name}` : ''}
+        </div>
+      )}
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
           <RadarCanvas />
@@ -168,17 +182,37 @@ function renderScreen(monitorId: string) {
   }
 }
 
-/** Simplified renderScreen for cockpit layout — no embedded controls/details */
-function renderCockpitScreen(monitorId: string) {
-  switch (monitorId) {
-    case MONITORS.NAV_COM: return (
-      <div style={{ display: 'flex', height: '100%' }}>
+function CockpitNavCom() {
+  const q = useStore((s) => s.currentQuadrant);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {q && (
+        <div style={{
+          padding: '2px 6px',
+          fontSize: '0.65rem',
+          color: 'var(--color-dim)',
+          borderBottom: '1px solid var(--color-dim)',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}>
+          [{q.qx}][{q.qy}]{q.name ? ` ${q.name}` : ''}
+        </div>
+      )}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
           <RadarCanvas />
         </div>
         <BookmarkBar />
       </div>
-    );
+    </div>
+  );
+}
+
+/** Simplified renderScreen for cockpit layout — no embedded controls/details */
+function renderCockpitScreen(monitorId: string) {
+  switch (monitorId) {
+    case MONITORS.NAV_COM: return <CockpitNavCom />;
     case MONITORS.TECH: return <TechTreePanel />;
     case MONITORS.BASE_LINK: return <BaseOverview />;
     default: return renderScreen(monitorId);

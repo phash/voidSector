@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
+import { innerCoord } from '@void-sector/shared';
 
 function SegmentedBar({ current, max, width = 12 }: { current: number; max: number; width?: number }) {
   const filled = max > 0 ? Math.round((current / max) * width) : 0;
@@ -180,7 +181,7 @@ export function SectorInfo() {
       minWidth: 0,
       overflow: 'hidden',
     }}>
-      <span style={{ whiteSpace: 'nowrap' }}>SECTOR: ({position.x}, {position.y})</span>
+      <span style={{ whiteSpace: 'nowrap' }}>SECTOR: ({innerCoord(position.x)}, {innerCoord(position.y)})</span>
       <span>{currentSector?.type?.toUpperCase() || '---'}</span>
       <span>PILOTS: {playerCount}</span>
       <span>ORIGIN: {distToOrigin.toLocaleString()}</span>

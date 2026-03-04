@@ -1,13 +1,12 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, innerCoord } from '@void-sector/shared';
 
 export function NavControls() {
   const position = useStore((s) => s.position);
   const jumpPending = useStore((s) => s.jumpPending);
   const ap = useStore((s) => s.ap);
   const fuel = useStore((s) => s.fuel);
-  const ship = useStore((s) => s.ship);
   const mining = useStore((s) => s.mining);
   const autopilot = useStore((s) => s.autopilot);
   const hyperdrive = useStore((s) => s.hyperdriveState);
@@ -20,7 +19,7 @@ export function NavControls() {
           AUTOPILOT AKTIV
         </div>
         <div style={{ fontSize: '0.8rem', marginBottom: 8 }}>
-          Ziel: ({autopilot.targetX}, {autopilot.targetY}) | Verbleibend: {autopilot.remaining}
+          Ziel: ({innerCoord(autopilot.targetX)}, {innerCoord(autopilot.targetY)}) | Verbleibend: {autopilot.remaining}
         </div>
         <button className="vs-btn" onClick={() => network.sendCancelAutopilot()}>
           [ABBRECHEN]
@@ -46,7 +45,9 @@ export function NavControls() {
 
   return (
     <div style={{ padding: '8px 12px' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
+      {/* Arrow-key layout: ↑ top center, ← · → middle, ↓ bottom center */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, justifyItems: 'center', marginBottom: 8, maxWidth: 140, margin: '0 auto 8px' }}>
+        <div />
         <button
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
@@ -56,6 +57,7 @@ export function NavControls() {
         >
           ↑
         </button>
+        <div />
         <button
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
@@ -65,15 +67,7 @@ export function NavControls() {
         >
           ←
         </button>
-        <button
-          className="vs-btn"
-          title="Jump: 1 AP, 0 Fuel"
-          onClick={() => jump(0, 1)}
-          disabled={jumpPending || isMining || scanPending || !canJump}
-          style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
-        >
-          ↓
-        </button>
+        <div />
         <button
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
@@ -83,6 +77,17 @@ export function NavControls() {
         >
           →
         </button>
+        <div />
+        <button
+          className="vs-btn"
+          title="Jump: 1 AP, 0 Fuel"
+          onClick={() => jump(0, 1)}
+          disabled={jumpPending || isMining || scanPending || !canJump}
+          style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+        >
+          ↓
+        </button>
+        <div />
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
         <button
@@ -102,25 +107,6 @@ export function NavControls() {
           style={isMining || scanPending ? miningDisabledStyle : (!canAreaScan ? insufficientStyle : undefined)}
         >
           [AREA SCAN]
-        </button>
-        <button className="vs-btn" disabled title="Coming soon">[MINE]</button>
-
-      </div>
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-        <button className="vs-btn" onClick={() => network.sendBuild('comm_relay')}
-          title="5 Ore, 2 Crystal, 5 AP" disabled={jumpPending || isMining}
-          style={isMining ? { fontSize: '0.7rem', ...miningDisabledStyle } : { fontSize: '0.7rem' }}>
-          [BUILD RELAY]
-        </button>
-        <button className="vs-btn" onClick={() => network.sendBuild('mining_station')}
-          title="30 Ore, 15 Gas, 10 Crystal, 15 AP" disabled={jumpPending || isMining}
-          style={isMining ? { fontSize: '0.7rem', ...miningDisabledStyle } : { fontSize: '0.7rem' }}>
-          [BUILD STATION]
-        </button>
-        <button className="vs-btn" onClick={() => network.sendBuild('base')}
-          title="50 Ore, 30 Gas, 25 Crystal, 25 AP" disabled={jumpPending || isMining}
-          style={isMining ? { fontSize: '0.7rem', ...miningDisabledStyle } : { fontSize: '0.7rem' }}>
-          [BUILD BASE]
         </button>
       </div>
       {hyperdrive && hyperdrive.maxCharge > 0 && (

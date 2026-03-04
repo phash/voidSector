@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { innerCoord } from '@void-sector/shared';
 
 /**
  * NavTargetPanel — coordinate input, bookmark selection, hyperjump toggle,
@@ -97,7 +98,7 @@ export function NavTargetPanel() {
             AUTOPILOT AKTIV
           </div>
           <div style={{ fontSize: '0.8rem', marginBottom: 4 }}>
-            Ziel: ({autopilotStatus.targetX}, {autopilotStatus.targetY})
+            Ziel: ({innerCoord(autopilotStatus.targetX)}, {innerCoord(autopilotStatus.targetY)})
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-dim)', marginBottom: 8 }}>
             Schritt {autopilotStatus.currentStep} / {autopilotStatus.totalSteps}
@@ -190,7 +191,7 @@ export function NavTargetPanel() {
                 <option value="">-- Lesezeichen --</option>
                 {bookmarks.map((bm) => (
                   <option key={bm.slot} value={`${bm.sectorX},${bm.sectorY}`}>
-                    {bm.label || `(${bm.sectorX}, ${bm.sectorY})`} [Slot {bm.slot}]
+                    {bm.label || `(${innerCoord(bm.sectorX)}, ${innerCoord(bm.sectorY)})`} [Slot {bm.slot}]
                   </option>
                 ))}
               </select>

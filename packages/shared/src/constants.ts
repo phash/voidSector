@@ -51,10 +51,11 @@ export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceT
   pirate:         { ore: 8,  gas: 3,  crystal: 8  },
 };
 
-export const MINING_RATE_PER_SECOND = 0.1;
+export const MINING_RATE_PER_SECOND = 1;
 
 export const RESOURCE_REGEN_PER_MINUTE = 1;
 export const CRYSTAL_REGEN_PER_MINUTE = 1 / 3;
+export const RESOURCE_REGEN_DELAY_MINUTES = 5;
 
 export const RESOURCE_TYPES: MineableResourceType[] = ['ore', 'gas', 'crystal'];
 
@@ -1027,59 +1028,6 @@ export const MONITORS = {
 
 export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
 
-export const RIGHT_SIDEBAR_MONITORS: MonitorId[] = [
-  MONITORS.SHIP_SYS,
-  MONITORS.MINING,
-  MONITORS.CARGO,
-  MONITORS.COMMS,
-  MONITORS.BASE_LINK,
-  MONITORS.TRADE,
-  MONITORS.FACTION,
-  MONITORS.QUESTS,
-  MONITORS.TECH,
-  MONITORS.QUAD_MAP,
-];
-
-export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
-  MONITORS.LOG,
-  MONITORS.SHIP_SYS,
-  MONITORS.MINING,
-  MONITORS.CARGO,
-  MONITORS.COMMS,
-  MONITORS.BASE_LINK,
-  MONITORS.TRADE,
-  MONITORS.FACTION,
-  MONITORS.QUESTS,
-  MONITORS.TECH,
-  MONITORS.QUAD_MAP,
-];
-
-export const MAIN_MONITORS: MonitorId[] = [
-  MONITORS.NAV_COM,
-  MONITORS.MINING,
-  MONITORS.CARGO,
-  MONITORS.COMMS,
-  MONITORS.BASE_LINK,
-  MONITORS.TRADE,
-  MONITORS.FACTION,
-  MONITORS.QUESTS,
-  MONITORS.TECH,
-  MONITORS.QUAD_MAP,
-];
-
-/** Monitors too large for sidebar — redirect to main area when clicked in sidebar */
-export const MAIN_ONLY_MONITORS: ReadonlySet<MonitorId> = new Set([
-  MONITORS.CARGO,
-  MONITORS.TECH,
-  MONITORS.TRADE,
-  MONITORS.FACTION,
-  MONITORS.QUESTS,
-  MONITORS.QUAD_MAP,
-]);
-
-/** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */
-export const SIDEBAR_MONITORS = RIGHT_SIDEBAR_MONITORS;
-
 /** Programs selectable in Section 1 of the cockpit layout (#107) */
 export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.NAV_COM,
@@ -1094,20 +1042,20 @@ export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.LOG,
 ];
 
-/** Short labels for cockpit program buttons */
+/** Labels for cockpit program buttons */
 export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
-  'NAV-COM': 'NAV',
-  'MINING': 'MIN',
-  'CARGO': 'CRG',
-  'BASE-LINK': 'BAS',
-  'TRADE': 'TRD',
-  'FACTION': 'FAC',
-  'QUESTS': 'QST',
-  'TECH': 'TEC',
-  'QUAD-MAP': 'MAP',
+  'NAV-COM': 'NAV-COM',
+  'MINING': 'MINING',
+  'CARGO': 'CARGO',
+  'BASE-LINK': 'BASE',
+  'TRADE': 'TRADE',
+  'FACTION': 'FACTION',
+  'QUESTS': 'QUESTS',
+  'TECH': 'TECH',
+  'QUAD-MAP': 'QUAD-MAP',
   'LOG': 'LOG',
-  'MODULES': 'MOD',
-  'HANGAR': 'HNG',
+  'MODULES': 'MODULES',
+  'HANGAR': 'HANGAR',
 };
 
 // --- Phase 5: Deep Systems ---
@@ -1263,6 +1211,11 @@ export const STALENESS_DIM_HOURS = 24;      // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7;       // coords-only after 7 days
 
 export const QUADRANT_SIZE = 10_000;
+
+/** Convert absolute coordinate to inner sector coordinate (0..QUADRANT_SIZE-1) */
+export function innerCoord(abs: number): number {
+  return ((abs % QUADRANT_SIZE) + QUADRANT_SIZE) % QUADRANT_SIZE;
+}
 export const SPAWN_QUADRANT_DISTANCE = 10_000_000;
 export const SPAWN_QUADRANT_BAND = 10;
 export const SPAWN_CLUSTER_MAX_PLAYERS_QUAD = 5;

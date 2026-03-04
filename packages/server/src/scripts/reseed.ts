@@ -8,31 +8,48 @@ async function reseed() {
   await runMigrations();
   console.log('Migrations complete');
 
-  // 1. Delete all sectors in quadrant (0,0)
-  const deleted = await query(
-    'DELETE FROM sectors WHERE x >= 0 AND x < 10000 AND y >= 0 AND y < 10000'
-  );
-  console.log(`Deleted ${deleted.rowCount} sectors in quadrant (0,0)`);
+  // 1. Full wipe: all sectors, all players, all quadrants, all discoveries
+  const tables = [
+    'player_known_jumpgates',
+    'player_known_quadrants',
+    'player_station_reputation',
+    'autopilot_routes',
+    'player_auto_refuel',
+    'player_bookmarks',
+    'player_discoveries',
+    'messages',
+    'faction_members',
+    'faction_upgrades',
+    'factions',
+    'ships',
+    'cargo',
+    'sectors',
+    'quadrants',
+    'players',
+  ];
+  for (const table of tables) {
+    try {
+      const del = await query(`DELETE FROM ${table}`);
+      console.log(`Cleared ${table}: ${del.rowCount} rows`);
+    } catch (err: any) {
+      console.log(`Skip ${table}: ${err.message}`);
+    }
+  }
 
-  // 2. Create test accounts
+  console.log('Redis will be flushed separately');
+
+  // 3. Create test accounts — all spawn in quadrant (3000,3000), sector ~(1234,1234)
+  //    absolute = quadrant * QUADRANT_SIZE + sector = 3000 * 10000 + 1234 = 30001234
   const passwordHash = await bcrypt.hash('test1234', SALT_ROUNDS);
   const accounts = [
-    { username: 'Phash', homeBase: { x: 20, y: 20 } },
-    { username: 'Smasher', homeBase: { x: 40, y: 20 } },
-    { username: 'Fede', homeBase: { x: 20, y: 40 } },
+    { username: 'Phash', homeBase: { x: 30001234, y: 30001234 } },
+    { username: 'Smasher', homeBase: { x: 30001254, y: 30001234 } },
+    { username: 'Fede', homeBase: { x: 30001234, y: 30001254 } },
   ];
 
   for (const acct of accounts) {
-    try {
-      const player = await createPlayer(acct.username, passwordHash, acct.homeBase);
-      console.log(`Created ${acct.username} (id: ${player.id}) at (${acct.homeBase.x}, ${acct.homeBase.y})`);
-    } catch (err: any) {
-      if (err.code === '23505') {
-        console.log(`${acct.username} already exists — skipping`);
-      } else {
-        throw err;
-      }
-    }
+    const player = await createPlayer(acct.username, passwordHash, acct.homeBase);
+    console.log(`Created ${acct.username} (id: ${player.id}) at (${acct.homeBase.x}, ${acct.homeBase.y})`);
   }
 
   console.log('Reseed complete');

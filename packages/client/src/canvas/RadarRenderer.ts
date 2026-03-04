@@ -1,4 +1,4 @@
-import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS, HULL_RADAR_PATTERNS } from '@void-sector/shared';
+import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS, HULL_RADAR_PATTERNS, innerCoord } from '@void-sector/shared';
 import type { SectorData, Coords, JumpGateInfo, JumpGateMapEntry, ScanEvent, HullType, Bookmark } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
@@ -197,7 +197,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         } else {
           ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.25)');
         }
-        ctx.fillText(`(${sx},${sy})`, cellX, cellY - CELL_H / 2 + 3);
+        ctx.fillText(`(${innerCoord(sx)},${innerCoord(sy)})`, cellX, cellY - CELL_H / 2 + 3);
       }
 
       // Sector content
@@ -542,7 +542,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   for (let dy = -radiusY; dy <= radiusY; dy++) {
     const sy = viewY + dy;
     const cellY = gridCenterY + dy * CELL_H;
-    ctx.fillText(String(sy), frameLeft - 8, cellY);
+    ctx.fillText(String(innerCoord(sy)), frameLeft - 8, cellY);
   }
 
   // Column labels (bottom) — X galaxy coordinates
@@ -551,7 +551,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   for (let dx = -radiusX; dx <= radiusX; dx++) {
     const sx = viewX + dx;
     const cellX = gridCenterX + dx * CELL_W;
-    ctx.fillText(String(sx), cellX, frameBottom + 4);
+    ctx.fillText(String(innerCoord(sx)), cellX, frameBottom + 4);
   }
 
   // Frame border — tightly wraps the cell grid

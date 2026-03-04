@@ -87,31 +87,68 @@ export function BaseDetailPanel() {
         {structure.tier > 1 ? `TIER ${structure.tier}` : 'TIER 1'} | AKTIV
       </div>
 
-      {/* Base — rename */}
+      {/* Base — rename + basic storage */}
       {structure.type === 'base' && (
-        <div style={{ marginBottom: 8 }}>
-          {renaming ? (
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <input
-                style={{
-                  background: 'transparent', border: '1px solid var(--color-dim)',
-                  color: 'var(--color-primary)', fontFamily: 'var(--font-mono)',
-                  fontSize: '0.65rem', padding: '2px 4px', maxWidth: 140,
-                }}
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value.slice(0, 20))}
-                onKeyDown={(e) => e.key === 'Enter' && handleRenameBase()}
-                maxLength={20} autoFocus placeholder="Name..."
-              />
-              <button style={btnStyle} onClick={handleRenameBase}>OK</button>
-              <button style={btnStyle} onClick={() => setRenaming(false)}>X</button>
-            </div>
-          ) : (
-            <button style={btnStyle} onClick={() => { setRenaming(true); setRenameValue(baseName || ''); }}>
-              UMBENENNEN
-            </button>
-          )}
-        </div>
+        <>
+          <div style={{ marginBottom: 8 }}>
+            {renaming ? (
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input
+                  style={{
+                    background: 'transparent', border: '1px solid var(--color-dim)',
+                    color: 'var(--color-primary)', fontFamily: 'var(--font-mono)',
+                    fontSize: '0.65rem', padding: '2px 4px', maxWidth: 140,
+                  }}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value.slice(0, 20))}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRenameBase()}
+                  maxLength={20} autoFocus placeholder="Name..."
+                />
+                <button style={btnStyle} onClick={handleRenameBase}>OK</button>
+                <button style={btnStyle} onClick={() => setRenaming(false)}>X</button>
+              </div>
+            ) : (
+              <button style={btnStyle} onClick={() => { setRenaming(true); setRenameValue(baseName || ''); }}>
+                UMBENENNEN
+              </button>
+            )}
+          </div>
+          {/* Base has built-in tier 1 storage (50 units) */}
+          {(() => {
+            const hasStorageStruct = baseStructures.some((s: any) => s.type === 'storage');
+            if (hasStorageStruct) return null; // storage structure handles this
+            const storageCap = STORAGE_TIERS[1]?.capacity ?? 50;
+            const storageTotal = storage.ore + storage.gas + storage.crystal + storage.artefact;
+            return (
+              <div style={{ marginBottom: 8, border: '1px solid var(--color-dim)', padding: '4px 6px' }}>
+                <div style={{ opacity: 0.6, marginBottom: 4 }}>BASIS-LAGER: {storageTotal}/{storageCap}</div>
+                <div style={{ marginBottom: 4 }}>
+                  ERZ: {storage.ore} | GAS: {storage.gas} | KRI: {storage.crystal} | ART: {storage.artefact}
+                </div>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
+                  <label>MENGE:</label>
+                  <input
+                    type="number" min={1} value={transferAmount}
+                    onChange={(e) => setTransferAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                    style={{ width: 50, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.6rem', padding: '2px 4px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  {(['ore', 'gas', 'crystal', 'artefact'] as const).map((res) => (
+                    <div key={res} style={{ display: 'flex', gap: 2 }}>
+                      <button style={btnStyle} onClick={() => network.sendTransfer(res, transferAmount, 'toStorage')}>
+                        {res.toUpperCase()}→LAG
+                      </button>
+                      <button style={btnStyle} onClick={() => network.sendTransfer(res, transferAmount, 'fromStorage')}>
+                        LAG→{res.toUpperCase()}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </>
       )}
 
       {/* Storage */}

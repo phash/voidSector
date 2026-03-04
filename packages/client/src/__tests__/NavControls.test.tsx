@@ -74,13 +74,6 @@ describe('NavControls', () => {
     expect(screen.getByText('[AREA SCAN]')).toBeInTheDocument();
   });
 
-  it('shows BUILD buttons', () => {
-    render(<NavControls />);
-    expect(screen.getByText('[BUILD RELAY]')).toBeInTheDocument();
-    expect(screen.getByText('[BUILD STATION]')).toBeInTheDocument();
-    expect(screen.getByText('[BUILD BASE]')).toBeInTheDocument();
-  });
-
   it('calls sendLocalScan on LOCAL SCAN click', async () => {
     render(<NavControls />);
     await userEvent.click(screen.getByText('[LOCAL SCAN]'));
@@ -93,25 +86,13 @@ describe('NavControls', () => {
     expect(network.sendAreaScan).toHaveBeenCalled();
   });
 
-  it('calls sendBuild on BUILD button clicks', async () => {
-    render(<NavControls />);
-    await userEvent.click(screen.getByText('[BUILD RELAY]'));
-    expect(network.sendBuild).toHaveBeenCalledWith('comm_relay');
-
-    await userEvent.click(screen.getByText('[BUILD STATION]'));
-    expect(network.sendBuild).toHaveBeenCalledWith('mining_station');
-
-    await userEvent.click(screen.getByText('[BUILD BASE]'));
-    expect(network.sendBuild).toHaveBeenCalledWith('base');
-  });
-
   it('shows autopilot UI when autopilot is active', () => {
     mockStoreState({
-      autopilot: { targetX: 5, targetY: -3, remaining: 8, active: true },
+      autopilot: { targetX: 5, targetY: 3, remaining: 8, active: true },
     });
     render(<NavControls />);
     expect(screen.getByText(/AUTOPILOT AKTIV/)).toBeInTheDocument();
-    expect(screen.getByText(/5, -3/)).toBeInTheDocument();
+    expect(screen.getByText(/5, 3/)).toBeInTheDocument();
     expect(screen.getByText(/ABBRECHEN/)).toBeInTheDocument();
   });
 

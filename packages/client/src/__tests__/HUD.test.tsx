@@ -89,10 +89,10 @@ describe('SectorInfo', () => {
     mockStoreState();
   });
 
-  it('renders sector position', () => {
-    mockStoreState({ position: { x: 3, y: -2 } });
+  it('renders sector position with inner coords', () => {
+    mockStoreState({ position: { x: 3, y: 7 } });
     render(<SectorInfo />);
-    expect(screen.getByText(/3, -2/)).toBeInTheDocument();
+    expect(screen.getByText(/3, 7/)).toBeInTheDocument();
   });
 
   it('renders player count', () => {

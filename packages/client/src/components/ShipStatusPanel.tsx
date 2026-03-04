@@ -2,6 +2,18 @@ import { useStore } from '../state/store';
 import { HULLS, MODULES } from '@void-sector/shared';
 import type { ShipModule, ModuleCategory } from '@void-sector/shared';
 
+const linkBtn: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  color: 'var(--color-primary)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '0.55rem',
+  cursor: 'pointer',
+  padding: '2px 0',
+  textDecoration: 'underline',
+  textAlign: 'left' as const,
+};
+
 const DISPLAY_CATEGORIES: ModuleCategory[] = [
   'drive', 'scanner', 'cargo', 'armor', 'mining',
 ];
@@ -56,6 +68,7 @@ function getModuleForCategory(modules: ShipModule[], category: ModuleCategory): 
 export function ShipStatusPanel() {
   const ship = useStore((s) => s.ship);
   const fuel = useStore((s) => s.fuel);
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
 
   if (!ship) {
     return (
@@ -143,6 +156,12 @@ export function ShipStatusPanel() {
       <div key="jump" style={statRow}>
         <span style={labelStyle}>JUMP RANGE</span>
         <span style={valueStyle}>{stats.jumpRange}</span>
+      </div>
+
+      {/* Quick-access to module/hangar screens */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 6, borderTop: '1px solid var(--color-dim)', paddingTop: 4 }}>
+        <button style={linkBtn} onClick={() => setActiveProgram('MODULES')}>[MODULES]</button>
+        <button style={linkBtn} onClick={() => setActiveProgram('HANGAR')}>[HANGAR]</button>
       </div>
     </div>
   );

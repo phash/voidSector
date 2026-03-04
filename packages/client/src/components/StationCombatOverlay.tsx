@@ -1,4 +1,5 @@
 import { useStore } from '../state/store';
+import { innerCoord } from '@void-sector/shared';
 
 export function StationCombatOverlay() {
   const event = useStore((s) => s.stationCombatEvent);
@@ -22,7 +23,7 @@ export function StationCombatOverlay() {
         STATION UNTER ANGRIFF
       </div>
       <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: 8 }}>
-        Sektor ({event.sectorX}, {event.sectorY}) &bull; Angreifer LV.{event.attackerLevel}
+        Sektor ({innerCoord(event.sectorX)}, {innerCoord(event.sectorY)}) &bull; Angreifer LV.{event.attackerLevel}
       </div>
       <div style={{ color: outcomeColor, fontSize: '1rem', letterSpacing: '0.15em', marginBottom: 16 }}>
         {outcomeText}

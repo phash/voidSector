@@ -1,4 +1,5 @@
 import { useStore } from '../state/store';
+import { innerCoord } from '@void-sector/shared';
 
 export function BattleResultDialog() {
   const lastBattleResult = useStore((s) => s.lastBattleResult);
@@ -33,7 +34,7 @@ export function BattleResultDialog() {
         </div>
 
         <div style={{ color: '#FFB000', marginBottom: '12px', lineHeight: 1.8 }}>
-          <div>Sektor: ({encounter.sectorX}, {encounter.sectorY})</div>
+          <div>Sektor: ({innerCoord(encounter.sectorX)}, {innerCoord(encounter.sectorY)})</div>
           <div>Piraten-Level: {encounter.pirateLevel}</div>
         </div>
 

@@ -1346,7 +1346,7 @@
 
 .cockpit-layout {
   display: grid;
-  grid-template-columns: 160px 1fr 1fr;
+  grid-template-columns: 200px 1fr 0.7fr;
   grid-template-rows: 3fr 2fr;
   gap: 0;
   height: 100%;
@@ -1632,3 +1632,8 @@
 }
 
 .hw-channel-btn:hover { border-color: var(--color-primary); }
+.hw-channel-btn.alert {
+  animation: channel-blink 1s ease-in-out infinite;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
