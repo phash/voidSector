@@ -218,8 +218,26 @@ export function DetailPanel() {
               <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.7em', letterSpacing: '0.1em' }}>FEATURES</div>
               {jumpGateInfo && <div style={{ color: '#00BFFF' }}>◆ JUMPGATE ({jumpGateInfo.gateType})</div>}
               {sectorScanEvents.map(e => (
-                <div key={e.id} style={{ color: e.eventType === 'distress_signal' ? '#FF3333' : '#FF00FF' }}>
-                  ◆ {e.eventType === 'distress_signal' ? 'DISTRESS SIGNAL' : e.eventType.toUpperCase().replace('_', ' ')}
+                <div key={e.id}>
+                  <div style={{ color: e.eventType === 'distress_signal' ? '#FF3333' : '#FF00FF' }}>
+                    ◆ {e.eventType === 'distress_signal' ? 'DISTRESS SIGNAL' : e.eventType.toUpperCase().replace('_', ' ')}
+                  </div>
+                  {e.eventType === 'distress_signal' && (e.data as { message?: string }).message && (
+                    <div style={{
+                      marginTop: '4px',
+                      padding: '6px 8px',
+                      border: '1px solid #FF3333',
+                      borderLeft: '3px solid #FF3333',
+                      color: '#FF9999',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.5,
+                      fontFamily: 'var(--font-mono)',
+                      whiteSpace: 'pre-wrap',
+                      opacity: 0.9,
+                    }}>
+                      {(e.data as { message: string }).message}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
