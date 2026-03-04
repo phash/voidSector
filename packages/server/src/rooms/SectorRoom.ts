@@ -9,13 +9,15 @@ import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
 import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateNpcCargoTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkScanEvent } from '../engine/scanEvents.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../engine/combatV2.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
+import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellToStation } from '../engine/npcStationEngine.js';
+import { getStationInventoryItem, upsertInventoryItem } from '../db/npcStationQueries.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
@@ -740,6 +742,11 @@ export class SectorRoom extends Room<SectorRoomState> {
         blueprints: researchData.blueprints,
         activeResearch: activeResearch,
       });
+
+      // Record NPC station visit for XP
+      if (this.state.sector.sectorType === 'station') {
+        recordVisit(this.state.sector.x, this.state.sector.y).catch(() => {});
+      }
     } catch (err) {
       console.error('[JOIN] Error:', err);
       client.send('error', { code: 'JOIN_FAILED', message: 'Failed to join sector' });
@@ -1606,38 +1613,84 @@ export class SectorRoom extends Room<SectorRoomState> {
     const bonuses = await this.getPlayerBonuses(auth.userId);
 
     if (isStation) {
-      // Station trade: use cargo
+      // Station trade: use cargo with dynamic pricing from NPC station engine
       const cargo = await getPlayerCargo(auth.userId);
       const cargoTotal = await getCargoTotal(auth.userId);
       const shipStats = this.getShipForClient(client.sessionId);
-
-      const result = validateNpcCargoTrade(action, resource, amount, currentCredits, cargo, cargoTotal, shipStats.cargoCap);
-      if (!result.valid) {
-        client.send('npcTradeResult', { success: false, error: result.error });
-        return;
-      }
-
-      if (action === 'buy') {
-        result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
-      }
+      const sx = this.state.sector.x;
+      const sy = this.state.sector.y;
 
       if (action === 'sell') {
+        // Check cargo has enough
+        if (cargo[resource as MineableResourceType] < amount) {
+          client.send('npcTradeResult', { success: false, error: `Not enough ${resource} in cargo` });
+          return;
+        }
+        // Check station can accept
+        const sellCheck = await canSellToStation(sx, sy, resource, amount);
+        if (!sellCheck.ok) {
+          client.send('npcTradeResult', { success: false, error: 'Station cannot accept more of this resource' });
+          return;
+        }
+        // Execute trade
         const deducted = await deductCargo(auth.userId, resource, amount);
         if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Cargo changed' }); return; }
-        const newCredits = await addCredits(auth.userId, result.totalPrice);
+        // Update station stock
+        const invItem = await getStationInventoryItem(sx, sy, resource);
+        if (invItem) {
+          invItem.stock = Math.min(invItem.stock + amount, invItem.maxStock);
+          invItem.lastUpdated = new Date().toISOString();
+          await upsertInventoryItem(invItem);
+        }
+        const newCredits = await addCredits(auth.userId, sellCheck.price);
+        await recordTrade(sx, sy, amount);
         const updatedCargo = await getPlayerCargo(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
+        // Send station info update
+        const stationDataSell = await getOrInitStation(sx, sy);
+        client.send('npcStationUpdate', { station: stationDataSell });
       } else {
-        const deducted = await deductCredits(auth.userId, result.totalPrice);
+        // Buy: check station has stock
+        const buyCheck = await canBuyFromStation(sx, sy, resource, amount);
+        if (!buyCheck.ok) {
+          client.send('npcTradeResult', { success: false, error: 'Station does not have enough stock' });
+          return;
+        }
+        // Apply faction bonus
+        let totalPrice = buyCheck.price;
+        totalPrice = Math.ceil(totalPrice * bonuses.tradePriceMultiplier);
+        // Check credits
+        if (currentCredits < totalPrice) {
+          client.send('npcTradeResult', { success: false, error: `Need ${totalPrice} credits (have ${currentCredits})` });
+          return;
+        }
+        // Check cargo space
+        if (cargoTotal + amount > shipStats.cargoCap) {
+          client.send('npcTradeResult', { success: false, error: 'Cargo full' });
+          return;
+        }
+        // Execute trade
+        const deducted = await deductCredits(auth.userId, totalPrice);
         if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
         await addToCargo(auth.userId, resource, amount);
+        // Update station stock
+        const invItem = await getStationInventoryItem(sx, sy, resource);
+        if (invItem) {
+          invItem.stock = Math.max(invItem.stock - amount, 0);
+          invItem.lastUpdated = new Date().toISOString();
+          await upsertInventoryItem(invItem);
+        }
         const newCredits = await getPlayerCredits(auth.userId);
+        await recordTrade(sx, sy, amount);
         const updatedCargo = await getPlayerCargo(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
+        // Send station info update
+        const stationDataBuy = await getOrInitStation(sx, sy);
+        client.send('npcStationUpdate', { station: stationDataBuy });
       }
     } else {
       // Home base trade: use storage

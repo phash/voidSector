@@ -261,6 +261,9 @@ describe('getOrInitStation', () => {
 // ---------------------------------------------------------------------------
 describe('recordVisit', () => {
   it('increments XP by NPC_XP_VISIT', async () => {
+    // Use a timestamp slightly in the future so applyXpDecay sees elapsedHours <= 0
+    // and returns the original XP without any decay (avoids sub-millisecond race).
+    const futureDecay = new Date(Date.now() + 1000).toISOString();
     const station: NpcStationData = {
       stationX: 5,
       stationY: 10,
@@ -268,7 +271,7 @@ describe('recordVisit', () => {
       xp: 100,
       visitCount: 3,
       tradeVolume: 0,
-      lastXpDecay: new Date().toISOString(),
+      lastXpDecay: futureDecay,
     };
     mockGetStationData.mockResolvedValueOnce(station);
     mockUpsertStationData.mockResolvedValueOnce(undefined);
@@ -308,6 +311,9 @@ describe('recordVisit', () => {
 // ---------------------------------------------------------------------------
 describe('recordTrade', () => {
   it('increments XP based on units traded', async () => {
+    // Use a timestamp slightly in the future so applyXpDecay sees elapsedHours <= 0
+    // and returns the original XP without any decay (avoids sub-millisecond race).
+    const futureDecay = new Date(Date.now() + 1000).toISOString();
     const station: NpcStationData = {
       stationX: 5,
       stationY: 10,
@@ -315,7 +321,7 @@ describe('recordTrade', () => {
       xp: 50,
       visitCount: 2,
       tradeVolume: 20,
-      lastXpDecay: new Date().toISOString(),
+      lastXpDecay: futureDecay,
     };
     mockGetStationData.mockResolvedValueOnce(station);
     mockUpsertStationData.mockResolvedValueOnce(undefined);
