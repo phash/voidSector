@@ -2347,6 +2347,9 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
         client.send('cargoUpdate', await getPlayerCargo(auth.userId));
       }
+      if (result.lootArtefact && result.lootArtefact > 0) {
+        await addToCargo(auth.userId, 'artefact', result.lootArtefact);
+      }
     }
 
     if (result.outcome === 'defeat' && result.cargoLost) {
@@ -2433,6 +2436,9 @@ export class SectorRoom extends Room<SectorRoomState> {
           for (const [resource, amount] of Object.entries(finalResult.lootResources)) {
             if (amount > 0) await addToCargo(auth.userId, resource, amount);
           }
+        }
+        if (finalResult.lootArtefact && finalResult.lootArtefact > 0) {
+          await addToCargo(auth.userId, 'artefact', finalResult.lootArtefact);
         }
       }
       if (finalResult.repChange) {
@@ -2678,6 +2684,12 @@ export class SectorRoom extends Room<SectorRoomState> {
         : event.event_type === 'artifact_find' ? 'ancients'
         : 'traders';
       await this.applyReputationChange(auth.userId, repFaction as NpcFactionId, eventData.rewardRep, client);
+    }
+    if (eventData.rewardArtefact && eventData.rewardArtefact > 0) {
+      await addToCargo(auth.userId, 'artefact', eventData.rewardArtefact);
+      const updatedCargo = await getPlayerCargo(auth.userId);
+      client.send('cargoUpdate', updatedCargo);
+      client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
     }
 
     client.send('logEntry', `Event abgeschlossen! +${eventData.rewardCredits ?? 0} CR`);

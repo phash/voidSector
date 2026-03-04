@@ -56,9 +56,17 @@ function generateEventData(
     case 'distress_signal':
       return { rewardCredits: 20 + ((seed >>> 4) % 80), rewardRep: 5, message: generateDistressMessage(sectorX, sectorY, seed) };
     case 'anomaly_reading':
-      return { rewardXp: 15 + ((seed >>> 6) % 35), rewardRep: 5 };
+      return {
+        rewardXp: 15 + ((seed >>> 6) % 35),
+        rewardRep: 5,
+        rewardArtefact: ((seed >>> 14) % 100) < 8 ? 1 : 0,
+      };
     case 'artifact_find':
-      return { rewardCredits: 50 + ((seed >>> 8) % 150), rewardRep: 10 };
+      return {
+        rewardCredits: 50 + ((seed >>> 8) % 150),
+        rewardRep: 10,
+        rewardArtefact: ((seed >>> 16) % 100) < 50 ? 1 : 0,
+      };
     default:
       return {};
   }

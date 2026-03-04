@@ -411,10 +411,12 @@ function resolveFight(
     const lootCredits = encounter.pirateLevel * 10 + ((seed >>> 4) % 50);
     const lootOre = ((seed >>> 6) % 3);
     const lootCrystal = ((seed >>> 10) % 2);
+    const lootArtefact = ((seed >>> 14) % 100) < 3 ? 1 : 0;  // 3% chance
     return {
       outcome: 'victory',
       lootCredits,
       lootResources: { ore: lootOre, crystal: lootCrystal },
+      lootArtefact,
       repChange: -3,
       xpGained: encounter.pirateLevel * 5,
     };

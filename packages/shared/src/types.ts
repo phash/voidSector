@@ -502,6 +502,7 @@ export interface BattleResult {
   outcome: BattleOutcome;
   lootCredits?: number;
   lootResources?: Partial<SectorResources>;
+  lootArtefact?: number;
   cargoLost?: Partial<SectorResources>;
   repChange?: number;
   xpGained?: number;
