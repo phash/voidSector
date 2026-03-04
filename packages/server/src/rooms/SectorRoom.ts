@@ -19,13 +19,14 @@ import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellToStation, calculateCurrentStock, getStationLevel, calculatePrice } from '../engine/npcStationEngine.js';
 import { getStationInventoryItem, upsertInventoryItem, getStationInventory } from '../db/npcStationQueries.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
+import { getOrCreateFactoryState, setActiveRecipe, collectOutput, getFactoryStatus, transferOutputToCargo } from '../engine/productionEngine.js';
 import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch } from '../db/queries.js';
 import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState, ProcessedItemType } from '@void-sector/shared';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -617,6 +618,118 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onDispose(() => {
       adminBus.off('adminBroadcast', onBroadcast);
       adminBus.off('adminQuestCreated', onQuestCreated);
+    });
+
+    // ── Factory Handlers ──
+
+    this.onMessage('factoryStatus', async (client) => {
+      if (!this.checkRate(client.sessionId, 'factoryStatus', 500)) return;
+      const auth = client.auth as AuthPayload;
+
+      // Find factory at player's base
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) {
+        client.send('factoryUpdate', { error: 'No factory built' });
+        return;
+      }
+
+      await getOrCreateFactoryState(factoryStruct.id, auth.userId);
+      const status = await getFactoryStatus(factoryStruct.id);
+      client.send('factoryUpdate', status);
+    });
+
+    this.onMessage('factorySetRecipe', async (client, data: { recipeId: string }) => {
+      if (!this.checkRate(client.sessionId, 'factorySetRecipe', 1000)) return;
+      if (rejectGuest(client, 'factory')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.recipeId || typeof data.recipeId !== 'string') {
+        client.send('factoryUpdate', { error: 'Invalid recipe ID' });
+        return;
+      }
+
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) {
+        client.send('factoryUpdate', { error: 'No factory built' });
+        return;
+      }
+
+      await getOrCreateFactoryState(factoryStruct.id, auth.userId);
+      const research = await getPlayerResearch(auth.userId);
+      const result = await setActiveRecipe(factoryStruct.id, data.recipeId, research?.blueprints ?? []);
+
+      if (!result.success) {
+        client.send('factoryUpdate', { error: result.error });
+        return;
+      }
+
+      const status = await getFactoryStatus(factoryStruct.id);
+      client.send('factoryUpdate', status);
+    });
+
+    this.onMessage('factoryCollect', async (client) => {
+      if (!this.checkRate(client.sessionId, 'factoryCollect', 1000)) return;
+      if (rejectGuest(client, 'factory')) return;
+      const auth = client.auth as AuthPayload;
+
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) {
+        client.send('factoryUpdate', { error: 'No factory built' });
+        return;
+      }
+
+      const storage = await getStorageInventory(auth.userId);
+      const result = await collectOutput(factoryStruct.id, storage);
+
+      if (result.error) {
+        client.send('factoryUpdate', { error: result.error });
+        return;
+      }
+
+      // Deduct consumed resources from storage
+      for (const [resource, amount] of Object.entries(result.consumed)) {
+        if (amount > 0) {
+          await updateStorageResource(auth.userId, resource as any, -amount);
+        }
+      }
+
+      // Send updated factory status + updated storage
+      const status = await getFactoryStatus(factoryStruct.id);
+      const updatedStorage = await getStorageInventory(auth.userId);
+      client.send('factoryUpdate', status);
+      client.send('storageUpdate', updatedStorage);
+    });
+
+    this.onMessage('factoryTransfer', async (client, data: { itemType: string; amount: number }) => {
+      if (!this.checkRate(client.sessionId, 'factoryTransfer', 500)) return;
+      if (rejectGuest(client, 'factory')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.itemType || !isPositiveInt(data?.amount)) {
+        client.send('factoryUpdate', { error: 'Invalid transfer parameters' });
+        return;
+      }
+
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) {
+        client.send('factoryUpdate', { error: 'No factory built' });
+        return;
+      }
+
+      const result = await transferOutputToCargo(factoryStruct.id, data.itemType as ProcessedItemType, data.amount);
+      if (!result.success) {
+        client.send('factoryUpdate', { error: result.error });
+        return;
+      }
+
+      // Add to player cargo
+      await addToCargo(auth.userId, data.itemType as any, data.amount);
+
+      // Send updates
+      const status = await getFactoryStatus(factoryStruct.id);
+      const cargo = await getPlayerCargo(auth.userId);
+      client.send('factoryUpdate', status);
+      client.send('cargoUpdate', cargo);
     });
   }
 
