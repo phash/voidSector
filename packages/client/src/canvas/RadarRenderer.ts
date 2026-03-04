@@ -155,6 +155,20 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
       }
 
+      // Background highlight for non-empty discovered sectors
+      if (sector && sector.type !== 'empty' && !isPlayer) {
+        const sectorBgColor = isHome
+          ? SECTOR_COLORS.home_base
+          : (sector as any).environment === 'black_hole'
+            ? '#1A1A1A'
+            : SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty;
+        const prevAlpha = ctx.globalAlpha;
+        ctx.fillStyle = sectorBgColor;
+        ctx.globalAlpha = prevAlpha * 0.08;
+        ctx.fillRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
+        ctx.globalAlpha = prevAlpha;
+      }
+
       // Pulsing player border
       if (isPlayer) {
         const t = state.animTime ?? 0;
