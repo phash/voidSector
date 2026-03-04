@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { useStore } from '../state/store';
 import type { StoreState } from '../state/store';
-import type { APState, SectorData, CargoState } from '@void-sector/shared';
+import type { APState, SectorData, CargoState, ResearchState } from '@void-sector/shared';
 
 const defaultAP: APState = {
   current: 100,
@@ -72,6 +72,10 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     moduleInventory: [],
     baseName: '',
     homeBase: { x: 0, y: 0 },
+    research: { unlockedModules: [], blueprints: [], activeResearch: null },
+    pendingBlueprint: null,
+    setResearch: vi.fn(),
+    setPendingBlueprint: vi.fn(),
     activeTip: null,
     seenTips: new Set<string>(),
     showTip: vi.fn(),

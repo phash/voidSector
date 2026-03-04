@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { HULLS, MODULES } from '@void-sector/shared';
+import { HULLS, MODULES, isModuleUnlocked } from '@void-sector/shared';
 import type { ModuleDefinition } from '@void-sector/shared';
 
 const MODULE_ICONS: Record<string, string> = {
@@ -42,6 +42,7 @@ export function ModulePanel() {
   const ship = useStore((s) => s.ship);
   const moduleInventory = useStore((s) => s.moduleInventory);
   const credits = useStore((s) => s.credits);
+  const research = useStore((s) => s.research);
   const currentSector = useStore((s) => s.currentSector);
   const baseStructures = useStore((s) => s.baseStructures);
 
@@ -153,7 +154,7 @@ export function ModulePanel() {
       {canShop && (
         <>
           <div style={sectionHeader}>MODUL-SHOP</div>
-          {Object.values(MODULES).map((def: ModuleDefinition) => {
+          {Object.values(MODULES).filter(m => isModuleUnlocked(m.id, research)).map((def: ModuleDefinition) => {
             const costParts: string[] = [];
             costParts.push(`${def.cost.credits} CR`);
             if (def.cost.ore) costParts.push(`${def.cost.ore} ERZ`);
@@ -172,6 +173,9 @@ export function ModulePanel() {
                   <span style={{ color: 'var(--color-primary)' }}>{def.displayName}</span>
                   <span style={{ color: 'var(--color-dim)', marginLeft: 4, fontSize: '0.55rem' }}>
                     {costParts.join(' ')}
+                  </span>
+                  <span style={{ color: 'var(--color-dim)', marginLeft: 4, fontSize: '0.5rem' }}>
+                    {def.primaryEffect.label}
                   </span>
                 </span>
                 <button

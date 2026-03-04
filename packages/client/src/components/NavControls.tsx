@@ -47,7 +47,7 @@ export function NavControls() {
       <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
         <button
           className="vs-btn"
-          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
+          title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(0, -1)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -56,7 +56,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
+          title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(-1, 0)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -65,7 +65,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
+          title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(0, 1)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
@@ -74,7 +74,7 @@ export function NavControls() {
         </button>
         <button
           className="vs-btn"
-          title={`Jump: ${ship?.stats.apCostJump ?? 1} AP, ${ship?.stats.fuelPerJump ?? 1} Fuel`}
+          title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(1, 0)}
           disabled={jumpPending || isMining}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}

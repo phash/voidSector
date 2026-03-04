@@ -97,7 +97,7 @@ export function StatusBar() {
             </span>
           )}
           <span style={{ fontSize: '0.7rem', color: 'var(--color-dim)' }}>
-            {ship?.stats.fuelPerJump ?? 1}/J
+            SPD {ship?.stats.engineSpeed ?? 1}
           </span>
         </>
       )}

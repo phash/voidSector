@@ -21,6 +21,8 @@ import { ModulePanel } from './ModulePanel';
 import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
 import { StationCombatOverlay } from './StationCombatOverlay';
+import { TechTreePanel } from './TechTreePanel';
+import { BlueprintDialog } from './BlueprintDialog';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
 import type { HullType, ShipModule, ModuleCategory } from '@void-sector/shared';
@@ -270,7 +272,7 @@ function SchematicView() {
             <span>FUEL: <span style={{ color: 'var(--color-primary)' }}>{stats.fuelMax}</span></span>
             <span>CARGO: <span style={{ color: 'var(--color-primary)' }}>{stats.cargoCap}</span></span>
             <span>JUMP: <span style={{ color: 'var(--color-primary)' }}>{stats.jumpRange}</span></span>
-            <span>AP/J: <span style={{ color: 'var(--color-primary)' }}>{stats.apCostJump}</span></span>
+            <span>ENGINE: <span style={{ color: 'var(--color-primary)' }}>SPD {stats.engineSpeed}</span></span>
             <span>FUEL/J: <span style={{ color: 'var(--color-primary)' }}>{stats.fuelPerJump}</span></span>
             <span>SCAN: <span style={{ color: 'var(--color-primary)' }}>{stats.scannerLevel}</span></span>
             <span>HP: <span style={{ color: 'var(--color-primary)' }}>{stats.hp}</span></span>
@@ -366,6 +368,7 @@ function renderScreen(monitorId: string) {
     case MONITORS.TRADE: return <TradeScreen />;
     case MONITORS.FACTION: return <FactionScreen />;
     case MONITORS.QUESTS: return <QuestsScreen />;
+    case MONITORS.TECH: return <TechTreePanel />;
     default: return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
 }
@@ -377,6 +380,7 @@ const MOBILE_TABS: Array<{ id: string; icon: string; label: string }> = [
   { id: MONITORS.CARGO,     icon: '▤', label: 'CARGO' },
   { id: MONITORS.COMMS,     icon: '⌘', label: 'COMMS' },
   { id: MONITORS.BASE_LINK, icon: '⌂', label: 'BASE' },
+  { id: MONITORS.TECH, icon: '⚗', label: 'TECH' },
 ];
 
 export function GameScreen() {
@@ -487,6 +491,7 @@ export function GameScreen() {
       <CombatV2Dialog />
       <StationCombatOverlay />
       <BattleResultDialog />
+      <BlueprintDialog />
       <HelpOverlay />
     </div>
   );
