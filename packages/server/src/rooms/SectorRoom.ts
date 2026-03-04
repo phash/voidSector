@@ -75,6 +75,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private combatV2States = new Map<string, CombatV2State>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
   private rateLimits = new Map<string, Map<string, number>>();
+  private disposeCallbacks: Array<() => void> = [];
 
   private checkRate(sessionId: string, action: string, intervalMs: number): boolean {
     let map = this.rateLimits.get(sessionId);
@@ -668,7 +669,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     };
     commsBus.on('commsBroadcast', onCommsBroadcast);
 
-    this.onDispose(() => {
+    this.disposeCallbacks.push(() => {
       adminBus.off('adminBroadcast', onBroadcast);
       adminBus.off('adminQuestCreated', onQuestCreated);
       commsBus.off('commsBroadcast', onCommsBroadcast);
@@ -1166,6 +1167,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.rateLimits.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
+  }
+
+  async onDispose() {
+    for (const cb of this.disposeCallbacks) {
+      cb();
+    }
   }
 
   private async handleJump(client: Client, data: JumpMessage) {
