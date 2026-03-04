@@ -30,6 +30,8 @@ export const AP_COSTS_BY_SCANNER: Record<number, { areaScan: number; areaScanRad
   1: { areaScan: 3, areaScanRadius: 2 },
   2: { areaScan: 5, areaScanRadius: 3 },
   3: { areaScan: 8, areaScanRadius: 5 },
+  4: { areaScan: 12, areaScanRadius: 7 },
+  5: { areaScan: 16, areaScanRadius: 9 },
 };
 
 export const AP_COSTS_LOCAL_SCAN = 1;
@@ -41,7 +43,7 @@ export const RADAR_RADIUS = 3;  // visible sectors around player on scan
 export const RECONNECTION_TIMEOUT_S = 15;
 
 export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceType, number>> = {
-  empty:          { ore: 5,  gas: 5,  crystal: 5  },
+  empty:          { ore: 0,  gas: 0,  crystal: 0  },
   nebula:         { ore: 2,  gas: 20, crystal: 3  },
   asteroid_field: { ore: 20, gas: 2,  crystal: 3  },
   anomaly:        { ore: 3,  gas: 3,  crystal: 20 },
@@ -210,6 +212,9 @@ export const PIRATE_DAMAGE_PER_LEVEL = 3;
 // Combat v2 — Feature flag
 export const FEATURE_COMBAT_V2 = true;
 
+// Hyperdrive v2 — Feature flag (charge-based hyperdrive system)
+export const FEATURE_HYPERDRIVE_V2 = false;
+
 // Combat v2 — Tactic multipliers
 export const TACTIC_MODS: Record<string, { dmg: number; def: number }> = {
   assault:   { dmg: 1.30, def: 0.80 },
@@ -322,6 +327,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 80, baseCargo: 3, baseJumpRange: 5, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 50, baseCommRange: 50, baseScannerLevel: 1,
     baseEngineSpeed: 2,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 1, unlockCost: 0,
   },
   freighter: {
@@ -329,6 +335,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 120, baseCargo: 15, baseJumpRange: 3, baseApPerJump: 2, baseFuelPerJump: 2,
     baseHp: 80, baseCommRange: 75, baseScannerLevel: 1,
     baseEngineSpeed: 1,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 3, unlockCost: 500,
   },
   cruiser: {
@@ -336,6 +343,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 150, baseCargo: 8, baseJumpRange: 4, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 100, baseCommRange: 100, baseScannerLevel: 1,
     baseEngineSpeed: 2,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 4, unlockCost: 1000,
   },
   explorer: {
@@ -343,6 +351,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 200, baseCargo: 10, baseJumpRange: 6, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 70, baseCommRange: 150, baseScannerLevel: 2,
     baseEngineSpeed: 2,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 5, unlockCost: 2000,
   },
   battleship: {
@@ -350,6 +359,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 180, baseCargo: 5, baseJumpRange: 2, baseApPerJump: 2, baseFuelPerJump: 3,
     baseHp: 150, baseCommRange: 75, baseScannerLevel: 1,
     baseEngineSpeed: 1,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 6, unlockCost: 3000,
   },
 };
@@ -361,7 +371,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'ION DRIVE MK.I', displayName: 'ION MK.I',
     primaryEffect: { stat: 'jumpRange', delta: 1, label: 'Sprungweite +1' },
     secondaryEffects: [{ stat: 'engineSpeed', delta: 1, label: 'Engine-Speed +1' }],
-    effects: { jumpRange: 1, engineSpeed: 1 },
+    effects: { jumpRange: 1, engineSpeed: 1, hyperdriveRange: 4, hyperdriveSpeed: 2, hyperdriveRegen: 1.0 },
     cost: { credits: 100, ore: 10 },
   },
   drive_mk2: {
@@ -372,7 +382,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 2, label: 'Engine-Speed +2' },
       { stat: 'apCostJump', delta: -0.2, label: 'AP/Sprung -0.2' },
     ],
-    effects: { jumpRange: 2, apCostJump: -0.2, engineSpeed: 2 },
+    effects: { jumpRange: 2, apCostJump: -0.2, engineSpeed: 2, hyperdriveRange: 8, hyperdriveSpeed: 3, hyperdriveRegen: 1.5, hyperdriveFuelEfficiency: 0.1 },
     cost: { credits: 300, ore: 20, crystal: 5 },
     researchCost: { credits: 200, ore: 15 },
     researchDurationMin: 5,
@@ -386,7 +396,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 3, label: 'Engine-Speed +3' },
       { stat: 'apCostJump', delta: -0.5, label: 'AP/Sprung -0.5' },
     ],
-    effects: { jumpRange: 3, apCostJump: -0.5, engineSpeed: 3 },
+    effects: { jumpRange: 3, apCostJump: -0.5, engineSpeed: 3, hyperdriveRange: 16, hyperdriveSpeed: 5, hyperdriveRegen: 2.0, hyperdriveFuelEfficiency: 0.2 },
     cost: { credits: 800, ore: 40, crystal: 15 },
     researchCost: { credits: 500, ore: 30, crystal: 10, artefact: 2 },
     researchDurationMin: 12,
@@ -651,7 +661,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
       { stat: 'fuelPerJump', delta: -3, label: 'Fuel/Sprung -3' },
     ],
-    effects: { jumpRange: 6, engineSpeed: 5, fuelPerJump: -3 },
+    effects: { jumpRange: 6, engineSpeed: 5, fuelPerJump: -3, hyperdriveRange: 30, hyperdriveSpeed: 8, hyperdriveRegen: 3.0, hyperdriveFuelEfficiency: 0.35 },
     cost: { credits: 2000, artefact: 5 },
     researchCost: { credits: 2000, artefact: 10 },
     researchDurationMin: 30,
@@ -683,6 +693,190 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchDurationMin: 30,
     prerequisite: 'armor_mk3',
   },
+
+  // === MINING LASER ===
+  mining_laser_mk1: {
+    id: 'mining_laser_mk1', category: 'mining', tier: 1,
+    name: 'MINING LASER MK.I', displayName: 'MINE MK.I',
+    primaryEffect: { stat: 'miningBonus', delta: 0.15, label: 'Mining +15%' },
+    secondaryEffects: [],
+    effects: { miningBonus: 0.15 },
+    cost: { credits: 100, ore: 10 },
+  },
+  mining_laser_mk2: {
+    id: 'mining_laser_mk2', category: 'mining', tier: 2,
+    name: 'MINING LASER MK.II', displayName: 'MINE MK.II',
+    primaryEffect: { stat: 'miningBonus', delta: 0.30, label: 'Mining +30%' },
+    secondaryEffects: [{ stat: 'artefactChanceBonus', delta: 0.01, label: 'Artefakt-Chance +1%' }],
+    effects: { miningBonus: 0.30, artefactChanceBonus: 0.01 },
+    cost: { credits: 300, ore: 20, crystal: 5 },
+    researchCost: { credits: 200, ore: 15 },
+    researchDurationMin: 5,
+    prerequisite: 'mining_laser_mk1',
+  },
+  mining_laser_mk3: {
+    id: 'mining_laser_mk3', category: 'mining', tier: 3,
+    name: 'MINING LASER MK.III', displayName: 'MINE MK.III',
+    primaryEffect: { stat: 'miningBonus', delta: 0.50, label: 'Mining +50%' },
+    secondaryEffects: [{ stat: 'artefactChanceBonus', delta: 0.02, label: 'Artefakt-Chance +2%' }],
+    effects: { miningBonus: 0.50, artefactChanceBonus: 0.02 },
+    cost: { credits: 700, ore: 35, crystal: 15 },
+    researchCost: { credits: 450, ore: 25, crystal: 10 },
+    researchDurationMin: 10,
+    prerequisite: 'mining_laser_mk2',
+  },
+  mining_laser_mk4: {
+    id: 'mining_laser_mk4', category: 'mining', tier: 4,
+    name: 'MINING LASER MK.IV', displayName: 'MINE MK.IV',
+    primaryEffect: { stat: 'miningBonus', delta: 0.75, label: 'Mining +75%' },
+    secondaryEffects: [
+      { stat: 'artefactChanceBonus', delta: 0.04, label: 'Artefakt-Chance +4%' },
+      { stat: 'cargoCap', delta: 3, label: 'Frachtraum +3' },
+    ],
+    effects: { miningBonus: 0.75, artefactChanceBonus: 0.04, cargoCap: 3 },
+    cost: { credits: 1500, ore: 60, crystal: 30, artefact: 2 },
+    researchCost: { credits: 1000, ore: 40, crystal: 20, artefact: 2 },
+    researchDurationMin: 20,
+    prerequisite: 'mining_laser_mk3',
+  },
+  mining_laser_mk5: {
+    id: 'mining_laser_mk5', category: 'mining', tier: 5,
+    name: 'MINING LASER MK.V', displayName: 'MINE MK.V',
+    primaryEffect: { stat: 'miningBonus', delta: 1.00, label: 'Mining +100%' },
+    secondaryEffects: [
+      { stat: 'artefactChanceBonus', delta: 0.08, label: 'Artefakt-Chance +8%' },
+      { stat: 'cargoCap', delta: 5, label: 'Frachtraum +5' },
+    ],
+    effects: { miningBonus: 1.00, artefactChanceBonus: 0.08, cargoCap: 5 },
+    cost: { credits: 4000, ore: 100, crystal: 60, artefact: 6 },
+    researchCost: { credits: 2500, ore: 80, crystal: 50, artefact: 6 },
+    researchDurationMin: 35,
+    prerequisite: 'mining_laser_mk4',
+  },
+
+  // === DRIVE MK.IV & MK.V ===
+  drive_mk4: {
+    id: 'drive_mk4', category: 'drive', tier: 4,
+    name: 'ION DRIVE MK.IV', displayName: 'ION MK.IV',
+    primaryEffect: { stat: 'jumpRange', delta: 4, label: 'Sprungweite +4' },
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 4, label: 'Engine-Speed +4' },
+      { stat: 'hyperdriveRegen', delta: 2.5, label: 'Hyperdrive-Regen +2.5' },
+      { stat: 'hyperdriveFuelEfficiency', delta: 0.3, label: 'Fuel-Effizienz +30%' },
+    ],
+    effects: { jumpRange: 4, apCostJump: -0.7, engineSpeed: 4, hyperdriveRange: 25, hyperdriveSpeed: 6, hyperdriveRegen: 2.5, hyperdriveFuelEfficiency: 0.3 },
+    cost: { credits: 2000, ore: 60, crystal: 30, artefact: 3 },
+    researchCost: { credits: 1200, ore: 50, crystal: 20, artefact: 3 },
+    researchDurationMin: 20,
+    prerequisite: 'drive_mk3',
+  },
+  drive_mk5: {
+    id: 'drive_mk5', category: 'drive', tier: 5,
+    name: 'ION DRIVE MK.V', displayName: 'ION MK.V',
+    primaryEffect: { stat: 'jumpRange', delta: 6, label: 'Sprungweite +6' },
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
+      { stat: 'hyperdriveRegen', delta: 4.0, label: 'Hyperdrive-Regen +4.0' },
+      { stat: 'hyperdriveFuelEfficiency', delta: 0.5, label: 'Fuel-Effizienz +50%' },
+    ],
+    effects: { jumpRange: 6, apCostJump: -1.0, engineSpeed: 5, hyperdriveRange: 50, hyperdriveSpeed: 10, hyperdriveRegen: 4.0, hyperdriveFuelEfficiency: 0.5 },
+    cost: { credits: 5000, ore: 120, crystal: 60, artefact: 8 },
+    researchCost: { credits: 3000, ore: 100, crystal: 50, artefact: 8 },
+    researchDurationMin: 40,
+    prerequisite: 'drive_mk4',
+  },
+
+  // === SCANNER MK.IV & MK.V ===
+  scanner_mk4: {
+    id: 'scanner_mk4', category: 'scanner', tier: 4,
+    name: 'SCANNER MK.IV', displayName: 'SCAN MK.IV',
+    primaryEffect: { stat: 'scannerLevel', delta: 3, label: 'Scan-Level +3' },
+    secondaryEffects: [
+      { stat: 'commRange', delta: 150, label: 'Komm-Reichweite +150' },
+      { stat: 'artefactChanceBonus', delta: 0.05, label: 'Artefakt-Chance +5%' },
+      { stat: 'miningBonus', delta: 0.10, label: 'Mining +10%' },
+    ],
+    effects: { scannerLevel: 3, commRange: 150, artefactChanceBonus: 0.05, miningBonus: 0.10 },
+    cost: { credits: 2000, crystal: 50, gas: 20, artefact: 2 },
+    researchCost: { credits: 1200, crystal: 40, gas: 15, artefact: 2 },
+    researchDurationMin: 22,
+    prerequisite: 'scanner_mk3',
+  },
+  scanner_mk5: {
+    id: 'scanner_mk5', category: 'scanner', tier: 5,
+    name: 'SCANNER MK.V', displayName: 'SCAN MK.V',
+    primaryEffect: { stat: 'scannerLevel', delta: 4, label: 'Scan-Level +4' },
+    secondaryEffects: [
+      { stat: 'commRange', delta: 250, label: 'Komm-Reichweite +250' },
+      { stat: 'artefactChanceBonus', delta: 0.08, label: 'Artefakt-Chance +8%' },
+      { stat: 'miningBonus', delta: 0.15, label: 'Mining +15%' },
+    ],
+    effects: { scannerLevel: 4, commRange: 250, artefactChanceBonus: 0.08, miningBonus: 0.15 },
+    cost: { credits: 5000, crystal: 100, gas: 40, artefact: 6 },
+    researchCost: { credits: 3000, crystal: 80, gas: 30, artefact: 6 },
+    researchDurationMin: 35,
+    prerequisite: 'scanner_mk4',
+  },
+
+  // === ARMOR MK.IV & MK.V ===
+  armor_mk4: {
+    id: 'armor_mk4', category: 'armor', tier: 4,
+    name: 'ARMOR PLATING MK.IV', displayName: 'ARM MK.IV',
+    primaryEffect: { stat: 'hp', delta: 150, label: 'HP +150' },
+    secondaryEffects: [
+      { stat: 'damageMod', delta: -0.30, label: 'Schadensreduktion -30%' },
+      { stat: 'shieldHp', delta: 15, label: 'Schild +15' },
+    ],
+    effects: { hp: 150, damageMod: -0.30, shieldHp: 15 },
+    cost: { credits: 1800, ore: 80, crystal: 40, artefact: 2 },
+    researchCost: { credits: 1200, ore: 60, crystal: 30, artefact: 2 },
+    researchDurationMin: 20,
+    prerequisite: 'armor_mk3',
+  },
+  armor_mk5: {
+    id: 'armor_mk5', category: 'armor', tier: 5,
+    name: 'ARMOR PLATING MK.V', displayName: 'ARM MK.V',
+    primaryEffect: { stat: 'hp', delta: 250, label: 'HP +250' },
+    secondaryEffects: [
+      { stat: 'damageMod', delta: -0.40, label: 'Schadensreduktion -40%' },
+      { stat: 'shieldHp', delta: 30, label: 'Schild +30' },
+    ],
+    effects: { hp: 250, damageMod: -0.40, shieldHp: 30 },
+    cost: { credits: 4500, ore: 150, crystal: 80, artefact: 6 },
+    researchCost: { credits: 3000, ore: 120, crystal: 60, artefact: 6 },
+    researchDurationMin: 35,
+    prerequisite: 'armor_mk4',
+  },
+
+  // === CARGO MK.IV & MK.V ===
+  cargo_mk4: {
+    id: 'cargo_mk4', category: 'cargo', tier: 4,
+    name: 'CARGO BAY MK.IV', displayName: 'CARGO MK.IV',
+    primaryEffect: { stat: 'cargoCap', delta: 40, label: 'Frachtraum +40' },
+    secondaryEffects: [
+      { stat: 'safeSlotBonus', delta: 3, label: 'Safe-Slot +3' },
+      { stat: 'fuelMax', delta: 40, label: 'Fuel-Tank +40' },
+    ],
+    effects: { cargoCap: 40, safeSlotBonus: 3, fuelMax: 40 },
+    cost: { credits: 1500, ore: 50, gas: 20, artefact: 2 },
+    researchCost: { credits: 1000, ore: 40, gas: 15, artefact: 2 },
+    researchDurationMin: 18,
+    prerequisite: 'cargo_mk3',
+  },
+  cargo_mk5: {
+    id: 'cargo_mk5', category: 'cargo', tier: 5,
+    name: 'CARGO BAY MK.V', displayName: 'CARGO MK.V',
+    primaryEffect: { stat: 'cargoCap', delta: 60, label: 'Frachtraum +60' },
+    secondaryEffects: [
+      { stat: 'safeSlotBonus', delta: 5, label: 'Safe-Slot +5' },
+      { stat: 'fuelMax', delta: 80, label: 'Fuel-Tank +80' },
+    ],
+    effects: { cargoCap: 60, safeSlotBonus: 5, fuelMax: 80 },
+    cost: { credits: 4000, ore: 100, gas: 40, artefact: 5 },
+    researchCost: { credits: 2500, ore: 80, gas: 30, artefact: 5 },
+    researchDurationMin: 30,
+    prerequisite: 'cargo_mk4',
+  },
 };
 
 export const SECTOR_COLORS: Record<SectorType | 'home_base', string> = {
@@ -708,9 +902,34 @@ export const NEBULA_ZONE_MIN_RADIUS = 15; // minimum zone radius in sectors
 export const NEBULA_ZONE_MAX_RADIUS = 50; // maximum zone radius in sectors
 export const NEBULA_SAFE_ORIGIN = 200;  // no nebula zones within this many sectors of origin
 
+// Two-stage worldgen: environment weights (first roll).
+// Weights intentionally sum to 0.70; the remaining 0.30 gap falls through
+// to 'empty' as the default in rollEnvironment().
+export const ENVIRONMENT_WEIGHTS: Record<string, number> = {
+  empty: 0.55,
+  nebula: 0.15,
+  // black_hole is handled separately via BLACK_HOLE_SPAWN_CHANCE
+};
+
+// Two-stage worldgen: content weights (second roll, for non-blackhole)
+export const CONTENT_WEIGHTS: Record<string, number> = {
+  none: 0.57,
+  asteroid_field: 0.20,
+  pirate: 0.10,
+  anomaly: 0.05,
+  station: 0.08,
+};
+
 // Black hole generation
 export const BLACK_HOLE_SPAWN_CHANCE = 0.005;    // 0.5% of sectors far from origin
 export const BLACK_HOLE_MIN_DISTANCE = 50;        // minimum Chebyshev distance from origin
+export const BLACK_HOLE_CLUSTER_GRID = 200;       // coarse grid spacing for cluster centers
+export const BLACK_HOLE_CLUSTER_CHANCE = 0.003;   // chance a grid cell is a cluster center
+export const BLACK_HOLE_CLUSTER_MIN_RADIUS = 0;   // minimum cluster radius (0 = single sector)
+export const BLACK_HOLE_CLUSTER_MAX_RADIUS = 4;   // maximum cluster radius (4 = up to 9x9)
+
+// Nebula content toggle — when true, nebula sectors get a content roll
+export const NEBULA_CONTENT_ENABLED = true;
 
 // Environment modifiers
 export const NEBULA_SCANNER_MALUS = 1;            // -1 sector scan range in nebula
@@ -854,6 +1073,20 @@ export const SIDEBAR_MONITORS = RIGHT_SIDEBAR_MONITORS;
 export const FUEL_COST_PER_UNIT = 2;
 export const FREE_REFUEL_MAX_SHIPS = 3;
 
+// Per-station reputation fuel price modifiers (more granular than faction REP_PRICE_MODIFIERS)
+// Takes a reputation score (-100..+100) and returns a price multiplier.
+export function getFuelRepPriceModifier(reputation: number): number {
+  if (reputation < -50) return 2.0;   // hostile
+  if (reputation < -10) return 1.3;   // unfriendly
+  if (reputation <= 25) return 1.0;   // neutral
+  if (reputation <= 50) return 0.85;  // friendly
+  return 0.65;                         // honored
+}
+
+// Station reputation gains
+export const STATION_REP_VISIT = 1;
+export const STATION_REP_TRADE = 2;
+
 // Faction Upgrade Tree
 export const FACTION_UPGRADE_TIERS: Record<number, {
   optionA: { name: string; effect: string; };
@@ -917,13 +1150,43 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 export const SECTOR_MAX_FEATURES = 3;
 
 // Emergency Warp (Notruf)
+/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
 export const EMERGENCY_WARP_FREE_RADIUS = 200;      // free within 200 Manhattan distance of home base
+/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
 export const EMERGENCY_WARP_CREDIT_PER_SECTOR = 5;   // credits per sector beyond free radius
+/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
 export const EMERGENCY_WARP_FUEL_GRANT = 10;          // fuel granted after emergency warp
+export const FEATURE_EMERGENCY_WARP = false;
 
 // Hyperjump Navigation
 export const HYPERJUMP_AP_DISCOUNT = 0.5;   // 50% AP cost for known routes (legacy)
 export const HYPERJUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate sectors
+
+// --- Fuel Rework (#94): only hyperjumps cost fuel ---
+export const HYPERJUMP_FUEL_PER_SECTOR = 1;   // base fuel cost per sector of hyperjump distance
+export const SCAN_FUEL_COST = 0;               // scans are free (#94)
+export const MINE_FUEL_COST = 0;               // mining is free (#94)
+
+// Ship purchasing — prices in credits per hull (separate from unlockCost which is initial unlock)
+export const HULL_PRICES: Record<HullType, number> = {
+  scout: 0,
+  freighter: 500,
+  cruiser: 1000,
+  explorer: 2000,
+  battleship: 3000,
+};
+
+// Only stations at this NPC level or above have a shipyard
+export const STATION_SHIPYARD_LEVEL_THRESHOLD = 3;
+
+// Hull-specific fuel multiplier for hyperjumps
+export const HULL_FUEL_MULTIPLIER: Record<HullType, number> = {
+  scout: 0.8,
+  freighter: 1.2,
+  cruiser: 1.0,
+  explorer: 0.9,
+  battleship: 1.5,
+};
 
 // Normal jump constants
 export const JUMP_NORMAL_AP_COST = 1;
@@ -945,6 +1208,8 @@ export const ENGINE_SPEED: Record<string, number> = {
   drive_mk1: 2,
   drive_mk2: 3,
   drive_mk3: 4,
+  drive_mk4: 5,
+  drive_mk5: 5,
   void_drive: 5,
 };
 // Research system

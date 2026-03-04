@@ -12,6 +12,8 @@ vi.mock('../network/client', () => ({
     sendAreaScan: vi.fn(),
     sendBuild: vi.fn(),
     sendCancelAutopilot: vi.fn(),
+    sendEmergencyWarp: vi.fn(),
+    sendSetAutoRefuel: vi.fn(),
   },
 }));
 
@@ -166,5 +168,66 @@ describe('NavControls', () => {
     render(<NavControls />);
     expect(screen.getByText('↑')).toBeInTheDocument();
     expect(screen.queryByText(/AUTOPILOT AKTIV/)).toBeNull();
+  });
+
+  // --- Hyperdrive charge display ---
+
+  it('does not show hyperdrive section when hyperdriveState is null', () => {
+    mockStoreState({ hyperdriveState: null });
+    render(<NavControls />);
+    expect(screen.queryByText(/HYPERDRIVE:/)).toBeNull();
+  });
+
+  it('shows hyperdrive charge info when hyperdriveState is present', () => {
+    mockStoreState({
+      hyperdriveState: {
+        charge: 7,
+        maxCharge: 15,
+        regenPerSecond: 0.2,
+        lastTick: Date.now(),
+      },
+    });
+    render(<NavControls />);
+    expect(screen.getByText(/HYPERDRIVE:/)).toBeInTheDocument();
+    expect(screen.getByText(/7\/15/)).toBeInTheDocument();
+  });
+
+  it('shows regen rate when hyperdrive is not full', () => {
+    mockStoreState({
+      hyperdriveState: {
+        charge: 3,
+        maxCharge: 10,
+        regenPerSecond: 0.5,
+        lastTick: Date.now(),
+      },
+    });
+    render(<NavControls />);
+    expect(screen.getByText(/\+0\.5\/s/)).toBeInTheDocument();
+  });
+
+  it('shows CHARGED label when hyperdrive is fully charged', () => {
+    mockStoreState({
+      hyperdriveState: {
+        charge: 10,
+        maxCharge: 10,
+        regenPerSecond: 0.1,
+        lastTick: Date.now(),
+      },
+    });
+    render(<NavControls />);
+    expect(screen.getByText('CHARGED')).toBeInTheDocument();
+  });
+
+  it('does not show hyperdrive section when maxCharge is 0', () => {
+    mockStoreState({
+      hyperdriveState: {
+        charge: 0,
+        maxCharge: 0,
+        regenPerSecond: 0,
+        lastTick: Date.now(),
+      },
+    });
+    render(<NavControls />);
+    expect(screen.queryByText(/HYPERDRIVE:/)).toBeNull();
   });
 });

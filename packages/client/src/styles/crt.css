@@ -555,8 +555,137 @@
   opacity: 0.8;
 }
 
+/* MEHR tab badge (alert count bubble) */
+.mobile-tab-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--color-primary);
+  color: #000;
+  font-size: 0.5rem;
+  font-weight: bold;
+  line-height: 14px;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
 @media (min-width: 1024px) {
   .mobile-tabs {
+    display: none;
+  }
+}
+
+/* MEHR overlay — fullscreen program picker (mobile only) */
+.mehr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mehr-overlay-content {
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  background: #0a0a0a;
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+  overflow-y: auto;
+}
+
+.mehr-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-dim);
+}
+
+.mehr-overlay-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: var(--color-primary);
+}
+
+.mehr-overlay-close {
+  background: transparent;
+  border: none;
+  color: var(--color-dim);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.mehr-overlay-close:hover {
+  color: var(--color-primary);
+}
+
+.mehr-overlay-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+}
+
+.mehr-overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 6px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #888;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
+  position: relative;
+}
+
+.mehr-overlay-card:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.mehr-overlay-card.alert {
+  animation: channel-blink 1s ease-in-out infinite;
+}
+
+.mehr-card-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.mehr-card-label {
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+.mehr-card-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 4px var(--color-primary);
+}
+
+@media (min-width: 1024px) {
+  .mehr-overlay {
     display: none;
   }
 }
@@ -706,5 +835,463 @@
   .crt-glitch-bar-2,
   .crt-noise {
     animation: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   UnifiedBezel — shared CRT monitor shell for sidebar + main
+   ══════════════════════════════════════════════════════════════════ */
+
+.unified-bezel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(145deg, #1e1e1e 0%, #141414 50%, #0e0e0e 100%);
+  border-radius: 10px;
+  border-top: 3px solid #3a3a3a;
+  border-left: 3px solid #333;
+  border-bottom: 3px solid #080808;
+  border-right: 3px solid #0a0a0a;
+  box-shadow:
+    inset 0 0 20px rgba(0,0,0,0.9),
+    5px 5px 12px rgba(0,0,0,0.9),
+    -1px -1px 4px rgba(60,55,50,0.25),
+    inset 0 2px 6px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+
+/* Alert pulsing border */
+@keyframes unified-bezel-alert-pulse {
+  0%, 100% { border-color: #2a2a2a; }
+  50% { border-color: var(--color-primary); }
+}
+
+.unified-bezel-alert {
+  animation: unified-bezel-alert-pulse 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unified-bezel-alert {
+    animation: none;
+    border-color: var(--color-primary);
+  }
+}
+
+/* ── Top inner edge: LED + label + chrome toggle ── */
+.unified-bezel-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: linear-gradient(180deg, #1c1c1c, #161616);
+  border-bottom: 1px solid #2a2a2a;
+  min-height: 24px;
+  flex-shrink: 0;
+}
+
+.unified-bezel-top-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.unified-bezel-program-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: rgba(255, 176, 0, 0.5);
+  margin-left: auto;
+  text-transform: uppercase;
+}
+
+.unified-bezel-chrome-toggle {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: rgba(255, 176, 0, 0.3);
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 1px 4px;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.unified-bezel-chrome-toggle:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* ── Body: pan arrows + CRT screen ── */
+.unified-bezel-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Pan arrows column (main variant) */
+.unified-bezel-pan-arrows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  padding: 4px;
+  align-self: center;
+  background: linear-gradient(180deg, #1a1a1a, #151515);
+  border-right: 1px solid #2a2a2a;
+}
+
+.unified-bezel-pan-arrows .unified-bezel-pan-btn:nth-child(1) {
+  grid-column: 1 / 3;
+  grid-row: 1;
+}
+.unified-bezel-pan-arrows .unified-bezel-pan-btn:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+.unified-bezel-pan-arrows .unified-bezel-pan-btn:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
+}
+.unified-bezel-pan-arrows .unified-bezel-pan-btn:nth-child(4) {
+  grid-column: 1 / 3;
+  grid-row: 3;
+}
+
+.unified-bezel-pan-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: rgba(255, 176, 0, 0.4);
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.unified-bezel-pan-btn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* ── Bottom inner edge: mode switcher + power ── */
+.unified-bezel-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: linear-gradient(180deg, #161616, #1c1c1c);
+  border-top: 1px solid #2a2a2a;
+  min-height: 24px;
+  flex-shrink: 0;
+}
+
+/* Mode switcher: < | MODE | > */
+.unified-bezel-mode-switcher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.unified-bezel-mode-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: rgba(255, 176, 0, 0.4);
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 1px 4px;
+  transition: color 0.1s, border-color 0.1s;
+  line-height: 1;
+}
+
+.unified-bezel-mode-btn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.unified-bezel-mode-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  min-width: 48px;
+  text-align: center;
+}
+
+.unified-bezel-mode-single {
+  color: rgba(255, 176, 0, 0.4);
+}
+
+/* Auto-follow toggle button (main variant) */
+.unified-bezel-auto-btn {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: var(--color-dim);
+  background: transparent;
+  border: 1px solid var(--color-dim);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 2px 6px;
+  margin-left: auto;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.unified-bezel-auto-btn.active {
+  color: #00FF88;
+  border-color: #00FF88;
+}
+
+/* Power button group */
+.unified-bezel-power {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.unified-bezel-power-led {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+/* Chrome-hidden restore button — thin strip at bottom */
+.unified-bezel-chrome-restore {
+  display: flex;
+  justify-content: center;
+  padding: 1px 0;
+  background: #141414;
+  border-top: 1px solid #222;
+  flex-shrink: 0;
+}
+
+/* ── Zoom slider (main variant, below bottom chrome) ── */
+.unified-bezel-zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: #111;
+  border-top: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.unified-bezel-zoom-label {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 176, 0, 0.3);
+}
+
+.unified-bezel-zoom-slider {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.unified-bezel-zoom-value {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: var(--color-primary);
+  min-width: 12px;
+  text-align: center;
+}
+
+/* ── CRT Shutdown Animation ── */
+@keyframes unified-bezel-shutdown {
+  0%   { opacity: 1; transform: scaleY(1); }
+  40%  { opacity: 1; transform: scaleY(0.005); filter: brightness(3); }
+  70%  { opacity: 0.6; transform: scaleY(0.005) scaleX(0.3); filter: brightness(2); }
+  100% { opacity: 0; transform: scaleY(0) scaleX(0); filter: brightness(0); }
+}
+
+.unified-bezel-shutdown {
+  animation: unified-bezel-shutdown 0.4s ease-in forwards;
+  transform-origin: center center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unified-bezel-shutdown {
+    animation: none;
+  }
+}
+
+/* ── Sidebar variant tweaks ── */
+.unified-bezel-sidebar .unified-bezel-top {
+  padding: 2px 6px;
+  min-height: 20px;
+}
+
+.unified-bezel-sidebar .unified-bezel-bottom {
+  padding: 2px 6px;
+  min-height: 20px;
+}
+
+.unified-bezel-sidebar .unified-bezel-program-label {
+  font-size: 0.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Mobile Zoom Controls — overlay +/- buttons on radar canvas
+   ══════════════════════════════════════════════════════════════════ */
+.mobile-zoom-controls {
+  display: none;
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 5;
+}
+
+.mobile-zoom-btn {
+  width: 44px;
+  height: 44px;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--color-primary);
+  background: rgba(10, 10, 10, 0.85);
+  border: 1px solid rgba(255, 176, 0, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, border-color 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-zoom-btn:active {
+  background: rgba(255, 176, 0, 0.15);
+  border-color: var(--color-primary);
+}
+
+@media (max-width: 1023px) {
+  .mobile-zoom-controls {
+    display: flex;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Frequency Slider — CRT-themed range input
+   ══════════════════════════════════════════════════════════════════ */
+.frequency-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+.frequency-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: rgba(255, 176, 0, 0.25);
+  border-radius: 2px;
+}
+
+.frequency-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #FFB000;
+  border: 2px solid rgba(255, 176, 0, 0.6);
+  margin-top: -8px;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(255, 176, 0, 0.4);
+}
+
+.frequency-slider::-moz-range-track {
+  height: 4px;
+  background: rgba(255, 176, 0, 0.25);
+  border-radius: 2px;
+  border: none;
+}
+
+.frequency-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #FFB000;
+  border: 2px solid rgba(255, 176, 0, 0.6);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(255, 176, 0, 0.4);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Mobile Bezel Adaptation (max-width: 1023px)
+   Hide side chrome strips, minimal bottom bar, 44px+ touch targets
+   ══════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  /* Hide side chrome strips */
+  .bezel-side,
+  .bezel-left,
+  .bezel-right,
+  .unified-bezel-pan-arrows {
+    display: none;
+  }
+
+  /* Minimal bottom bar: only mode + power visible */
+  .unified-bezel-bottom {
+    padding: 4px 8px;
+    min-height: 44px;
+  }
+
+  .unified-bezel-bottom .unified-bezel-auto-btn,
+  .unified-bezel-bottom .unified-bezel-chrome-toggle {
+    display: none;
+  }
+
+  .unified-bezel-mode-switcher {
+    flex: 1;
+  }
+
+  /* Top bar compact */
+  .unified-bezel-top {
+    min-height: 36px;
+    padding: 4px 8px;
+  }
+
+  /* 44px minimum touch targets for all interactive elements */
+  .channel-btn,
+  .channel-btn-small,
+  .unified-bezel-mode-btn,
+  .bezel-power-btn,
+  .mobile-tab-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .unified-bezel-mode-btn {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+  }
+
+  .bezel-power-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .mehr-overlay-card {
+    min-height: 56px;
+    padding: 14px 8px;
+  }
+
+  .mehr-overlay-close {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Bottom bezel chrome-restore strip: larger tap area */
+  .unified-bezel-chrome-restore {
+    min-height: 44px;
   }
 }

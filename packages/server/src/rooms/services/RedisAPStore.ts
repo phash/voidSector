@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
-import type { APState, MiningState } from '@void-sector/shared';
+import type { APState, MiningState, HyperdriveState } from '@void-sector/shared';
 import { createAPState } from '../../engine/ap.js';
 import { createMiningState } from '../../engine/mining.js';
 
@@ -91,6 +91,28 @@ export async function getFuelState(userId: string): Promise<number | null> {
 
 export async function saveFuelState(userId: string, fuel: number): Promise<void> {
   await redis.set(`${FUEL_PREFIX}${userId}`, fuel.toString());
+}
+
+const HYPERDRIVE_PREFIX = 'player:hyperdrive:';
+
+export async function getHyperdriveState(userId: string): Promise<HyperdriveState | null> {
+  const data = await redis.hgetall(`${HYPERDRIVE_PREFIX}${userId}`);
+  if (!data.charge) return null;
+  return {
+    charge: Number(data.charge),
+    maxCharge: Number(data.maxCharge),
+    regenPerSecond: Number(data.regenPerSecond),
+    lastTick: Number(data.lastTick),
+  };
+}
+
+export async function setHyperdriveState(userId: string, state: HyperdriveState): Promise<void> {
+  await redis.hset(`${HYPERDRIVE_PREFIX}${userId}`, {
+    charge: String(state.charge),
+    maxCharge: String(state.maxCharge),
+    regenPerSecond: String(state.regenPerSecond),
+    lastTick: String(state.lastTick),
+  });
 }
 
 export { redis };

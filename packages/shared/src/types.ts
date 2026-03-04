@@ -34,6 +34,14 @@ export interface SectorData {
   discoveredAt: string | null;
   metadata: Record<string, unknown>;
   resources?: SectorResources;
+  impassable?: boolean;
+}
+
+export interface BlackHoleCluster {
+  centerX: number;
+  centerY: number;
+  radius: number;
+  seed: number;
 }
 
 /** Derive legacy SectorType from environment + contents (for backward compat) */
@@ -81,11 +89,23 @@ export interface FuelState {
   max: number;
 }
 
+export interface AutoRefuelConfig {
+  enabled: boolean;
+  maxPricePerUnit: number;
+}
+
 export interface APState {
   current: number;
   max: number;
   lastTick: number;  // timestamp ms
   regenPerSecond: number;
+}
+
+export interface HyperdriveState {
+  charge: number;        // current range charge
+  maxCharge: number;     // = hyperdriveRange from ship stats
+  regenPerSecond: number; // = hyperdriveRegen
+  lastTick: number;      // timestamp ms
 }
 
 export interface PlayerPosition {
@@ -195,7 +215,7 @@ export interface BuildResultMessage {
 }
 
 // Communication
-export type ChatChannel = 'direct' | 'faction' | 'local';
+export type ChatChannel = 'direct' | 'faction' | 'local' | 'sector' | 'quadrant';
 
 export interface ChatMessage {
   id: string;
@@ -796,8 +816,8 @@ export type JumpType = 'normal' | 'hyperjump';
 // --- Phase 7: Ship Designer ---
 export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
 export type HullSize = 'small' | 'medium' | 'large';
-export type ModuleCategory = 'drive' | 'cargo' | 'scanner' | 'armor' | 'special' | 'weapon' | 'shield' | 'defense';
-export type ModuleTier = 1 | 2 | 3;
+export type ModuleCategory = 'drive' | 'cargo' | 'scanner' | 'armor' | 'special' | 'weapon' | 'shield' | 'defense' | 'mining';
+export type ModuleTier = 1 | 2 | 3 | 4 | 5;
 
 export interface HullDefinition {
   name: string;
@@ -812,6 +832,10 @@ export interface HullDefinition {
   baseCommRange: number;
   baseScannerLevel: number;
   baseEngineSpeed: number;
+  baseHyperdriveRange: number;
+  baseHyperdriveSpeed: number;
+  baseHyperdriveRegen: number;
+  baseHyperdriveFuelEfficiency: number;
   unlockLevel: number;
   unlockCost: number;
 }
@@ -858,6 +882,12 @@ export interface ShipStats {
   engineSpeed: number;
   artefactChanceBonus: number;
   safeSlotBonus: number;
+  // Hyperdrive
+  hyperdriveRange: number;
+  hyperdriveSpeed: number;
+  hyperdriveRegen: number;
+  hyperdriveFuelEfficiency: number;
+  miningBonus: number;
 }
 
 export interface ShipRecord {
@@ -868,6 +898,7 @@ export interface ShipRecord {
   modules: ShipModule[];
   active: boolean;
   createdAt: string;
+  shipColor?: string;
 }
 
 export interface ResearchState {
@@ -976,4 +1007,13 @@ export interface FirstContactEvent {
   quadrant: QuadrantData;
   canName: boolean;
   autoName: string;
+}
+
+export interface JumpGateMapEntry {
+  gateId: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  gateType: string; // 'bidirectional' | 'wormhole'
 }

@@ -34,6 +34,10 @@ export interface UISlice {
   detailView: { type: string; data?: Record<string, any> } | null;
   leftCollapsed: boolean;
   rightCollapsed: boolean;
+  monitorPower: Record<string, boolean>;
+  monitorChromeVisible: Record<string, boolean>;
+  monitorModes: Record<string, string>;
+  moreOverlayOpen: boolean;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -43,7 +47,7 @@ export interface UISlice {
   setZoomLevel: (level: number) => void;
   setPanOffset: (offset: { x: number; y: number }) => void;
   resetPan: () => void;
-  startJumpAnimation: (dx: number, dy: number) => void;
+  startJumpAnimation: (dx: number, dy: number, distance?: number) => void;
   clearJumpAnimation: () => void;
   setSidebarSlot: (index: 0 | 1, monitor: string) => void;
   setLeftSidebarSlot: (index: 0 | 1, monitor: string) => void;
@@ -52,6 +56,10 @@ export interface UISlice {
   setDetailView: (view: { type: string; data?: Record<string, any> } | null) => void;
   setLeftCollapsed: (val: boolean) => void;
   setRightCollapsed: (val: boolean) => void;
+  setMonitorPower: (monitorId: string, on: boolean) => void;
+  setMonitorChromeVisible: (monitorId: string, visible: boolean) => void;
+  setMonitorMode: (monitorId: string, mode: string) => void;
+  setMoreOverlayOpen: (open: boolean) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -70,6 +78,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   detailView: null,
   leftCollapsed: false,
   rightCollapsed: false,
+  monitorPower: {},
+  monitorChromeVisible: {},
+  monitorModes: {},
+  moreOverlayOpen: false,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -96,7 +108,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     };
   }),
   resetPan: () => set({ panOffset: { x: 0, y: 0 } }),
-  startJumpAnimation: (dx, dy) => set({ jumpAnimation: createJumpAnimation(dx, dy) }),
+  startJumpAnimation: (dx, dy, distance?) => set({ jumpAnimation: createJumpAnimation(dx, dy, distance) }),
   clearJumpAnimation: () => set({ jumpAnimation: null }),
   setSidebarSlot: (index, monitor) => set((s) => {
     const slots = [...s.sidebarSlots] as [string, string];
@@ -115,4 +127,14 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setDetailView: (view) => set({ detailView: view }),
   setLeftCollapsed: (val) => set({ leftCollapsed: val }),
   setRightCollapsed: (val) => set({ rightCollapsed: val }),
+  setMonitorPower: (monitorId, on) => set((s) => ({
+    monitorPower: { ...s.monitorPower, [monitorId]: on },
+  })),
+  setMonitorChromeVisible: (monitorId, visible) => set((s) => ({
+    monitorChromeVisible: { ...s.monitorChromeVisible, [monitorId]: visible },
+  })),
+  setMonitorMode: (monitorId, mode) => set((s) => ({
+    monitorModes: { ...s.monitorModes, [monitorId]: mode },
+  })),
+  setMoreOverlayOpen: (open) => set({ moreOverlayOpen: open }),
 });

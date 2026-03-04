@@ -12,6 +12,8 @@ const baseShip: ShipStats = {
   shieldHp: 0, shieldRegen: 0, weaponAttack: 0, weaponType: 'none',
   weaponPiercing: 0, pointDefense: 0, ecmReduction: 0, engineSpeed: 2,
   artefactChanceBonus: 0, safeSlotBonus: 0,
+  hyperdriveRange: 0, hyperdriveSpeed: 0, hyperdriveRegen: 0, hyperdriveFuelEfficiency: 0,
+  miningBonus: 0,
 };
 
 const baseEncounter: PirateEncounter = {

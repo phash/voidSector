@@ -69,6 +69,10 @@ export const FrequencyMinigame: React.FC<Props> = ({ onComplete, onCancel }) => 
     });
   }, []);
 
+  const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPlayerFreq(parseFloat(e.target.value));
+  }, []);
+
   return (
     <div style={{
       background: 'rgba(5, 5, 5, 0.95)',
@@ -85,6 +89,24 @@ export const FrequencyMinigame: React.FC<Props> = ({ onComplete, onCancel }) => 
         onWheel={handleWheel}
         style={{ border: '1px solid rgba(255,176,0,0.2)', display: 'block', margin: '0 auto' }}
       />
+      <input
+        type="range"
+        min="0.5"
+        max="10"
+        step="0.1"
+        value={playerFreq}
+        onChange={handleSliderChange}
+        aria-label="Frequency tuner"
+        className="frequency-slider"
+        style={{
+          display: 'block',
+          width: '280px',
+          margin: '8px auto 0',
+          accentColor: '#FFB000',
+          height: '44px',
+          cursor: 'pointer',
+        }}
+      />
       <div style={{ textAlign: 'center', marginTop: 8, fontSize: '0.8rem' }}>
         <span style={{ color: matchPercent >= FREQUENCY_MATCH_THRESHOLD ? '#00FF88' : '#FFB000' }}>
           MATCH: {Math.floor(matchPercent * 100)}%
@@ -94,7 +116,7 @@ export const FrequencyMinigame: React.FC<Props> = ({ onComplete, onCancel }) => 
         )}
       </div>
       <div style={{ fontSize: '0.65rem', textAlign: 'center', opacity: 0.4, marginTop: 4 }}>
-        ← → or MOUSEWHEEL to tune | ESC to cancel
+        SLIDE / ← → / MOUSEWHEEL to tune | ESC to cancel
       </div>
     </div>
   );

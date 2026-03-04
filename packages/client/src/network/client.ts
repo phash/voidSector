@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, JumpGateMapEntry, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
 function getWsUrl(): string {
@@ -241,6 +241,16 @@ class GameNetwork {
     room.onMessage('fuelUpdate', (data: FuelState) => {
       useStore.getState().setFuel(data);
       if (data.current < data.max * 0.15) useStore.getState().showTip('low_fuel');
+    });
+
+    // Hyperdrive state
+    room.onMessage('hyperdriveUpdate', (data: HyperdriveState) => {
+      useStore.getState().setHyperdriveState(data);
+    });
+
+    // Auto-refuel config
+    room.onMessage('autoRefuelConfig', (data: AutoRefuelConfig) => {
+      useStore.getState().setAutoRefuelConfig(data);
     });
 
     // --- Ship designer messages ---
@@ -646,6 +656,10 @@ class GameNetwork {
       useStore.getState().setJumpGateInfo(data);
     });
 
+    room.onMessage('knownJumpGates', (data: { gates: JumpGateMapEntry[] }) => {
+      useStore.getState().setKnownJumpGates(data.gates);
+    });
+
     room.onMessage('useJumpGateResult', (data: UseJumpGateResultMessage) => {
       const store = useStore.getState();
       if (data.success) {
@@ -762,22 +776,42 @@ class GameNetwork {
 
     // --- Hyperjump / Autopilot ---
 
-    room.onMessage('autopilotStart', (data: { targetX: number; targetY: number; totalSteps: number }) => {
-      useStore.getState().setAutopilot({
+    room.onMessage('autopilotStart', (data: { targetX: number; targetY: number; totalSteps: number; costs?: { totalFuel: number; totalAP: number; estimatedTime: number }; currentStep?: number }) => {
+      const store = useStore.getState();
+      store.setAutopilot({
         targetX: data.targetX,
         targetY: data.targetY,
         remaining: data.totalSteps,
         active: true,
       });
+      store.setNavTarget({ x: data.targetX, y: data.targetY });
+      store.setAutopilotStatus({
+        targetX: data.targetX,
+        targetY: data.targetY,
+        currentStep: data.currentStep ?? 0,
+        totalSteps: data.totalSteps,
+        status: 'active',
+        useHyperjump: false,
+      });
     });
 
-    room.onMessage('autopilotUpdate', (data: { x: number; y: number; remaining: number }) => {
+    room.onMessage('autopilotUpdate', (data: { x: number; y: number; remaining: number; currentStep?: number; totalSteps?: number }) => {
       const store = useStore.getState();
       store.setPosition({ x: data.x, y: data.y });
       store.setAutopilot({
         ...(store.autopilot || { targetX: 0, targetY: 0, active: true }),
         remaining: data.remaining,
       });
+      // Update autopilot status with progress
+      const existing = store.autopilotStatus;
+      if (existing) {
+        store.setAutopilotStatus({
+          ...existing,
+          currentStep: data.currentStep ?? (existing.totalSteps - data.remaining),
+          totalSteps: data.totalSteps ?? existing.totalSteps,
+          status: 'active',
+        });
+      }
       // Auto-center camera on ship during autopilot
       store.resetPan();
     });
@@ -785,6 +819,8 @@ class GameNetwork {
     room.onMessage('autopilotComplete', (data: { x: number; y: number }) => {
       const store = useStore.getState();
       store.setAutopilot(null);
+      store.setAutopilotStatus(null);
+      store.setNavTarget(null);
       if (data.x >= 0 && data.y >= 0) {
         store.setPosition({ x: data.x, y: data.y });
         store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);
@@ -792,6 +828,59 @@ class GameNetwork {
         store.addLogEntry('Autopilot abgebrochen.');
       }
       store.resetPan();
+    });
+
+    room.onMessage('autopilotPaused', (data: { reason: string; currentStep: number }) => {
+      const store = useStore.getState();
+      const existing = store.autopilotStatus;
+      store.setAutopilotStatus({
+        targetX: existing?.targetX ?? store.autopilot?.targetX ?? 0,
+        targetY: existing?.targetY ?? store.autopilot?.targetY ?? 0,
+        currentStep: data.currentStep,
+        totalSteps: existing?.totalSteps ?? 0,
+        status: 'paused',
+        useHyperjump: existing?.useHyperjump ?? false,
+        pauseReason: data.reason,
+      });
+      store.setAutopilot(null);
+      store.addLogEntry(`Autopilot pausiert: ${data.reason}`);
+    });
+
+    room.onMessage('autopilotCancelled', () => {
+      const store = useStore.getState();
+      store.setAutopilot(null);
+      store.setAutopilotStatus(null);
+      store.setNavTarget(null);
+      store.addLogEntry('Autopilot abgebrochen.');
+    });
+
+    room.onMessage('autopilotStatus', (data: {
+      active: boolean;
+      targetX?: number;
+      targetY?: number;
+      currentStep?: number;
+      totalSteps?: number;
+      remaining?: number;
+      eta?: number;
+      useHyperjump?: boolean;
+    }) => {
+      const store = useStore.getState();
+      if (!data.active) {
+        store.setAutopilotStatus(null);
+        return;
+      }
+      store.setAutopilotStatus({
+        targetX: data.targetX ?? 0,
+        targetY: data.targetY ?? 0,
+        currentStep: data.currentStep ?? 0,
+        totalSteps: data.totalSteps ?? 0,
+        status: 'active',
+        useHyperjump: data.useHyperjump ?? false,
+        eta: data.eta,
+      });
+      if (data.targetX !== undefined && data.targetY !== undefined) {
+        store.setNavTarget({ x: data.targetX, y: data.targetY });
+      }
     });
 
     room.onMessage('emergencyWarpResult', (data: {
@@ -1251,8 +1340,25 @@ class GameNetwork {
     this.sectorRoom?.send('hyperJump', { targetX, targetY });
   }
 
+  sendStartAutopilot(targetX: number, targetY: number, useHyperjump: boolean = false) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('startAutopilot', { targetX, targetY, useHyperjump });
+  }
+
   sendCancelAutopilot() {
     this.sectorRoom?.send('cancelAutopilot');
+  }
+
+  sendGetAutopilotStatus() {
+    this.sectorRoom?.send('getAutopilotStatus');
+  }
+
+  sendSetAutoRefuel(enabled: boolean, maxPricePerUnit: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('setAutoRefuel', { enabled, maxPricePerUnit });
   }
 
   sendEmergencyWarp() {

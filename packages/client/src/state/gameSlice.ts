@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState, FirstContactEvent } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, JumpGateMapEntry, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -14,6 +14,17 @@ export interface ClientShipData {
   stats: ShipStats;
   fuel: number;
   active: boolean;
+}
+
+export interface AutopilotStatusInfo {
+  targetX: number;
+  targetY: number;
+  currentStep: number;
+  totalSteps: number;
+  status: 'active' | 'paused' | 'complete';
+  useHyperjump: boolean;
+  pauseReason?: string;
+  eta?: number;
 }
 
 function safeGetItem(key: string): string | null {
@@ -77,6 +88,7 @@ export interface GameSlice {
   // Chat / COMMS
   chatMessages: ChatMessage[];
   chatChannel: ChatChannel;
+  recentContacts: Array<{ id: string; name: string }>;
 
   // Alerts
   alerts: Record<string, boolean>;
@@ -119,6 +131,7 @@ export interface GameSlice {
 
   // Phase 5: Deep Systems
   jumpGateInfo: JumpGateInfo | null;
+  knownJumpGates: JumpGateMapEntry[];
   rescuedSurvivors: RescueSurvivor[];
   distressCalls: DistressCall[];
   factionUpgrades: FactionUpgradeState[];
@@ -130,6 +143,10 @@ export interface GameSlice {
   // Autopilot / Hyperjump
   autopilot: AutopilotState | null;
   discoveryTimestamps: Record<string, number>;
+
+  // Hyperdrive
+  hyperdriveState: HyperdriveState | null;
+  autoRefuelConfig: AutoRefuelConfig;
 
   // Ship designer
   shipList: (ShipRecord & { stats: ShipStats })[];
@@ -172,6 +189,10 @@ export interface GameSlice {
     pricePerUnit: number; active: boolean;
   }>;
 
+  // Nav target (for autopilot UI)
+  navTarget: { x: number; y: number } | null;
+  autopilotStatus: AutopilotStatusInfo | null;
+
   // Quadrant system
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
   currentQuadrant: { qx: number; qy: number } | null;
@@ -195,6 +216,7 @@ export interface GameSlice {
   setCargo: (cargo: CargoState) => void;
   addChatMessage: (msg: ChatMessage) => void;
   setChatChannel: (channel: ChatChannel) => void;
+  addRecentContact: (id: string, name: string) => void;
   setAlert: (monitorId: string, active: boolean) => void;
   clearAlert: (monitorId: string) => void;
   setSelectedSector: (sector: { x: number; y: number } | null) => void;
@@ -218,6 +240,7 @@ export interface GameSlice {
   setScanEvents: (events: ScanEvent[]) => void;
   addScanEvent: (event: ScanEvent) => void;
   setJumpGateInfo: (gate: JumpGateInfo | null) => void;
+  setKnownJumpGates: (gates: JumpGateMapEntry[]) => void;
   setRescuedSurvivors: (survivors: RescueSurvivor[]) => void;
   addDistressCall: (call: DistressCall) => void;
   removeDistressCall: (id: string) => void;
@@ -238,6 +261,10 @@ export interface GameSlice {
   setKnownQuadrants: (quadrants: Array<{ qx: number; qy: number; learnedAt: string }>) => void;
   setCurrentQuadrant: (q: { qx: number; qy: number } | null) => void;
   setFirstContactEvent: (event: FirstContactEvent | null) => void;
+  setHyperdriveState: (state: HyperdriveState | null) => void;
+  setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
+  setNavTarget: (target: { x: number; y: number } | null) => void;
+  setAutopilotStatus: (status: AutopilotStatusInfo | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -258,6 +285,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   activeMonitor: 'NAV-COM',
   chatMessages: [],
   chatChannel: 'local' as ChatChannel,
+  recentContacts: [],
   alerts: {},
   selectedSector: null,
   baseStructures: [],
@@ -280,6 +308,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   stationCombatEvent: null,
   scanEvents: [],
   jumpGateInfo: null,
+  knownJumpGates: [],
   rescuedSurvivors: [],
   distressCalls: [],
   factionUpgrades: [],
@@ -296,9 +325,13 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   npcStationData: null,
   factoryState: null,
   kontorOrders: [],
+  navTarget: null,
+  autopilotStatus: null,
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
+  hyperdriveState: null,
+  autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -360,6 +393,12 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
       return { chatMessages: [...s.chatMessages.slice(-199), msg] };
     }),
   setChatChannel: (chatChannel) => set({ chatChannel }),
+  addRecentContact: (id, name) =>
+    set((s) => {
+      const MAX_CONTACTS = 20;
+      const filtered = s.recentContacts.filter(c => c.id !== id);
+      return { recentContacts: [{ id, name }, ...filtered].slice(0, MAX_CONTACTS) };
+    }),
   setAlert: (monitorId, active) => set((s) => ({
     alerts: { ...s.alerts, [monitorId]: active },
   })),
@@ -389,6 +428,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
   setJumpGateInfo: (jumpGateInfo) => set({ jumpGateInfo }),
+  setKnownJumpGates: (knownJumpGates) => set({ knownJumpGates }),
   setRescuedSurvivors: (rescuedSurvivors) => set({ rescuedSurvivors }),
   addDistressCall: (call) => set((s) => ({ distressCalls: [...s.distressCalls, call] })),
   removeDistressCall: (id) => set((s) => ({ distressCalls: s.distressCalls.filter(d => d.id !== id) })),
@@ -409,4 +449,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setKnownQuadrants: (knownQuadrants) => set({ knownQuadrants }),
   setCurrentQuadrant: (currentQuadrant) => set({ currentQuadrant }),
   setFirstContactEvent: (firstContactEvent) => set({ firstContactEvent }),
+  setHyperdriveState: (hyperdriveState) => set({ hyperdriveState }),
+  setAutoRefuelConfig: (autoRefuelConfig) => set({ autoRefuelConfig }),
+  setNavTarget: (navTarget) => set({ navTarget }),
+  setAutopilotStatus: (autopilotStatus) => set({ autopilotStatus }),
 });

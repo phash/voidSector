@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>voidSector UI Compendium &mdash; Technical Reference</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="crt-page">
+<div class="compendium-container">
+
+  <!-- ============================================================ -->
+  <!-- HEADER                                                        -->
+  <!-- ============================================================ -->
+  <header class="compendium-header">
+    <h1>voidSector UI Compendium</h1>
+    <div class="subtitle">INTERFACE SYSTEMS TECHNICAL REFERENCE</div>
+    <div class="version">REVISION 1.0 &mdash; COMBAT-V2 ERA &mdash; 355 TESTS PASSING</div>
+  </header>
+
+  <!-- ============================================================ -->
+  <!-- TABLE OF CONTENTS                                             -->
+  <!-- ============================================================ -->
+  <nav class="toc">
+    <div class="toc-title">// TABLE OF CONTENTS</div>
+    <a href="#monitors">01. Monitor Programs (12)</a>
+    <a href="#bezel-components">02. Bezel Components</a>
+    <a href="#crt-effects">03. CRT Effects</a>
+    <a href="#color-profiles">04. Color Profiles</a>
+    <a href="#canvas-renderers">05. Canvas Renderers</a>
+    <a href="#overlays-dialogs">06. Overlays &amp; Dialogs</a>
+    <a href="#layout-variants">07. Layout Variants</a>
+    <a href="#state-management">08. State Management</a>
+    <a href="#ux-report">09. UX Report</a>
+  </nav>
+
+  <!-- ============================================================ -->
+  <!-- 01. MONITOR PROGRAMS                                          -->
+  <!-- ============================================================ -->
+  <section id="monitors">
+    <h2>01. Monitor Programs</h2>
+    <p>
+      The multi-monitor system provides 12 distinct programs, each rendered inside a
+      bezel frame. Monitors can be assigned to sidebar slots (left/right, 2 per side),
+      displayed in the main area (split or fullscreen mode), or accessed via mobile tabs.
+      Monitor IDs are defined in <code>packages/shared/src/constants.ts</code> as the
+      <code>MONITORS</code> constant.
+    </p>
+
+    <table class="monitor-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>COMPONENT</th>
+          <th>DESCRIPTION</th>
+          <th>SIDEBAR</th>
+          <th>MAIN</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>NAV-COM</code></td>
+          <td>NavComScreen (inline in GameScreen)</td>
+          <td>
+            Primary navigation. Contains RadarCanvas, SectorInfo, StatusBar, NavControls.
+            In split mode, wrapped in MonitorBezel with zoom/pan knobs, BookmarkBar,
+            and DetailViewOverlay. Features pulsing player border, staleness rendering,
+            jump animation, feature dots (jumpgate/scan events), and bookmark markers.
+          </td>
+          <td>Left only</td>
+          <td>Default (split)</td>
+        </tr>
+        <tr>
+          <td><code>LOG</code></td>
+          <td>EventLog</td>
+          <td>
+            Scrollable event log with timestamped entries. Shows navigation, scan results,
+            combat outcomes, and system messages. Available only on the left sidebar.
+          </td>
+          <td>Left only</td>
+          <td>&mdash;</td>
+        </tr>
+        <tr>
+          <td><code>SHIP-SYS</code></td>
+          <td>ShipSysScreen (inline in GameScreen)</td>
+          <td>
+            Three sub-tabs: SCHEMATIC (ASCII ship diagram per hull type with slot labels,
+            module breakdown, ship stats grid, color profile selector), MODULE (ModulePanel
+            for equipping/unequipping modules), HANGAR (HangarPanel for ship management).
+            Hull types: scout, freighter, cruiser, explorer, battleship.
+          </td>
+          <td>Both</td>
+          <td>&mdash;</td>
+        </tr>
+        <tr>
+          <td><code>MINING</code></td>
+          <td>MiningScreen</td>
+          <td>
+            Mining operations. Shows rig status, current yield, resource extraction
+            progress. Features auto-mining with AP consumption and cargo capacity tracking.
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><code>CARGO</code></td>
+          <td>CargoScreen</td>
+          <td>
+            Cargo inventory display. Shows ore, gas, crystal, data slates, artefacts.
+            Capacity indicator with color-coded warnings (green/yellow/red). Includes
+            transfer and jettison controls.
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><code>COMMS</code></td>
+          <td>CommsScreen</td>
+          <td>
+            Communications terminal. Multi-channel chat system (local, sector, faction,
+            global). Relay routing for cross-sector messages. In nebula sectors, the
+            NAV-COM monitor shows noise interference overlay.
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><code>BASE-LINK</code></td>
+          <td>BaseScreen</td>
+          <td>
+            Home base management. Structure building interface with tier upgrades.
+            Storage management and base status overview. Also hosts station defense
+            panel (StationDefensePanel) for turrets/shields/ion cannon configuration.
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><code>TRADE</code></td>
+          <td>TradeScreen</td>
+          <td>
+            Trading interface. NPC trade at stations (buy/sell resources), player market
+            listings (Trading Post), credits economy. Price display with supply/demand
+            indicators.
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><code>FACTION</code></td>
+          <td>FactionScreen</td>
+          <td>
+            Faction management. Create/join/invite system with ranks. Faction chat channel,
+            member list, rank management. Reputation display for NPC factions
+            (Traders/Scientists/Pirates/Ancients, -100..+100 scale).
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><code>QUESTS</code></td>
+          <td>QuestsScreen</td>
+          <td>
+            Quest log. Procedural quest system with daily rotation. Quest types: fetch,
+            delivery, scan, bounty. Shows active quests, objectives, rewards, and
+            completion status. Alert LED blinks when new quests are available.
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><code>TECH</code></td>
+          <td>TechTreePanel</td>
+          <td>
+            Faction upgrade tree. 3 tiers with A/B branching choices per tier. Applies
+            bonuses to mining/scan/trade/combat. Visual tree display showing unlocked
+            and available upgrades. Mobile tab icon: &#x2697;.
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+        <tr>
+          <td><code>QUAD-MAP</code></td>
+          <td>QuadMapScreen</td>
+          <td>
+            Quadrant-scale map using QuadrantMapRenderer (canvas). Shows known quadrants
+            with fog-of-war for unexplored regions. 4 zoom levels (8px to 48px cells).
+            First-contact dialog system for newly discovered quadrants.
+            Mobile tab icon: &#x25A6;.
+          </td>
+          <td>Both</td>
+          <td>Yes</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Monitor Routing</h3>
+    <p>
+      Monitors are assigned to layout slots via Zustand state. The <code>renderScreen(monitorId)</code>
+      function in <code>GameScreen.tsx</code> maps each <code>MONITORS.*</code> constant to its
+      React component. Three routing arrays control availability:
+    </p>
+    <pre><code>LEFT_SIDEBAR_MONITORS:  LOG, SHIP-SYS, MINING, CARGO, COMMS, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP
+RIGHT_SIDEBAR_MONITORS: SHIP-SYS, MINING, CARGO, COMMS, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP
+MAIN_MONITORS:          NAV-COM, MINING, CARGO, COMMS, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP</code></pre>
+    <p>
+      Note: LOG is left-sidebar only. NAV-COM is main-area only (split or fullscreen).
+      SHIP-SYS is sidebar-only (not available in main area).
+    </p>
+
+    <h3>Mobile Tabs</h3>
+    <p>
+      On screens below 1024px, the desktop layout is hidden and a bottom tab bar is shown.
+      8 tabs are exposed (not all 12 monitors):
+    </p>
+    <pre><code>NAV (NAV-COM)  |  SHIP (SHIP-SYS)  |  MINE (MINING)  |  CARGO (CARGO)
+COMMS (COMMS)  |  BASE (BASE-LINK)  |  TECH (TECH)    |  QUAD (QUAD-MAP)</code></pre>
+    <p>
+      LOG, TRADE, FACTION, and QUESTS are not accessible via mobile tabs.
+      Each tab shows an icon and a short label. Active tab has a bottom highlight bar
+      with glow effect. Alert state triggers a blink animation.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 02. BEZEL COMPONENTS                                          -->
+  <!-- ============================================================ -->
+  <section id="bezel-components">
+    <h2>02. Bezel Components</h2>
+    <p>
+      The bezel system simulates physical CRT monitor hardware. Two bezel variants exist:
+      a full-featured <code>MonitorBezel</code> for the main area and a simplified
+      <code>SidebarBezel</code> for sidebar slots. This creates a visual divergence
+      documented in the UX Report.
+    </p>
+
+    <div class="component-card">
+      <div class="card-header">MonitorBezel</div>
+      <div class="card-file">packages/client/src/components/MonitorBezel.tsx</div>
+      <div class="card-props">Props: <code>children: ReactNode, monitorId: string</code></div>
+      <div class="card-desc">
+        Full CRT bezel frame wrapping the main nav monitor. Renders all CRT effects
+        (scanlines, flicker, glitch bars, vignette, noise). Features:
+        <br>&bull; <strong>Left bezel side:</strong> Vertical monitor ID label, PAN knob (range -20..20, step 1), BookmarkBar
+        <br>&bull; <strong>Right bezel side:</strong> Status LEDs (via useMonitorLeds), ON/OFF toggle switch, ZOOM knob (range 0..3, step 1), POWER button
+        <br>&bull; <strong>Bottom bezel:</strong> BRIGHTNESS knob (range 0.5..1.5, step 0.1), AUTO/MANUAL follow button (NAV-COM only), [?] legend button
+        <br>&bull; <strong>Screen area:</strong> CRT wrapper with scanlines, flicker, glitch bars, vignette, optional noise (nebula). Content wrapped in CrtErrorBoundary.
+        <br>&bull; <strong>Program-switch flicker:</strong> 300ms <code>crt-switch-flicker</code> animation when children identity changes.
+        <br>&bull; <strong>Power toggle:</strong> Turns monitor on/off. Off state shows &quot;DISPLAY OFF&quot; overlay.
+        <br>&bull; <strong>Noise:</strong> Activated when <code>monitorId === 'NAV-COM'</code> and <code>currentSector.type === 'nebula'</code>.
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">SidebarBezel</div>
+      <div class="card-file">packages/client/src/components/SidebarBezel.tsx</div>
+      <div class="card-props">Props: <code>children: ReactNode, monitorId: string, alert?: boolean</code></div>
+      <div class="card-desc">
+        Simplified bezel for sidebar slots. Notable differences from MonitorBezel:
+        <br>&bull; Only renders scanlines and vignette (no flicker, no glitch bars, no noise)
+        <br>&bull; Left bezel side only: vertical label (0.45rem) + LED dots
+        <br>&bull; No right bezel side, no bottom controls
+        <br>&bull; No zoom/pan/brightness knobs
+        <br>&bull; No BookmarkBar, no power toggle
+        <br>&bull; Alert prop triggers <code>bezel-alert-pulse</code> animation on border
+        <br>&bull; Auto-clears alert when monitor becomes visible (useEffect on mount)
+        <br>&bull; Uses inline styles for bezel side (<code>minWidth: 20, padding: '4px 2px'</code>)
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">ChannelButtons</div>
+      <div class="card-file">packages/client/src/components/ChannelButtons.tsx</div>
+      <div class="card-props">Props: <code>slotIndex: 0 | 1, side: 'left' | 'right', monitors: MonitorId[]</code></div>
+      <div class="card-desc">
+        Vertical strip of channel selector buttons rendered adjacent to sidebar bezels.
+        Each button represents a monitor that can be loaded into the parent sidebar slot.
+        <br>&bull; Active state: inverted colors (dark text on primary background)
+        <br>&bull; Alert state: <code>channel-blink</code> animation (1s ease-in-out infinite) when monitor has pending alert
+        <br>&bull; Label abbreviation map: LOG&rarr;LOG, SHIP-SYS&rarr;SYS, MINING&rarr;MIN, CARGO&rarr;CRG, COMMS&rarr;COM, BASE-LINK&rarr;BAS
+        <br>&bull; Fallback: first 3 chars of monitor ID
+        <br>&bull; Button size: 64x48px, font 0.7rem, letter-spacing 0.05em
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">BezelKnob</div>
+      <div class="card-file">packages/client/src/components/BezelKnob.tsx</div>
+      <div class="card-props">Props: <code>label: string, value: number, min: number, max: number, step?: number, onChange: (value: number) =&gt; void</code></div>
+      <div class="card-desc">
+        Vertical range slider styled as a CRT hardware knob. Used for BRIGHTNESS, ZOOM, and PAN controls.
+        <br>&bull; Rendered as a vertical <code>&lt;input type="range"&gt;</code> (80px tall, 20px wide)
+        <br>&bull; <code>writingMode: 'vertical-lr', direction: 'rtl'</code> for vertical orientation
+        <br>&bull; <code>accentColor: var(--color-primary)</code> for slider track/thumb
+        <br>&bull; Displays label above (0.55rem, dim) and current value below (0.55rem, primary)
+        <br>&bull; Value display precision: 1 decimal if step &lt; 1, else integer
+        <br>&bull; All styling is inline (no CSS class)
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">LedDot</div>
+      <div class="card-file">packages/client/src/components/MonitorLeds.tsx</div>
+      <div class="card-props">Props: <code>led: LedConfig</code> where <code>LedConfig = { label: string, color: 'green' | 'yellow' | 'red' | 'gray', blink?: boolean }</code></div>
+      <div class="card-desc">
+        Single status LED indicator with label. Used in both MonitorBezel and SidebarBezel.
+        <br>&bull; Colors: green=#00FF88, yellow=#FFB000, red=#FF3333, gray=#444
+        <br>&bull; Active LEDs get <code>box-shadow: 0 0 4px</code> glow
+        <br>&bull; Blink uses <code>bezel-alert-pulse 1.5s infinite</code> animation
+        <br>&bull; LED diameter: 6px, label font: 0.6rem at 0.6 opacity
+        <br>&bull; All styling is inline (no CSS class)
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">useMonitorLeds (Hook)</div>
+      <div class="card-file">packages/client/src/components/MonitorLeds.tsx</div>
+      <div class="card-props">Signature: <code>useMonitorLeds(monitorId: string): LedConfig[]</code></div>
+      <div class="card-desc">
+        Returns an array of LED configurations based on the current monitor and game state.
+        <br>&bull; <strong>NAV-COM:</strong> SYS (green), NAV (yellow if autopilot active, else green)
+        <br>&bull; <strong>SHIP-SYS:</strong> PWR (green), FUEL (red if &lt;20%, yellow if &lt;50%, else green)
+        <br>&bull; <strong>MINING:</strong> RIG (green if mining active, gray if idle)
+        <br>&bull; <strong>CARGO:</strong> CAP (red if full, yellow if &gt;70%, else green)
+        <br>&bull; <strong>COMMS:</strong> SIG (green), MSG (yellow+blink if alert), SOS (red+blink if distress calls)
+        <br>&bull; <strong>QUESTS:</strong> QST (yellow+blink if alert, else gray)
+        <br>&bull; <strong>Default:</strong> SYS (green) for all other monitors
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">BookmarkBar</div>
+      <div class="card-file">packages/client/src/components/BookmarkBar.tsx</div>
+      <div class="card-props">Props: none (reads from store)</div>
+      <div class="card-desc">
+        Vertical bookmark navigation strip rendered inside the MonitorBezel left side.
+        <br>&bull; Two fixed buttons: HOME (jumps to 0,0) and SHIP (centers on player position)
+        <br>&bull; 5 custom bookmark slots (1-5), showing label or coordinates
+        <br>&bull; Left-click: pans view to bookmarked sector and selects it
+        <br>&bull; Right-click: clears the bookmark (sends clearBookmark to server)
+        <br>&bull; Empty slots shown at 0.3 opacity, disabled
+        <br>&bull; Style: <code>vs-btn</code> class, 0.55rem font, 2px 4px padding
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">CrtErrorBoundary</div>
+      <div class="card-file">packages/client/src/components/CrtErrorBoundary.tsx</div>
+      <div class="card-props">Props: <code>children: ReactNode, monitorId?: string</code></div>
+      <div class="card-desc">
+        React Error Boundary that wraps monitor content inside MonitorBezel. Catches render
+        errors and displays a CRT-themed &quot;SYSTEM FAULT&quot; screen.
+        <br>&bull; Phase 1 (2 seconds): &quot;SYSTEM FAULT&quot; in red with flicker animation, glitch bar, &quot;REBOOTING...&quot; message
+        <br>&bull; Phase 2: &quot;MONITOR OFFLINE&quot; with [REBOOT] button
+        <br>&bull; Logs error to console as <code>[CRT:{monitorId}]</code>
+        <br>&bull; Reboot resets error state, re-renders children
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 03. CRT EFFECTS                                               -->
+  <!-- ============================================================ -->
+  <section id="crt-effects">
+    <h2>03. CRT Effects</h2>
+    <p>
+      CRT effects are layered via absolute-positioned overlays inside the
+      <code>.crt-wrapper</code> container. Each effect has a specific z-index for correct
+      stacking. All effects are defined in <code>packages/client/src/styles/crt.css</code>.
+      Effects respect <code>prefers-reduced-motion: reduce</code> by disabling animations.
+    </p>
+
+    <h3>Scanlines</h3>
+    <div class="effect-demo">
+      <div class="demo-scanlines"></div>
+      <div class="demo-label">SCANLINES</div>
+    </div>
+    <div class="component-card">
+      <div class="card-header">.crt-scanlines</div>
+      <div class="card-desc">
+        <strong>Z-index:</strong> 10
+        <br><strong>Implementation:</strong> Dual-layer background gradient:
+        <br>1. Horizontal scanlines: alternating transparent/dark rows at 3px pitch
+        <br>2. Vertical RGB sub-pixel simulation: faint red/green/blue bands at 3px pitch
+        <br><strong>CSS:</strong>
+      </div>
+      <pre><code>background:
+  linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  ),
+  linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.02),
+    rgba(0, 0, 255, 0.03)
+  );
+background-size: 100% 3px, 3px 100%;</code></pre>
+    </div>
+
+    <h3>Flicker</h3>
+    <div class="effect-demo">
+      <div class="demo-flicker"></div>
+      <div class="demo-label">FLICKER</div>
+    </div>
+    <div class="component-card">
+      <div class="card-header">.crt-flicker</div>
+      <div class="card-desc">
+        <strong>Z-index:</strong> 11
+        <br><strong>Implementation:</strong> Semi-transparent dark overlay with rapid opacity oscillation
+        <br><strong>Animation:</strong> <code>crt-flicker 0.15s infinite</code> &mdash; cycles opacity between 0.18 and 0.43
+        <br><strong>Note:</strong> Only present in MonitorBezel, absent from SidebarBezel
+        <br><strong>Reduced motion:</strong> <code>animation: none</code>
+      </div>
+    </div>
+
+    <h3>Glitch Bars</h3>
+    <div class="effect-demo">
+      <div class="demo-glitch-bar"></div>
+      <div class="demo-label">GLITCH BAR</div>
+    </div>
+    <div class="component-card">
+      <div class="card-header">.crt-glitch-bar / .crt-glitch-bar-2</div>
+      <div class="card-desc">
+        <strong>Z-index:</strong> 13
+        <br><strong>Implementation:</strong> Horizontal distortion stripes that scroll top-to-bottom
+        <br><strong>Bar 1:</strong> 3px tall, amber-tinted gradient, 12s cycle, hue-rotate(20deg) effect
+        <br><strong>Bar 2:</strong> 2px tall, teal-tinted gradient, 18s cycle with -7s delay, hue-rotate(-15deg)
+        <br><strong>Note:</strong> Only present in MonitorBezel, absent from SidebarBezel
+        <br><strong>Reduced motion:</strong> <code>animation: none</code>
+      </div>
+    </div>
+
+    <h3>Vignette</h3>
+    <div class="effect-demo">
+      <div class="demo-vignette"></div>
+      <div class="demo-label">VIGNETTE</div>
+    </div>
+    <div class="component-card">
+      <div class="card-header">.crt-vignette</div>
+      <div class="card-desc">
+        <strong>Z-index:</strong> 9
+        <br><strong>Implementation:</strong> Radial gradient from transparent center to dark edges
+        <br><strong>CSS:</strong> <code>radial-gradient(ellipse at center, transparent 75%, rgba(0, 0, 0, 0.06) 100%)</code>
+        <br><strong>Note:</strong> Present in both MonitorBezel and SidebarBezel
+      </div>
+    </div>
+
+    <h3>Noise</h3>
+    <div class="effect-demo">
+      <div class="demo-noise"></div>
+      <div class="demo-label">NOISE (NEBULA)</div>
+    </div>
+    <div class="component-card">
+      <div class="card-header">.crt-noise</div>
+      <div class="card-desc">
+        <strong>Z-index:</strong> 14
+        <br><strong>Implementation:</strong> SVG fractal noise pattern via inline data URI, animated with stepped position shifts
+        <br><strong>Animation:</strong> <code>crt-noise 0.15s steps(1) infinite</code> &mdash; shifts background-position in 10 keyframes
+        <br><strong>Opacity:</strong> 0.08 base
+        <br><strong>Trigger:</strong> Only shown when <code>monitorId === 'NAV-COM'</code> and player is in a nebula sector
+        <br><strong>Purpose:</strong> Simulates signal interference in nebula environments
+      </div>
+    </div>
+
+    <h3>Program-Switch Flicker</h3>
+    <div class="component-card">
+      <div class="card-header">.crt-switch-flicker</div>
+      <div class="card-desc">
+        <strong>Animation:</strong> <code>crt-switch-flicker 0.3s ease-out forwards</code>
+        <br><strong>Keyframes:</strong> Rapid brightness/opacity oscillation simulating a CRT tube switching input
+        <br>0%: normal &rarr; 10%: blackout+bright &rarr; 20%: normal+dim &rarr; 35%: partial+bright &rarr; 50%: normal &rarr; 100%: normal
+        <br><strong>Trigger:</strong> Applied to <code>.crt-content</code> when MonitorBezel detects children identity change
+      </div>
+    </div>
+
+    <h3>Sidebar CRT Collapse/Expand</h3>
+    <div class="component-card">
+      <div class="card-header">.sidebar-crt-collapse / .sidebar-crt-expand</div>
+      <div class="card-desc">
+        <strong>Animation:</strong> 250ms ease-in/ease-out
+        <br><strong>Effect:</strong> <code>scaleX</code> from 1 to 0 (collapse) or 0 to 1 (expand), with brightness flash at midpoint
+        <br><strong>Transform origin:</strong> <code>left center</code> for left sidebar, <code>right center</code> for right sidebar
+        <br><strong>Purpose:</strong> Simulates CRT tube power-on/power-off when toggling sidebar visibility
+      </div>
+    </div>
+
+    <h3>Z-Index Stack</h3>
+    <pre><code>z-index  Layer
+  1      .crt-content (actual UI content)
+  9      .crt-vignette
+ 10      .crt-scanlines
+ 11      .crt-flicker
+ 13      .crt-glitch-bar, .crt-glitch-bar-2
+ 14      .crt-noise
+ 20      .crt-monitor-off (DISPLAY OFF overlay)</code></pre>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 04. COLOR PROFILES                                            -->
+  <!-- ============================================================ -->
+  <section id="color-profiles">
+    <h2>04. Color Profiles</h2>
+    <p>
+      Four color profiles are defined in <code>packages/client/src/styles/themes.ts</code>.
+      The active profile is applied by setting CSS custom properties
+      <code>--color-primary</code> and <code>--color-dim</code> on
+      <code>document.documentElement</code> (in <code>GameScreen</code> via useEffect).
+      Profile selection is persisted to <code>localStorage</code> key
+      <code>vs-color-profile</code>. Default: Amber Classic.
+    </p>
+
+    <div class="color-swatch-row">
+      <div class="color-swatch">
+        <div class="swatch-dot" style="background: #FFB000; color: #FFB000;"></div>
+        <div class="swatch-name">AMBER CLASSIC</div>
+        <div class="swatch-hex">primary: #FFB000</div>
+        <div class="swatch-hex">dim: rgba(255, 176, 0, 0.6)</div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-dot" style="background: #00FF66; color: #00FF66;"></div>
+        <div class="swatch-name">GREEN PHOSPHOR</div>
+        <div class="swatch-hex">primary: #00FF66</div>
+        <div class="swatch-hex">dim: rgba(0, 255, 102, 0.6)</div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-dot" style="background: #00CCFF; color: #00CCFF;"></div>
+        <div class="swatch-name">ICE BLUE</div>
+        <div class="swatch-hex">primary: #00CCFF</div>
+        <div class="swatch-hex">dim: rgba(0, 204, 255, 0.6)</div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-dot" style="background: #FFFFFF; color: #FFFFFF;"></div>
+        <div class="swatch-name">HIGH CONTRAST</div>
+        <div class="swatch-hex">primary: #FFFFFF</div>
+        <div class="swatch-hex">dim: rgba(255, 255, 255, 0.6)</div>
+      </div>
+    </div>
+
+    <h3>CSS Custom Properties (Default / Amber Classic)</h3>
+    <pre><code>:root {
+  --color-primary: #FFB000;          /* Main text, borders, active elements */
+  --color-dim: rgba(255, 176, 0, 0.6); /* Secondary text, labels */
+  --color-bg: #050505;               /* Background */
+  --color-danger: #FF3333;           /* Error, combat, pirate encounters */
+  --color-bezel: #1a1a1a;            /* Bezel panel background */
+  --color-bezel-light: #2a2a2a;      /* Bezel dividers */
+  --color-led-active: #FFB000;       /* Active LED glow */
+  --color-led-off: #3a3000;          /* Inactive LED */
+  --font-mono: 'Share Tech Mono', 'Courier New', Courier, monospace;
+}</code></pre>
+    <p>
+      <strong>Note:</strong> Only <code>--color-primary</code> and <code>--color-dim</code> are
+      updated by the color profile system. Hardcoded colors like <code>--color-danger</code>
+      (#FF3333), <code>--color-led-active</code>, and bezel background colors remain fixed
+      regardless of profile. LED colors are also hardcoded:
+      green=#00FF88, yellow=#FFB000, red=#FF3333.
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 05. CANVAS RENDERERS                                          -->
+  <!-- ============================================================ -->
+  <section id="canvas-renderers">
+    <h2>05. Canvas Renderers</h2>
+    <p>
+      Two canvas renderers power the game&rsquo;s map displays. Both use the
+      <code>useCanvas</code> hook which manages DPR-aware sizing via
+      <code>ResizeObserver</code> and drives rendering through
+      <code>requestAnimationFrame</code> loops.
+    </p>
+
+    <div class="component-card">
+      <div class="card-header">RadarRenderer</div>
+      <div class="card-file">packages/client/src/canvas/RadarRenderer.ts</div>
+      <div class="card-desc">
+        Sector-level radar grid. The main visual display of the game world.
+        <br><br><strong>Zoom levels (0-4):</strong>
+      </div>
+      <table class="monitor-table">
+        <thead>
+          <tr><th>Zoom</th><th>Cell Size</th><th>Font</th><th>Features</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>48x38px</td><td>12px</td><td>Overview, no coords per cell</td></tr>
+          <tr><td>1</td><td>64x50px</td><td>14px</td><td>Coordinates, sector labels</td></tr>
+          <tr><td>2</td><td>80x64px</td><td>16px</td><td>Feature dots (jumpgate, events), structure indicator</td></tr>
+          <tr><td>3</td><td>96x76px</td><td>18px</td><td>Other player hull icons + usernames</td></tr>
+          <tr><td>4</td><td>Dynamic (3x3)</td><td>20px</td><td>Detail view: resources, discovery age. No pan.</td></tr>
+        </tbody>
+      </table>
+      <div class="card-desc">
+        <strong>Coordinate frame:</strong> Row labels (Y) on left, column labels (X) on bottom.
+        Margins: FRAME_LEFT=40px, FRAME_BOTTOM=24px, FRAME_PAD=8px.
+        <br><br><strong>Visual features:</strong>
+        <br>&bull; Pulsing player border (sinusoidal alpha, period ~2.5s)
+        <br>&bull; Bookmark borders (6 colors: green, red-orange, blue, yellow, teal, magenta)
+        <br>&bull; Staleness rendering: discoveries dim at <code>STALENESS_DIM_HOURS</code>, fade to 0.2 alpha at <code>STALENESS_FADE_DAYS * 24</code>
+        <br>&bull; Selected sector highlight (3px primary border)
+        <br>&bull; Hull icons rendered as pixel-art patterns (from <code>HULL_RADAR_PATTERNS</code>)
+        <br>&bull; Feature dots: cyan (#00BFFF) for jumpgate, red (#FF3333) for distress, magenta (#FF00FF) for other events
+        <br>&bull; Structure indicator: diamond symbol (&loz;) in top-left corner, amber colored
+        <br><br><strong>Jump animation:</strong> 3-phase, 800ms total
+        <br>1. Glitch phase (200ms): scanline displacement + static noise
+        <br>2. Slide phase (400ms): grid translates in jump direction
+        <br>3. Settle phase (200ms): residual glitch fades out
+        <br><br><strong>Exported functions:</strong>
+        <br>&bull; <code>drawRadar(ctx, state)</code> &mdash; main render function
+        <br>&bull; <code>calculateVisibleRadius(canvasW, canvasH, zoomLevel)</code> &mdash; grid size calculation
+        <br>&bull; <code>drawGlitchOverlay(ctx, width, height, intensity)</code> &mdash; pixel-level scanline displacement
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">QuadrantMapRenderer</div>
+      <div class="card-file">packages/client/src/canvas/QuadrantMapRenderer.ts</div>
+      <div class="card-desc">
+        Quadrant-scale map showing larger regions. Each quadrant contains
+        <code>QUADRANT_SIZE</code> sectors per side.
+        <br><br><strong>Zoom levels (0-3):</strong>
+      </div>
+      <table class="monitor-table">
+        <thead>
+          <tr><th>Zoom</th><th>Cell Size</th><th>Display</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>8x8px</td><td>Single 3px dot for known quadrants</td></tr>
+          <tr><td>1</td><td>16x16px</td><td>Dot with radius proportional to cell</td></tr>
+          <tr><td>2</td><td>32x32px</td><td>Coordinate labels (qx,qy), &quot;?&quot; fog-of-war</td></tr>
+          <tr><td>3</td><td>48x48px</td><td>Detail view with coordinates</td></tr>
+        </tbody>
+      </table>
+      <div class="card-desc">
+        <strong>Coordinate frame:</strong> QUAD_FRAME_LEFT=48px, QUAD_FRAME_BOTTOM=24px, QUAD_FRAME_PAD=8px.
+        <br><br><strong>Visual features:</strong>
+        <br>&bull; Known quadrants: green-tinted fill (rgba(0,255,136,0.08)), brighter if current (0.25)
+        <br>&bull; Unknown quadrants: near-invisible borders (rgba(255,255,255,0.05))
+        <br>&bull; Current quadrant: pulsing border (same sinusoidal as radar)
+        <br>&bull; Header label: &quot;QUADRANT MAP [N KNOWN] ZOOM:L&quot;
+        <br><br><strong>Exported functions:</strong>
+        <br>&bull; <code>drawQuadrantMap(ctx, state)</code> &mdash; main render function
+        <br>&bull; <code>quadrantAtPoint(w, h, clickX, clickY, state)</code> &mdash; click-to-quadrant coordinate mapping
+        <br>&bull; <code>sectorToQuadrantCoords(x, y)</code> &mdash; sector-to-quadrant coordinate conversion
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">useCanvas (Hook)</div>
+      <div class="card-file">packages/client/src/canvas/useCanvas.ts</div>
+      <div class="card-props">Signature: <code>useCanvas(draw: (ctx: CanvasRenderingContext2D) =&gt; void): RefObject&lt;HTMLCanvasElement&gt;</code></div>
+      <div class="card-desc">
+        Shared canvas hook used by both RadarCanvas and QuadMapScreen.
+        <br>&bull; Handles DPR-aware canvas sizing via <code>ResizeObserver</code>
+        <br>&bull; Scales context by <code>devicePixelRatio</code> for crisp rendering
+        <br>&bull; Drives <code>requestAnimationFrame</code> render loop
+        <br>&bull; Catches render errors silently to prevent render loop death
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">JumpAnimation</div>
+      <div class="card-file">packages/client/src/canvas/JumpAnimation.ts</div>
+      <div class="card-desc">
+        State machine for sector-jump visual effects.
+        <br>&bull; <code>JumpAnimationState</code>: active, phase ('glitch'|'slide'|'settle'|'none'), progress (0-1), direction ({dx,dy}), startTime
+        <br>&bull; Phase durations: glitch=200ms, slide=400ms, settle=200ms (total 800ms)
+        <br>&bull; <code>createJumpAnimation(dx, dy)</code> &mdash; initialize from direction vector
+        <br>&bull; <code>updateJumpAnimation(state, now)</code> &mdash; advance state based on elapsed time
+        <br>&bull; During slide phase: canvas translates by <code>direction * progress * cellSize</code>
+        <br>&bull; Glitch overlay intensity scales with phase progress
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 06. OVERLAYS & DIALOGS                                        -->
+  <!-- ============================================================ -->
+  <section id="overlays-dialogs">
+    <h2>06. Overlays &amp; Dialogs</h2>
+    <p>
+      Overlays and dialogs are rendered as fixed-position elements on top of the game UI.
+      They are conditionally rendered in <code>GameScreen</code> based on Zustand state.
+      All dialogs use inline styles extensively (see UX Report).
+    </p>
+
+    <div class="component-card">
+      <div class="card-header">BattleDialog</div>
+      <div class="card-file">packages/client/src/components/BattleDialog.tsx</div>
+      <div class="card-desc">
+        V1 auto-battle encounter dialog. Shown when <code>activeBattle</code> state is set.
+        Hidden when <code>activeCombatV2</code> is active (v2 takes priority).
+        <br>&bull; <strong>Z-index:</strong> 1000
+        <br>&bull; ASCII art: PIRATE_ART (7 lines) for standard pirates, ANCIENT_ART (7 lines) for level 6+ aliens
+        <br>&bull; Color-coded: red (#FF3333) for pirates, cyan (#00BFFF) for ancients
+        <br>&bull; Three action buttons: [KAMPF] (fight, red), [FLUCHT] (flee, amber), [VERHANDELN] (negotiate, green)
+        <br>&bull; Negotiate requires Pirate reputation &gt;= Friendly tier
+        <br>&bull; ESC key triggers flee action
+        <br>&bull; Uses <code>role="dialog" aria-modal="true"</code>
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">CombatV2Dialog</div>
+      <div class="card-file">packages/client/src/components/CombatV2Dialog.tsx</div>
+      <div class="card-desc">
+        Tactical combat dialog (feature-flagged via FEATURE_COMBAT_V2). 5-round turn-based
+        combat with weapons, shields, tactics, and special actions.
+        <br>&bull; <strong>Z-index:</strong> 1000 (inferred from fixed positioning)
+        <br>&bull; HP bars: segmented block display <code>[&#x25A0;&#x25A0;&#x25A0;&#x2591;&#x2591;]</code> for player HP, shield, enemy HP
+        <br>&bull; Tactic buttons: ASSAULT (F1/1), BALANCED (F2/2), DEFENSIVE (F3/3)
+        <br>&bull; Special actions: AIM (F4/4), EVADE (F5/5) with limited uses per combat
+        <br>&bull; Combat log: scrollable list of round results
+        <br>&bull; ESC triggers flee
+        <br>&bull; Weapon types: laser, railgun, missile, EMP
+        <br>&bull; Ship modules: 8 weapons, 3 shields, point defense, ECM suite
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">BattleResultDialog</div>
+      <div class="card-file">packages/client/src/components/BattleResultDialog.tsx</div>
+      <div class="card-desc">
+        Post-combat outcome summary. Shown when <code>lastBattleResult</code> state is set.
+        <br>&bull; <strong>Z-index:</strong> 1000
+        <br>&bull; Outcome labels: SIEG (#00FF88), NIEDERLAGE (#FF3333), GEFLOHEN (#FFB000),
+        FLUCHT GESCHEITERT (#FF3333), VERHANDELT (#00BFFF)
+        <br>&bull; Shows loot (credits, resources) and losses (cargo lost)
+        <br>&bull; Border color matches outcome color
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">StationCombatOverlay</div>
+      <div class="card-file">packages/client/src/components/StationCombatOverlay.tsx</div>
+      <div class="card-desc">
+        Station defense event notification. Shown when <code>stationCombatEvent</code> state is set.
+        <br>&bull; <strong>Z-index:</strong> 950
+        <br>&bull; Header: &quot;STATION UNTER ANGRIFF&quot; in red
+        <br>&bull; Outcomes: ABGEWEHRT (#00FF88), BESCH&Auml;DIGT (#FFB000), ZERST&Ouml;RT (#FF3333)
+        <br>&bull; Shows attacker level and HP loss
+        <br>&bull; [BEST&Auml;TIGEN] dismiss button
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">FrequencyMinigame</div>
+      <div class="card-file">packages/client/src/components/FrequencyMinigame.tsx</div>
+      <div class="card-desc">
+        JumpGate frequency matching minigame. Rendered inline (not a fixed overlay).
+        <br>&bull; Canvas-based sine wave display (280x120px)
+        <br>&bull; Target wave: green (rgba(0,255,100,0.4)), Player wave: amber (#FFB000)
+        <br>&bull; Controls: Arrow Left/Right to adjust frequency, Mouse wheel to tune
+        <br>&bull; Match threshold: <code>FREQUENCY_MATCH_THRESHOLD</code> from shared constants
+        <br>&bull; Visual feedback: match percentage, &quot;LOCK ACQUIRED [ENTER]&quot; when threshold met
+        <br>&bull; ESC to cancel
+        <br>&bull; <strong>Touch gap:</strong> No touch controls for frequency adjustment (keyboard/mouse only)
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">HelpOverlay</div>
+      <div class="card-file">packages/client/src/components/HelpOverlay.tsx</div>
+      <div class="card-desc">
+        Context-sensitive help tip display. Shown when <code>activeTip</code> state is set.
+        <br>&bull; <strong>Z-index:</strong> 9000
+        <br>&bull; Positioned at bottom-center, 80px from bottom edge
+        <br>&bull; Black semi-transparent card with left amber border accent (4px)
+        <br>&bull; Uses <code>crt-expand</code> animation (200ms) on appear
+        <br>&bull; Dismissed via ESC key or click outside
+        <br>&bull; 8 contextual tips defined in <code>helpSlice.ts</code>:
+        first_login, first_nebula, first_station, first_asteroid, first_pirate,
+        first_distress, low_fuel, first_anomaly
+        <br>&bull; Tips are shown once (persisted to localStorage as <code>vs_seen_tips</code>)
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">LegendOverlay</div>
+      <div class="card-file">packages/client/src/components/LegendOverlay.tsx</div>
+      <div class="card-desc">
+        Radar symbol legend. Triggered by the [?] button in MonitorBezel bottom controls.
+        <br>&bull; Shows all sector type symbols with colors from <code>SYMBOLS</code> and <code>SECTOR_COLORS</code>
+        <br>&bull; Entries: YOUR SHIP, HOME BASE, OTHER PLAYER, + all SECTOR_TYPES
+        <br>&bull; Click on entry shows German-language description
+        <br>&bull; ESC or click-outside to dismiss
+        <br>&bull; Positioned absolutely within MonitorBezel (z-index 20)
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">DetailViewOverlay</div>
+      <div class="card-file">packages/client/src/components/DetailViewOverlay.tsx</div>
+      <div class="card-desc">
+        ASCII art detail view for sector types. Overlaid on the radar canvas when
+        <code>detailView</code> state is set. Shows large ASCII art representations
+        of stations (standard and ancient), asteroid fields, and other sector types.
+        Positioned absolutely within the radar area.
+      </div>
+    </div>
+
+    <div class="component-card">
+      <div class="card-header">BlueprintDialog</div>
+      <div class="card-file">packages/client/src/components/BlueprintDialog.tsx</div>
+      <div class="card-desc">
+        Blueprint acquisition confirmation dialog. Shown when <code>pendingBlueprint</code>
+        state is set (from anomaly artifact discoveries).
+        <br>&bull; <strong>Z-index:</strong> 1000
+        <br>&bull; Border color: cyan (#00BFFF)
+        <br>&bull; Shows module details from <code>MODULES</code> constant
+        <br>&bull; [ACTIVATE] and [DISMISS] actions
+        <br>&bull; Uses <code>role="dialog" aria-modal="true"</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 07. LAYOUT VARIANTS                                           -->
+  <!-- ============================================================ -->
+  <section id="layout-variants">
+    <h2>07. Layout Variants</h2>
+
+    <h3>Desktop Layout (>= 1024px)</h3>
+    <p>
+      Three-column grid layout implemented in <code>DesktopLayout.tsx</code> with CSS class
+      <code>.desktop-layout-v2</code>. Uses <code>display: grid; grid-template-columns: auto 1fr auto;</code>
+    </p>
+    <div class="layout-diagram">
++-------------------------------------------------------------------+
+| .desktop-layout-v2 (grid: auto 1fr auto)                         |
++----------------+---------------------------+----------------------+
+| .sidebar-left  |  .main-area               | .sidebar-right       |
+| 416px fixed    |  (flex column)            | 416px fixed          |
+|                |                           |                      |
+| [Toggle ◀/▶]  | .main-channel-bar         |                      |
+|                | [NAV] [MIN] [CRG] ...    |                      |
+| +----------+   |                           |  +-----------+       |
+| |Ch|Sidebar|   | .main-upper (flex: 2)     |  |Sidebar|Ch |       |
+| |Bt|Bezel  |   | +-------+--------+        |  |Bezel  |Bt |       |
+| |ns|Slot 0 |   | |.main  |.main   |        |  |Slot 0 |ns |       |
+| |  |(LEDS) |   | |grid   |detail  |        |  |(LEDS) |  |       |
+| +--+-------+   | |Radar+ |Detail  |        |  +-------+--+       |
+| border-top 2px | |Bezel  |Panel   |        |  border-top 2px     |
+| +----------+   | +-------+--------+        |  +-----------+       |
+| |Ch|Sidebar|   | .main-lower (flex: 1)     |  |Sidebar|Ch |       |
+| |Bt|Bezel  |   | SectorInfo+StatusBar      |  |Bezel  |Bt |       |
+| |ns|Slot 1 |   | +NavControls              |  |Slot 1 |ns |       |
+| |  |(LEDS) |   |                           |  |(LEDS) |  |       |
+| +--+-------+   |                           |  +-------+--+       |
+|                |                           | [Toggle ◀/▶]        |
++----------------+---------------------------+----------------------+</div>
+    <p>
+      Key layout properties:
+    </p>
+    <pre><code>/* Sidebars */
+.sidebar-left, .sidebar-right { width: 416px; min-width: 416px; max-width: 416px; }
+.sidebar-left.collapsed, .sidebar-right.collapsed { width: 32px; min-width: 32px; }
+
+/* Main area split */
+.main-upper { flex: 2; }     /* Radar + Detail */
+.main-lower { flex: 1; max-height: 40%; }  /* Controls */
+.main-detail { width: 320px; }  /* Detail panel */
+
+/* Fullscreen mode (main not split) */
+.main-fullscreen { flex: 1; }  /* Single monitor fills main area */</code></pre>
+
+    <h3>Mobile Layout (&lt; 1024px)</h3>
+    <p>
+      Single-column layout with bottom tab bar. The desktop layout is hidden
+      (<code>.desktop-layout-v2 { display: none; }</code>) and replaced with
+      <code>.mobile-content</code> and <code>.mobile-tabs</code>.
+    </p>
+    <div class="layout-diagram">
++-------------------------------------------+
+| .mobile-content                           |
+| (flex: 1, full-screen active monitor)     |
+|                                           |
+|   Currently active monitor component      |
+|   renders here in full viewport           |
+|                                           |
+|                                           |
++-------------------------------------------+
+| .mobile-tabs                              |
+| +-----+-----+-----+-----+-----+----+----+
+| | NAV |SHIP |MINE |CARGO|COMMS|BASE|TECH|QUAD|
+| | ◉   | ⚙   | ⛏   | ▤   | ⌘   | ⌂  | ⚗  | ▦  |
+| +-----+-----+-----+-----+-----+----+----+----+</div>
+    <p>
+      Mobile tab button styling:
+    </p>
+    <pre><code>.mobile-tab-btn {
+  flex: 1;  min-height: 52px;
+  /* Active: primary color border + bottom 2px glow bar */
+  /* Alert: channel-blink 1s animation */
+}
+.mobile-tab-icon  { font-size: 0.8rem; }
+.mobile-tab-label { font-size: 0.5rem; letter-spacing: 0.08em; }</code></pre>
+
+    <h3>Sidebar Collapsing</h3>
+    <p>
+      Both sidebars have toggle buttons that collapse them to 32px width with a CRT
+      power-off animation. State is managed via <code>leftCollapsed</code> and
+      <code>rightCollapsed</code> in the UI slice. When collapsed, the
+      <code>.sidebar-slot-content</code> is hidden and channel buttons are removed.
+      The collapse animation uses <code>crt-collapse</code> (scaleX 1&rarr;0 with brightness flash,
+      250ms) and expand uses <code>crt-expand</code> (scaleX 0&rarr;1, 250ms).
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 08. STATE MANAGEMENT                                          -->
+  <!-- ============================================================ -->
+  <section id="state-management">
+    <h2>08. State Management</h2>
+    <p>
+      UI state is managed by Zustand with three slices combined in
+      <code>packages/client/src/state/store.ts</code>:
+    </p>
+
+    <h3>UISlice (uiSlice.ts)</h3>
+    <pre><code>interface UISlice {
+  screen: 'login' | 'game';
+  brightness: number;               // 0.5-1.5, persisted to localStorage
+  colorProfile: ColorProfileName;   // persisted to localStorage
+  zoomLevel: number;                // 0-4
+  panOffset: { x: number; y: number };  // -50..50, locked at zoom 4
+  jumpAnimation: JumpAnimationState | null;
+  sidebarSlots: [string, string];        // right sidebar, persisted
+  leftSidebarSlots: [string, string];    // left sidebar, persisted
+  mainMonitorMode: 'split' | string;     // 'split' or a MonitorId
+  autoFollow: boolean;
+  detailView: { type: string; data?: Record&lt;string, any&gt; } | null;
+  leftCollapsed: boolean;
+  rightCollapsed: boolean;
+}</code></pre>
+
+    <h3>GameSlice (gameSlice.ts) &mdash; UI-relevant fields</h3>
+    <pre><code>/* Monitor routing */
+activeMonitor: string;          // Mobile: currently displayed monitor
+alerts: Record&lt;string, boolean&gt;;  // Monitor IDs with pending alerts
+
+/* Alert system */
+setAlert(monitorId, active)     // Set alert flag (triggers blink animation)
+clearAlert(monitorId)           // Clear alert flag</code></pre>
+
+    <h3>HelpSlice (helpSlice.ts)</h3>
+    <pre><code>interface HelpSlice {
+  activeTip: HelpTip | null;     // Currently displayed tip
+  seenTips: Set&lt;string&gt;;         // Persisted to localStorage 'vs_seen_tips'
+  showTip(tipId: string): void;  // Show tip if not yet seen
+  dismissTip(): void;            // Close active tip
+}</code></pre>
+
+    <h3>Persistence</h3>
+    <table class="monitor-table">
+      <thead>
+        <tr><th>Key</th><th>Value</th><th>Default</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>vs-brightness</code></td><td>Number (0.5-1.5)</td><td>1.0</td></tr>
+        <tr><td><code>vs-color-profile</code></td><td>ColorProfileName string</td><td>'Amber Classic'</td></tr>
+        <tr><td><code>vs-sidebar-slots</code></td><td>JSON [string, string]</td><td>['SHIP-SYS', 'COMMS']</td></tr>
+        <tr><td><code>vs-left-sidebar-slots</code></td><td>JSON [string, string]</td><td>['LOG', 'SHIP-SYS']</td></tr>
+        <tr><td><code>vs_seen_tips</code></td><td>JSON string[]</td><td>[]</td></tr>
+        <tr><td><code>vs_theme</code></td><td>'amber'</td><td>'amber'</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- 09. UX REPORT                                                 -->
+  <!-- ============================================================ -->
+  <section id="ux-report" class="ux-report">
+    <h2>09. UX Report</h2>
+    <p>
+      This section documents identified UX inconsistencies, accessibility gaps, and
+      architectural divergences in the current UI implementation. Findings are categorized
+      by severity.
+    </p>
+
+    <h3>A. Inline Styles vs CSS Classes</h3>
+
+    <div class="ux-finding">
+      <div class="severity severity-high">SEVERITY: HIGH</div>
+      <p>
+        <strong>Finding:</strong> Heavy reliance on inline styles throughout component tree.
+        Nearly all dialog and overlay components (BattleDialog, CombatV2Dialog, BattleResultDialog,
+        StationCombatOverlay, FrequencyMinigame, HelpOverlay, BlueprintDialog) use exclusively
+        inline styles with no CSS classes.
+      </p>
+      <p>
+        <strong>Impact:</strong> Inline styles cannot be overridden by color profile changes.
+        Hardcoded color values (#FFB000, #FF3333, #00FF88, #00BFFF) bypass the
+        <code>var(--color-primary)</code> system, meaning dialogs do not respond to color
+        profile changes. For example, BattleDialog hardcodes <code>color: '#FFB000'</code>
+        instead of <code>color: 'var(--color-primary)'</code>.
+      </p>
+      <p>
+        <strong>Affected components:</strong> BattleDialog, BattleResultDialog, CombatV2Dialog,
+        StationCombatOverlay, FrequencyMinigame, HelpOverlay, BlueprintDialog, LegendOverlay,
+        DetailViewOverlay, BookmarkBar, BezelKnob, LedDot, SchematicView (in GameScreen).
+      </p>
+      <p>
+        <strong>Recommendation:</strong> Extract inline styles to CSS classes in crt.css or a
+        new dialogs.css file. Use CSS custom properties throughout for theme compliance.
+      </p>
+    </div>
+
+    <div class="ux-finding">
+      <div class="severity severity-medium">SEVERITY: MEDIUM</div>
+      <p>
+        <strong>Finding:</strong> Inconsistent font-family declarations. Some components use
+        <code>fontFamily: 'monospace'</code> (BattleDialog, BattleResultDialog) while others
+        use <code>fontFamily: 'var(--font-mono)'</code> (CombatV2Dialog, StationCombatOverlay).
+        The CSS custom property resolves to <code>'Share Tech Mono', 'Courier New', Courier, monospace</code>.
+      </p>
+      <p>
+        <strong>Impact:</strong> Visual inconsistency between V1 and V2 dialogs. BattleDialog
+        falls back to browser default monospace font rather than Share Tech Mono.
+      </p>
+    </div>
+
+    <h3>B. Touch Accessibility Gaps</h3>
+
+    <div class="ux-finding">
+      <div class="severity severity-high">SEVERITY: HIGH</div>
+      <p>
+        <strong>Finding:</strong> FrequencyMinigame has no touch input method. Frequency
+        adjustment only works via keyboard arrow keys or mouse wheel. The canvas element
+        has an <code>onWheel</code> handler but no touch event handlers (onTouchStart,
+        onTouchMove). On mobile devices, the minigame is effectively unusable.
+      </p>
+      <p>
+        <strong>Recommendation:</strong> Add touch drag or on-screen +/- buttons for
+        frequency adjustment. Consider a horizontal slider input as an alternative to
+        the canvas-based interaction.
+      </p>
+    </div>
+
+    <div class="ux-finding">
+      <div class="severity severity-medium">SEVERITY: MEDIUM</div>
+      <p>
+        <strong>Finding:</strong> BezelKnob uses <code>&lt;input type="range"&gt;</code> with
+        <code>writingMode: 'vertical-lr'</code>. While this works on desktop, vertical range
+        inputs have inconsistent behavior across mobile browsers. Some browsers may not
+        render the thumb correctly or may not respond to vertical drag gestures.
+      </p>
+      <p>
+        <strong>Recommendation:</strong> Test vertical range inputs on iOS Safari and Android
+        Chrome. Consider a custom knob implementation with touch event handling for reliable
+        mobile behavior.
+      </p>
+    </div>
+
+    <div class="ux-finding">
+      <div class="severity severity-medium">SEVERITY: MEDIUM</div>
+      <p>
+        <strong>Finding:</strong> BookmarkBar right-click action (clear bookmark) via
+        <code>onContextMenu</code> has no touch equivalent. Long-press does not trigger
+        context menu on all mobile browsers consistently.
+      </p>
+      <p>
+        <strong>Recommendation:</strong> Add an explicit &quot;clear&quot; button or use a
+        long-press handler with a visual indicator (e.g., fill animation during press).
+      </p>
+    </div>
+
+    <div class="ux-finding">
+      <div class="severity severity-low">SEVERITY: LOW</div>
+      <p>
+        <strong>Finding:</strong> Mobile tab bar exposes only 8 of 12 monitors.
+        LOG, TRADE, FACTION, and QUESTS are not accessible on mobile. Players on
+        mobile devices cannot view event logs, trade, manage factions, or check quests.
+      </p>
+      <p>
+        <strong>Recommendation:</strong> Add a &quot;more&quot; tab or implement a scrollable
+        tab bar to expose all 12 monitors on mobile.
+      </p>
+    </div>
+
+    <h3>C. Sidebar / Main Bezel Divergence</h3>
+
+    <div class="ux-finding">
+      <div class="severity severity-medium">SEVERITY: MEDIUM</div>
+      <p>
+        <strong>Finding:</strong> MonitorBezel and SidebarBezel have significantly different
+        feature sets despite wrapping the same monitor content. This creates two distinct
+        visual experiences for the same program:
+      </p>
+      <table class="monitor-table">
+        <thead>
+          <tr><th>Feature</th><th>MonitorBezel</th><th>SidebarBezel</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Scanlines</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td>Vignette</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td>Flicker</td><td>Yes</td><td>No</td></tr>
+          <tr><td>Glitch bars</td><td>Yes (x2)</td><td>No</td></tr>
+          <tr><td>Noise (nebula)</td><td>Yes (conditional)</td><td>No</td></tr>
+          <tr><td>Program-switch flicker</td><td>Yes (300ms)</td><td>No</td></tr>
+          <tr><td>Brightness knob</td><td>Yes</td><td>No (uses global brightness)</td></tr>
+          <tr><td>Zoom/Pan knobs</td><td>Yes</td><td>No</td></tr>
+          <tr><td>BookmarkBar</td><td>Yes</td><td>No</td></tr>
+          <tr><td>Power toggle</td><td>Yes</td><td>No</td></tr>
+          <tr><td>Error boundary</td><td>Yes (CrtErrorBoundary)</td><td>No</td></tr>
+          <tr><td>Legend overlay</td><td>Yes</td><td>No</td></tr>
+          <tr><td>LED placement</td><td>Right side</td><td>Left side</td></tr>
+          <tr><td>Monitor label size</td><td>0.55rem</td><td>0.45rem</td></tr>
+          <tr><td>Bezel side styling</td><td>CSS class</td><td>Inline style overrides</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Impact:</strong> A monitor (e.g., COMMS) looks and behaves differently depending
+        on whether it is viewed in the main area vs. a sidebar slot. The SidebarBezel lacks
+        the CrtErrorBoundary, meaning errors in sidebar monitors crash the entire layout
+        rather than showing the themed reboot screen.
+      </p>
+      <p>
+        <strong>Recommendation:</strong> Create a unified bezel component (see Task #17,
+        UnifiedBezel) with a <code>variant: 'main' | 'sidebar'</code> prop that controls
+        which features are enabled while maintaining a consistent base. Both variants should
+        include CrtErrorBoundary at minimum.
+      </p>
+    </div>
+
+    <div class="ux-finding">
+      <div class="severity severity-low">SEVERITY: LOW</div>
+      <p>
+        <strong>Finding:</strong> SidebarBezel applies brightness from global store
+        (<code>style={{ filter: brightness(${brightness}) }}</code>) but has no local
+        brightness control. MonitorBezel also reads from the global store for its content
+        brightness. Both share the same brightness value, which is conceptually correct
+        but the MonitorBezel &quot;BRIGHTNESS&quot; knob implies per-monitor control.
+      </p>
+    </div>
+
+    <div class="ux-finding">
+      <div class="severity severity-low">SEVERITY: LOW</div>
+      <p>
+        <strong>Finding:</strong> The alert system auto-clears in SidebarBezel on mount
+        (via useEffect) but requires explicit user action (clicking the channel button)
+        in the main area and mobile tabs. This inconsistency means an alert might be
+        &quot;silently&quot; cleared when a sidebar loads a monitor, without the user
+        noticing the alert existed.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FOOTER                                                        -->
+  <!-- ============================================================ -->
+  <footer class="compendium-footer">
+    VOIDSECTOR UI COMPENDIUM // END OF DOCUMENT // REVISION 1.0
+  </footer>
+
+</div><!-- .compendium-container -->
+</div><!-- .crt-page -->
+</body>
+</html>

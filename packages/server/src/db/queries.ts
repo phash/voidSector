@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord } from '@void-sector/shared';
+import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord, JumpGateMapEntry } from '@void-sector/shared';
 import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -1223,6 +1223,44 @@ export async function addGateCode(playerId: string, gateId: string): Promise<voi
   );
 }
 
+// --- Player-Known JumpGates ---
+
+export async function getPlayerKnownJumpGates(playerId: string): Promise<JumpGateMapEntry[]> {
+  const { rows } = await query<{
+    gate_id: string; from_x: number; from_y: number;
+    to_x: number; to_y: number; gate_type: string;
+  }>(
+    `SELECT gate_id, from_x, from_y, to_x, to_y, gate_type
+     FROM player_known_jumpgates WHERE player_id = $1`,
+    [playerId]
+  );
+  return rows.map(r => ({
+    gateId: r.gate_id,
+    fromX: r.from_x,
+    fromY: r.from_y,
+    toX: r.to_x,
+    toY: r.to_y,
+    gateType: r.gate_type,
+  }));
+}
+
+export async function addPlayerKnownJumpGate(
+  playerId: string,
+  gateId: string,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  gateType: string,
+): Promise<void> {
+  await query(
+    `INSERT INTO player_known_jumpgates (player_id, gate_id, from_x, from_y, to_x, to_y, gate_type)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (player_id, gate_id) DO NOTHING`,
+    [playerId, gateId, fromX, fromY, toX, toY, gateType]
+  );
+}
+
 // --- Phase 5: Rescued Survivors ---
 
 export async function getPlayerSurvivors(playerId: string): Promise<Array<{ id: string; originX: number; originY: number; survivorCount: number; sourceType: string }>> {
@@ -1574,4 +1612,151 @@ export async function startActiveResearch(
 
 export async function deleteActiveResearch(userId: string): Promise<void> {
   await query('DELETE FROM active_research WHERE user_id = $1', [userId]);
+}
+
+// --- Autopilot Routes ---
+
+export interface AutopilotRouteRow {
+  userId: string;
+  targetX: number;
+  targetY: number;
+  useHyperjump: boolean;
+  path: Array<{ x: number; y: number }>;
+  currentStep: number;
+  totalSteps: number;
+  startedAt: number;
+  lastStepAt: number;
+  status: string;
+}
+
+export async function saveAutopilotRoute(
+  userId: string,
+  targetX: number,
+  targetY: number,
+  useHyperjump: boolean,
+  path: Array<{ x: number; y: number }>,
+  now: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO autopilot_routes (user_id, target_x, target_y, use_hyperjump, path, current_step, total_steps, started_at, last_step_at, status)
+     VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $7, 'active')
+     ON CONFLICT (user_id) DO UPDATE
+     SET target_x = $2, target_y = $3, use_hyperjump = $4, path = $5,
+         current_step = 0, total_steps = $6, started_at = $7, last_step_at = $7, status = 'active'`,
+    [userId, targetX, targetY, useHyperjump, JSON.stringify(path), path.length, now]
+  );
+}
+
+export async function getAutopilotRoute(userId: string): Promise<AutopilotRouteRow | null> {
+  const { rows } = await query<{
+    user_id: string; target_x: number; target_y: number;
+    use_hyperjump: boolean; path: Array<{ x: number; y: number }>;
+    current_step: number; total_steps: number;
+    started_at: string; last_step_at: string; status: string;
+  }>(
+    `SELECT user_id, target_x, target_y, use_hyperjump, path, current_step, total_steps, started_at, last_step_at, status
+     FROM autopilot_routes WHERE user_id = $1`,
+    [userId]
+  );
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    userId: r.user_id,
+    targetX: r.target_x,
+    targetY: r.target_y,
+    useHyperjump: r.use_hyperjump,
+    path: r.path,
+    currentStep: r.current_step,
+    totalSteps: r.total_steps,
+    startedAt: Number(r.started_at),
+    lastStepAt: Number(r.last_step_at),
+    status: r.status,
+  };
+}
+
+export async function getActiveAutopilotRoute(userId: string): Promise<AutopilotRouteRow | null> {
+  const { rows } = await query<{
+    user_id: string; target_x: number; target_y: number;
+    use_hyperjump: boolean; path: Array<{ x: number; y: number }>;
+    current_step: number; total_steps: number;
+    started_at: string; last_step_at: string; status: string;
+  }>(
+    `SELECT user_id, target_x, target_y, use_hyperjump, path, current_step, total_steps, started_at, last_step_at, status
+     FROM autopilot_routes WHERE user_id = $1 AND status = 'active'`,
+    [userId]
+  );
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    userId: r.user_id,
+    targetX: r.target_x,
+    targetY: r.target_y,
+    useHyperjump: r.use_hyperjump,
+    path: r.path,
+    currentStep: r.current_step,
+    totalSteps: r.total_steps,
+    startedAt: Number(r.started_at),
+    lastStepAt: Number(r.last_step_at),
+    status: r.status,
+  };
+}
+
+export async function updateAutopilotStep(userId: string, currentStep: number, now: number): Promise<void> {
+  await query(
+    `UPDATE autopilot_routes SET current_step = $2, last_step_at = $3 WHERE user_id = $1 AND status = 'active'`,
+    [userId, currentStep, now]
+  );
+}
+
+export async function pauseAutopilotRoute(userId: string): Promise<boolean> {
+  const result = await query(
+    `UPDATE autopilot_routes SET status = 'paused' WHERE user_id = $1 AND status = 'active'`,
+    [userId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function resumeAutopilotRoute(userId: string, now: number): Promise<boolean> {
+  const result = await query(
+    `UPDATE autopilot_routes SET status = 'active', last_step_at = $2 WHERE user_id = $1 AND status = 'paused'`,
+    [userId, now]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function cancelAutopilotRoute(userId: string): Promise<boolean> {
+  const result = await query(
+    `UPDATE autopilot_routes SET status = 'cancelled' WHERE user_id = $1 AND status IN ('active', 'paused')`,
+    [userId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function completeAutopilotRoute(userId: string): Promise<void> {
+  await query(
+    `UPDATE autopilot_routes SET status = 'completed' WHERE user_id = $1 AND status = 'active'`,
+    [userId]
+  );
+}
+
+// --- Per-Station Reputation ---
+
+export async function getPlayerStationRep(playerId: string, stationX: number, stationY: number): Promise<number> {
+  const { rows } = await query<{ reputation: number }>(
+    `SELECT reputation FROM player_station_reputation WHERE player_id = $1 AND station_x = $2 AND station_y = $3`,
+    [playerId, stationX, stationY]
+  );
+  return rows[0]?.reputation ?? 0;
+}
+
+export async function updatePlayerStationRep(playerId: string, stationX: number, stationY: number, delta: number): Promise<number> {
+  const { rows } = await query<{ reputation: number }>(
+    `INSERT INTO player_station_reputation (player_id, station_x, station_y, reputation)
+     VALUES ($1, $2, $3, GREATEST(-100, LEAST(100, $4)))
+     ON CONFLICT (player_id, station_x, station_y)
+     DO UPDATE SET reputation = GREATEST(-100, LEAST(100, player_station_reputation.reputation + $4))
+     RETURNING reputation`,
+    [playerId, stationX, stationY, delta]
+  );
+  return rows[0].reputation;
 }
