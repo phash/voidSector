@@ -21,6 +21,9 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
     weaponPiercing: 0,
     pointDefense: 0,
     ecmReduction: 0,
+    engineSpeed: hull.baseEngineSpeed,
+    artefactChanceBonus: 0,
+    safeSlotBonus: 0,
   };
 
   for (const mod of modules) {
@@ -41,6 +44,7 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
   stats.apCostJump = Math.max(0.5, stats.apCostJump);
   stats.jumpRange = Math.max(1, stats.jumpRange);
   stats.damageMod = Math.max(0.25, stats.damageMod);
+  stats.engineSpeed = Math.max(1, Math.min(5, stats.engineSpeed));
 
   return stats;
 }

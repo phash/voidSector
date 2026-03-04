@@ -277,187 +277,367 @@ export const HULLS: Record<HullType, HullDefinition> = {
     name: 'VOID SCOUT', size: 'small', slots: 3,
     baseFuel: 80, baseCargo: 3, baseJumpRange: 5, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 50, baseCommRange: 50, baseScannerLevel: 1,
+    baseEngineSpeed: 2,
     unlockLevel: 1, unlockCost: 0,
   },
   freighter: {
     name: 'VOID FREIGHTER', size: 'medium', slots: 4,
     baseFuel: 120, baseCargo: 15, baseJumpRange: 3, baseApPerJump: 2, baseFuelPerJump: 2,
     baseHp: 80, baseCommRange: 75, baseScannerLevel: 1,
+    baseEngineSpeed: 1,
     unlockLevel: 3, unlockCost: 500,
   },
   cruiser: {
     name: 'VOID CRUISER', size: 'medium', slots: 4,
     baseFuel: 150, baseCargo: 8, baseJumpRange: 4, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 100, baseCommRange: 100, baseScannerLevel: 1,
+    baseEngineSpeed: 2,
     unlockLevel: 4, unlockCost: 1000,
   },
   explorer: {
     name: 'VOID EXPLORER', size: 'large', slots: 5,
     baseFuel: 200, baseCargo: 10, baseJumpRange: 6, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 70, baseCommRange: 150, baseScannerLevel: 2,
+    baseEngineSpeed: 2,
     unlockLevel: 5, unlockCost: 2000,
   },
   battleship: {
     name: 'VOID BATTLESHIP', size: 'large', slots: 5,
     baseFuel: 180, baseCargo: 5, baseJumpRange: 2, baseApPerJump: 2, baseFuelPerJump: 3,
     baseHp: 150, baseCommRange: 75, baseScannerLevel: 1,
+    baseEngineSpeed: 1,
     unlockLevel: 6, unlockCost: 3000,
   },
 };
 
 export const MODULES: Record<string, ModuleDefinition> = {
+  // === DRIVE ===
   drive_mk1: {
     id: 'drive_mk1', category: 'drive', tier: 1,
     name: 'ION DRIVE MK.I', displayName: 'ION MK.I',
-    effects: { jumpRange: 1 },
+    primaryEffect: { stat: 'jumpRange', delta: 1, label: 'Sprungweite +1' },
+    secondaryEffects: [{ stat: 'engineSpeed', delta: 1, label: 'Engine-Speed +1' }],
+    effects: { jumpRange: 1, engineSpeed: 1 },
     cost: { credits: 100, ore: 10 },
   },
   drive_mk2: {
     id: 'drive_mk2', category: 'drive', tier: 2,
     name: 'ION DRIVE MK.II', displayName: 'ION MK.II',
-    effects: { jumpRange: 2, apCostJump: -0.2 },
+    primaryEffect: { stat: 'jumpRange', delta: 2, label: 'Sprungweite +2' },
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 2, label: 'Engine-Speed +2' },
+      { stat: 'apCostJump', delta: -0.2, label: 'AP/Sprung -0.2' },
+    ],
+    effects: { jumpRange: 2, apCostJump: -0.2, engineSpeed: 2 },
     cost: { credits: 300, ore: 20, crystal: 5 },
+    researchCost: { credits: 200, ore: 15 },
+    researchDurationMin: 5,
+    prerequisite: 'drive_mk1',
   },
   drive_mk3: {
     id: 'drive_mk3', category: 'drive', tier: 3,
     name: 'ION DRIVE MK.III', displayName: 'ION MK.III',
-    effects: { jumpRange: 3, apCostJump: -0.5 },
+    primaryEffect: { stat: 'jumpRange', delta: 3, label: 'Sprungweite +3' },
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 3, label: 'Engine-Speed +3' },
+      { stat: 'apCostJump', delta: -0.5, label: 'AP/Sprung -0.5' },
+    ],
+    effects: { jumpRange: 3, apCostJump: -0.5, engineSpeed: 3 },
     cost: { credits: 800, ore: 40, crystal: 15 },
+    researchCost: { credits: 500, ore: 30, crystal: 10, artefact: 2 },
+    researchDurationMin: 12,
+    prerequisite: 'drive_mk2',
   },
+
+  // === CARGO ===
   cargo_mk1: {
     id: 'cargo_mk1', category: 'cargo', tier: 1,
     name: 'CARGO BAY MK.I', displayName: 'CARGO MK.I',
+    primaryEffect: { stat: 'cargoCap', delta: 5, label: 'Frachtraum +5' },
+    secondaryEffects: [],
     effects: { cargoCap: 5 },
     cost: { credits: 80 },
   },
   cargo_mk2: {
     id: 'cargo_mk2', category: 'cargo', tier: 2,
     name: 'CARGO BAY MK.II', displayName: 'CARGO MK.II',
-    effects: { cargoCap: 12 },
+    primaryEffect: { stat: 'cargoCap', delta: 12, label: 'Frachtraum +12' },
+    secondaryEffects: [{ stat: 'safeSlotBonus', delta: 1, label: 'Safe-Slot +1' }],
+    effects: { cargoCap: 12, safeSlotBonus: 1 },
     cost: { credits: 250, ore: 15 },
+    researchCost: { credits: 150, ore: 10 },
+    researchDurationMin: 5,
+    prerequisite: 'cargo_mk1',
   },
   cargo_mk3: {
     id: 'cargo_mk3', category: 'cargo', tier: 3,
     name: 'CARGO BAY MK.III', displayName: 'CARGO MK.III',
-    effects: { cargoCap: 25 },
+    primaryEffect: { stat: 'cargoCap', delta: 25, label: 'Frachtraum +25' },
+    secondaryEffects: [
+      { stat: 'safeSlotBonus', delta: 2, label: 'Safe-Slot +2' },
+      { stat: 'fuelMax', delta: 20, label: 'Fuel-Tank +20' },
+    ],
+    effects: { cargoCap: 25, safeSlotBonus: 2, fuelMax: 20 },
     cost: { credits: 600, ore: 30, gas: 10 },
+    researchCost: { credits: 400, ore: 25, artefact: 1 },
+    researchDurationMin: 10,
+    prerequisite: 'cargo_mk2',
   },
+
+  // === SCANNER ===
   scanner_mk1: {
     id: 'scanner_mk1', category: 'scanner', tier: 1,
     name: 'SCANNER MK.I', displayName: 'SCAN MK.I',
+    primaryEffect: { stat: 'scannerLevel', delta: 1, label: 'Scan-Level +1' },
+    secondaryEffects: [],
     effects: { scannerLevel: 1 },
     cost: { credits: 120, crystal: 5 },
   },
   scanner_mk2: {
     id: 'scanner_mk2', category: 'scanner', tier: 2,
     name: 'SCANNER MK.II', displayName: 'SCAN MK.II',
+    primaryEffect: { stat: 'scannerLevel', delta: 1, label: 'Scan-Level +1' },
+    secondaryEffects: [{ stat: 'commRange', delta: 50, label: 'Komm-Reichweite +50' }],
     effects: { scannerLevel: 1, commRange: 50 },
     cost: { credits: 350, crystal: 15 },
+    researchCost: { credits: 200, crystal: 10 },
+    researchDurationMin: 5,
+    prerequisite: 'scanner_mk1',
   },
   scanner_mk3: {
     id: 'scanner_mk3', category: 'scanner', tier: 3,
     name: 'SCANNER MK.III', displayName: 'SCAN MK.III',
-    effects: { scannerLevel: 2, commRange: 100 },
+    primaryEffect: { stat: 'scannerLevel', delta: 2, label: 'Scan-Level +2' },
+    secondaryEffects: [
+      { stat: 'commRange', delta: 100, label: 'Komm-Reichweite +100' },
+      { stat: 'artefactChanceBonus', delta: 0.03, label: 'Artefakt-Chance +3%' },
+    ],
+    effects: { scannerLevel: 2, commRange: 100, artefactChanceBonus: 0.03 },
     cost: { credits: 900, crystal: 30, gas: 10 },
+    researchCost: { credits: 600, crystal: 20, artefact: 3 },
+    researchDurationMin: 15,
+    prerequisite: 'scanner_mk2',
   },
+
+  // === ARMOR ===
   armor_mk1: {
     id: 'armor_mk1', category: 'armor', tier: 1,
     name: 'ARMOR PLATING MK.I', displayName: 'ARM MK.I',
+    primaryEffect: { stat: 'hp', delta: 25, label: 'HP +25' },
+    secondaryEffects: [],
     effects: { hp: 25 },
     cost: { credits: 100, ore: 15 },
   },
   armor_mk2: {
     id: 'armor_mk2', category: 'armor', tier: 2,
     name: 'ARMOR PLATING MK.II', displayName: 'ARM MK.II',
+    primaryEffect: { stat: 'hp', delta: 50, label: 'HP +50' },
+    secondaryEffects: [{ stat: 'damageMod', delta: -0.10, label: 'Schadensreduktion -10%' }],
     effects: { hp: 50, damageMod: -0.10 },
     cost: { credits: 300, ore: 30, crystal: 10 },
+    researchCost: { credits: 200, ore: 20 },
+    researchDurationMin: 5,
+    prerequisite: 'armor_mk1',
   },
   armor_mk3: {
     id: 'armor_mk3', category: 'armor', tier: 3,
     name: 'ARMOR PLATING MK.III', displayName: 'ARM MK.III',
+    primaryEffect: { stat: 'hp', delta: 100, label: 'HP +100' },
+    secondaryEffects: [{ stat: 'damageMod', delta: -0.25, label: 'Schadensreduktion -25%' }],
     effects: { hp: 100, damageMod: -0.25 },
     cost: { credits: 800, ore: 50, crystal: 25 },
+    researchCost: { credits: 500, ore: 40, artefact: 2 },
+    researchDurationMin: 12,
+    prerequisite: 'armor_mk2',
   },
-  // Weapon modules
+
+  // === WEAPONS ===
   laser_mk1: {
     id: 'laser_mk1', category: 'weapon', tier: 1,
     name: 'PULS-LASER MK.I', displayName: 'LASER MK.I',
+    primaryEffect: { stat: 'weaponAttack', delta: 8, label: 'ATK +8' },
+    secondaryEffects: [],
     effects: { weaponAttack: 8, weaponType: 'laser' as any },
     cost: { credits: 150, crystal: 10 },
+    researchCost: { credits: 200, crystal: 10 },
+    researchDurationMin: 5,
   },
   laser_mk2: {
     id: 'laser_mk2', category: 'weapon', tier: 2,
     name: 'PULS-LASER MK.II', displayName: 'LASER MK.II',
+    primaryEffect: { stat: 'weaponAttack', delta: 16, label: 'ATK +16' },
+    secondaryEffects: [],
     effects: { weaponAttack: 16, weaponType: 'laser' as any },
     cost: { credits: 450, crystal: 25, gas: 10 },
+    researchCost: { credits: 600, crystal: 25, gas: 10 },
+    researchDurationMin: 10,
+    prerequisite: 'laser_mk1',
   },
   laser_mk3: {
     id: 'laser_mk3', category: 'weapon', tier: 3,
     name: 'PULS-LASER MK.III', displayName: 'LASER MK.III',
+    primaryEffect: { stat: 'weaponAttack', delta: 28, label: 'ATK +28' },
+    secondaryEffects: [],
     effects: { weaponAttack: 28, weaponType: 'laser' as any },
     cost: { credits: 1200, crystal: 50, gas: 20 },
+    researchCost: { credits: 1500, crystal: 50, gas: 20 },
+    researchDurationMin: 18,
+    prerequisite: 'laser_mk2',
   },
   railgun_mk1: {
     id: 'railgun_mk1', category: 'weapon', tier: 1,
     name: 'RAIL-KANONE MK.I', displayName: 'RAIL MK.I',
+    primaryEffect: { stat: 'weaponAttack', delta: 12, label: 'ATK +12' },
+    secondaryEffects: [{ stat: 'weaponPiercing', delta: 0.30, label: 'Panzerbrechend 30%' }],
     effects: { weaponAttack: 12, weaponPiercing: 0.30, weaponType: 'railgun' as any },
     cost: { credits: 300, ore: 30, crystal: 15 },
+    researchCost: { credits: 400, ore: 30, crystal: 15 },
+    researchDurationMin: 8,
+    prerequisite: 'laser_mk1',
   },
   railgun_mk2: {
     id: 'railgun_mk2', category: 'weapon', tier: 2,
     name: 'RAIL-KANONE MK.II', displayName: 'RAIL MK.II',
+    primaryEffect: { stat: 'weaponAttack', delta: 22, label: 'ATK +22' },
+    secondaryEffects: [{ stat: 'weaponPiercing', delta: 0.50, label: 'Panzerbrechend 50%' }],
     effects: { weaponAttack: 22, weaponPiercing: 0.50, weaponType: 'railgun' as any },
     cost: { credits: 900, ore: 60, crystal: 30 },
+    researchCost: { credits: 1000, ore: 60, crystal: 30, artefact: 1 },
+    researchDurationMin: 15,
+    prerequisite: 'railgun_mk1',
   },
   missile_mk1: {
     id: 'missile_mk1', category: 'weapon', tier: 1,
     name: 'RAKETEN-POD MK.I', displayName: 'RAKET MK.I',
+    primaryEffect: { stat: 'weaponAttack', delta: 18, label: 'ATK +18' },
+    secondaryEffects: [],
     effects: { weaponAttack: 18, weaponType: 'missile' as any },
     cost: { credits: 250, ore: 20, crystal: 5 },
+    researchCost: { credits: 300, ore: 20, crystal: 5 },
+    researchDurationMin: 7,
   },
   missile_mk2: {
     id: 'missile_mk2', category: 'weapon', tier: 2,
     name: 'RAKETEN-POD MK.II', displayName: 'RAKET MK.II',
+    primaryEffect: { stat: 'weaponAttack', delta: 30, label: 'ATK +30' },
+    secondaryEffects: [],
     effects: { weaponAttack: 30, weaponType: 'missile' as any },
     cost: { credits: 750, ore: 40, crystal: 15 },
+    researchCost: { credits: 900, ore: 40, crystal: 15 },
+    researchDurationMin: 12,
+    prerequisite: 'missile_mk1',
   },
   emp_array: {
     id: 'emp_array', category: 'weapon', tier: 2,
     name: 'EMP-EMITTER', displayName: 'EMP',
+    primaryEffect: { stat: 'weaponAttack', delta: 0, label: 'EMP (kein Schaden)' },
+    secondaryEffects: [],
     effects: { weaponAttack: 0, weaponType: 'emp' as any },
     cost: { credits: 500, crystal: 20, gas: 20 },
+    researchCost: { credits: 600, crystal: 20, gas: 20, artefact: 2 },
+    researchDurationMin: 12,
+    prerequisite: 'laser_mk2',
   },
-  // Shield modules
+
+  // === SHIELDS ===
   shield_mk1: {
     id: 'shield_mk1', category: 'shield', tier: 1,
     name: 'SCHILD-GEN MK.I', displayName: 'SHLD MK.I',
+    primaryEffect: { stat: 'shieldHp', delta: 30, label: 'Schild +30' },
+    secondaryEffects: [{ stat: 'shieldRegen', delta: 3, label: 'Schild-Regen +3' }],
     effects: { shieldHp: 30, shieldRegen: 3 },
     cost: { credits: 200, crystal: 15 },
+    researchCost: { credits: 300, crystal: 15 },
+    researchDurationMin: 7,
+    prerequisite: 'armor_mk1',
   },
   shield_mk2: {
     id: 'shield_mk2', category: 'shield', tier: 2,
     name: 'SCHILD-GEN MK.II', displayName: 'SHLD MK.II',
+    primaryEffect: { stat: 'shieldHp', delta: 60, label: 'Schild +60' },
+    secondaryEffects: [{ stat: 'shieldRegen', delta: 6, label: 'Schild-Regen +6' }],
     effects: { shieldHp: 60, shieldRegen: 6 },
     cost: { credits: 600, crystal: 35, gas: 10 },
+    researchCost: { credits: 700, crystal: 35, gas: 10, artefact: 2 },
+    researchDurationMin: 15,
+    prerequisite: 'shield_mk1',
   },
   shield_mk3: {
     id: 'shield_mk3', category: 'shield', tier: 3,
     name: 'SCHILD-GEN MK.III', displayName: 'SHLD MK.III',
+    primaryEffect: { stat: 'shieldHp', delta: 100, label: 'Schild +100' },
+    secondaryEffects: [{ stat: 'shieldRegen', delta: 12, label: 'Schild-Regen +12' }],
     effects: { shieldHp: 100, shieldRegen: 12 },
     cost: { credits: 1500, crystal: 70, gas: 25 },
+    researchCost: { credits: 1500, crystal: 70, gas: 25 },
+    researchDurationMin: 20,
+    prerequisite: 'shield_mk2',
   },
-  // Defensive modules
+
+  // === DEFENSE ===
   point_defense: {
     id: 'point_defense', category: 'defense', tier: 2,
     name: 'PUNKT-VERTEIDIGUNG', displayName: 'PD',
+    primaryEffect: { stat: 'pointDefense', delta: 0.60, label: 'Punkt-Verteidigung 60%' },
+    secondaryEffects: [],
     effects: { pointDefense: 0.60 },
     cost: { credits: 350, ore: 20, crystal: 10 },
+    researchCost: { credits: 400, ore: 20, crystal: 10 },
+    researchDurationMin: 8,
+    prerequisite: 'armor_mk2',
   },
   ecm_suite: {
     id: 'ecm_suite', category: 'defense', tier: 2,
     name: 'ECM-SUITE', displayName: 'ECM',
+    primaryEffect: { stat: 'ecmReduction', delta: 0.15, label: 'ECM -15% feindl. Genauigkeit' },
+    secondaryEffects: [],
     effects: { ecmReduction: 0.15 },
     cost: { credits: 400, crystal: 25, gas: 15 },
+    researchCost: { credits: 500, crystal: 25, gas: 15 },
+    researchDurationMin: 10,
+    prerequisite: 'scanner_mk2',
+  },
+
+  // === SPEZIAL-MODULE ===
+  void_drive: {
+    id: 'void_drive', category: 'drive', tier: 3,
+    name: 'VOID DRIVE', displayName: 'VOID',
+    primaryEffect: { stat: 'jumpRange', delta: 6, label: 'Sprungweite +6' },
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
+      { stat: 'fuelPerJump', delta: -3, label: 'Fuel/Sprung -3' },
+    ],
+    effects: { jumpRange: 6, engineSpeed: 5, fuelPerJump: -3 },
+    cost: { credits: 2000, artefact: 5 },
+    researchCost: { credits: 2000, artefact: 10 },
+    researchDurationMin: 30,
+    prerequisite: 'drive_mk3',
+    factionRequirement: { factionId: 'ancients', minTier: 'honored' },
+  },
+  quantum_scanner: {
+    id: 'quantum_scanner', category: 'scanner', tier: 3,
+    name: 'QUANTUM-SCANNER', displayName: 'Q-SCAN',
+    primaryEffect: { stat: 'scannerLevel', delta: 3, label: 'Scan-Level +3' },
+    secondaryEffects: [
+      { stat: 'commRange', delta: 200, label: 'Komm-Reichweite +200' },
+      { stat: 'artefactChanceBonus', delta: 0.05, label: 'Artefakt-Chance +5%' },
+    ],
+    effects: { scannerLevel: 3, commRange: 200, artefactChanceBonus: 0.05 },
+    cost: { credits: 1500, crystal: 50 },
+    researchCost: { credits: 1500, crystal: 50, artefact: 8 },
+    researchDurationMin: 25,
+    prerequisite: 'scanner_mk3',
+  },
+  nano_armor: {
+    id: 'nano_armor', category: 'armor', tier: 3,
+    name: 'NANO-PANZERUNG', displayName: 'NANO',
+    primaryEffect: { stat: 'hp', delta: 150, label: 'HP +150' },
+    secondaryEffects: [{ stat: 'damageMod', delta: -0.35, label: 'Schadensreduktion -35%' }],
+    effects: { hp: 150, damageMod: -0.35 },
+    cost: { credits: 1800, ore: 50, crystal: 50 },
+    researchCost: { credits: 1800, ore: 50, crystal: 50, artefact: 15 },
+    researchDurationMin: 30,
+    prerequisite: 'armor_mk3',
   },
 };
 
@@ -575,6 +755,7 @@ export const MONITORS = {
   TRADE: 'TRADE',
   FACTION: 'FACTION',
   QUESTS: 'QUESTS',
+  TECH: 'TECH',
 } as const;
 
 export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
@@ -588,6 +769,7 @@ export const RIGHT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.TRADE,
   MONITORS.FACTION,
   MONITORS.QUESTS,
+  MONITORS.TECH,
 ];
 
 export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
@@ -600,6 +782,7 @@ export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.TRADE,
   MONITORS.FACTION,
   MONITORS.QUESTS,
+  MONITORS.TECH,
 ];
 
 export const MAIN_MONITORS: MonitorId[] = [
@@ -611,6 +794,7 @@ export const MAIN_MONITORS: MonitorId[] = [
   MONITORS.TRADE,
   MONITORS.FACTION,
   MONITORS.QUESTS,
+  MONITORS.TECH,
 ];
 
 /** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */
@@ -690,8 +874,34 @@ export const EMERGENCY_WARP_CREDIT_PER_SECTOR = 5;   // credits per sector beyon
 export const EMERGENCY_WARP_FUEL_GRANT = 10;          // fuel granted after emergency warp
 
 // Hyperjump Navigation
-export const HYPERJUMP_AP_DISCOUNT = 0.5;   // 50% AP cost for known routes
+export const HYPERJUMP_AP_DISCOUNT = 0.5;   // 50% AP cost for known routes (legacy)
 export const HYPERJUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate sectors
+
+// Normal jump constants
+export const JUMP_NORMAL_AP_COST = 1;
+export const JUMP_NORMAL_FUEL_COST = 0;
+export const JUMP_NORMAL_MAX_RANGE = 1;
+
+// Hyperjump AP formula constants
+export const HYPERJUMP_BASE_AP = 5;
+export const HYPERJUMP_AP_PER_SPEED = 1;
+export const HYPERJUMP_MIN_AP = 1;
+
+// Hyperjump fuel scaling
+export const HYPERJUMP_FUEL_DIST_FACTOR = 0.1;
+export const HYPERJUMP_FUEL_MAX_FACTOR = 2.0;
+
+// Engine-Speed mapping (drive module → speed level)
+export const ENGINE_SPEED: Record<string, number> = {
+  none: 1,
+  drive_mk1: 2,
+  drive_mk2: 3,
+  drive_mk3: 4,
+  void_drive: 5,
+};
+// Research system
+export const RESEARCH_TICK_MS = 60_000; // 1 tick = 1 minute
+
 export const AUTOPILOT_STEP_MS = 100;       // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24;      // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7;       // coords-only after 7 days

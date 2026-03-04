@@ -11,9 +11,9 @@ npm run docker:up           # PostgreSQL + Redis
 npm test                    # All tests
 
 # Per-package tests
-cd packages/server && npx vitest run    # 168 tests
-cd packages/client && npx vitest run    # 115 tests
-cd packages/shared && npx vitest run    # 5 tests
+cd packages/server && npx vitest run    # 198 tests
+cd packages/client && npx vitest run    # 132 tests
+cd packages/shared && npx vitest run    # 25 tests
 ```
 
 ## Code Style
@@ -37,7 +37,7 @@ cd packages/shared && npx vitest run    # 5 tests
 - Tests: Vitest everywhere. Client uses jsdom + RTL + jest-canvas-mock (via jest-shim.ts)
 
 ## DB Migrations
-Files in `packages/server/src/db/migrations/` (001-010). Auto-run on startup.
+Files in `packages/server/src/db/migrations/` (001-015). Auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` for idempotency.
 
 ## Current State
@@ -65,8 +65,17 @@ rescue missions (distress calls + survivor delivery), faction upgrade tree (3 ti
 mining/scan/trade/combat), trade route automation, custom data slates, multi-content sectors,
 mining nav-lock bugfix (#17), UI fixes (#16).
 
-Branch `feat/nav-grid-overhaul` adds:
+Branch `feat/nav-grid-overhaul` (merged) adds:
 Nav-Grid Overhaul: Dynamic grid sizing (fills canvas based on zoom), CSS overflow fix (page no longer scrolls),
 status LEDs on monitor bezels, bookmark system (5 custom slots + HOME/SHIP), far-navigation with autopilot
 (travel to discovered sectors), staleness rendering (dim old discoveries), relog position fix (centers on last position).
-Issues addressed: #21, #22, #23, #24, #25. 288 total tests.
+Issues addressed: #21, #22, #23, #24, #25.
+
+Quality Sprint (PR #67, merged): Cheat protection (coord bounds, rate limiting, anomaly logging),
+edge case coverage for comms and scanEvents, context-sensitive help system (HelpSlice, HelpOverlay, 8 tips).
+
+Branch `feat/combat-v2` (PR #72, merged) adds:
+Combat System v2: 5-round tactical combat with weapon types (laser/railgun/missile/EMP), shield system,
+tactic choices (assault/balanced/defensive), special actions (aim/evade), 13 new ship modules (8 weapons,
+3 shields, point defense, ECM suite), station defense system (turrets/shields/ion cannon with auto-combat),
+CombatV2Dialog UI, DB migration 015, feature-flagged via FEATURE_COMBAT_V2. 355 total tests.

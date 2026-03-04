@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState } from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -137,6 +137,10 @@ export interface GameSlice {
   baseName: string;
   homeBase: { x: number; y: number };
 
+  // Research / Tech tree
+  research: ResearchState;
+  pendingBlueprint: string | null;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -190,6 +194,8 @@ export interface GameSlice {
   setModuleInventory: (modules: string[]) => void;
   setBaseName: (name: string) => void;
   setHomeBase: (coords: { x: number; y: number }) => void;
+  setResearch: (research: ResearchState) => void;
+  setPendingBlueprint: (moduleId: string | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -243,6 +249,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   moduleInventory: [],
   baseName: '',
   homeBase: { x: 0, y: 0 },
+  research: { unlockedModules: [], blueprints: [], activeResearch: null },
+  pendingBlueprint: null,
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -343,4 +351,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setModuleInventory: (moduleInventory) => set({ moduleInventory }),
   setBaseName: (baseName) => set({ baseName }),
   setHomeBase: (homeBase) => set({ homeBase }),
+  setResearch: (research) => set({ research }),
+  setPendingBlueprint: (pendingBlueprint) => set({ pendingBlueprint }),
 });

@@ -118,6 +118,24 @@ describe('calculateShipStats', () => {
     expect(stats.jumpRange).toBe(5 + 1); // scout base (5) + drive_mk1 (+1)
     expect(stats.weaponAttack).toBe(0);
   });
+
+  it('adds artefactChanceBonus from scanner_mk3', () => {
+    const stats = calculateShipStats('explorer', [{ moduleId: 'scanner_mk3', slotIndex: 0 }]);
+    expect(stats.artefactChanceBonus).toBeCloseTo(0.03);
+  });
+
+  it('adds safeSlotBonus from cargo_mk2', () => {
+    const stats = calculateShipStats('freighter', [{ moduleId: 'cargo_mk2', slotIndex: 0 }]);
+    expect(stats.safeSlotBonus).toBe(1);
+  });
+
+  it('stacks safeSlotBonus from multiple cargo modules', () => {
+    const stats = calculateShipStats('explorer', [
+      { moduleId: 'cargo_mk2', slotIndex: 0 },
+      { moduleId: 'cargo_mk3', slotIndex: 1 },
+    ]);
+    expect(stats.safeSlotBonus).toBe(3); // 1 + 2
+  });
 });
 
 describe('validateModuleInstall', () => {

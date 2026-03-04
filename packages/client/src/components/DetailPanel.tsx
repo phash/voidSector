@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
-import { SECTOR_COLORS, FUEL_COST_PER_UNIT, HYPERJUMP_AP_DISCOUNT, FREE_REFUEL_MAX_SHIPS, REP_PRICE_MODIFIERS, generateStationName } from '@void-sector/shared';
+import { SECTOR_COLORS, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, REP_PRICE_MODIFIERS, generateStationName, calcHyperjumpAP, calcHyperjumpFuel } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 
@@ -281,8 +281,8 @@ export function DetailPanel() {
             const isAdjacent = distance <= 1;
             if (!isPlayerHere && !isAdjacent && !autopilot?.active) {
               const shipStats = ship?.stats ?? null;
-              const apCost = shipStats ? Math.ceil(distance * shipStats.apCostJump * HYPERJUMP_AP_DISCOUNT) : 0;
-              const fuelCost = shipStats ? distance : 0;
+              const apCost = shipStats ? calcHyperjumpAP(shipStats.engineSpeed) : 0;
+              const fuelCost = shipStats ? calcHyperjumpFuel(shipStats.fuelPerJump, distance) : 0;
               return (
                 <button className="vs-btn" style={{ marginTop: 8, display: 'block', width: '100%' }}
                   onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}>

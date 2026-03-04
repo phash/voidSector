@@ -1,6 +1,6 @@
 import { hashCoords } from './worldgen.js';
 import { generateDistressMessage } from './distressStories.js';
-import { WORLD_SEED, SCAN_EVENT_CHANCE } from '@void-sector/shared';
+import { WORLD_SEED, SCAN_EVENT_CHANCE, MODULES } from '@void-sector/shared';
 import type { ScanEventType } from '@void-sector/shared';
 
 const SCAN_EVENT_SALT = 5555;
@@ -15,8 +15,9 @@ export interface ScanEventResult {
 const EVENT_TYPE_WEIGHTS: { type: ScanEventType; weight: number; immediate: boolean }[] = [
   { type: 'pirate_ambush', weight: 0.35, immediate: true },
   { type: 'distress_signal', weight: 0.30, immediate: false },
-  { type: 'anomaly_reading', weight: 0.25, immediate: false },
+  { type: 'anomaly_reading', weight: 0.20, immediate: false },
   { type: 'artifact_find', weight: 0.10, immediate: false },
+  { type: 'blueprint_find', weight: 0.05, immediate: false },
 ];
 
 export function checkScanEvent(sectorX: number, sectorY: number): ScanEventResult {
@@ -67,6 +68,11 @@ function generateEventData(
         rewardRep: 10,
         rewardArtefact: ((seed >>> 16) % 100) < 50 ? 1 : 0,
       };
+    case 'blueprint_find': {
+      const researchModules = Object.values(MODULES).filter(m => m.researchCost);
+      const pick = researchModules[seed % researchModules.length];
+      return { moduleId: pick.id, moduleName: pick.name };
+    }
     default:
       return {};
   }

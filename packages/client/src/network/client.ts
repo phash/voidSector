@@ -3,7 +3,12 @@ import { useStore } from '../state/store';
 import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
+function getWsUrl(): string {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  const loc = window.location;
+  const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${loc.host}`;
+}
 
 class GameNetwork {
   private client: Client | null = null;
@@ -12,7 +17,7 @@ class GameNetwork {
 
   private ensureClient(): Client {
     if (!this.client) {
-      this.client = new Client(WS_URL);
+      this.client = new Client(getWsUrl());
     }
     return this.client;
   }
@@ -283,6 +288,46 @@ class GameNetwork {
 
     room.onMessage('baseRenamed', (data: { name: string }) => {
       useStore.setState({ baseName: data.name });
+    });
+
+    // Tech-Baum: Research
+    room.onMessage('researchState', (data) => {
+      useStore.setState({
+        research: {
+          unlockedModules: data.unlockedModules ?? [],
+          blueprints: data.blueprints ?? [],
+          activeResearch: data.activeResearch ?? null,
+        },
+      });
+    });
+
+    room.onMessage('researchResult', (data) => {
+      if (data.success) {
+        const patch: any = {};
+        if (data.unlockedModules !== undefined) {
+          patch.research = {
+            ...useStore.getState().research,
+            unlockedModules: data.unlockedModules,
+            blueprints: data.blueprints ?? useStore.getState().research.blueprints,
+            activeResearch: data.activeResearch !== undefined ? data.activeResearch : useStore.getState().research.activeResearch,
+          };
+        }
+        if (data.activeResearch !== undefined && !patch.research) {
+          patch.research = { ...useStore.getState().research, activeResearch: data.activeResearch };
+        }
+        if (Object.keys(patch).length) useStore.setState(patch);
+      }
+    });
+
+    room.onMessage('blueprintFound', (data) => {
+      const current = useStore.getState().research;
+      useStore.setState({
+        research: {
+          ...current,
+          blueprints: [...current.blueprints, data.moduleId],
+        },
+        pendingBlueprint: data.moduleId,
+      });
     });
 
     room.onMessage('refuelResult', (data: { success: boolean; error?: string; fuel?: FuelState; credits?: number }) => {
@@ -1168,6 +1213,13 @@ class GameNetwork {
   sendRenameBase(name: string) { this.sectorRoom?.send('renameBase', { name }); }
 
   sendGetModuleInventory() { this.sectorRoom?.send('getModuleInventory'); }
+
+  // Tech-Baum: Research
+  sendStartResearch(moduleId: string) { this.sectorRoom?.send('startResearch', { moduleId }); }
+  sendCancelResearch() { this.sectorRoom?.send('cancelResearch', {}); }
+  sendClaimResearch() { this.sectorRoom?.send('claimResearch', {}); }
+  sendActivateBlueprint(moduleId: string) { this.sectorRoom?.send('activateBlueprint', { moduleId }); }
+  requestResearchState() { this.sectorRoom?.send('getResearchState', {}); }
 }
 
 export const network = new GameNetwork();
