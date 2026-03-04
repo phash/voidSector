@@ -419,6 +419,10 @@ class GameNetwork {
       useStore.getState().setNpcStationData(data);
     });
 
+    room.onMessage('factoryUpdate', (data: any) => {
+      useStore.getState().setFactoryState(data);
+    });
+
     // Upgrade result
     room.onMessage('upgradeResult', (data: { success: boolean; error?: string; newTier?: number }) => {
       const store = useStore.getState();
@@ -1260,6 +1264,12 @@ class GameNetwork {
   sendClaimResearch() { this.sectorRoom?.send('claimResearch', {}); }
   sendActivateBlueprint(moduleId: string) { this.sectorRoom?.send('activateBlueprint', { moduleId }); }
   requestResearchState() { this.sectorRoom?.send('getResearchState', {}); }
+
+  // Factory
+  requestFactoryStatus() { this.sectorRoom?.send('factoryStatus'); }
+  sendFactorySetRecipe(recipeId: string) { this.sectorRoom?.send('factorySetRecipe', { recipeId }); }
+  sendFactoryCollect() { this.sectorRoom?.send('factoryCollect'); }
+  sendFactoryTransfer(itemType: string, amount: number) { this.sectorRoom?.send('factoryTransfer', { itemType, amount }); }
 }
 
 export const network = new GameNetwork();

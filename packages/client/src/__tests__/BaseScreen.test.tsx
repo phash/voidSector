@@ -10,6 +10,10 @@ vi.mock('../network/client', () => ({
     requestCredits: vi.fn(),
     sendTransfer: vi.fn(),
     sendUpgradeStructure: vi.fn(),
+    requestFactoryStatus: vi.fn(),
+    sendFactorySetRecipe: vi.fn(),
+    sendFactoryCollect: vi.fn(),
+    sendFactoryTransfer: vi.fn(),
   },
 }));
 
@@ -77,5 +81,56 @@ describe('BaseScreen', () => {
     render(<BaseScreen />);
     expect(screen.getByText('KOMMANDO-KERN')).toBeTruthy();
     expect(screen.getByText('COMM RELAY')).toBeTruthy();
+  });
+
+  it('shows factory section when factory is built', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'f1', type: 'factory', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      factoryState: {
+        activeRecipe: { id: 'alloy_plate_basic', outputItem: 'alloy_plate', outputAmount: 1, cycleSeconds: 180 },
+        progress: 0.6,
+        completedCycles: 3,
+        output: { alloy_plate: 3, fuel_cell: 0 },
+      },
+      credits: 0,
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText(/FACTORY — ACTIVE/)).toBeTruthy();
+    expect(screen.getAllByText(/ALLOY PLATE/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/3 cycles ready/)).toBeTruthy();
+    expect(screen.getByText('COLLECT')).toBeTruthy();
+  });
+
+  it('shows idle factory when no recipe selected', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'f1', type: 'factory', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      factoryState: {
+        activeRecipe: null,
+        progress: 0,
+        completedCycles: 0,
+        output: {},
+      },
+      credits: 0,
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText(/FACTORY — IDLE/)).toBeTruthy();
+    expect(screen.getByText(/No recipe selected/)).toBeTruthy();
+  });
+
+  it('does not show factory section when no factory built', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 0,
+    });
+    render(<BaseScreen />);
+    expect(screen.queryByText(/FACTORY/)).toBeNull();
   });
 });

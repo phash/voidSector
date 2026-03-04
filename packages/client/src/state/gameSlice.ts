@@ -156,6 +156,15 @@ export interface GameSlice {
     }>;
   } | null;
 
+  // Factory
+  factoryState: {
+    activeRecipe: { id: string; outputItem: string; outputAmount: number; cycleSeconds: number } | null;
+    progress: number;
+    completedCycles: number;
+    output: Record<string, number>;
+    error?: string;
+  } | null;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -212,6 +221,7 @@ export interface GameSlice {
   setResearch: (research: ResearchState) => void;
   setPendingBlueprint: (moduleId: string | null) => void;
   setNpcStationData: (data: GameSlice['npcStationData']) => void;
+  setFactoryState: (data: GameSlice['factoryState']) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -268,6 +278,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   research: { unlockedModules: [], blueprints: [], activeResearch: null },
   pendingBlueprint: null,
   npcStationData: null,
+  factoryState: null,
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -373,4 +384,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setResearch: (research) => set({ research }),
   setPendingBlueprint: (pendingBlueprint) => set({ pendingBlueprint }),
   setNpcStationData: (npcStationData) => set({ npcStationData }),
+  setFactoryState: (factoryState) => set({ factoryState }),
 });
