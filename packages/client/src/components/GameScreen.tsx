@@ -11,7 +11,6 @@ import { MiningScreen } from './MiningScreen';
 import { CargoScreen } from './CargoScreen';
 import { CommsScreen } from './CommsScreen';
 import { BookmarkBar } from './BookmarkBar';
-import { BaseScreen } from './BaseScreen';
 import { TradeScreen } from './TradeScreen';
 import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
@@ -24,277 +23,58 @@ import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
 import { StationCombatOverlay } from './StationCombatOverlay';
 import { TechTreePanel } from './TechTreePanel';
+import { TechDetailPanel } from './TechDetailPanel';
+import { BaseOverview } from './BaseOverview';
+import { BaseDetailPanel } from './BaseDetailPanel';
+import { ShipStatusPanel } from './ShipStatusPanel';
+import { CombatStatusPanel } from './CombatStatusPanel';
 import { BlueprintDialog } from './BlueprintDialog';
 import { QuadMapScreen } from './QuadMapScreen';
 import { MehrOverlay } from './MehrOverlay';
 import { useStore } from '../state/store';
 import { useMobileTabs } from '../hooks/useMobileTabs';
-import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
-import type { HullType, ShipModule, ModuleCategory, ChatChannel } from '@void-sector/shared';
+import { MONITORS, MAIN_MONITORS } from '@void-sector/shared';
+import type { ChatChannel } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
-// --- Ship Schematic Helpers ---
+// --- SHIP-SYS: Settings + Modules + Hangar ---
 
-const SLOT_LABELS: Record<ModuleCategory, string> = {
-  drive: 'DRV',
-  cargo: 'CRG',
-  scanner: 'SCN',
-  armor: 'ARM',
-  special: 'SPC',
-  weapon: 'WPN',
-  shield: 'SHD',
-  defense: 'DEF',
-  mining: 'MNG',
-};
+type ShipSysView = 'settings' | 'modules' | 'hangar';
 
-const CATEGORY_DISPLAY: Record<ModuleCategory, string> = {
-  drive: 'DRIVE',
-  cargo: 'CARGO',
-  scanner: 'SCANNER',
-  armor: 'ARMOR',
-  special: 'SPECIAL',
-  weapon: 'WEAPON',
-  shield: 'SHIELD',
-  defense: 'DEFENSE',
-  mining: 'MINING',
-};
+const SHIP_SYS_MODES: ShipSysView[] = ['settings', 'modules', 'hangar'];
 
-function getSlotLabel(modules: ShipModule[], slotIndex: number): { label: string; filled: boolean } {
-  const mod = modules.find((m) => m.slotIndex === slotIndex);
-  if (!mod) return { label: '---', filled: false };
-  const def = MODULES[mod.moduleId];
-  if (!def) return { label: '???', filled: true };
-  return { label: `${SLOT_LABELS[def.category] || '???'} ${def.tier}`, filled: true };
-}
-
-function getModuleByCategory(modules: ShipModule[], category: ModuleCategory): string {
-  const mod = modules.find((m) => {
-    const def = MODULES[m.moduleId];
-    return def && def.category === category;
-  });
-  if (!mod) return 'NONE';
-  const def = MODULES[mod.moduleId];
-  return def ? def.displayName : 'UNKNOWN';
-}
-
-type SchematicLine = { text: string; slotIndex?: number };
-
-function getSchematicLines(hullType: HullType): SchematicLine[] {
-  switch (hullType) {
-    case 'scout':
-      // Light interceptor — sleek arrow profile, 3 slots
-      return [
-        { text: '      ╱△╲' },
-        { text: '     ╱   ╲' },
-        { text: '    ╱  ??  ╲', slotIndex: 0 },
-        { text: '   ╱─────────╲' },
-        { text: '   ┤   ??   ├', slotIndex: 1 },
-        { text: '   ╲─────────╱' },
-        { text: '   │   ??   │', slotIndex: 2 },
-        { text: '   └──┬┬────┘' },
-        { text: '      ╲╱' },
-      ];
-    case 'freighter':
-      // Heavy cargo hauler — wide blocky rectangle, 4 slots
-      return [
-        { text: '  ╔══════════╗' },
-        { text: '  ║   ??    ║', slotIndex: 0 },
-        { text: '  ╠══════════╣' },
-        { text: '  ║   ??    ║', slotIndex: 1 },
-        { text: '  ╠══════════╣' },
-        { text: '  ║   ??    ║', slotIndex: 2 },
-        { text: '  ╠══════════╣' },
-        { text: '  ║   ??    ║', slotIndex: 3 },
-        { text: '  ╚══╦════╦══╝' },
-        { text: '     ║    ║' },
-      ];
-    case 'cruiser':
-      // Armored warship — winged hull, 4 slots
-      return [
-        { text: '      ╱△╲' },
-        { text: '     ╱   ╲' },
-        { text: '  ╔══╪═════╪══╗' },
-        { text: '  ║  │  ?? │  ║', slotIndex: 0 },
-        { text: '  ╠══╪═════╪══╣' },
-        { text: '  ║  │  ?? │  ║', slotIndex: 1 },
-        { text: '  ╠══╪═════╪══╣' },
-        { text: '  ║  │  ?? │  ║', slotIndex: 2 },
-        { text: '  ║  │  ?? │  ║', slotIndex: 3 },
-        { text: '  ╚══╪═════╪══╝' },
-        { text: '     ╲   ╱' },
-        { text: '      ╲▼╱' },
-      ];
-    case 'explorer':
-      // Science vessel — sensor nose with extended sensor wings, 5 slots
-      return [
-        { text: '       ╱△╲' },
-        { text: '      ╱   ╲' },
-        { text: '     ╱  ??  ╲', slotIndex: 0 },
-        { text: '    ╱─────────╲' },
-        { text: ' ═══╡   ??   ╞', slotIndex: 1 },
-        { text: '    │─────────│' },
-        { text: ' ═══╡   ??   ╞', slotIndex: 2 },
-        { text: '    │─────────│' },
-        { text: ' ═══╡   ??   ╞', slotIndex: 3 },
-        { text: '    │   ??   │', slotIndex: 4 },
-        { text: '    └───┬┬───┘' },
-      ];
-    case 'battleship':
-      // Heavy fortress — armored flanks, dual thruster banks, 5 slots
-      return [
-        { text: '  ╔═══╦══════╦═══╗' },
-        { text: '  ║▓▓▓║  ??  ║▓▓▓║', slotIndex: 0 },
-        { text: '  ╠═══╬══════╬═══╣' },
-        { text: '  ║▓▓▓║  ??  ║▓▓▓║', slotIndex: 1 },
-        { text: '  ╠═══╬══════╬═══╣' },
-        { text: '  ║   ║  ??  ║   ║', slotIndex: 2 },
-        { text: '  ╠═══╬══════╬═══╣' },
-        { text: '  ║   ║  ??  ║   ║', slotIndex: 3 },
-        { text: '  ╠═══╬══════╬═══╣' },
-        { text: '  ║▓▓▓║  ??  ║▓▓▓║', slotIndex: 4 },
-        { text: '  ╚═══╩══╦═══╩═══╝' },
-        { text: '         ▼' },
-      ];
-    default:
-      return [{ text: '  [UNKNOWN]' }];
-  }
-}
-
-function renderSchematicLine(
-  line: SchematicLine,
-  modules: ShipModule[],
-): React.ReactNode {
-  if (line.slotIndex === undefined) {
-    return <span style={{ color: 'var(--color-dim)' }}>{line.text}</span>;
-  }
-  const { label, filled } = getSlotLabel(modules, line.slotIndex);
-  // Pad label to 3 chars for consistent width
-  const padded = label.length < 4 ? label.padEnd(4, ' ').slice(0, 5) : label.slice(0, 5);
-  const parts = line.text.split('??');
-  return (
-    <>
-      <span style={{ color: 'var(--color-dim)' }}>{parts[0]}</span>
-      <span style={{ color: filled ? 'var(--color-primary)' : 'var(--color-dim)', opacity: filled ? 1 : 0.4 }}>
-        {padded}
-      </span>
-      <span style={{ color: 'var(--color-dim)' }}>{parts[1] || ''}</span>
-    </>
-  );
-}
-
-type ShipSysView = 'schematic' | 'modules' | 'hangar';
-
-const SHIP_SYS_MODES: ShipSysView[] = ['schematic', 'modules', 'hangar'];
-
-function SchematicView() {
-  const ship = useStore((s) => s.ship);
+function SettingsView() {
   const colorProfile = useStore((s) => s.colorProfile);
   const setColorProfile = useStore((s) => s.setColorProfile);
 
-  const hull = ship ? HULLS[ship.hullType] : null;
-  const stats = ship?.stats;
-
-  if (!ship || !hull || !stats) {
-    return (
-      <div style={{ padding: '8px 12px', fontSize: '0.8rem', lineHeight: 1.8 }}>
-        <div style={{ letterSpacing: '0.2em', fontSize: '0.85rem', color: 'var(--color-dim)' }}>
-          NO SHIP DATA
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <label style={{ fontSize: '0.75rem', opacity: 0.6 }}>DISPLAY PROFILE</label>
-          <select
-            value={colorProfile}
-            onChange={(e) => setColorProfile(e.target.value as ColorProfileName)}
-            style={{
-              display: 'block', marginTop: 4, width: '100%',
-              background: '#050505', border: '1px solid var(--color-primary)',
-              color: 'var(--color-primary)', fontFamily: 'var(--font-mono)',
-              padding: '4px 8px', fontSize: '0.8rem',
-            }}
-          >
-            {Object.keys(COLOR_PROFILES).map((name) => (
-              <option key={name} value={name}>{name.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-    );
-  }
-
-  const schematicLines = getSchematicLines(ship.hullType);
-  const categories: ModuleCategory[] = ['drive', 'cargo', 'scanner', 'armor', 'special'];
-
   return (
     <div style={{
-      padding: '4px 8px',
+      padding: '8px 12px',
       fontFamily: 'var(--font-mono)',
       fontSize: '0.65rem',
       lineHeight: 1.5,
       overflow: 'auto',
     }}>
-      {/* Two-column layout: schematic + stats */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-        {/* Left: Ship schematic */}
-        <div style={{ flexShrink: 0, whiteSpace: 'pre' }}>
-          {schematicLines.map((line, i) => (
-            <div key={i}>{renderSchematicLine(line, ship.modules)}</div>
-          ))}
-        </div>
-
-        {/* Right: Stats panel */}
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ color: 'var(--color-primary)', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-            {hull.name} &quot;{ship.name}&quot;
-          </div>
-          <div style={{ color: 'var(--color-dim)', margin: '2px 0' }}>
-            {'\u2500'.repeat(20)}
-          </div>
-          {categories.map((cat) => (
-            <div key={cat} style={{ display: 'flex', gap: 4 }}>
-              <span style={{ color: 'var(--color-dim)', width: 64, flexShrink: 0 }}>
-                {CATEGORY_DISPLAY[cat]}:
-              </span>
-              <span style={{
-                color: getModuleByCategory(ship.modules, cat) !== 'NONE'
-                  ? 'var(--color-primary)' : 'var(--color-dim)',
-                opacity: getModuleByCategory(ship.modules, cat) !== 'NONE' ? 1 : 0.5,
-              }}>
-                {getModuleByCategory(ship.modules, cat)}
-              </span>
-            </div>
-          ))}
-          <div style={{ color: 'var(--color-dim)', margin: '2px 0' }}>
-            {'\u2500'.repeat(20)}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 8px' }}>
-            <span>FUEL: <span style={{ color: 'var(--color-primary)' }}>{stats.fuelMax}</span></span>
-            <span>CARGO: <span style={{ color: 'var(--color-primary)' }}>{stats.cargoCap}</span></span>
-            <span>JUMP: <span style={{ color: 'var(--color-primary)' }}>{stats.jumpRange}</span></span>
-            <span>ENGINE: <span style={{ color: 'var(--color-primary)' }}>SPD {stats.engineSpeed}</span></span>
-            <span>FUEL/J: <span style={{ color: 'var(--color-primary)' }}>{stats.fuelPerJump}</span></span>
-            <span>SCAN: <span style={{ color: 'var(--color-primary)' }}>{stats.scannerLevel}</span></span>
-            <span>HP: <span style={{ color: 'var(--color-primary)' }}>{stats.hp}</span></span>
-            <span>COMM: <span style={{ color: 'var(--color-primary)' }}>{stats.commRange}</span></span>
-          </div>
-        </div>
+      <div style={{
+        letterSpacing: '0.15em',
+        fontSize: '0.7rem',
+        marginBottom: 8,
+        borderBottom: '1px solid var(--color-dim)',
+        paddingBottom: 2,
+      }}>
+        SYSTEM-EINSTELLUNGEN
       </div>
 
-      {/* Systems status */}
-      <div style={{ marginTop: 6, borderTop: '1px solid var(--color-dim)', paddingTop: 4, color: 'var(--color-dim)' }}>
-        SYSTEMS: <span style={{ color: '#00FF88' }}>ONLINE</span>
-      </div>
-
-      {/* Color profile selector */}
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginBottom: 12 }}>
         <label style={{ fontSize: '0.65rem', opacity: 0.6 }}>DISPLAY PROFILE</label>
         <select
           value={colorProfile}
           onChange={(e) => setColorProfile(e.target.value as ColorProfileName)}
           style={{
-            display: 'block', marginTop: 2, width: '100%',
+            display: 'block', marginTop: 4, width: '100%',
             background: '#050505', border: '1px solid var(--color-primary)',
             color: 'var(--color-primary)', fontFamily: 'var(--font-mono)',
-            padding: '3px 6px', fontSize: '0.7rem',
+            padding: '4px 8px', fontSize: '0.7rem',
           }}
         >
           {Object.keys(COLOR_PROFILES).map((name) => (
@@ -302,20 +82,57 @@ function SchematicView() {
           ))}
         </select>
       </div>
+
+      <div style={{ borderTop: '1px solid var(--color-dim)', paddingTop: 4, color: 'var(--color-dim)' }}>
+        SYSTEMS: <span style={{ color: '#00FF88' }}>ONLINE</span>
+      </div>
     </div>
   );
 }
 
 function ShipSysScreen() {
-  const view = (useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'schematic') as ShipSysView;
+  const view = (useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'settings') as ShipSysView;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Sub-view content — tab switching is now handled by UnifiedBezel mode switcher */}
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {view === 'schematic' && <SchematicView />}
+        {view === 'settings' && <SettingsView />}
         {view === 'modules' && <ModulePanel />}
         {view === 'hangar' && <HangarPanel />}
+      </div>
+    </div>
+  );
+}
+
+// --- Tech Screen (split layout) ---
+
+function TechScreen() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+        <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+          <TechTreePanel />
+        </div>
+        <div style={{ width: 320, minHeight: 0, overflow: 'auto', borderLeft: '2px solid #2a2a2a' }}>
+          <TechDetailPanel />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Base Screen (split layout) ---
+
+function BaseSplitScreen() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+        <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+          <BaseOverview />
+        </div>
+        <div style={{ width: 320, minHeight: 0, overflow: 'auto', borderLeft: '2px solid #2a2a2a' }}>
+          <BaseDetailPanel />
+        </div>
       </div>
     </div>
   );
@@ -346,11 +163,11 @@ function renderScreen(monitorId: string) {
     case MONITORS.MINING: return <MiningScreen />;
     case MONITORS.CARGO: return <CargoScreen />;
     case MONITORS.COMMS: return <CommsScreen />;
-    case MONITORS.BASE_LINK: return <BaseScreen />;
+    case MONITORS.BASE_LINK: return <BaseSplitScreen />;
     case MONITORS.TRADE: return <TradeScreen />;
     case MONITORS.FACTION: return <FactionScreen />;
     case MONITORS.QUESTS: return <QuestsScreen />;
-    case MONITORS.TECH: return <TechTreePanel />;
+    case MONITORS.TECH: return <TechScreen />;
     case MONITORS.QUAD_MAP: return <QuadMapScreen />;
     default: return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
@@ -376,7 +193,7 @@ export function GameScreen() {
   const setChatChannel = useStore((s) => s.setChatChannel);
 
   // SHIP-SYS mode state (from monitorModes store)
-  const shipSysMode = useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'schematic';
+  const shipSysMode = useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'settings';
   const setMonitorMode = useStore((s) => s.setMonitorMode);
 
   // Bezel config callback for mode-aware monitors
@@ -435,12 +252,24 @@ export function GameScreen() {
     </div>
   );
 
-  // Controls area: sector info, status bar, nav controls
+  // Controls area: sector info, status bar, nav controls, ship/combat panels
   const controlsArea = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SectorInfo />
-      <StatusBar />
-      <NavControls />
+    <div className="main-lower-layout">
+      <div className="main-lower-top">
+        <SectorInfo />
+        <StatusBar />
+      </div>
+      <div className="main-lower-center">
+        <NavControls />
+      </div>
+      <div className="main-lower-bottom">
+        <div className="main-lower-left">
+          <ShipStatusPanel />
+        </div>
+        <div className="main-lower-right">
+          <CombatStatusPanel />
+        </div>
+      </div>
     </div>
   );
 

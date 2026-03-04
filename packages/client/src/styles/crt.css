@@ -447,9 +447,44 @@
 .main-lower {
   flex: 1;
   min-height: 0;
-  max-height: 40%;
+  max-height: 45%;
   overflow: auto;
   border-top: 2px solid #2a2a2a;
+}
+
+.main-lower-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.main-lower-top {
+  flex-shrink: 0;
+}
+
+.main-lower-center {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-dim);
+}
+
+.main-lower-bottom {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.main-lower-left {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  border-right: 1px solid var(--color-dim);
+}
+
+.main-lower-right {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
 }
 
 .main-fullscreen {
