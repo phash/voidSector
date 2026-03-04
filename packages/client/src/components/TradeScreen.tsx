@@ -28,6 +28,7 @@ export function TradeScreen() {
   const position = useStore((s) => s.position);
   const ship = useStore((s) => s.ship);
   const homeBase = useStore((s) => s.homeBase);
+  const npcStationData = useStore((s) => s.npcStationData);
   const [amount, setAmount] = useState(1);
   const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes'>('npc');
 
@@ -41,7 +42,7 @@ export function TradeScreen() {
   useEffect(() => {
     network.requestCredits();
     if (isStation) {
-      // No storage/base data needed at stations
+      network.requestNpcStationData();
     } else {
       network.requestStorage();
       if (tier >= 2) {
@@ -96,32 +97,74 @@ export function TradeScreen() {
 
       {tab === 'npc' && (
         <div>
-          <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
-            NPC PREISE (KAUF / VERKAUF)
-          </div>
-          {(['ore', 'gas', 'crystal'] as const).map((res) => {
-            const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
-            const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
-            return (
-              <div key={res} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ width: 60 }}>{res.toUpperCase()}</span>
-                <button style={btnStyle} onClick={() => network.sendNpcTrade(res, amount, 'buy')}>
-                  KAUFEN ({buyPrice} CR)
-                </button>
-                <button style={btnStyle} onClick={() => network.sendNpcTrade(res, amount, 'sell')}>
-                  VERKAUFEN ({sellPrice} CR)
-                </button>
+          {isStation && npcStationData ? (
+            <>
+              <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
+                {npcStationData.name.toUpperCase()} LV.{npcStationData.level} — XP: {npcStationData.xp}/{npcStationData.nextLevelXp}
               </div>
-            );
-          })}
-          {isStation ? (
-            <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-              CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} | ART {cargo.artefact} ({cargoTotal}/{cargoCap})
-            </div>
+              {npcStationData.inventory.map((item) => {
+                const filled = item.maxStock > 0 ? Math.round((item.stock / item.maxStock) * 10) : 0;
+                const empty = 10 - filled;
+                const stockBar = '\u2588'.repeat(filled) + '\u2591'.repeat(empty);
+                const outOfStock = item.stock < amount;
+                const buyTotal = item.buyPrice * amount;
+                const sellTotal = item.sellPrice * amount;
+                return (
+                  <div key={item.itemType} style={{ marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+                      <span style={{ width: 56 }}>{item.itemType.toUpperCase()}</span>
+                      <span style={{ letterSpacing: '0.05em' }}>{stockBar}</span>
+                      <span style={{ opacity: 0.6, minWidth: 60 }}>{item.stock}/{item.maxStock}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 2, marginLeft: 56 }}>
+                      {outOfStock ? (
+                        <span style={{ ...btnStyle, opacity: 0.3, cursor: 'default' }}>[UNAVAILABLE]</span>
+                      ) : (
+                        <button style={btnStyle} onClick={() => network.sendNpcTrade(item.itemType, amount, 'buy')}>
+                          KAUFEN ({buyTotal} CR)
+                        </button>
+                      )}
+                      <button style={btnStyle} onClick={() => network.sendNpcTrade(item.itemType, amount, 'sell')}>
+                        VERKAUFEN ({sellTotal} CR)
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+                CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} | ART {cargo.artefact} ({cargoTotal}/{cargoCap})
+              </div>
+            </>
           ) : (
-            <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-              LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal} | ART {storage.artefact}
-            </div>
+            <>
+              <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
+                NPC PREISE (KAUF / VERKAUF)
+              </div>
+              {(['ore', 'gas', 'crystal'] as const).map((res) => {
+                const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
+                const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
+                return (
+                  <div key={res} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ width: 60 }}>{res.toUpperCase()}</span>
+                    <button style={btnStyle} onClick={() => network.sendNpcTrade(res, amount, 'buy')}>
+                      KAUFEN ({buyPrice} CR)
+                    </button>
+                    <button style={btnStyle} onClick={() => network.sendNpcTrade(res, amount, 'sell')}>
+                      VERKAUFEN ({sellPrice} CR)
+                    </button>
+                  </div>
+                );
+              })}
+              {isStation ? (
+                <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+                  CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} | ART {cargo.artefact} ({cargoTotal}/{cargoCap})
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+                  LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal} | ART {storage.artefact}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

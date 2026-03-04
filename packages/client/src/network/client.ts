@@ -415,6 +415,10 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('npcStationUpdate', (data: any) => {
+      useStore.getState().setNpcStationData(data);
+    });
+
     // Upgrade result
     room.onMessage('upgradeResult', (data: { success: boolean; error?: string; newTier?: number }) => {
       const store = useStore.getState();
@@ -1005,6 +1009,10 @@ class GameNetwork {
   sendNpcTrade(resource: string, amount: number, action: 'buy' | 'sell') {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('npcTrade', { resource, amount, action });
+  }
+
+  requestNpcStationData(): void {
+    this.sectorRoom?.send('getNpcStation');
   }
 
   sendUpgradeStructure(structureId: string) {

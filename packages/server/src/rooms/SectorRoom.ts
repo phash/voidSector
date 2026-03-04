@@ -16,15 +16,15 @@ import { checkDistressCall, generateDistressCallData, calculateRescueReward, can
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../engine/combatV2.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
-import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellToStation } from '../engine/npcStationEngine.js';
-import { getStationInventoryItem, upsertInventoryItem } from '../db/npcStationQueries.js';
+import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellToStation, calculateCurrentStock, getStationLevel, calculatePrice } from '../engine/npcStationEngine.js';
+import { getStationInventoryItem, upsertInventoryItem, getStationInventory } from '../db/npcStationQueries.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
 import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState } from '@void-sector/shared';
 
 function isInt(v: unknown): v is number {
@@ -569,6 +569,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('claimResearch', (client) => this.handleClaimResearch(client));
     this.onMessage('activateBlueprint', (client, data) => this.handleActivateBlueprint(client, data));
     this.onMessage('getResearchState', (client) => this.handleGetResearchState(client));
+
+    // NPC Station data request
+    this.onMessage('getNpcStation', async (client) => {
+      if (this.state.sector.sectorType !== 'station') return;
+      await this.sendNpcStationUpdate(client, this.state.sector.x, this.state.sector.y);
+    });
 
     // Trade route processing interval
     this.clock.setInterval(() => {
@@ -1580,6 +1586,32 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('storageUpdate', updatedStorage);
   }
 
+  private async sendNpcStationUpdate(client: Client, sx: number, sy: number): Promise<void> {
+    const station = await getOrInitStation(sx, sy);
+    const inventory = await getStationInventory(sx, sy);
+    const level = getStationLevel(station.xp);
+    const items = inventory.map(item => {
+      const currentStock = calculateCurrentStock(item);
+      const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
+      const basePrice = NPC_PRICES[item.itemType as MineableResourceType] || 0;
+      return {
+        itemType: item.itemType,
+        stock: currentStock,
+        maxStock: item.maxStock,
+        buyPrice: Math.ceil(calculatePrice(basePrice, stockRatio) * NPC_BUY_SPREAD),
+        sellPrice: Math.floor(calculatePrice(basePrice, stockRatio) * NPC_SELL_SPREAD),
+      };
+    });
+    const nextLevel = NPC_STATION_LEVELS.find(l => l.xpThreshold > station.xp);
+    client.send('npcStationUpdate', {
+      level: level.level,
+      name: level.name,
+      xp: station.xp,
+      nextLevelXp: nextLevel?.xpThreshold ?? station.xp,
+      inventory: items,
+    });
+  }
+
   private async handleNpcTrade(client: Client, data: NpcTradeMessage) {
     if (!this.checkRate(client.sessionId, 'npcTrade', 250)) {
       client.send('npcTradeResult', { success: false, error: 'Too fast — please wait' });
@@ -1648,9 +1680,8 @@ export class SectorRoom extends Room<SectorRoomState> {
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
-        // Send station info update
-        const stationDataSell = await getOrInitStation(sx, sy);
-        client.send('npcStationUpdate', { station: stationDataSell });
+        // Send station info update (rich format with inventory)
+        await this.sendNpcStationUpdate(client, sx, sy);
       } else {
         // Buy: check station has stock
         const buyCheck = await canBuyFromStation(sx, sy, resource, amount);
@@ -1688,9 +1719,8 @@ export class SectorRoom extends Room<SectorRoomState> {
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
-        // Send station info update
-        const stationDataBuy = await getOrInitStation(sx, sy);
-        client.send('npcStationUpdate', { station: stationDataBuy });
+        // Send station info update (rich format with inventory)
+        await this.sendNpcStationUpdate(client, sx, sy);
       }
     } else {
       // Home base trade: use storage

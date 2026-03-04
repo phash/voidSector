@@ -9,6 +9,7 @@ vi.mock('../network/client', () => ({
     requestMyOrders: vi.fn(),
     requestCredits: vi.fn(),
     requestStorage: vi.fn(),
+    requestNpcStationData: vi.fn(),
     sendNpcTrade: vi.fn(),
     sendCancelOrder: vi.fn(),
     requestMySlates: vi.fn(),
@@ -54,18 +55,47 @@ describe('TradeScreen', () => {
     expect(screen.getByText(/100 CR/)).toBeTruthy();
   });
 
-  it('shows NPC trade at station with cargo info', () => {
+  it('shows NPC trade at station with cargo info (no station data yet)', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
       currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
       credits: 200,
       cargo: { ore: 3, gas: 1, crystal: 0, slates: 0, artefact: 0 },
+      npcStationData: null,
     });
     render(<TradeScreen />);
     expect(screen.getByText(/NPC PREISE/)).toBeTruthy();
     expect(screen.getByText(/STATION/)).toBeTruthy();
     expect(screen.getByText(/CARGO/)).toBeTruthy();
+  });
+
+  it('shows stock bars and dynamic prices when npcStationData is available', () => {
+    mockStoreState({
+      baseStructures: [],
+      position: { x: 10, y: 10 },
+      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      credits: 200,
+      cargo: { ore: 3, gas: 1, crystal: 0, slates: 0, artefact: 0 },
+      npcStationData: {
+        level: 1,
+        name: 'Outpost',
+        xp: 120,
+        nextLevelXp: 500,
+        inventory: [
+          { itemType: 'ore', stock: 82, maxStock: 100, buyPrice: 12, sellPrice: 8 },
+          { itemType: 'gas', stock: 20, maxStock: 100, buyPrice: 18, sellPrice: 15 },
+          { itemType: 'crystal', stock: 0, maxStock: 100, buyPrice: 25, sellPrice: 20 },
+        ],
+      },
+    });
+    render(<TradeScreen />);
+    expect(screen.getByText(/OUTPOST LV\.1/)).toBeTruthy();
+    expect(screen.getByText(/XP: 120\/500/)).toBeTruthy();
+    expect(screen.getByText('82/100')).toBeTruthy();
+    expect(screen.getByText('20/100')).toBeTruthy();
+    expect(screen.getByText('0/100')).toBeTruthy();
+    expect(screen.getByText('[UNAVAILABLE]')).toBeTruthy();
   });
 
   it('shows market tab at tier 2 at home base', () => {

@@ -141,6 +141,21 @@ export interface GameSlice {
   research: ResearchState;
   pendingBlueprint: string | null;
 
+  // NPC Station
+  npcStationData: {
+    level: number;
+    name: string;
+    xp: number;
+    nextLevelXp: number;
+    inventory: Array<{
+      itemType: string;
+      stock: number;
+      maxStock: number;
+      buyPrice: number;
+      sellPrice: number;
+    }>;
+  } | null;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -196,6 +211,7 @@ export interface GameSlice {
   setHomeBase: (coords: { x: number; y: number }) => void;
   setResearch: (research: ResearchState) => void;
   setPendingBlueprint: (moduleId: string | null) => void;
+  setNpcStationData: (data: GameSlice['npcStationData']) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -251,6 +267,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   homeBase: { x: 0, y: 0 },
   research: { unlockedModules: [], blueprints: [], activeResearch: null },
   pendingBlueprint: null,
+  npcStationData: null,
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -355,4 +372,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setHomeBase: (homeBase) => set({ homeBase }),
   setResearch: (research) => set({ research }),
   setPendingBlueprint: (pendingBlueprint) => set({ pendingBlueprint }),
+  setNpcStationData: (npcStationData) => set({ npcStationData }),
 });
