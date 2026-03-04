@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES, SLATE_AP_COST_SECTOR, CUSTOM_SLATE_AP_COST, CUSTOM_SLATE_CREDIT_COST, CUSTOM_SLATE_MAX_NOTES_LENGTH, HULLS } from '@void-sector/shared';
-import type { ResourceType, DataSlate } from '@void-sector/shared';
+import type { DataSlate } from '@void-sector/shared';
 
 const RESOURCE_ART: Record<string, string[]> = {
   ore: [
@@ -28,6 +28,12 @@ const RESOURCE_ART: Record<string, string[]> = {
     '│══════│',
     '│══DATA│',
     '└──────┘',
+  ],
+  artefact: [
+    '  ╔═══╗ ',
+    ' ╔╝░▓░╚╗',
+    ' ╚╗░▓░╔╝',
+    '  ╚═══╝ ',
   ],
 };
 
@@ -58,7 +64,7 @@ export function CargoScreen() {
   const credits = useStore((s) => s.credits);
   const alienCredits = useStore((s) => s.alienCredits);
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+  const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
@@ -89,6 +95,7 @@ export function CargoScreen() {
         <CargoBar label="GAS" value={cargo.gas} max={cargoCap} />
         <CargoBar label="CRYSTAL" value={cargo.crystal} max={cargoCap} />
         <CargoBar label="SLATES" value={cargo.slates} max={cargoCap} />
+        <CargoBar label="ARTEFAKT" value={cargo.artefact} max={cargoCap} />
       </div>
 
       <div style={{
@@ -203,7 +210,7 @@ export function CargoScreen() {
       )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-        {RESOURCE_TYPES.map((res: ResourceType) => (
+        {RESOURCE_TYPES.map((res) => (
           <button
             key={res}
             className="vs-btn"
@@ -213,6 +220,14 @@ export function CargoScreen() {
             [ABWERFEN {res.toUpperCase()}]
           </button>
         ))}
+        <button
+          key="artefact"
+          className="vs-btn"
+          disabled={cargo.artefact <= 0}
+          onClick={() => network.sendJettison('artefact')}
+        >
+          [ABWERFEN ARTEFAKT]
+        </button>
       </div>
     </div>
   );

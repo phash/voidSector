@@ -70,7 +70,7 @@ export function TradeScreen() {
   // At stations: cargo-based trading, NPC tab only
   // At home base: storage-based trading, all tabs based on trading post tier
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
   return (
     <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
@@ -99,7 +99,7 @@ export function TradeScreen() {
           <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
             NPC PREISE (KAUF / VERKAUF)
           </div>
-          {(['ore', 'gas', 'crystal'] as ResourceType[]).map((res) => {
+          {(['ore', 'gas', 'crystal'] as const).map((res) => {
             const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
             const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
             return (
@@ -116,11 +116,11 @@ export function TradeScreen() {
           })}
           {isStation ? (
             <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-              CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} ({cargoTotal}/{cargoCap})
+              CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} | ART {cargo.artefact} ({cargoTotal}/{cargoCap})
             </div>
           ) : (
             <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-              LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal}
+              LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal} | ART {storage.artefact}
             </div>
           )}
         </div>

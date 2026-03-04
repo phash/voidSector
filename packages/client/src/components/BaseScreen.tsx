@@ -61,7 +61,7 @@ export function BaseScreen() {
   const tradingPostStruct = baseStructures.find((s: any) => s.type === 'trading_post');
   const storageTier = storageStruct?.tier ?? 0;
   const storageCap = storageTier > 0 ? STORAGE_TIERS[storageTier]?.capacity ?? 0 : 0;
-  const storageTotal = storage.ore + storage.gas + storage.crystal;
+  const storageTotal = storage.ore + storage.gas + storage.crystal + storage.artefact;
 
   return (
     <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
@@ -132,7 +132,7 @@ export function BaseScreen() {
               <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px', marginTop: '16px' }}>
                 LAGER ({storageTotal}/{storageCap})
               </div>
-              <div>ERZ: {storage.ore} &nbsp; GAS: {storage.gas} &nbsp; KRISTALL: {storage.crystal}</div>
+              <div>ERZ: {storage.ore} &nbsp; GAS: {storage.gas} &nbsp; KRISTALL: {storage.crystal} &nbsp; ARTEFAKT: {storage.artefact}</div>
 
               <div style={{ marginTop: 8, fontSize: '0.7rem' }}>
                 <label>MENGE: </label>
@@ -143,7 +143,7 @@ export function BaseScreen() {
                 />
               </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
-                {(['ore', 'gas', 'crystal'] as const).map((res) => (
+                {(['ore', 'gas', 'crystal', 'artefact'] as const).map((res) => (
                   <div key={res} style={{ display: 'flex', gap: 2 }}>
                     <button style={btnStyle} onClick={() => network.sendTransfer(res, transferAmount, 'toStorage')}>
                       {res.toUpperCase()} → LAGER
@@ -175,7 +175,7 @@ export function BaseScreen() {
           <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px', marginTop: '16px' }}>
             CARGO ON SHIP
           </div>
-          <div>ERZ: {cargo.ore} &nbsp; GAS: {cargo.gas} &nbsp; KRISTALL: {cargo.crystal}</div>
+          <div>ERZ: {cargo.ore} &nbsp; GAS: {cargo.gas} &nbsp; KRISTALL: {cargo.crystal} &nbsp; ARTEFAKT: {cargo.artefact}</div>
         </>
       )}
     </div>
