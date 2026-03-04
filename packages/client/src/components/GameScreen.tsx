@@ -21,6 +21,8 @@ import { ModulePanel } from './ModulePanel';
 import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
 import { StationCombatOverlay } from './StationCombatOverlay';
+import { QuadMapScreen } from './QuadMapScreen';
+import { FirstContactDialog } from './FirstContactDialog';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
 import type { HullType, ShipModule, ModuleCategory } from '@void-sector/shared';
@@ -366,6 +368,7 @@ function renderScreen(monitorId: string) {
     case MONITORS.TRADE: return <TradeScreen />;
     case MONITORS.FACTION: return <FactionScreen />;
     case MONITORS.QUESTS: return <QuestsScreen />;
+    case MONITORS.QUAD_MAP: return <QuadMapScreen />;
     default: return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
 }
@@ -487,6 +490,7 @@ export function GameScreen() {
       <CombatV2Dialog />
       <StationCombatOverlay />
       <BattleResultDialog />
+      <FirstContactDialog />
       <HelpOverlay />
     </div>
   );

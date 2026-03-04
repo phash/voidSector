@@ -1,5 +1,5 @@
-import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN } from '@void-sector/shared';
-import type { SectorData, SectorType, SectorResources, ResourceType } from '@void-sector/shared';
+import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, QUAD_SECTOR_SIZE, QUAD_FACTOR_MIN, QUAD_FACTOR_MAX, QUAD_AUTONAME_PREFIXES, QUAD_AUTONAME_SUFFIXES, EMPTY_ENCOUNTER_CHANCES, EMPTY_ENCOUNTER_SCANNER_BONUS } from '@void-sector/shared';
+import type { SectorData, SectorType, SectorResources, ResourceType, QuadrantConfig, QuadrantData, EmptyEncounterResult } from '@void-sector/shared';
 
 /**
  * Simple deterministic hash for coordinates.
@@ -28,6 +28,28 @@ function sectorTypeFromSeed(seed: number): SectorType {
     if (normalized < cumulative) return type;
   }
   return 'empty'; // fallback
+}
+
+function sectorTypeFromSeedWithConfig(seed: number, cfg: QuadrantConfig): SectorType {
+  // Build adjusted weights from quadrant config factors, then renormalize
+  const adjusted: Record<string, number> = {};
+  let total = 0;
+  for (const type of SECTOR_TYPES) {
+    let w = SECTOR_WEIGHTS[type];
+    if (type === 'empty')        w *= cfg.emptyRatio;
+    else if (type === 'station') w *= cfg.stationDensity;
+    else if (type === 'pirate')  w *= cfg.pirateDensity;
+    else if (type === 'nebula')  w *= cfg.nebulaThreshold;
+    adjusted[type] = w;
+    total += w;
+  }
+  const normalized = (seed >>> 0) / 0x100000000;
+  let cumulative = 0;
+  for (const type of SECTOR_TYPES) {
+    cumulative += adjusted[type] / total;
+    if (normalized < cumulative) return type as SectorType;
+  }
+  return 'empty';
 }
 
 function generateResources(type: SectorType, seed: number): SectorResources {
@@ -87,14 +109,93 @@ function hashSecondary(seed: number): number {
   return (h >>> 0) / 0x100000000; // 0..1
 }
 
+/** Converts sector coordinates to quadrant coordinates. */
+export function coordsToQuadrant(x: number, y: number): { qx: number; qy: number } {
+  return {
+    qx: Math.floor(x / QUAD_SECTOR_SIZE),
+    qy: Math.floor(y / QUAD_SECTOR_SIZE),
+  };
+}
+
+/** Derives a per-quadrant factor in [QUAD_FACTOR_MIN, QUAD_FACTOR_MAX] from a seed integer. */
+function quadFactor(seed: number): number {
+  return QUAD_FACTOR_MIN + ((seed >>> 0) / 0xFFFFFFFF) * (QUAD_FACTOR_MAX - QUAD_FACTOR_MIN);
+}
+
+/** Generates a deterministic QuadrantConfig from quadrant coordinates. */
+export function generateQuadrantConfig(qx: number, qy: number): { seed: number; config: QuadrantConfig } {
+  const seed = hashCoords(qx ^ 0xDEAD, qy ^ 0xBEEF, WORLD_SEED);
+  const s1 = hashCoords(qx, qy, seed);
+  const s2 = hashCoords(qx + 1, qy, seed);
+  const s3 = hashCoords(qx, qy + 1, seed);
+  const s4 = hashCoords(qx + 1, qy + 1, seed);
+  const s5 = hashCoords(qx - 1, qy, seed);
+  return {
+    seed,
+    config: {
+      resourceFactor:  quadFactor(seed),
+      stationDensity:  quadFactor(s1),
+      pirateDensity:   quadFactor(s2),
+      nebulaThreshold: quadFactor(s3),
+      emptyRatio:      quadFactor(s4),
+    },
+  };
+}
+
+/** Generates a deterministic auto-name for a quadrant from its seed. */
+export function generateQuadrantAutoName(seed: number): string {
+  const pi = ((seed >>> 0) % QUAD_AUTONAME_PREFIXES.length);
+  const si = (((seed >>> 16) >>> 0) % QUAD_AUTONAME_SUFFIXES.length);
+  return `${QUAD_AUTONAME_PREFIXES[pi]} ${QUAD_AUTONAME_SUFFIXES[si]}`;
+}
+
+/**
+ * Rolls an empty-sector rare encounter. Returns null if no encounter fires.
+ * Scanner level above 1 grants a bonus to detection rates.
+ */
+export function rollEmptyEncounter(
+  x: number, y: number, scannerLevel: number,
+): EmptyEncounterResult | null {
+  const seed = hashCoords(x, y, WORLD_SEED ^ 0xEC0EC0);
+  const roll = (seed >>> 0) / 0xFFFFFFFF;
+  const bonus = 1 + Math.max(0, scannerLevel - 1) * EMPTY_ENCOUNTER_SCANNER_BONUS;
+
+  const npcChance      = EMPTY_ENCOUNTER_CHANCES.driftingNpc * bonus;
+  const alienChance    = EMPTY_ENCOUNTER_CHANCES.alienSig * bonus;
+  const artifactChance = EMPTY_ENCOUNTER_CHANCES.artifactWreck * bonus;
+
+  if (roll < npcChance) {
+    return { type: 'driftingNpc', message: 'DRIFTING VESSEL DETECTED — Transmitting trade request.' };
+  }
+  const roll2 = hashSecondary(seed ^ 0x1);
+  if (roll2 < alienChance) {
+    return { type: 'alienSig', message: 'UNKNOWN SIGNATURE — Origin unclassifiable. Approach with caution.' };
+  }
+  const roll3 = hashSecondary(seed ^ 0x2);
+  if (roll3 < artifactChance) {
+    return { type: 'artifactWreck', message: 'DERELICT STRUCTURE — Salvageable materials detected.' };
+  }
+  return null;
+}
+
 export function generateSector(
   x: number,
   y: number,
-  discoveredBy: string | null
+  discoveredBy: string | null,
+  quadrantConfig?: QuadrantConfig,
 ): SectorData {
   const seed = hashCoords(x, y, WORLD_SEED);
-  // Nebula zones override individual sector types (zones trump random distribution)
-  const type = isInNebulaZone(x, y) ? 'nebula' : sectorTypeFromSeed(seed);
+
+  // Apply quadrant density modifiers to sector type weights
+  let type: SectorType;
+  if (isInNebulaZone(x, y)) {
+    // Nebula zones always win (quadrant modifiers don't override hard zone membership)
+    type = 'nebula';
+  } else if (quadrantConfig) {
+    type = sectorTypeFromSeedWithConfig(seed, quadrantConfig);
+  } else {
+    type = sectorTypeFromSeed(seed);
+  }
 
   // Special metadata: some stations are ancient variants
   const metadata: Record<string, unknown> = {};
@@ -105,12 +206,21 @@ export function generateSector(
     }
   }
 
+  // Apply quadrant resource factor
+  const resources = generateResources(type, seed);
+  if (quadrantConfig && quadrantConfig.resourceFactor !== 1) {
+    const rf = quadrantConfig.resourceFactor;
+    resources.ore     = Math.round(resources.ore * rf);
+    resources.gas     = Math.round(resources.gas * rf);
+    resources.crystal = Math.round(resources.crystal * rf);
+  }
+
   return {
     x,
     y,
     type,
     seed,
-    resources: generateResources(type, seed),
+    resources,
     discoveredBy,
     discoveredAt: null,
     metadata,

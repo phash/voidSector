@@ -4,7 +4,7 @@ const { Room, ServerError } = colyseus;
 
 import { SectorRoomState, PlayerSchema } from './schema/SectorState.js';
 import { verifyToken, type AuthPayload } from '../auth.js';
-import { generateSector } from '../engine/worldgen.js';
+import { generateSector, coordsToQuadrant, generateQuadrantConfig, generateQuadrantAutoName, rollEmptyEncounter } from '../engine/worldgen.js';
 import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
 import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engine/npcgen.js';
@@ -19,9 +19,10 @@ import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
+import { getQuadrant, createQuadrant, setQuadrantName, getPlayerKnownQuadrants, addKnownQuadrant, isQuadrantNew } from '../db/queries.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector } from '../db/queries.js';
 import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, NameQuadrantMessage } from '@void-sector/shared';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -140,6 +141,29 @@ export class SectorRoom extends Room<SectorRoomState> {
       const auth = client.auth as AuthPayload;
       const discoveries = await getPlayerDiscoveries(auth.userId);
       client.send('discoveries', discoveries);
+    });
+
+    // --- Quadrant System ---
+
+    this.onMessage('getKnownQuadrants', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const quadrants = await getPlayerKnownQuadrants(auth.userId);
+      client.send('knownQuadrants', { quadrants });
+    });
+
+    this.onMessage('nameQuadrant', async (client, data: NameQuadrantMessage) => {
+      const auth = client.auth as AuthPayload;
+      const { qx, qy } = coordsToQuadrant(sectorX, sectorY);
+      const q = await getQuadrant(qx, qy);
+      if (!q) { client.send('error', { code: 'QUAD_NOT_FOUND', message: 'Quadrant not in database' }); return; }
+      if (q.discoveredBy !== auth.userId) { client.send('error', { code: 'QUAD_NOT_DISCOVERER', message: 'Only the discoverer may name a quadrant' }); return; }
+      if (q.name) { client.send('error', { code: 'QUAD_ALREADY_NAMED', message: 'Quadrant already has a name' }); return; }
+      const name = (data.name ?? '').replace(/[^a-zA-Z0-9 '\-]/g, '').trim().slice(0, 24);
+      if (name.length < 3) { client.send('error', { code: 'QUAD_NAME_TOO_SHORT', message: 'Name must be at least 3 characters' }); return; }
+      await setQuadrantName(qx, qy, name.toUpperCase());
+      const updated = await getQuadrant(qx, qy);
+      this.broadcast('logEntry', `QUADRANT CHRISTENED: "${name.toUpperCase()}" by ${auth.username}`);
+      client.send('quadrantNamed', { qx, qy, name: name.toUpperCase(), quadrant: updated });
     });
 
     this.onMessage('mine', async (client, data: MineMessage) => {
@@ -771,10 +795,31 @@ export class SectorRoom extends Room<SectorRoomState> {
     const newFuel = currentFuel - fuelCost;
     await saveFuelState(auth.userId, newFuel);
 
-    // Load or generate target sector
+    // Quadrant: ensure the target quadrant exists and handle first-contact
+    const { qx, qy } = coordsToQuadrant(targetX, targetY);
+    const isNewQuad = await isQuadrantNew(qx, qy);
+    let quadrantConfig = undefined;
+    if (isNewQuad) {
+      const { seed, config } = generateQuadrantConfig(qx, qy);
+      const autoName = generateQuadrantAutoName(seed);
+      const created = await createQuadrant(qx, qy, seed, config, auth.userId);
+      quadrantConfig = config;
+      // Auto-name immediately; player can override via nameQuadrant if they are the discoverer
+      await setQuadrantName(qx, qy, autoName);
+      // Notify the discoverer to optionally rename
+      client.send('firstContact', { qx, qy, seed: created.seed });
+      this.broadcast('logEntry', `QUADRANT DISCOVERED: "${autoName}" by ${auth.username}`);
+    } else {
+      const existing = await getQuadrant(qx, qy);
+      if (existing) quadrantConfig = existing.config;
+    }
+    // Track this player's quadrant knowledge
+    await addKnownQuadrant(auth.userId, qx, qy);
+
+    // Load or generate target sector (pass quadrant config so sector type reflects it)
     let targetSector = await getSector(targetX, targetY);
     if (!targetSector) {
-      targetSector = generateSector(targetX, targetY, auth.userId);
+      targetSector = generateSector(targetX, targetY, auth.userId, quadrantConfig);
       await saveSector(targetSector);
     }
 
@@ -1144,6 +1189,16 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     const sectorData = await getSector(this.state.sector.x, this.state.sector.y);
     const resources = sectorData?.resources ?? { ore: 0, gas: 0, crystal: 0 };
+
+    // Empty-sector rare encounter roll
+    let emptyEncounter = null;
+    if (sectorData?.type === 'empty') {
+      emptyEncounter = rollEmptyEncounter(this.state.sector.x, this.state.sector.y, scannerLevel);
+      if (emptyEncounter) {
+        client.send('emptyEncounter', emptyEncounter);
+        client.send('logEntry', emptyEncounter.message);
+      }
+    }
 
     client.send('localScanResult', {
       resources,

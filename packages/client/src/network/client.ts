@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, QuadrantData, EmptyEncounterResult } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
@@ -782,6 +782,33 @@ class GameNetwork {
       }
     });
 
+    // --- Quadrant System ---
+
+    room.onMessage('firstContact', (data: { qx: number; qy: number; seed: number }) => {
+      const store = useStore.getState();
+      store.setFirstContactQuadrant(data);
+      store.addLogEntry(`FIRST CONTACT: You are the first to enter quadrant (${data.qx}, ${data.qy}). Name it via the QUAD-MAP monitor.`);
+      const quadVisible = store.sidebarSlots.includes('QUAD-MAP')
+        || store.leftSidebarSlots.includes('QUAD-MAP')
+        || store.mainMonitorMode === 'QUAD-MAP';
+      if (!quadVisible) store.setAlert('QUAD-MAP', true);
+    });
+
+    room.onMessage('knownQuadrants', (data: { quadrants: QuadrantData[] }) => {
+      useStore.getState().setKnownQuadrants(data.quadrants);
+    });
+
+    room.onMessage('quadrantNamed', (data: { qx: number; qy: number; name: string; quadrant: QuadrantData }) => {
+      const store = useStore.getState();
+      store.setFirstContactQuadrant(null);
+      if (data.quadrant) store.addKnownQuadrant(data.quadrant);
+      store.addLogEntry(`Quadrant (${data.qx}, ${data.qy}) named: ${data.name}`);
+    });
+
+    room.onMessage('emptyEncounter', (data: EmptyEncounterResult) => {
+      useStore.getState().setLastEmptyEncounter(data);
+    });
+
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
@@ -1156,6 +1183,15 @@ class GameNetwork {
   sendRenameBase(name: string) { this.sectorRoom?.send('renameBase', { name }); }
 
   sendGetModuleInventory() { this.sectorRoom?.send('getModuleInventory'); }
+
+  // --- Quadrant System ---
+
+  requestKnownQuadrants() { this.sectorRoom?.send('getKnownQuadrants'); }
+
+  sendNameQuadrant(name: string) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('nameQuadrant', { name });
+  }
 }
 
 export const network = new GameNetwork();

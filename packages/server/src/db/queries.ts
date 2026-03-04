@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord } from '@void-sector/shared';
+import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord, QuadrantConfig, QuadrantData } from '@void-sector/shared';
 import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -1499,4 +1499,84 @@ export async function getPlayerStructuresInSector(
     [userId, sectorX, sectorY],
   );
   return result.rows;
+}
+
+// --- Quadrant System ---
+
+export async function getQuadrant(qx: number, qy: number): Promise<QuadrantData | null> {
+  const result = await query<{
+    qx: string; qy: string; seed: number; name: string | null;
+    discovered_by: string | null; discovered_at: string | null; config: QuadrantConfig;
+  }>(
+    'SELECT qx, qy, seed, name, discovered_by, discovered_at, config FROM quadrants WHERE qx = $1 AND qy = $2',
+    [qx, qy],
+  );
+  if (!result.rows[0]) return null;
+  const r = result.rows[0];
+  return {
+    qx: Number(r.qx), qy: Number(r.qy), seed: r.seed, name: r.name,
+    discoveredBy: r.discovered_by, discoveredAt: r.discovered_at, config: r.config,
+  };
+}
+
+export async function createQuadrant(
+  qx: number, qy: number, seed: number, config: QuadrantConfig, discoveredBy: string | null,
+): Promise<QuadrantData> {
+  const result = await query<{
+    qx: string; qy: string; seed: number; name: string | null;
+    discovered_by: string | null; discovered_at: string | null; config: QuadrantConfig;
+  }>(
+    `INSERT INTO quadrants (qx, qy, seed, config, discovered_by)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (qx, qy) DO UPDATE SET qx = EXCLUDED.qx
+     RETURNING qx, qy, seed, name, discovered_by, discovered_at, config`,
+    [qx, qy, seed, JSON.stringify(config), discoveredBy],
+  );
+  const r = result.rows[0];
+  return {
+    qx: Number(r.qx), qy: Number(r.qy), seed: r.seed, name: r.name,
+    discoveredBy: r.discovered_by, discoveredAt: r.discovered_at, config: r.config,
+  };
+}
+
+export async function setQuadrantName(qx: number, qy: number, name: string): Promise<void> {
+  await query(
+    'UPDATE quadrants SET name = $3 WHERE qx = $1 AND qy = $2',
+    [qx, qy, name],
+  );
+}
+
+export async function getPlayerKnownQuadrants(playerId: string): Promise<QuadrantData[]> {
+  const result = await query<{
+    qx: string; qy: string; seed: number; name: string | null;
+    discovered_by: string | null; discovered_at: string | null; config: QuadrantConfig;
+  }>(
+    `SELECT q.qx, q.qy, q.seed, q.name, q.discovered_by, q.discovered_at, q.config
+     FROM player_known_quadrants pkq
+     JOIN quadrants q ON q.qx = pkq.qx AND q.qy = pkq.qy
+     WHERE pkq.player_id = $1
+     ORDER BY pkq.learned_at DESC`,
+    [playerId],
+  );
+  return result.rows.map(r => ({
+    qx: Number(r.qx), qy: Number(r.qy), seed: r.seed, name: r.name,
+    discoveredBy: r.discovered_by, discoveredAt: r.discovered_at, config: r.config,
+  }));
+}
+
+export async function addKnownQuadrant(playerId: string, qx: number, qy: number): Promise<void> {
+  await query(
+    `INSERT INTO player_known_quadrants (player_id, qx, qy)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (player_id, qx, qy) DO NOTHING`,
+    [playerId, qx, qy],
+  );
+}
+
+export async function isQuadrantNew(qx: number, qy: number): Promise<boolean> {
+  const result = await query<{ exists: boolean }>(
+    'SELECT EXISTS(SELECT 1 FROM quadrants WHERE qx = $1 AND qy = $2) AS exists',
+    [qx, qy],
+  );
+  return !result.rows[0].exists;
 }

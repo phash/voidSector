@@ -521,6 +521,7 @@ export const MONITORS = {
   TRADE: 'TRADE',
   FACTION: 'FACTION',
   QUESTS: 'QUESTS',
+  QUAD_MAP: 'QUAD-MAP',
 } as const;
 
 export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
@@ -534,6 +535,7 @@ export const RIGHT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.TRADE,
   MONITORS.FACTION,
   MONITORS.QUESTS,
+  MONITORS.QUAD_MAP,
 ];
 
 export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
@@ -546,6 +548,7 @@ export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.TRADE,
   MONITORS.FACTION,
   MONITORS.QUESTS,
+  MONITORS.QUAD_MAP,
 ];
 
 export const MAIN_MONITORS: MonitorId[] = [
@@ -641,3 +644,36 @@ export const HYPERJUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate s
 export const AUTOPILOT_STEP_MS = 100;       // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24;      // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7;       // coords-only after 7 days
+
+// --- Quadrant System ---
+
+// Number of sectors per quadrant edge (1000x1000 sectors per quadrant)
+export const QUAD_SECTOR_SIZE = 1000;
+
+// Variance factor range for per-quadrant config (±50% of base values)
+export const QUAD_FACTOR_MIN = 0.5;
+export const QUAD_FACTOR_MAX = 1.5;
+
+// Timeout (ms) for the first-contact naming dialog before auto-name is applied
+export const FIRST_CONTACT_TIMEOUT_MS = 60_000;
+
+// Auto-name word lists (combined deterministically per quadrant seed)
+export const QUAD_AUTONAME_PREFIXES = [
+  'IRON', 'VOID', 'COLD', 'DARK', 'LOST', 'DEEP', 'DUST', 'GREY',
+  'PALE', 'DEAD', 'BLEAK', 'GRIM', 'FADED', 'STARK', 'VAST',
+] as const;
+
+export const QUAD_AUTONAME_SUFFIXES = [
+  'REACH', 'DRIFT', 'ABYSS', 'FRONT', 'FIELDS', 'EXPANSE', 'HAVEN',
+  'MARCH', 'RIDGE', 'FALLS', 'BASIN', 'HOLLOW', 'EDGE', 'GATE', 'VALE',
+] as const;
+
+// Empty-sector rare encounter probabilities (per local scan)
+export const EMPTY_ENCOUNTER_CHANCES = {
+  driftingNpc:   0.008,  // 0.8%
+  alienSig:      0.003,  // 0.3%
+  artifactWreck: 0.005,  // 0.5%
+} as const;
+
+// Scanner level bonus for empty encounters (per level above 1: +25%)
+export const EMPTY_ENCOUNTER_SCANNER_BONUS = 0.25;

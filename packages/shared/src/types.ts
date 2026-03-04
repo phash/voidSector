@@ -810,3 +810,47 @@ export interface ShipRecord {
   active: boolean;
   createdAt: string;
 }
+
+// --- Quadrant System ---
+
+export interface QuadrantConfig {
+  resourceFactor: number;   // 0.5–1.5: multiplier for resource yields
+  stationDensity: number;   // 0.5–1.5: station spawn probability multiplier
+  pirateDensity: number;    // 0.5–1.5: pirate spawn probability multiplier
+  nebulaThreshold: number;  // 0.5–1.5: nebula zone chance multiplier
+  emptyRatio: number;       // 0.5–1.5: empty sector weight multiplier
+}
+
+export interface QuadrantData {
+  qx: number;
+  qy: number;
+  seed: number;
+  name: string | null;
+  discoveredBy: string | null;
+  discoveredAt: string | null;
+  config: QuadrantConfig;
+}
+
+export type EmptyEncounterType = 'driftingNpc' | 'alienSig' | 'artifactWreck';
+
+export interface EmptyEncounterResult {
+  type: EmptyEncounterType;
+  message: string;
+  reward?: { credits?: number; alienCredits?: number; resource?: string; amount?: number };
+}
+
+// Messages: Client -> Server
+export interface NameQuadrantMessage {
+  name: string;
+}
+
+// Messages: Server -> Client
+export interface FirstContactEventMessage {
+  qx: number;
+  qy: number;
+  seed: number;
+}
+
+export interface KnownQuadrantsMessage {
+  quadrants: QuadrantData[];
+}
