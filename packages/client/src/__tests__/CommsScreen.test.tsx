@@ -31,11 +31,10 @@ describe('CommsScreen', () => {
     });
   });
 
-  it('renders channel tabs', () => {
+  it('displays channel indicator from store', () => {
     render(<CommsScreen />);
-    expect(screen.getByText('[DIRECT]')).toBeInTheDocument();
-    expect(screen.getByText('[FACTION]')).toBeInTheDocument();
-    expect(screen.getByText('[LOCAL]')).toBeInTheDocument();
+    expect(screen.getByText('LOCAL')).toBeInTheDocument();
+    expect(screen.getByText(/CHANNEL:/)).toBeInTheDocument();
   });
 
   it('displays messages for active channel', () => {
@@ -101,5 +100,27 @@ describe('CommsScreen', () => {
     render(<CommsScreen />);
     const matches = screen.getAllByText(/Duplicate test/);
     expect(matches).toHaveLength(1);
+  });
+
+  it('filters messages by active channel from store', () => {
+    mockStoreState({
+      chatMessages: [
+        {
+          id: '1', senderId: 's1', senderName: 'PhashX',
+          channel: 'local' as const, content: 'Local message',
+          sentAt: Date.now(), delayed: false,
+        },
+        {
+          id: '2', senderId: 's2', senderName: 'AnotherUser',
+          channel: 'direct' as const, content: 'Direct message',
+          sentAt: Date.now(), delayed: false,
+        },
+      ],
+      chatChannel: 'direct' as const,
+      alerts: {},
+    });
+    render(<CommsScreen />);
+    expect(screen.getByText(/Direct message/)).toBeInTheDocument();
+    expect(screen.queryByText(/Local message/)).not.toBeInTheDocument();
   });
 });

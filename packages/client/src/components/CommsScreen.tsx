@@ -1,16 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import type { ChatChannel } from '@void-sector/shared';
 
-const CHANNELS: ChatChannel[] = ['direct', 'faction', 'local'];
 const MAX_VISIBLE_MESSAGES = 15;
 const MESSAGE_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 export function CommsScreen() {
   const messages = useStore(s => s.chatMessages);
   const channel = useStore(s => s.chatChannel);
-  const setChatChannel = useStore(s => s.setChatChannel);
   const clearAlert = useStore(s => s.clearAlert);
   const [input, setInput] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
@@ -52,14 +49,9 @@ export function CommsScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 8, gap: 8 }}>
-      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        {CHANNELS.map(ch => (
-          <button key={ch} className="vs-btn"
-            style={ch === channel ? { background: 'var(--color-primary)', color: '#000' } : {}}
-            onClick={() => setChatChannel(ch)}>
-            [{ch.toUpperCase()}]
-          </button>
-        ))}
+      {/* Channel indicator — switching is handled by the bezel mode switcher */}
+      <div style={{ fontSize: '0.65rem', color: 'var(--color-dim)', flexShrink: 0 }}>
+        CHANNEL: <span style={{ color: 'var(--color-primary)' }}>{channel.toUpperCase()}</span>
       </div>
 
       <div ref={logRef} style={{

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { MonitorBezel } from './MonitorBezel';
+import { useEffect, useCallback } from 'react';
+import { UnifiedBezel } from './UnifiedBezel';
 import { DesktopLayout } from './DesktopLayout';
+import type { MonitorBezelConfig } from './DesktopLayout';
 import { DetailPanel } from './DetailPanel';
 import { RadarCanvas } from './RadarCanvas';
 import { StatusBar, SectorInfo } from './HUD';
@@ -9,6 +10,7 @@ import { EventLog } from './EventLog';
 import { MiningScreen } from './MiningScreen';
 import { CargoScreen } from './CargoScreen';
 import { CommsScreen } from './CommsScreen';
+import { BookmarkBar } from './BookmarkBar';
 import { BaseScreen } from './BaseScreen';
 import { TradeScreen } from './TradeScreen';
 import { FactionScreen } from './FactionScreen';
@@ -26,7 +28,7 @@ import { BlueprintDialog } from './BlueprintDialog';
 import { QuadMapScreen } from './QuadMapScreen';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
-import type { HullType, ShipModule, ModuleCategory } from '@void-sector/shared';
+import type { HullType, ShipModule, ModuleCategory, ChatChannel } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 // --- Ship Schematic Helpers ---
@@ -178,16 +180,7 @@ function renderSchematicLine(
 
 type ShipSysView = 'schematic' | 'modules' | 'hangar';
 
-const shipSysTabStyle = (active: boolean): React.CSSProperties => ({
-  background: active ? 'var(--color-primary)' : 'transparent',
-  color: active ? '#000' : 'var(--color-primary)',
-  border: '1px solid var(--color-primary)',
-  fontFamily: 'var(--font-mono)',
-  fontSize: '0.6rem',
-  padding: '2px 6px',
-  cursor: 'pointer',
-  letterSpacing: '0.1em',
-});
+const SHIP_SYS_MODES: ShipSysView[] = ['schematic', 'modules', 'hangar'];
 
 function SchematicView() {
   const ship = useStore((s) => s.ship);
@@ -310,30 +303,11 @@ function SchematicView() {
 }
 
 function ShipSysScreen() {
-  const [view, setView] = useState<ShipSysView>('schematic');
+  const view = (useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'schematic') as ShipSysView;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Tab bar */}
-      <div style={{
-        display: 'flex',
-        gap: 2,
-        padding: '4px 6px',
-        borderBottom: '1px solid var(--color-dim)',
-        flexShrink: 0,
-      }}>
-        <button style={shipSysTabStyle(view === 'schematic')} onClick={() => setView('schematic')}>
-          SCHEMATIC
-        </button>
-        <button style={shipSysTabStyle(view === 'modules')} onClick={() => setView('modules')}>
-          MODULE
-        </button>
-        <button style={shipSysTabStyle(view === 'hangar')} onClick={() => setView('hangar')}>
-          HANGAR
-        </button>
-      </div>
-
-      {/* Sub-view content */}
+      {/* Sub-view content — tab switching is now handled by UnifiedBezel mode switcher */}
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         {view === 'schematic' && <SchematicView />}
         {view === 'modules' && <ModulePanel />}
@@ -347,8 +321,11 @@ function ShipSysScreen() {
 function NavComScreen() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-        <RadarCanvas />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          <RadarCanvas />
+        </div>
+        <BookmarkBar />
       </div>
       <SectorInfo />
       <StatusBar />
@@ -386,6 +363,8 @@ const MOBILE_TABS: Array<{ id: string; icon: string; label: string }> = [
   { id: MONITORS.QUAD_MAP, icon: '\u25A6', label: 'QUAD' },
 ];
 
+const COMMS_MODES: ChatChannel[] = ['direct', 'faction', 'local'];
+
 export function GameScreen() {
   const colorProfile = useStore((s) => s.colorProfile);
   const mainMode = useStore((s) => s.mainMonitorMode);
@@ -395,6 +374,34 @@ export function GameScreen() {
   const clearAlert = useStore((s) => s.clearAlert);
   const alerts = useStore((s) => s.alerts);
 
+  // COMMS mode state (chat channel)
+  const chatChannel = useStore((s) => s.chatChannel);
+  const setChatChannel = useStore((s) => s.setChatChannel);
+
+  // SHIP-SYS mode state (from monitorModes store)
+  const shipSysMode = useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'schematic';
+  const setMonitorMode = useStore((s) => s.setMonitorMode);
+
+  // Bezel config callback for mode-aware monitors
+  const getBezelConfig = useCallback((monitorId: string): MonitorBezelConfig | undefined => {
+    switch (monitorId) {
+      case MONITORS.COMMS:
+        return {
+          modes: COMMS_MODES,
+          currentMode: chatChannel,
+          onModeChange: (mode: string) => setChatChannel(mode as ChatChannel),
+        };
+      case MONITORS.SHIP_SYS:
+        return {
+          modes: SHIP_SYS_MODES,
+          currentMode: shipSysMode,
+          onModeChange: (mode: string) => setMonitorMode(MONITORS.SHIP_SYS, mode),
+        };
+      default:
+        return undefined;
+    }
+  }, [chatChannel, setChatChannel, shipSysMode, setMonitorMode]);
+
   useEffect(() => {
     const profile = COLOR_PROFILES[colorProfile];
     document.documentElement.style.setProperty('--color-primary', profile.primary);
@@ -403,16 +410,22 @@ export function GameScreen() {
 
   // Grid area: radar canvas inside bezel
   const gridArea = (
-    <MonitorBezel
+    <UnifiedBezel
+      variant="main"
       monitorId="NAV-COM"
+      showNavControls
+      showZoomSlider
     >
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
-        <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-          <RadarCanvas />
+        <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+          <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+            <RadarCanvas />
+          </div>
+          <BookmarkBar />
         </div>
         <DetailViewOverlay />
       </div>
-    </MonitorBezel>
+    </UnifiedBezel>
   );
 
   // Detail area: sector inspection panel
@@ -467,6 +480,7 @@ export function GameScreen() {
         controlsArea={controlsArea}
         mainChannelBar={mainChannelBar}
         renderScreen={renderScreen}
+        getBezelConfig={getBezelConfig}
       />
 
       {/* Mobile content (< 1024px): full-screen active monitor */}
