@@ -126,7 +126,12 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Handle jump message
     this.onMessage('jump', async (client, data: JumpMessage) => {
-      await this.handleJump(client, data);
+      try {
+        await this.handleJump(client, data);
+      } catch (err) {
+        console.error('[JUMP] Unhandled error:', err);
+        client.send('jumpResult', { success: false, error: 'Server error' });
+      }
     });
 
     // Handle local scan message

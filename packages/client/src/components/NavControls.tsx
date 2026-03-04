@@ -50,7 +50,7 @@ export function NavControls() {
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(0, -1)}
-          disabled={jumpPending || isMining}
+          disabled={jumpPending || isMining || !canJump}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
         >
           ↑
@@ -59,7 +59,7 @@ export function NavControls() {
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(-1, 0)}
-          disabled={jumpPending || isMining}
+          disabled={jumpPending || isMining || !canJump}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
         >
           ←
@@ -68,7 +68,7 @@ export function NavControls() {
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(0, 1)}
-          disabled={jumpPending || isMining}
+          disabled={jumpPending || isMining || !canJump}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
         >
           ↓
@@ -77,7 +77,7 @@ export function NavControls() {
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(1, 0)}
-          disabled={jumpPending || isMining}
+          disabled={jumpPending || isMining || !canJump}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
         >
           →

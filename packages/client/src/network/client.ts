@@ -816,7 +816,7 @@ class GameNetwork {
       store.resetPan();
     });
 
-    room.onMessage('autopilotComplete', (data: { x: number; y: number }) => {
+    room.onMessage('autopilotComplete', async (data: { x: number; y: number }) => {
       const store = useStore.getState();
       store.setAutopilot(null);
       store.setAutopilotStatus(null);
@@ -824,8 +824,21 @@ class GameNetwork {
       if (data.x >= 0 && data.y >= 0) {
         store.setPosition({ x: data.x, y: data.y });
         store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);
+        // Join the destination sector room so subsequent moves work
+        try {
+          await this.joinSector(data.x, data.y);
+        } catch (err) {
+          store.addLogEntry(`Sector-Join nach Autopilot fehlgeschlagen: ${(err as Error).message}`);
+        }
       } else {
+        // Cancelled: rejoin current sector from store.position
+        const pos = store.position;
         store.addLogEntry('Autopilot abgebrochen.');
+        try {
+          await this.joinSector(pos.x, pos.y);
+        } catch {
+          // Best effort — already at current position room
+        }
       }
       store.resetPan();
     });
@@ -846,12 +859,18 @@ class GameNetwork {
       store.addLogEntry(`Autopilot pausiert: ${data.reason}`);
     });
 
-    room.onMessage('autopilotCancelled', () => {
+    room.onMessage('autopilotCancelled', async () => {
       const store = useStore.getState();
       store.setAutopilot(null);
       store.setAutopilotStatus(null);
       store.setNavTarget(null);
       store.addLogEntry('Autopilot abgebrochen.');
+      // Rejoin current position sector to fix room desync
+      try {
+        await this.joinSector(store.position.x, store.position.y);
+      } catch {
+        // Best effort
+      }
     });
 
     room.onMessage('autopilotStatus', (data: {
