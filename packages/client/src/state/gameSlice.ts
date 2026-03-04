@@ -193,9 +193,11 @@ export interface GameSlice {
   navTarget: { x: number; y: number } | null;
   autopilotStatus: AutopilotStatusInfo | null;
 
-  // UI selection state (#103, #104)
+  // UI selection state (#103, #104, #107)
   selectedTechModule: string | null;
   selectedBaseStructure: string | null;
+  selectedCargoItem: string | null;
+  selectedQuest: string | null;
 
   // Quadrant system
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
@@ -271,6 +273,8 @@ export interface GameSlice {
   setAutopilotStatus: (status: AutopilotStatusInfo | null) => void;
   setSelectedTechModule: (id: string | null) => void;
   setSelectedBaseStructure: (id: string | null) => void;
+  setSelectedCargoItem: (item: string | null) => void;
+  setSelectedQuest: (questId: string | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -335,6 +339,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   autopilotStatus: null,
   selectedTechModule: null,
   selectedBaseStructure: null,
+  selectedCargoItem: null,
+  selectedQuest: null,
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
@@ -463,4 +469,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setAutopilotStatus: (autopilotStatus) => set({ autopilotStatus }),
   setSelectedTechModule: (selectedTechModule) => set({ selectedTechModule }),
   setSelectedBaseStructure: (selectedBaseStructure) => set({ selectedBaseStructure }),
+  setSelectedCargoItem: (selectedCargoItem) => set({ selectedCargoItem }),
+  setSelectedQuest: (selectedQuest) => set({ selectedQuest }),
 });
