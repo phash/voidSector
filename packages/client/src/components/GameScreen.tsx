@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { UnifiedBezel } from './UnifiedBezel';
 import { DesktopLayout } from './DesktopLayout';
 import type { MonitorBezelConfig } from './DesktopLayout';
+import { CockpitLayout } from './CockpitLayout';
 import { DetailPanel } from './DetailPanel';
 import { RadarCanvas } from './RadarCanvas';
 import { StatusBar, SectorInfo } from './HUD';
@@ -169,7 +170,26 @@ function renderScreen(monitorId: string) {
     case MONITORS.QUESTS: return <QuestsScreen />;
     case MONITORS.TECH: return <TechScreen />;
     case MONITORS.QUAD_MAP: return <QuadMapScreen />;
+    case 'MODULES': return <ModulePanel />;
+    case 'HANGAR': return <HangarPanel />;
     default: return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
+  }
+}
+
+/** Simplified renderScreen for cockpit layout — no embedded controls/details */
+function renderCockpitScreen(monitorId: string) {
+  switch (monitorId) {
+    case MONITORS.NAV_COM: return (
+      <div style={{ display: 'flex', height: '100%' }}>
+        <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          <RadarCanvas />
+        </div>
+        <BookmarkBar />
+      </div>
+    );
+    case MONITORS.TECH: return <TechTreePanel />;
+    case MONITORS.BASE_LINK: return <BaseOverview />;
+    default: return renderScreen(monitorId);
   }
 }
 
@@ -300,14 +320,7 @@ export function GameScreen() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Desktop layout (>= 1024px) */}
-      <DesktopLayout
-        gridArea={gridArea}
-        detailArea={detailArea}
-        controlsArea={controlsArea}
-        mainChannelBar={mainChannelBar}
-        renderScreen={renderScreen}
-        getBezelConfig={getBezelConfig}
-      />
+      <CockpitLayout renderScreen={renderCockpitScreen} />
 
       {/* Mobile content (< 1024px): full-screen active monitor */}
       <div className="mobile-content">
