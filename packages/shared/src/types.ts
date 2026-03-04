@@ -134,6 +134,11 @@ export interface CargoState {
   crystal: number;
   slates: number;
   artefact: number;
+  fuel_cell?: number;
+  circuit_board?: number;
+  alloy_plate?: number;
+  void_shard?: number;
+  bio_extract?: number;
 }
 
 export interface MineMessage {
@@ -160,7 +165,7 @@ export interface LocalScanResultMessage {
 }
 
 // Structures
-export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post' | 'defense_turret' | 'station_shield' | 'ion_cannon';
+export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post' | 'defense_turret' | 'station_shield' | 'ion_cannon' | 'factory' | 'research_lab' | 'kontor';
 
 export interface Structure {
   id: string;
@@ -921,4 +926,29 @@ export interface NpcStationInventoryItem {
   consumptionRate: number;
   restockRate: number;
   lastUpdated: string;
+}
+
+// --- Factory & Production ---
+
+export type ProcessedItemType = 'fuel_cell' | 'circuit_board' | 'alloy_plate' | 'void_shard' | 'bio_extract';
+
+export interface ProductionRecipe {
+  id: string;
+  outputItem: ProcessedItemType;
+  outputAmount: number;
+  inputs: Array<{ resource: MineableResourceType; amount: number }>;
+  cycleSeconds: number;
+  researchRequired: string | null;
+}
+
+export interface FactoryState {
+  structureId: string;
+  ownerId: string;
+  activeRecipeId: string | null;
+  cycleStartedAt: number | null;
+  fuelCell: number;
+  circuitBoard: number;
+  alloyPlate: number;
+  voidShard: number;
+  bioExtract: number;
 }

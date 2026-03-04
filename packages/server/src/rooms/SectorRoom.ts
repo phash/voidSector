@@ -45,7 +45,7 @@ function rejectGuest(client: Client, action: string): boolean {
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
 const VALID_TRANSFER_RESOURCES = ['ore', 'gas', 'crystal', 'artefact'];
-const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon'];
+const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon', 'factory', 'research_lab', 'kontor'];
 
 function sanitizeChat(text: string): string {
   return text

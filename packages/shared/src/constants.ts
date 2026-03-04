@@ -1,4 +1,4 @@
-import type { SectorType, ShipClass, ResourceType, MineableResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, SectorEnvironment, SectorContent } from './types.js';
+import type { SectorType, ShipClass, ResourceType, MineableResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, SectorEnvironment, SectorContent, ProductionRecipe } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
   'empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate'
@@ -62,6 +62,9 @@ export const STRUCTURE_COSTS: Record<StructureType, Record<MineableResourceType,
   defense_turret: { ore: 40, gas: 10, crystal: 20 },
   station_shield: { ore: 30, gas: 25, crystal: 30 },
   ion_cannon: { ore: 60, gas: 30, crystal: 40 },
+  factory: { ore: 40, gas: 20, crystal: 15 },
+  research_lab: { ore: 30, gas: 25, crystal: 30 },
+  kontor: { ore: 20, gas: 10, crystal: 10 },
 };
 
 export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
@@ -73,6 +76,9 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
   defense_turret: 20,
   station_shield: 20,
   ion_cannon: 25,
+  factory: 20,
+  research_lab: 25,
+  kontor: 15,
 };
 
 export const RELAY_RANGES: Record<StructureType, number> = {
@@ -84,6 +90,9 @@ export const RELAY_RANGES: Record<StructureType, number> = {
   defense_turret: 0,
   station_shield: 0,
   ion_cannon: 0,
+  factory: 0,
+  research_lab: 0,
+  kontor: 0,
 };
 
 // NPC Trade Prices (base prices per unit in credits)
@@ -104,6 +113,27 @@ export const NPC_STATION_LEVELS = [
   { level: 4, name: 'Port',        maxStock: 3000,  xpThreshold: 6000 },
   { level: 5, name: 'Megastation', maxStock: 8000,  xpThreshold: 15000 },
 ] as const;
+
+// --- Production Recipes (Factory) ---
+export const PRODUCTION_RECIPES: ProductionRecipe[] = [
+  // Basic (no research needed)
+  { id: 'fuel_cell_basic', outputItem: 'fuel_cell', outputAmount: 1,
+    inputs: [{ resource: 'ore', amount: 2 }, { resource: 'gas', amount: 3 }],
+    cycleSeconds: 120, researchRequired: null },
+  { id: 'alloy_plate_basic', outputItem: 'alloy_plate', outputAmount: 1,
+    inputs: [{ resource: 'ore', amount: 3 }, { resource: 'crystal', amount: 1 }],
+    cycleSeconds: 180, researchRequired: null },
+  // Researchable
+  { id: 'circuit_board_t1', outputItem: 'circuit_board', outputAmount: 1,
+    inputs: [{ resource: 'crystal', amount: 2 }, { resource: 'gas', amount: 2 }],
+    cycleSeconds: 240, researchRequired: 'circuit_board_t1' },
+  { id: 'void_shard_t1', outputItem: 'void_shard', outputAmount: 1,
+    inputs: [{ resource: 'crystal', amount: 3 }, { resource: 'ore', amount: 2 }],
+    cycleSeconds: 300, researchRequired: 'void_shard_t1' },
+  { id: 'bio_extract_t1', outputItem: 'bio_extract', outputAmount: 1,
+    inputs: [{ resource: 'gas', amount: 4 }, { resource: 'crystal', amount: 1 }],
+    cycleSeconds: 360, researchRequired: 'bio_extract_t1' },
+];
 
 export const NPC_XP_DECAY_PER_HOUR = 1;
 export const NPC_XP_VISIT = 5;
