@@ -11,6 +11,7 @@ export function NavControls() {
   const mining = useStore((s) => s.mining);
   const autopilot = useStore((s) => s.autopilot);
   const hyperdrive = useStore((s) => s.hyperdriveState);
+  const scanPending = useStore((s) => s.scanPending);
 
   if (autopilot?.active) {
     return (
@@ -31,7 +32,7 @@ export function NavControls() {
   const isMining = mining?.active ?? false;
 
   function jump(dx: number, dy: number) {
-    if (jumpPending || isMining) return;
+    if (jumpPending || isMining || scanPending) return;
     network.sendJump(position.x + dx, position.y + dy);
   }
 
@@ -50,7 +51,7 @@ export function NavControls() {
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(0, -1)}
-          disabled={jumpPending || isMining || !canJump}
+          disabled={jumpPending || isMining || scanPending || !canJump}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
         >
           ↑
@@ -59,7 +60,7 @@ export function NavControls() {
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(-1, 0)}
-          disabled={jumpPending || isMining || !canJump}
+          disabled={jumpPending || isMining || scanPending || !canJump}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
         >
           ←
@@ -68,7 +69,7 @@ export function NavControls() {
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(0, 1)}
-          disabled={jumpPending || isMining || !canJump}
+          disabled={jumpPending || isMining || scanPending || !canJump}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
         >
           ↓
@@ -77,7 +78,7 @@ export function NavControls() {
           className="vs-btn"
           title="Jump: 1 AP, 0 Fuel"
           onClick={() => jump(1, 0)}
-          disabled={jumpPending || isMining || !canJump}
+          disabled={jumpPending || isMining || scanPending || !canJump}
           style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
         >
           →
@@ -88,8 +89,8 @@ export function NavControls() {
           className="vs-btn"
           title={`Local Scan: ${AP_COSTS_LOCAL_SCAN} AP`}
           onClick={() => network.sendLocalScan()}
-          disabled={jumpPending || isMining}
-          style={isMining ? miningDisabledStyle : (!canLocalScan ? insufficientStyle : undefined)}
+          disabled={jumpPending || isMining || scanPending}
+          style={isMining || scanPending ? miningDisabledStyle : (!canLocalScan ? insufficientStyle : undefined)}
         >
           [LOCAL SCAN]
         </button>
@@ -97,8 +98,8 @@ export function NavControls() {
           className="vs-btn"
           title={`Area Scan: ${AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3} AP`}
           onClick={() => network.sendAreaScan()}
-          disabled={jumpPending || isMining}
-          style={isMining ? miningDisabledStyle : (!canAreaScan ? insufficientStyle : undefined)}
+          disabled={jumpPending || isMining || scanPending}
+          style={isMining || scanPending ? miningDisabledStyle : (!canAreaScan ? insufficientStyle : undefined)}
         >
           [AREA SCAN]
         </button>

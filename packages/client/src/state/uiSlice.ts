@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ColorProfileName } from '../styles/themes';
 import { createJumpAnimation, type JumpAnimationState } from '../canvas/JumpAnimation';
+import { createScanAnimation, type ScanAnimationState } from '../canvas/ScanAnimation';
 
 export type Screen = 'login' | 'game';
 export type ThemeColor = 'amber';
@@ -38,6 +39,8 @@ export interface UISlice {
   monitorChromeVisible: Record<string, boolean>;
   monitorModes: Record<string, string>;
   moreOverlayOpen: boolean;
+  scanAnimation: ScanAnimationState | null;
+  scanPending: boolean;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -60,6 +63,9 @@ export interface UISlice {
   setMonitorChromeVisible: (monitorId: string, visible: boolean) => void;
   setMonitorMode: (monitorId: string, mode: string) => void;
   setMoreOverlayOpen: (open: boolean) => void;
+  startScanAnimation: (type: 'local' | 'area') => void;
+  clearScanAnimation: () => void;
+  setScanPending: (pending: boolean) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -82,6 +88,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   monitorChromeVisible: {},
   monitorModes: {},
   moreOverlayOpen: false,
+  scanAnimation: null,
+  scanPending: false,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -137,4 +145,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     monitorModes: { ...s.monitorModes, [monitorId]: mode },
   })),
   setMoreOverlayOpen: (open) => set({ moreOverlayOpen: open }),
+  startScanAnimation: (type) => set({ scanAnimation: createScanAnimation(type), scanPending: true }),
+  clearScanAnimation: () => set({ scanAnimation: null, scanPending: false }),
+  setScanPending: (pending) => set({ scanPending: pending }),
 });

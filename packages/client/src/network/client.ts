@@ -134,12 +134,14 @@ class GameNetwork {
       }
     });
 
-    // Scan result
+    // Scan result (area scan)
     room.onMessage('scanResult', (data: {
       sectors: SectorData[];
       apRemaining: number;
     }) => {
       const store = useStore.getState();
+      // Don't clear scan animation immediately — let it finish naturally
+      store.setScanPending(false);
       store.addDiscoveries(data.sectors);
       const currentAP = store.ap;
       if (currentAP) {
@@ -165,6 +167,7 @@ class GameNetwork {
     // Local scan result
     room.onMessage('localScanResult', (data: { resources: SectorResources; hiddenSignatures: boolean }) => {
       const store = useStore.getState();
+      store.setScanPending(false);
       if (store.currentSector) {
         const updatedSector = { ...store.currentSector, resources: data.resources };
         store.setCurrentSector(updatedSector);
@@ -1075,6 +1078,7 @@ class GameNetwork {
       useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
       return;
     }
+    useStore.getState().startScanAnimation('local');
     this.sectorRoom.send('localScan', {});
   }
 
@@ -1083,6 +1087,7 @@ class GameNetwork {
       useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
       return;
     }
+    useStore.getState().startScanAnimation('area');
     this.sectorRoom.send('areaScan', {});
   }
 

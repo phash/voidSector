@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useCanvas } from '../canvas/useCanvas';
 import { drawRadar, CELL_SIZES, FRAME_LEFT, FRAME_PAD, FRAME_BOTTOM } from '../canvas/RadarRenderer';
 import { updateJumpAnimation } from '../canvas/JumpAnimation';
+import { updateScanAnimation, drawScanOverlay } from '../canvas/ScanAnimation';
 import { useStore } from '../state/store';
 import { COLOR_PROFILES } from '../styles/themes';
 
@@ -25,7 +26,17 @@ export function RadarCanvas() {
       }
     }
 
-    drawRadar(ctx, {
+    // Update scan animation each frame
+    let scanAnimation = state.scanAnimation;
+    if (scanAnimation && scanAnimation.active) {
+      scanAnimation = updateScanAnimation(scanAnimation, performance.now());
+      if (!scanAnimation.active) {
+        useStore.getState().clearScanAnimation();
+        scanAnimation = null;
+      }
+    }
+
+    const radarState = {
       position: state.position,
       discoveries: state.discoveries,
       players: state.players,
@@ -44,7 +55,20 @@ export function RadarCanvas() {
       bookmarks: state.bookmarks,
       animTime: performance.now(),
       navTarget: state.navTarget,
-    });
+    };
+
+    drawRadar(ctx, radarState);
+
+    // Draw scan overlay after radar
+    if (scanAnimation?.active) {
+      const w = ctx.canvas.width;
+      const h = ctx.canvas.height;
+      const cellSize = CELL_SIZES[state.zoomLevel]?.w ?? 64;
+      const centerX = FRAME_LEFT + (w - FRAME_LEFT - FRAME_PAD) / 2;
+      const centerY = FRAME_PAD + (h - FRAME_PAD - FRAME_BOTTOM) / 2;
+      const scanRange = state.ship?.stats?.scannerLevel ?? 3;
+      drawScanOverlay(ctx, w, h, centerX, centerY, cellSize, scanAnimation, scanRange);
+    }
   }, []);
 
   const canvasRef = useCanvas(draw);
