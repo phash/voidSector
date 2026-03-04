@@ -16,6 +16,17 @@ export interface ClientShipData {
   active: boolean;
 }
 
+export interface AutopilotStatusInfo {
+  targetX: number;
+  targetY: number;
+  currentStep: number;
+  totalSteps: number;
+  status: 'active' | 'paused' | 'complete';
+  useHyperjump: boolean;
+  pauseReason?: string;
+  eta?: number;
+}
+
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
 }
@@ -176,6 +187,10 @@ export interface GameSlice {
     pricePerUnit: number; active: boolean;
   }>;
 
+  // Nav target (for autopilot UI)
+  navTarget: { x: number; y: number } | null;
+  autopilotStatus: AutopilotStatusInfo | null;
+
   // Quadrant system
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
   currentQuadrant: { qx: number; qy: number } | null;
@@ -244,6 +259,8 @@ export interface GameSlice {
   setFirstContactEvent: (event: FirstContactEvent | null) => void;
   setHyperdriveState: (state: HyperdriveState | null) => void;
   setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
+  setNavTarget: (target: { x: number; y: number } | null) => void;
+  setAutopilotStatus: (status: AutopilotStatusInfo | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -302,6 +319,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   npcStationData: null,
   factoryState: null,
   kontorOrders: [],
+  navTarget: null,
+  autopilotStatus: null,
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
@@ -419,4 +438,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setFirstContactEvent: (firstContactEvent) => set({ firstContactEvent }),
   setHyperdriveState: (hyperdriveState) => set({ hyperdriveState }),
   setAutoRefuelConfig: (autoRefuelConfig) => set({ autoRefuelConfig }),
+  setNavTarget: (navTarget) => set({ navTarget }),
+  setAutopilotStatus: (autopilotStatus) => set({ autopilotStatus }),
 });

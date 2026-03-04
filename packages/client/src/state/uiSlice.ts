@@ -43,7 +43,7 @@ export interface UISlice {
   setZoomLevel: (level: number) => void;
   setPanOffset: (offset: { x: number; y: number }) => void;
   resetPan: () => void;
-  startJumpAnimation: (dx: number, dy: number) => void;
+  startJumpAnimation: (dx: number, dy: number, distance?: number) => void;
   clearJumpAnimation: () => void;
   setSidebarSlot: (index: 0 | 1, monitor: string) => void;
   setLeftSidebarSlot: (index: 0 | 1, monitor: string) => void;
@@ -96,7 +96,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     };
   }),
   resetPan: () => set({ panOffset: { x: 0, y: 0 } }),
-  startJumpAnimation: (dx, dy) => set({ jumpAnimation: createJumpAnimation(dx, dy) }),
+  startJumpAnimation: (dx, dy, distance?) => set({ jumpAnimation: createJumpAnimation(dx, dy, distance) }),
   clearJumpAnimation: () => set({ jumpAnimation: null }),
   setSidebarSlot: (index, monitor) => set((s) => {
     const slots = [...s.sidebarSlots] as [string, string];

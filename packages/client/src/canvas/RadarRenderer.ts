@@ -2,6 +2,7 @@ import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS, HULL_
 import type { SectorData, Coords, JumpGateInfo, ScanEvent, HullType, Bookmark } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
+import { drawLongJumpCRTEffect } from './JumpAnimation';
 
 const BOOKMARK_COLORS: Record<number, string> = {
   0: '#33FF33',   // HOME — green
@@ -54,6 +55,7 @@ interface RadarState {
   homeBase?: { x: number; y: number };
   bookmarks?: Bookmark[];
   animTime?: number;
+  navTarget?: { x: number; y: number } | null;
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
@@ -321,6 +323,52 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     ctx.restore();
   }
 
+  // --- Nav target dashed line ---
+  if (state.navTarget && !animActive) {
+    const ntDx = state.navTarget.x - viewX;
+    const ntDy = state.navTarget.y - viewY;
+    const playerDx = state.position.x - viewX;
+    const playerDy = state.position.y - viewY;
+
+    // Only draw if both endpoints are within the visible grid
+    const ntVisible = Math.abs(ntDx) <= radiusX && Math.abs(ntDy) <= radiusY;
+    const playerVisible = Math.abs(playerDx) <= radiusX && Math.abs(playerDy) <= radiusY;
+
+    if (ntVisible || playerVisible) {
+      const fromX = gridCenterX + playerDx * CELL_W;
+      const fromY = gridCenterY + playerDy * CELL_H;
+      const toX = gridCenterX + ntDx * CELL_W;
+      const toY = gridCenterY + ntDy * CELL_H;
+
+      ctx.save();
+      ctx.strokeStyle = '#FFB000';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1.0;
+
+      // Draw target marker (diamond)
+      if (ntVisible) {
+        ctx.fillStyle = '#FFB000';
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(toX, toY - 5);
+        ctx.lineTo(toX + 5, toY);
+        ctx.lineTo(toX, toY + 5);
+        ctx.lineTo(toX - 5, toY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+      ctx.restore();
+    }
+  }
+
   // --- Coordinate frame (tightly wraps actual cells) ---
   const totalCellsW = (2 * radiusX + 1) * CELL_W;
   const totalCellsH = (2 * radiusY + 1) * CELL_H;
@@ -371,6 +419,10 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       drawGlitchOverlay(ctx, pixelW, pixelH, (1 - anim.progress) * 0.5);
     } else if (anim.phase === 'settle') {
       drawGlitchOverlay(ctx, pixelW, pixelH, (1 - anim.progress) * 0.3);
+    }
+    // Heavy CRT effect for long-distance jumps (>20 sectors)
+    if (anim.isLongJump) {
+      drawLongJumpCRTEffect(ctx, pixelW, pixelH, anim);
     }
   }
 }

@@ -39,6 +39,7 @@ export function RadarCanvas() {
       homeBase: state.homeBase,
       bookmarks: state.bookmarks,
       animTime: performance.now(),
+      navTarget: state.navTarget,
     });
   }, []);
 
