@@ -311,6 +311,49 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         }
       }
 
+      // Resource fill indicator dots
+      if (sector?.resources && state.zoomLevel >= 1) {
+        const res = sector.resources;
+        const dotY = cellY + CELL_H / 2 - 8;
+        const dotSpacing = 4;
+        const dotR = 1.5;
+
+        // Helper to draw 3-dot indicator
+        const drawDots = (baseX: number, value: number, maxValue: number, color: string) => {
+          if (maxValue <= 0) return;
+          const pct = Math.min(1, value / maxValue);
+          if (pct >= 1) {
+            // Full: solid bar
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.9;
+            ctx.fillRect(baseX, dotY - 1, dotSpacing * 2 + dotR * 2, 2);
+            ctx.globalAlpha = 1;
+            return;
+          }
+          const active = Math.ceil(pct * 3);
+          for (let d = 0; d < 3; d++) {
+            ctx.fillStyle = color;
+            ctx.globalAlpha = d < active ? 0.8 : 0.15;
+            ctx.beginPath();
+            ctx.arc(baseX + d * dotSpacing, dotY, dotR, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        };
+
+        // Left dots: primary resource (ore or gas, whichever > 0)
+        const primaryVal = res.ore > 0 ? res.ore : res.gas;
+        const primaryMax = primaryVal; // Use current as max (undepleted = 100%)
+        if (primaryVal > 0) {
+          drawDots(cellX - 8, primaryVal, primaryMax, state.themeColor);
+        }
+
+        // Right dots: crystal
+        if (res.crystal > 0) {
+          drawDots(cellX + 4, res.crystal, res.crystal, '#66CCFF');
+        }
+      }
+
       // Reset alpha after each cell (staleness rendering)
       ctx.globalAlpha = 1.0;
     }
