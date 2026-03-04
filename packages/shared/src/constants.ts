@@ -322,6 +322,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 80, baseCargo: 3, baseJumpRange: 5, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 50, baseCommRange: 50, baseScannerLevel: 1,
     baseEngineSpeed: 2,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 1, unlockCost: 0,
   },
   freighter: {
@@ -329,6 +330,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 120, baseCargo: 15, baseJumpRange: 3, baseApPerJump: 2, baseFuelPerJump: 2,
     baseHp: 80, baseCommRange: 75, baseScannerLevel: 1,
     baseEngineSpeed: 1,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 3, unlockCost: 500,
   },
   cruiser: {
@@ -336,6 +338,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 150, baseCargo: 8, baseJumpRange: 4, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 100, baseCommRange: 100, baseScannerLevel: 1,
     baseEngineSpeed: 2,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 4, unlockCost: 1000,
   },
   explorer: {
@@ -343,6 +346,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 200, baseCargo: 10, baseJumpRange: 6, baseApPerJump: 1, baseFuelPerJump: 1,
     baseHp: 70, baseCommRange: 150, baseScannerLevel: 2,
     baseEngineSpeed: 2,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 5, unlockCost: 2000,
   },
   battleship: {
@@ -350,6 +354,7 @@ export const HULLS: Record<HullType, HullDefinition> = {
     baseFuel: 180, baseCargo: 5, baseJumpRange: 2, baseApPerJump: 2, baseFuelPerJump: 3,
     baseHp: 150, baseCommRange: 75, baseScannerLevel: 1,
     baseEngineSpeed: 1,
+    baseHyperdriveRange: 0, baseHyperdriveSpeed: 0, baseHyperdriveRegen: 0, baseHyperdriveFuelEfficiency: 0,
     unlockLevel: 6, unlockCost: 3000,
   },
 };
@@ -361,7 +366,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'ION DRIVE MK.I', displayName: 'ION MK.I',
     primaryEffect: { stat: 'jumpRange', delta: 1, label: 'Sprungweite +1' },
     secondaryEffects: [{ stat: 'engineSpeed', delta: 1, label: 'Engine-Speed +1' }],
-    effects: { jumpRange: 1, engineSpeed: 1 },
+    effects: { jumpRange: 1, engineSpeed: 1, hyperdriveRange: 4, hyperdriveSpeed: 2, hyperdriveRegen: 1.0 },
     cost: { credits: 100, ore: 10 },
   },
   drive_mk2: {
@@ -372,7 +377,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 2, label: 'Engine-Speed +2' },
       { stat: 'apCostJump', delta: -0.2, label: 'AP/Sprung -0.2' },
     ],
-    effects: { jumpRange: 2, apCostJump: -0.2, engineSpeed: 2 },
+    effects: { jumpRange: 2, apCostJump: -0.2, engineSpeed: 2, hyperdriveRange: 8, hyperdriveSpeed: 3, hyperdriveRegen: 1.5, hyperdriveFuelEfficiency: 0.1 },
     cost: { credits: 300, ore: 20, crystal: 5 },
     researchCost: { credits: 200, ore: 15 },
     researchDurationMin: 5,
@@ -386,7 +391,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 3, label: 'Engine-Speed +3' },
       { stat: 'apCostJump', delta: -0.5, label: 'AP/Sprung -0.5' },
     ],
-    effects: { jumpRange: 3, apCostJump: -0.5, engineSpeed: 3 },
+    effects: { jumpRange: 3, apCostJump: -0.5, engineSpeed: 3, hyperdriveRange: 16, hyperdriveSpeed: 5, hyperdriveRegen: 2.0, hyperdriveFuelEfficiency: 0.2 },
     cost: { credits: 800, ore: 40, crystal: 15 },
     researchCost: { credits: 500, ore: 30, crystal: 10, artefact: 2 },
     researchDurationMin: 12,
@@ -651,7 +656,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
       { stat: 'fuelPerJump', delta: -3, label: 'Fuel/Sprung -3' },
     ],
-    effects: { jumpRange: 6, engineSpeed: 5, fuelPerJump: -3 },
+    effects: { jumpRange: 6, engineSpeed: 5, fuelPerJump: -3, hyperdriveRange: 30, hyperdriveSpeed: 8, hyperdriveRegen: 3.0, hyperdriveFuelEfficiency: 0.35 },
     cost: { credits: 2000, artefact: 5 },
     researchCost: { credits: 2000, artefact: 10 },
     researchDurationMin: 30,

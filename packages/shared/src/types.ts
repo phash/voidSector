@@ -101,6 +101,13 @@ export interface APState {
   regenPerSecond: number;
 }
 
+export interface HyperdriveState {
+  charge: number;        // current range charge
+  maxCharge: number;     // = hyperdriveRange from ship stats
+  regenPerSecond: number; // = hyperdriveRegen
+  lastTick: number;      // timestamp ms
+}
+
 export interface PlayerPosition {
   x: number;
   y: number;
@@ -825,6 +832,10 @@ export interface HullDefinition {
   baseCommRange: number;
   baseScannerLevel: number;
   baseEngineSpeed: number;
+  baseHyperdriveRange: number;
+  baseHyperdriveSpeed: number;
+  baseHyperdriveRegen: number;
+  baseHyperdriveFuelEfficiency: number;
   unlockLevel: number;
   unlockCost: number;
 }
@@ -871,6 +882,11 @@ export interface ShipStats {
   engineSpeed: number;
   artefactChanceBonus: number;
   safeSlotBonus: number;
+  // Hyperdrive
+  hyperdriveRange: number;
+  hyperdriveSpeed: number;
+  hyperdriveRegen: number;
+  hyperdriveFuelEfficiency: number;
 }
 
 export interface ShipRecord {

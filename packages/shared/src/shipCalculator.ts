@@ -24,6 +24,11 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
     engineSpeed: hull.baseEngineSpeed,
     artefactChanceBonus: 0,
     safeSlotBonus: 0,
+    // Hyperdrive
+    hyperdriveRange: hull.baseHyperdriveRange,
+    hyperdriveSpeed: hull.baseHyperdriveSpeed,
+    hyperdriveRegen: hull.baseHyperdriveRegen,
+    hyperdriveFuelEfficiency: hull.baseHyperdriveFuelEfficiency,
   };
 
   for (const mod of modules) {
@@ -45,6 +50,7 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
   stats.jumpRange = Math.max(1, stats.jumpRange);
   stats.damageMod = Math.max(0.25, stats.damageMod);
   stats.engineSpeed = Math.max(1, Math.min(5, stats.engineSpeed));
+  stats.hyperdriveFuelEfficiency = Math.max(0, Math.min(1, stats.hyperdriveFuelEfficiency));
 
   return stats;
 }
