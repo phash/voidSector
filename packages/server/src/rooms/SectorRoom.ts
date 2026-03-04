@@ -1324,6 +1324,18 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
 
+    // Nebula blocking: can't hyperjump into or out of nebula
+    const currentSectorData = await getSector(this.state.sector.x, this.state.sector.y);
+    if (currentSectorData?.environment === 'nebula') {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: hyperjump blocked inside nebula' });
+      return;
+    }
+    const targetSectorData = await getSector(targetX, targetY);
+    if (targetSectorData?.environment === 'nebula') {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump into nebula' });
+      return;
+    }
+
     // Check mining state (reject if mining is active)
     const mining = await getMiningState(auth.userId);
     if (mining?.active) {
@@ -2227,7 +2239,21 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Phase 4: Check for scan events in scanned sectors (skip pirate ambush — remote scan can't trigger physical encounters)
     await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y, environment: s.environment })), false);
 
-    client.send('scanResult', { sectors, apRemaining: scanResult.newAP!.current });
+    // Nebula fog: hide contents of nebula sectors when scanned from outside
+    const foggedSectors = sectors.map(s => {
+      if (s.environment === 'nebula') {
+        return {
+          ...s,
+          resources: { ore: 0, gas: 0, crystal: 0 },
+          contents: [],
+          type: 'nebula' as const,
+          metadata: {},
+        };
+      }
+      return s;
+    });
+
+    client.send('scanResult', { sectors: foggedSectors, apRemaining: scanResult.newAP!.current });
 
     // Phase 4: Check quest progress for scan quests
     for (const s of sectors) {

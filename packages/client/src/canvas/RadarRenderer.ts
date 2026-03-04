@@ -307,6 +307,45 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
+  // Draw nebula cloud overlay — soft glow between adjacent nebula sectors
+  for (let dx = -radiusX; dx <= radiusX; dx++) {
+    for (let dy = -radiusY; dy <= radiusY; dy++) {
+      const sx = viewX + dx;
+      const sy = viewY + dy;
+      const key = `${sx}:${sy}`;
+      const sector = state.discoveries[key];
+      if (!sector || (sector as any).environment !== 'nebula') continue;
+
+      const cellX = gridCenterX + dx * CELL_W;
+      const cellY = gridCenterY + dy * CELL_H;
+
+      // Soft nebula glow fill
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      const grad = ctx.createRadialGradient(cellX, cellY, 0, cellX, cellY, CELL_W * 0.8);
+      grad.addColorStop(0, '#8844CC');
+      grad.addColorStop(0.6, '#5522AA');
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.fillRect(cellX - CELL_W, cellY - CELL_H, CELL_W * 2, CELL_H * 2);
+      ctx.restore();
+
+      // Animated particle wisps
+      const t = state.animTime ?? 0;
+      ctx.save();
+      ctx.globalAlpha = 0.15 + 0.05 * Math.sin(t / 1200 + sx * 0.7);
+      for (let p = 0; p < 3; p++) {
+        const px = cellX + Math.sin(t / 2000 + p * 2.1 + sx) * CELL_W * 0.3;
+        const py = cellY + Math.cos(t / 1800 + p * 1.7 + sy) * CELL_H * 0.25;
+        ctx.beginPath();
+        ctx.arc(px, py, 2 + p, 0, Math.PI * 2);
+        ctx.fillStyle = '#AA66DD';
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
   // Draw other players — zoom >= 3
   if (state.zoomLevel >= 3) {
     const otherPattern = HULL_RADAR_PATTERNS.scout;
