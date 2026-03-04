@@ -1,0 +1,137 @@
+import type { ReactNode } from 'react';
+import { useStore } from '../state/store';
+import { ProgramSelector } from './ProgramSelector';
+import { SettingsPanel } from './SettingsPanel';
+import { HardwareControls } from './HardwareControls';
+import { TestPattern } from './TestPattern';
+import { UnifiedBezel } from './UnifiedBezel';
+import { DetailPanel } from './DetailPanel';
+import { TechDetailPanel } from './TechDetailPanel';
+import { BaseDetailPanel } from './BaseDetailPanel';
+import { CargoDetailPanel } from './CargoDetailPanel';
+import { TradeDetailPanel } from './TradeDetailPanel';
+import { MiningDetailPanel } from './MiningDetailPanel';
+import { QuestDetailPanel } from './QuestDetailPanel';
+import { SectorInfo, StatusBar } from './HUD';
+import { NavControls } from './NavControls';
+import { ShipStatusPanel } from './ShipStatusPanel';
+import { CombatStatusPanel } from './CombatStatusPanel';
+import { CommsScreen } from './CommsScreen';
+import type { ChatChannel } from '@void-sector/shared';
+
+interface CockpitLayoutProps {
+  renderScreen: (monitorId: string) => ReactNode;
+}
+
+function getDetailForProgram(programId: string): ReactNode {
+  switch (programId) {
+    case 'NAV-COM': return <DetailPanel />;
+    case 'TECH': return <TechDetailPanel />;
+    case 'BASE-LINK': return <BaseDetailPanel />;
+    case 'CARGO': return <CargoDetailPanel />;
+    case 'TRADE': return <TradeDetailPanel />;
+    case 'MINING': return <MiningDetailPanel />;
+    case 'QUESTS': return <QuestDetailPanel />;
+    default: return <TestPattern />;
+  }
+}
+
+export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
+  const activeProgram = useStore((s) => s.activeProgram);
+  const zoomLevel = useStore((s) => s.zoomLevel);
+  const setZoomLevel = useStore((s) => s.setZoomLevel);
+  const panOffset = useStore((s) => s.panOffset);
+  const setPanOffset = useStore((s) => s.setPanOffset);
+  const chatChannel = useStore((s) => s.chatChannel);
+  const setChatChannel = useStore((s) => s.setChatChannel);
+  const detailPowerOn = useStore((s) => s.monitorPower['DETAIL'] ?? true);
+  const setMonitorPower = useStore((s) => s.setMonitorPower);
+
+  const handleMainDpad = (dir: 'up' | 'down' | 'left' | 'right') => {
+    const step = 2;
+    switch (dir) {
+      case 'up': setPanOffset({ x: panOffset.x, y: panOffset.y - step }); break;
+      case 'down': setPanOffset({ x: panOffset.x, y: panOffset.y + step }); break;
+      case 'left': setPanOffset({ x: panOffset.x - step, y: panOffset.y }); break;
+      case 'right': setPanOffset({ x: panOffset.x + step, y: panOffset.y }); break;
+    }
+  };
+
+  const mainContent = renderScreen(activeProgram);
+  const detailContent = getDetailForProgram(activeProgram);
+
+  return (
+    <div className="cockpit-layout" data-testid="cockpit-layout">
+      {/* Section 1: Program Selector */}
+      <div className="cockpit-sec1 cockpit-section">
+        <ProgramSelector />
+      </div>
+
+      {/* Section 2: Main Monitor */}
+      <div className="cockpit-sec2 cockpit-section">
+        <div className="cockpit-monitor">
+          <UnifiedBezel variant="sidebar" monitorId={activeProgram}>
+            {mainContent}
+          </UnifiedBezel>
+        </div>
+        <div className="cockpit-hw-strip">
+          <HardwareControls
+            dpad
+            onDpad={handleMainDpad}
+            zoom
+            zoomValue={zoomLevel}
+            onZoom={setZoomLevel}
+          />
+        </div>
+      </div>
+
+      {/* Section 3: Detail Monitor */}
+      <div className="cockpit-sec3 cockpit-section">
+        <div className="cockpit-monitor">
+          <UnifiedBezel variant="sidebar" monitorId="DETAIL">
+            {detailPowerOn ? detailContent : <div className="cockpit-off-screen">DISPLAY OFF</div>}
+          </UnifiedBezel>
+        </div>
+        <div className="cockpit-hw-strip">
+          <HardwareControls
+            power
+            powerOn={detailPowerOn}
+            onPower={() => setMonitorPower('DETAIL', !detailPowerOn)}
+          />
+        </div>
+      </div>
+
+      {/* Section 4: Settings */}
+      <div className="cockpit-sec4 cockpit-section">
+        <SettingsPanel />
+      </div>
+
+      {/* Section 5: Navigation */}
+      <div className="cockpit-sec5 cockpit-section">
+        <div className="cockpit-monitor cockpit-nav-monitor">
+          <SectorInfo />
+          <StatusBar />
+          <NavControls />
+          <div className="cockpit-nav-panels">
+            <ShipStatusPanel />
+            <CombatStatusPanel />
+          </div>
+        </div>
+      </div>
+
+      {/* Section 6: Communication */}
+      <div className="cockpit-sec6 cockpit-section">
+        <div className="cockpit-monitor">
+          <CommsScreen />
+        </div>
+        <div className="cockpit-hw-strip">
+          <HardwareControls
+            channels={['direct', 'faction', 'local', 'sector', 'quadrant']}
+            activeChannel={chatChannel}
+            onChannel={(ch) => setChatChannel(ch as ChatChannel)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

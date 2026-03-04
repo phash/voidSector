@@ -160,6 +160,17 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     jumpPending: false,
     activeProgram: 'NAV-COM',
     setActiveProgram: vi.fn(),
+    chatChannel: 'local' as const,
+    setChatChannel: vi.fn(),
+    zoomLevel: 2,
+    setZoomLevel: vi.fn(),
+    panOffset: { x: 0, y: 0 },
+    setPanOffset: vi.fn(),
+    brightness: 1.0,
+    setBrightness: vi.fn(),
+    colorProfile: 'Amber Classic',
+    setColorProfile: vi.fn(),
+    scanPending: false,
     ...overrides,
   };
   useStore.setState(state as StoreState);
