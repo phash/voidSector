@@ -58,6 +58,7 @@ interface RadarState {
   bookmarks?: Bookmark[];
   animTime?: number;
   navTarget?: { x: number; y: number } | null;
+  visitedTrail?: Coords[];
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
@@ -216,22 +217,30 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.fillText(isHome ? 'HOME BASE' : 'YOU', cellX, cellY + CELL_H / 2 - 2);
         }
       } else if (sector) {
-        const symbol = isHome ? SYMBOLS.homeBase : getSectorSymbol(sector.type, (sector as any).environment);
-        const sectorColor = isHome
-          ? SECTOR_COLORS.home_base
-          : (sector as any).environment === 'black_hole'
-            ? '#1A1A1A'
-            : SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty;
-        ctx.fillStyle = sectorColor;
-        ctx.shadowBlur = 0;
-        ctx.fillText(symbol, cellX, cellY);
-
-        if (state.zoomLevel >= 1) {
-          ctx.font = COORD_FONT;
+        if (sector.type === 'empty' && (sector as any).environment !== 'black_hole' && !isHome) {
+          // Empty sectors: just a small centered dot
+          ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.3)');
+          ctx.beginPath();
+          ctx.arc(cellX, cellY, 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          const symbol = isHome ? SYMBOLS.homeBase : getSectorSymbol(sector.type, (sector as any).environment);
+          const sectorColor = isHome
+            ? SECTOR_COLORS.home_base
+            : (sector as any).environment === 'black_hole'
+              ? '#1A1A1A'
+              : SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty;
           ctx.fillStyle = sectorColor;
-          ctx.textBaseline = 'bottom';
-          const label = isHome ? 'HOME' : getSectorLabel(sector.type, (sector as any).environment);
-          ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
+          ctx.shadowBlur = 0;
+          ctx.fillText(symbol, cellX, cellY);
+
+          if (state.zoomLevel >= 1) {
+            ctx.font = COORD_FONT;
+            ctx.fillStyle = sectorColor;
+            ctx.textBaseline = 'bottom';
+            const label = isHome ? 'HOME' : getSectorLabel(sector.type, (sector as any).environment);
+            ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
+          }
         }
       } else {
         if (state.zoomLevel >= 1) {
@@ -376,6 +385,39 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   // Restore translate after slide phase drawing
   if (animActive && anim.phase === 'slide') {
     ctx.restore();
+  }
+
+  // === Trail line ===
+  if (state.visitedTrail && state.visitedTrail.length > 0 && !animActive) {
+    const trail = state.visitedTrail;
+    let prevSX = gridCenterX + (state.position.x - viewX) * CELL_W;
+    let prevSY = gridCenterY + (state.position.y - viewY) * CELL_H;
+
+    for (let i = 0; i < trail.length; i++) {
+      const t = trail[i];
+      const screenX = gridCenterX + (t.x - viewX) * CELL_W;
+      const screenY = gridCenterY + (t.y - viewY) * CELL_H;
+      const inBounds = Math.abs(t.x - viewX) <= radiusX && Math.abs(t.y - viewY) <= radiusY;
+      if (!inBounds) { prevSX = screenX; prevSY = screenY; continue; }
+
+      const opacity = 0.8 - (i / trail.length) * 0.7;
+      ctx.save();
+      ctx.strokeStyle = state.themeColor;
+      ctx.globalAlpha = opacity;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(prevSX, prevSY);
+      ctx.lineTo(screenX, screenY);
+      ctx.stroke();
+      ctx.fillStyle = state.themeColor;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      prevSX = screenX;
+      prevSY = screenY;
+    }
   }
 
   // --- JumpGate connection lines ---

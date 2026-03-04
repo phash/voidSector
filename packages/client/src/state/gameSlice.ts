@@ -56,6 +56,7 @@ export interface GameSlice {
 
   // Position
   position: Coords;
+  visitedTrail: Coords[];
 
   // AP & Fuel
   ap: APState | null;
@@ -208,6 +209,7 @@ export interface GameSlice {
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
   setPosition: (pos: Coords) => void;
+  pushTrail: (pos: Coords) => void;
   setAP: (ap: APState) => void;
   setFuel: (fuel: FuelState) => void;
   setShip: (ship: ClientShipData) => void;
@@ -277,12 +279,13 @@ export interface GameSlice {
   setSelectedQuest: (questId: string | null) => void;
 }
 
-export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
+export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
   token: safeGetItem('vs_token'),
   playerId: safeGetItem('vs_playerId'),
   username: safeGetItem('vs_username'),
   isGuest: safeGetItem('vs_isGuest') === 'true',
   position: { x: 0, y: 0 },
+  visitedTrail: [],
   ap: null,
   fuel: null,
   ship: null,
@@ -364,7 +367,20 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
     set({ token: null, playerId: null, username: null, isGuest: false });
   },
 
-  setPosition: (position) => set({ position }),
+  setPosition: (pos) => {
+    const old = get().position;
+    if (old.x !== pos.x || old.y !== pos.y) {
+      get().pushTrail(old);
+    }
+    set({ position: pos });
+  },
+
+  pushTrail: (pos) => {
+    const trail = get().visitedTrail;
+    if (trail.length > 0 && trail[0].x === pos.x && trail[0].y === pos.y) return;
+    set({ visitedTrail: [pos, ...trail].slice(0, 9) });
+  },
+
   setAP: (ap) => set({ ap }),
   setFuel: (fuel) => set({ fuel }),
   setShip: (ship) => set({ ship }),

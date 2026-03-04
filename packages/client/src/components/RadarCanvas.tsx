@@ -55,6 +55,7 @@ export function RadarCanvas() {
       bookmarks: state.bookmarks,
       animTime: performance.now(),
       navTarget: state.navTarget,
+      visitedTrail: state.visitedTrail,
     };
 
     drawRadar(ctx, radarState);

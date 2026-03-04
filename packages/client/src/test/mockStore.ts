@@ -30,6 +30,7 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     playerId: 'test-id',
     username: 'TestPilot',
     position: { x: 0, y: 0 },
+    visitedTrail: [],
     ap: defaultAP,
     fuel: { current: 100, max: 100 },
     ship: null,
