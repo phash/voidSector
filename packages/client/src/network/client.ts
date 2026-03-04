@@ -184,6 +184,9 @@ class GameNetwork {
             resources: { ore: 0, gas: 0, crystal: 0 },
             environment: (d as any).environment ?? 'empty',
             contents: (d as any).contents ?? [],
+            discoveredBy: (d as any).discoveredBy ?? null,
+            discoveredAt: (d as any).discoveredAt ?? null,
+            metadata: (d as any).metadata ?? {},
           });
         }
       }
@@ -779,6 +782,9 @@ class GameNetwork {
             resources: { ore: 0, gas: 0, crystal: 0 },
             environment: (d as any).environment ?? 'empty',
             contents: (d as any).contents ?? [],
+            discoveredBy: (d as any).discoveredBy ?? null,
+            discoveredAt: (d as any).discoveredAt ?? null,
+            metadata: (d as any).metadata ?? {},
           });
         }
       }

@@ -13,8 +13,8 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const alerts = useStore((s) => s.alerts);
-  const autopilot = useStore((s) => (s as Record<string, unknown>).autopilot);
-  const distressCalls = useStore((s) => (s as Record<string, unknown>).distressCalls) as unknown[] | undefined;
+  const autopilot = useStore((s) => (s as unknown as Record<string, unknown>).autopilot);
+  const distressCalls = useStore((s) => (s as unknown as Record<string, unknown>).distressCalls) as unknown[] | undefined;
 
   switch (monitorId) {
     case 'NAV-COM': {
@@ -48,7 +48,7 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
     case 'CARGO': {
       let capColor: LedConfig['color'] = 'green';
       if (ship) {
-        const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+        const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
         const cap = ship.stats?.cargoCap ?? 5;
         const pct = cap > 0 ? total / cap : 0;
         if (pct >= 1) capColor = 'red';

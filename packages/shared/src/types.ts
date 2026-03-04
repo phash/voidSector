@@ -9,7 +9,8 @@ export type SectorContent =
   | 'home_base'
   | 'player_base';
 
-export type ResourceType = 'ore' | 'gas' | 'crystal';
+export type MineableResourceType = 'ore' | 'gas' | 'crystal';
+export type ResourceType = MineableResourceType | 'artefact';
 
 export interface SectorResources {
   ore: number;
@@ -132,6 +133,7 @@ export interface CargoState {
   gas: number;
   crystal: number;
   slates: number;
+  artefact: number;
 }
 
 export interface MineMessage {
@@ -220,6 +222,7 @@ export interface StorageInventory {
   ore: number;
   gas: number;
   crystal: number;
+  artefact: number;
 }
 
 export interface TransferMessage {
@@ -499,6 +502,7 @@ export interface BattleResult {
   outcome: BattleOutcome;
   lootCredits?: number;
   lootResources?: Partial<SectorResources>;
+  lootArtefact?: number;
   cargoLost?: Partial<SectorResources>;
   repChange?: number;
   xpGained?: number;
@@ -811,7 +815,7 @@ export interface ModuleDefinition {
   name: string;
   displayName: string;
   effects: Partial<ShipStats>;
-  cost: { credits: number; ore?: number; gas?: number; crystal?: number };
+  cost: { credits: number; ore?: number; gas?: number; crystal?: number; artefact?: number };
 }
 
 export interface ShipModule {

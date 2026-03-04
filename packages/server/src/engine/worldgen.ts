@@ -1,6 +1,6 @@
 import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
 import { deriveEnvironment, deriveContents } from '@void-sector/shared';
-import type { SectorData, SectorType, SectorResources, ResourceType, SectorEnvironment, SectorContent } from '@void-sector/shared';
+import type { SectorData, SectorType, SectorResources, MineableResourceType, SectorEnvironment, SectorContent } from '@void-sector/shared';
 
 /**
  * Simple deterministic hash for coordinates.
@@ -34,7 +34,7 @@ function sectorTypeFromSeed(seed: number): SectorType {
 function generateResources(type: SectorType, seed: number): SectorResources {
   const base = SECTOR_RESOURCE_YIELDS[type];
   const resources: SectorResources = { ore: 0, gas: 0, crystal: 0 };
-  const types: ResourceType[] = ['ore', 'gas', 'crystal'];
+  const types: MineableResourceType[] = ['ore', 'gas', 'crystal'];
   for (let i = 0; i < types.length; i++) {
     const res = types[i];
     if (base[res] === 0) continue;

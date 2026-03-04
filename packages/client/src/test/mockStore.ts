@@ -22,7 +22,7 @@ const defaultSector: SectorData = {
   contents: [],
 };
 
-const defaultCargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0 };
+const defaultCargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 };
 
 export function mockStoreState(overrides: Partial<StoreState> = {}) {
   const state: Partial<StoreState> = {
@@ -44,7 +44,7 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     selectedSector: null,
     baseStructures: [],
     credits: 0,
-    storage: { ore: 0, gas: 0, crystal: 0 },
+    storage: { ore: 0, gas: 0, crystal: 0, artefact: 0 },
     tradeOrders: [],
     myOrders: [],
     mySlates: [],

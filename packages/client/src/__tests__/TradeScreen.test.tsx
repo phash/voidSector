@@ -36,7 +36,7 @@ describe('TradeScreen', () => {
       baseStructures: [],
       position: { x: 0, y: 0 },
       credits: 100,
-      storage: { ore: 10, gas: 5, crystal: 2 },
+      storage: { ore: 10, gas: 5, crystal: 2, artefact: 0 },
     });
     render(<TradeScreen />);
     expect(screen.getByText(/NPC PREISE/)).toBeTruthy();
@@ -47,7 +47,7 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [{ id: 'tp1', type: 'trading_post', tier: 1, sector_x: 0, sector_y: 0 }],
       credits: 100,
-      storage: { ore: 10, gas: 5, crystal: 2 },
+      storage: { ore: 10, gas: 5, crystal: 2, artefact: 0 },
     });
     render(<TradeScreen />);
     expect(screen.getByText(/NPC PREISE/)).toBeTruthy();
@@ -60,7 +60,7 @@ describe('TradeScreen', () => {
       position: { x: 10, y: 10 },
       currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
       credits: 200,
-      cargo: { ore: 3, gas: 1, crystal: 0, slates: 0 },
+      cargo: { ore: 3, gas: 1, crystal: 0, slates: 0, artefact: 0 },
     });
     render(<TradeScreen />);
     expect(screen.getByText(/NPC PREISE/)).toBeTruthy();
@@ -72,7 +72,7 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [{ id: 'tp1', type: 'trading_post', tier: 2, sector_x: 0, sector_y: 0 }],
       credits: 500,
-      storage: { ore: 0, gas: 0, crystal: 0 },
+      storage: { ore: 0, gas: 0, crystal: 0, artefact: 0 },
       tradeOrders: [],
       myOrders: [],
     });
@@ -84,7 +84,7 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [{ id: 'tp1', type: 'trading_post', tier: 1, sector_x: 0, sector_y: 0 }],
       credits: 0,
-      storage: { ore: 0, gas: 0, crystal: 0 },
+      storage: { ore: 0, gas: 0, crystal: 0, artefact: 0 },
     });
     render(<TradeScreen />);
     expect(screen.queryByText('MARKT')).toBeNull();
@@ -96,7 +96,7 @@ describe('TradeScreen', () => {
       position: { x: 10, y: 10 },
       currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
       credits: 500,
-      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
+      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
     });
     render(<TradeScreen />);
     expect(screen.queryByText('MARKT')).toBeNull();

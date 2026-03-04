@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { validateTransfer, validateNpcTrade } from '../commands.js';
 
 describe('validateTransfer', () => {
-  const cargo = { ore: 10, gas: 5, crystal: 2 };
-  const storage = { ore: 20, gas: 10, crystal: 5 };
+  const cargo = { ore: 10, gas: 5, crystal: 2, slates: 0, artefact: 0 };
+  const storage = { ore: 20, gas: 10, crystal: 5, artefact: 0 };
 
   it('allows toStorage when cargo has enough', () => {
     const result = validateTransfer('toStorage', 'ore', 5, cargo, storage, 1);
@@ -17,7 +17,7 @@ describe('validateTransfer', () => {
   });
 
   it('rejects toStorage when storage full', () => {
-    const fullStorage = { ore: 45, gas: 3, crystal: 2 };
+    const fullStorage = { ore: 45, gas: 3, crystal: 2, artefact: 0 };
     const result = validateTransfer('toStorage', 'ore', 1, cargo, fullStorage, 1);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Storage full');
@@ -39,14 +39,14 @@ describe('validateTransfer', () => {
   });
 
   it('respects tier 2 capacity (150)', () => {
-    const bigStorage = { ore: 100, gas: 30, crystal: 10 };
+    const bigStorage = { ore: 100, gas: 30, crystal: 10, artefact: 0 };
     const result = validateTransfer('toStorage', 'ore', 10, cargo, bigStorage, 2);
     expect(result.valid).toBe(true);
   });
 });
 
 describe('validateNpcTrade', () => {
-  const storage = { ore: 20, gas: 10, crystal: 5 };
+  const storage = { ore: 20, gas: 10, crystal: 5, artefact: 0 };
 
   it('allows selling when storage has resources', () => {
     const result = validateNpcTrade('sell', 'ore', 5, 0, storage, 1);
@@ -71,7 +71,7 @@ describe('validateNpcTrade', () => {
   });
 
   it('rejects buying when storage full', () => {
-    const fullStorage = { ore: 45, gas: 3, crystal: 2 };
+    const fullStorage = { ore: 45, gas: 3, crystal: 2, artefact: 0 };
     const result = validateNpcTrade('buy', 'ore', 5, 1000, fullStorage, 1);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Storage full');

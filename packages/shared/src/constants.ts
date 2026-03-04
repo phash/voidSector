@@ -1,4 +1,4 @@
-import type { SectorType, ShipClass, ResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, SectorEnvironment, SectorContent } from './types.js';
+import type { SectorType, ShipClass, ResourceType, MineableResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, SectorEnvironment, SectorContent } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
   'empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate'
@@ -40,7 +40,7 @@ export const RADAR_RADIUS = 3;  // visible sectors around player on scan
 
 export const RECONNECTION_TIMEOUT_S = 15;
 
-export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<ResourceType, number>> = {
+export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceType, number>> = {
   empty:          { ore: 5,  gas: 5,  crystal: 5  },
   nebula:         { ore: 2,  gas: 20, crystal: 3  },
   asteroid_field: { ore: 20, gas: 2,  crystal: 3  },
@@ -51,9 +51,9 @@ export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<ResourceType, num
 
 export const MINING_RATE_PER_SECOND = 0.1;
 
-export const RESOURCE_TYPES: ResourceType[] = ['ore', 'gas', 'crystal'];
+export const RESOURCE_TYPES: MineableResourceType[] = ['ore', 'gas', 'crystal'];
 
-export const STRUCTURE_COSTS: Record<StructureType, Record<ResourceType, number>> = {
+export const STRUCTURE_COSTS: Record<StructureType, Record<MineableResourceType, number>> = {
   comm_relay: { ore: 5, gas: 0, crystal: 2 },
   mining_station: { ore: 30, gas: 15, crystal: 10 },
   base: { ore: 50, gas: 30, crystal: 25 },
@@ -87,7 +87,7 @@ export const RELAY_RANGES: Record<StructureType, number> = {
 };
 
 // NPC Trade Prices (base prices per unit in credits)
-export const NPC_PRICES: Record<ResourceType, number> = {
+export const NPC_PRICES: Record<MineableResourceType, number> = {
   ore: 10,
   gas: 15,
   crystal: 25,
@@ -95,6 +95,17 @@ export const NPC_PRICES: Record<ResourceType, number> = {
 
 export const NPC_BUY_SPREAD = 1.2;
 export const NPC_SELL_SPREAD = 0.8;
+
+// Artefact drop chances
+export const ARTEFACT_DROP_CHANCES = {
+  artifact_find_event: 0.50,  // 50% on artifact_find scan event (vs crystal)
+  anomaly_scan: 0.08,         // 8% bonus on anomaly_reading
+  pirate_loot: 0.03,          // 3% on pirate victory
+} as const;
+
+// Artefact UI constants
+export const ARTEFACT_COLOR = '#FF6B35';
+export const ARTEFACT_SYMBOL = '\u273B'; // ❋
 
 // Data Slate constants
 export const SLATE_AP_COST_SECTOR = 1;

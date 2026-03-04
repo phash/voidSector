@@ -12,7 +12,6 @@ export function App() {
     return (
       <MonitorBezel
         monitorId="VOID-SEC"
-        statusLeds={[{ label: 'SYS', active: true }]}
       >
         <LoginScreen />
       </MonitorBezel>

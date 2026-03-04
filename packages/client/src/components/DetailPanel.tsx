@@ -13,8 +13,9 @@ function RefuelPanel({ fuel, isFreeRefuel }: {
   const currentSector = useStore((s) => s.currentSector);
 
   // Reputation-based pricing
-  const factionRep = currentSector?.faction
-    ? reputations.find((r: any) => r.factionId === currentSector.faction)
+  const sectorFaction = (currentSector as any)?.faction;
+  const factionRep = sectorFaction
+    ? reputations.find((r: any) => r.factionId === sectorFaction)
     : null;
   const repTier = factionRep?.tier ?? 'neutral';
   const priceModifier = REP_PRICE_MODIFIERS[repTier] ?? 1.0;
@@ -123,7 +124,7 @@ export function DetailPanel() {
                   ? generateStationName(selectedSector.x, selectedSector.y)
                   : sector.type.toUpperCase(),
                 position: `(${selectedSector.x}, ${selectedSector.y})`,
-                faction: sector.faction,
+                faction: (sector as any).faction,
                 resources: sector.resources
                   ? Object.entries(sector.resources).map(([r, a]) => `${r.toUpperCase()} x${a}`).join(', ')
                   : undefined,

@@ -21,7 +21,7 @@ import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector } from '../db/queries.js';
 import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State } from '@void-sector/shared';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -39,7 +39,8 @@ function rejectGuest(client: Client, action: string): boolean {
   return true;
 }
 
-const VALID_RESOURCES = ['ore', 'gas', 'crystal'];
+const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
+const VALID_TRANSFER_RESOURCES = ['ore', 'gas', 'crystal', 'artefact'];
 const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon'];
 
 function sanitizeChat(text: string): string {
@@ -458,7 +459,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
       // Check resource costs from cargo
       const cargo = await getPlayerCargo(auth.userId);
-      const cargoMap: Record<string, number> = { ore: cargo.ore, gas: cargo.gas, crystal: cargo.crystal };
+      const cargoMap: Record<string, number> = { ore: cargo.ore, gas: cargo.gas, crystal: cargo.crystal, artefact: cargo.artefact };
       for (const [res, amount] of Object.entries(moduleDef.cost)) {
         if (res === 'credits') continue;
         const have = cargoMap[res] ?? 0;
@@ -1246,7 +1247,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   private async handleMine(client: Client, data: MineMessage) {
     if (!this.checkRate(client.sessionId, 'mine', 500)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
-    if (!data.resource || !VALID_RESOURCES.includes(data.resource)) {
+    if (!data.resource || !VALID_MINE_RESOURCES.includes(data.resource)) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
       return;
     }
@@ -1472,7 +1473,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   private async handleTransfer(client: Client, data: TransferMessage) {
     if (!this.checkRate(client.sessionId, 'transfer', 500)) { client.send('transferResult', { success: false, error: 'Too fast' }); return; }
-    if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
+    if (!isPositiveInt(data.amount) || !VALID_TRANSFER_RESOURCES.includes(data.resource)) {
       client.send('transferResult', { success: false, error: 'Invalid transfer parameters' });
       return;
     }
@@ -1521,7 +1522,11 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('npcTradeResult', { success: false, error: 'Too fast — please wait' });
       return;
     }
-    if (!isPositiveInt(data.amount) || !VALID_RESOURCES.includes(data.resource)) {
+    if (data.resource === 'artefact') {
+      client.send('npcTradeResult', { success: false, error: 'Artefakte können nicht an NPCs gehandelt werden' });
+      return;
+    }
+    if (!isPositiveInt(data.amount) || !VALID_MINE_RESOURCES.includes(data.resource)) {
       client.send('npcTradeResult', { success: false, error: 'Invalid trade parameters' });
       return;
     }
@@ -1665,7 +1670,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid amount or price' });
       return;
     }
-    if (!VALID_RESOURCES.includes(data.resource)) {
+    if (!VALID_MINE_RESOURCES.includes(data.resource)) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
       return;
     }
@@ -1723,7 +1728,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
     const cargo = await getPlayerCargo(auth.userId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
     const validation = validateCreateSlate(
       { ap: currentAP.current, scannerLevel: ship.scannerLevel, cargoTotal, cargoCap: ship.cargoCap },
@@ -1883,7 +1888,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     const cargo = await getPlayerCargo(auth.userId);
     const ship = this.getShipForClient(client.sessionId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates;
+    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
     if (cargoTotal >= ship.cargoCap) {
       client.send('error', { code: 'CARGO_FULL', message: 'No cargo space' });
       return;
@@ -2338,9 +2343,12 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
       if (result.lootResources) {
         for (const [res, amount] of Object.entries(result.lootResources)) {
-          if (amount && amount > 0) await addToCargo(auth.userId, res, amount);
+          if (amount && amount > 0) await addToCargo(auth.userId, res as ResourceType, amount);
         }
         client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+      }
+      if (result.lootArtefact && result.lootArtefact > 0) {
+        await addToCargo(auth.userId, 'artefact' as ResourceType, result.lootArtefact);
       }
     }
 
@@ -2426,8 +2434,11 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
         if (finalResult.lootResources) {
           for (const [resource, amount] of Object.entries(finalResult.lootResources)) {
-            if (amount > 0) await addToCargo(auth.userId, resource, amount);
+            if (amount > 0) await addToCargo(auth.userId, resource as ResourceType, amount);
           }
+        }
+        if (finalResult.lootArtefact && finalResult.lootArtefact > 0) {
+          await addToCargo(auth.userId, 'artefact' as ResourceType, finalResult.lootArtefact);
         }
       }
       if (finalResult.repChange) {
@@ -2674,6 +2685,12 @@ export class SectorRoom extends Room<SectorRoomState> {
         : 'traders';
       await this.applyReputationChange(auth.userId, repFaction as NpcFactionId, eventData.rewardRep, client);
     }
+    if (eventData.rewardArtefact && eventData.rewardArtefact > 0) {
+      await addToCargo(auth.userId, 'artefact' as ResourceType, eventData.rewardArtefact);
+      const updatedCargo = await getPlayerCargo(auth.userId);
+      client.send('cargoUpdate', updatedCargo);
+      client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
+    }
 
     client.send('logEntry', `Event abgeschlossen! +${eventData.rewardCredits ?? 0} CR`);
   }
@@ -2840,8 +2857,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Check safe slots
     const survivors = await getPlayerSurvivors(auth.userId);
-    const ship = this.getShipForClient(client.sessionId);
-    const safeSlots = ship.safeSlots ?? 1;
+    const safeSlots = (ship as any).safeSlots ?? 1;
     if (!canRescue(safeSlots, survivors.length)) {
       client.send('rescueResult', { success: false, error: 'No free safe slots' });
       return;
@@ -3108,7 +3124,7 @@ export class SectorRoom extends Room<SectorRoomState> {
                 const available = storage[route.sellResource as keyof typeof storage] || 0;
                 const sellQty = Math.min(route.sellAmount, available);
                 if (sellQty > 0) {
-                  const price = NPC_PRICES[route.sellResource as ResourceType] * NPC_SELL_SPREAD;
+                  const price = NPC_PRICES[route.sellResource as MineableResourceType] * NPC_SELL_SPREAD;
                   await addCredits(ownerId, Math.floor(sellQty * price));
                   await updateStorageResource(ownerId, route.sellResource, -sellQty);
                 }
@@ -3118,7 +3134,7 @@ export class SectorRoom extends Room<SectorRoomState> {
             // Execute buy
             if (route.buyResource && route.buyAmount > 0) {
               const credits = await getPlayerCredits(ownerId);
-              const price = NPC_PRICES[route.buyResource as ResourceType] * NPC_BUY_SPREAD;
+              const price = NPC_PRICES[route.buyResource as MineableResourceType] * NPC_BUY_SPREAD;
               const affordable = Math.floor(credits / price);
               const buyQty = Math.min(route.buyAmount, affordable);
               if (buyQty > 0) {

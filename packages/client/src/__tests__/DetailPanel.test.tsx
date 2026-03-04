@@ -55,6 +55,7 @@ describe('DetailPanel', () => {
         '1:1': {
           x: 1, y: 1, type: 'asteroid_field', seed: 55,
           discoveredBy: null, discoveredAt: null, metadata: {},
+          environment: 'empty' as const, contents: ['asteroid_field' as const],
           resources: { ore: 50, gas: 10, crystal: 5 },
         },
       },
