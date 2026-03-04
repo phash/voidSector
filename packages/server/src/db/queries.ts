@@ -1613,3 +1613,128 @@ export async function startActiveResearch(
 export async function deleteActiveResearch(userId: string): Promise<void> {
   await query('DELETE FROM active_research WHERE user_id = $1', [userId]);
 }
+
+// --- Autopilot Routes ---
+
+export interface AutopilotRouteRow {
+  userId: string;
+  targetX: number;
+  targetY: number;
+  useHyperjump: boolean;
+  path: Array<{ x: number; y: number }>;
+  currentStep: number;
+  totalSteps: number;
+  startedAt: number;
+  lastStepAt: number;
+  status: string;
+}
+
+export async function saveAutopilotRoute(
+  userId: string,
+  targetX: number,
+  targetY: number,
+  useHyperjump: boolean,
+  path: Array<{ x: number; y: number }>,
+  now: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO autopilot_routes (user_id, target_x, target_y, use_hyperjump, path, current_step, total_steps, started_at, last_step_at, status)
+     VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $7, 'active')
+     ON CONFLICT (user_id) DO UPDATE
+     SET target_x = $2, target_y = $3, use_hyperjump = $4, path = $5,
+         current_step = 0, total_steps = $6, started_at = $7, last_step_at = $7, status = 'active'`,
+    [userId, targetX, targetY, useHyperjump, JSON.stringify(path), path.length, now]
+  );
+}
+
+export async function getAutopilotRoute(userId: string): Promise<AutopilotRouteRow | null> {
+  const { rows } = await query<{
+    user_id: string; target_x: number; target_y: number;
+    use_hyperjump: boolean; path: Array<{ x: number; y: number }>;
+    current_step: number; total_steps: number;
+    started_at: string; last_step_at: string; status: string;
+  }>(
+    `SELECT user_id, target_x, target_y, use_hyperjump, path, current_step, total_steps, started_at, last_step_at, status
+     FROM autopilot_routes WHERE user_id = $1`,
+    [userId]
+  );
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    userId: r.user_id,
+    targetX: r.target_x,
+    targetY: r.target_y,
+    useHyperjump: r.use_hyperjump,
+    path: r.path,
+    currentStep: r.current_step,
+    totalSteps: r.total_steps,
+    startedAt: Number(r.started_at),
+    lastStepAt: Number(r.last_step_at),
+    status: r.status,
+  };
+}
+
+export async function getActiveAutopilotRoute(userId: string): Promise<AutopilotRouteRow | null> {
+  const { rows } = await query<{
+    user_id: string; target_x: number; target_y: number;
+    use_hyperjump: boolean; path: Array<{ x: number; y: number }>;
+    current_step: number; total_steps: number;
+    started_at: string; last_step_at: string; status: string;
+  }>(
+    `SELECT user_id, target_x, target_y, use_hyperjump, path, current_step, total_steps, started_at, last_step_at, status
+     FROM autopilot_routes WHERE user_id = $1 AND status = 'active'`,
+    [userId]
+  );
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    userId: r.user_id,
+    targetX: r.target_x,
+    targetY: r.target_y,
+    useHyperjump: r.use_hyperjump,
+    path: r.path,
+    currentStep: r.current_step,
+    totalSteps: r.total_steps,
+    startedAt: Number(r.started_at),
+    lastStepAt: Number(r.last_step_at),
+    status: r.status,
+  };
+}
+
+export async function updateAutopilotStep(userId: string, currentStep: number, now: number): Promise<void> {
+  await query(
+    `UPDATE autopilot_routes SET current_step = $2, last_step_at = $3 WHERE user_id = $1 AND status = 'active'`,
+    [userId, currentStep, now]
+  );
+}
+
+export async function pauseAutopilotRoute(userId: string): Promise<boolean> {
+  const result = await query(
+    `UPDATE autopilot_routes SET status = 'paused' WHERE user_id = $1 AND status = 'active'`,
+    [userId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function resumeAutopilotRoute(userId: string, now: number): Promise<boolean> {
+  const result = await query(
+    `UPDATE autopilot_routes SET status = 'active', last_step_at = $2 WHERE user_id = $1 AND status = 'paused'`,
+    [userId, now]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function cancelAutopilotRoute(userId: string): Promise<boolean> {
+  const result = await query(
+    `UPDATE autopilot_routes SET status = 'cancelled' WHERE user_id = $1 AND status IN ('active', 'paused')`,
+    [userId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function completeAutopilotRoute(userId: string): Promise<void> {
+  await query(
+    `UPDATE autopilot_routes SET status = 'completed' WHERE user_id = $1 AND status = 'active'`,
+    [userId]
+  );
+}
