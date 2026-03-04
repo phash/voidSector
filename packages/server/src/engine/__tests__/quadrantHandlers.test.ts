@@ -4,17 +4,19 @@ vi.mock('../../db/quadrantQueries.js', () => ({
   getQuadrant: vi.fn(),
   upsertQuadrant: vi.fn(),
   addPlayerKnownQuadrant: vi.fn(),
+  addPlayerKnownQuadrantsBatch: vi.fn(),
   quadrantNameExists: vi.fn(),
   updateQuadrantName: vi.fn(),
   getPlayerKnownQuadrants: vi.fn(),
-  getAllDiscoveredQuadrants: vi.fn(),
+  getAllDiscoveredQuadrantCoords: vi.fn(),
 }));
 
 import {
   getQuadrant,
   addPlayerKnownQuadrant,
+  addPlayerKnownQuadrantsBatch,
   getPlayerKnownQuadrants,
-  getAllDiscoveredQuadrants,
+  getAllDiscoveredQuadrantCoords,
   upsertQuadrant,
   quadrantNameExists,
   updateQuadrantName,
@@ -31,8 +33,9 @@ import { QUADRANT_SIZE } from '@void-sector/shared';
 
 const mockGetQuadrant = vi.mocked(getQuadrant);
 const mockAddPlayerKnownQuadrant = vi.mocked(addPlayerKnownQuadrant);
+const mockAddPlayerKnownQuadrantsBatch = vi.mocked(addPlayerKnownQuadrantsBatch);
 const mockGetPlayerKnownQuadrants = vi.mocked(getPlayerKnownQuadrants);
-const mockGetAllDiscoveredQuadrants = vi.mocked(getAllDiscoveredQuadrants);
+const mockGetAllDiscoveredQuadrantCoords = vi.mocked(getAllDiscoveredQuadrantCoords);
 const mockUpsertQuadrant = vi.mocked(upsertQuadrant);
 const mockQuadrantNameExists = vi.mocked(quadrantNameExists);
 const mockUpdateQuadrantName = vi.mocked(updateQuadrantName);
@@ -261,43 +264,47 @@ describe('getKnownQuadrants', () => {
 // syncQuadrants logic
 // ---------------------------------------------------------------------------
 describe('syncQuadrants logic', () => {
-  it('getAllDiscoveredQuadrants returns all quadrants from DB', async () => {
-    const quadrants = [
-      makeQuadrant({ qx: 0, qy: 0 }),
-      makeQuadrant({ qx: 1, qy: 0, name: 'Alpha-7', discoveredBy: 'player-2' }),
-      makeQuadrant({ qx: -1, qy: 1, name: 'Beta-3', discoveredBy: 'player-3' }),
+  it('getAllDiscoveredQuadrantCoords returns only qx/qy from DB', async () => {
+    const coords = [
+      { qx: 0, qy: 0 },
+      { qx: 1, qy: 0 },
+      { qx: -1, qy: 1 },
     ];
-    mockGetAllDiscoveredQuadrants.mockResolvedValueOnce(quadrants);
+    mockGetAllDiscoveredQuadrantCoords.mockResolvedValueOnce(coords);
 
-    const result = await getAllDiscoveredQuadrants();
+    const result = await getAllDiscoveredQuadrantCoords();
     expect(result.length).toBe(3);
-    expect(result[0].qx).toBe(0);
-    expect(result[1].name).toBe('Alpha-7');
-    expect(result[2].discoveredBy).toBe('player-3');
+    expect(result[0]).toEqual({ qx: 0, qy: 0 });
+    expect(result[1]).toEqual({ qx: 1, qy: 0 });
+    expect(result[2]).toEqual({ qx: -1, qy: 1 });
   });
 
-  it('syncing adds each quadrant to player known list', async () => {
-    const quadrants = [
-      makeQuadrant({ qx: 0, qy: 0 }),
-      makeQuadrant({ qx: 1, qy: 0 }),
+  it('syncing batch-inserts all quadrant coords for player', async () => {
+    const coords = [
+      { qx: 0, qy: 0 },
+      { qx: 1, qy: 0 },
     ];
-    mockGetAllDiscoveredQuadrants.mockResolvedValueOnce(quadrants);
-    mockAddPlayerKnownQuadrant.mockResolvedValue(undefined);
+    mockGetAllDiscoveredQuadrantCoords.mockResolvedValueOnce(coords);
+    mockAddPlayerKnownQuadrantsBatch.mockResolvedValueOnce(undefined);
 
-    const all = await getAllDiscoveredQuadrants();
-    for (const q of all) {
-      await addPlayerKnownQuadrant('player-1', q.qx, q.qy);
-    }
+    const all = await getAllDiscoveredQuadrantCoords();
+    await addPlayerKnownQuadrantsBatch('player-1', all);
 
-    expect(mockAddPlayerKnownQuadrant).toHaveBeenCalledTimes(2);
-    expect(mockAddPlayerKnownQuadrant).toHaveBeenCalledWith('player-1', 0, 0);
-    expect(mockAddPlayerKnownQuadrant).toHaveBeenCalledWith('player-1', 1, 0);
+    expect(mockAddPlayerKnownQuadrantsBatch).toHaveBeenCalledOnce();
+    expect(mockAddPlayerKnownQuadrantsBatch).toHaveBeenCalledWith('player-1', [
+      { qx: 0, qy: 0 },
+      { qx: 1, qy: 0 },
+    ]);
   });
 
-  it('syncing with no discovered quadrants does nothing', async () => {
-    mockGetAllDiscoveredQuadrants.mockResolvedValueOnce([]);
-    const all = await getAllDiscoveredQuadrants();
-    expect(all.length).toBe(0);
+  it('syncing with no discovered quadrants calls batch with empty array', async () => {
+    mockGetAllDiscoveredQuadrantCoords.mockResolvedValueOnce([]);
+    mockAddPlayerKnownQuadrantsBatch.mockResolvedValueOnce(undefined);
+
+    const all = await getAllDiscoveredQuadrantCoords();
+    await addPlayerKnownQuadrantsBatch('player-1', all);
+
+    expect(mockAddPlayerKnownQuadrantsBatch).toHaveBeenCalledWith('player-1', []);
   });
 });
 

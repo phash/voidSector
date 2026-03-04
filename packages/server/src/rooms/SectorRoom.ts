@@ -30,7 +30,7 @@ import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECON
 import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState, ProcessedItemType } from '@void-sector/shared';
 import type { FirstContactEvent } from '@void-sector/shared';
 import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../engine/quadrantEngine.js';
-import { getPlayerKnownQuadrants, addPlayerKnownQuadrant, getQuadrant, getAllDiscoveredQuadrants } from '../db/quadrantQueries.js';
+import { getPlayerKnownQuadrants, addPlayerKnownQuadrant, addPlayerKnownQuadrantsBatch, getQuadrant, getAllDiscoveredQuadrantCoords } from '../db/quadrantQueries.js';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -852,6 +852,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     this.onMessage('getKnownQuadrants', async (client) => {
       if (!this.checkRate(client.sessionId, 'getKnownQuadrants', 500)) return;
+      if (rejectGuest(client, 'getKnownQuadrants')) return;
       const auth = client.auth as AuthPayload;
       const known = await getPlayerKnownQuadrants(auth.userId);
       client.send('knownQuadrants', { quadrants: known });
@@ -859,6 +860,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     this.onMessage('syncQuadrants', async (client) => {
       if (!this.checkRate(client.sessionId, 'syncQuadrants', 2000)) return;
+      if (rejectGuest(client, 'syncQuadrants')) return;
       const auth = client.auth as AuthPayload;
 
       // Only allowed at stations
@@ -868,14 +870,12 @@ export class SectorRoom extends Room<SectorRoomState> {
         return;
       }
 
-      // Get all publicly known quadrants and add them to player's known list
-      const allQuadrants = await getAllDiscoveredQuadrants();
-      for (const q of allQuadrants) {
-        await addPlayerKnownQuadrant(auth.userId, q.qx, q.qy);
-      }
+      // Get all publicly known quadrant coords and batch-insert into player's known list
+      const allCoords = await getAllDiscoveredQuadrantCoords();
+      await addPlayerKnownQuadrantsBatch(auth.userId, allCoords);
 
       const known = await getPlayerKnownQuadrants(auth.userId);
-      client.send('syncQuadrantsResult', { success: true, quadrants: known, synced: allQuadrants.length });
+      client.send('syncQuadrantsResult', { success: true, quadrants: known, synced: allCoords.length });
     });
   }
 
@@ -3721,33 +3721,37 @@ export class SectorRoom extends Room<SectorRoomState> {
   // Quadrant first-contact detection
   // ---------------------------------------------------------------------------
   private async checkFirstContact(client: Client, auth: AuthPayload, targetX: number, targetY: number) {
-    const { qx, qy } = sectorToQuadrant(targetX, targetY);
-    const currentQ = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+    try {
+      const { qx, qy } = sectorToQuadrant(targetX, targetY);
+      const currentQ = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
 
-    // Only check if entering a different quadrant
-    if (qx === currentQ.qx && qy === currentQ.qy) return;
+      // Only check if entering a different quadrant
+      if (qx === currentQ.qx && qy === currentQ.qy) return;
 
-    // Check if quadrant exists already
-    const existing = await getQuadrant(qx, qy);
-    if (!existing) {
-      // First contact! Create quadrant with player as discoverer
-      const quadrant = await getOrCreateQuadrant(qx, qy, auth.userId);
-      const autoName = generateQuadrantName(quadrant.seed);
+      // Check if quadrant exists already
+      const existing = await getQuadrant(qx, qy);
+      if (!existing) {
+        // First contact! Create quadrant with player as discoverer
+        const quadrant = await getOrCreateQuadrant(qx, qy, auth.userId);
+        const autoName = generateQuadrantName(quadrant.seed);
 
-      client.send('firstContact', {
-        quadrant,
-        canName: true,
-        autoName,
-      } as FirstContactEvent);
+        client.send('firstContact', {
+          quadrant,
+          canName: true,
+          autoName,
+        } as FirstContactEvent);
 
-      // Broadcast to all connected players
-      this.broadcast('announcement', {
-        message: `[${quadrant.name}] charted by ${auth.username}`,
-        type: 'quadrant_discovery',
-      });
-    } else {
-      // Quadrant exists but player may not know it yet
-      await addPlayerKnownQuadrant(auth.userId, qx, qy);
+        // Broadcast to all connected players
+        this.broadcast('announcement', {
+          message: `[${quadrant.name}] charted by ${auth.username}`,
+          type: 'quadrant_discovery',
+        });
+      } else {
+        // Quadrant exists but player may not know it yet
+        await addPlayerKnownQuadrant(auth.userId, qx, qy);
+      }
+    } catch (err) {
+      console.error('[checkFirstContact] Error:', err);
     }
   }
 }

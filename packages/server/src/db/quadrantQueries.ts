@@ -52,12 +52,17 @@ export async function updateQuadrantName(qx: number, qy: number, name: string): 
   await query('UPDATE quadrants SET name = $1 WHERE qx = $2 AND qy = $3', [name, qx, qy]);
 }
 
-export async function getAllDiscoveredQuadrants(): Promise<QuadrantData[]> {
-  const { rows } = await query<any>('SELECT * FROM quadrants');
-  return rows.map((r: any) => ({
-    qx: r.qx, qy: r.qy, seed: r.seed,
-    name: r.name, discoveredBy: r.discovered_by,
-    discoveredAt: r.discovered_at?.toISOString() ?? null,
-    config: r.config as QuadrantConfig,
-  }));
+export async function getAllDiscoveredQuadrantCoords(): Promise<Array<{ qx: number; qy: number }>> {
+  const { rows } = await query<any>('SELECT qx, qy FROM quadrants');
+  return rows.map((r: any) => ({ qx: r.qx, qy: r.qy }));
+}
+
+export async function addPlayerKnownQuadrantsBatch(playerId: string, quadrants: Array<{ qx: number; qy: number }>): Promise<void> {
+  if (quadrants.length === 0) return;
+  const values = quadrants.map((_, i) => `($1, $${i * 2 + 2}, $${i * 2 + 3})`).join(', ');
+  const params: any[] = [playerId, ...quadrants.flatMap(q => [q.qx, q.qy])];
+  await query(
+    `INSERT INTO player_known_quadrants (player_id, qx, qy) VALUES ${values} ON CONFLICT DO NOTHING`,
+    params
+  );
 }
