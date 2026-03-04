@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="3" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="glow2" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="6" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="softglow">
+    <feGaussianBlur stdDeviation="2" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <pattern id="scanlines" x="0" y="0" width="512" height="2" patternUnits="userSpaceOnUse">
+    <rect x="0" y="0" width="512" height="1" fill="rgba(0,0,0,0.18)"/>
+    <rect x="0" y="1" width="512" height="1" fill="rgba(0,0,0,0)"/>
+  </pattern>
+  <pattern id="grid" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+    <path d="M32 0 L0 0 0 32" fill="none" stroke="rgba(255,176,0,0.08)" stroke-width="0.5"/>
+  </pattern>
+</defs>
+<rect width="512" height="512" fill="#050505"/>
+<rect width="512" height="512" fill="url(#grid)"/>
+
+<!-- Shield emitter ring (dashed, with glow) -->
+<circle cx="256" cy="252" r="130" stroke="#FFB000" stroke-width="1" fill="none"
+  stroke-dasharray="6,6" opacity="0.35" filter="url(#glow2)"/>
+<circle cx="256" cy="252" r="130" stroke="#8B5A00" stroke-width="1" fill="none"
+  stroke-dasharray="6,6" opacity="0.5"/>
+
+<!-- Targeting range rings -->
+<circle cx="256" cy="252" r="55" stroke="#8B5A00" stroke-width="0.5" fill="none" stroke-dasharray="2,8" opacity="0.4"/>
+<circle cx="256" cy="252" r="105" stroke="#8B5A00" stroke-width="0.5" fill="none" stroke-dasharray="2,8" opacity="0.4"/>
+
+<!-- Hex hull (6 sides, offset -90°) -->
+<!-- Vertices at angles: -90°, -30°, 30°, 90°, 150°, 210° from center (256,252), r=70 -->
+<!-- -90°: (256, 182), -30°: (316.6, 217), 30°: (316.6, 287), 90°: (256, 322), 150°: (195.4, 287), 210°: (195.4, 217) -->
+<polygon points="256,182 316.6,217 316.6,287 256,322 195.4,287 195.4,217"
+  stroke="#FFB000" stroke-width="3" fill="rgba(255,176,0,0.05)" filter="url(#softglow)"/>
+
+<!-- Inner hex (armor detail, r=58) -->
+<polygon points="256,194 306.2,223 306.2,281 256,310 205.8,281 205.8,223"
+  stroke="#8B5A00" stroke-width="1" fill="none"/>
+
+<!-- Armor plate hatching lines -->
+<g stroke="#8B5A00" stroke-width="0.8" opacity="0.5">
+  <!-- Face 0: (256,182)→(316.6,217) -->
+  <line x1="276.2" y1="190.75" x2="268.2" y2="204.00"/>
+  <line x1="296.4" y1="199.50" x2="282.8" y2="210.00"/>
+  <!-- Face 1: (316.6,217)→(316.6,287) -->
+  <line x1="316.6" y1="234.33" x2="306.2" y2="240.00"/>
+  <line x1="316.6" y1="252.00" x2="306.2" y2="252.00"/>
+  <line x1="316.6" y1="269.67" x2="306.2" y2="264.00"/>
+  <!-- Face 2: (316.6,287)→(256,322) -->
+  <line x1="296.4" y1="304.50" x2="282.8" y2="294.00"/>
+  <line x1="276.2" y1="313.25" x2="268.2" y2="300.00"/>
+  <!-- Face 3: (256,322)→(195.4,287) -->
+  <line x1="235.8" y1="313.25" x2="243.8" y2="300.00"/>
+  <line x1="215.6" y1="304.50" x2="229.2" y2="294.00"/>
+  <!-- Face 4: (195.4,287)→(195.4,217) -->
+  <line x1="195.4" y1="269.67" x2="205.8" y2="264.00"/>
+  <line x1="195.4" y1="252.00" x2="205.8" y2="252.00"/>
+  <line x1="195.4" y1="234.33" x2="205.8" y2="240.00"/>
+  <!-- Face 5: (195.4,217)→(256,182) -->
+  <line x1="215.6" y1="199.50" x2="229.2" y2="210.00"/>
+  <line x1="235.8" y1="190.75" x2="243.8" y2="204.00"/>
+</g>
+
+<!-- Turrets at hex corners (r=70, glow barrels pointing outward) -->
+<!-- Corner 0: (256, 182), barrel points up (270°) -->
+<circle cx="256" cy="182" r="10" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.12)" filter="url(#softglow)"/>
+<line x1="256" y1="182" x2="256" y2="160" stroke="#FFD540" stroke-width="3" filter="url(#softglow)"/>
+<circle cx="256" cy="160" r="2" fill="#FFD540"/>
+
+<!-- Corner 1: (316.6, 217), barrel points 30° (-60° from vertical) -->
+<circle cx="316.6" cy="217" r="10" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.12)" filter="url(#softglow)"/>
+<line x1="316.6" y1="217" x2="335.6" y2="195" stroke="#FFD540" stroke-width="3" filter="url(#softglow)"/>
+<circle cx="335.6" cy="195" r="2" fill="#FFD540"/>
+
+<!-- Corner 2: (316.6, 287), barrel points 150° (30° from vertical right) -->
+<circle cx="316.6" cy="287" r="10" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.12)" filter="url(#softglow)"/>
+<line x1="316.6" y1="287" x2="336.6" y2="309" stroke="#FFD540" stroke-width="3" filter="url(#softglow)"/>
+<circle cx="336.6" cy="309" r="2" fill="#FFD540"/>
+
+<!-- Corner 3: (256, 322), barrel points down -->
+<circle cx="256" cy="322" r="10" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.12)" filter="url(#softglow)"/>
+<line x1="256" y1="322" x2="256" y2="344" stroke="#FFD540" stroke-width="3" filter="url(#softglow)"/>
+<circle cx="256" cy="344" r="2" fill="#FFD540"/>
+
+<!-- Corner 4: (195.4, 287), barrel points 210° -->
+<circle cx="195.4" cy="287" r="10" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.12)" filter="url(#softglow)"/>
+<line x1="195.4" y1="287" x2="175.4" y2="309" stroke="#FFD540" stroke-width="3" filter="url(#softglow)"/>
+<circle cx="175.4" cy="309" r="2" fill="#FFD540"/>
+
+<!-- Corner 5: (195.4, 217), barrel points 330° -->
+<circle cx="195.4" cy="217" r="10" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.12)" filter="url(#softglow)"/>
+<line x1="195.4" y1="217" x2="175.4" y2="195" stroke="#FFD540" stroke-width="3" filter="url(#softglow)"/>
+<circle cx="175.4" cy="195" r="2" fill="#FFD540"/>
+
+<!-- Fighter bays on faces 0, 2, 4 (midpoints) -->
+<!-- Face 0 mid: (286.3, 199.5) -->
+<rect x="274" y="191" width="24" height="14" stroke="#8B5A00" stroke-width="1" fill="rgba(255,176,0,0.04)"/>
+<line x1="282" y1="191" x2="282" y2="205" stroke="#8B5A00" stroke-width="1"/>
+<line x1="290" y1="191" x2="290" y2="205" stroke="#8B5A00" stroke-width="1"/>
+
+<!-- Face 2 mid: (286.3, 304.5) -->
+<rect x="274" y="297" width="24" height="14" stroke="#8B5A00" stroke-width="1" fill="rgba(255,176,0,0.04)"/>
+<line x1="282" y1="297" x2="282" y2="311" stroke="#8B5A00" stroke-width="1"/>
+<line x1="290" y1="297" x2="290" y2="311" stroke="#8B5A00" stroke-width="1"/>
+
+<!-- Face 4 mid: (195.4, 252) — left face -->
+<rect x="182" y="245" width="24" height="14" stroke="#8B5A00" stroke-width="1" fill="rgba(255,176,0,0.04)"/>
+<line x1="190" y1="245" x2="190" y2="259" stroke="#8B5A00" stroke-width="1"/>
+<line x1="198" y1="245" x2="198" y2="259" stroke="#8B5A00" stroke-width="1"/>
+
+<!-- Command core -->
+<circle cx="256" cy="252" r="18" stroke="#FFD540" stroke-width="2" fill="rgba(255,176,0,0.1)" filter="url(#glow)"/>
+<circle cx="256" cy="252" r="7" fill="#FFB000" filter="url(#softglow)"/>
+
+<!-- Annotations -->
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="262" cy="176" r="2.5" fill="#8B5A00"/>
+  <line x1="262" y1="176" x2="322" y2="140"/>
+</g>
+<text x="326" y="138" font-family="monospace" font-size="8" fill="#8B5A00">TURRET MK-IV</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="295" cy="197" r="2.5" fill="#8B5A00"/>
+  <line x1="295" y1="197" x2="362" y2="160"/>
+</g>
+<text x="366" y="158" font-family="monospace" font-size="8" fill="#8B5A00">ARMOR PLATE</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="298" cy="303" r="2.5" fill="#8B5A00"/>
+  <line x1="298" y1="303" x2="358" y2="333"/>
+</g>
+<text x="362" y="331" font-family="monospace" font-size="8" fill="#8B5A00">FIGHTER BAY</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="256" cy="122" r="2.5" fill="#8B5A00"/>
+  <line x1="256" y1="122" x2="176" y2="100"/>
+</g>
+<text x="174" y="98" font-family="monospace" font-size="8" fill="#8B5A00" text-anchor="end">SHIELD EMITTER</text>
+
+<!-- Header/Footer -->
+<text x="10" y="16" font-family="monospace" font-size="9" fill="#8B5A00">[VOID SECTOR] — SCHEMATIC DISPLAY</text>
+<text x="502" y="16" font-family="monospace" font-size="9" fill="#8B5A00" text-anchor="end">SCANNER DISPLAY v2.4</text>
+<text x="10" y="506" font-family="monospace" font-size="9" fill="#FFB000">MILITARY OUTPOST  //  CLASS: FORTRESS  //  THREAT LEVEL: HIGH</text>
+<text x="502" y="506" font-family="monospace" font-size="9" fill="#8B5A00" text-anchor="end">CLASSIFICATION: OPEN</text>
+
+<!-- Corner brackets -->
+<g stroke="#FFB000" stroke-width="2" fill="none">
+  <polyline points="12,34 12,12 34,12"/>
+  <polyline points="478,12 500,12 500,34"/>
+  <polyline points="12,478 12,500 34,500"/>
+  <polyline points="478,500 500,500 500,478"/>
+</g>
+
+<rect width="512" height="512" fill="url(#scanlines)" opacity="0.5"/>
+</svg>

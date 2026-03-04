@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="3" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="glow2" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="6" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="softglow">
+    <feGaussianBlur stdDeviation="2" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <pattern id="scanlines" x="0" y="0" width="512" height="2" patternUnits="userSpaceOnUse">
+    <rect x="0" y="0" width="512" height="1" fill="rgba(0,0,0,0.18)"/>
+    <rect x="0" y="1" width="512" height="1" fill="rgba(0,0,0,0)"/>
+  </pattern>
+  <pattern id="grid" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+    <path d="M32 0 L0 0 0 32" fill="none" stroke="rgba(255,176,0,0.08)" stroke-width="0.5"/>
+  </pattern>
+</defs>
+<!-- Background -->
+<rect width="512" height="512" fill="#050505"/>
+<!-- Grid overlay -->
+<rect width="512" height="512" fill="url(#grid)"/>
+
+<!-- Habitat ring glow -->
+<circle cx="256" cy="240" r="90" stroke="#FFB000" stroke-width="2" fill="none" filter="url(#glow2)" opacity="0.4"/>
+<!-- Habitat ring main -->
+<circle cx="256" cy="240" r="90" stroke="#FFB000" stroke-width="2" fill="none"/>
+
+<!-- Ring segments (30° spacing) -->
+<line x1="256.00" y1="158.00" x2="256.00" y2="142.00" stroke="#8B5A00" stroke-width="2"/>
+<line x1="301.00" y1="170.00" x2="315.00" y2="162.00" stroke="#8B5A00" stroke-width="2"/>
+<line x1="333.00" y1="205.00" x2="341.00" y2="191.00" stroke="#8B5A00" stroke-width="2"/>
+<line x1="346.00" y1="240.00" x2="346.00" y2="240.00" stroke="#8B5A00" stroke-width="2"/>
+<line x1="256.00" y1="322.00" x2="256.00" y2="338.00" stroke="#8B5A00" stroke-width="2"/>
+<line x1="211.00" y1="310.00" x2="197.00" y2="318.00" stroke="#8B5A00" stroke-width="2"/>
+<line x1="179.00" y1="275.00" x2="171.00" y2="289.00" stroke="#8B5A00" stroke-width="2"/>
+<line x1="166.00" y1="240.00" x2="150.00" y2="240.00" stroke="#8B5A00" stroke-width="2"/>
+
+<!-- All 12 ring tick marks -->
+<g stroke="#8B5A00" stroke-width="2">
+  <line x1="256" y1="150" x2="256" y2="166"/>
+  <line x1="301.78" y1="162.50" x2="294.22" y2="175.39"/>
+  <line x1="333.50" y1="194.22" x2="320.61" y2="201.78"/>
+  <line x1="346" y1="240" x2="330" y2="240"/>
+  <line x1="333.50" y1="285.78" x2="320.61" y2="278.22"/>
+  <line x1="301.78" y1="317.50" x2="294.22" y2="304.61"/>
+  <line x1="256" y1="330" x2="256" y2="314"/>
+  <line x1="210.22" y1="317.50" x2="217.78" y2="304.61"/>
+  <line x1="178.50" y1="285.78" x2="191.39" y2="278.22"/>
+  <line x1="166" y1="240" x2="182" y2="240"/>
+  <line x1="178.50" y1="194.22" x2="191.39" y2="201.78"/>
+  <line x1="210.22" y1="162.50" x2="217.78" y2="175.39"/>
+</g>
+
+<!-- Spokes (60° spacing) -->
+<g stroke="#8B5A00" stroke-width="1">
+  <line x1="256" y1="240" x2="256" y2="150"/>
+  <line x1="256" y1="240" x2="333.97" y2="285"/>
+  <line x1="256" y1="240" x2="333.97" y2="195"/>
+  <line x1="256" y1="240" x2="256" y2="330"/>
+  <line x1="256" y1="240" x2="178.03" y2="285"/>
+  <line x1="256" y1="240" x2="178.03" y2="195"/>
+</g>
+
+<!-- Central hub -->
+<circle cx="256" cy="240" r="22" stroke="#FFD540" stroke-width="2" fill="none" filter="url(#softglow)"/>
+<circle cx="256" cy="240" r="8" stroke="#FFB000" stroke-width="1" fill="none"/>
+<circle cx="256" cy="240" r="3" fill="#FFB000"/>
+
+<!-- Docking arm 0° -->
+<line x1="346" y1="240" x2="401" y2="240" stroke="#FFB000" stroke-width="3" filter="url(#softglow)"/>
+<polygon points="419,222 419,258 437,258 437,222" stroke="#FFB000" stroke-width="1.5" fill="rgba(255,176,0,0.05)"/>
+<!-- Docking bay door lines -->
+<line x1="419" y1="233" x2="437" y2="233" stroke="#8B5A00" stroke-width="1"/>
+<line x1="419" y1="247" x2="437" y2="247" stroke="#8B5A00" stroke-width="1"/>
+
+<!-- Docking arm 120° -->
+<line x1="301.00" y1="317.94" x2="328.50" y2="365.49" stroke="#FFB000" stroke-width="3" filter="url(#softglow)"/>
+<polygon points="338.70,380.94 367.30,364.04 355.55,343.59 326.95,360.49" stroke="#FFB000" stroke-width="1.5" fill="rgba(255,176,0,0.05)"/>
+
+<!-- Docking arm 240° -->
+<line x1="211.00" y1="317.94" x2="183.50" y2="365.49" stroke="#FFB000" stroke-width="3" filter="url(#softglow)"/>
+<polygon points="173.30,380.94 144.70,364.04 156.45,343.59 185.05,360.49" stroke="#FFB000" stroke-width="1.5" fill="rgba(255,176,0,0.05)"/>
+
+<!-- Cargo containers (60°, 180°, 300°) -->
+<rect x="313" y="136" width="12" height="8" stroke="#8B5A00" stroke-width="1" fill="none"/>
+<rect x="327" y="113" width="12" height="8" stroke="#8B5A00" stroke-width="1" fill="none"/>
+<rect x="244" y="126" width="12" height="8" stroke="#8B5A00" stroke-width="1" fill="none"/>
+<rect x="244" y="108" width="12" height="8" stroke="#8B5A00" stroke-width="1" fill="none"/>
+<rect x="193" y="136" width="12" height="8" stroke="#8B5A00" stroke-width="1" fill="none"/>
+<rect x="178" y="113" width="12" height="8" stroke="#8B5A00" stroke-width="1" fill="none"/>
+
+<!-- Antenna arrays (top) -->
+<g stroke="#FFB000" stroke-width="1.5" filter="url(#softglow)">
+  <line x1="226" y1="150" x2="226" y2="122"/>
+  <line x1="256" y1="150" x2="256" y2="122"/>
+  <line x1="286" y1="150" x2="286" y2="122"/>
+</g>
+<g stroke="#8B5A00" stroke-width="1">
+  <line x1="212" y1="136" x2="240" y2="136"/>
+  <line x1="219" y1="128" x2="233" y2="128"/>
+  <circle cx="226" cy="122" r="2" fill="#8B5A00"/>
+  <line x1="242" y1="136" x2="270" y2="136"/>
+  <line x1="249" y1="128" x2="263" y2="128"/>
+  <circle cx="256" cy="122" r="2" fill="#8B5A00"/>
+  <line x1="272" y1="136" x2="300" y2="136"/>
+  <line x1="279" y1="128" x2="293" y2="128"/>
+  <circle cx="286" cy="122" r="2" fill="#8B5A00"/>
+</g>
+
+<!-- Annotations -->
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="346" cy="235" r="2.5" fill="#8B5A00"/>
+  <line x1="346" y1="235" x2="406" y2="208"/>
+</g>
+<text x="410" y="206" font-family="monospace" font-size="8" fill="#8B5A00">HABITAT RING</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="419" cy="248" r="2.5" fill="#8B5A00"/>
+  <line x1="419" y1="248" x2="438" y2="282"/>
+</g>
+<text x="442" y="280" font-family="monospace" font-size="8" fill="#8B5A00">DOCKING BAY A</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="256" cy="218" r="2.5" fill="#8B5A00"/>
+  <line x1="256" y1="218" x2="196" y2="185"/>
+</g>
+<text x="100" y="183" font-family="monospace" font-size="8" fill="#8B5A00">COMMAND HUB</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="275" cy="114" r="2.5" fill="#8B5A00"/>
+  <line x1="275" y1="114" x2="335" y2="98"/>
+</g>
+<text x="339" y="96" font-family="monospace" font-size="8" fill="#8B5A00">ANTENNA ARRAY</text>
+
+<!-- Header/Footer -->
+<text x="10" y="16" font-family="monospace" font-size="9" fill="#8B5A00">[VOID SECTOR] — SCHEMATIC DISPLAY</text>
+<text x="502" y="16" font-family="monospace" font-size="9" fill="#8B5A00" text-anchor="end">SCANNER DISPLAY v2.4</text>
+<text x="10" y="506" font-family="monospace" font-size="9" fill="#FFB000">TRADING POST  //  CLASS: COMMERCIAL  //  DOCK CAPACITY: 12</text>
+<text x="502" y="506" font-family="monospace" font-size="9" fill="#8B5A00" text-anchor="end">CLASSIFICATION: OPEN</text>
+
+<!-- Corner brackets -->
+<g stroke="#FFB000" stroke-width="2" fill="none">
+  <polyline points="12,34 12,12 34,12"/>
+  <polyline points="478,12 500,12 500,34"/>
+  <polyline points="12,478 12,500 34,500"/>
+  <polyline points="478,500 500,500 500,478"/>
+</g>
+
+<!-- Scanlines overlay -->
+<rect width="512" height="512" fill="url(#scanlines)" opacity="0.5"/>
+</svg>

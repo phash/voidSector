@@ -3,51 +3,21 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES, SLATE_AP_COST_SECTOR, CUSTOM_SLATE_AP_COST, CUSTOM_SLATE_CREDIT_COST, CUSTOM_SLATE_MAX_NOTES_LENGTH, HULLS } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
-
-const RESOURCE_ART: Record<string, string[]> = {
-  ore: [
-    ' ╱▓▓▓╲ ',
-    '│◆░◆░◆│',
-    '│░◆░◆░│',
-    ' ╲▓▓▓╱ ',
-  ],
-  gas: [
-    ' ≋≋≋≋≋ ',
-    '≋ PLASMA≋',
-    '≋≋≋≋≋≋≋',
-    ' ≈≈≈≈≈ ',
-  ],
-  crystal: [
-    '  /◇◇\ ',
-    ' /◇◇◇◇\ ',
-    ' \◇◇◇◇/ ',
-    '  \◇◇/ ',
-  ],
-  slates: [
-    '┌──────┐',
-    '│══════│',
-    '│══DATA│',
-    '└──────┘',
-  ],
-  artefact: [
-    '  ╔═══╗ ',
-    ' ╔╝░▓░╚╗',
-    ' ╚╗░▓░╔╝',
-    '  ╚═══╝ ',
-  ],
-};
+import { getItemArtwork } from '../assets/items';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
   const filled = max > 0 ? Math.min(Math.round((value / max) * width), width) : 0;
   const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(width - filled);
-  const art = RESOURCE_ART[label.toLowerCase().trim()];
+  const svgUrl = getItemArtwork(label.toLowerCase().trim());
   return (
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-      {art && (
-        <div style={{ fontSize: '0.6rem', lineHeight: 1.2, color: 'var(--color-dim)', opacity: 0.7, flexShrink: 0 }}>
-          {art.map((line, i) => <div key={i} style={{ whiteSpace: 'pre' }}>{line}</div>)}
-        </div>
+      {svgUrl && (
+        <img
+          src={svgUrl}
+          alt={label}
+          style={{ width: 40, height: 40, flexShrink: 0, filter: 'drop-shadow(0 0 4px var(--color-primary))' }}
+        />
       )}
       <div>
         <div>{label.padEnd(10)}</div>

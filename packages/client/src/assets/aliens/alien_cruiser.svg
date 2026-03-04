@@ -1,0 +1,220 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scanlines" width="1" height="2" patternUnits="userSpaceOnUse">
+      <rect width="1" height="1" fill="rgba(0,0,0,0.18)"/>
+    </pattern>
+    <style>
+      .amber { stroke: #FFB000; fill: none; }
+      .dim   { stroke: #B46E00; fill: none; }
+      .faint { stroke: #503200; fill: none; }
+      .bright{ stroke: #FFD250; fill: none; }
+      .node  { fill: #FFD250; stroke: none; }
+      .node-a{ fill: #FFB000; stroke: none; }
+      .txt   { fill: #B46E00; font-family: monospace; font-size: 8px; }
+      .txt-f { fill: #503200; font-family: monospace; font-size: 7px; }
+    </style>
+  </defs>
+
+  <rect width="512" height="512" fill="#050505"/>
+
+  <!-- Grid -->
+  <g stroke="#503200" stroke-width="0.5" opacity="0.6">
+    <line x1="32"  y1="0" x2="32"  y2="512"/>  <line x1="64"  y1="0" x2="64"  y2="512"/>
+    <line x1="96"  y1="0" x2="96"  y2="512"/>  <line x1="128" y1="0" x2="128" y2="512"/>
+    <line x1="160" y1="0" x2="160" y2="512"/>  <line x1="192" y1="0" x2="192" y2="512"/>
+    <line x1="224" y1="0" x2="224" y2="512"/>  <line x1="256" y1="0" x2="256" y2="512"/>
+    <line x1="288" y1="0" x2="288" y2="512"/>  <line x1="320" y1="0" x2="320" y2="512"/>
+    <line x1="352" y1="0" x2="352" y2="512"/>  <line x1="384" y1="0" x2="384" y2="512"/>
+    <line x1="416" y1="0" x2="416" y2="512"/>  <line x1="448" y1="0" x2="448" y2="512"/>
+    <line x1="480" y1="0" x2="480" y2="512"/>
+    <line x1="0" y1="32"  x2="512" y2="32"/>  <line x1="0" y1="64"  x2="512" y2="64"/>
+    <line x1="0" y1="96"  x2="512" y2="96"/>  <line x1="0" y1="128" x2="512" y2="128"/>
+    <line x1="0" y1="160" x2="512" y2="160"/>  <line x1="0" y1="192" x2="512" y2="192"/>
+    <line x1="0" y1="224" x2="512" y2="224"/>  <line x1="0" y1="256" x2="512" y2="256"/>
+    <line x1="0" y1="288" x2="512" y2="288"/>  <line x1="0" y1="320" x2="512" y2="320"/>
+    <line x1="0" y1="352" x2="512" y2="352"/>  <line x1="0" y1="384" x2="512" y2="384"/>
+    <line x1="0" y1="416" x2="512" y2="416"/>  <line x1="0" y1="448" x2="512" y2="448"/>
+    <line x1="0" y1="480" x2="512" y2="480"/>
+  </g>
+
+  <!-- Corner marks -->
+  <g stroke="#B46E00" stroke-width="1" fill="none">
+    <line x1="4" y1="4" x2="20" y2="4"/><line x1="4" y1="4" x2="4" y2="20"/>
+    <line x1="508" y1="4" x2="492" y2="4"/><line x1="508" y1="4" x2="508" y2="20"/>
+    <line x1="4" y1="508" x2="20" y2="508"/><line x1="4" y1="508" x2="4" y2="492"/>
+    <line x1="508" y1="508" x2="492" y2="508"/><line x1="508" y1="508" x2="508" y2="492"/>
+  </g>
+
+  <!-- cx=256 cy=276 -->
+
+  <!-- OUTER HULL — heavy bio-mechanical shell, front-heavy -->
+  <g filter="url(#glow)">
+    <path class="amber" stroke-width="2.5"
+      d="M384,240 C395,258 388,290 370,302 C345,318 310,320 270,318
+         C230,316 185,308 162,292 C140,276 140,258 162,244
+         C185,230 225,224 270,224 C310,224 370,218 384,240 Z"/>
+    <path class="dim" stroke-width="1"
+      d="M372,242 C382,258 376,286 360,296 C337,310 305,312 268,310
+         C231,308 190,301 170,287 C151,273 151,259 170,247
+         C190,235 226,230 268,230 C305,230 360,226 372,242 Z"/>
+    <path class="faint" stroke-width="1"
+      d="M354,247 C362,260 357,282 343,291 C322,303 294,305 262,303
+         C230,301 196,295 179,283 C163,271 163,261 179,251
+         C196,241 226,237 262,237 C294,237 344,233 354,247 Z"/>
+  </g>
+
+  <!-- ARMOR PLATE SEAMS -->
+  <g stroke="#503200" stroke-width="0.5" opacity="0.8">
+    <line x1="256" y1="226" x2="256" y2="320"/>
+    <line x1="220" y1="230" x2="210" y2="318"/>
+    <line x1="292" y1="230" x2="302" y2="318"/>
+    <line x1="185" y1="246" x2="165" y2="294"/>
+    <line x1="327" y1="246" x2="347" y2="294"/>
+    <!-- cross segments -->
+    <line x1="160" y1="268" x2="392" y2="268"/>
+    <line x1="168" y1="252" x2="376" y2="258"/>
+    <line x1="168" y1="284" x2="376" y2="278"/>
+  </g>
+
+  <!-- WEAPON LANCES (top array) -->
+  <g filter="url(#glow)">
+    <!-- Lance 1 -->
+    <line stroke="#FFB000" stroke-width="1.5" x1="243" y1="222" x2="236" y2="168"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="239" y1="222" x2="232" y2="168"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="247" y1="222" x2="240" y2="168"/>
+    <circle class="node" cx="236" cy="168" r="2.5"/>
+    <!-- Lance 2 -->
+    <line stroke="#FFB000" stroke-width="1.5" x1="252" y1="220" x2="250" y2="165"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="248" y1="220" x2="246" y2="165"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="256" y1="220" x2="254" y2="165"/>
+    <circle class="node" cx="250" cy="165" r="2.5"/>
+    <!-- Lance 3 (center) -->
+    <line stroke="#FFB000" stroke-width="2" x1="262" y1="220" x2="265" y2="163"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="258" y1="220" x2="261" y2="163"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="266" y1="220" x2="269" y2="163"/>
+    <circle class="node" cx="265" cy="163" r="3"/>
+    <!-- Lance 4 -->
+    <line stroke="#FFB000" stroke-width="1.5" x1="272" y1="220" x2="278" y2="164"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="268" y1="220" x2="274" y2="164"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="276" y1="220" x2="282" y2="164"/>
+    <circle class="node" cx="278" cy="164" r="2.5"/>
+    <!-- Lance 5 -->
+    <line stroke="#FFB000" stroke-width="1.5" x1="284" y1="222" x2="294" y2="168"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="280" y1="222" x2="290" y2="168"/>
+    <line stroke="#B46E00" stroke-width="0.8" x1="288" y1="222" x2="298" y2="168"/>
+    <circle class="node" cx="294" cy="168" r="2.5"/>
+  </g>
+
+  <!-- DORSAL SPINES -->
+  <g stroke="#FFB000" stroke-width="1">
+    <line x1="172" y1="268" x2="172" y2="252"/>
+    <line x1="190" y1="258" x2="190" y2="237"/>
+    <line x1="208" y1="252" x2="208" y2="228"/>
+    <line x1="226" y1="247" x2="226" y2="222"/>
+    <line x1="244" y1="244" x2="244" y2="218"/>
+    <line x1="256" y1="243" x2="256" y2="215"/>
+    <line x1="268" y1="244" x2="268" y2="218"/>
+    <line x1="286" y1="247" x2="286" y2="222"/>
+    <line x1="304" y1="252" x2="304" y2="228"/>
+    <line x1="322" y1="258" x2="322" y2="237"/>
+    <line x1="340" y1="268" x2="340" y2="252"/>
+  </g>
+
+  <!-- ENGINE EXHAUSTS (left/rear) -->
+  <g filter="url(#glow)">
+    <!-- Engine 1 -->
+    <ellipse class="amber" stroke-width="1.5" cx="134" cy="248" rx="9" ry="11"/>
+    <ellipse class="dim"   stroke-width="1"   cx="134" cy="248" rx="5" ry="6"/>
+    <circle class="node" cx="134" cy="248" r="2.5"/>
+    <!-- Engine 2 -->
+    <ellipse class="amber" stroke-width="1.5" cx="134" cy="276" rx="9" ry="11"/>
+    <ellipse class="dim"   stroke-width="1"   cx="134" cy="276" rx="5" ry="6"/>
+    <circle class="node" cx="134" cy="276" r="2.5"/>
+    <!-- Engine 3 -->
+    <ellipse class="amber" stroke-width="1.5" cx="134" cy="304" rx="9" ry="11"/>
+    <ellipse class="dim"   stroke-width="1"   cx="134" cy="304" rx="5" ry="6"/>
+    <circle class="node" cx="134" cy="304" r="2.5"/>
+  </g>
+
+  <!-- Engine trails -->
+  <g stroke="#503200" stroke-width="0.5" opacity="0.8">
+    <line x1="125" y1="242" x2="84" y2="236"/> <line x1="125" y1="254" x2="84" y2="260"/>
+    <line x1="125" y1="270" x2="84" y2="264"/> <line x1="125" y1="282" x2="84" y2="288"/>
+    <line x1="125" y1="298" x2="84" y2="292"/> <line x1="125" y1="310" x2="84" y2="316"/>
+  </g>
+
+  <!-- FORWARD COMMAND POD -->
+  <g filter="url(#glow)">
+    <ellipse class="amber" stroke-width="2" cx="368" cy="276" rx="20" ry="14"/>
+    <ellipse class="dim"   stroke-width="1" cx="368" cy="276" rx="10" ry="7"/>
+    <circle class="node" cx="368" cy="276" r="4"/>
+    <circle stroke="#FFB000" stroke-width="1" fill="none" cx="368" cy="276" r="8"/>
+    <line stroke="#B46E00" stroke-width="0.7" x1="350" y1="276" x2="386" y2="276"/>
+    <line stroke="#B46E00" stroke-width="0.7" x1="368" y1="262" x2="368" y2="290"/>
+  </g>
+
+  <!-- LATERAL FINS -->
+  <polygon class="dim" stroke-width="1"
+    points="231,218 304,198 341,184 318,216"/>
+  <polygon class="dim" stroke-width="1"
+    points="231,334 304,354 341,368 318,336"/>
+
+  <!-- ENERGY LATTICE -->
+  <g stroke="#503200" stroke-width="0.5" opacity="0.7">
+    <line x1="256" y1="234" x2="276" y2="218"/> <line x1="298" y1="232" x2="318" y2="246"/>
+    <line x1="310" y1="268" x2="330" y2="282"/> <line x1="298" y1="302" x2="318" y2="288"/>
+    <line x1="256" y1="310" x2="276" y2="326"/> <line x1="214" y1="302" x2="194" y2="316"/>
+    <line x1="202" y1="268" x2="182" y2="282"/> <line x1="214" y1="232" x2="194" y2="218"/>
+  </g>
+
+  <!-- CENTRAL ENERGY CORE -->
+  <g filter="url(#glow-strong)">
+    <circle class="node" cx="256" cy="276" r="10"/>
+    <circle stroke="#FFD250" stroke-width="1" fill="none" cx="256" cy="276" r="16"/>
+    <ellipse class="faint" stroke-width="1" cx="256" cy="276" rx="24" ry="15"/>
+    <line stroke="#B46E00" stroke-width="0.7" x1="232" y1="276" x2="280" y2="276"/>
+    <line stroke="#B46E00" stroke-width="0.7" x1="256" y1="261" x2="256" y2="291"/>
+  </g>
+
+  <!-- SCAN BARS -->
+  <line stroke="#503200" stroke-width="1" stroke-dasharray="4,4" x1="0" y1="118" x2="512" y2="118"/>
+  <line stroke="#503200" stroke-width="1" stroke-dasharray="4,4" x1="0" y1="398" x2="512" y2="398"/>
+
+  <!-- ANNOTATION LINES -->
+  <g stroke="#B46E00" stroke-width="0.7" stroke-dasharray="3,3" fill="none">
+    <line x1="368" y1="262" x2="394" y2="204"/>
+    <circle fill="#B46E00" stroke="none" cx="368" cy="262" r="1.5"/>
+    <line x1="134" y1="248" x2="80" y2="215"/>
+    <circle fill="#B46E00" stroke="none" cx="134" cy="248" r="1.5"/>
+    <line x1="265" y1="163" x2="278" y2="131"/>
+    <circle fill="#B46E00" stroke="none" cx="265" cy="163" r="1.5"/>
+  </g>
+
+  <!-- HUD TEXT -->
+  <text class="txt" x="8" y="22">VOID SECTOR // SCAN TERMINAL v4.7</text>
+  <text class="txt" x="8" y="33">CONTACT: UNKNOWN VESSEL CLASS-C</text>
+  <text class="txt" x="8" y="44">DESIGNATION: ALIEN CRUISER [BIO-MECH]</text>
+  <text class="txt" x="8" y="55">STATUS: ACTIVE  THREAT: CRITICAL</text>
+
+  <text class="txt-f" x="434" y="22">SIG: 2.1 AU</text>
+  <text class="txt-f" x="434" y="33">MASS: ~890 MT</text>
+  <text class="txt-f" x="434" y="44">CLASS: CRUISER</text>
+  <text class="txt-f" x="434" y="55">ID: UNK-003</text>
+
+  <text class="txt-f" x="396" y="202">CMD POD</text>
+  <text class="txt-f" x="28"  y="213">ENGINE x3</text>
+  <text class="txt-f" x="278" y="129">WEAPON ARRAY</text>
+
+  <text class="txt-f" x="8" y="498">SCAN COMPLETE</text>
+  <text class="txt-f" x="8" y="507">RES: 512x512</text>
+
+  <rect width="512" height="512" fill="url(#scanlines)" opacity="0.4"/>
+</svg>

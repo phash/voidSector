@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow_soft_bp" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow_strong_bp" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scanlines_bp" x="0" y="0" width="512" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="512" height="2" fill="rgba(0,0,0,0.25)"/>
+      <rect x="0" y="2" width="512" height="2" fill="rgba(0,0,0,0.05)"/>
+    </pattern>
+    <radialGradient id="vignette_bp" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.7)"/>
+    </radialGradient>
+    <radialGradient id="amberGrad_bp" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFB000" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#FFB000" stop-opacity="0.02"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#050505"/>
+  <rect width="512" height="512" fill="url(#amberGrad_bp)"/>
+
+  <!-- Corner brackets -->
+  <g fill="none" stroke="#CC8800" stroke-width="1" opacity="0.6">
+    <polyline points="16,36 16,16 36,16"/>
+    <polyline points="476,16 496,16 496,36"/>
+    <polyline points="16,476 16,496 36,496"/>
+    <polyline points="476,496 496,496 496,476"/>
+  </g>
+
+  <!-- Main content -->
+  <g filter="url(#glow_soft_bp)">
+    <!-- Left scroll cylinder (side view ellipse) -->
+    <ellipse cx="132" cy="243" rx="20" ry="108" fill="none" stroke="#FFB000" stroke-width="2"/>
+    <ellipse cx="132" cy="243" rx="11" ry="99" fill="none" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <!-- Scroll shading lines on left cylinder -->
+    <line x1="121" y1="160" x2="121" y2="326" stroke="#CC8800" stroke-width="0.5" opacity="0.3"/>
+    <line x1="126" y1="145" x2="126" y2="341" stroke="#CC8800" stroke-width="0.5" opacity="0.3"/>
+
+    <!-- Right scroll cylinder -->
+    <ellipse cx="380" cy="243" rx="20" ry="108" fill="none" stroke="#FFB000" stroke-width="2"/>
+    <ellipse cx="380" cy="243" rx="11" ry="99" fill="none" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="391" y1="160" x2="391" y2="326" stroke="#CC8800" stroke-width="0.5" opacity="0.3"/>
+    <line x1="386" y1="145" x2="386" y2="341" stroke="#CC8800" stroke-width="0.5" opacity="0.3"/>
+
+    <!-- Scroll body -->
+    <rect x="132" y="135" width="248" height="216" rx="3" fill="none" stroke="#FFB000" stroke-width="2.5"/>
+    <!-- Scroll body subtle fill -->
+    <rect x="132" y="135" width="248" height="216" rx="3" fill="#FFB000" opacity="0.025"/>
+
+    <!-- Diagram grid on scroll (faint) -->
+    <line x1="140" y1="155" x2="372" y2="155" stroke="#CC8800" stroke-width="0.5" opacity="0.25"/>
+    <line x1="140" y1="175" x2="372" y2="175" stroke="#CC8800" stroke-width="0.5" opacity="0.2"/>
+    <line x1="170" y1="135" x2="170" y2="351" stroke="#CC8800" stroke-width="0.5" opacity="0.2"/>
+    <line x1="210" y1="135" x2="210" y2="351" stroke="#CC8800" stroke-width="0.5" opacity="0.2"/>
+    <line x1="260" y1="135" x2="260" y2="351" stroke="#CC8800" stroke-width="0.5" opacity="0.2"/>
+    <line x1="310" y1="135" x2="310" y2="351" stroke="#CC8800" stroke-width="0.5" opacity="0.2"/>
+    <line x1="350" y1="135" x2="350" y2="351" stroke="#CC8800" stroke-width="0.5" opacity="0.2"/>
+
+    <!-- Ship schematic: top-down view -->
+    <!-- Main hull (hexagon-like) -->
+    <polygon points="256,162 300,192 300,232 256,252 212,232 212,192"
+      fill="none" stroke="#FFB000" stroke-width="1.5"/>
+
+    <!-- Cockpit nose -->
+    <polygon points="256,148 272,175 256,175 240,175"
+      fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <line x1="256" y1="148" x2="256" y2="162" stroke="#CC8800" stroke-width="1" opacity="0.6"/>
+
+    <!-- Engine pods left -->
+    <rect x="188" y="202" width="10" height="24" rx="2" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <line x1="198" y1="210" x2="212" y2="200" stroke="#CC8800" stroke-width="1.5" opacity="0.7"/>
+    <line x1="198" y1="218" x2="212" y2="215" stroke="#CC8800" stroke-width="1.5" opacity="0.7"/>
+    <!-- Engine nozzle glow left -->
+    <line x1="188" y1="208" x2="180" y2="208" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="188" y1="214" x2="178" y2="214" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="188" y1="220" x2="180" y2="220" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+
+    <!-- Engine pods right -->
+    <rect x="314" y="202" width="10" height="24" rx="2" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <line x1="314" y1="210" x2="300" y2="200" stroke="#CC8800" stroke-width="1.5" opacity="0.7"/>
+    <line x1="314" y1="218" x2="300" y2="215" stroke="#CC8800" stroke-width="1.5" opacity="0.7"/>
+    <line x1="324" y1="208" x2="332" y2="208" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="324" y1="214" x2="334" y2="214" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="324" y1="220" x2="332" y2="220" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+
+    <!-- Ship internal details -->
+    <!-- Center axis line -->
+    <line x1="256" y1="148" x2="256" y2="260" stroke="#CC8800" stroke-width="1" opacity="0.4" stroke-dasharray="5,3"/>
+    <!-- Cross beam -->
+    <line x1="212" y1="212" x2="300" y2="212" stroke="#CC8800" stroke-width="1" opacity="0.4" stroke-dasharray="4,3"/>
+    <!-- Reactor core -->
+    <circle cx="256" cy="212" r="12" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <circle cx="256" cy="212" r="5" fill="#FFB000" opacity="0.35"/>
+    <circle cx="256" cy="212" r="2" fill="#FFD050" opacity="0.7"/>
+
+    <!-- Dimension lines width -->
+    <line x1="212" y1="262" x2="300" y2="262" stroke="#CC8800" stroke-width="1" opacity="0.5" stroke-dasharray="3,3"/>
+    <line x1="212" y1="258" x2="212" y2="266" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="300" y1="258" x2="300" y2="266" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <!-- Width measurement text -->
+    <text x="256" y="277" fill="#CC8800" font-family="monospace" font-size="9" text-anchor="middle" opacity="0.6">88u</text>
+
+    <!-- Dimension lines height -->
+    <line x1="155" y1="148" x2="155" y2="260" stroke="#CC8800" stroke-width="1" opacity="0.5" stroke-dasharray="3,3"/>
+    <line x1="151" y1="148" x2="159" y2="148" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="151" y1="260" x2="159" y2="260" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <text x="147" y="208" fill="#CC8800" font-family="monospace" font-size="9" text-anchor="middle" opacity="0.6" transform="rotate(-90, 147, 208)">112u</text>
+
+    <!-- Text data rows below diagram -->
+    <line x1="148" y1="290" x2="370" y2="290" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+    <line x1="148" y1="305" x2="340" y2="305" stroke="#CC8800" stroke-width="1" opacity="0.3"/>
+    <line x1="148" y1="318" x2="355" y2="318" stroke="#CC8800" stroke-width="1" opacity="0.3"/>
+    <line x1="148" y1="330" x2="325" y2="330" stroke="#CC8800" stroke-width="1" opacity="0.25"/>
+    <line x1="148" y1="342" x2="340" y2="342" stroke="#CC8800" stroke-width="1" opacity="0.25"/>
+
+    <!-- Title block box (bottom right) -->
+    <rect x="315" y="292" width="58" height="60" rx="2" fill="none" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="315" y1="305" x2="373" y2="305" stroke="#CC8800" stroke-width="0.5" opacity="0.4"/>
+    <line x1="315" y1="318" x2="373" y2="318" stroke="#CC8800" stroke-width="0.5" opacity="0.4"/>
+    <line x1="315" y1="330" x2="373" y2="330" stroke="#CC8800" stroke-width="0.5" opacity="0.4"/>
+    <line x1="315" y1="342" x2="373" y2="342" stroke="#CC8800" stroke-width="0.5" opacity="0.4"/>
+    <text x="344" y="301" fill="#CC8800" font-family="monospace" font-size="7" text-anchor="middle" opacity="0.6">VS-REV1</text>
+    <text x="344" y="314" fill="#CC8800" font-family="monospace" font-size="7" text-anchor="middle" opacity="0.6">SCOUT-MK2</text>
+    <text x="344" y="327" fill="#CC8800" font-family="monospace" font-size="7" text-anchor="middle" opacity="0.6">2246-03</text>
+    <text x="344" y="340" fill="#CC8800" font-family="monospace" font-size="7" text-anchor="middle" opacity="0.6">APPROVED</text>
+    <text x="344" y="349" fill="#CC8800" font-family="monospace" font-size="6" text-anchor="middle" opacity="0.4">VOID SEC.</text>
+  </g>
+
+  <!-- Ship diagram glow -->
+  <polygon points="256,162 300,192 300,232 256,252 212,232 212,192"
+    fill="none" stroke="#FFD050" stroke-width="0.8" opacity="0.25" filter="url(#glow_strong_bp)"/>
+
+  <!-- Annotations -->
+  <text x="256" y="30" fill="#CC8800" font-family="monospace" font-size="12" opacity="0.7" text-anchor="middle">[ SCHEMATICS :: BLUEPRINT ]</text>
+  <text x="256" y="45" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7" text-anchor="middle">CONSTRUCTION BLUEPRINT -- CLASSIFIED</text>
+  <text x="256" y="120" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.6" text-anchor="middle">VOID SECTOR SHIPWORKS -- MK.2 SCOUT</text>
+  <text x="256" y="490" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.7" text-anchor="middle">SYS:CARGO  REF:BLPT-MK2  AUTH:SEALED</text>
+
+  <!-- Scan lines overlay -->
+  <rect width="512" height="512" fill="url(#scanlines_bp)" opacity="0.4"/>
+  <!-- Vignette -->
+  <rect width="512" height="512" fill="url(#vignette_bp)"/>
+</svg>

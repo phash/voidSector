@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="3" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="glow2" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="6" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="softglow">
+    <feGaussianBlur stdDeviation="2" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <pattern id="scanlines" x="0" y="0" width="512" height="2" patternUnits="userSpaceOnUse">
+    <rect x="0" y="0" width="512" height="1" fill="rgba(0,0,0,0.18)"/>
+    <rect x="0" y="1" width="512" height="1" fill="rgba(0,0,0,0)"/>
+  </pattern>
+  <pattern id="grid" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+    <path d="M32 0 L0 0 0 32" fill="none" stroke="rgba(255,176,0,0.08)" stroke-width="0.5"/>
+  </pattern>
+</defs>
+<rect width="512" height="512" fill="#050505"/>
+<rect width="512" height="512" fill="url(#grid)"/>
+
+<!-- Main spine -->
+<line x1="256" y1="118" x2="256" y2="348" stroke="#FFB000" stroke-width="3" filter="url(#softglow)"/>
+
+<!-- Lab module: SPECTROMETRY (y=158) -->
+<rect x="206" y="142" width="100" height="32" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.04)"/>
+<line x1="212" y1="158" x2="300" y2="158" stroke="#8B5A00" stroke-width="1"/>
+<text x="256" y="154" font-family="monospace" font-size="7" fill="#8B5A00" text-anchor="middle">SPECTROMETRY</text>
+
+<!-- Lab module: MAIN LAB (y=208) -->
+<rect x="186" y="192" width="140" height="32" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.04)"/>
+<line x1="192" y1="208" x2="320" y2="208" stroke="#8B5A00" stroke-width="1"/>
+<text x="256" y="204" font-family="monospace" font-size="7" fill="#8B5A00" text-anchor="middle">MAIN LABORATORY</text>
+
+<!-- Lab module: DATA CORE (y=258) -->
+<rect x="196" y="242" width="120" height="32" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.04)"/>
+<line x1="202" y1="258" x2="310" y2="258" stroke="#8B5A00" stroke-width="1"/>
+<text x="256" y="254" font-family="monospace" font-size="7" fill="#8B5A00" text-anchor="middle">DATA CORE</text>
+
+<!-- Lab module: CRYO STORE (y=308) -->
+<rect x="216" y="292" width="80" height="32" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.04)"/>
+<line x1="222" y1="308" x2="290" y2="308" stroke="#8B5A00" stroke-width="1"/>
+<text x="256" y="304" font-family="monospace" font-size="7" fill="#8B5A00" text-anchor="middle">CRYO STORE</text>
+
+<!-- Large radio telescope dish (left, at y=208) -->
+<!-- Dish arc: parabola open to right -->
+<path d="M126,178 Q86,208 126,238" stroke="#FFB000" stroke-width="2" fill="none" filter="url(#softglow)"/>
+<!-- Dish rim lines -->
+<line x1="126" y1="178" x2="186" y2="192" stroke="#8B5A00" stroke-width="1"/>
+<line x1="126" y1="238" x2="186" y2="224" stroke="#8B5A00" stroke-width="1"/>
+<!-- Support strut -->
+<line x1="126" y1="208" x2="126" y2="258" stroke="#8B5A00" stroke-width="1"/>
+<!-- Focal point -->
+<circle cx="126" cy="208" r="5" stroke="#FFD540" stroke-width="2" fill="none" filter="url(#softglow)"/>
+<circle cx="126" cy="208" r="2" fill="#FFD540"/>
+<!-- Feed arm -->
+<line x1="126" y1="208" x2="155" y2="208" stroke="#8B5A00" stroke-width="1" stroke-dasharray="3,3"/>
+
+<!-- Secondary sensor dish (right, at y=268) -->
+<path d="M352,248 Q390,268 352,288" stroke="#FFB000" stroke-width="2" fill="none" filter="url(#softglow)"/>
+<line x1="352" y1="248" x2="316" y2="258" stroke="#8B5A00" stroke-width="1"/>
+<line x1="352" y1="288" x2="316" y2="274" stroke="#8B5A00" stroke-width="1"/>
+<circle cx="352" cy="268" r="3.5" stroke="#FFD540" stroke-width="1.5" fill="none"/>
+<circle cx="352" cy="268" r="1.5" fill="#FFD540"/>
+
+<!-- Solar panels left -->
+<rect x="161" y="318" width="70" height="20" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.03)"/>
+<line x1="175" y1="318" x2="175" y2="338" stroke="#8B5A00" stroke-width="1"/>
+<line x1="189" y1="318" x2="189" y2="338" stroke="#8B5A00" stroke-width="1"/>
+<line x1="203" y1="318" x2="203" y2="338" stroke="#8B5A00" stroke-width="1"/>
+<line x1="217" y1="318" x2="217" y2="338" stroke="#8B5A00" stroke-width="1"/>
+<line x1="216" y1="308" x2="196" y2="328" stroke="#8B5A00" stroke-width="1"/>
+
+<!-- Solar panels right -->
+<rect x="281" y="318" width="70" height="20" stroke="#FFB000" stroke-width="2" fill="rgba(255,176,0,0.03)"/>
+<line x1="295" y1="318" x2="295" y2="338" stroke="#8B5A00" stroke-width="1"/>
+<line x1="309" y1="318" x2="309" y2="338" stroke="#8B5A00" stroke-width="1"/>
+<line x1="323" y1="318" x2="323" y2="338" stroke="#8B5A00" stroke-width="1"/>
+<line x1="337" y1="318" x2="337" y2="338" stroke="#8B5A00" stroke-width="1"/>
+<line x1="296" y1="308" x2="316" y2="328" stroke="#8B5A00" stroke-width="1"/>
+
+<!-- Telescope array top (3 scopes) -->
+<line x1="236" y1="118" x2="236" y2="63" stroke="#FFB000" stroke-width="1.5" filter="url(#softglow)"/>
+<circle cx="236" cy="63" r="5" stroke="#8B5A00" stroke-width="1" fill="none"/>
+<circle cx="236" cy="63" r="2" fill="#8B5A00"/>
+
+<line x1="256" y1="118" x2="256" y2="48" stroke="#FFB000" stroke-width="1.5" filter="url(#softglow)"/>
+<circle cx="256" cy="48" r="6" stroke="#8B5A00" stroke-width="1" fill="none"/>
+<circle cx="256" cy="48" r="2.5" fill="#8B5A00"/>
+
+<line x1="276" y1="118" x2="276" y2="63" stroke="#FFB000" stroke-width="1.5" filter="url(#softglow)"/>
+<circle cx="276" cy="63" r="5" stroke="#8B5A00" stroke-width="1" fill="none"/>
+<circle cx="276" cy="63" r="2" fill="#8B5A00"/>
+
+<!-- Cross-braces telescope array -->
+<line x1="236" y1="85" x2="256" y2="80" stroke="#8B5A00" stroke-width="0.8" opacity="0.6"/>
+<line x1="256" y1="80" x2="276" y2="85" stroke="#8B5A00" stroke-width="0.8" opacity="0.6"/>
+<line x1="234" y1="100" x2="278" y2="100" stroke="#8B5A00" stroke-width="0.8" opacity="0.6"/>
+
+<!-- Annotations -->
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="106" cy="196" r="2.5" fill="#8B5A00"/>
+  <line x1="106" y1="196" x2="46" y2="163"/>
+</g>
+<text x="44" y="161" font-family="monospace" font-size="8" fill="#8B5A00" text-anchor="end">RADIO TELESCOPE</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="292" cy="142" r="2.5" fill="#8B5A00"/>
+  <line x1="292" y1="142" x2="352" y2="123"/>
+</g>
+<text x="356" y="121" font-family="monospace" font-size="8" fill="#8B5A00">SENSOR ARRAY</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="326" cy="198" r="2.5" fill="#8B5A00"/>
+  <line x1="326" y1="198" x2="386" y2="176"/>
+</g>
+<text x="390" y="174" font-family="monospace" font-size="8" fill="#8B5A00">PRIMARY LAB</text>
+
+<g stroke="#8B5A00" stroke-width="1" fill="none">
+  <circle cx="351" cy="328" r="2.5" fill="#8B5A00"/>
+  <line x1="351" y1="328" x2="406" y2="352"/>
+</g>
+<text x="410" y="350" font-family="monospace" font-size="8" fill="#8B5A00">SOLAR PANELS</text>
+
+<!-- Header/Footer -->
+<text x="10" y="16" font-family="monospace" font-size="9" fill="#8B5A00">[VOID SECTOR] — SCHEMATIC DISPLAY</text>
+<text x="502" y="16" font-family="monospace" font-size="9" fill="#8B5A00" text-anchor="end">SCANNER DISPLAY v2.4</text>
+<text x="10" y="506" font-family="monospace" font-size="9" fill="#FFB000">RESEARCH STATION  //  CLASS: SCIENTIFIC  //  SENSOR RANGE: 8.4 AU</text>
+<text x="502" y="506" font-family="monospace" font-size="9" fill="#8B5A00" text-anchor="end">CLASSIFICATION: OPEN</text>
+
+<!-- Corner brackets -->
+<g stroke="#FFB000" stroke-width="2" fill="none">
+  <polyline points="12,34 12,12 34,12"/>
+  <polyline points="478,12 500,12 500,34"/>
+  <polyline points="12,478 12,500 34,500"/>
+  <polyline points="478,500 500,500 500,478"/>
+</g>
+
+<rect width="512" height="512" fill="url(#scanlines)" opacity="0.5"/>
+</svg>

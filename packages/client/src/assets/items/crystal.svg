@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow_soft_crystal" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow_strong_crystal" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scanlines_crystal" x="0" y="0" width="512" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="512" height="2" fill="rgba(0,0,0,0.25)"/>
+      <rect x="0" y="2" width="512" height="2" fill="rgba(0,0,0,0.05)"/>
+    </pattern>
+    <radialGradient id="vignette_crystal" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.7)"/>
+    </radialGradient>
+    <radialGradient id="amberGrad_crystal" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFB000" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#FFB000" stop-opacity="0.02"/>
+    </radialGradient>
+    <radialGradient id="crystalInner" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#FFB000" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#FFB000" stop-opacity="0.0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#050505"/>
+  <rect width="512" height="512" fill="url(#amberGrad_crystal)"/>
+
+  <!-- Corner brackets -->
+  <g fill="none" stroke="#CC8800" stroke-width="1" opacity="0.6">
+    <polyline points="16,36 16,16 36,16"/>
+    <polyline points="476,16 496,16 496,36"/>
+    <polyline points="16,476 16,496 36,496"/>
+    <polyline points="476,496 496,496 496,476"/>
+  </g>
+
+  <!-- Main content -->
+  <g filter="url(#glow_soft_crystal)">
+    <!-- Main crystal body - hexagonal prism -->
+    <polygon points="256,90 310,140 310,260 256,310 202,260 202,140"
+      fill="url(#crystalInner)" stroke="#FFB000" stroke-width="2.5"/>
+
+    <!-- Crystal top tip -->
+    <polygon points="256,52 290,90 256,90 222,90"
+      fill="none" stroke="#FFB000" stroke-width="2"/>
+    <line x1="256" y1="52" x2="256" y2="90" stroke="#CC8800" stroke-width="1.5"/>
+
+    <!-- Crystal bottom tip -->
+    <polygon points="256,350 290,310 256,310 222,310"
+      fill="none" stroke="#FFB000" stroke-width="2"/>
+    <line x1="256" y1="350" x2="256" y2="310" stroke="#CC8800" stroke-width="1.5"/>
+
+    <!-- Interior refraction lines -->
+    <line x1="256" y1="90" x2="256" y2="310" stroke="#CC8800" stroke-width="1.5" opacity="0.5"/>
+    <line x1="202" y1="140" x2="310" y2="260" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+    <line x1="310" y1="140" x2="202" y2="260" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+    <line x1="202" y1="200" x2="310" y2="200" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="202" y1="170" x2="310" y2="230" stroke="#CC8800" stroke-width="0.8" opacity="0.3"/>
+    <line x1="202" y1="230" x2="310" y2="170" stroke="#CC8800" stroke-width="0.8" opacity="0.3"/>
+
+    <!-- Facet highlight lines -->
+    <line x1="256" y1="90" x2="310" y2="140" stroke="#FFD050" stroke-width="1.5" opacity="0.7"/>
+    <line x1="256" y1="52" x2="310" y2="140" stroke="#FFD050" stroke-width="1" opacity="0.5"/>
+    <line x1="202" y1="140" x2="256" y2="90" stroke="#FFD050" stroke-width="1" opacity="0.4"/>
+
+    <!-- Small satellite crystal right -->
+    <polygon points="330,130 350,110 370,140 355,165 335,160"
+      fill="none" stroke="#CC8800" stroke-width="1.5" opacity="0.7"/>
+    <line x1="350" y1="110" x2="352" y2="153" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="310" y1="140" x2="330" y2="130" stroke="#CC8800" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>
+
+    <!-- Small satellite crystal left -->
+    <polygon points="140,230 120,205 130,180 150,195 155,225"
+      fill="none" stroke="#CC8800" stroke-width="1.5" opacity="0.7"/>
+    <line x1="120" y1="205" x2="147" y2="210" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="202" y1="220" x2="155" y2="220" stroke="#CC8800" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>
+
+    <!-- Tiny crystal bottom-right -->
+    <polygon points="345,290 360,275 375,295 365,315 348,312"
+      fill="none" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="310" y1="280" x2="345" y2="290" stroke="#CC8800" stroke-width="0.8" stroke-dasharray="2,3" opacity="0.4"/>
+
+    <!-- Energy nodes / glowing core points -->
+    <circle cx="256" cy="200" r="5" fill="#FFB000" opacity="0.8" filter="url(#glow_strong_crystal)"/>
+    <circle cx="256" cy="200" r="2" fill="#FFD050"/>
+    <circle cx="256" cy="140" r="3" fill="#FFB000" opacity="0.6"/>
+    <circle cx="256" cy="260" r="3" fill="#FFB000" opacity="0.6"/>
+    <circle cx="202" cy="200" r="3" fill="#FFB000" opacity="0.5"/>
+    <circle cx="310" cy="200" r="3" fill="#FFB000" opacity="0.5"/>
+    <circle cx="256" cy="90" r="3" fill="#FFD050" opacity="0.7"/>
+    <circle cx="256" cy="310" r="3" fill="#FFD050" opacity="0.7"/>
+
+    <!-- Refraction angle indicator -->
+    <path d="M310,200 Q340,185 350,165" fill="none" stroke="#CC8800" stroke-width="1" opacity="0.4" stroke-dasharray="2,3"/>
+    <text x="352" y="163" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.6">42 deg</text>
+
+    <!-- Measurement lines -->
+    <line x1="185" y1="380" x2="327" y2="380" stroke="#CC8800" stroke-width="1" opacity="0.4" stroke-dasharray="3,3"/>
+    <line x1="185" y1="376" x2="185" y2="384" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+    <line x1="327" y1="376" x2="327" y2="384" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+    <line x1="92" y1="52" x2="92" y2="350" stroke="#CC8800" stroke-width="1" opacity="0.4" stroke-dasharray="3,3"/>
+    <line x1="88" y1="52" x2="96" y2="52" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+    <line x1="88" y1="350" x2="96" y2="350" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+  </g>
+
+  <!-- Glow outline pass -->
+  <polygon points="256,90 310,140 310,260 256,310 202,260 202,140"
+    fill="none" stroke="#FFD050" stroke-width="0.8" opacity="0.4" filter="url(#glow_strong_crystal)"/>
+
+  <!-- Annotations -->
+  <text x="256" y="30" fill="#CC8800" font-family="monospace" font-size="12" opacity="0.7" text-anchor="middle">[ MINERAL SCAN :: CRYSTAL-3K ]</text>
+  <text x="256" y="45" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7" text-anchor="middle">FACETED ENERGY CRYSTAL -- GRADE A</text>
+  <text x="370" y="210" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7">INDEX</text>
+  <text x="370" y="223" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7">2.41</text>
+  <text x="370" y="255" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7">FREQ</text>
+  <text x="370" y="268" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7">847THz</text>
+  <text x="108" y="270" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.6">SAT-2</text>
+  <text x="256" y="395" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.6" text-anchor="middle">142u</text>
+  <text x="83" y="205" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.6" text-anchor="middle">298u</text>
+  <text x="256" y="490" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.7" text-anchor="middle">SYS:CARGO  REF:XTAL-A  PURITY:98.4%</text>
+
+  <!-- Scan lines overlay -->
+  <rect width="512" height="512" fill="url(#scanlines_crystal)" opacity="0.4"/>
+  <!-- Vignette -->
+  <rect width="512" height="512" fill="url(#vignette_crystal)"/>
+</svg>

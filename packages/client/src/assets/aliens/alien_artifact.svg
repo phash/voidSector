@@ -1,0 +1,255 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-strong">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="rune-glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scanlines" width="1" height="2" patternUnits="userSpaceOnUse">
+      <rect width="1" height="1" fill="rgba(0,0,0,0.18)"/>
+    </pattern>
+    <style>
+      .amber { stroke: #FFB000; fill: none; }
+      .dim   { stroke: #B46E00; fill: none; }
+      .faint { stroke: #503200; fill: none; }
+      .bright{ stroke: #FFD250; fill: #FFD250; }
+      .node  { fill: #FFD250; stroke: none; }
+      .rune  { stroke: #FFD250; fill: none; stroke-width: 1.2; }
+      .txt   { fill: #B46E00; font-family: monospace; font-size: 8px; }
+      .txt-f { fill: #503200; font-family: monospace; font-size: 7px; }
+    </style>
+  </defs>
+
+  <rect width="512" height="512" fill="#050505"/>
+
+  <!-- Grid -->
+  <g stroke="#503200" stroke-width="0.5" opacity="0.55">
+    <line x1="32"  y1="0" x2="32"  y2="512"/> <line x1="64"  y1="0" x2="64"  y2="512"/>
+    <line x1="96"  y1="0" x2="96"  y2="512"/> <line x1="128" y1="0" x2="128" y2="512"/>
+    <line x1="160" y1="0" x2="160" y2="512"/> <line x1="192" y1="0" x2="192" y2="512"/>
+    <line x1="224" y1="0" x2="224" y2="512"/> <line x1="256" y1="0" x2="256" y2="512"/>
+    <line x1="288" y1="0" x2="288" y2="512"/> <line x1="320" y1="0" x2="320" y2="512"/>
+    <line x1="352" y1="0" x2="352" y2="512"/> <line x1="384" y1="0" x2="384" y2="512"/>
+    <line x1="416" y1="0" x2="416" y2="512"/> <line x1="448" y1="0" x2="448" y2="512"/>
+    <line x1="480" y1="0" x2="480" y2="512"/>
+    <line x1="0" y1="32"  x2="512" y2="32"/> <line x1="0" y1="64"  x2="512" y2="64"/>
+    <line x1="0" y1="96"  x2="512" y2="96"/> <line x1="0" y1="128" x2="512" y2="128"/>
+    <line x1="0" y1="160" x2="512" y2="160"/> <line x1="0" y1="192" x2="512" y2="192"/>
+    <line x1="0" y1="224" x2="512" y2="224"/> <line x1="0" y1="256" x2="512" y2="256"/>
+    <line x1="0" y1="288" x2="512" y2="288"/> <line x1="0" y1="320" x2="512" y2="320"/>
+    <line x1="0" y1="352" x2="512" y2="352"/> <line x1="0" y1="384" x2="512" y2="384"/>
+    <line x1="0" y1="416" x2="512" y2="416"/> <line x1="0" y1="448" x2="512" y2="448"/>
+    <line x1="0" y1="480" x2="512" y2="480"/>
+  </g>
+
+  <!-- Corner marks -->
+  <g stroke="#B46E00" stroke-width="1" fill="none">
+    <line x1="4" y1="4" x2="20" y2="4"/><line x1="4" y1="4" x2="4" y2="20"/>
+    <line x1="508" y1="4" x2="492" y2="4"/><line x1="508" y1="4" x2="508" y2="20"/>
+    <line x1="4" y1="508" x2="20" y2="508"/><line x1="4" y1="508" x2="4" y2="492"/>
+    <line x1="508" y1="508" x2="492" y2="508"/><line x1="508" y1="508" x2="508" y2="492"/>
+  </g>
+
+  <!-- DETECTION RINGS -->
+  <circle class="faint" stroke-width="1" cx="256" cy="256" r="222"/>
+  <circle class="faint" stroke-width="0.7" cx="256" cy="256" r="212"/>
+  <!-- Ring ticks -->
+  <g stroke="#503200" stroke-width="0.8">
+    <!-- major ticks every 40deg -->
+    <line x1="468" y1="256" x2="476" y2="256"/>
+    <line x1="44"  y1="256" x2="36"  y2="256"/>
+    <line x1="256" y1="34"  x2="256" y2="42"/>
+    <line x1="256" y1="478" x2="256" y2="470"/>
+    <line x1="419" y1="128" x2="424" y2="121"/>
+    <line x1="93"  y1="128" x2="88"  y2="121"/>
+    <line x1="419" y1="384" x2="424" y2="391"/>
+    <line x1="93"  y1="384" x2="88"  y2="391"/>
+    <!-- minor ticks -->
+    <line x1="452" y1="180" x2="455" y2="176"/> <line x1="452" y1="332" x2="455" y2="336"/>
+    <line x1="60"  y1="180" x2="57"  y2="176"/> <line x1="60"  y1="332" x2="57"  y2="336"/>
+    <line x1="356" y1="50"  x2="359" y2="46"/>  <line x1="156" y1="50"  x2="153" y2="46"/>
+    <line x1="356" y1="462" x2="359" y2="466"/> <line x1="156" y1="462" x2="153" y2="466"/>
+  </g>
+
+  <!-- cx=256 cy=256 -->
+
+  <!-- MONOLITH FRONT FACE -->
+  <g filter="url(#glow)">
+    <polygon class="amber" stroke-width="2.5"
+             points="226,124 286,124 278,388 234,388"/>
+  </g>
+
+  <!-- MONOLITH RIGHT SIDE FACE (3D depth) -->
+  <polygon class="dim" stroke-width="1"
+           points="286,124 314,140 306,396 278,388"/>
+
+  <!-- MONOLITH TOP FACE -->
+  <polygon class="amber" stroke-width="1.5"
+           points="226,124 286,124 314,108 284,108"/>
+
+  <!-- BAND DIVISIONS across front face -->
+  <g stroke="#B46E00" stroke-width="0.8">
+    <line x1="228" y1="160" x2="284" y2="160"/>
+    <line x1="228" y1="200" x2="284" y2="200"/>
+    <line x1="228" y1="244" x2="284" y2="244"/>
+    <line x1="228" y1="290" x2="284" y2="290"/>
+    <line x1="228" y1="334" x2="284" y2="334"/>
+    <line x1="228" y1="362" x2="284" y2="362"/>
+  </g>
+  <!-- Corresponding side face lines -->
+  <g stroke="#503200" stroke-width="0.5">
+    <line x1="286" y1="160" x2="314" y2="163"/>
+    <line x1="286" y1="200" x2="314" y2="204"/>
+    <line x1="286" y1="244" x2="314" y2="248"/>
+    <line x1="286" y1="290" x2="314" y2="295"/>
+    <line x1="286" y1="334" x2="314" y2="339"/>
+    <line x1="286" y1="362" x2="314" y2="367"/>
+  </g>
+
+  <!-- RUNE GLYPHS (6 bands) — all with glow -->
+  <g filter="url(#rune-glow)">
+
+    <!-- Row 1: Diamond (band 124-160) -->
+    <g class="rune" transform="translate(256,142)">
+      <polygon points="0,-10 10,0 0,10 -10,0"/>
+      <circle fill="#FFD250" stroke="none" cx="0" cy="0" r="2"/>
+    </g>
+
+    <!-- Row 2: Tri-Fork (band 160-200) -->
+    <g class="rune" transform="translate(256,180)">
+      <line x1="0" y1="-10" x2="0" y2="10"/>
+      <line x1="0" y1="-5"  x2="-10" y2="-10"/>
+      <line x1="0" y1="-5"  x2="10"  y2="-10"/>
+      <line x1="0" y1="5"   x2="-10" y2="10"/>
+      <line x1="0" y1="5"   x2="10"  y2="10"/>
+    </g>
+
+    <!-- Row 3: Eye (band 200-244) -->
+    <g class="rune" transform="translate(256,222)">
+      <ellipse rx="12" ry="6"/>
+      <circle fill="#FFD250" stroke="none" cx="0" cy="0" r="3"/>
+      <circle stroke="#FFD250" fill="none" cx="0" cy="0" r="5"/>
+    </g>
+
+    <!-- Row 4: Cross-Circle (band 244-290) -->
+    <g class="rune" transform="translate(256,267)">
+      <circle r="7"/>
+      <line x1="-12" y1="0" x2="12" y2="0"/>
+      <line x1="0" y1="-12" x2="0" y2="12"/>
+      <circle fill="#FFD250" stroke="none" cx="0" cy="0" r="2"/>
+    </g>
+
+    <!-- Row 5: Wave (band 290-334) -->
+    <g class="rune" transform="translate(256,312)">
+      <path d="M-12,0 C-8,-6 -4,6 0,0 C4,-6 8,6 12,0" stroke="#FFD250" fill="none" stroke-width="1.5"/>
+      <path d="M-12,4 C-8,-2 -4,8 0,4 C4,-2 8,8 12,4" stroke="#FFD250" fill="none" stroke-width="0.8" opacity="0.5"/>
+    </g>
+
+    <!-- Row 6: Dot Grid (band 334-388) -->
+    <g fill="#FFD250" transform="translate(256,356)">
+      <circle cx="-6" cy="-6" r="1.5"/> <circle cx="0" cy="-6" r="1.5"/> <circle cx="6" cy="-6" r="1.5"/>
+      <circle cx="-6" cy="0"  r="2"/>   <circle cx="0" cy="0"  r="2.5"/> <circle cx="6" cy="0"  r="2"/>
+      <circle cx="-6" cy="6"  r="1.5"/> <circle cx="0" cy="6"  r="1.5"/> <circle cx="6" cy="6"  r="1.5"/>
+    </g>
+
+  </g>
+
+  <!-- ENERGY VEINS (subtle lines running up the body) -->
+  <g stroke="#503200" stroke-width="1" fill="none">
+    <path d="M238,124 C236,160 240,200 237,244 C234,290 238,334 236,388"/>
+    <path d="M256,124 C254,160 258,200 255,244 C252,290 256,334 254,388"/>
+    <path d="M274,124 C272,160 276,200 273,244 C270,290 274,334 272,388"/>
+  </g>
+
+  <!-- FLOATING GEOMETRIC COMPANIONS -->
+  <!-- Floater 1 (NW) -->
+  <g filter="url(#glow)">
+    <polygon class="amber" stroke-width="1" points="174,198 192,234 156,234"/>
+    <circle class="node" cx="174" cy="222" r="2.5"/>
+    <ellipse class="faint" stroke-width="0.7" cx="174" cy="222" rx="27" ry="11"/>
+    <!-- Tether -->
+    <line stroke="#503200" stroke-width="0.5" stroke-dasharray="2,4" x1="174" y1="222" x2="232" y2="238"/>
+  </g>
+
+  <!-- Floater 2 (NE) -->
+  <g filter="url(#glow)">
+    <polygon class="amber" stroke-width="1" points="348,218 362,246 334,246"/>
+    <circle class="node" cx="348" cy="237" r="2"/>
+    <ellipse class="faint" stroke-width="0.7" cx="348" cy="237" rx="21" ry="8"/>
+    <line stroke="#503200" stroke-width="0.5" stroke-dasharray="2,4" x1="348" y1="237" x2="292" y2="246"/>
+  </g>
+
+  <!-- Floater 3 (SW) -->
+  <g filter="url(#glow)">
+    <polygon class="amber" stroke-width="1" points="184,314 196,338 172,338"/>
+    <circle class="node" cx="184" cy="328" r="2"/>
+    <ellipse class="faint" stroke-width="0.7" cx="184" cy="328" rx="18" ry="7"/>
+    <line stroke="#503200" stroke-width="0.5" stroke-dasharray="2,4" x1="184" y1="314" x2="236" y2="294"/>
+  </g>
+
+  <!-- Floater 4 (SE) -->
+  <g filter="url(#glow)">
+    <polygon class="amber" stroke-width="1" points="344,318 354,338 334,338"/>
+    <circle class="node" cx="344" cy="330" r="2"/>
+    <ellipse class="faint" stroke-width="0.7" cx="344" cy="330" rx="15" ry="6"/>
+    <line stroke="#503200" stroke-width="0.5" stroke-dasharray="2,4" x1="344" y1="318" x2="288" y2="294"/>
+  </g>
+
+  <!-- BASE ENERGY NODE -->
+  <g filter="url(#glow-strong)">
+    <circle class="node" cx="256" cy="396" r="5"/>
+    <circle stroke="#FFD250" stroke-width="1" fill="none" cx="256" cy="396" r="10"/>
+    <circle stroke="#FFB000" stroke-width="0.7" fill="none" cx="256" cy="396" r="17"/>
+    <ellipse class="faint" stroke-width="0.7" cx="256" cy="396" rx="30" ry="11"/>
+    <line stroke="#B46E00" stroke-width="0.7" x1="234" y1="396" x2="278" y2="396"/>
+    <line stroke="#B46E00" stroke-width="0.7" x1="256" y1="381" x2="256" y2="411"/>
+  </g>
+
+  <!-- APEX NODE -->
+  <g filter="url(#glow-strong)">
+    <circle class="node" cx="284" cy="108" r="5"/>
+    <circle stroke="#FFD250" stroke-width="1" fill="none" cx="284" cy="108" r="10"/>
+    <circle stroke="#503200" stroke-width="0.7" fill="none" cx="284" cy="108" r="18"/>
+  </g>
+
+  <!-- SCAN BARS -->
+  <line stroke="#503200" stroke-width="1" stroke-dasharray="4,4" x1="0" y1="118" x2="512" y2="118"/>
+  <line stroke="#503200" stroke-width="1" stroke-dasharray="4,4" x1="0" y1="398" x2="512" y2="398"/>
+
+  <!-- ANNOTATION LINES -->
+  <g stroke="#B46E00" stroke-width="0.7" stroke-dasharray="3,3" fill="none">
+    <line x1="284" y1="108" x2="336" y2="82"/>
+    <circle fill="#B46E00" stroke="none" cx="284" cy="108" r="1.5"/>
+    <line x1="284" y1="256" x2="400" y2="234"/>
+    <circle fill="#B46E00" stroke="none" cx="284" cy="256" r="1.5"/>
+    <line x1="256" y1="396" x2="318" y2="435"/>
+    <circle fill="#B46E00" stroke="none" cx="256" cy="396" r="1.5"/>
+  </g>
+
+  <!-- HUD TEXT -->
+  <text class="txt" x="8" y="22">VOID SECTOR // SCAN TERMINAL v4.7</text>
+  <text class="txt" x="8" y="33">CONTACT: ANOMALOUS STRUCTURE</text>
+  <text class="txt" x="8" y="44">DESIGNATION: ALIEN ARTIFACT [ANCIENT]</text>
+  <text class="txt" x="8" y="55">STATUS: DORMANT?  THREAT: UNKNOWN</text>
+
+  <text class="txt-f" x="438" y="22">SIG: 0.8 AU</text>
+  <text class="txt-f" x="438" y="33">AGE: UNKNOWN</text>
+  <text class="txt-f" x="438" y="44">CLASS: ARTIFACT</text>
+  <text class="txt-f" x="438" y="55">ID: ANC-001</text>
+
+  <text class="txt-f" x="338" y="80">APEX NODE</text>
+  <text class="txt-f" x="402" y="232">RUNE SCRIPT</text>
+  <text class="txt-f" x="320" y="437">ENERGY BASE</text>
+
+  <text class="txt-f" x="8" y="498">SCAN INCOMPLETE</text>
+  <text class="txt-f" x="8" y="507">RES: 512x512</text>
+
+  <rect width="512" height="512" fill="url(#scanlines)" opacity="0.4"/>
+</svg>

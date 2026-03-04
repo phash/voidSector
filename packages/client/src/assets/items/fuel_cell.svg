@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow_soft_fc" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow_strong_fc" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scanlines_fc" x="0" y="0" width="512" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="512" height="2" fill="rgba(0,0,0,0.25)"/>
+      <rect x="0" y="2" width="512" height="2" fill="rgba(0,0,0,0.05)"/>
+    </pattern>
+    <radialGradient id="vignette_fc" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.7)"/>
+    </radialGradient>
+    <radialGradient id="amberGrad_fc" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFB000" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#FFB000" stop-opacity="0.02"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#050505"/>
+  <rect width="512" height="512" fill="url(#amberGrad_fc)"/>
+
+  <!-- Corner brackets -->
+  <g fill="none" stroke="#CC8800" stroke-width="1" opacity="0.6">
+    <polyline points="16,36 16,16 36,16"/>
+    <polyline points="476,16 496,16 496,36"/>
+    <polyline points="16,476 16,496 36,496"/>
+    <polyline points="476,496 496,496 496,476"/>
+  </g>
+
+  <!-- Main content -->
+  <g filter="url(#glow_soft_fc)">
+    <!-- Main cylinder body -->
+    <rect x="182" y="128" width="148" height="228" rx="8" fill="none" stroke="#FFB000" stroke-width="2.5"/>
+
+    <!-- Top ellipse cap -->
+    <ellipse cx="256" cy="128" rx="74" ry="16" fill="none" stroke="#FFB000" stroke-width="2"/>
+    <!-- Bottom ellipse cap -->
+    <ellipse cx="256" cy="356" rx="74" ry="16" fill="none" stroke="#FFB000" stroke-width="2"/>
+
+    <!-- Top connector block -->
+    <rect x="228" y="100" width="56" height="30" rx="4" fill="none" stroke="#FFB000" stroke-width="2"/>
+    <!-- Top connector narrower -->
+    <rect x="240" y="80" width="32" height="22" rx="3" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <!-- Hex nut top -->
+    <polygon points="256,62 268,69 268,83 256,90 244,83 244,69" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <!-- Center dot -->
+    <circle cx="256" cy="76" r="3" fill="#FFB000" opacity="0.7"/>
+
+    <!-- Bottom connector -->
+    <rect x="228" y="372" width="56" height="20" rx="4" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+
+    <!-- Energy level bars (78% fill = ~4 of 5 bars filled) -->
+    <!-- Background bar area -->
+    <rect x="193" y="210" width="130" height="128" rx="2" fill="none" stroke="#CC8800" stroke-width="0.5" opacity="0.3"/>
+    <!-- Bar 5: bottom 100% -->
+    <rect x="195" y="310" width="126" height="24" fill="#FFB000" opacity="0.28"/>
+    <!-- Bar 4: 75% -->
+    <rect x="195" y="282" width="126" height="24" fill="#FFB000" opacity="0.24"/>
+    <!-- Bar 3: 50% -->
+    <rect x="195" y="254" width="126" height="24" fill="#FFB000" opacity="0.20"/>
+    <!-- Bar 2: 25% (partial fill for 78%) -->
+    <rect x="195" y="226" width="97" height="24" fill="#FFB000" opacity="0.16"/>
+    <!-- Bar dividers -->
+    <line x1="193" y1="306" x2="323" y2="306" stroke="#CC8800" stroke-width="1" opacity="0.6"/>
+    <line x1="193" y1="278" x2="323" y2="278" stroke="#CC8800" stroke-width="1" opacity="0.6"/>
+    <line x1="193" y1="250" x2="323" y2="250" stroke="#CC8800" stroke-width="1" opacity="0.6"/>
+    <line x1="193" y1="222" x2="323" y2="222" stroke="#CC8800" stroke-width="1" opacity="0.6"/>
+    <!-- Tick marks right side -->
+    <line x1="323" y1="322" x2="338" y2="322" stroke="#FFB000" stroke-width="1" opacity="0.6"/>
+    <line x1="323" y1="294" x2="338" y2="294" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="323" y1="266" x2="338" y2="266" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+    <line x1="323" y1="238" x2="338" y2="238" stroke="#CC8800" stroke-width="1" opacity="0.3"/>
+
+    <!-- Horizontal band above bars -->
+    <line x1="183" y1="175" x2="330" y2="175" stroke="#CC8800" stroke-width="1" opacity="0.4"/>
+    <line x1="183" y1="195" x2="330" y2="195" stroke="#CC8800" stroke-width="0.8" opacity="0.3"/>
+
+    <!-- Warning triangle in upper section -->
+    <polygon points="256,148 244,170 268,170" fill="none" stroke="#FFD050" stroke-width="1.5"/>
+    <line x1="256" y1="155" x2="256" y2="164" stroke="#FFD050" stroke-width="1.5"/>
+    <circle cx="256" cy="167" r="1.5" fill="#FFD050"/>
+
+    <!-- Left thermal vents -->
+    <line x1="182" y1="148" x2="170" y2="148" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="182" y1="158" x2="168" y2="158" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="182" y1="168" x2="170" y2="168" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+
+    <!-- Right output connectors -->
+    <rect x="330" y="152" width="18" height="9" rx="2" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <rect x="330" y="167" width="18" height="9" rx="2" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <!-- Connector glow dots -->
+    <circle cx="339" cy="156" r="2" fill="#FFB000" opacity="0.6"/>
+    <circle cx="339" cy="171" r="2" fill="#FFB000" opacity="0.5"/>
+
+    <!-- Bottom heat sink fins -->
+    <line x1="210" y1="388" x2="210" y2="400" stroke="#CC8800" stroke-width="1.5" opacity="0.5"/>
+    <line x1="225" y1="388" x2="225" y2="402" stroke="#CC8800" stroke-width="1.5" opacity="0.5"/>
+    <line x1="240" y1="388" x2="240" y2="403" stroke="#CC8800" stroke-width="1.5" opacity="0.5"/>
+    <line x1="255" y1="388" x2="255" y2="403" stroke="#CC8800" stroke-width="1.5" opacity="0.5"/>
+    <line x1="270" y1="388" x2="270" y2="403" stroke="#CC8800" stroke-width="1.5" opacity="0.5"/>
+    <line x1="285" y1="388" x2="285" y2="402" stroke="#CC8800" stroke-width="1.5" opacity="0.5"/>
+    <line x1="300" y1="388" x2="300" y2="400" stroke="#CC8800" stroke-width="1.5" opacity="0.5"/>
+  </g>
+
+  <!-- Cylinder glow -->
+  <rect x="182" y="128" width="148" height="228" rx="8"
+    fill="none" stroke="#FFD050" stroke-width="0.8" opacity="0.3" filter="url(#glow_strong_fc)"/>
+
+  <!-- Annotations -->
+  <text x="256" y="30" fill="#CC8800" font-family="monospace" font-size="12" opacity="0.7" text-anchor="middle">[ PROPULSION :: FUEL CELL ]</text>
+  <text x="256" y="45" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7" text-anchor="middle">HIGH-DENSITY ENERGY STORAGE UNIT</text>
+  <text x="344" y="320" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.7">100%</text>
+  <text x="344" y="292" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.6">75%</text>
+  <text x="344" y="264" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.5">50%</text>
+  <text x="344" y="236" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.4">25%</text>
+  <text x="142" y="135" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.6">OUTPUT</text>
+  <text x="142" y="148" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.6">18.4kW</text>
+  <text x="256" y="424" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7" text-anchor="middle">REMAINING CHARGE: 78%</text>
+  <text x="256" y="490" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.7" text-anchor="middle">SYS:PROP  REF:FUEL-C4  TYPE:PLASMA</text>
+
+  <!-- Scan lines overlay -->
+  <rect width="512" height="512" fill="url(#scanlines_fc)" opacity="0.4"/>
+  <!-- Vignette -->
+  <rect width="512" height="512" fill="url(#vignette_fc)"/>
+</svg>

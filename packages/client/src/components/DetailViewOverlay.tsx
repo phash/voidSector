@@ -1,4 +1,6 @@
 import { useStore } from '../state/store';
+import { getStationArtwork } from '../assets/stations';
+import { getAlienArtwork } from '../assets/aliens';
 
 const SECTOR_ART: Record<string, string[]> = {
   ancient_station: [
@@ -144,6 +146,12 @@ export function DetailViewOverlay() {
     ? 'ANCIENT XENOSTATION'
     : detailView.type.toUpperCase().replace('_', ' ');
 
+  // Resolve SVG artwork for stations and aliens
+  const svgUrl = detailView.type === 'station'
+    ? getStationArtwork(detailView.data?.stationVariant ?? 'trading_post')
+      ?? getStationArtwork(detailView.data?.faction ?? 'independent')
+    : getAlienArtwork(detailView.type) ?? undefined;
+
   return (
     <div style={{
       position: 'absolute',
@@ -180,19 +188,38 @@ export function DetailViewOverlay() {
         DETAIL VIEW — {sectorType}
       </div>
 
-      <div style={{
-        fontFamily: "'Share Tech Mono', 'Courier New', monospace",
-        fontSize: '1.1rem',
-        lineHeight: 1.4,
-        color: 'var(--color-primary)',
-        textAlign: 'center',
-        marginBottom: 16,
-        textShadow: '0 0 8px var(--color-primary)',
-      }}>
-        {art.map((line, i) => (
-          <div key={i} style={{ whiteSpace: 'pre' }}>{line}</div>
-        ))}
-      </div>
+      {svgUrl ? (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: 16,
+        }}>
+          <img
+            src={svgUrl}
+            alt={sectorType}
+            style={{
+              width: '100%',
+              maxWidth: 280,
+              height: 'auto',
+              filter: 'drop-shadow(0 0 8px var(--color-primary))',
+            }}
+          />
+        </div>
+      ) : (
+        <div style={{
+          fontFamily: "'Share Tech Mono', 'Courier New', monospace",
+          fontSize: '1.1rem',
+          lineHeight: 1.4,
+          color: 'var(--color-primary)',
+          textAlign: 'center',
+          marginBottom: 16,
+          textShadow: '0 0 8px var(--color-primary)',
+        }}>
+          {art.map((line, i) => (
+            <div key={i} style={{ whiteSpace: 'pre' }}>{line}</div>
+          ))}
+        </div>
+      )}
 
       <div style={{
         fontSize: '0.8rem',

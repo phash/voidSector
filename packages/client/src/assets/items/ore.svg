@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <filter id="glow_ore" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow_soft_ore" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow_strong_ore" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scanlines_ore" x="0" y="0" width="512" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="512" height="2" fill="rgba(0,0,0,0.25)"/>
+      <rect x="0" y="2" width="512" height="2" fill="rgba(0,0,0,0.05)"/>
+    </pattern>
+    <radialGradient id="vignette_ore" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.7)"/>
+    </radialGradient>
+    <radialGradient id="amberGrad_ore" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#FFB000" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#FFB000" stop-opacity="0.02"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#050505"/>
+  <rect width="512" height="512" fill="url(#amberGrad_ore)"/>
+
+  <!-- Corner brackets -->
+  <g fill="none" stroke="#CC8800" stroke-width="1" opacity="0.6">
+    <polyline points="16,36 16,16 36,16"/>
+    <polyline points="476,16 496,16 496,36"/>
+    <polyline points="16,476 16,496 36,496"/>
+    <polyline points="476,496 496,496 496,476"/>
+  </g>
+
+  <!-- Main content -->
+  <g filter="url(#glow_soft_ore)">
+    <!-- Main ore chunk - irregular polygon -->
+    <polygon points="180,110 260,95 320,140 340,210 295,280 220,305 155,265 130,195 150,140"
+      fill="none" stroke="#FFB000" stroke-width="2.5"/>
+
+    <!-- Interior facet lines - center point 260,185 -->
+    <line x1="180" y1="110" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+    <line x1="260" y1="95" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+    <line x1="320" y1="140" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+    <line x1="340" y1="210" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+    <line x1="295" y1="280" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+    <line x1="220" y1="305" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+    <line x1="155" y1="265" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+    <line x1="130" y1="195" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+    <line x1="150" y1="140" x2="260" y2="185" stroke="#CC8800" stroke-width="1.5"/>
+
+    <!-- Sub-facets -->
+    <line x1="180" y1="110" x2="150" y2="140" stroke="#FFB000" stroke-width="1.5" opacity="0.6"/>
+    <line x1="260" y1="95" x2="320" y2="140" stroke="#FFB000" stroke-width="1.5" opacity="0.6"/>
+    <line x1="295" y1="280" x2="220" y2="305" stroke="#FFB000" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Small crystal protrusions -->
+    <polyline points="290,100 305,75 320,100" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <line x1="305" y1="75" x2="305" y2="100" stroke="#CC8800" stroke-width="1"/>
+    <polyline points="345,225 370,210 355,240" fill="none" stroke="#FFB000" stroke-width="1.5"/>
+    <line x1="370" y1="210" x2="350" y2="233" stroke="#CC8800" stroke-width="1"/>
+
+    <!-- Center mass dot -->
+    <circle cx="260" cy="185" r="3" fill="#FFB000" opacity="0.9"/>
+
+    <!-- Measurement lines -->
+    <line x1="125" y1="330" x2="345" y2="330" stroke="#CC8800" stroke-width="1" opacity="0.5" stroke-dasharray="4,3"/>
+    <line x1="125" y1="326" x2="125" y2="334" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="345" y1="326" x2="345" y2="334" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="95" y1="95" x2="95" y2="310" stroke="#CC8800" stroke-width="1" opacity="0.5" stroke-dasharray="4,3"/>
+    <line x1="91" y1="95" x2="99" y2="95" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+    <line x1="91" y1="310" x2="99" y2="310" stroke="#CC8800" stroke-width="1" opacity="0.5"/>
+
+    <!-- Surface detail dots -->
+    <circle cx="195" cy="160" r="2" fill="#FFB000" opacity="0.5"/>
+    <circle cx="300" cy="170" r="2" fill="#FFB000" opacity="0.5"/>
+    <circle cx="240" cy="270" r="2" fill="#FFB000" opacity="0.5"/>
+    <circle cx="170" cy="220" r="2" fill="#FFB000" opacity="0.5"/>
+  </g>
+
+  <!-- Glowing outline pass -->
+  <polygon points="180,110 260,95 320,140 340,210 295,280 220,305 155,265 130,195 150,140"
+    fill="none" stroke="#FFD050" stroke-width="1" opacity="0.4" filter="url(#glow_strong_ore)"/>
+
+  <!-- Annotations -->
+  <text x="256" y="30" fill="#CC8800" font-family="monospace" font-size="12" opacity="0.7" text-anchor="middle">[ MINERAL SCAN :: ORE-7X ]</text>
+  <text x="256" y="45" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7" text-anchor="middle">CRYSTALLINE FRAGMENT -- CLASS B</text>
+  <text x="100" y="205" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7" text-anchor="middle">215u</text>
+  <text x="235" y="345" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7" text-anchor="middle">220u</text>
+  <text x="380" y="180" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7">DENSITY</text>
+  <text x="380" y="193" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7">4.72 g/cc</text>
+  <text x="380" y="225" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7">YIELD</text>
+  <text x="380" y="238" fill="#CC8800" font-family="monospace" font-size="10" opacity="0.7">68%</text>
+  <text x="256" y="490" fill="#CC8800" font-family="monospace" font-size="9" opacity="0.7" text-anchor="middle">SYS:CARGO  REF:ORE-FRAG  QUALITY:STANDARD</text>
+
+  <!-- Scan lines overlay -->
+  <rect width="512" height="512" fill="url(#scanlines_ore)" opacity="0.4"/>
+  <!-- Vignette -->
+  <rect width="512" height="512" fill="url(#vignette_ore)"/>
+</svg>
