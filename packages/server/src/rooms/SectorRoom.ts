@@ -28,6 +28,9 @@ import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMini
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch } from '../db/queries.js';
 import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
 import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState, ProcessedItemType } from '@void-sector/shared';
+import type { FirstContactEvent } from '@void-sector/shared';
+import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../engine/quadrantEngine.js';
+import { getPlayerKnownQuadrants, addPlayerKnownQuadrant, getQuadrant, getAllDiscoveredQuadrants } from '../db/quadrantQueries.js';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -820,6 +823,60 @@ export class SectorRoom extends Room<SectorRoomState> {
       const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
       client.send('kontorUpdate', { orders });
     });
+
+    // -----------------------------------------------------------------------
+    // Quadrant handlers
+    // -----------------------------------------------------------------------
+
+    this.onMessage('nameQuadrant', async (client, data: { qx: number; qy: number; name: string }) => {
+      if (!this.checkRate(client.sessionId, 'nameQuadrant', 1000)) return;
+      if (rejectGuest(client, 'nameQuadrant')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!isInt(data?.qx) || !isInt(data?.qy) || typeof data?.name !== 'string') {
+        client.send('nameQuadrantResult', { success: false, error: 'Invalid input' });
+        return;
+      }
+
+      const result = await nameQuadrantEngine(data.qx, data.qy, data.name.trim(), auth.userId);
+      client.send('nameQuadrantResult', result);
+
+      if (result.success) {
+        // Broadcast the new name to all connected players
+        this.broadcast('announcement', {
+          message: `Quadrant (${data.qx},${data.qy}) named "${data.name.trim()}" by ${auth.username}`,
+          type: 'quadrant_named',
+        });
+      }
+    });
+
+    this.onMessage('getKnownQuadrants', async (client) => {
+      if (!this.checkRate(client.sessionId, 'getKnownQuadrants', 500)) return;
+      const auth = client.auth as AuthPayload;
+      const known = await getPlayerKnownQuadrants(auth.userId);
+      client.send('knownQuadrants', { quadrants: known });
+    });
+
+    this.onMessage('syncQuadrants', async (client) => {
+      if (!this.checkRate(client.sessionId, 'syncQuadrants', 2000)) return;
+      const auth = client.auth as AuthPayload;
+
+      // Only allowed at stations
+      const isStation = this.state.sector.sectorType === 'station';
+      if (!isStation) {
+        client.send('syncQuadrantsResult', { success: false, error: 'Must be at a station to sync quadrant data' });
+        return;
+      }
+
+      // Get all publicly known quadrants and add them to player's known list
+      const allQuadrants = await getAllDiscoveredQuadrants();
+      for (const q of allQuadrants) {
+        await addPlayerKnownQuadrant(auth.userId, q.qx, q.qy);
+      }
+
+      const known = await getPlayerKnownQuadrants(auth.userId);
+      client.send('syncQuadrantsResult', { success: true, quadrants: known, synced: allQuadrants.length });
+    });
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
@@ -1113,6 +1170,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Phase 5: Check for distress calls in comm range
     await this.checkAndEmitDistressCalls(client, auth.userId, targetX, targetY);
 
+    // Quadrant first-contact detection
+    await this.checkFirstContact(client, auth, targetX, targetY);
+
     // Client will leave this room and join the new sector room
   }
 
@@ -1248,6 +1308,8 @@ export class SectorRoom extends Room<SectorRoomState> {
             await saveSector(targetSector);
           }
           client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
+          // Quadrant first-contact detection after hyperjump completes
+          await this.checkFirstContact(client, auth, targetX, targetY);
           return;
         }
         const step = steps[stepIndex];
@@ -3653,5 +3715,39 @@ export class SectorRoom extends Room<SectorRoomState> {
       blueprints: updated.blueprints,
     });
     client.send('logEntry', `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Quadrant first-contact detection
+  // ---------------------------------------------------------------------------
+  private async checkFirstContact(client: Client, auth: AuthPayload, targetX: number, targetY: number) {
+    const { qx, qy } = sectorToQuadrant(targetX, targetY);
+    const currentQ = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+
+    // Only check if entering a different quadrant
+    if (qx === currentQ.qx && qy === currentQ.qy) return;
+
+    // Check if quadrant exists already
+    const existing = await getQuadrant(qx, qy);
+    if (!existing) {
+      // First contact! Create quadrant with player as discoverer
+      const quadrant = await getOrCreateQuadrant(qx, qy, auth.userId);
+      const autoName = generateQuadrantName(quadrant.seed);
+
+      client.send('firstContact', {
+        quadrant,
+        canName: true,
+        autoName,
+      } as FirstContactEvent);
+
+      // Broadcast to all connected players
+      this.broadcast('announcement', {
+        message: `[${quadrant.name}] charted by ${auth.username}`,
+        type: 'quadrant_discovery',
+      });
+    } else {
+      // Quadrant exists but player may not know it yet
+      await addPlayerKnownQuadrant(auth.userId, qx, qy);
+    }
   }
 }

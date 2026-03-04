@@ -51,3 +51,13 @@ export async function quadrantNameExists(name: string): Promise<boolean> {
 export async function updateQuadrantName(qx: number, qy: number, name: string): Promise<void> {
   await query('UPDATE quadrants SET name = $1 WHERE qx = $2 AND qy = $3', [name, qx, qy]);
 }
+
+export async function getAllDiscoveredQuadrants(): Promise<QuadrantData[]> {
+  const { rows } = await query<any>('SELECT * FROM quadrants');
+  return rows.map((r: any) => ({
+    qx: r.qx, qy: r.qy, seed: r.seed,
+    name: r.name, discoveredBy: r.discovered_by,
+    discoveredAt: r.discovered_at?.toISOString() ?? null,
+    config: r.config as QuadrantConfig,
+  }));
+}
