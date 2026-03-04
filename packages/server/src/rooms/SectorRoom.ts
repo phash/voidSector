@@ -7,7 +7,7 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
-import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engine/npcgen.js';
+import { generateStationNpcs, getStationFaction, getPirateLevel, hasShipyard } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
 import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkScanEvent } from '../engine/scanEvents.js';
@@ -28,7 +28,7 @@ import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState, getHyperdriveState, setHyperdriveState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate, saveAutopilotRoute, getActiveAutopilotRoute, updateAutopilotStep, pauseAutopilotRoute, cancelAutopilotRoute, completeAutopilotRoute } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch, WORLD_SEED, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HULL_PRICES, STATION_SHIPYARD_LEVEL_THRESHOLD, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch, WORLD_SEED, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
 import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, HyperdriveState, ResearchState, ProcessedItemType } from '@void-sector/shared';
 import type { FirstContactEvent } from '@void-sector/shared';
 import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../engine/quadrantEngine.js';
@@ -511,7 +511,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('moduleInventory', { modules: inventory });
     });
 
-    this.onMessage('buyHull', async (client, data: { hullType: string; name?: string }) => {
+    this.onMessage('buyHull', async (client, data: { hullType: string; name?: string; shipColor?: string }) => {
       if (rejectGuest(client, 'Schiffskauf')) return;
       const auth = client.auth as AuthPayload;
       const hullDef = HULLS[data.hullType as HullType];
@@ -527,21 +527,33 @@ export class SectorRoom extends Room<SectorRoomState> {
         client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
         return;
       }
+      // If at an NPC station (not home base), check shipyard availability
+      if (isStation && !isHomeBase) {
+        const sx = this.state.sector.x;
+        const sy = this.state.sector.y;
+        const station = await getOrInitStation(sx, sy);
+        const stationLevelInfo = getStationLevel(station.xp);
+        if (!hasShipyard(stationLevelInfo.level)) {
+          client.send('error', { code: 'NO_SHIPYARD', message: `Station needs level ${STATION_SHIPYARD_LEVEL_THRESHOLD}+ for shipyard` });
+          return;
+        }
+      }
       // Check level
       const playerLevel = await getPlayerLevel(auth.userId);
       if (playerLevel < hullDef.unlockLevel) {
         client.send('error', { code: 'LEVEL_TOO_LOW', message: `Need level ${hullDef.unlockLevel}` });
         return;
       }
-      // Check credits
+      // Check credits (use HULL_PRICES)
+      const price = HULL_PRICES[data.hullType as HullType] ?? hullDef.unlockCost;
       const credits = await getPlayerCredits(auth.userId);
-      if (credits < hullDef.unlockCost) {
+      if (credits < price) {
         client.send('error', { code: 'INSUFFICIENT_CREDITS', message: 'Not enough credits' });
         return;
       }
       // Deduct credits
-      if (hullDef.unlockCost > 0) {
-        await deductCredits(auth.userId, hullDef.unlockCost);
+      if (price > 0) {
+        await deductCredits(auth.userId, price);
       }
       // Create new ship (becomes active, old one deactivated)
       const newShip = await createShip(auth.userId, data.hullType as HullType, data.name?.slice(0, 20) || hullDef.name, hullDef.baseFuel);
@@ -550,10 +562,12 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.clientHullTypes.set(client.sessionId, newShip.hullType);
       // Reset fuel
       await saveFuelState(auth.userId, hullDef.baseFuel);
+      // Persist cosmetic ship color
+      const shipColor = data.shipColor?.slice(0, 7) || undefined;
       client.send('shipData', {
         id: newShip.id, ownerId: auth.userId, hullType: newShip.hullType,
         name: newShip.name, modules: newShip.modules, stats: newStats,
-        fuel: hullDef.baseFuel, active: true,
+        fuel: hullDef.baseFuel, active: true, shipColor,
       });
       const remainingCredits = await getPlayerCredits(auth.userId);
       client.send('creditsUpdate', { credits: remainingCredits });

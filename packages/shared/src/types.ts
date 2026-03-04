@@ -898,6 +898,7 @@ export interface ShipRecord {
   modules: ShipModule[];
   active: boolean;
   createdAt: string;
+  shipColor?: string;
 }
 
 export interface ResearchState {

@@ -1153,6 +1153,18 @@ export const HYPERJUMP_FUEL_PER_SECTOR = 1;   // base fuel cost per sector of hy
 export const SCAN_FUEL_COST = 0;               // scans are free (#94)
 export const MINE_FUEL_COST = 0;               // mining is free (#94)
 
+// Ship purchasing — prices in credits per hull (separate from unlockCost which is initial unlock)
+export const HULL_PRICES: Record<HullType, number> = {
+  scout: 0,
+  freighter: 500,
+  cruiser: 1000,
+  explorer: 2000,
+  battleship: 3000,
+};
+
+// Only stations at this NPC level or above have a shipyard
+export const STATION_SHIPYARD_LEVEL_THRESHOLD = 3;
+
 // Hull-specific fuel multiplier for hyperjumps
 export const HULL_FUEL_MULTIPLIER: Record<HullType, number> = {
   scout: 0.8,
