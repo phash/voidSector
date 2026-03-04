@@ -1,4 +1,5 @@
 import { hashCoords } from './worldgen.js';
+import { generateDistressMessage } from './distressStories.js';
 import { WORLD_SEED, SCAN_EVENT_CHANCE } from '@void-sector/shared';
 import type { ScanEventType } from '@void-sector/shared';
 
@@ -53,7 +54,7 @@ function generateEventData(
     case 'pirate_ambush':
       return { pirateLevel: Math.min(Math.floor(Math.sqrt(sectorX * sectorX + sectorY * sectorY) / 50) + 1, 10) };
     case 'distress_signal':
-      return { rewardCredits: 20 + ((seed >>> 4) % 80), rewardRep: 5 };
+      return { rewardCredits: 20 + ((seed >>> 4) % 80), rewardRep: 5, message: generateDistressMessage(sectorX, sectorY, seed) };
     case 'anomaly_reading':
       return { rewardXp: 15 + ((seed >>> 6) % 35), rewardRep: 5 };
     case 'artifact_find':
