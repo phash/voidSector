@@ -44,14 +44,17 @@ export const RECONNECTION_TIMEOUT_S = 15;
 
 export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceType, number>> = {
   empty:          { ore: 0,  gas: 0,  crystal: 0  },
-  nebula:         { ore: 2,  gas: 20, crystal: 3  },
-  asteroid_field: { ore: 20, gas: 2,  crystal: 3  },
+  nebula:         { ore: 0,  gas: 30, crystal: 5  },
+  asteroid_field: { ore: 50, gas: 0,  crystal: 8  },
   anomaly:        { ore: 3,  gas: 3,  crystal: 20 },
   station:        { ore: 0,  gas: 0,  crystal: 0  },
   pirate:         { ore: 8,  gas: 3,  crystal: 8  },
 };
 
 export const MINING_RATE_PER_SECOND = 0.1;
+
+export const RESOURCE_REGEN_PER_MINUTE = 1;
+export const CRYSTAL_REGEN_PER_MINUTE = 1 / 3;
 
 export const RESOURCE_TYPES: MineableResourceType[] = ['ore', 'gas', 'crystal'];
 
@@ -906,15 +909,15 @@ export const NEBULA_SAFE_ORIGIN = 200;  // no nebula zones within this many sect
 // Weights intentionally sum to 0.70; the remaining 0.30 gap falls through
 // to 'empty' as the default in rollEnvironment().
 export const ENVIRONMENT_WEIGHTS: Record<string, number> = {
-  empty: 0.55,
+  empty: 0.70,
   nebula: 0.15,
   // black_hole is handled separately via BLACK_HOLE_SPAWN_CHANCE
 };
 
 // Two-stage worldgen: content weights (second roll, for non-blackhole)
 export const CONTENT_WEIGHTS: Record<string, number> = {
-  none: 0.57,
-  asteroid_field: 0.20,
+  none: 0.45,
+  asteroid_field: 0.25,
   pirate: 0.10,
   anomaly: 0.05,
   station: 0.08,

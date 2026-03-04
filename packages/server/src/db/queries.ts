@@ -1,6 +1,6 @@
 import { query } from './client.js';
 import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord, JumpGateMapEntry } from '@void-sector/shared';
-import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
+import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS, RESOURCE_REGEN_PER_MINUTE, CRYSTAL_REGEN_PER_MINUTE } from '@void-sector/shared';
 
 export async function createPlayer(
   username: string,
@@ -247,14 +247,29 @@ export async function getSector(
     metadata: Record<string, unknown>;
     environment: string;
     contents: string[];
+    last_mined: string | null;
+    max_ore: number;
+    max_gas: number;
+    max_crystal: number;
   }>(
-    'SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents FROM sectors WHERE x = $1 AND y = $2',
+    'SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents, last_mined, max_ore, max_gas, max_crystal FROM sectors WHERE x = $1 AND y = $2',
     [x, y]
   );
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
   const meta = row.metadata || {};
-  const resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
+  let resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
+
+  // Apply resource regeneration if sector was mined
+  if (row.last_mined && (row.max_ore > 0 || row.max_gas > 0 || row.max_crystal > 0)) {
+    const elapsedMinutes = (Date.now() - Number(row.last_mined)) / 60000;
+    resources = {
+      ore: Math.min(row.max_ore, resources.ore + Math.floor(elapsedMinutes * RESOURCE_REGEN_PER_MINUTE)),
+      gas: Math.min(row.max_gas, resources.gas + Math.floor(elapsedMinutes * RESOURCE_REGEN_PER_MINUTE)),
+      crystal: Math.min(row.max_crystal, resources.crystal + Math.floor(elapsedMinutes * CRYSTAL_REGEN_PER_MINUTE)),
+    };
+  }
+
   return {
     x: row.x,
     y: row.y,
@@ -270,9 +285,10 @@ export async function getSector(
 }
 
 export async function saveSector(sector: SectorData): Promise<void> {
+  const res = sector.resources || { ore: 0, gas: 0, crystal: 0 };
   await query(
-    `INSERT INTO sectors (x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents)
-     VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8)
+    `INSERT INTO sectors (x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents, max_ore, max_gas, max_crystal)
+     VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11)
      ON CONFLICT (x, y) DO NOTHING`,
     [
       sector.x,
@@ -280,10 +296,24 @@ export async function saveSector(sector: SectorData): Promise<void> {
       sector.type,
       sector.seed,
       sector.discoveredBy,
-      JSON.stringify({ resources: sector.resources || { ore: 0, gas: 0, crystal: 0 } }),
+      JSON.stringify({ resources: res }),
       sector.environment ?? 'empty',
       sector.contents ?? [],
+      res.ore,
+      res.gas,
+      res.crystal,
     ]
+  );
+}
+
+export async function updateSectorResources(
+  x: number, y: number,
+  resources: { ore: number; gas: number; crystal: number }
+): Promise<void> {
+  await query(
+    `UPDATE sectors SET metadata = jsonb_set(COALESCE(metadata, '{}'), '{resources}', $3::jsonb), last_mined = $4
+     WHERE x = $1 AND y = $2`,
+    [x, y, JSON.stringify(resources), Date.now()]
   );
 }
 
@@ -1425,23 +1455,38 @@ export async function getSectorsInRange(
   cx: number, cy: number, radius: number
 ): Promise<SectorData[]> {
   const result = await query<any>(
-    `SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents
+    `SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents, last_mined, max_ore, max_gas, max_crystal
      FROM sectors
      WHERE x BETWEEN $1 AND $2 AND y BETWEEN $3 AND $4`,
     [cx - radius, cx + radius, cy - radius, cy + radius]
   );
-  return result.rows.map((r: any) => ({
-    x: r.x,
-    y: r.y,
-    type: r.type,
-    seed: r.seed,
-    discoveredBy: r.discovered_by,
-    discoveredAt: r.discovered_at,
-    metadata: r.metadata ?? {},
-    resources: r.resources,
-    environment: (r.environment ?? 'empty') as SectorData['environment'],
-    contents: (r.contents ?? []) as SectorData['contents'],
-  }));
+  return result.rows.map((r: any) => {
+    const meta = r.metadata || {};
+    let resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
+
+    // Apply resource regeneration if sector was mined
+    if (r.last_mined && (r.max_ore > 0 || r.max_gas > 0 || r.max_crystal > 0)) {
+      const elapsedMinutes = (Date.now() - Number(r.last_mined)) / 60000;
+      resources = {
+        ore: Math.min(r.max_ore, resources.ore + Math.floor(elapsedMinutes * RESOURCE_REGEN_PER_MINUTE)),
+        gas: Math.min(r.max_gas, resources.gas + Math.floor(elapsedMinutes * RESOURCE_REGEN_PER_MINUTE)),
+        crystal: Math.min(r.max_crystal, resources.crystal + Math.floor(elapsedMinutes * CRYSTAL_REGEN_PER_MINUTE)),
+      };
+    }
+
+    return {
+      x: r.x,
+      y: r.y,
+      type: r.type,
+      seed: r.seed,
+      discoveredBy: r.discovered_by,
+      discoveredAt: r.discovered_at,
+      metadata: r.metadata ?? {},
+      resources,
+      environment: (r.environment ?? 'empty') as SectorData['environment'],
+      contents: (r.contents ?? []) as SectorData['contents'],
+    };
+  });
 }
 
 export async function addDiscoveriesBatch(
