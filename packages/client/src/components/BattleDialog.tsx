@@ -1,12 +1,36 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 
+const PIRATE_ART = [
+  '    ╱╲  ╱╲    ',
+  '   ╱██╲╱██╲   ',
+  '  │╔══╗╔══╗│  ',
+  '══╡║ ▓╟╢▓ ║╞══',
+  '  │╚══╝╚══╝│  ',
+  '   ╲  ╱╲  ╱   ',
+  '    ╲╱  ╲╱    ',
+];
+
+const ANCIENT_ART = [
+  ' ≋≋≋≋≋≋≋≋≋≋≋≋ ',
+  '≋ ◈ ════════ ◈ ≋',
+  '≋ ║ ◆◇◆◇◆◇◆ ║ ≋',
+  '≋ ╠═[ANCIENT]=╣ ≋',
+  '≋ ║ ◇◆◇◆◇◆◇ ║ ≋',
+  '≋ ◈ ════════ ◈ ≋',
+  ' ≋≋≋≋≋≋≋≋≋≋≋≋ ',
+];
+
 export function BattleDialog() {
   const activeBattle = useStore((s) => s.activeBattle);
 
   if (!activeBattle) return null;
 
   const { pirateLevel, pirateHp, pirateDamage, canNegotiate, negotiateCost, sectorX, sectorY } = activeBattle;
+  const isAncient = pirateLevel >= 6;
+  const enemyArt = isAncient ? ANCIENT_ART : PIRATE_ART;
+  const contactLabel = isAncient ? 'ALIEN-KONTAKT' : 'PIRATEN-KONTAKT';
+  const contactColor = isAncient ? '#00BFFF' : '#FF3333';
 
   return (
     <div style={{
@@ -15,15 +39,21 @@ export function BattleDialog() {
       zIndex: 1000,
     }}>
       <div style={{
-        border: '2px solid #FF3333', background: '#0a0a0a', padding: '16px', maxWidth: '350px',
+        border: `2px solid ${contactColor}`, background: '#0a0a0a', padding: '16px', maxWidth: '380px',
         fontFamily: 'monospace', fontSize: '12px',
       }}>
-        <div style={{ color: '#FF3333', fontSize: '14px', marginBottom: '8px', textAlign: 'center' }}>
-          PIRATEN-KONTAKT
+        <div style={{ color: contactColor, fontSize: '14px', marginBottom: '8px', textAlign: 'center' }}>
+          {contactLabel}
         </div>
+        <pre style={{
+          color: contactColor, fontSize: '0.65rem', lineHeight: 1.3, margin: '0 0 10px',
+          textAlign: 'center', textShadow: `0 0 6px ${contactColor}`,
+        }}>
+          {enemyArt.join('\n')}
+        </pre>
         <div style={{ color: '#FFB000', marginBottom: '12px' }}>
           <div>Sektor: ({sectorX}, {sectorY})</div>
-          <div>Piraten-Level: {pirateLevel}</div>
+          <div>{isAncient ? 'Alien-Level' : 'Piraten-Level'}: {pirateLevel}</div>
           <div>HP: {pirateHp} | DMG: {pirateDamage}</div>
         </div>
 

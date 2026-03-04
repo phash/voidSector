@@ -4,6 +4,13 @@ import { network } from '../network/client';
 import { HULLS, MODULES } from '@void-sector/shared';
 import type { ModuleDefinition } from '@void-sector/shared';
 
+const MODULE_ICONS: Record<string, string> = {
+  drive: '[>>>]',
+  cargo: '[═══]',
+  scanner: '[(◉)]',
+  armor: '[▓▓▓]',
+};
+
 const btnStyle: React.CSSProperties = {
   background: 'transparent',
   border: '1px solid var(--color-primary)',
@@ -125,6 +132,7 @@ export function ModulePanel() {
               alignItems: 'center',
               padding: '1px 0',
             }}>
+              <span style={{ color: 'var(--color-dim)', marginRight: 4 }}>{MODULE_ICONS[def.category] ?? '[   ]'}</span>
               <span style={{ color: 'var(--color-primary)' }}>{def.name}</span>
               {targetSlot >= 0 ? (
                 <button
@@ -160,6 +168,7 @@ export function ModulePanel() {
                 padding: '1px 0',
               }}>
                 <span>
+                  <span style={{ color: 'var(--color-dim)', marginRight: 4 }}>{MODULE_ICONS[def.category] ?? '[   ]'}</span>
                   <span style={{ color: 'var(--color-primary)' }}>{def.displayName}</span>
                   <span style={{ color: 'var(--color-dim)', marginLeft: 4, fontSize: '0.55rem' }}>
                     {costParts.join(' ')}

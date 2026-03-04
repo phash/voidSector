@@ -1,6 +1,20 @@
 import { useStore } from '../state/store';
 
 const SECTOR_ART: Record<string, string[]> = {
+  ancient_station: [
+    '  ≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋  ',
+    ' ≋ ⟨════════════════⟩ ≋ ',
+    '≋≋ ║  ◈  ANCIENT  ◈  ║ ≋≋',
+    ' ≋ ║   XENOSTATION   ║ ≋ ',
+    '≋≋ ╠═══════╦═════════╣ ≋≋',
+    ' ≋ ║ ◆◇◆◇◆ ║ ●○●○●○● ║ ≋ ',
+    '≋≋ ║ ◇◆◇◆◇ ║ ○●○●○●○ ║ ≋≋',
+    ' ≋ ╠═══════╩═════════╣ ≋ ',
+    '≋≋ ║   CORE: ACTIVE   ║ ≋≋',
+    ' ≋ ║  ORIGIN: UNKNOWN  ║ ≋ ',
+    '≋≋ ⟨════════════════⟩ ≋≋',
+    '  ≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋≋  ',
+  ],
   station: [
     '          ╔════╗          ',
     '  ════════╬════╬════════  ',
@@ -123,8 +137,12 @@ export function DetailViewOverlay() {
 
   if (!detailView) return null;
 
-  const art = SECTOR_ART[detailView.type] ?? SECTOR_ART.empty;
-  const sectorType = detailView.type.toUpperCase().replace('_', ' ');
+  const isAncient = detailView.type === 'station' && detailView.data?.stationVariant === 'ancient';
+  const artKey = isAncient ? 'ancient_station' : detailView.type;
+  const art = SECTOR_ART[artKey] ?? SECTOR_ART.empty;
+  const sectorType = isAncient
+    ? 'ANCIENT XENOSTATION'
+    : detailView.type.toUpperCase().replace('_', ' ');
 
   return (
     <div style={{

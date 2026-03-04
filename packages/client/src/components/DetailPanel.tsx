@@ -127,6 +127,7 @@ export function DetailPanel() {
                 resources: sector.resources
                   ? Object.entries(sector.resources).map(([r, a]) => `${r.toUpperCase()} x${a}`).join(', ')
                   : undefined,
+                stationVariant: sector.metadata?.stationVariant as string | undefined,
               },
             })}
           >{sector.type.toUpperCase()}</span></div>
