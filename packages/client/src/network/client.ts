@@ -78,6 +78,10 @@ class GameNetwork {
       };
       useStore.getState().setCurrentSector(sector);
       useStore.getState().addDiscoveries([sector]);
+      // Sector type help tips
+      if (sector.type === 'nebula') useStore.getState().showTip('first_nebula');
+      else if (sector.type === 'station') useStore.getState().showTip('first_station');
+      else if (sector.type === 'asteroid_field') useStore.getState().showTip('first_asteroid');
     });
 
     // AP updates
@@ -221,6 +225,7 @@ class GameNetwork {
     // Fuel updates
     room.onMessage('fuelUpdate', (data: FuelState) => {
       useStore.getState().setFuel(data);
+      if (data.current < data.max * 0.15) useStore.getState().showTip('low_fuel');
     });
 
     // --- Ship designer messages ---
@@ -525,6 +530,11 @@ class GameNetwork {
         || store.leftSidebarSlots.includes('QUESTS')
         || store.mainMonitorMode === 'QUESTS';
       if (!visible) store.setAlert('QUESTS', true);
+      // Context-sensitive help tips
+      const eventType = data.event?.eventType;
+      if (eventType === 'distress_signal') store.showTip('first_distress');
+      else if (eventType === 'pirate_ambush') store.showTip('first_pirate');
+      else if (eventType === 'anomaly_reading') store.showTip('first_anomaly');
     });
 
     room.onMessage('logEntry', (data) => {
