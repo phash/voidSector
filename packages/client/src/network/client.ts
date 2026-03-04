@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
 function getWsUrl(): string {
@@ -836,6 +836,38 @@ class GameNetwork {
       store.setDiscoveryTimestamps(timestamps);
       if (sectorData.length > 0) {
         store.addDiscoveries(sectorData);
+      }
+    });
+
+    // --- Admin Messages ---
+
+    room.onMessage('adminMessage', (data: AdminMessage) => {
+      const store = useStore.getState();
+      store.addChatMessage({
+        id: data.id,
+        senderId: 'admin',
+        senderName: data.senderName,
+        channel: 'direct' as ChatChannel,
+        content: data.content,
+        sentAt: Date.parse(data.createdAt),
+        delayed: false,
+      });
+      const visible = store.sidebarSlots.includes('COMMS')
+        || store.leftSidebarSlots.includes('COMMS')
+        || store.mainMonitorMode === 'COMMS';
+      if (!visible) {
+        store.setAlert('COMMS', true);
+      }
+    });
+
+    room.onMessage('adminQuestOffer', (data: AdminQuestNotification) => {
+      const store = useStore.getState();
+      store.addLogEntry(`New quest available: ${data.title}`);
+      const visible = store.sidebarSlots.includes('QUESTS')
+        || store.leftSidebarSlots.includes('QUESTS')
+        || store.mainMonitorMode === 'QUESTS';
+      if (!visible) {
+        store.setAlert('QUESTS', true);
       }
     });
 

@@ -874,3 +874,23 @@ export interface ResearchState {
     completesAt: number;
   } | null;
 }
+
+// --- Admin Messages ---
+export type AdminQuestScope = 'universal' | 'individual' | 'sector';
+
+export interface AdminMessage {
+  id: string;
+  senderName: string;
+  content: string;
+  scope: string;
+  channel: string;
+  allowReply: boolean;
+  createdAt: string;
+}
+
+export interface AdminQuestNotification {
+  questId: string;
+  title: string;
+  description: string;
+  scope: AdminQuestScope;
+}

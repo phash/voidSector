@@ -17,6 +17,8 @@ import { calculateBonuses } from '../engine/factionBonuses.js';
 import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../engine/combatV2.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
+import { adminBus } from '../adminBus.js';
+import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch } from '../db/queries.js';
@@ -570,6 +572,44 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.clock.setInterval(() => {
       this.processTradeRoutes().catch(err => console.error('[TRADE ROUTES] Tick error:', err));
     }, 60000);
+
+    // --- Admin Bus ---
+    const onBroadcast = (event: AdminBroadcastEvent) => {
+      for (const client of this.clients) {
+        const auth = client.auth as AuthPayload;
+        if (event.scope === 'universal' || event.targetPlayers.includes(auth.userId)) {
+          client.send('adminMessage', {
+            id: event.messageId,
+            senderName: event.senderName,
+            content: event.content,
+            scope: event.scope,
+            channel: event.channel,
+            allowReply: event.allowReply,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+    };
+    const onQuestCreated = (event: AdminQuestEvent) => {
+      for (const client of this.clients) {
+        const auth = client.auth as AuthPayload;
+        if (event.scope === 'universal' || event.targetPlayers.includes(auth.userId)) {
+          client.send('adminQuestOffer', {
+            questId: event.questId,
+            title: event.title,
+            description: event.description,
+            scope: event.scope,
+          });
+        }
+      }
+    };
+    adminBus.on('adminBroadcast', onBroadcast);
+    adminBus.on('adminQuestCreated', onQuestCreated);
+
+    this.onDispose(() => {
+      adminBus.off('adminBroadcast', onBroadcast);
+      adminBus.off('adminQuestCreated', onQuestCreated);
+    });
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
