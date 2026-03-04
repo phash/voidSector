@@ -14,6 +14,7 @@ class GameNetwork {
   private client: Client | null = null;
   private sectorRoom: Room | null = null;
   private reconnecting = false;
+  private intentionalLeave = false;
 
   private ensureClient(): Client {
     if (!this.client) {
@@ -28,6 +29,7 @@ class GameNetwork {
 
     // Leave current room
     if (this.sectorRoom) {
+      this.intentionalLeave = true;
       await this.sectorRoom.leave();
       this.sectorRoom = null;
       store.clearPlayers();
@@ -1032,6 +1034,10 @@ class GameNetwork {
     });
 
     room.onLeave(async (code) => {
+      if (this.intentionalLeave) {
+        this.intentionalLeave = false;
+        return;
+      }
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
         const store = useStore.getState();
