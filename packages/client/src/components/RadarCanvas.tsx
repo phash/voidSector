@@ -1,11 +1,15 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useCanvas } from '../canvas/useCanvas';
 import { drawRadar, CELL_SIZES, FRAME_LEFT, FRAME_PAD, FRAME_BOTTOM } from '../canvas/RadarRenderer';
 import { updateJumpAnimation } from '../canvas/JumpAnimation';
 import { useStore } from '../state/store';
 import { COLOR_PROFILES } from '../styles/themes';
 
+const DOUBLE_TAP_DELAY = 300;
+
 export function RadarCanvas() {
+  const lastTapRef = useRef(0);
+
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
     const state = useStore.getState();
     const themeColors = COLOR_PROFILES[state.colorProfile];
@@ -59,7 +63,7 @@ export function RadarCanvas() {
     return () => canvas.removeEventListener('wheel', handleWheel);
   }, []);
 
-  // Drag pan + double-click recenter
+  // Drag pan + double-click recenter + double-tap recenter
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -113,26 +117,65 @@ export function RadarCanvas() {
 
     const onDblClick = () => { useStore.getState().resetPan(); };
 
+    // Double-tap detection for touch devices
+    const onTouchEnd = (e: TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+        e.preventDefault();
+        useStore.getState().resetPan();
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
+    };
+
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('dblclick', onDblClick);
+    canvas.addEventListener('touchend', onTouchEnd);
     return () => {
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('dblclick', onDblClick);
+      canvas.removeEventListener('touchend', onTouchEnd);
     };
   }, []);
 
+  const handleZoomIn = useCallback(() => {
+    const current = useStore.getState().zoomLevel;
+    useStore.getState().setZoomLevel(Math.min(4, current + 1));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    const current = useStore.getState().zoomLevel;
+    useStore.getState().setZoomLevel(Math.max(0, current - 1));
+  }, []);
+
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'block',
-      }}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          touchAction: 'none',
+        }}
+      />
+      <div className="mobile-zoom-controls">
+        <button
+          className="mobile-zoom-btn"
+          onClick={handleZoomIn}
+          aria-label="Zoom in"
+        >+</button>
+        <button
+          className="mobile-zoom-btn"
+          onClick={handleZoomOut}
+          aria-label="Zoom out"
+        >−</button>
+      </div>
+    </div>
   );
 }

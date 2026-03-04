@@ -1135,3 +1135,163 @@
 .unified-bezel-sidebar .unified-bezel-program-label {
   font-size: 0.5rem;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Mobile Zoom Controls — overlay +/- buttons on radar canvas
+   ══════════════════════════════════════════════════════════════════ */
+.mobile-zoom-controls {
+  display: none;
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 5;
+}
+
+.mobile-zoom-btn {
+  width: 44px;
+  height: 44px;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--color-primary);
+  background: rgba(10, 10, 10, 0.85);
+  border: 1px solid rgba(255, 176, 0, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, border-color 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-zoom-btn:active {
+  background: rgba(255, 176, 0, 0.15);
+  border-color: var(--color-primary);
+}
+
+@media (max-width: 1023px) {
+  .mobile-zoom-controls {
+    display: flex;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Frequency Slider — CRT-themed range input
+   ══════════════════════════════════════════════════════════════════ */
+.frequency-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+.frequency-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: rgba(255, 176, 0, 0.25);
+  border-radius: 2px;
+}
+
+.frequency-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #FFB000;
+  border: 2px solid rgba(255, 176, 0, 0.6);
+  margin-top: -8px;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(255, 176, 0, 0.4);
+}
+
+.frequency-slider::-moz-range-track {
+  height: 4px;
+  background: rgba(255, 176, 0, 0.25);
+  border-radius: 2px;
+  border: none;
+}
+
+.frequency-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #FFB000;
+  border: 2px solid rgba(255, 176, 0, 0.6);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(255, 176, 0, 0.4);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Mobile Bezel Adaptation (max-width: 1023px)
+   Hide side chrome strips, minimal bottom bar, 44px+ touch targets
+   ══════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  /* Hide side chrome strips */
+  .bezel-side,
+  .bezel-left,
+  .bezel-right,
+  .unified-bezel-pan-arrows {
+    display: none;
+  }
+
+  /* Minimal bottom bar: only mode + power visible */
+  .unified-bezel-bottom {
+    padding: 4px 8px;
+    min-height: 44px;
+  }
+
+  .unified-bezel-bottom .unified-bezel-auto-btn,
+  .unified-bezel-bottom .unified-bezel-chrome-toggle {
+    display: none;
+  }
+
+  .unified-bezel-mode-switcher {
+    flex: 1;
+  }
+
+  /* Top bar compact */
+  .unified-bezel-top {
+    min-height: 36px;
+    padding: 4px 8px;
+  }
+
+  /* 44px minimum touch targets for all interactive elements */
+  .channel-btn,
+  .channel-btn-small,
+  .unified-bezel-mode-btn,
+  .bezel-power-btn,
+  .mobile-tab-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .unified-bezel-mode-btn {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+  }
+
+  .bezel-power-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .mehr-overlay-card {
+    min-height: 56px;
+    padding: 14px 8px;
+  }
+
+  .mehr-overlay-close {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Bottom bezel chrome-restore strip: larger tap area */
+  .unified-bezel-chrome-restore {
+    min-height: 44px;
+  }
+}
