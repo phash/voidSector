@@ -210,6 +210,9 @@ export const PIRATE_DAMAGE_PER_LEVEL = 3;
 // Combat v2 — Feature flag
 export const FEATURE_COMBAT_V2 = true;
 
+// Hyperdrive v2 — Feature flag (charge-based hyperdrive system)
+export const FEATURE_HYPERDRIVE_V2 = false;
+
 // Combat v2 — Tactic multipliers
 export const TACTIC_MODS: Record<string, { dmg: number; def: number }> = {
   assault:   { dmg: 1.30, def: 0.80 },
