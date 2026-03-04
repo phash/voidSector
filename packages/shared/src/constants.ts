@@ -96,6 +96,20 @@ export const NPC_PRICES: Record<MineableResourceType, number> = {
 export const NPC_BUY_SPREAD = 1.2;
 export const NPC_SELL_SPREAD = 0.8;
 
+// NPC Station Levels
+export const NPC_STATION_LEVELS = [
+  { level: 1, name: 'Outpost',     maxStock: 200,   xpThreshold: 0 },
+  { level: 2, name: 'Station',     maxStock: 500,   xpThreshold: 500 },
+  { level: 3, name: 'Hub',         maxStock: 1200,  xpThreshold: 2000 },
+  { level: 4, name: 'Port',        maxStock: 3000,  xpThreshold: 6000 },
+  { level: 5, name: 'Megastation', maxStock: 8000,  xpThreshold: 15000 },
+] as const;
+
+export const NPC_XP_DECAY_PER_HOUR = 1;
+export const NPC_XP_VISIT = 5;
+export const NPC_XP_PER_TRADE_UNIT = 1;
+export const NPC_XP_QUEST_COMPLETE = 15;
+
 // Artefact drop chances
 export const ARTEFACT_DROP_CHANCES = {
   artifact_find_event: 0.50,  // 50% on artifact_find scan event (vs crystal)

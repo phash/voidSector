@@ -894,3 +894,31 @@ export interface AdminQuestNotification {
   description: string;
   scope: AdminQuestScope;
 }
+
+export interface NpcStationLevel {
+  level: number;
+  name: string;
+  maxStock: number;
+  xpThreshold: number;
+}
+
+export interface NpcStationData {
+  stationX: number;
+  stationY: number;
+  level: number;
+  xp: number;
+  visitCount: number;
+  tradeVolume: number;
+  lastXpDecay: string;
+}
+
+export interface NpcStationInventoryItem {
+  stationX: number;
+  stationY: number;
+  itemType: string;
+  stock: number;
+  maxStock: number;
+  consumptionRate: number;
+  restockRate: number;
+  lastUpdated: string;
+}
