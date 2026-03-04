@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateSector, hashCoords, isInNebulaZone } from '../worldgen.js';
+import { generateSector, hashCoords, isInNebulaZone, isInBlackHoleCluster } from '../worldgen.js';
 import { WORLD_SEED, SECTOR_TYPES, RESOURCE_TYPES } from '@void-sector/shared';
 
 describe('worldgen', () => {
@@ -183,6 +183,132 @@ describe('worldgen', () => {
       }
     }
     expect(found).toBe(true);
+  });
+  // --- Two-stage worldgen tests ---
+
+  it('empty sectors yield zero resources', () => {
+    let found = false;
+    for (let x = 0; x < 200 && !found; x++) {
+      for (let y = 0; y < 50 && !found; y++) {
+        const s = generateSector(x, y, null);
+        if (s.type === 'empty' && s.environment === 'empty') {
+          expect(s.resources).toEqual({ ore: 0, gas: 0, crystal: 0 });
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('all empty-environment no-content sectors have zero resources', () => {
+    let count = 0;
+    for (let x = 0; x < 100; x++) {
+      for (let y = 0; y < 100; y++) {
+        const s = generateSector(x, y, null);
+        if (s.type === 'empty' && s.environment === 'empty' && s.contents.length === 0) {
+          expect(s.resources!.ore).toBe(0);
+          expect(s.resources!.gas).toBe(0);
+          expect(s.resources!.crystal).toBe(0);
+          count++;
+        }
+      }
+    }
+    // Should find many empty sectors
+    expect(count).toBeGreaterThan(100);
+  });
+
+  it('nebula sectors can contain station content', () => {
+    // Scan nebula zones for sectors with station content
+    let found = false;
+    // Use a very wide scan of nebula zone coordinates
+    for (let x = -1500; x <= 1500 && !found; x += 3) {
+      for (let y = -1500; y <= 1500 && !found; y += 3) {
+        const s = generateSector(x, y, null);
+        if (s.environment === 'nebula' && s.contents.includes('station')) {
+          expect(s.type).toBe('station');
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('nebula sectors can contain asteroid_field content', () => {
+    let found = false;
+    for (let x = -1500; x <= 1500 && !found; x += 3) {
+      for (let y = -1500; y <= 1500 && !found; y += 3) {
+        const s = generateSector(x, y, null);
+        if (s.environment === 'nebula' && s.contents.includes('asteroid_field')) {
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('black hole sectors are marked impassable', () => {
+    let found = false;
+    for (let x = 100; x < 1000 && !found; x++) {
+      for (let y = 100; y < 200 && !found; y++) {
+        const s = generateSector(x, y, null);
+        if (s.environment === 'black_hole') {
+          expect(s.impassable).toBe(true);
+          expect(s.contents).toEqual([]);
+          expect(s.resources).toEqual({ ore: 0, gas: 0, crystal: 0 });
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('black hole cluster generation is deterministic', () => {
+    // Test that isInBlackHoleCluster returns consistent results
+    const results: Array<{ x: number; y: number; cluster: boolean }> = [];
+    for (let x = 100; x < 500; x += 10) {
+      for (let y = 100; y < 500; y += 10) {
+        const cluster = isInBlackHoleCluster(x, y);
+        results.push({ x, y, cluster: cluster !== null });
+      }
+    }
+
+    // Verify determinism — same call should produce same result
+    for (const { x, y, cluster } of results) {
+      const again = isInBlackHoleCluster(x, y);
+      expect((again !== null)).toBe(cluster);
+    }
+  });
+
+  it('black hole clusters never appear within BLACK_HOLE_MIN_DISTANCE', () => {
+    for (let x = -49; x <= 49; x += 5) {
+      for (let y = -49; y <= 49; y += 5) {
+        expect(isInBlackHoleCluster(x, y)).toBeNull();
+      }
+    }
+  });
+
+  it('two-stage generation: environment and content are independent rolls', () => {
+    // Verify that sectors with content have valid environment+content combos
+    const envContentPairs: Record<string, Set<string>> = {};
+    for (let x = 0; x < 200; x++) {
+      for (let y = 0; y < 50; y++) {
+        const s = generateSector(x, y, null);
+        if (!envContentPairs[s.environment]) {
+          envContentPairs[s.environment] = new Set();
+        }
+        for (const c of s.contents) {
+          envContentPairs[s.environment].add(c);
+        }
+        if (s.contents.length === 0) {
+          envContentPairs[s.environment].add('none');
+        }
+      }
+    }
+    // Empty environment should have variety of content
+    expect(envContentPairs['empty']).toBeDefined();
+    expect(envContentPairs['empty'].has('none')).toBe(true);
+    expect(envContentPairs['empty'].has('asteroid_field')).toBe(true);
+    expect(envContentPairs['empty'].has('station')).toBe(true);
   });
 });
 

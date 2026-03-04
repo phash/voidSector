@@ -1,6 +1,6 @@
-import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
-import { deriveEnvironment, deriveContents } from '@void-sector/shared';
-import type { SectorData, SectorType, SectorResources, MineableResourceType, SectorEnvironment, SectorContent, QuadrantConfig } from '@void-sector/shared';
+import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE, BLACK_HOLE_CLUSTER_GRID, BLACK_HOLE_CLUSTER_CHANCE, BLACK_HOLE_CLUSTER_MIN_RADIUS, BLACK_HOLE_CLUSTER_MAX_RADIUS, ENVIRONMENT_WEIGHTS, CONTENT_WEIGHTS, NEBULA_CONTENT_ENABLED } from '@void-sector/shared';
+import { legacySectorType } from '@void-sector/shared';
+import type { SectorData, SectorType, SectorResources, MineableResourceType, SectorEnvironment, SectorContent, QuadrantConfig, BlackHoleCluster } from '@void-sector/shared';
 
 /**
  * Simple deterministic hash for coordinates.
@@ -21,29 +21,22 @@ export function hashCoords(x: number, y: number, worldSeed: number): number {
   return h | 0; // signed 32-bit (fits PostgreSQL INTEGER)
 }
 
-function sectorTypeFromSeed(seed: number): SectorType {
-  const normalized = (seed >>> 0) / 0x100000000; // treat as unsigned, normalize to [0, 1)
-  let cumulative = 0;
-  for (const type of SECTOR_TYPES) {
-    cumulative += SECTOR_WEIGHTS[type];
-    if (normalized < cumulative) return type;
-  }
-  return 'empty'; // fallback
+// Secondary hash for metadata decisions (uses different mixing than primary)
+function hashSecondary(seed: number): number {
+  let h = seed ^ 0xdeadbeef;
+  h = Math.imul(h, 0x9e3779b9);
+  h = h ^ (h >>> 16);
+  return (h >>> 0) / 0x100000000; // 0..1
 }
 
-function generateResources(type: SectorType, seed: number): SectorResources {
-  const base = SECTOR_RESOURCE_YIELDS[type];
-  const resources: SectorResources = { ore: 0, gas: 0, crystal: 0 };
-  const types: MineableResourceType[] = ['ore', 'gas', 'crystal'];
-  for (let i = 0; i < types.length; i++) {
-    const res = types[i];
-    if (base[res] === 0) continue;
-    // Use seed bits to vary ±30%
-    const variation = ((seed >>> (i * 8)) & 0xFF) / 255; // 0..1
-    const factor = 0.7 + variation * 0.6; // 0.7..1.3
-    resources[res] = Math.round(base[res] * factor);
-  }
-  return resources;
+// Tertiary hash — uncorrelated with primary and secondary
+function hashTertiary(seed: number): number {
+  let h = seed ^ 0xcafebabe;
+  h = Math.imul(h, 0xc2b2ae35);
+  h = h ^ (h >>> 13);
+  h = Math.imul(h, 0x85ebca6b);
+  h = h ^ (h >>> 16);
+  return (h >>> 0) / 0x100000000; // 0..1
 }
 
 /**
@@ -80,12 +73,127 @@ export function isInNebulaZone(x: number, y: number): boolean {
   return false;
 }
 
-// Secondary hash for metadata decisions (uses different mixing than primary)
-function hashSecondary(seed: number): number {
-  let h = seed ^ 0xdeadbeef;
-  h = Math.imul(h, 0x9e3779b9);
-  h = h ^ (h >>> 16);
-  return (h >>> 0) / 0x100000000; // 0..1
+/**
+ * Determines whether a coordinate falls inside a deterministic black hole cluster.
+ * Black hole clusters are seeded on a coarse grid; each cluster center has a radius
+ * of 0 to BLACK_HOLE_CLUSTER_MAX_RADIUS sectors. Only sectors far from origin qualify.
+ */
+export function isInBlackHoleCluster(x: number, y: number): BlackHoleCluster | null {
+  const distFromOrigin = Math.max(Math.abs(x), Math.abs(y));
+  if (distFromOrigin <= BLACK_HOLE_MIN_DISTANCE) return null;
+
+  const grid = BLACK_HOLE_CLUSTER_GRID;
+  const gridX = Math.round(x / grid);
+  const gridY = Math.round(y / grid);
+
+  for (let dgx = -1; dgx <= 1; dgx++) {
+    for (let dgy = -1; dgy <= 1; dgy++) {
+      const cx = (gridX + dgx) * grid;
+      const cy = (gridY + dgy) * grid;
+
+      // Must be far enough from origin
+      if (Math.max(Math.abs(cx), Math.abs(cy)) <= BLACK_HOLE_MIN_DISTANCE) continue;
+
+      // Use distinct XOR-mixed seed for black hole clusters
+      const centerSeed = hashCoords(cx, cy, WORLD_SEED ^ 0xb1ac4001);
+      const roll = (centerSeed >>> 0) / 0x100000000;
+
+      if (roll < BLACK_HOLE_CLUSTER_CHANCE) {
+        const radiusFraction = hashSecondary(centerSeed);
+        const radius = BLACK_HOLE_CLUSTER_MIN_RADIUS +
+          radiusFraction * (BLACK_HOLE_CLUSTER_MAX_RADIUS - BLACK_HOLE_CLUSTER_MIN_RADIUS);
+        const dx = x - cx;
+        const dy = y - cy;
+        // Use Chebyshev distance for square-ish clusters
+        if (Math.max(Math.abs(dx), Math.abs(dy)) <= radius) {
+          return { centerX: cx, centerY: cy, radius, seed: centerSeed };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Stage 1: Roll environment type.
+ * nebula zones override the roll. Black hole clusters override everything.
+ */
+function rollEnvironment(x: number, y: number, seed: number): SectorEnvironment {
+  const distFromOrigin = Math.max(Math.abs(x), Math.abs(y));
+
+  // Black hole: standalone chance (rare, far from origin)
+  if (distFromOrigin > BLACK_HOLE_MIN_DISTANCE) {
+    const bhRoll = ((seed >>> 0) & 0xFF) / 255;
+    if (bhRoll < BLACK_HOLE_SPAWN_CHANCE) {
+      return 'black_hole';
+    }
+  }
+
+  // Black hole clusters
+  if (isInBlackHoleCluster(x, y)) {
+    return 'black_hole';
+  }
+
+  // Nebula zone override
+  if (isInNebulaZone(x, y)) {
+    return 'nebula';
+  }
+
+  // Weighted roll for remaining environments
+  const normalized = hashSecondary(seed);
+  let cumulative = 0;
+  for (const [env, weight] of Object.entries(ENVIRONMENT_WEIGHTS)) {
+    cumulative += weight;
+    if (normalized < cumulative) return env as SectorEnvironment;
+  }
+  return 'empty';
+}
+
+/**
+ * Stage 2: Roll content for a sector (what's inside the environment).
+ * Black holes never have content. Empty and nebula sectors both get a content roll.
+ */
+function rollContent(seed: number, environment: SectorEnvironment): SectorContent[] {
+  if (environment === 'black_hole') return [];
+
+  // For nebula, only roll content if enabled
+  if (environment === 'nebula' && !NEBULA_CONTENT_ENABLED) return [];
+
+  // Use tertiary hash for content roll (uncorrelated with environment roll)
+  const roll = hashTertiary(seed);
+  let cumulative = 0;
+  for (const [contentKey, weight] of Object.entries(CONTENT_WEIGHTS)) {
+    cumulative += weight;
+    if (roll < cumulative) {
+      if (contentKey === 'none') return [];
+      if (contentKey === 'pirate') return ['pirate_zone', 'asteroid_field'];
+      return [contentKey as SectorContent];
+    }
+  }
+  return [];
+}
+
+/**
+ * Map environment + contents to a legacy SectorType for resource yield lookup
+ * and backward compatibility.
+ */
+function deriveLegacyType(environment: SectorEnvironment, contents: SectorContent[]): SectorType {
+  return legacySectorType(environment, contents);
+}
+
+function generateResources(type: SectorType, seed: number): SectorResources {
+  const base = SECTOR_RESOURCE_YIELDS[type];
+  const resources: SectorResources = { ore: 0, gas: 0, crystal: 0 };
+  const types: MineableResourceType[] = ['ore', 'gas', 'crystal'];
+  for (let i = 0; i < types.length; i++) {
+    const res = types[i];
+    if (base[res] === 0) continue;
+    // Use seed bits to vary ±30%
+    const variation = ((seed >>> (i * 8)) & 0xFF) / 255; // 0..1
+    const factor = 0.7 + variation * 0.6; // 0.7..1.3
+    resources[res] = Math.round(base[res] * factor);
+  }
+  return resources;
 }
 
 export function generateSector(
@@ -94,35 +202,34 @@ export function generateSector(
   discoveredBy: string | null
 ): SectorData {
   const seed = hashCoords(x, y, WORLD_SEED);
-  const distFromOrigin = Math.max(Math.abs(x), Math.abs(y));
 
-  // Black hole check — rare, only far from origin
-  if (distFromOrigin > BLACK_HOLE_MIN_DISTANCE) {
-    const bhRoll = ((seed >>> 0) & 0xFF) / 255;
-    if (bhRoll < BLACK_HOLE_SPAWN_CHANCE) {
-      return {
-        x, y, seed,
-        environment: 'black_hole' as SectorEnvironment,
-        contents: [],
-        type: 'empty',
-        discoveredBy,
-        discoveredAt: null,
-        metadata: {},
-        resources: { ore: 0, gas: 0, crystal: 0 },
-      };
-    }
+  // Stage 1: Roll environment
+  const environment = rollEnvironment(x, y, seed);
+
+  // Black holes are impassable with no content or resources
+  if (environment === 'black_hole') {
+    return {
+      x, y, seed,
+      environment,
+      contents: [],
+      type: 'empty',
+      discoveredBy,
+      discoveredAt: null,
+      metadata: {},
+      resources: { ore: 0, gas: 0, crystal: 0 },
+      impassable: true,
+    };
   }
 
-  // Legacy type generation (preserved for determinism)
-  const type = isInNebulaZone(x, y) ? 'nebula' : sectorTypeFromSeed(seed);
+  // Stage 2: Roll content
+  const contents = rollContent(seed, environment);
 
-  // Derive environment and contents from legacy type
-  const environment = deriveEnvironment(type);
-  const contents = deriveContents(type);
+  // Derive legacy type from environment + contents
+  const type = deriveLegacyType(environment, contents);
 
   // Special metadata: some stations are ancient variants
   const metadata: Record<string, unknown> = {};
-  if (type === 'station') {
+  if (contents.includes('station')) {
     const secondaryRoll = hashSecondary(seed);
     if (secondaryRoll < ANCIENT_STATION_CHANCE) {
       metadata.stationVariant = 'ancient';

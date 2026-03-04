@@ -41,7 +41,7 @@ export const RADAR_RADIUS = 3;  // visible sectors around player on scan
 export const RECONNECTION_TIMEOUT_S = 15;
 
 export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceType, number>> = {
-  empty:          { ore: 5,  gas: 5,  crystal: 5  },
+  empty:          { ore: 0,  gas: 0,  crystal: 0  },
   nebula:         { ore: 2,  gas: 20, crystal: 3  },
   asteroid_field: { ore: 20, gas: 2,  crystal: 3  },
   anomaly:        { ore: 3,  gas: 3,  crystal: 20 },
@@ -708,9 +708,32 @@ export const NEBULA_ZONE_MIN_RADIUS = 15; // minimum zone radius in sectors
 export const NEBULA_ZONE_MAX_RADIUS = 50; // maximum zone radius in sectors
 export const NEBULA_SAFE_ORIGIN = 200;  // no nebula zones within this many sectors of origin
 
+// Two-stage worldgen: environment weights (first roll)
+export const ENVIRONMENT_WEIGHTS: Record<string, number> = {
+  empty: 0.55,
+  nebula: 0.15,
+  // black_hole is handled separately via BLACK_HOLE_SPAWN_CHANCE
+};
+
+// Two-stage worldgen: content weights (second roll, for non-blackhole)
+export const CONTENT_WEIGHTS: Record<string, number> = {
+  none: 0.57,
+  asteroid_field: 0.20,
+  pirate: 0.10,
+  anomaly: 0.05,
+  station: 0.08,
+};
+
 // Black hole generation
 export const BLACK_HOLE_SPAWN_CHANCE = 0.005;    // 0.5% of sectors far from origin
 export const BLACK_HOLE_MIN_DISTANCE = 50;        // minimum Chebyshev distance from origin
+export const BLACK_HOLE_CLUSTER_GRID = 200;       // coarse grid spacing for cluster centers
+export const BLACK_HOLE_CLUSTER_CHANCE = 0.003;   // chance a grid cell is a cluster center
+export const BLACK_HOLE_CLUSTER_MIN_RADIUS = 0;   // minimum cluster radius (0 = single sector)
+export const BLACK_HOLE_CLUSTER_MAX_RADIUS = 4;   // maximum cluster radius (4 = up to 9x9)
+
+// Nebula content toggle — when true, nebula sectors get a content roll
+export const NEBULA_CONTENT_ENABLED = true;
 
 // Environment modifiers
 export const NEBULA_SCANNER_MALUS = 1;            // -1 sector scan range in nebula

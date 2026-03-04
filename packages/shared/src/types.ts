@@ -34,6 +34,14 @@ export interface SectorData {
   discoveredAt: string | null;
   metadata: Record<string, unknown>;
   resources?: SectorResources;
+  impassable?: boolean;
+}
+
+export interface BlackHoleCluster {
+  centerX: number;
+  centerY: number;
+  radius: number;
+  seed: number;
 }
 
 /** Derive legacy SectorType from environment + contents (for backward compat) */
