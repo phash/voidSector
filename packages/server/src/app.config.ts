@@ -18,7 +18,8 @@ const config = (toolsPkg as any).default ?? toolsPkg;
 
 export default config({
   initializeGameServer: (gameServer) => {
-    gameServer.define('sector', SectorRoom);
+    gameServer.define('sector', SectorRoom)
+      .filterBy(['quadrantX', 'quadrantY']);
   },
 
   initializeExpress: (app) => {

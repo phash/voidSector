@@ -1,5 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
+import { QUADRANT_SIZE } from '@void-sector/shared';
 import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, JumpGateMapEntry, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
@@ -10,11 +11,16 @@ function getWsUrl(): string {
   return `${protocol}//${loc.host}`;
 }
 
+function sectorToQuadrant(x: number, y: number): { qx: number; qy: number } {
+  return { qx: Math.floor(x / QUADRANT_SIZE), qy: Math.floor(y / QUADRANT_SIZE) };
+}
+
 class GameNetwork {
   private client: Client | null = null;
   private sectorRoom: Room | null = null;
   private reconnecting = false;
   private intentionalLeave = false;
+  private currentQuadrant: { qx: number; qy: number } | null = null;
 
   private ensureClient(): Client {
     if (!this.client) {
@@ -27,7 +33,19 @@ class GameNetwork {
     const store = useStore.getState();
     if (!store.token) throw new Error('Not authenticated');
 
-    // Leave current room
+    const { qx: targetQx, qy: targetQy } = sectorToQuadrant(x, y);
+
+    // Same quadrant: send moveSector message (no room leave/join)
+    if (this.sectorRoom && this.currentQuadrant &&
+        this.currentQuadrant.qx === targetQx && this.currentQuadrant.qy === targetQy) {
+      this.sectorRoom.send('moveSector', { sectorX: x, sectorY: y });
+      store.setPosition({ x, y });
+      store.resetPan();
+      store.addLogEntry(`Entered sector (${x}, ${y})`);
+      return;
+    }
+
+    // Different quadrant: leave old room and join new quadrant room
     if (this.sectorRoom) {
       this.intentionalLeave = true;
       await this.sectorRoom.leave();
@@ -38,10 +56,13 @@ class GameNetwork {
     this.ensureClient().http.authToken = store.token;
 
     this.sectorRoom = await this.ensureClient().joinOrCreate('sector', {
+      quadrantX: targetQx,
+      quadrantY: targetQy,
       sectorX: x,
       sectorY: y,
     });
 
+    this.currentQuadrant = { qx: targetQx, qy: targetQy };
     this.setupRoomListeners(this.sectorRoom);
     store.setPosition({ x, y });
     store.resetPan();
@@ -69,31 +90,31 @@ class GameNetwork {
         y: player.y,
         connected: player.connected,
       });
+      // Track position changes within the quadrant room
+      player.onChange(() => {
+        useStore.getState().setPlayer(sessionId, {
+          sessionId,
+          username: player.username,
+          x: player.x,
+          y: player.y,
+          connected: player.connected,
+        });
+      });
     });
 
     (room.state as any).players.onRemove((_player: any, sessionId: string) => {
       useStore.getState().removePlayer(sessionId);
     });
 
-    // Sector data
-    room.onStateChange.once((state: any) => {
-      const sector: SectorData = {
-        x: state.sector.x,
-        y: state.sector.y,
-        type: state.sector.sectorType,
-        seed: state.sector.seed,
-        discoveredBy: null,
-        discoveredAt: null,
-        metadata: {},
-        environment: state.sector.environment ?? 'empty',
-        contents: state.sector.contents ?? [],
-      };
-      useStore.getState().setCurrentSector(sector);
-      useStore.getState().addDiscoveries([sector]);
+    // Sector data (sent by server on join and on moveSector)
+    room.onMessage('sectorData', (sector: SectorData) => {
+      const store = useStore.getState();
+      store.setCurrentSector(sector);
+      store.addDiscoveries([sector]);
       // Sector type help tips
-      if (sector.type === 'nebula') useStore.getState().showTip('first_nebula');
-      else if (sector.type === 'station') useStore.getState().showTip('first_station');
-      else if (sector.type === 'asteroid_field') useStore.getState().showTip('first_asteroid');
+      if (sector.type === 'nebula') store.showTip('first_nebula');
+      else if (sector.type === 'station') store.showTip('first_station');
+      else if (sector.type === 'asteroid_field') store.showTip('first_asteroid');
     });
 
     // AP updates
@@ -108,6 +129,7 @@ class GameNetwork {
       newSector?: SectorData;
       apRemaining?: number;
       fuelRemaining?: number;
+      crossQuadrant?: boolean;
     }) => {
       useStore.getState().setJumpPending(false);
       if (data.fuelRemaining !== undefined) {
@@ -121,14 +143,22 @@ class GameNetwork {
         const dx = data.newSector.x - store.position.x;
         const dy = data.newSector.y - store.position.y;
         store.startJumpAnimation(dx, dy);
-        // Delay sector join until animation completes
         const newSector = data.newSector;
+        const needsRoomChange = data.crossQuadrant === true;
         setTimeout(async () => {
           useStore.getState().addDiscoveries([newSector]);
           useStore.getState().addLogEntry(
             `Jumped to (${newSector.x}, ${newSector.y}) — ${newSector.type}`
           );
-          await this.joinSector(newSector.x, newSector.y);
+          if (needsRoomChange) {
+            // Cross-quadrant: need to leave and join new quadrant room
+            await this.joinSector(newSector.x, newSector.y);
+          } else {
+            // Same quadrant: server already moved us, just update local state
+            useStore.getState().setPosition({ x: newSector.x, y: newSector.y });
+            useStore.getState().setCurrentSector(newSector);
+            useStore.getState().resetPan();
+          }
           useStore.getState().clearJumpAnimation();
         }, 800);
       } else {

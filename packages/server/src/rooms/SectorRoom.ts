@@ -64,6 +64,8 @@ function sanitizeChat(text: string): string {
 const MAX_COORD = 100_000_000;
 
 interface SectorRoomOptions {
+  quadrantX: number;
+  quadrantY: number;
   sectorX: number;
   sectorY: number;
 }
@@ -76,6 +78,19 @@ export class SectorRoom extends Room<SectorRoomState> {
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
   private rateLimits = new Map<string, Map<string, number>>();
   private disposeCallbacks: Array<() => void> = [];
+
+  // Quadrant-based room: tracks which quadrant this room serves
+  private quadrantX: number = 0;
+  private quadrantY: number = 0;
+  // Per-player sector data cache (each player may be in a different sector within the quadrant)
+  private playerSectorData = new Map<string, SectorData>();
+
+  /** Get a player's current sector X coordinate */
+  private _px(sid: string): number { return this.state.players.get(sid)?.x ?? 0; }
+  /** Get a player's current sector Y coordinate */
+  private _py(sid: string): number { return this.state.players.get(sid)?.y ?? 0; }
+  /** Get a player's current sector type from cache */
+  private _pst(sid: string): string { return this.playerSectorData.get(sid)?.type ?? 'empty'; }
 
   private checkRate(sessionId: string, action: string, intervalMs: number): boolean {
     let map = this.rateLimits.get(sessionId);
@@ -107,22 +122,23 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   async onCreate(options: SectorRoomOptions) {
-    const { sectorX, sectorY } = options;
+    const { quadrantX, quadrantY } = options;
     this.setState(new SectorRoomState());
 
-    // Load or generate sector
-    let sectorData = await getSector(sectorX, sectorY);
-    if (!sectorData) {
-      sectorData = generateSector(sectorX, sectorY, null);
-      await saveSector(sectorData);
-    }
+    // Quadrant-based room: one room per quadrant, not per sector
+    this.quadrantX = quadrantX;
+    this.quadrantY = quadrantY;
+    this.roomId = `quadrant_${quadrantX}_${quadrantY}`;
 
-    this.state.sector.x = sectorData.x;
-    this.state.sector.y = sectorData.y;
-    this.state.sector.sectorType = sectorData.type;
-    this.state.sector.seed = sectorData.seed;
-
-    this.roomId = `sector_${sectorX}_${sectorY}`;
+    // Handle intra-quadrant sector move (no room leave/join needed)
+    this.onMessage('moveSector', async (client, data: { sectorX: number; sectorY: number }) => {
+      try {
+        await this.handleMoveSector(client, data);
+      } catch (err) {
+        console.error('[MOVE_SECTOR] Error:', err);
+        client.send('error', { code: 'MOVE_FAILED', message: 'Failed to move sector' });
+      }
+    });
 
     // Handle jump message
     this.onMessage('jump', async (client, data: JumpMessage) => {
@@ -410,7 +426,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const auth = client.auth as AuthPayload;
       // Must be at home base
       const homeBase = await getPlayerHomeBase(auth.userId);
-      if (this.state.sector.x !== homeBase.x || this.state.sector.y !== homeBase.y) {
+      if (this._px(client.sessionId) !== homeBase.x || this._py(client.sessionId) !== homeBase.y) {
         client.send('error', { code: 'NOT_AT_BASE', message: 'Must be at home base to switch ships' });
         return;
       }
@@ -494,8 +510,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
       // Must be at station or home base
       const homeBase = await getPlayerHomeBase(auth.userId);
-      const isStation = this.state.sector.sectorType === 'station';
-      const isHomeBase = this.state.sector.x === homeBase.x && this.state.sector.y === homeBase.y;
+      const isStation = this._pst(client.sessionId) === 'station';
+      const isHomeBase = this._px(client.sessionId) === homeBase.x && this._py(client.sessionId) === homeBase.y;
       if (!isStation && !isHomeBase) {
         client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
         return;
@@ -544,16 +560,16 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
       // Must be at station or home base
       const homeBase = await getPlayerHomeBase(auth.userId);
-      const isStation = this.state.sector.sectorType === 'station';
-      const isHomeBase = this.state.sector.x === homeBase.x && this.state.sector.y === homeBase.y;
+      const isStation = this._pst(client.sessionId) === 'station';
+      const isHomeBase = this._px(client.sessionId) === homeBase.x && this._py(client.sessionId) === homeBase.y;
       if (!isStation && !isHomeBase) {
         client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
         return;
       }
       // If at an NPC station (not home base), check shipyard availability
       if (isStation && !isHomeBase) {
-        const sx = this.state.sector.x;
-        const sy = this.state.sector.y;
+        const sx = this._px(client.sessionId);
+        const sy = this._py(client.sessionId);
         const station = await getOrInitStation(sx, sy);
         const stationLevelInfo = getStationLevel(station.xp);
         if (!hasShipyard(stationLevelInfo.level)) {
@@ -625,8 +641,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // NPC Station data request
     this.onMessage('getNpcStation', async (client) => {
-      if (this.state.sector.sectorType !== 'station') return;
-      await this.sendNpcStationUpdate(client, this.state.sector.x, this.state.sector.y);
+      if (this._pst(client.sessionId) !== 'station') return;
+      await this.sendNpcStationUpdate(client, this._px(client.sessionId), this._py(client.sessionId));
     });
 
     // Trade route processing interval
@@ -669,12 +685,11 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Cross-room COMMS relay for sector/quadrant channels
     const onCommsBroadcast = (event: CommsBroadcastEvent) => {
-      // Skip messages that originated in this room (already broadcast locally)
-      if (event.sectorX === this.state.sector.x && event.sectorY === this.state.sector.y) return;
+      // Skip messages from the same quadrant room (already broadcast locally)
+      const { qx: eventQx, qy: eventQy } = sectorToQuadrant(event.sectorX, event.sectorY);
+      if (eventQx === this.quadrantX && eventQy === this.quadrantY) return;
 
-      const { qx: myQx, qy: myQy } = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
-
-      if (event.channel === 'quadrant' && event.quadrantX === myQx && event.quadrantY === myQy) {
+      if (event.channel === 'quadrant' && event.quadrantX === this.quadrantX && event.quadrantY === this.quadrantY) {
         this.broadcast('chatMessage', event.message);
       }
       // For direct messages relayed cross-room
@@ -825,8 +840,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
       const result = await placeKontorOrder(
         auth.userId,
-        this.state.sector.x,
-        this.state.sector.y,
+        this._px(client.sessionId),
+        this._py(client.sessionId),
         data.itemType,
         data.amount,
         data.pricePerUnit
@@ -837,7 +852,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         return;
       }
 
-      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      const orders = await getKontorOrders(this._px(client.sessionId), this._py(client.sessionId));
       client.send('kontorUpdate', { orders, placed: result.order });
     });
 
@@ -858,7 +873,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         return;
       }
 
-      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      const orders = await getKontorOrders(this._px(client.sessionId), this._py(client.sessionId));
       client.send('kontorUpdate', { orders, refunded: result.refunded });
     });
 
@@ -883,7 +898,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         return;
       }
 
-      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      const orders = await getKontorOrders(this._px(client.sessionId), this._py(client.sessionId));
       const cargo = await getPlayerCargo(auth.userId);
       client.send('kontorUpdate', { orders, earned: result.earned });
       client.send('cargoUpdate', cargo);
@@ -891,7 +906,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     this.onMessage('kontorGetOrders', async (client) => {
       if (!this.checkRate(client.sessionId, 'kontorGetOrders', 500)) return;
-      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      const orders = await getKontorOrders(this._px(client.sessionId), this._py(client.sessionId));
       client.send('kontorUpdate', { orders });
     });
 
@@ -943,7 +958,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const auth = client.auth as AuthPayload;
 
       // Only allowed at stations
-      const isStation = this.state.sector.sectorType === 'station';
+      const isStation = this._pst(client.sessionId) === 'station';
       if (!isStation) {
         client.send('syncQuadrantsResult', { success: false, error: 'Must be at a station to sync quadrant data' });
         return;
@@ -958,21 +973,36 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
   }
 
-  async onJoin(client: Client, _options: any, auth: AuthPayload) {
+  async onJoin(client: Client, options: any, auth: AuthPayload) {
     try {
+      // Player joins a specific sector within this quadrant room
+      const sectorX = options?.sectorX ?? 0;
+      const sectorY = options?.sectorY ?? 0;
+
       const player = new PlayerSchema();
       player.sessionId = client.sessionId;
       player.userId = auth.userId;
       player.username = auth.username;
-      player.x = this.state.sector.x;
-      player.y = this.state.sector.y;
+      player.x = sectorX;
+      player.y = sectorY;
       player.connected = true;
 
       this.state.players.set(client.sessionId, player);
       this.state.playerCount = this.state.players.size;
 
+      // Load or generate sector for this player
+      let sectorData = await getSector(sectorX, sectorY);
+      if (!sectorData) {
+        sectorData = generateSector(sectorX, sectorY, auth.userId);
+        await saveSector(sectorData);
+      }
+      this.playerSectorData.set(client.sessionId, sectorData);
+
+      // Send sector data to client
+      client.send('sectorData', sectorData);
+
       // Save position
-      await savePlayerPosition(auth.userId, this.state.sector.x, this.state.sector.y);
+      await savePlayerPosition(auth.userId, sectorX, sectorY);
 
       // Load active ship (or create default scout on first login)
       let shipRecord = await getActiveShip(auth.userId);
@@ -1004,7 +1034,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('fuelUpdate', { current: fuelCurrent, max: stats.fuelMax });
 
       // Record discovery
-      await addDiscovery(auth.userId, this.state.sector.x, this.state.sector.y);
+      await addDiscovery(auth.userId, sectorX, sectorY);
 
       // Send initial AP state
       const ap = await getAPState(auth.userId);
@@ -1089,9 +1119,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       });
 
       // Record NPC station visit for XP and per-station reputation
-      if (this.state.sector.sectorType === 'station') {
-        recordVisit(this.state.sector.x, this.state.sector.y).catch(() => {});
-        updatePlayerStationRep(auth.userId, this.state.sector.x, this.state.sector.y, STATION_REP_VISIT).catch(() => {});
+      if (sectorData.type === 'station') {
+        recordVisit(sectorX, sectorY).catch(() => {});
+        updatePlayerStationRep(auth.userId, sectorX, sectorY, STATION_REP_VISIT).catch(() => {});
 
         // Auto-refuel at station when FEATURE_HYPERDRIVE_V2 is enabled
         if (FEATURE_HYPERDRIVE_V2) {
@@ -1185,6 +1215,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.clientShips.delete(client.sessionId);
     this.clientHullTypes.delete(client.sessionId);
     this.rateLimits.delete(client.sessionId);
+    this.playerSectorData.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
   }
@@ -1193,6 +1224,50 @@ export class SectorRoom extends Room<SectorRoomState> {
     for (const cb of this.disposeCallbacks) {
       cb();
     }
+  }
+
+  /**
+   * Handle intra-quadrant sector move (client already confirmed same quadrant).
+   * Used when client calls joinSector for same-quadrant destination.
+   */
+  private async handleMoveSector(client: Client, data: { sectorX: number; sectorY: number }) {
+    if (!this.checkRate(client.sessionId, 'moveSector', 200)) return;
+    const { sectorX, sectorY } = data;
+    if (!isInt(sectorX) || !isInt(sectorY) || Math.abs(sectorX) > MAX_COORD || Math.abs(sectorY) > MAX_COORD) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
+      return;
+    }
+    const auth = client.auth as AuthPayload;
+
+    // Load or generate sector
+    let sectorData = await getSector(sectorX, sectorY);
+    if (!sectorData) {
+      sectorData = generateSector(sectorX, sectorY, auth.userId);
+      await saveSector(sectorData);
+    }
+
+    // Update player position
+    const player = this.state.players.get(client.sessionId);
+    if (player) { player.x = sectorX; player.y = sectorY; }
+    this.playerSectorData.set(client.sessionId, sectorData);
+    await savePlayerPosition(auth.userId, sectorX, sectorY);
+    await addDiscovery(auth.userId, sectorX, sectorY);
+
+    // Send sector data to client
+    client.send('sectorData', sectorData);
+
+    // Station visit tracking
+    if (sectorData.type === 'station') {
+      recordVisit(sectorX, sectorY).catch(() => {});
+      updatePlayerStationRep(auth.userId, sectorX, sectorY, STATION_REP_VISIT).catch(() => {});
+      if (FEATURE_HYPERDRIVE_V2) {
+        const ship = this.getShipForClient(client.sessionId);
+        await this.tryAutoRefuel(client, auth, ship);
+      }
+    }
+
+    // Quadrant first-contact detection
+    await this.checkFirstContact(client, auth, sectorX, sectorY);
   }
 
   private async handleJump(client: Client, data: JumpMessage) {
@@ -1209,10 +1284,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Normal jump: 1 AP, 0 fuel, max range 1
     const mining = await getMiningState(auth.userId);
     const ap = await getAPState(auth.userId);
+    const currentX = this._px(client.sessionId);
+    const currentY = this._py(client.sessionId);
     const jumpResult = validateJump(
       ap,
-      this.state.sector.x,
-      this.state.sector.y,
+      currentX,
+      currentY,
       targetX,
       targetY,
       JUMP_NORMAL_MAX_RANGE,
@@ -1297,13 +1374,26 @@ export class SectorRoom extends Room<SectorRoomState> {
       );
     }
 
-    // Tell client to switch rooms (normal jump: 0 fuel cost)
+    // Check if target is in the same quadrant
+    const { qx: curQx, qy: curQy } = sectorToQuadrant(currentX, currentY);
+    const { qx: tgtQx, qy: tgtQy } = sectorToQuadrant(targetX, targetY);
+    const crossQuadrant = curQx !== tgtQx || curQy !== tgtQy;
+
+    if (!crossQuadrant) {
+      // Intra-quadrant: update player position in-place (no room change)
+      const player = this.state.players.get(client.sessionId);
+      if (player) { player.x = targetX; player.y = targetY; }
+      this.playerSectorData.set(client.sessionId, targetSector);
+      await savePlayerPosition(auth.userId, targetX, targetY);
+    }
+
     client.send('jumpResult', {
       success: true,
       newSector: targetSector,
       apRemaining: jumpResult.newAP!.current,
       fuelRemaining: currentFuel ?? 0,
       gateInfo,
+      crossQuadrant,
     });
 
     // Phase 5: Check for distress calls in comm range
@@ -1311,8 +1401,6 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Quadrant first-contact detection
     await this.checkFirstContact(client, auth, targetX, targetY);
-
-    // Client will leave this room and join the new sector room
   }
 
   private async handleHyperJump(client: Client, data: HyperJumpMessage) {
@@ -1340,7 +1428,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
 
     // Nebula blocking: can't hyperjump into or out of nebula
-    const currentSectorData = await getSector(this.state.sector.x, this.state.sector.y);
+    const currentSectorData = await getSector(this._px(client.sessionId), this._py(client.sessionId));
     if (currentSectorData?.environment === 'nebula') {
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: hyperjump blocked inside nebula' });
       return;
@@ -1504,16 +1592,19 @@ export class SectorRoom extends Room<SectorRoomState> {
             this.autopilotTimers.delete(client.sessionId);
             await savePlayerPosition(auth.userId, targetX, targetY);
             await addDiscovery(auth.userId, targetX, targetY);
+            const hjPlayer = this.state.players.get(client.sessionId);
+            if (hjPlayer) { hjPlayer.x = targetX; hjPlayer.y = targetY; }
             let targetSector = await getSector(targetX, targetY);
             if (!targetSector) {
               targetSector = generateSector(targetX, targetY, auth.userId);
               await saveSector(targetSector);
             }
+            this.playerSectorData.set(client.sessionId, targetSector);
             client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
             await this.checkFirstContact(client, auth, targetX, targetY);
 
             // Auto-refuel at station if enabled
-            if (targetSector.contents?.includes('station') || targetSector.sectorType === 'station') {
+            if (targetSector.contents?.includes('station') || targetSector.type === 'station') {
               await this.tryAutoRefuel(client, auth, ship);
             }
             return;
@@ -1521,6 +1612,8 @@ export class SectorRoom extends Room<SectorRoomState> {
           const step = steps[stepIndex];
           await savePlayerPosition(auth.userId, step.x, step.y);
           await addDiscovery(auth.userId, step.x, step.y);
+          const hjStepPlayer = this.state.players.get(client.sessionId);
+          if (hjStepPlayer) { hjStepPlayer.x = step.x; hjStepPlayer.y = step.y; }
           stepIndex++;
           client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
         } catch (err) {
@@ -1590,12 +1683,15 @@ export class SectorRoom extends Room<SectorRoomState> {
             // Save final position and record discovery
             await savePlayerPosition(auth.userId, targetX, targetY);
             await addDiscovery(auth.userId, targetX, targetY);
+            const v1Player = this.state.players.get(client.sessionId);
+            if (v1Player) { v1Player.x = targetX; v1Player.y = targetY; }
             // Load or generate target sector
             let targetSector = await getSector(targetX, targetY);
             if (!targetSector) {
               targetSector = generateSector(targetX, targetY, auth.userId);
               await saveSector(targetSector);
             }
+            this.playerSectorData.set(client.sessionId, targetSector);
             client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
             // Quadrant first-contact detection after hyperjump completes
             await this.checkFirstContact(client, auth, targetX, targetY);
@@ -1605,6 +1701,8 @@ export class SectorRoom extends Room<SectorRoomState> {
           // Save position and record discovery for intermediate step
           await savePlayerPosition(auth.userId, step.x, step.y);
           await addDiscovery(auth.userId, step.x, step.y);
+          const v1StepPlayer = this.state.players.get(client.sessionId);
+          if (v1StepPlayer) { v1StepPlayer.x = step.x; v1StepPlayer.y = step.y; }
           stepIndex++;
           client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
         } catch (err) {
@@ -1815,12 +1913,17 @@ export class SectorRoom extends Room<SectorRoomState> {
           await savePlayerPosition(auth.userId, target.x, target.y);
           await addDiscovery(auth.userId, target.x, target.y);
 
+          // Update player position in schema
+          const player = this.state.players.get(client.sessionId);
+          if (player) { player.x = target.x; player.y = target.y; }
+
           // Load or generate target sector
           let targetSector = await getSector(target.x, target.y);
           if (!targetSector) {
             targetSector = generateSector(target.x, target.y, auth.userId);
             await saveSector(targetSector);
           }
+          this.playerSectorData.set(client.sessionId, targetSector);
 
           client.send('autopilotComplete', { x: target.x, y: target.y, sector: targetSector });
 
@@ -1829,7 +1932,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
           // Auto-refuel at station if FEATURE_HYPERDRIVE_V2 is enabled
           if (FEATURE_HYPERDRIVE_V2 &&
-              (targetSector.contents?.includes('station') || targetSector.sectorType === 'station')) {
+              (targetSector.contents?.includes('station') || targetSector.type === 'station')) {
             await this.tryAutoRefuel(client, auth, ship);
           }
           return;
@@ -1938,6 +2041,9 @@ export class SectorRoom extends Room<SectorRoomState> {
           await savePlayerPosition(auth.userId, move.x, move.y);
           await addDiscovery(auth.userId, move.x, move.y);
         }
+        // Update player position in schema
+        const apPlayer = this.state.players.get(client.sessionId);
+        if (apPlayer) { apPlayer.x = lastMove.x; apPlayer.y = lastMove.y; }
         currentStep += segment.moves.length;
 
         // Persist step progress to DB
@@ -1979,8 +2085,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       if (tankSpace <= 0) return;
 
       // Calculate price modifier using station/faction rep
-      const sx = this.state.sector.x;
-      const sy = this.state.sector.y;
+      const sx = this._px(client.sessionId);
+      const sy = this._py(client.sessionId);
       let modifier = 1.0;
       const sectorFaction = getStationFaction(sx, sy);
       if (sectorFaction) {
@@ -2017,9 +2123,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
 
     // Must be at a station or own base
-    const isStation = this.state.sector.sectorType === 'station';
+    const isStation = this._pst(client.sessionId) === 'station';
     const hasBaseHere = await playerHasBaseAtSector(
-      auth.userId, this.state.sector.x, this.state.sector.y
+      auth.userId, this._px(client.sessionId), this._py(client.sessionId)
     );
     if (!isStation && !hasBaseHere) {
       client.send('refuelResult', { success: false, error: 'Must be at a station or your base to refuel' });
@@ -2043,8 +2149,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Apply reputation price modifier at stations — use the better of station-rep vs faction-rep
     let priceModifier = 1.0;
     if (isStation && !isFreeRefuel) {
-      const sx = this.state.sector.x;
-      const sy = this.state.sector.y;
+      const sx = this._px(client.sessionId);
+      const sy = this._py(client.sessionId);
 
       // Faction reputation modifier
       const sectorFaction = getStationFaction(sx, sy);
@@ -2112,8 +2218,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Get home base coordinates
     const homeBase = await getPlayerHomeBase(auth.userId);
-    const currentX = this.state.sector.x;
-    const currentY = this.state.sector.y;
+    const currentX = this._px(client.sessionId);
+    const currentY = this._py(client.sessionId);
     const distance = Math.abs(homeBase.x - currentX) + Math.abs(homeBase.y - currentY);
 
     // Already at home base
@@ -2182,7 +2288,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     await saveAPState(auth.userId, result.newAP!);
 
-    const sectorData = await getSector(this.state.sector.x, this.state.sector.y);
+    const sectorData = await getSector(this._px(client.sessionId), this._py(client.sessionId));
     const resources = sectorData?.resources ?? { ore: 0, gas: 0, crystal: 0 };
 
     client.send('localScanResult', {
@@ -2192,8 +2298,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('apUpdate', result.newAP!);
 
     // Phase 4: Check for scan events (pass environment for pirate frequency scaling)
-    const env = (this.state.sector.sectorType === 'nebula' ? 'nebula' : 'empty') as import('@void-sector/shared').SectorEnvironment;
-    await this.checkAndEmitScanEvents(client, [{ x: this.state.sector.x, y: this.state.sector.y, environment: env }]);
+    const env = (this._pst(client.sessionId) === 'nebula' ? 'nebula' : 'empty') as import('@void-sector/shared').SectorEnvironment;
+    await this.checkAndEmitScanEvents(client, [{ x: this._px(client.sessionId), y: this._py(client.sessionId), environment: env }]);
   }
 
   private async handleAreaScan(client: Client) {
@@ -2214,8 +2320,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Apply faction scan radius bonus
     const bonuses = await this.getPlayerBonuses(auth.userId);
     const radius = scanResult.radius + bonuses.scanRadiusBonus;
-    const sectorX = this.state.sector.x;
-    const sectorY = this.state.sector.y;
+    const sectorX = this._px(client.sessionId);
+    const sectorY = this._py(client.sessionId);
 
     // Nebula interference: area scan is blocked inside nebula sectors
     const currentSectorData = await getSector(sectorX, sectorY);
@@ -2285,7 +2391,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const { resource } = data;
 
-    const sectorData = await getSector(this.state.sector.x, this.state.sector.y);
+    const sectorData = await getSector(this._px(client.sessionId), this._py(client.sessionId));
     if (!sectorData?.resources) {
       client.send('error', { code: 'NO_RESOURCES', message: 'No resources in this sector' });
       return;
@@ -2301,8 +2407,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       current,
       cargoTotal,
       ship.cargoCap,
-      this.state.sector.x,
-      this.state.sector.y,
+      this._px(client.sessionId),
+      this._py(client.sessionId),
     );
     if (!result.valid) {
       client.send('error', { code: 'MINE_FAILED', message: result.error! });
@@ -2394,7 +2500,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     try {
       structure = await createStructure(
         auth.userId, data.type,
-        this.state.sector.x, this.state.sector.y
+        this._px(client.sessionId), this._py(client.sessionId)
       );
     } catch (err: any) {
       if (err.code === '23505') {
@@ -2411,8 +2517,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('cargoUpdate', updatedCargo);
     this.broadcast('structureBuilt', {
       structure,
-      sectorX: this.state.sector.x,
-      sectorY: this.state.sector.y,
+      sectorX: this._px(client.sessionId),
+      sectorY: this._py(client.sessionId),
     });
   }
 
@@ -2429,7 +2535,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Nebula interference blocks local chat
     if (data.channel === 'local') {
-      const sectorData = await getSector(this.state.sector.x, this.state.sector.y);
+      const sectorData = await getSector(this._px(client.sessionId), this._py(client.sessionId));
       if (sectorData?.type === 'nebula') {
         client.send('error', { code: 'NEBULA_INTERFERENCE', message: 'Nebel-Interferenz: Kommunikation gestört' });
         return;
@@ -2495,11 +2601,11 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Broadcast to all players in the same sector (this room)
       this.broadcast('chatMessage', chatMsg);
       // Also emit to commsBus for other rooms at the same coordinates
-      const { qx, qy } = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+      const { qx, qy } = sectorToQuadrant(this._px(client.sessionId), this._py(client.sessionId));
       commsBus.broadcast({
         channel: 'sector',
-        sectorX: this.state.sector.x,
-        sectorY: this.state.sector.y,
+        sectorX: this._px(client.sessionId),
+        sectorY: this._py(client.sessionId),
         quadrantX: qx,
         quadrantY: qy,
         message: chatMsg,
@@ -2508,11 +2614,11 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Broadcast to all players in this room (same quadrant)
       this.broadcast('chatMessage', chatMsg);
       // Emit to commsBus for other rooms in the same quadrant
-      const { qx, qy } = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+      const { qx, qy } = sectorToQuadrant(this._px(client.sessionId), this._py(client.sessionId));
       commsBus.broadcast({
         channel: 'quadrant',
-        sectorX: this.state.sector.x,
-        sectorY: this.state.sector.y,
+        sectorX: this._px(client.sessionId),
+        sectorY: this._py(client.sessionId),
         quadrantX: qx,
         quadrantY: qy,
         message: chatMsg,
@@ -2525,11 +2631,11 @@ export class SectorRoom extends Room<SectorRoomState> {
         recipientClient.send('chatMessage', chatMsg);
       }
       // Also emit to commsBus for cross-room direct delivery
-      const { qx, qy } = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+      const { qx, qy } = sectorToQuadrant(this._px(client.sessionId), this._py(client.sessionId));
       commsBus.broadcast({
         channel: 'sector', // use sector channel for routing, message.channel is 'direct'
-        sectorX: this.state.sector.x,
-        sectorY: this.state.sector.y,
+        sectorX: this._px(client.sessionId),
+        sectorY: this._py(client.sessionId),
         quadrantX: qx,
         quadrantY: qy,
         message: chatMsg,
@@ -2549,7 +2655,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     const player = await findPlayerByUsername(auth.username);
     if (!player) { client.send('error', { code: 'NO_PLAYER', message: 'Player not found' }); return; }
-    if (this.state.sector.x !== player.homeBase.x || this.state.sector.y !== player.homeBase.y) {
+    if (this._px(client.sessionId) !== player.homeBase.x || this._py(client.sessionId) !== player.homeBase.y) {
       client.send('transferResult', { success: false, error: 'Must be at home base' });
       return;
     }
@@ -2629,9 +2735,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     const player = await findPlayerByUsername(auth.username);
     if (!player) return;
 
-    const isStation = this.state.sector.sectorType === 'station';
-    const isHomeBase = this.state.sector.x === player.homeBase.x &&
-                       this.state.sector.y === player.homeBase.y;
+    const isStation = this._pst(client.sessionId) === 'station';
+    const isHomeBase = this._px(client.sessionId) === player.homeBase.x &&
+                       this._py(client.sessionId) === player.homeBase.y;
     if (!isStation && !isHomeBase) {
       client.send('npcTradeResult', { success: false, error: 'Must be at a station or home base' });
       return;
@@ -2647,8 +2753,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       const cargo = await getPlayerCargo(auth.userId);
       const cargoTotal = await getCargoTotal(auth.userId);
       const shipStats = this.getShipForClient(client.sessionId);
-      const sx = this.state.sector.x;
-      const sy = this.state.sector.y;
+      const sx = this._px(client.sessionId);
+      const sy = this._py(client.sessionId);
 
       if (action === 'sell') {
         // Check cargo has enough
@@ -2880,8 +2986,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Gather sector data
     let sectorData: any[];
-    const sectorX = this.state.sector.x;
-    const sectorY = this.state.sector.y;
+    const sectorX = this._px(client.sessionId);
+    const sectorY = this._py(client.sessionId);
 
     if (data.slateType === 'sector') {
       const sector = await getSector(sectorX, sectorY);
@@ -3664,8 +3770,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
 
-    const sectorX = this.state.sector.x;
-    const sectorY = this.state.sector.y;
+    const sectorX = this._px(client.sessionId);
+    const sectorY = this._py(client.sessionId);
     const structures = await getPlayerStructuresInSector(auth.userId, sectorX, sectorY);
     const hasBase = structures.some(s => s.type === 'base');
     if (!hasBase) {
@@ -3923,7 +4029,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const { gateId, accessCode } = data;
 
-    const gate = await getJumpGate(this.state.sector.x, this.state.sector.y);
+    const gate = await getJumpGate(this._px(client.sessionId), this._py(client.sessionId));
     if (!gate || gate.id !== gateId) {
       client.send('useJumpGateResult', { success: false, error: 'No gate at this location' });
       return;
@@ -3971,7 +4077,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       return;
     }
 
-    const gate = await getJumpGate(this.state.sector.x, this.state.sector.y);
+    const gate = await getJumpGate(this._px(client.sessionId), this._py(client.sessionId));
     if (!gate || gate.id !== data.gateId) {
       client.send('useJumpGateResult', { success: false, error: 'Gate not found' });
       return;
@@ -3999,7 +4105,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const ship = this.getShipForClient(client.sessionId);
 
     // Must be at the sector
-    if (data.sectorX !== this.state.sector.x || data.sectorY !== this.state.sector.y) {
+    if (data.sectorX !== this._px(client.sessionId) || data.sectorY !== this._py(client.sessionId)) {
       client.send('rescueResult', { success: false, error: 'Not at rescue location' });
       return;
     }
@@ -4038,7 +4144,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
 
     // Must be at a station
-    if (this.state.sector.sectorType !== 'station') {
+    if (this._pst(client.sessionId) !== 'station') {
       client.send('deliverSurvivorsResult', { success: false, error: 'Must be at a station' });
       return;
     }
@@ -4331,7 +4437,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Must be at home base
     const homeBase = await getPlayerHomeBase(auth.userId);
-    if (!homeBase || homeBase.x !== this.state.sector.x || homeBase.y !== this.state.sector.y) {
+    if (!homeBase || homeBase.x !== this._px(client.sessionId) || homeBase.y !== this._py(client.sessionId)) {
       client.send('researchResult', { success: false, error: 'Must be at home base' });
       return;
     }
@@ -4459,7 +4565,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private async checkFirstContact(client: Client, auth: AuthPayload, targetX: number, targetY: number) {
     try {
       const { qx, qy } = sectorToQuadrant(targetX, targetY);
-      const currentQ = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+      const currentQ = sectorToQuadrant(this._px(client.sessionId), this._py(client.sessionId));
 
       // Only check if entering a different quadrant
       if (qx === currentQ.qx && qy === currentQ.qy) return;
