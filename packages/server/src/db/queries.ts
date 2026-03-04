@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord } from '@void-sector/shared';
+import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord, AnyItemType, KontorOrder, StorageInventory } from '@void-sector/shared';
 import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -1499,4 +1499,328 @@ export async function getPlayerStructuresInSector(
     [userId, sectorX, sectorY],
   );
   return result.rows;
+}
+
+// --- Economy Overhaul Queries ---
+
+// NPC Station data
+export async function getNpcStationData(sectorX: number, sectorY: number): Promise<{
+  level: number; xp: number; visitCount: number; tradeVolume: number; lastXpDecay: number;
+} | null> {
+  const r = await query(
+    'SELECT level, xp, visit_count, trade_volume, last_xp_decay FROM npc_station_data WHERE station_x = $1 AND station_y = $2',
+    [sectorX, sectorY],
+  );
+  if (!r.rows[0]) return null;
+  const row = r.rows[0];
+  return { level: row.level, xp: row.xp, visitCount: row.visit_count, tradeVolume: row.trade_volume, lastXpDecay: Number(row.last_xp_decay) };
+}
+
+export async function upsertNpcStationData(sectorX: number, sectorY: number, level: number, xp: number, visitCount: number, tradeVolume: number): Promise<void> {
+  await query(
+    `INSERT INTO npc_station_data (station_x, station_y, level, xp, visit_count, trade_volume, last_xp_decay)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (station_x, station_y) DO UPDATE
+       SET level = EXCLUDED.level, xp = EXCLUDED.xp,
+           visit_count = EXCLUDED.visit_count, trade_volume = EXCLUDED.trade_volume,
+           last_xp_decay = EXCLUDED.last_xp_decay`,
+    [sectorX, sectorY, level, xp, visitCount, tradeVolume, Date.now()],
+  );
+}
+
+export async function addNpcStationXp(sectorX: number, sectorY: number, xpGain: number): Promise<{ level: number; xp: number; visitCount: number; tradeVolume: number }> {
+  const r = await query(
+    `INSERT INTO npc_station_data (station_x, station_y, xp, visit_count, trade_volume)
+     VALUES ($1, $2, $3, 0, 0)
+     ON CONFLICT (station_x, station_y) DO UPDATE
+       SET xp = npc_station_data.xp + $3,
+           trade_volume = npc_station_data.trade_volume + $3
+     RETURNING level, xp, visit_count, trade_volume`,
+    [sectorX, sectorY, xpGain],
+  );
+  const row = r.rows[0];
+  return { level: row.level, xp: row.xp, visitCount: row.visit_count, tradeVolume: row.trade_volume };
+}
+
+export async function recordNpcStationVisit(sectorX: number, sectorY: number, xpGain: number): Promise<{ level: number; xp: number }> {
+  const r = await query(
+    `INSERT INTO npc_station_data (station_x, station_y, xp, visit_count, trade_volume)
+     VALUES ($1, $2, $3, 1, 0)
+     ON CONFLICT (station_x, station_y) DO UPDATE
+       SET xp = npc_station_data.xp + $3,
+           visit_count = npc_station_data.visit_count + 1
+     RETURNING level, xp`,
+    [sectorX, sectorY, xpGain],
+  );
+  const row = r.rows[0];
+  return { level: row.level, xp: row.xp };
+}
+
+export async function updateNpcStationLevel(sectorX: number, sectorY: number, level: number): Promise<void> {
+  await query('UPDATE npc_station_data SET level = $3 WHERE station_x = $1 AND station_y = $2', [sectorX, sectorY, level]);
+}
+
+// NPC Station inventory
+export async function getNpcStationInventory(sectorX: number, sectorY: number): Promise<Array<{
+  itemType: string; stock: number; maxStock: number; consumptionRate: number; restockRate: number; lastUpdated: number;
+}>> {
+  const r = await query(
+    'SELECT item_type, stock, max_stock, consumption_rate, restock_rate, last_updated FROM npc_station_inventory WHERE station_x = $1 AND station_y = $2',
+    [sectorX, sectorY],
+  );
+  return r.rows.map(row => ({
+    itemType: row.item_type,
+    stock: row.stock,
+    maxStock: row.max_stock,
+    consumptionRate: Number(row.consumption_rate),
+    restockRate: Number(row.restock_rate),
+    lastUpdated: Number(row.last_updated),
+  }));
+}
+
+export async function upsertNpcInventoryItem(
+  sectorX: number, sectorY: number, itemType: string,
+  stock: number, maxStock: number, consumptionRate: number, restockRate: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO npc_station_inventory (station_x, station_y, item_type, stock, max_stock, consumption_rate, restock_rate, last_updated)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (station_x, station_y, item_type) DO UPDATE
+       SET stock = EXCLUDED.stock, max_stock = EXCLUDED.max_stock,
+           consumption_rate = EXCLUDED.consumption_rate, restock_rate = EXCLUDED.restock_rate,
+           last_updated = EXCLUDED.last_updated`,
+    [sectorX, sectorY, itemType, stock, maxStock, consumptionRate, restockRate, Date.now()],
+  );
+}
+
+export async function adjustNpcInventoryStock(
+  sectorX: number, sectorY: number, itemType: string, delta: number,
+): Promise<number> {
+  const r = await query(
+    `UPDATE npc_station_inventory
+     SET stock = GREATEST(0, LEAST(max_stock, stock + $4)), last_updated = $5
+     WHERE station_x = $1 AND station_y = $2 AND item_type = $3
+     RETURNING stock`,
+    [sectorX, sectorY, itemType, delta, Date.now()],
+  );
+  return r.rows[0]?.stock ?? 0;
+}
+
+// Factory queries
+export async function getFactoryState(structureId: string): Promise<{
+  structureId: string; ownerId: string; activeRecipeId: string | null;
+  cycleStartedAt: number | null; fuel_cell: number; circuit_board: number;
+  alloy_plate: number; void_shard: number; bio_extract: number;
+} | null> {
+  const r = await query('SELECT * FROM factory_state WHERE structure_id = $1', [structureId]);
+  if (!r.rows[0]) return null;
+  const row = r.rows[0];
+  return {
+    structureId: row.structure_id,
+    ownerId: row.owner_id,
+    activeRecipeId: row.active_recipe_id,
+    cycleStartedAt: row.cycle_started_at ? Number(row.cycle_started_at) : null,
+    fuel_cell: row.fuel_cell,
+    circuit_board: row.circuit_board,
+    alloy_plate: row.alloy_plate,
+    void_shard: row.void_shard,
+    bio_extract: row.bio_extract,
+  };
+}
+
+export async function upsertFactoryState(structureId: string, ownerId: string): Promise<void> {
+  await query(
+    `INSERT INTO factory_state (structure_id, owner_id) VALUES ($1, $2)
+     ON CONFLICT (structure_id) DO NOTHING`,
+    [structureId, ownerId],
+  );
+}
+
+export async function setFactoryRecipe(structureId: string, recipeId: string | null): Promise<void> {
+  const now = recipeId ? Date.now() : null;
+  await query(
+    'UPDATE factory_state SET active_recipe_id = $2, cycle_started_at = $3 WHERE structure_id = $1',
+    [structureId, recipeId, now],
+  );
+}
+
+export async function addFactoryOutput(
+  structureId: string,
+  item: string,
+  amount: number,
+  newCycleStart: number,
+): Promise<void> {
+  const col = item.replace(/_/g, '_'); // already safe column name
+  await query(
+    `UPDATE factory_state SET ${col} = ${col} + $2, cycle_started_at = $3 WHERE structure_id = $1`,
+    [structureId, amount, newCycleStart],
+  );
+}
+
+export async function collectFactoryOutput(structureId: string): Promise<Partial<Record<string, number>>> {
+  const r = await query(
+    `UPDATE factory_state
+     SET fuel_cell = 0, circuit_board = 0, alloy_plate = 0, void_shard = 0, bio_extract = 0
+     WHERE structure_id = $1
+     RETURNING fuel_cell, circuit_board, alloy_plate, void_shard, bio_extract`,
+    [structureId],
+  );
+  return r.rows[0] ?? {};
+}
+
+// Research queries
+export async function getPlayerResearch(playerId: string): Promise<string[]> {
+  const r = await query('SELECT recipe_id FROM player_research WHERE player_id = $1', [playerId]);
+  return r.rows.map((row: { recipe_id: string }) => row.recipe_id);
+}
+
+export async function unlockResearch(playerId: string, recipeId: string): Promise<void> {
+  await query(
+    'INSERT INTO player_research (player_id, recipe_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+    [playerId, recipeId],
+  );
+}
+
+export async function getActiveResearch(playerId: string): Promise<{
+  recipeId: string; startedAt: number; completesAt: number;
+} | null> {
+  const r = await query('SELECT recipe_id, started_at, completes_at FROM active_research WHERE player_id = $1', [playerId]);
+  if (!r.rows[0]) return null;
+  const row = r.rows[0];
+  return { recipeId: row.recipe_id, startedAt: Number(row.started_at), completesAt: Number(row.completes_at) };
+}
+
+export async function startResearch(playerId: string, recipeId: string, completesAt: number): Promise<void> {
+  await query(
+    `INSERT INTO active_research (player_id, recipe_id, started_at, completes_at, credits_spent)
+     VALUES ($1, $2, $3, $4, 0)
+     ON CONFLICT (player_id) DO UPDATE
+       SET recipe_id = EXCLUDED.recipe_id, started_at = EXCLUDED.started_at, completes_at = EXCLUDED.completes_at`,
+    [playerId, recipeId, Date.now(), completesAt],
+  );
+}
+
+export async function clearActiveResearch(playerId: string): Promise<void> {
+  await query('DELETE FROM active_research WHERE player_id = $1', [playerId]);
+}
+
+// Kontor queries
+export async function getKontorOrders(sectorX: number, sectorY: number): Promise<KontorOrder[]> {
+  const r = await query(
+    `SELECT k.*, p.username as owner_name
+     FROM kontor_orders k
+     JOIN players p ON k.owner_id = p.id
+     WHERE k.sector_x = $1 AND k.sector_y = $2 AND k.active = TRUE
+     ORDER BY k.created_at`,
+    [sectorX, sectorY],
+  );
+  return r.rows.map((row: any) => ({
+    id: row.id,
+    ownerId: row.owner_id,
+    ownerName: row.owner_name,
+    sectorX: row.sector_x,
+    sectorY: row.sector_y,
+    itemType: row.item_type as AnyItemType,
+    amountWanted: row.amount_wanted,
+    amountFilled: row.amount_filled,
+    pricePerUnit: row.price_per_unit,
+    budgetReserved: row.budget_reserved,
+    active: row.active,
+    createdAt: Number(row.created_at),
+  }));
+}
+
+export async function getMyKontorOrders(ownerId: string): Promise<KontorOrder[]> {
+  const r = await query(
+    `SELECT k.*, p.username as owner_name
+     FROM kontor_orders k
+     JOIN players p ON k.owner_id = p.id
+     WHERE k.owner_id = $1
+     ORDER BY k.created_at DESC`,
+    [ownerId],
+  );
+  return r.rows.map((row: any) => ({
+    id: row.id,
+    ownerId: row.owner_id,
+    ownerName: row.owner_name,
+    sectorX: row.sector_x,
+    sectorY: row.sector_y,
+    itemType: row.item_type as AnyItemType,
+    amountWanted: row.amount_wanted,
+    amountFilled: row.amount_filled,
+    pricePerUnit: row.price_per_unit,
+    budgetReserved: row.budget_reserved,
+    active: row.active,
+    createdAt: Number(row.created_at),
+  }));
+}
+
+export async function createKontorOrder(
+  ownerId: string, sectorX: number, sectorY: number,
+  itemType: string, amountWanted: number, pricePerUnit: number, budgetReserved: number,
+): Promise<string> {
+  const r = await query(
+    `INSERT INTO kontor_orders (owner_id, sector_x, sector_y, item_type, amount_wanted, price_per_unit, budget_reserved)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [ownerId, sectorX, sectorY, itemType, amountWanted, pricePerUnit, budgetReserved],
+  );
+  return r.rows[0].id;
+}
+
+export async function cancelKontorOrder(orderId: string, ownerId: string): Promise<number | null> {
+  const r = await query(
+    `DELETE FROM kontor_orders WHERE id = $1 AND owner_id = $2 AND active = TRUE
+     RETURNING budget_reserved, amount_filled, price_per_unit`,
+    [orderId, ownerId],
+  );
+  if (!r.rows[0]) return null;
+  const { amount_filled, price_per_unit, budget_reserved } = r.rows[0];
+  const spent = amount_filled * price_per_unit;
+  return budget_reserved - spent; // refund
+}
+
+export async function fulfillKontorOrder(orderId: string, amount: number): Promise<{
+  pricePerUnit: number; ownerId: string; amountFilled: number; amountWanted: number;
+} | null> {
+  const r = await query(
+    `UPDATE kontor_orders
+     SET amount_filled = amount_filled + $2,
+         active = CASE WHEN amount_filled + $2 >= amount_wanted THEN FALSE ELSE TRUE END
+     WHERE id = $1 AND active = TRUE AND amount_filled + $2 <= amount_wanted
+     RETURNING price_per_unit, owner_id, amount_filled, amount_wanted`,
+    [orderId, amount],
+  );
+  if (!r.rows[0]) return null;
+  const row = r.rows[0];
+  return { pricePerUnit: row.price_per_unit, ownerId: row.owner_id, amountFilled: row.amount_filled, amountWanted: row.amount_wanted };
+}
+
+// Extend getStorageInventory to include processed items
+export async function getFullStorageInventory(ownerId: string): Promise<StorageInventory> {
+  const r = await query(
+    `SELECT ore, gas, crystal, fuel_cell, circuit_board, alloy_plate, void_shard, bio_extract
+     FROM storage_inventory WHERE owner_id = $1`,
+    [ownerId],
+  );
+  if (!r.rows[0]) return { ore: 0, gas: 0, crystal: 0 };
+  const row = r.rows[0];
+  return {
+    ore: row.ore ?? 0,
+    gas: row.gas ?? 0,
+    crystal: row.crystal ?? 0,
+    fuel_cell: row.fuel_cell ?? 0,
+    circuit_board: row.circuit_board ?? 0,
+    alloy_plate: row.alloy_plate ?? 0,
+    void_shard: row.void_shard ?? 0,
+    bio_extract: row.bio_extract ?? 0,
+  };
+}
+
+export async function updateStorageProcessedItem(ownerId: string, item: string, delta: number): Promise<void> {
+  const safeItem = ['fuel_cell', 'circuit_board', 'alloy_plate', 'void_shard', 'bio_extract'].includes(item) ? item : null;
+  if (!safeItem) throw new Error(`Invalid processed item: ${item}`);
+  await query(
+    `UPDATE storage_inventory SET ${safeItem} = GREATEST(0, ${safeItem} + $2) WHERE owner_id = $1`,
+    [ownerId, delta],
+  );
 }

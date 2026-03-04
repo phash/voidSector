@@ -12,6 +12,13 @@ vi.mock('../network/client', () => ({
     sendNpcTrade: vi.fn(),
     sendCancelOrder: vi.fn(),
     requestMySlates: vi.fn(),
+    requestStationInventory: vi.fn(),
+    sendNpcTradeV2: vi.fn(),
+    requestMyKontorOrders: vi.fn(),
+    requestSectorKontorOrders: vi.fn(),
+    sendKontorPlaceOrder: vi.fn(),
+    sendKontorCancelOrder: vi.fn(),
+    sendKontorSell: vi.fn(),
   },
 }));
 
@@ -101,5 +108,57 @@ describe('TradeScreen', () => {
     render(<TradeScreen />);
     expect(screen.queryByText('MARKT')).toBeNull();
     expect(screen.queryByText('ROUTEN')).toBeNull();
+  });
+
+  it('shows station inventory tab at NPC station', () => {
+    mockStoreState({
+      baseStructures: [],
+      position: { x: 10, y: 10 },
+      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {} },
+      credits: 200,
+      cargo: { ore: 3, gas: 1, crystal: 0, slates: 0 },
+      stationInfo: null,
+    });
+    render(<TradeScreen />);
+    expect(screen.getByText('STATION V2')).toBeTruthy();
+  });
+
+  it('shows station inventory items when stationInfo is loaded', () => {
+    mockStoreState({
+      baseStructures: [],
+      position: { x: 10, y: 10 },
+      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {} },
+      credits: 200,
+      cargo: { ore: 3, gas: 1, crystal: 0, slates: 0 },
+      stationInfo: {
+        stationX: 10,
+        stationY: 10,
+        level: 2,
+        xp: 600,
+        items: [
+          { itemType: 'ore', stock: 50, maxStock: 80, buyPrice: 5, sellPrice: 3, canBuy: true, canSell: true },
+          { itemType: 'gas', stock: 0, maxStock: 60, buyPrice: 8, sellPrice: 5, canBuy: false, canSell: true },
+        ],
+      },
+    });
+    render(<TradeScreen />);
+    expect(screen.getByText(/LVL 2/)).toBeTruthy();
+    expect(screen.getByText(/ERZ/)).toBeTruthy();
+  });
+
+  it('shows kontor tab at home base with kontor structure', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'k1', type: 'kontor', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      position: { x: 0, y: 0 },
+      credits: 500,
+      storage: { ore: 10, gas: 5, crystal: 2 },
+      myKontorOrders: [],
+      sectorKontorOrders: [],
+    });
+    render(<TradeScreen />);
+    expect(screen.getByText('KONTOR')).toBeTruthy();
   });
 });

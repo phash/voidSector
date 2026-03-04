@@ -17,11 +17,13 @@ import { calculateBonuses } from '../engine/factionBonuses.js';
 import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../engine/combatV2.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
+import { buildInventoryItems, getStationLevel, applyXpDecay, calcTradeXp, getBasePrice, NPC_STATION_XP_VISIT } from '../engine/npcStation.js';
+import { buildFactoryStatus, calculateCompletedBatches, canProduceBatch, deductRecipeInputs, validateResearch, checkResearchComplete } from '../engine/production.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getNpcStationData, getNpcStationInventory, recordNpcStationVisit, addNpcStationXp, updateNpcStationLevel, upsertNpcInventoryItem, adjustNpcInventoryStock, getFactoryState, upsertFactoryState, setFactoryRecipe, addFactoryOutput, collectFactoryOutput, getPlayerResearch, unlockResearch, getActiveResearch, startResearch, clearActiveResearch, getKontorOrders, getMyKontorOrders, createKontorOrder, cancelKontorOrder, fulfillKontorOrder, getFullStorageInventory, updateStorageProcessedItem } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, calculateShipStats, validateModuleInstall, NPC_STATION_MAX_STOCK, NPC_STATION_CONSUMPTION, NPC_STATION_RESTOCK, KONTOR_MAX_ORDERS, PRODUCTION_RECIPES, RESEARCH_TREE } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, AnyItemType, ProcessedItemType, NpcTradeV2Message, FactorySetRecipeMessage, FactoryCollectMessage, ResearchStartMessage, KontorPlaceOrderMessage, KontorCancelOrderMessage, KontorSellMessage } from '@void-sector/shared';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -40,7 +42,7 @@ function rejectGuest(client: Client, action: string): boolean {
 }
 
 const VALID_RESOURCES = ['ore', 'gas', 'crystal'];
-const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon'];
+const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon', 'factory', 'research_lab', 'kontor'];
 
 function sanitizeChat(text: string): string {
   return text
@@ -551,7 +553,47 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('moduleInventory', { modules: inventory });
     });
 
-    // Trade route processing interval
+    // Economy Overhaul handlers
+    this.onMessage('getStationInventory', (client, data) => this.handleGetStationInventory(client, data));
+    this.onMessage('npcTradeV2', (client, data: NpcTradeV2Message) => this.handleNpcTradeV2(client, data));
+    this.onMessage('factorySetRecipe', (client, data: FactorySetRecipeMessage) => this.handleFactorySetRecipe(client, data));
+    this.onMessage('factoryCollect', (client, data: FactoryCollectMessage) => this.handleFactoryCollect(client, data));
+    this.onMessage('getFactoryStatus', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const player = await findPlayerByUsername(auth.username);
+      if (!player) return;
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) { client.send('factoryStatus', { factory: null }); return; }
+      await this.processFactoryBatches(factoryStruct.id, auth.userId);
+      const row = await getFactoryState(factoryStruct.id);
+      client.send('factoryStatus', { factory: row ? buildFactoryStatus(row) : null });
+    });
+    this.onMessage('researchStart', (client, data: ResearchStartMessage) => this.handleResearchStart(client, data));
+    this.onMessage('getResearchStatus', async (client) => {
+      const auth = client.auth as AuthPayload;
+      await this.checkAndCompleteResearch(auth.userId);
+      const [unlocked, active] = await Promise.all([
+        getPlayerResearch(auth.userId),
+        getActiveResearch(auth.userId),
+      ]);
+      client.send('researchStatus', { unlocked, active });
+    });
+    this.onMessage('kontorPlaceOrder', (client, data: KontorPlaceOrderMessage) => this.handleKontorPlaceOrder(client, data));
+    this.onMessage('kontorCancelOrder', (client, data: KontorCancelOrderMessage) => this.handleKontorCancelOrder(client, data));
+    this.onMessage('kontorSell', (client, data: KontorSellMessage) => this.handleKontorSell(client, data));
+    this.onMessage('getKontorOrders', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const player = await findPlayerByUsername(auth.username);
+      if (!player) return;
+      const orders = await getMyKontorOrders(auth.userId);
+      client.send('myKontorOrders', { orders });
+    });
+    this.onMessage('getSectorKontorOrders', async (client) => {
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      client.send('sectorKontorOrders', { orders });
+    });
+
+        // Trade route processing interval
     this.clock.setInterval(() => {
       this.processTradeRoutes().catch(err => console.error('[TRADE ROUTES] Tick error:', err));
     }, 60000);
@@ -3119,4 +3161,398 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
   }
+  // ─── Economy Overhaul Handlers ────────────────────────────────────────────
+
+  /** Initialise NPC station inventory from constants (first visit). */
+  private async ensureNpcStationInventory(sectorX: number, sectorY: number, level: number): Promise<void> {
+    const existing = await getNpcStationInventory(sectorX, sectorY);
+    const existingTypes = new Set(existing.map(r => r.itemType));
+    const maxStockForLevel = NPC_STATION_MAX_STOCK[level] ?? {};
+
+    for (const [itemType, maxSt] of Object.entries(maxStockForLevel)) {
+      if (!existingTypes.has(itemType)) {
+        const consumptionRate = NPC_STATION_CONSUMPTION[level]?.[itemType as AnyItemType] ?? 0;
+        const restockRate = NPC_STATION_RESTOCK[level]?.[itemType as AnyItemType] ?? 0;
+        const initialStock = Math.floor(maxSt * 0.5);
+        await upsertNpcInventoryItem(sectorX, sectorY, itemType, initialStock, maxSt, consumptionRate, restockRate);
+      }
+    }
+  }
+
+  /** Check and apply level-up after XP change. */
+  private async checkAndApplyLevelUp(sectorX: number, sectorY: number, currentXp: number, currentLevel: number): Promise<void> {
+    const newLevel = getStationLevel(currentXp);
+    if (newLevel > currentLevel) {
+      await updateNpcStationLevel(sectorX, sectorY, newLevel);
+      await this.ensureNpcStationInventory(sectorX, sectorY, newLevel);
+    }
+  }
+
+  private async handleGetStationInventory(client: Client, data: { sectorX: number; sectorY: number }): Promise<void> {
+    const { sectorX, sectorY } = data;
+    const auth = client.auth as AuthPayload;
+
+    const stationData = await getNpcStationData(sectorX, sectorY);
+    const level = stationData ? getStationLevel(stationData.xp) : 1;
+
+    // Record visit XP (lazy init via DB upsert)
+    const updated = await recordNpcStationVisit(sectorX, sectorY, NPC_STATION_XP_VISIT);
+    await this.checkAndApplyLevelUp(sectorX, sectorY, updated.xp, level);
+
+    await this.ensureNpcStationInventory(sectorX, sectorY, level);
+    const invRows = await getNpcStationInventory(sectorX, sectorY);
+    const stockMap = new Map(invRows.map(r => [r.itemType, r]));
+
+    const repData = await getPlayerReputation(auth.userId, 'traders');
+    const repTier = (repData?.tier ?? 'neutral') as import('@void-sector/shared').ReputationTier;
+
+    const inventory = buildInventoryItems(level, stockMap, repTier);
+
+    const info = {
+      station: {
+        stationX: sectorX,
+        stationY: sectorY,
+        level,
+        xp: updated.xp,
+        visitCount: (stationData?.visitCount ?? 0) + 1,
+        tradeVolume: stationData?.tradeVolume ?? 0,
+      },
+      inventory,
+    };
+    client.send('stationInventory', { success: true, info });
+  }
+
+  private async handleNpcTradeV2(client: Client, data: NpcTradeV2Message): Promise<void> {
+    if (!this.checkRate(client.sessionId, 'npcTradeV2', 250)) {
+      client.send('npcTradeV2Result', { success: false, error: 'Too fast' }); return;
+    }
+    const { itemType, amount, action, sectorX, sectorY } = data;
+    if (!amount || amount <= 0) { client.send('npcTradeV2Result', { success: false, error: 'Invalid amount' }); return; }
+
+    const auth = client.auth as AuthPayload;
+    const player = await findPlayerByUsername(auth.username);
+    if (!player) return;
+
+    const isStation = this.state.sector.sectorType === 'station' &&
+      this.state.sector.x === sectorX && this.state.sector.y === sectorY;
+    if (!isStation) { client.send('npcTradeV2Result', { success: false, error: 'Not at this station' }); return; }
+
+    // Get station data
+    const stationData = await getNpcStationData(sectorX, sectorY);
+    const level = stationData ? getStationLevel(stationData.xp) : 1;
+    const invRows = await getNpcStationInventory(sectorX, sectorY);
+    const itemRow = invRows.find(r => r.itemType === itemType);
+
+    if (!itemRow) { client.send('npcTradeV2Result', { success: false, error: 'Item not available at this station' }); return; }
+
+    const repData = await getPlayerReputation(auth.userId, 'traders');
+    const repTier = (repData?.tier ?? 'neutral') as import('@void-sector/shared').ReputationTier;
+    const stockMap = new Map(invRows.map(r => [r.itemType, r]));
+    const invItems = buildInventoryItems(level, stockMap, repTier);
+    const invItem = invItems.find(i => i.itemType === itemType);
+    if (!invItem) { client.send('npcTradeV2Result', { success: false, error: 'Item not configured' }); return; }
+
+    const currentCredits = await getPlayerCredits(auth.userId);
+    const bonuses = await this.getPlayerBonuses(auth.userId);
+
+    const isProcessed = ['fuel_cell', 'circuit_board', 'alloy_plate', 'void_shard', 'bio_extract'].includes(itemType);
+
+    if (action === 'sell') {
+      // Player sells to NPC station
+      if (!invItem.accepts) { client.send('npcTradeV2Result', { success: false, error: 'Station inventory full for this item' }); return; }
+      const totalPrice = invItem.buyPrice * amount;
+
+      if (isProcessed) {
+        const storage = await getFullStorageInventory(auth.userId);
+        const stock = storage[itemType as ProcessedItemType] ?? 0;
+        if (stock < amount) { client.send('npcTradeV2Result', { success: false, error: `Not enough ${itemType} in storage` }); return; }
+        await updateStorageProcessedItem(auth.userId, itemType, -amount);
+      } else {
+        const cargo = await getPlayerCargo(auth.userId);
+        if ((cargo[itemType as ResourceType] ?? 0) < amount) {
+          client.send('npcTradeV2Result', { success: false, error: `Not enough ${itemType} in cargo` }); return;
+        }
+        await deductCargo(auth.userId, itemType as ResourceType, amount);
+      }
+
+      const newCredits = await addCredits(auth.userId, totalPrice);
+      await adjustNpcInventoryStock(sectorX, sectorY, itemType, amount);
+      const tradeXp = calcTradeXp(amount);
+      const xpResult = await addNpcStationXp(sectorX, sectorY, tradeXp);
+      await this.checkAndApplyLevelUp(sectorX, sectorY, xpResult.xp, xpResult.level);
+
+      const updatedInvRows = await getNpcStationInventory(sectorX, sectorY);
+      const updatedStockMap = new Map(updatedInvRows.map(r => [r.itemType, r]));
+      const updatedInventory = buildInventoryItems(level, updatedStockMap, repTier);
+
+      client.send('npcTradeV2Result', { success: true, credits: newCredits, inventory: updatedInventory });
+      client.send('creditsUpdate', { credits: newCredits });
+
+    } else {
+      // Player buys from NPC station
+      if (!invItem.available) { client.send('npcTradeV2Result', { success: false, error: 'Out of stock' }); return; }
+      if (invItem.stock < amount) { client.send('npcTradeV2Result', { success: false, error: `Only ${invItem.stock} available` }); return; }
+
+      let totalPrice = invItem.sellPrice * amount;
+      if (action === 'buy') totalPrice = Math.ceil(totalPrice * bonuses.tradePriceMultiplier);
+      if (currentCredits < totalPrice) { client.send('npcTradeV2Result', { success: false, error: `Need ${totalPrice} CR` }); return; }
+
+      const deducted = await deductCredits(auth.userId, totalPrice);
+      if (!deducted) { client.send('npcTradeV2Result', { success: false, error: 'Credits changed' }); return; }
+
+      if (isProcessed) {
+        await updateStorageProcessedItem(auth.userId, itemType, amount);
+        const storage = await getFullStorageInventory(auth.userId);
+        await adjustNpcInventoryStock(sectorX, sectorY, itemType, -amount);
+        const newCredits = await getPlayerCredits(auth.userId);
+        client.send('npcTradeV2Result', { success: true, credits: newCredits, storage });
+        client.send('creditsUpdate', { credits: newCredits });
+      } else {
+        await addToCargo(auth.userId, itemType as ResourceType, amount);
+        const cargo = await getPlayerCargo(auth.userId);
+        await adjustNpcInventoryStock(sectorX, sectorY, itemType, -amount);
+        const newCredits = await getPlayerCredits(auth.userId);
+        client.send('npcTradeV2Result', { success: true, credits: newCredits, cargo });
+        client.send('creditsUpdate', { credits: newCredits });
+        client.send('cargoUpdate', cargo);
+      }
+
+      const tradeXp = calcTradeXp(amount);
+      const xpResult = await addNpcStationXp(sectorX, sectorY, tradeXp);
+      await this.checkAndApplyLevelUp(sectorX, sectorY, xpResult.xp, xpResult.level);
+    }
+  }
+
+  /** Process accumulated factory batches (lazy evaluation). */
+  private async processFactoryBatches(structureId: string, ownerId: string): Promise<void> {
+    const row = await getFactoryState(structureId);
+    if (!row || !row.activeRecipeId || !row.cycleStartedAt) return;
+
+    const recipe = PRODUCTION_RECIPES[row.activeRecipeId];
+    if (!recipe) return;
+
+    const { batches, nextCycleStart } = calculateCompletedBatches(row.activeRecipeId, row.cycleStartedAt);
+    if (batches <= 0) return;
+
+    const storage = await getFullStorageInventory(ownerId);
+    // Find how many batches we can actually produce given current storage
+    let feasible = 0;
+    for (let i = 0; i < batches; i++) {
+      const tempStorage = deductRecipeInputs(row.activeRecipeId, 1,
+        i === 0 ? storage : deductRecipeInputs(row.activeRecipeId, i, storage));
+      if (canProduceBatch(row.activeRecipeId, i === 0 ? storage : tempStorage)) {
+        feasible++;
+      } else break;
+    }
+    if (feasible <= 0) return;
+
+    // Deduct inputs for feasible batches
+    const newStorage = deductRecipeInputs(row.activeRecipeId, feasible, storage);
+    for (const input of recipe.inputs) {
+      await updateStorageResource(ownerId, input.resource as ResourceType, -input.amount * feasible);
+    }
+
+    // Add output
+    const outputItem = recipe.outputItem;
+    const totalOutput = recipe.outputAmount * feasible;
+    await addFactoryOutput(structureId, outputItem, totalOutput, nextCycleStart);
+  }
+
+  private async handleFactorySetRecipe(client: Client, data: FactorySetRecipeMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const { structureId, recipeId } = data;
+
+    const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+    if (!factoryStruct || factoryStruct.id !== structureId) {
+      client.send('factorySetRecipeResult', { success: false, error: 'Factory not found' }); return;
+    }
+
+    if (recipeId !== null) {
+      const recipe = PRODUCTION_RECIPES[recipeId];
+      if (!recipe) { client.send('factorySetRecipeResult', { success: false, error: 'Unknown recipe' }); return; }
+      if (recipe.researchRequired) {
+        const unlocked = await getPlayerResearch(auth.userId);
+        if (!unlocked.includes(recipe.researchRequired)) {
+          client.send('factorySetRecipeResult', { success: false, error: 'Research required' }); return;
+        }
+      }
+    }
+
+    await upsertFactoryState(structureId, auth.userId);
+    await this.processFactoryBatches(structureId, auth.userId);
+    await setFactoryRecipe(structureId, recipeId);
+
+    const row = await getFactoryState(structureId);
+    client.send('factorySetRecipeResult', { success: true, factory: row ? buildFactoryStatus(row) : null });
+  }
+
+  private async handleFactoryCollect(client: Client, data: FactoryCollectMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const { structureId } = data;
+
+    const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+    if (!factoryStruct || factoryStruct.id !== structureId) {
+      client.send('factoryCollectResult', { success: false, error: 'Factory not found' }); return;
+    }
+
+    await this.processFactoryBatches(structureId, auth.userId);
+    const output = await collectFactoryOutput(structureId);
+
+    // Move collected items to storage
+    for (const [item, amount] of Object.entries(output)) {
+      if (amount && amount > 0) {
+        await updateStorageProcessedItem(auth.userId, item, amount);
+      }
+    }
+
+    const storage = await getFullStorageInventory(auth.userId);
+    const row = await getFactoryState(structureId);
+    client.send('factoryCollectResult', { success: true, output, storage });
+    client.send('storageUpdate', storage);
+  }
+
+  private async handleResearchStart(client: Client, data: ResearchStartMessage): Promise<void> {
+    if (!this.checkRate(client.sessionId, 'research', 1000)) {
+      client.send('researchStartResult', { success: false, error: 'Too fast' }); return;
+    }
+    const auth = client.auth as AuthPayload;
+
+    // Check research lab exists at home base
+    const researchLab = await getPlayerStructure(auth.userId, 'research_lab');
+    if (!researchLab) { client.send('researchStartResult', { success: false, error: 'Research Lab required' }); return; }
+
+    await this.checkAndCompleteResearch(auth.userId);
+
+    const [unlocked, active] = await Promise.all([
+      getPlayerResearch(auth.userId),
+      getActiveResearch(auth.userId),
+    ]);
+    const credits = await getPlayerCredits(auth.userId);
+
+    const validation = validateResearch(data.recipeId, unlocked, active, credits);
+    if (!validation.valid) { client.send('researchStartResult', { success: false, error: validation.error }); return; }
+
+    await deductCredits(auth.userId, validation.creditCost);
+    const completesAt = Date.now() + validation.durationMs;
+    await startResearch(auth.userId, data.recipeId, completesAt);
+
+    const newCredits = await getPlayerCredits(auth.userId);
+    client.send('researchStartResult', { success: true, recipeId: data.recipeId, completesAt, credits: newCredits });
+    client.send('creditsUpdate', { credits: newCredits });
+  }
+
+  private async checkAndCompleteResearch(playerId: string): Promise<void> {
+    const active = await getActiveResearch(playerId);
+    const completedId = checkResearchComplete(active);
+    if (completedId) {
+      await unlockResearch(playerId, completedId);
+      await clearActiveResearch(playerId);
+    }
+  }
+
+  private async handleKontorPlaceOrder(client: Client, data: KontorPlaceOrderMessage): Promise<void> {
+    if (!this.checkRate(client.sessionId, 'kontor', 500)) {
+      client.send('kontorResult', { success: false, error: 'Too fast' }); return;
+    }
+    const auth = client.auth as AuthPayload;
+    const player = await findPlayerByUsername(auth.username);
+    if (!player) return;
+
+    const isHomeBase = this.state.sector.x === player.homeBase.x && this.state.sector.y === player.homeBase.y;
+    if (!isHomeBase) { client.send('kontorResult', { success: false, error: 'Must be at home base' }); return; }
+
+    const kontorStruct = await getPlayerStructure(auth.userId, 'kontor');
+    if (!kontorStruct) { client.send('kontorResult', { success: false, error: 'Kontor required' }); return; }
+
+    const existing = await getMyKontorOrders(auth.userId);
+    const activeOrders = existing.filter(o => o.active);
+    if (activeOrders.length >= KONTOR_MAX_ORDERS) {
+      client.send('kontorResult', { success: false, error: `Max ${KONTOR_MAX_ORDERS} orders` }); return;
+    }
+
+    const { itemType, amountWanted, pricePerUnit } = data;
+    if (!amountWanted || amountWanted <= 0 || !pricePerUnit || pricePerUnit <= 0) {
+      client.send('kontorResult', { success: false, error: 'Invalid order parameters' }); return;
+    }
+
+    const budget = amountWanted * pricePerUnit;
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < budget) { client.send('kontorResult', { success: false, error: `Need ${budget} CR budget` }); return; }
+
+    await deductCredits(auth.userId, budget);
+    const orderId = await createKontorOrder(auth.userId, player.homeBase.x, player.homeBase.y, itemType, amountWanted, pricePerUnit, budget);
+
+    const newCredits = await getPlayerCredits(auth.userId);
+    const orders = await getMyKontorOrders(auth.userId);
+    client.send('kontorResult', { success: true, orderId });
+    client.send('myKontorOrders', { orders });
+    client.send('creditsUpdate', { credits: newCredits });
+  }
+
+  private async handleKontorCancelOrder(client: Client, data: KontorCancelOrderMessage): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const refund = await cancelKontorOrder(data.orderId, auth.userId);
+    if (refund === null) { client.send('kontorResult', { success: false, error: 'Order not found' }); return; }
+
+    if (refund > 0) await addCredits(auth.userId, refund);
+    const newCredits = await getPlayerCredits(auth.userId);
+    const orders = await getMyKontorOrders(auth.userId);
+    client.send('kontorResult', { success: true });
+    client.send('myKontorOrders', { orders });
+    client.send('creditsUpdate', { credits: newCredits });
+  }
+
+  private async handleKontorSell(client: Client, data: KontorSellMessage): Promise<void> {
+    if (!this.checkRate(client.sessionId, 'kontorSell', 500)) {
+      client.send('kontorSellResult', { success: false, error: 'Too fast' }); return;
+    }
+    const auth = client.auth as AuthPayload;
+    const { orderId, amount } = data;
+    if (!amount || amount <= 0) { client.send('kontorSellResult', { success: false, error: 'Invalid amount' }); return; }
+
+    // Verify order exists and is in this sector
+    const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+    const order = orders.find(o => o.id === orderId);
+    if (!order) { client.send('kontorSellResult', { success: false, error: 'Order not found in this sector' }); return; }
+    if (order.ownerId === auth.userId) { client.send('kontorSellResult', { success: false, error: 'Cannot fill own order' }); return; }
+
+    const remaining = order.amountWanted - order.amountFilled;
+    const fillAmount = Math.min(amount, remaining);
+    if (fillAmount <= 0) { client.send('kontorSellResult', { success: false, error: 'Order already filled' }); return; }
+
+    // Check seller has the items
+    const isProcessed = ['fuel_cell', 'circuit_board', 'alloy_plate', 'void_shard', 'bio_extract'].includes(order.itemType);
+    if (isProcessed) {
+      const storage = await getFullStorageInventory(auth.userId);
+      if ((storage[order.itemType as ProcessedItemType] ?? 0) < fillAmount) {
+        client.send('kontorSellResult', { success: false, error: `Not enough ${order.itemType}` }); return;
+      }
+      await updateStorageProcessedItem(auth.userId, order.itemType, -fillAmount);
+    } else {
+      const cargo = await getPlayerCargo(auth.userId);
+      if ((cargo[order.itemType as ResourceType] ?? 0) < fillAmount) {
+        client.send('kontorSellResult', { success: false, error: `Not enough ${order.itemType} in cargo` }); return;
+      }
+      await deductCargo(auth.userId, order.itemType as ResourceType, fillAmount);
+    }
+
+    const result = await fulfillKontorOrder(orderId, fillAmount);
+    if (!result) { client.send('kontorSellResult', { success: false, error: 'Order could not be fulfilled' }); return; }
+
+    const payment = fillAmount * result.pricePerUnit;
+    const newCredits = await addCredits(auth.userId, payment);
+
+    // Move goods to owner's storage
+    if (isProcessed) {
+      await updateStorageProcessedItem(result.ownerId, order.itemType, fillAmount);
+    } else {
+      await updateStorageResource(result.ownerId, order.itemType as ResourceType, fillAmount);
+    }
+
+    const cargo = await getPlayerCargo(auth.userId);
+    client.send('kontorSellResult', { success: true, credits: newCredits, payment, fillAmount });
+    client.send('creditsUpdate', { credits: newCredits });
+    client.send('cargoUpdate', cargo);
+  }
+
 }

@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, NpcStationInfo, FactoryStatus, KontorOrder, ActiveResearch } from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -137,6 +137,14 @@ export interface GameSlice {
   baseName: string;
   homeBase: { x: number; y: number };
 
+  // Economy Overhaul
+  stationInfo: NpcStationInfo | null;
+  factoryStatus: FactoryStatus | null;
+  unlockedRecipes: string[];
+  activeResearch: ActiveResearch | null;
+  myKontorOrders: KontorOrder[];
+  sectorKontorOrders: KontorOrder[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -190,6 +198,14 @@ export interface GameSlice {
   setModuleInventory: (modules: string[]) => void;
   setBaseName: (name: string) => void;
   setHomeBase: (coords: { x: number; y: number }) => void;
+
+  // Economy Overhaul actions
+  setStationInfo: (info: NpcStationInfo | null) => void;
+  setFactoryStatus: (status: FactoryStatus | null) => void;
+  setUnlockedRecipes: (recipes: string[]) => void;
+  setActiveResearch: (research: ActiveResearch | null) => void;
+  setMyKontorOrders: (orders: KontorOrder[]) => void;
+  setSectorKontorOrders: (orders: KontorOrder[]) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -243,6 +259,12 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   moduleInventory: [],
   baseName: '',
   homeBase: { x: 0, y: 0 },
+  stationInfo: null,
+  factoryStatus: null,
+  unlockedRecipes: [],
+  activeResearch: null,
+  myKontorOrders: [],
+  sectorKontorOrders: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -343,4 +365,11 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setModuleInventory: (moduleInventory) => set({ moduleInventory }),
   setBaseName: (baseName) => set({ baseName }),
   setHomeBase: (homeBase) => set({ homeBase }),
+
+  setStationInfo: (stationInfo) => set({ stationInfo }),
+  setFactoryStatus: (factoryStatus) => set({ factoryStatus }),
+  setUnlockedRecipes: (unlockedRecipes) => set({ unlockedRecipes }),
+  setActiveResearch: (activeResearch) => set({ activeResearch }),
+  setMyKontorOrders: (myKontorOrders) => set({ myKontorOrders }),
+  setSectorKontorOrders: (sectorKontorOrders) => set({ sectorKontorOrders }),
 });

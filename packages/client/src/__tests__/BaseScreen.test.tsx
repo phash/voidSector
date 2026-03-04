@@ -10,6 +10,11 @@ vi.mock('../network/client', () => ({
     requestCredits: vi.fn(),
     sendTransfer: vi.fn(),
     sendUpgradeStructure: vi.fn(),
+    requestFactoryStatus: vi.fn(),
+    sendFactorySetRecipe: vi.fn(),
+    sendFactoryCollect: vi.fn(),
+    requestResearchStatus: vi.fn(),
+    sendResearchStart: vi.fn(),
   },
 }));
 
@@ -77,5 +82,110 @@ describe('BaseScreen', () => {
     render(<BaseScreen />);
     expect(screen.getByText('KOMMANDO-KERN')).toBeTruthy();
     expect(screen.getByText('COMM RELAY')).toBeTruthy();
+  });
+
+  it('shows factory panel when factory structure exists', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'f1', type: 'factory', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 0,
+      factoryStatus: null,
+      unlockedRecipes: [],
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText('FABRIK')).toBeTruthy();
+  });
+
+  it('shows factory inactive state with no active recipe', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'f1', type: 'factory', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 0,
+      factoryStatus: {
+        structureId: 'f1',
+        activeRecipeId: null,
+        progress: 0,
+        cycleSeconds: 0,
+        output: { fuel_cell: 0, circuit_board: 0, alloy_plate: 0, void_shard: 0, bio_extract: 0 },
+      },
+      unlockedRecipes: [],
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText('INAKTIV')).toBeTruthy();
+  });
+
+  it('shows factory active recipe with progress', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'f1', type: 'factory', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 0,
+      factoryStatus: {
+        structureId: 'f1',
+        activeRecipeId: 'fuel_cell_basic',
+        progress: 0.5,
+        cycleSeconds: 120,
+        output: { fuel_cell: 2, circuit_board: 0, alloy_plate: 0, void_shard: 0, bio_extract: 0 },
+      },
+      unlockedRecipes: [],
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText(/TREIBSTOFFZELLE/)).toBeTruthy();
+    expect(screen.getByText(/STOPPEN/)).toBeTruthy();
+    expect(screen.getByText(/LAGER OUTPUT/)).toBeTruthy();
+    expect(screen.getByText(/TREIBSTOFFZELLE: 2/)).toBeTruthy();
+  });
+
+  it('shows research lab panel when research_lab structure exists', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'r1', type: 'research_lab', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 0,
+      unlockedRecipes: [],
+      activeResearch: null,
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText('FORSCHUNGSLABOR')).toBeTruthy();
+    expect(screen.getByText('FORSCHUNGSBAUM')).toBeTruthy();
+  });
+
+  it('shows active research progress in research lab', () => {
+    const now = Date.now();
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'r1', type: 'research_lab', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 1000,
+      unlockedRecipes: [],
+      activeResearch: {
+        recipeId: 'circuit_board_t1',
+        startedAt: now - 15 * 60 * 1000,
+        completesAt: now + 15 * 60 * 1000,
+      },
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText(/CIRCUIT BOARD MK\.I/)).toBeTruthy();
+  });
+
+  it('shows unlocked research items as FREIGESCHALTET', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'r1', type: 'research_lab', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 5000,
+      unlockedRecipes: ['circuit_board_t1'],
+      activeResearch: null,
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText('[FREIGESCHALTET]')).toBeTruthy();
   });
 });

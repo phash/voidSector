@@ -2,6 +2,10 @@ export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'an
 
 export type ResourceType = 'ore' | 'gas' | 'crystal';
 
+export type ProcessedItemType = 'fuel_cell' | 'circuit_board' | 'alloy_plate' | 'void_shard' | 'bio_extract';
+
+export type AnyItemType = ResourceType | ProcessedItemType;
+
 export interface SectorResources {
   ore: number;
   gas: number;
@@ -94,6 +98,11 @@ export interface CargoState {
   gas: number;
   crystal: number;
   slates: number;
+  fuel_cell?: number;
+  circuit_board?: number;
+  alloy_plate?: number;
+  void_shard?: number;
+  bio_extract?: number;
 }
 
 export interface MineMessage {
@@ -120,7 +129,7 @@ export interface LocalScanResultMessage {
 }
 
 // Structures
-export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post' | 'defense_turret' | 'station_shield' | 'ion_cannon';
+export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post' | 'defense_turret' | 'station_shield' | 'ion_cannon' | 'factory' | 'research_lab' | 'kontor';
 
 export interface Structure {
   id: string;
@@ -182,6 +191,11 @@ export interface StorageInventory {
   ore: number;
   gas: number;
   crystal: number;
+  fuel_cell?: number;
+  circuit_board?: number;
+  alloy_plate?: number;
+  void_shard?: number;
+  bio_extract?: number;
 }
 
 export interface TransferMessage {
@@ -809,4 +823,147 @@ export interface ShipRecord {
   modules: ShipModule[];
   active: boolean;
   createdAt: string;
+}
+
+// --- Economy Overhaul ---
+
+export interface NpcStationData {
+  stationX: number;
+  stationY: number;
+  level: number;
+  xp: number;
+  visitCount: number;
+  tradeVolume: number;
+}
+
+export interface NpcStationInventoryItem {
+  itemType: AnyItemType;
+  stock: number;
+  maxStock: number;
+  buyPrice: number;   // NPC pays this to player (player sells)
+  sellPrice: number;  // NPC charges this to player (player buys)
+  available: boolean; // can player buy this?
+  accepts: boolean;   // can player sell this? (stock < max)
+}
+
+export interface NpcStationInfo {
+  station: NpcStationData;
+  inventory: NpcStationInventoryItem[];
+}
+
+export interface GetStationInventoryMessage {
+  sectorX: number;
+  sectorY: number;
+}
+
+export interface StationInventoryResultMessage {
+  success: boolean;
+  error?: string;
+  info?: NpcStationInfo;
+}
+
+export interface NpcTradeV2Message {
+  itemType: AnyItemType;
+  amount: number;
+  action: 'buy' | 'sell';
+  sectorX: number;
+  sectorY: number;
+}
+
+export interface NpcTradeV2ResultMessage {
+  success: boolean;
+  error?: string;
+  credits?: number;
+  cargo?: CargoState;
+  storage?: StorageInventory;
+  inventory?: NpcStationInventoryItem[];
+}
+
+// Production recipes
+export interface RecipeInput {
+  resource: ResourceType;
+  amount: number;
+}
+
+export interface ProductionRecipe {
+  id: string;
+  outputItem: ProcessedItemType;
+  outputAmount: number;
+  inputs: RecipeInput[];
+  cycleSeconds: number;
+  researchRequired: string | null;
+}
+
+// Factory state (server → client)
+export interface FactoryStatus {
+  structureId: string;
+  activeRecipeId: string | null;
+  cycleStartedAt: number | null;
+  cycleSeconds: number;
+  output: Partial<Record<ProcessedItemType, number>>;
+  progress: number; // 0..1
+}
+
+export interface FactorySetRecipeMessage {
+  structureId: string;
+  recipeId: string | null;
+}
+
+export interface FactoryCollectMessage {
+  structureId: string;
+}
+
+export interface FactoryStatusMessage {
+  factory: FactoryStatus | null;
+}
+
+// Research
+export interface ResearchStartMessage {
+  recipeId: string;
+}
+
+export interface ResearchStatusMessage {
+  unlocked: string[];
+  active: ActiveResearch | null;
+}
+
+export interface ActiveResearch {
+  recipeId: string;
+  startedAt: number;
+  completesAt: number;
+}
+
+// Kontor
+export interface KontorOrder {
+  id: string;
+  ownerId: string;
+  ownerName?: string;
+  sectorX: number;
+  sectorY: number;
+  itemType: AnyItemType;
+  amountWanted: number;
+  amountFilled: number;
+  pricePerUnit: number;
+  budgetReserved: number;
+  active: boolean;
+  createdAt: number;
+}
+
+export interface KontorPlaceOrderMessage {
+  itemType: AnyItemType;
+  amountWanted: number;
+  pricePerUnit: number;
+}
+
+export interface KontorCancelOrderMessage {
+  orderId: string;
+}
+
+export interface KontorSellMessage {
+  orderId: string;
+  amount: number;
+}
+
+export interface KontorOrdersMessage {
+  orders: KontorOrder[];
 }

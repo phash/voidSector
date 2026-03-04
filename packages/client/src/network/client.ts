@@ -363,6 +363,98 @@ class GameNetwork {
       }
     });
 
+    // Economy V2: Station inventory
+    room.onMessage('stationInventory', (data: { success: boolean; info?: any; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success && data.info) {
+        store.setStationInfo(data.info);
+      }
+    });
+
+    room.onMessage('npcTradeV2Result', (data: { success: boolean; error?: string; credits?: number; inventory?: any[] }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('Trade erfolgreich');
+        if (data.inventory) {
+          const info = store.stationInfo;
+          if (info) store.setStationInfo({ ...info, inventory: data.inventory });
+        }
+      } else {
+        store.addLogEntry(`Trade fehlgeschlagen: ${data.error}`);
+      }
+    });
+
+    // Factory
+    room.onMessage('factoryStatus', (data: { factory: any | null }) => {
+      useStore.getState().setFactoryStatus(data.factory);
+    });
+
+    room.onMessage('factorySetRecipeResult', (data: { success: boolean; factory?: any; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('Rezept gesetzt');
+        if (data.factory) store.setFactoryStatus(data.factory);
+      } else {
+        store.addLogEntry(`Rezept-Fehler: ${data.error}`);
+      }
+    });
+
+    room.onMessage('factoryCollectResult', (data: { success: boolean; output?: any; storage?: any; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        const items = Object.entries(data.output ?? {})
+          .filter(([, v]) => (v as number) > 0)
+          .map(([k, v]) => `${v}x ${k}`)
+          .join(', ');
+        store.addLogEntry(`Fabrik: ${items || 'nichts'} eingesammelt`);
+        if (data.storage) store.setStorage(data.storage);
+      } else {
+        store.addLogEntry(`Fabrik-Fehler: ${data.error}`);
+      }
+    });
+
+    // Research
+    room.onMessage('researchStatus', (data: { unlocked: string[]; active: any | null }) => {
+      const store = useStore.getState();
+      store.setUnlockedRecipes(data.unlocked);
+      store.setActiveResearch(data.active);
+    });
+
+    room.onMessage('researchStartResult', (data: { success: boolean; recipeId?: string; completesAt?: number; credits?: number; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`Forschung gestartet: ${data.recipeId}`);
+        if (data.recipeId && data.completesAt) {
+          store.setActiveResearch({ recipeId: data.recipeId, startedAt: Date.now(), completesAt: data.completesAt });
+        }
+      } else {
+        store.addLogEntry(`Forschung fehlgeschlagen: ${data.error}`);
+      }
+    });
+
+    // Kontor
+    room.onMessage('myKontorOrders', (data: { orders: any[] }) => {
+      useStore.getState().setMyKontorOrders(data.orders);
+    });
+
+    room.onMessage('sectorKontorOrders', (data: { orders: any[] }) => {
+      useStore.getState().setSectorKontorOrders(data.orders);
+    });
+
+    room.onMessage('kontorResult', (data: { success: boolean; error?: string }) => {
+      const store = useStore.getState();
+      if (!data.success) store.addLogEntry(`Kontor-Fehler: ${data.error}`);
+    });
+
+    room.onMessage('kontorSellResult', (data: { success: boolean; payment?: number; fillAmount?: number; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`Kontor: ${data.fillAmount} units verkauft, ${data.payment} CR erhalten`);
+      } else {
+        store.addLogEntry(`Kontor-Verkauf fehlgeschlagen: ${data.error}`);
+      }
+    });
+
     // Upgrade result
     room.onMessage('upgradeResult', (data: { success: boolean; error?: string; newTier?: number }) => {
       const store = useStore.getState();
@@ -1156,6 +1248,47 @@ class GameNetwork {
   sendRenameBase(name: string) { this.sectorRoom?.send('renameBase', { name }); }
 
   sendGetModuleInventory() { this.sectorRoom?.send('getModuleInventory'); }
+
+  // Economy V2
+  requestStationInventory(sectorX: number, sectorY: number) {
+    this.sectorRoom?.send('getStationInventory', { sectorX, sectorY });
+  }
+
+  sendNpcTradeV2(itemType: string, amount: number, action: 'buy' | 'sell', sectorX: number, sectorY: number) {
+    this.sectorRoom?.send('npcTradeV2', { itemType, amount, action, sectorX, sectorY });
+  }
+
+  requestFactoryStatus() { this.sectorRoom?.send('getFactoryStatus'); }
+
+  sendFactorySetRecipe(structureId: string, recipeId: string | null) {
+    this.sectorRoom?.send('factorySetRecipe', { structureId, recipeId });
+  }
+
+  sendFactoryCollect(structureId: string) {
+    this.sectorRoom?.send('factoryCollect', { structureId });
+  }
+
+  requestResearchStatus() { this.sectorRoom?.send('getResearchStatus'); }
+
+  sendResearchStart(recipeId: string) {
+    this.sectorRoom?.send('researchStart', { recipeId });
+  }
+
+  sendKontorPlaceOrder(itemType: string, amountWanted: number, pricePerUnit: number) {
+    this.sectorRoom?.send('kontorPlaceOrder', { itemType, amountWanted, pricePerUnit });
+  }
+
+  sendKontorCancelOrder(orderId: string) {
+    this.sectorRoom?.send('kontorCancelOrder', { orderId });
+  }
+
+  sendKontorSell(orderId: string, amount: number) {
+    this.sectorRoom?.send('kontorSell', { orderId, amount });
+  }
+
+  requestMyKontorOrders() { this.sectorRoom?.send('getKontorOrders'); }
+
+  requestSectorKontorOrders() { this.sectorRoom?.send('getSectorKontorOrders'); }
 }
 
 export const network = new GameNetwork();

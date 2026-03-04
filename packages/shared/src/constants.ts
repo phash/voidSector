@@ -1,4 +1,4 @@
-import type { SectorType, ShipClass, ResourceType, StructureType, HullType, HullDefinition, ModuleDefinition } from './types.js';
+import type { SectorType, ShipClass, ResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, ProcessedItemType, AnyItemType, ProductionRecipe } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
   'empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate'
@@ -62,6 +62,9 @@ export const STRUCTURE_COSTS: Record<StructureType, Record<ResourceType, number>
   defense_turret: { ore: 40, gas: 10, crystal: 20 },
   station_shield: { ore: 30, gas: 25, crystal: 30 },
   ion_cannon: { ore: 60, gas: 30, crystal: 40 },
+  factory: { ore: 40, gas: 20, crystal: 15 },
+  research_lab: { ore: 30, gas: 25, crystal: 30 },
+  kontor: { ore: 20, gas: 10, crystal: 10 },
 };
 
 export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
@@ -73,6 +76,9 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
   defense_turret: 20,
   station_shield: 20,
   ion_cannon: 25,
+  factory: 20,
+  research_lab: 25,
+  kontor: 15,
 };
 
 export const RELAY_RANGES: Record<StructureType, number> = {
@@ -84,6 +90,9 @@ export const RELAY_RANGES: Record<StructureType, number> = {
   defense_turret: 0,
   station_shield: 0,
   ion_cannon: 0,
+  factory: 0,
+  research_lab: 0,
+  kontor: 0,
 };
 
 // NPC Trade Prices (base prices per unit in credits)
@@ -641,3 +650,171 @@ export const HYPERJUMP_PIRATE_FUEL_PENALTY = 1.5; // 50% extra fuel for pirate s
 export const AUTOPILOT_STEP_MS = 100;       // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24;      // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7;       // coords-only after 7 days
+
+// --- Economy Overhaul ---
+
+// NPC Station level thresholds (XP required to reach this level)
+export const NPC_STATION_LEVEL_XP: Record<number, number> = {
+  1: 0,
+  2: 500,
+  3: 2000,
+  4: 6000,
+  5: 15000,
+};
+
+// NPC Station: XP decay per hour (once station is at that level)
+export const NPC_STATION_XP_DECAY_PER_HOUR = 1;
+
+// NPC Station max stock per level per item type
+export const NPC_STATION_MAX_STOCK: Record<number, Partial<Record<AnyItemType, number>>> = {
+  1: { ore: 80,  gas: 60,  crystal: 40 },
+  2: { ore: 200, gas: 150, crystal: 100, fuel_cell: 60, alloy_plate: 50 },
+  3: { ore: 400, gas: 350, crystal: 200, fuel_cell: 150, alloy_plate: 120, circuit_board: 80 },
+  4: { ore: 800, gas: 700, crystal: 400, fuel_cell: 300, alloy_plate: 250, circuit_board: 200, void_shard: 50, bio_extract: 80 },
+  5: { ore: 2500, gas: 2000, crystal: 1500, fuel_cell: 800, alloy_plate: 700, circuit_board: 600, void_shard: 200, bio_extract: 250 },
+};
+
+// Consumption rate (units/hour) per level — station uses up stock over time
+export const NPC_STATION_CONSUMPTION: Record<number, Partial<Record<AnyItemType, number>>> = {
+  1: { ore: 2,  gas: 1.5, crystal: 1 },
+  2: { ore: 5,  gas: 4,   crystal: 2.5, fuel_cell: 1.5, alloy_plate: 1 },
+  3: { ore: 10, gas: 8,   crystal: 5,   fuel_cell: 4,   alloy_plate: 3,  circuit_board: 2 },
+  4: { ore: 20, gas: 15,  crystal: 10,  fuel_cell: 8,   alloy_plate: 6,  circuit_board: 4, void_shard: 1, bio_extract: 2 },
+  5: { ore: 50, gas: 40,  crystal: 25,  fuel_cell: 20,  alloy_plate: 15, circuit_board: 10, void_shard: 3, bio_extract: 5 },
+};
+
+// Restock rate (units/hour) per level — organic resupply
+export const NPC_STATION_RESTOCK: Record<number, Partial<Record<AnyItemType, number>>> = {
+  1: { ore: 3,  gas: 2,   crystal: 1 },
+  2: { ore: 6,  gas: 5,   crystal: 3,  fuel_cell: 0, alloy_plate: 0 },
+  3: { ore: 12, gas: 10,  crystal: 6,  fuel_cell: 0, alloy_plate: 0, circuit_board: 0 },
+  4: { ore: 25, gas: 18,  crystal: 12, fuel_cell: 0, alloy_plate: 0, circuit_board: 0, void_shard: 0, bio_extract: 0 },
+  5: { ore: 60, gas: 45,  crystal: 28, fuel_cell: 0, alloy_plate: 0, circuit_board: 0, void_shard: 0, bio_extract: 0 },
+};
+// Note: processed items only restock to 0 organically — players must sell them to stock NPC stations
+
+// NPC prices for processed items
+export const NPC_PROCESSED_PRICES: Record<ProcessedItemType, number> = {
+  fuel_cell: 25,
+  circuit_board: 70,
+  alloy_plate: 40,
+  void_shard: 200,
+  bio_extract: 100,
+};
+
+// Station XP rewards
+export const NPC_STATION_XP_VISIT = 5;
+export const NPC_STATION_XP_PER_UNIT = 1;
+
+// Kontor
+export const KONTOR_MAX_ORDERS = 5;
+export const KONTOR_MAX_BUDGET = 50000;
+
+// Production recipes
+export const PROCESSED_ITEM_TYPES: ProcessedItemType[] = [
+  'fuel_cell', 'circuit_board', 'alloy_plate', 'void_shard', 'bio_extract',
+];
+
+export const PRODUCTION_RECIPES: Record<string, ProductionRecipe> = {
+  fuel_cell_basic: {
+    id: 'fuel_cell_basic',
+    outputItem: 'fuel_cell',
+    outputAmount: 1,
+    inputs: [{ resource: 'ore', amount: 2 }, { resource: 'gas', amount: 3 }],
+    cycleSeconds: 120,
+    researchRequired: null,
+  },
+  alloy_plate_basic: {
+    id: 'alloy_plate_basic',
+    outputItem: 'alloy_plate',
+    outputAmount: 1,
+    inputs: [{ resource: 'ore', amount: 3 }, { resource: 'crystal', amount: 1 }],
+    cycleSeconds: 180,
+    researchRequired: null,
+  },
+  circuit_board_t1: {
+    id: 'circuit_board_t1',
+    outputItem: 'circuit_board',
+    outputAmount: 1,
+    inputs: [{ resource: 'crystal', amount: 2 }, { resource: 'gas', amount: 2 }],
+    cycleSeconds: 240,
+    researchRequired: 'circuit_board_t1',
+  },
+  fuel_cell_efficient: {
+    id: 'fuel_cell_efficient',
+    outputItem: 'fuel_cell',
+    outputAmount: 1,
+    inputs: [{ resource: 'ore', amount: 2 }, { resource: 'gas', amount: 2 }],
+    cycleSeconds: 90,
+    researchRequired: 'fuel_cell_efficient',
+  },
+  alloy_plate_refined: {
+    id: 'alloy_plate_refined',
+    outputItem: 'alloy_plate',
+    outputAmount: 1,
+    inputs: [{ resource: 'ore', amount: 2 }, { resource: 'crystal', amount: 1 }],
+    cycleSeconds: 120,
+    researchRequired: 'alloy_plate_refined',
+  },
+  void_shard_t1: {
+    id: 'void_shard_t1',
+    outputItem: 'void_shard',
+    outputAmount: 1,
+    inputs: [{ resource: 'crystal', amount: 5 }, { resource: 'gas', amount: 2 }],
+    cycleSeconds: 600,
+    researchRequired: 'void_shard_t1',
+  },
+  bio_extract_t1: {
+    id: 'bio_extract_t1',
+    outputItem: 'bio_extract',
+    outputAmount: 1,
+    inputs: [{ resource: 'gas', amount: 4 }, { resource: 'crystal', amount: 1 }],
+    cycleSeconds: 360,
+    researchRequired: 'bio_extract_t1',
+  },
+};
+
+// Research tree: what each research unlocks and its prerequisites
+export const RESEARCH_TREE: Record<string, {
+  name: string;
+  description: string;
+  creditCost: number;
+  durationMinutes: number;
+  prerequisite: string | null;
+}> = {
+  circuit_board_t1: {
+    name: 'CIRCUIT BOARD MK.I',
+    description: 'Ermöglicht Schaltkreis-Produktion aus Kristall + Gas',
+    creditCost: 300,
+    durationMinutes: 30,
+    prerequisite: null,
+  },
+  fuel_cell_efficient: {
+    name: 'FUEL CELL EFFIZIENT',
+    description: 'Reduziert Gas-Verbrauch bei Treibstoffzellen-Produktion',
+    creditCost: 500,
+    durationMinutes: 45,
+    prerequisite: null,
+  },
+  alloy_plate_refined: {
+    name: 'LEGIERUNGSPLATTE RAFFINIERT',
+    description: 'Reduziert Erz-Verbrauch bei Legierungsplatten-Produktion',
+    creditCost: 800,
+    durationMinutes: 60,
+    prerequisite: null,
+  },
+  void_shard_t1: {
+    name: 'VOID SHARD SYNTHESE',
+    description: 'Ermöglicht Void-Kristall-Synthese aus Kristall + Gas',
+    creditCost: 2000,
+    durationMinutes: 180,
+    prerequisite: 'circuit_board_t1',
+  },
+  bio_extract_t1: {
+    name: 'BIO-EXTRAKT DESTILLATION',
+    description: 'Ermöglicht Bio-Extrakt aus Gas + Kristall',
+    creditCost: 1500,
+    durationMinutes: 90,
+    prerequisite: null,
+  },
+};
