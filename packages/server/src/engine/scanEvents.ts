@@ -1,7 +1,7 @@
 import { hashCoords } from './worldgen.js';
 import { generateDistressMessage } from './distressStories.js';
-import { WORLD_SEED, SCAN_EVENT_CHANCE, MODULES } from '@void-sector/shared';
-import type { ScanEventType } from '@void-sector/shared';
+import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULES } from '@void-sector/shared';
+import type { ScanEventType, SectorEnvironment } from '@void-sector/shared';
 
 const SCAN_EVENT_SALT = 5555;
 
@@ -20,11 +20,39 @@ const EVENT_TYPE_WEIGHTS: { type: ScanEventType; weight: number; immediate: bool
   { type: 'blueprint_find', weight: 0.05, immediate: false },
 ];
 
-export function checkScanEvent(sectorX: number, sectorY: number): ScanEventResult {
+/** Distance from nearest quadrant edge (0 = at edge) */
+function quadrantEdgeDistance(x: number, y: number): number {
+  const modX = ((x % QUADRANT_SIZE) + QUADRANT_SIZE) % QUADRANT_SIZE;
+  const modY = ((y % QUADRANT_SIZE) + QUADRANT_SIZE) % QUADRANT_SIZE;
+  return Math.min(modX, QUADRANT_SIZE - modX, modY, QUADRANT_SIZE - modY);
+}
+
+/**
+ * Effective scan event chance varies by environment and location.
+ *
+ * Target pirate rates (pirate_ambush weight = 0.35):
+ *   empty near spawn:     ~0.4% → chance = 0.012
+ *   empty at quad edges:  ~1%   → chance = 0.03
+ *   nebula:               ~10%  → chance = 0.30
+ *   nebula at quad edges: ~33%  → chance = 0.95
+ */
+export function getEffectiveEventChance(environment: SectorEnvironment, x: number, y: number): number {
+  const edgeDist = quadrantEdgeDistance(x, y);
+  const nearEdge = edgeDist < 500;
+
+  if (environment === 'nebula') {
+    return nearEdge ? 0.95 : 0.30;
+  }
+  // empty / black_hole
+  return nearEdge ? 0.03 : 0.012;
+}
+
+export function checkScanEvent(sectorX: number, sectorY: number, environment: SectorEnvironment = 'empty'): ScanEventResult {
   const seed = hashCoords(sectorX, sectorY, WORLD_SEED + SCAN_EVENT_SALT);
   const normalized = (seed >>> 0) / 0x100000000;
 
-  if (normalized >= SCAN_EVENT_CHANCE) {
+  const effectiveChance = getEffectiveEventChance(environment, sectorX, sectorY);
+  if (normalized >= effectiveChance) {
     return { hasEvent: false };
   }
 

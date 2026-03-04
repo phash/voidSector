@@ -2159,8 +2159,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     client.send('apUpdate', result.newAP!);
 
-    // Phase 4: Check for scan events
-    await this.checkAndEmitScanEvents(client, [{ x: this.state.sector.x, y: this.state.sector.y }]);
+    // Phase 4: Check for scan events (pass environment for pirate frequency scaling)
+    const env = (this.state.sector.sectorType === 'nebula' ? 'nebula' : 'empty') as import('@void-sector/shared').SectorEnvironment;
+    await this.checkAndEmitScanEvents(client, [{ x: this.state.sector.x, y: this.state.sector.y, environment: env }]);
   }
 
   private async handleAreaScan(client: Client) {
@@ -2219,7 +2220,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     await addDiscoveriesBatch(auth.userId, allCoords);
 
     // Phase 4: Check for scan events in scanned sectors (skip pirate ambush — remote scan can't trigger physical encounters)
-    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y })), false);
+    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y, environment: s.environment })), false);
 
     client.send('scanResult', { sectors, apRemaining: scanResult.newAP!.current });
 
@@ -3701,10 +3702,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
   }
 
-  private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number }[], includeImmediateEvents = true) {
+  private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number; environment?: import('@void-sector/shared').SectorEnvironment }[], includeImmediateEvents = true) {
     const auth = client.auth as AuthPayload;
     for (const sector of scannedSectors) {
-      const eventResult = checkScanEvent(sector.x, sector.y);
+      const eventResult = checkScanEvent(sector.x, sector.y, sector.environment ?? 'empty');
       if (!eventResult.hasEvent || !eventResult.eventType) continue;
 
       if (eventResult.isImmediate && eventResult.eventType === 'pirate_ambush') {
