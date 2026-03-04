@@ -361,10 +361,20 @@ function renderScreen(monitorId: string) {
   }
 }
 
+const MOBILE_TABS: Array<{ id: string; icon: string; label: string }> = [
+  { id: MONITORS.NAV_COM,   icon: '◉', label: 'NAV' },
+  { id: MONITORS.SHIP_SYS,  icon: '⚙', label: 'SHIP' },
+  { id: MONITORS.MINING,    icon: '⛏', label: 'MINE' },
+  { id: MONITORS.CARGO,     icon: '▤', label: 'CARGO' },
+  { id: MONITORS.COMMS,     icon: '⌘', label: 'COMMS' },
+  { id: MONITORS.BASE_LINK, icon: '⌂', label: 'BASE' },
+];
+
 export function GameScreen() {
   const colorProfile = useStore((s) => s.colorProfile);
   const mainMode = useStore((s) => s.mainMonitorMode);
   const setMainMonitorMode = useStore((s) => s.setMainMonitorMode);
+  const activeMonitor = useStore((s) => s.activeMonitor);
   const setActiveMonitor = useStore((s) => s.setActiveMonitor);
   const clearAlert = useStore((s) => s.clearAlert);
   const alerts = useStore((s) => s.alerts);
@@ -434,6 +444,7 @@ export function GameScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Desktop layout (>= 1024px) */}
       <DesktopLayout
         gridArea={gridArea}
         detailArea={detailArea}
@@ -442,26 +453,24 @@ export function GameScreen() {
         renderScreen={renderScreen}
       />
 
+      {/* Mobile content (< 1024px): full-screen active monitor */}
+      <div className="mobile-content">
+        {renderScreen(activeMonitor)}
+      </div>
+
       {/* Mobile tabs (< 1024px) */}
       <div className="mobile-tabs">
-        {[MONITORS.NAV_COM, MONITORS.SHIP_SYS, MONITORS.MINING, MONITORS.CARGO, MONITORS.COMMS, MONITORS.BASE_LINK].map((id) => (
+        {MOBILE_TABS.map(({ id, icon, label }) => (
           <button
             key={id}
-            className={`vs-btn ${alerts[id] ? 'alert' : ''}`}
-            style={{
-              flex: 1,
-              fontSize: '0.75rem',
-              padding: '8px 2px',
-              border: '2px solid var(--color-primary)',
-              background: 'transparent',
-              color: 'var(--color-primary)',
-            }}
+            className={`mobile-tab-btn${activeMonitor === id ? ' active' : ''}${alerts[id] ? ' alert' : ''}`}
             onClick={() => {
               setActiveMonitor(id);
               if (alerts[id]) clearAlert(id);
             }}
           >
-            [{id}]
+            <span className="mobile-tab-icon">{icon}</span>
+            <span className="mobile-tab-label">{label}</span>
           </button>
         ))}
       </div>
