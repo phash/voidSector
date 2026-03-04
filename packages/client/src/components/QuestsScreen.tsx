@@ -80,8 +80,8 @@ export function QuestsScreen() {
           {activeQuests.map((q) => (
             <div key={q.id} style={{ border: '1px solid rgba(255,176,0,0.3)', padding: '4px', marginBottom: '4px' }}>
               <div style={{ color: '#FFB000' }}>{q.title}</div>
-              {q.objectives.map((obj, i) => (
-                <div key={i} style={{ color: obj.fulfilled ? '#00FF88' : 'rgba(255,176,0,0.6)', paddingLeft: '8px' }}>
+              {q.objectives.map((obj) => (
+                <div key={obj.description} style={{ color: obj.fulfilled ? '#00FF88' : 'rgba(255,176,0,0.6)', paddingLeft: '8px' }}>
                   {obj.fulfilled ? '[x]' : '[ ]'} {obj.description}
                 </div>
               ))}

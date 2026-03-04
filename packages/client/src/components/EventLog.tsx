@@ -12,12 +12,16 @@ export function EventLog() {
       fontSize: '0.7rem',
       opacity: 0.7,
       lineHeight: 1.6,
+      display: 'flex',
+      flexDirection: 'column-reverse',
     }}>
-      {[...log].reverse().map((entry, i) => (
-        <div key={i} style={
-          entry.includes('NOTRUF') ? { color: '#FF3333' } : undefined
-        }>&gt; {entry}</div>
-      ))}
+      <div>
+        {log.map((entry, i) => (
+          <div key={`${i}-${entry.slice(0, 20)}`} style={
+            entry.includes('NOTRUF') ? { color: '#FF3333' } : undefined
+          }>&gt; {entry}</div>
+        ))}
+      </div>
     </div>
   );
 }

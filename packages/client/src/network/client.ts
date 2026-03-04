@@ -6,12 +6,15 @@ import type { ClientShipData } from '../state/gameSlice';
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2567';
 
 class GameNetwork {
-  private client: Client;
+  private client: Client | null = null;
   private sectorRoom: Room | null = null;
   private reconnecting = false;
 
-  constructor() {
-    this.client = new Client(WS_URL);
+  private ensureClient(): Client {
+    if (!this.client) {
+      this.client = new Client(WS_URL);
+    }
+    return this.client;
   }
 
   async joinSector(x: number, y: number): Promise<void> {
@@ -25,9 +28,9 @@ class GameNetwork {
       store.clearPlayers();
     }
 
-    this.client.http.authToken = store.token;
+    this.ensureClient().http.authToken = store.token;
 
-    this.sectorRoom = await this.client.joinOrCreate('sector', {
+    this.sectorRoom = await this.ensureClient().joinOrCreate('sector', {
       sectorX: x,
       sectorY: y,
     });

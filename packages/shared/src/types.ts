@@ -32,23 +32,10 @@ export interface PlayerData {
   level: number;
   credits?: number;
   alienCredits?: number;
+  isGuest?: boolean;
 }
 
 export type ShipClass = 'aegis_scout_mk1' | 'void_seeker_mk2';
-
-export interface ShipData {
-  id: string;
-  ownerId: string;
-  shipClass: ShipClass;
-  fuel: number;
-  fuelMax: number;
-  jumpRange: number;       // max sectors per jump
-  apCostJump: number;      // AP cost per jump
-  cargoCap: number;        // cargo capacity in units
-  scannerLevel: number;
-  safeSlots: number;       // rescue pod slots
-  active: boolean;
-}
 
 export interface FuelState {
   current: number;

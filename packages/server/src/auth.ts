@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { createPlayer, createGuestPlayer, findPlayerByUsername } from './db/queries.js';
 import { generateSpawnPosition, assignToCluster } from './engine/spawn.js';
 import type { PlayerData } from '@void-sector/shared';
@@ -52,7 +53,7 @@ export async function login(
 }
 
 export async function loginAsGuest(): Promise<{ player: PlayerData; token: string }> {
-  const hex = Math.random().toString(16).slice(2, 6).toUpperCase();
+  const hex = crypto.randomBytes(4).toString('hex').toUpperCase();
   const username = `GAST-${hex}`;
   const spawnPos = generateSpawnPosition();
   const cluster = await assignToCluster(spawnPos.x, spawnPos.y);

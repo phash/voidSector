@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 
@@ -24,6 +25,17 @@ const ANCIENT_ART = [
 export function BattleDialog() {
   const activeBattle = useStore((s) => s.activeBattle);
 
+  useEffect(() => {
+    if (!activeBattle) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        network.sendBattleAction('flee', activeBattle.sectorX, activeBattle.sectorY);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [activeBattle]);
+
   if (!activeBattle) return null;
 
   const { pirateLevel, pirateHp, pirateDamage, canNegotiate, negotiateCost, sectorX, sectorY } = activeBattle;
@@ -33,16 +45,21 @@ export function BattleDialog() {
   const contactColor = isAncient ? '#00BFFF' : '#FF3333';
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 1000,
-    }}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="battle-title"
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1000,
+      }}
+    >
       <div style={{
         border: `2px solid ${contactColor}`, background: '#0a0a0a', padding: '16px', maxWidth: '380px',
         fontFamily: 'monospace', fontSize: '12px',
       }}>
-        <div style={{ color: contactColor, fontSize: '14px', marginBottom: '8px', textAlign: 'center' }}>
+        <div id="battle-title" style={{ color: contactColor, fontSize: '14px', marginBottom: '8px', textAlign: 'center' }}>
           {contactLabel}
         </div>
         <pre style={{
