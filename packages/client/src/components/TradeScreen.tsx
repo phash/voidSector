@@ -28,8 +28,10 @@ export function TradeScreen() {
   const position = useStore((s) => s.position);
   const ship = useStore((s) => s.ship);
   const homeBase = useStore((s) => s.homeBase);
+  const npcStationData = useStore((s) => s.npcStationData);
+  const kontorOrders = useStore((s) => s.kontorOrders);
   const [amount, setAmount] = useState(1);
-  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes'>('npc');
+  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
 
   const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
   const tier = tradingPost?.tier ?? 0;
@@ -37,11 +39,13 @@ export function TradeScreen() {
   const isStation = currentSector?.type === 'station';
   const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
   const canTrade = isStation || isHomeBase;
+  const hasKontorOrders = kontorOrders.length > 0;
 
   useEffect(() => {
     network.requestCredits();
+    network.requestKontorOrders();
     if (isStation) {
-      // No storage/base data needed at stations
+      network.requestNpcStationData();
     } else {
       network.requestStorage();
       if (tier >= 2) {
@@ -78,11 +82,12 @@ export function TradeScreen() {
         TRADE — {isStation ? 'STATION' : `T${tier}`} | {credits} CR
       </div>
 
-      <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>NPC HANDEL</button>
         {!isStation && tier >= 2 && <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>MARKT</button>}
         {!isStation && tier >= 2 && <button style={tabStyle(tab === 'slates')} onClick={() => setTab('slates')}>[SLATES]</button>}
         {!isStation && tier >= 3 && <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>ROUTEN</button>}
+        {hasKontorOrders && <button style={tabStyle(tab === 'kontor')} onClick={() => setTab('kontor')}>KONTOR</button>}
       </div>
 
       <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
@@ -96,32 +101,74 @@ export function TradeScreen() {
 
       {tab === 'npc' && (
         <div>
-          <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
-            NPC PREISE (KAUF / VERKAUF)
-          </div>
-          {(['ore', 'gas', 'crystal'] as const).map((res) => {
-            const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
-            const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
-            return (
-              <div key={res} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ width: 60 }}>{res.toUpperCase()}</span>
-                <button style={btnStyle} onClick={() => network.sendNpcTrade(res, amount, 'buy')}>
-                  KAUFEN ({buyPrice} CR)
-                </button>
-                <button style={btnStyle} onClick={() => network.sendNpcTrade(res, amount, 'sell')}>
-                  VERKAUFEN ({sellPrice} CR)
-                </button>
+          {isStation && npcStationData ? (
+            <>
+              <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
+                {npcStationData.name.toUpperCase()} LV.{npcStationData.level} — XP: {npcStationData.xp}/{npcStationData.nextLevelXp}
               </div>
-            );
-          })}
-          {isStation ? (
-            <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-              CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} | ART {cargo.artefact} ({cargoTotal}/{cargoCap})
-            </div>
+              {npcStationData.inventory.map((item) => {
+                const filled = item.maxStock > 0 ? Math.round((item.stock / item.maxStock) * 10) : 0;
+                const empty = 10 - filled;
+                const stockBar = '\u2588'.repeat(filled) + '\u2591'.repeat(empty);
+                const outOfStock = item.stock < amount;
+                const buyTotal = item.buyPrice * amount;
+                const sellTotal = item.sellPrice * amount;
+                return (
+                  <div key={item.itemType} style={{ marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+                      <span style={{ width: 56 }}>{item.itemType.toUpperCase()}</span>
+                      <span style={{ letterSpacing: '0.05em' }}>{stockBar}</span>
+                      <span style={{ opacity: 0.6, minWidth: 60 }}>{item.stock}/{item.maxStock}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 2, marginLeft: 56 }}>
+                      {outOfStock ? (
+                        <span style={{ ...btnStyle, opacity: 0.3, cursor: 'default' }}>[UNAVAILABLE]</span>
+                      ) : (
+                        <button style={btnStyle} onClick={() => network.sendNpcTrade(item.itemType, amount, 'buy')}>
+                          KAUFEN ({buyTotal} CR)
+                        </button>
+                      )}
+                      <button style={btnStyle} onClick={() => network.sendNpcTrade(item.itemType, amount, 'sell')}>
+                        VERKAUFEN ({sellTotal} CR)
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+                CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} | ART {cargo.artefact} ({cargoTotal}/{cargoCap})
+              </div>
+            </>
           ) : (
-            <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-              LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal} | ART {storage.artefact}
-            </div>
+            <>
+              <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
+                NPC PREISE (KAUF / VERKAUF)
+              </div>
+              {(['ore', 'gas', 'crystal'] as const).map((res) => {
+                const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
+                const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
+                return (
+                  <div key={res} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ width: 60 }}>{res.toUpperCase()}</span>
+                    <button style={btnStyle} onClick={() => network.sendNpcTrade(res, amount, 'buy')}>
+                      KAUFEN ({buyPrice} CR)
+                    </button>
+                    <button style={btnStyle} onClick={() => network.sendNpcTrade(res, amount, 'sell')}>
+                      VERKAUFEN ({sellPrice} CR)
+                    </button>
+                  </div>
+                );
+              })}
+              {isStation ? (
+                <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+                  CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} | ART {cargo.artefact} ({cargoTotal}/{cargoCap})
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+                  LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal} | ART {storage.artefact}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -262,6 +309,32 @@ export function TradeScreen() {
           )}
 
           {tradeRoutes.length < MAX_TRADE_ROUTES && <NewRouteForm />}
+        </div>
+      )}
+
+      {tab === 'kontor' && hasKontorOrders && (
+        <div>
+          <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
+            KONTOR ORDERS
+          </div>
+          {kontorOrders.map((order, idx) => {
+            const remaining = order.amountWanted - order.amountFilled;
+            const isOwn = order.ownerId === playerId;
+            return (
+              <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, fontSize: '0.7rem' }}>
+                <span>
+                  #{idx + 1} BUYING {order.itemType.toUpperCase()} {remaining}u remaining @{order.pricePerUnit}cr/u
+                </span>
+                <button
+                  style={{ ...btnStyle, fontSize: '0.6rem', opacity: isOwn ? 0.3 : 1, cursor: isOwn ? 'default' : 'pointer' }}
+                  disabled={isOwn}
+                  onClick={() => !isOwn && network.sendKontorSellTo(order.id, amount)}
+                >
+                  SELL
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

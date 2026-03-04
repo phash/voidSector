@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>voidSector // ADMIN CONSOLE</title>
+<style>
+/* ── Reset & Base ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a0a;
+  --bg-raised: #111111;
+  --bg-input: #0d0d0d;
+  --amber: rgba(255, 176, 0, 0.85);
+  --amber-full: #ffb000;
+  --amber-dim: rgba(255, 176, 0, 0.4);
+  --amber-faint: rgba(255, 176, 0, 0.15);
+  --amber-glow: rgba(255, 176, 0, 0.08);
+  --green: #00ff88;
+  --green-dim: rgba(0, 255, 136, 0.4);
+  --red: #ff4444;
+  --red-dim: rgba(255, 68, 68, 0.4);
+  --cyan: #00ccff;
+  --font: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  --border: rgba(255, 176, 0, 0.2);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--amber);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* ── Scanline Overlay ──────────────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── CRT Flicker Animation ─────────────────────────────────────── */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.8; }
+  94% { opacity: 1; }
+  96% { opacity: 0.9; }
+  97% { opacity: 1; }
+}
+
+body { animation: flicker 8s infinite; }
+
+/* ── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--amber-dim); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+/* ── Login Screen ──────────────────────────────────────────────── */
+#login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 20px;
+}
+
+.login-logo {
+  font-size: 20px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--amber-full);
+  text-shadow: 0 0 20px rgba(255, 176, 0, 0.5);
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  font-size: 11px;
+  color: var(--amber-dim);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.login-box {
+  border: 1px solid var(--border);
+  padding: 24px;
+  background: var(--bg-raised);
+  width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-box label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+}
+
+.login-error {
+  color: var(--red);
+  font-size: 11px;
+  min-height: 16px;
+}
+
+/* ── Form Elements ─────────────────────────────────────────────── */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+textarea,
+select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--amber);
+  font-family: var(--font);
+  font-size: 13px;
+  padding: 8px 10px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--amber-full);
+  box-shadow: 0 0 8px rgba(255, 176, 0, 0.15);
+}
+
+textarea { resize: vertical; min-height: 80px; }
+
+select { cursor: pointer; }
+select option { background: var(--bg); color: var(--amber); }
+
+button, .btn {
+  background: transparent;
+  border: 1px solid var(--amber-dim);
+  color: var(--amber);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 8px 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+button:hover, .btn:hover {
+  background: var(--amber-glow);
+  border-color: var(--amber-full);
+  text-shadow: 0 0 8px rgba(255, 176, 0, 0.5);
+}
+
+button:active { transform: scale(0.97); }
+
+button.primary {
+  border-color: var(--amber);
+  background: var(--amber-faint);
+}
+
+button.danger {
+  border-color: var(--red-dim);
+  color: var(--red);
+}
+button.danger:hover {
+  border-color: var(--red);
+  background: rgba(255, 68, 68, 0.1);
+}
+
+button.success {
+  border-color: var(--green-dim);
+  color: var(--green);
+}
+button.success:hover {
+  border-color: var(--green);
+  background: rgba(0, 255, 136, 0.1);
+}
+
+/* ── App Layout ────────────────────────────────────────────────── */
+#app {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Header */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+  flex-shrink: 0;
+}
+
+#header .logo {
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber-full);
+  text-shadow: 0 0 12px rgba(255, 176, 0, 0.3);
+}
+
+#header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11px;
+}
+
+#header .status-led {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  margin-right: 6px;
+}
+
+#header .status-led.error {
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+}
+
+#logout-btn {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-color: var(--red-dim);
+  color: var(--red);
+}
+
+/* Tab Bar */
+#tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+  flex-shrink: 0;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.tab:hover {
+  color: var(--amber);
+  background: var(--amber-glow);
+}
+
+.tab.active {
+  color: var(--amber-full);
+  border-bottom-color: var(--amber-full);
+  text-shadow: 0 0 8px rgba(255, 176, 0, 0.4);
+}
+
+/* Content Area */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Common Components ─────────────────────────────────────────── */
+.section-title {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--amber-glow);
+  vertical-align: top;
+}
+
+.data-table tr:hover td {
+  background: var(--amber-glow);
+}
+
+.data-table tr.clickable { cursor: pointer; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 2px;
+}
+
+.badge-active { color: var(--green); border-color: var(--green-dim); }
+.badge-paused { color: var(--amber); border-color: var(--amber-dim); }
+.badge-completed { color: var(--cyan); border-color: rgba(0, 204, 255, 0.3); }
+.badge-cancelled { color: var(--red); border-color: var(--red-dim); }
+.badge-universal { color: var(--amber); border-color: var(--amber-dim); }
+.badge-individual { color: var(--cyan); border-color: rgba(0, 204, 255, 0.3); }
+.badge-sector { color: var(--green); border-color: var(--green-dim); }
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.card {
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--bg-raised);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--amber-dim);
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.search-bar {
+  margin-bottom: 16px;
+}
+
+.search-bar input {
+  max-width: 400px;
+}
+
+/* Detail Panel */
+.detail-panel {
+  border: 1px solid var(--amber-dim);
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--bg-raised);
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.detail-header h3 {
+  font-size: 14px;
+  color: var(--amber-full);
+  text-shadow: 0 0 8px rgba(255, 176, 0, 0.3);
+}
+
+.close-btn {
+  font-size: 10px;
+  padding: 4px 8px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+
+.detail-grid dt {
+  color: var(--amber-dim);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding-top: 2px;
+}
+
+.detail-grid dd {
+  color: var(--amber);
+}
+
+/* Stats Dashboard */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  padding: 20px;
+  background: var(--bg-raised);
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 32px;
+  color: var(--amber-full);
+  text-shadow: 0 0 16px rgba(255, 176, 0, 0.4);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+}
+
+/* Tabs within panels (sub-tabs) */
+.sub-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.sub-tab {
+  padding: 6px 14px;
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.sub-tab:hover { color: var(--amber); }
+.sub-tab.active {
+  color: var(--amber-full);
+  border-color: var(--amber-dim);
+  background: var(--amber-glow);
+}
+
+/* Notification Toast */
+#toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  font-family: var(--font);
+  font-size: 12px;
+  border: 1px solid;
+  z-index: 10000;
+  display: none;
+  animation: fadeInUp 0.3s ease;
+}
+
+#toast.toast-success {
+  background: rgba(0, 255, 136, 0.1);
+  border-color: var(--green-dim);
+  color: var(--green);
+}
+
+#toast.toast-error {
+  background: rgba(255, 68, 68, 0.1);
+  border-color: var(--red-dim);
+  color: var(--red);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-row { flex-direction: column; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .tab { padding: 8px 12px; font-size: 10px; letter-spacing: 1px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Login Screen ────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-logo">voidSector</div>
+  <div class="login-subtitle">admin console</div>
+  <div class="login-box">
+    <label for="token-input">Authorization Token</label>
+    <input type="password" id="token-input" placeholder="Enter admin token..." autofocus>
+    <div class="login-error" id="login-error"></div>
+    <button class="primary" id="login-btn">Authenticate</button>
+  </div>
+</div>
+
+<!-- ── Main App ────────────────────────────────────────────────── -->
+<div id="app">
+  <div id="header">
+    <div class="logo">voidSector // Admin</div>
+    <div class="header-right">
+      <span><span class="status-led" id="status-led"></span><span id="status-text">Connected</span></span>
+      <button id="logout-btn">Logout</button>
+    </div>
+  </div>
+
+  <div id="tab-bar">
+    <div class="tab active" data-tab="players">Players</div>
+    <div class="tab" data-tab="quests">Quests</div>
+    <div class="tab" data-tab="comms">Comms</div>
+    <div class="tab" data-tab="events">Events</div>
+    <div class="tab" data-tab="stats">Stats</div>
+  </div>
+
+  <div id="content">
+
+    <!-- ── PLAYERS Tab ─────────────────────────────────────────── -->
+    <div class="tab-panel active" id="panel-players">
+      <div class="search-bar">
+        <input type="search" id="player-search" placeholder="Search players...">
+      </div>
+      <div id="player-detail"></div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Level</th>
+            <th>XP</th>
+            <th>Position</th>
+            <th>Faction</th>
+          </tr>
+        </thead>
+        <tbody id="player-list"></tbody>
+      </table>
+      <div class="empty-state" id="players-empty" style="display:none">No players found</div>
+    </div>
+
+    <!-- ── QUESTS Tab ──────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-quests">
+      <div class="sub-tabs">
+        <div class="sub-tab active" data-quest-tab="create">Create</div>
+        <div class="sub-tab" data-quest-tab="yaml">YAML Import</div>
+        <div class="sub-tab" data-quest-tab="list">Quest List</div>
+      </div>
+
+      <!-- Create Quest Form -->
+      <div id="quest-create" class="card">
+        <div class="section-title">Create Quest</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="q-title" placeholder="Quest title...">
+          </div>
+          <div class="form-group">
+            <label>Quest Type</label>
+            <select id="q-type">
+              <option value="fetch">Fetch</option>
+              <option value="delivery">Delivery</option>
+              <option value="scan">Scan</option>
+              <option value="bounty">Bounty</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Description</label>
+          <textarea id="q-desc" placeholder="Quest description..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Scope</label>
+            <select id="q-scope">
+              <option value="universal">Universal</option>
+              <option value="individual">Individual</option>
+              <option value="sector">Sector</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>NPC Name</label>
+            <input type="text" id="q-npc-name" placeholder="Optional...">
+          </div>
+          <div class="form-group">
+            <label>NPC Faction</label>
+            <select id="q-npc-faction">
+              <option value="">None</option>
+              <option value="traders">Traders</option>
+              <option value="scientists">Scientists</option>
+              <option value="pirates">Pirates</option>
+              <option value="ancients">Ancients</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sector X (optional)</label>
+            <input type="number" id="q-sector-x" placeholder="X">
+          </div>
+          <div class="form-group">
+            <label>Sector Y (optional)</label>
+            <input type="number" id="q-sector-y" placeholder="Y">
+          </div>
+          <div class="form-group">
+            <label>Max Acceptances (0=unlimited)</label>
+            <input type="number" id="q-max" value="0">
+          </div>
+          <div class="form-group">
+            <label>Expires (days)</label>
+            <input type="number" id="q-expires" value="7">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Objectives (JSON array)</label>
+          <textarea id="q-objectives" placeholder='[{"type":"fetch","resource":"ore","amount":100}]' style="min-height:60px"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Rewards (JSON object)</label>
+          <textarea id="q-rewards" placeholder='{"credits":500,"xp":200}' style="min-height:60px"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Target Players (comma-separated IDs, optional)</label>
+          <input type="text" id="q-targets" placeholder="player-id-1, player-id-2">
+        </div>
+        <div class="form-actions">
+          <button class="primary" id="create-quest-btn">Create Quest</button>
+          <button id="clear-quest-btn">Clear</button>
+        </div>
+      </div>
+
+      <!-- YAML Import -->
+      <div id="quest-yaml" class="card" style="display:none">
+        <div class="section-title">YAML Import</div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Paste YAML Quest Definition</label>
+          <textarea id="q-yaml-input" style="min-height:200px" placeholder="title: Retrieve Lost Cargo
+description: Find the cargo container in sector 3,5
+scope: universal
+questType: fetch
+objectives:
+  - type: fetch
+    resource: cargo_container
+    amount: 1
+rewards:
+  credits: 1000
+  xp: 500
+expiresDays: 14"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="primary" id="import-yaml-btn">Import YAML</button>
+          <button id="clear-yaml-btn">Clear</button>
+        </div>
+        <div id="yaml-preview" style="margin-top:12px"></div>
+      </div>
+
+      <!-- Quest List -->
+      <div id="quest-list-panel" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="section-title" style="margin-bottom:0;border-bottom:none;padding-bottom:0">Quest List</div>
+          <select id="quest-filter" style="width:auto;min-width:120px">
+            <option value="">All</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div id="quest-detail"></div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Scope</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="quest-list"></tbody>
+        </table>
+        <div class="empty-state" id="quests-empty" style="display:none">No quests found</div>
+      </div>
+    </div>
+
+    <!-- ── COMMS Tab ───────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-comms">
+      <div class="card">
+        <div class="section-title">Broadcast Message</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sender Name</label>
+            <input type="text" id="msg-sender" value="SYSTEM" placeholder="SYSTEM">
+          </div>
+          <div class="form-group">
+            <label>Scope</label>
+            <select id="msg-scope">
+              <option value="universal">Universal (all players)</option>
+              <option value="individual">Individual (targeted)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Channel</label>
+            <select id="msg-channel">
+              <option value="direct">Direct</option>
+              <option value="comms">Comms</option>
+              <option value="faction">Faction</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Message Content</label>
+          <textarea id="msg-content" placeholder="Enter broadcast message..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Target Players (comma-separated IDs, for individual scope)</label>
+            <input type="text" id="msg-targets" placeholder="player-id-1, player-id-2">
+          </div>
+        </div>
+        <div class="form-row" style="align-items:center">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--amber-dim);cursor:pointer">
+            <input type="checkbox" id="msg-allow-reply"> Allow replies
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="primary" id="send-msg-btn">Send Broadcast</button>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:24px">Message History</div>
+      <div id="msg-history"></div>
+      <div class="empty-state" id="msgs-empty" style="display:none">No messages sent</div>
+    </div>
+
+    <!-- ── EVENTS Tab ──────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-events">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="section-title" style="margin-bottom:0;border-bottom:none;padding-bottom:0">Admin Audit Log</div>
+        <button id="refresh-events-btn" style="font-size:10px;padding:4px 10px">Refresh</button>
+      </div>
+      <div id="event-list"></div>
+      <div class="empty-state" id="events-empty" style="display:none">No events logged</div>
+    </div>
+
+    <!-- ── STATS Tab ───────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-stats">
+      <div class="section-title">Server Statistics</div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-players">--</div>
+          <div class="stat-label">Players</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-sectors">--</div>
+          <div class="stat-label">Discovered Sectors</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-structures">--</div>
+          <div class="stat-label">Structures</div>
+        </div>
+      </div>
+      <div style="text-align:center;color:var(--amber-dim);font-size:10px;letter-spacing:1px" id="stats-updated">
+        Last updated: --
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Toast ───────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── State ──────────────────────────────────────────────────────
+  var API_BASE = '/admin/api';
+  var allPlayers = [];
+  var refreshInterval = null;
+
+  // ── Utilities ──────────────────────────────────────────────────
+
+  /** Escape text for safe display — returns a text node or sets textContent */
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str);
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '--';
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /** Create a DOM element with optional attributes and children */
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function(key) {
+        if (key === 'className') node.className = attrs[key];
+        else if (key === 'style' && typeof attrs[key] === 'object') {
+          Object.keys(attrs[key]).forEach(function(sk) { node.style[sk] = attrs[key][sk]; });
+        }
+        else if (key.indexOf('on') === 0) node.addEventListener(key.slice(2).toLowerCase(), attrs[key]);
+        else node.setAttribute(key, attrs[key]);
+      });
+    }
+    if (children !== undefined) {
+      if (Array.isArray(children)) {
+        children.forEach(function(c) {
+          if (c === null || c === undefined) return;
+          if (typeof c === 'string' || typeof c === 'number') node.appendChild(document.createTextNode(String(c)));
+          else node.appendChild(c);
+        });
+      } else if (typeof children === 'string' || typeof children === 'number') {
+        node.textContent = String(children);
+      } else {
+        node.appendChild(children);
+      }
+    }
+    return node;
+  }
+
+  function clearChildren(node) {
+    while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  // ── Auth ───────────────────────────────────────────────────────
+
+  function getToken() {
+    return sessionStorage.getItem('admin_token') || '';
+  }
+
+  function setToken(token) {
+    sessionStorage.setItem('admin_token', token);
+  }
+
+  function clearToken() {
+    sessionStorage.removeItem('admin_token');
+  }
+
+  function doLogin() {
+    var input = document.getElementById('token-input');
+    var errorEl = document.getElementById('login-error');
+    var token = input.value.trim();
+
+    if (!token) {
+      errorEl.textContent = 'Token is required';
+      return;
+    }
+
+    errorEl.textContent = '';
+
+    fetch(API_BASE + '/stats', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(res) {
+      if (res.status === 401) {
+        errorEl.textContent = 'Invalid token. Access denied.';
+        return;
+      }
+      if (!res.ok) {
+        errorEl.textContent = 'Server error: ' + res.status;
+        return;
+      }
+      setToken(token);
+      showApp();
+    }).catch(function(err) {
+      errorEl.textContent = 'Connection failed: ' + err.message;
+    });
+  }
+
+  function doLogout() {
+    clearToken();
+    stopRefresh();
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('token-input').value = '';
+  }
+
+  // ── API Helper ─────────────────────────────────────────────────
+
+  function api(method, path, body) {
+    var opts = {
+      method: method,
+      headers: {
+        'Authorization': 'Bearer ' + getToken(),
+        'Content-Type': 'application/json',
+      },
+    };
+    if (body !== undefined) {
+      opts.body = JSON.stringify(body);
+    }
+
+    return fetch(API_BASE + path, opts).then(function(res) {
+      if (res.status === 401) {
+        toast('Session expired. Please login again.', 'error');
+        doLogout();
+        return Promise.reject(new Error('Unauthorized'));
+      }
+      if (!res.ok) {
+        return res.json().catch(function() { return {}; }).then(function(data) {
+          return Promise.reject(new Error(data.error || 'Request failed: ' + res.status));
+        });
+      }
+      return res.json();
+    });
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────
+
+  var toastTimer = null;
+
+  function toast(message, type) {
+    type = type || 'success';
+    var toastEl = document.getElementById('toast');
+    toastEl.textContent = message;
+    toastEl.className = 'toast-' + type;
+    toastEl.style.display = 'block';
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() {
+      toastEl.style.display = 'none';
+    }, 4000);
+  }
+
+  // ── Tab System ─────────────────────────────────────────────────
+
+  function switchTab(name) {
+    document.querySelectorAll('#tab-bar .tab').forEach(function(t) {
+      t.classList.toggle('active', t.getAttribute('data-tab') === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach(function(p) {
+      p.classList.toggle('active', p.id === 'panel-' + name);
+    });
+    if (name === 'players') loadPlayers();
+    else if (name === 'quests') loadQuests();
+    else if (name === 'comms') loadMessages();
+    else if (name === 'events') loadEvents();
+    else if (name === 'stats') loadStats();
+  }
+
+  function switchQuestSubTab(name) {
+    var tabs = ['create', 'yaml', 'list'];
+    document.querySelectorAll('#panel-quests .sub-tab').forEach(function(t) {
+      t.classList.toggle('active', t.getAttribute('data-quest-tab') === name);
+    });
+    document.getElementById('quest-create').style.display = name === 'create' ? 'block' : 'none';
+    document.getElementById('quest-yaml').style.display = name === 'yaml' ? 'block' : 'none';
+    document.getElementById('quest-list-panel').style.display = name === 'list' ? 'block' : 'none';
+    if (name === 'list') loadQuests();
+  }
+
+  // ── PLAYERS ────────────────────────────────────────────────────
+
+  function loadPlayers() {
+    api('GET', '/players').then(function(data) {
+      allPlayers = data.players || [];
+      renderPlayers(allPlayers);
+      setStatus(true);
+    }).catch(function(err) {
+      setStatus(false);
+      if (err.message !== 'Unauthorized') toast('Failed to load players: ' + err.message, 'error');
+    });
+  }
+
+  function renderPlayers(players) {
+    var tbody = document.getElementById('player-list');
+    var empty = document.getElementById('players-empty');
+    clearChildren(tbody);
+
+    if (players.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    players.forEach(function(p) {
+      var tr = el('tr', { className: 'clickable' });
+      tr.addEventListener('click', function() { showPlayerDetail(p.id); });
+
+      tr.appendChild(el('td', null, esc(p.username)));
+      tr.appendChild(el('td', null, String(p.level)));
+      tr.appendChild(el('td', null, String(p.xp)));
+      tr.appendChild(el('td', null, '(' + p.positionX + ', ' + p.positionY + ')'));
+
+      var factionTd = el('td');
+      if (p.factionId) {
+        factionTd.textContent = p.factionId.substring(0, 8) + '...';
+      } else {
+        var factionSpan = el('span', { style: { color: 'var(--amber-dim)' } }, 'none');
+        factionTd.appendChild(factionSpan);
+      }
+      tr.appendChild(factionTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function filterPlayers() {
+    var q = document.getElementById('player-search').value.toLowerCase();
+    if (!q) {
+      renderPlayers(allPlayers);
+      return;
+    }
+    var filtered = allPlayers.filter(function(p) {
+      return p.username.toLowerCase().indexOf(q) !== -1
+        || p.id.toLowerCase().indexOf(q) !== -1;
+    });
+    renderPlayers(filtered);
+  }
+
+  function showPlayerDetail(id) {
+    api('GET', '/players/' + encodeURIComponent(id)).then(function(data) {
+      var p = data.player;
+      if (!p) return;
+
+      var container = document.getElementById('player-detail');
+      clearChildren(container);
+
+      var panel = el('div', { className: 'detail-panel' });
+
+      var header = el('div', { className: 'detail-header' });
+      header.appendChild(el('h3', null, esc(p.username)));
+      var closeBtn = el('button', { className: 'close-btn' }, 'Close');
+      closeBtn.addEventListener('click', closePlayerDetail);
+      header.appendChild(closeBtn);
+      panel.appendChild(header);
+
+      var grid = el('dl', { className: 'detail-grid' });
+      var fields = [
+        ['ID', p.id],
+        ['Username', p.username],
+        ['Level', String(p.level)],
+        ['XP', String(p.xp)],
+        ['Position', '(' + p.positionX + ', ' + p.positionY + ')'],
+        ['Faction ID', p.factionId || 'none'],
+      ];
+      fields.forEach(function(f) {
+        grid.appendChild(el('dt', null, f[0]));
+        grid.appendChild(el('dd', null, esc(f[1])));
+      });
+      panel.appendChild(grid);
+
+      container.appendChild(panel);
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Failed to load player: ' + err.message, 'error');
+    });
+  }
+
+  function closePlayerDetail() {
+    clearChildren(document.getElementById('player-detail'));
+  }
+
+  // ── QUESTS ─────────────────────────────────────────────────────
+
+  function loadQuests() {
+    var filter = document.getElementById('quest-filter').value;
+    var path = '/quests' + (filter ? '?status=' + filter : '');
+    api('GET', path).then(function(data) {
+      renderQuests(data.quests || []);
+      setStatus(true);
+    }).catch(function(err) {
+      setStatus(false);
+      if (err.message !== 'Unauthorized') toast('Failed to load quests: ' + err.message, 'error');
+    });
+  }
+
+  function renderQuests(quests) {
+    var tbody = document.getElementById('quest-list');
+    var empty = document.getElementById('quests-empty');
+    clearChildren(tbody);
+
+    if (quests.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    quests.forEach(function(q) {
+      var tr = el('tr');
+
+      var titleTd = el('td', { className: 'clickable' }, esc(q.title));
+      titleTd.addEventListener('click', function() { showQuestDetail(q.id); });
+      tr.appendChild(titleTd);
+
+      tr.appendChild(el('td', null, esc(q.questType)));
+
+      var scopeTd = el('td');
+      scopeTd.appendChild(el('span', { className: 'badge badge-' + q.scope }, esc(q.scope)));
+      tr.appendChild(scopeTd);
+
+      var statusTd = el('td');
+      statusTd.appendChild(el('span', { className: 'badge badge-' + q.status }, esc(q.status)));
+      tr.appendChild(statusTd);
+
+      tr.appendChild(el('td', null, formatDate(q.createdAt)));
+
+      var actionsTd = el('td');
+      if (q.status === 'active') {
+        var pauseBtn = el('button', { style: { fontSize: '10px', padding: '2px 6px', marginRight: '4px' } }, 'Pause');
+        pauseBtn.addEventListener('click', function() { updateQuestStatus(q.id, 'paused'); });
+        actionsTd.appendChild(pauseBtn);
+
+        var cancelBtn = el('button', { className: 'danger', style: { fontSize: '10px', padding: '2px 6px' } }, 'Cancel');
+        cancelBtn.addEventListener('click', function() { updateQuestStatus(q.id, 'cancelled'); });
+        actionsTd.appendChild(cancelBtn);
+      } else if (q.status === 'paused') {
+        var resumeBtn = el('button', { className: 'success', style: { fontSize: '10px', padding: '2px 6px', marginRight: '4px' } }, 'Resume');
+        resumeBtn.addEventListener('click', function() { updateQuestStatus(q.id, 'active'); });
+        actionsTd.appendChild(resumeBtn);
+
+        var completeBtn = el('button', { style: { fontSize: '10px', padding: '2px 6px' } }, 'Complete');
+        completeBtn.addEventListener('click', function() { updateQuestStatus(q.id, 'completed'); });
+        actionsTd.appendChild(completeBtn);
+      } else {
+        actionsTd.appendChild(el('span', { style: { color: 'var(--amber-dim)' } }, '--'));
+      }
+      tr.appendChild(actionsTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function showQuestDetail(id) {
+    api('GET', '/quests/' + encodeURIComponent(id)).then(function(data) {
+      var q = data.quest;
+      if (!q) return;
+
+      var container = document.getElementById('quest-detail');
+      clearChildren(container);
+
+      var panel = el('div', { className: 'detail-panel' });
+
+      var header = el('div', { className: 'detail-header' });
+      header.appendChild(el('h3', null, esc(q.title)));
+      var closeBtn = el('button', { className: 'close-btn' }, 'Close');
+      closeBtn.addEventListener('click', closeQuestDetail);
+      header.appendChild(closeBtn);
+      panel.appendChild(header);
+
+      var grid = el('dl', { className: 'detail-grid' });
+
+      function addField(label, value) {
+        grid.appendChild(el('dt', null, label));
+        if (typeof value === 'string' || typeof value === 'number') {
+          grid.appendChild(el('dd', null, esc(String(value))));
+        } else {
+          var dd = el('dd');
+          dd.appendChild(value);
+          grid.appendChild(dd);
+        }
+      }
+
+      addField('ID', q.id);
+      addField('Type', q.questType);
+
+      var scopeBadge = el('span', { className: 'badge badge-' + q.scope }, esc(q.scope));
+      addField('Scope', scopeBadge);
+
+      var statusBadge = el('span', { className: 'badge badge-' + q.status }, esc(q.status));
+      addField('Status', statusBadge);
+
+      addField('Description', q.description);
+      addField('NPC Name', q.npcName || '--');
+      addField('NPC Faction', q.npcFaction || '--');
+      addField('Sector', q.sectorX !== null ? '(' + q.sectorX + ', ' + q.sectorY + ')' : '--');
+      addField('Max Accept', q.maxAcceptances === 0 ? 'Unlimited' : String(q.maxAcceptances));
+      addField('Expires', q.expiresDays + ' days');
+      addField('Assignments', q.assignmentCount !== undefined ? String(q.assignmentCount) : '--');
+
+      var objPre = el('pre', { style: { margin: '0', whiteSpace: 'pre-wrap', color: 'var(--amber)' } },
+        JSON.stringify(q.objectives, null, 2));
+      addField('Objectives', objPre);
+
+      var rewPre = el('pre', { style: { margin: '0', whiteSpace: 'pre-wrap', color: 'var(--amber)' } },
+        JSON.stringify(q.rewards, null, 2));
+      addField('Rewards', rewPre);
+
+      addField('Created', formatDate(q.createdAt));
+
+      panel.appendChild(grid);
+      container.appendChild(panel);
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Failed to load quest: ' + err.message, 'error');
+    });
+  }
+
+  function closeQuestDetail() {
+    clearChildren(document.getElementById('quest-detail'));
+  }
+
+  function updateQuestStatus(id, status) {
+    api('PATCH', '/quests/' + encodeURIComponent(id), { status: status }).then(function() {
+      toast('Quest status updated to ' + status);
+      loadQuests();
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Failed to update quest: ' + err.message, 'error');
+    });
+  }
+
+  function createQuest() {
+    var title = document.getElementById('q-title').value.trim();
+    var description = document.getElementById('q-desc').value.trim();
+
+    if (!title || !description) {
+      toast('Title and description are required', 'error');
+      return;
+    }
+
+    var objectives = [];
+    var objectivesRaw = document.getElementById('q-objectives').value.trim();
+    if (objectivesRaw) {
+      try {
+        objectives = JSON.parse(objectivesRaw);
+        if (!Array.isArray(objectives)) throw new Error('Must be an array');
+      } catch (e) {
+        toast('Invalid objectives JSON: ' + e.message, 'error');
+        return;
+      }
+    }
+
+    var rewards = {};
+    var rewardsRaw = document.getElementById('q-rewards').value.trim();
+    if (rewardsRaw) {
+      try {
+        rewards = JSON.parse(rewardsRaw);
+      } catch (e) {
+        toast('Invalid rewards JSON: ' + e.message, 'error');
+        return;
+      }
+    }
+
+    var targetPlayers = [];
+    var targetsRaw = document.getElementById('q-targets').value.trim();
+    if (targetsRaw) {
+      targetPlayers = targetsRaw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    }
+
+    var body = {
+      title: title,
+      description: description,
+      questType: document.getElementById('q-type').value,
+      scope: document.getElementById('q-scope').value,
+      npcName: document.getElementById('q-npc-name').value.trim() || undefined,
+      npcFaction: document.getElementById('q-npc-faction').value || undefined,
+      objectives: objectives,
+      rewards: rewards,
+      maxAcceptances: parseInt(document.getElementById('q-max').value, 10) || 0,
+      expiresDays: parseInt(document.getElementById('q-expires').value, 10) || 7,
+      targetPlayers: targetPlayers.length > 0 ? targetPlayers : undefined,
+    };
+
+    var sectorX = document.getElementById('q-sector-x').value;
+    var sectorY = document.getElementById('q-sector-y').value;
+    if (sectorX !== '' && sectorY !== '') {
+      body.sectorX = parseInt(sectorX, 10);
+      body.sectorY = parseInt(sectorY, 10);
+    }
+
+    api('POST', '/quests', body).then(function(data) {
+      toast('Quest created: ' + data.id);
+      clearQuestForm();
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Failed to create quest: ' + err.message, 'error');
+    });
+  }
+
+  function clearQuestForm() {
+    document.getElementById('q-title').value = '';
+    document.getElementById('q-desc').value = '';
+    document.getElementById('q-type').value = 'fetch';
+    document.getElementById('q-scope').value = 'universal';
+    document.getElementById('q-npc-name').value = '';
+    document.getElementById('q-npc-faction').value = '';
+    document.getElementById('q-sector-x').value = '';
+    document.getElementById('q-sector-y').value = '';
+    document.getElementById('q-max').value = '0';
+    document.getElementById('q-expires').value = '7';
+    document.getElementById('q-objectives').value = '';
+    document.getElementById('q-rewards').value = '';
+    document.getElementById('q-targets').value = '';
+  }
+
+  function importYaml() {
+    var yamlText = document.getElementById('q-yaml-input').value.trim();
+    if (!yamlText) {
+      toast('Paste a YAML definition first', 'error');
+      return;
+    }
+
+    var parsed;
+    try {
+      parsed = parseYaml(yamlText);
+    } catch (e) {
+      toast('YAML parse error: ' + e.message, 'error');
+      return;
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      toast('Invalid YAML: must be an object', 'error');
+      return;
+    }
+
+    if (!parsed.title || !parsed.description) {
+      toast('YAML must contain title and description', 'error');
+      return;
+    }
+
+    api('POST', '/quests', parsed).then(function(data) {
+      toast('Quest imported: ' + data.id);
+      document.getElementById('q-yaml-input').value = '';
+      clearChildren(document.getElementById('yaml-preview'));
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Failed to import quest: ' + err.message, 'error');
+    });
+  }
+
+  // ── Minimal YAML parser (handles common quest YAML) ────────────
+
+  function parseYaml(text) {
+    var result = {};
+    var lines = text.split('\n');
+    var currentKey = null;
+    var currentArray = null;
+    var currentObject = null;
+    var inArray = false;
+    var inObject = false;
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var trimmed = line.replace(/\r$/, '');
+
+      if (/^\s*$/.test(trimmed) || /^\s*#/.test(trimmed)) continue;
+
+      var indent = line.match(/^(\s*)/)[1].length;
+
+      if (indent === 0 && trimmed.indexOf(':') !== -1) {
+        if (inArray && currentKey) { result[currentKey] = currentArray; inArray = false; }
+        if (inObject && currentKey) { result[currentKey] = currentObject; inObject = false; }
+
+        var parts = trimmed.split(':');
+        var key = parts[0].trim();
+        var val = parts.slice(1).join(':').trim();
+
+        if (val === '' || val === '|' || val === '>') {
+          currentKey = key;
+          currentArray = [];
+          currentObject = {};
+          inArray = false;
+          inObject = false;
+          continue;
+        }
+
+        currentKey = null;
+        result[key] = parseYamlValue(val);
+        continue;
+      }
+
+      if (indent > 0 && currentKey && /^\s*-\s/.test(trimmed)) {
+        inArray = true;
+        inObject = false;
+        var itemText = trimmed.replace(/^\s*-\s*/, '');
+
+        if (itemText.indexOf(':') !== -1) {
+          var obj = {};
+          var objParts = itemText.split(':');
+          obj[objParts[0].trim()] = parseYamlValue(objParts.slice(1).join(':').trim());
+
+          while (i + 1 < lines.length) {
+            var nextLine = lines[i + 1];
+            var nextIndent = nextLine.match(/^(\s*)/)[1].length;
+            var nextTrimmed = nextLine.replace(/\r$/, '').trim();
+            if (nextIndent > indent && nextTrimmed.indexOf(':') !== -1 && !/^\s*-/.test(nextTrimmed)) {
+              var np = nextTrimmed.split(':');
+              obj[np[0].trim()] = parseYamlValue(np.slice(1).join(':').trim());
+              i++;
+            } else {
+              break;
+            }
+          }
+          currentArray.push(obj);
+        } else {
+          currentArray.push(parseYamlValue(itemText));
+        }
+        continue;
+      }
+
+      if (indent > 0 && currentKey && trimmed.indexOf(':') !== -1 && !/^\s*-/.test(trimmed)) {
+        inObject = true;
+        inArray = false;
+        var oParts = trimmed.trim().split(':');
+        var oKey = oParts[0].trim();
+        var oVal = oParts.slice(1).join(':').trim();
+        currentObject[oKey] = parseYamlValue(oVal);
+        continue;
+      }
+    }
+
+    if (inArray && currentKey) result[currentKey] = currentArray;
+    if (inObject && currentKey) result[currentKey] = currentObject;
+
+    return result;
+  }
+
+  function parseYamlValue(val) {
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    if (val === 'null' || val === '~') return null;
+    if (/^-?\d+$/.test(val)) return parseInt(val, 10);
+    if (/^-?\d+\.\d+$/.test(val)) return parseFloat(val);
+    if ((val.charAt(0) === '"' && val.charAt(val.length - 1) === '"') ||
+        (val.charAt(0) === "'" && val.charAt(val.length - 1) === "'")) {
+      return val.slice(1, -1);
+    }
+    if ((val.charAt(0) === '[' && val.charAt(val.length - 1) === ']') ||
+        (val.charAt(0) === '{' && val.charAt(val.length - 1) === '}')) {
+      try { return JSON.parse(val); } catch(e) { /* fall through */ }
+    }
+    return val;
+  }
+
+  // ── COMMS ──────────────────────────────────────────────────────
+
+  function loadMessages() {
+    api('GET', '/messages').then(function(data) {
+      renderMessages(data.messages || []);
+      setStatus(true);
+    }).catch(function(err) {
+      setStatus(false);
+      if (err.message !== 'Unauthorized') toast('Failed to load messages: ' + err.message, 'error');
+    });
+  }
+
+  function renderMessages(messages) {
+    var container = document.getElementById('msg-history');
+    var empty = document.getElementById('msgs-empty');
+    clearChildren(container);
+
+    if (messages.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    messages.forEach(function(m) {
+      var item = el('div', { className: 'card', style: { marginBottom: '8px' } });
+
+      // Header row
+      var headerRow = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11px' } });
+      headerRow.appendChild(el('span', { style: { color: 'var(--amber-full)', fontWeight: 'bold' } }, esc(m.senderName)));
+      headerRow.appendChild(el('span', { style: { color: 'var(--amber-dim)', fontSize: '10px' } }, formatDate(m.createdAt)));
+      item.appendChild(headerRow);
+
+      // Content
+      var contentEl = el('div', { style: { color: 'var(--amber)', fontSize: '12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' } }, esc(m.content));
+      item.appendChild(contentEl);
+
+      // Meta
+      var metaRow = el('div', { style: { marginTop: '6px', fontSize: '10px', color: 'var(--amber-dim)' } });
+      metaRow.appendChild(el('span', { className: 'badge badge-' + m.scope }, esc(m.scope)));
+      metaRow.appendChild(document.createTextNode(' \u00B7 ch: ' + esc(m.channel)));
+      if (m.allowReply) {
+        metaRow.appendChild(document.createTextNode(' \u00B7 '));
+        metaRow.appendChild(el('span', { style: { color: 'var(--green)' } }, 'replies on'));
+      }
+      if (m.targetPlayers && m.targetPlayers.length > 0) {
+        metaRow.appendChild(document.createTextNode(' \u00B7 targets: ' + m.targetPlayers.length));
+      }
+      item.appendChild(metaRow);
+
+      // Replies section
+      if (m.allowReply) {
+        var repliesDiv = el('div', { style: { marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)' }, id: 'replies-' + m.id });
+        var loadRepliesBtn = el('button', { style: { fontSize: '10px', padding: '2px 8px', marginTop: '4px' } }, 'Load Replies');
+        loadRepliesBtn.addEventListener('click', function() { loadReplies(m.id); });
+        repliesDiv.appendChild(loadRepliesBtn);
+        item.appendChild(repliesDiv);
+      }
+
+      container.appendChild(item);
+    });
+  }
+
+  function loadReplies(messageId) {
+    api('GET', '/messages/' + encodeURIComponent(messageId) + '/replies').then(function(data) {
+      var replies = data.replies || [];
+      var container = document.getElementById('replies-' + messageId);
+      if (!container) return;
+      clearChildren(container);
+
+      if (replies.length === 0) {
+        container.appendChild(el('div', { style: { color: 'var(--amber-dim)', fontSize: '11px', padding: '4px 0' } }, 'No replies yet'));
+        return;
+      }
+
+      replies.forEach(function(r) {
+        var replyItem = el('div', { style: { padding: '4px 0 4px 12px', borderLeft: '2px solid var(--amber-dim)', marginBottom: '4px', fontSize: '11px' } });
+        replyItem.appendChild(el('span', { style: { color: 'var(--cyan)', fontSize: '10px' } }, r.playerId.substring(0, 8) + '...'));
+        replyItem.appendChild(document.createTextNode(' '));
+        replyItem.appendChild(el('span', { style: { color: 'var(--amber-dim)', fontSize: '10px' } }, formatDate(r.createdAt)));
+        replyItem.appendChild(el('div', null, esc(r.content)));
+        container.appendChild(replyItem);
+      });
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Failed to load replies: ' + err.message, 'error');
+    });
+  }
+
+  function sendMessage() {
+    var content = document.getElementById('msg-content').value.trim();
+    if (!content) {
+      toast('Message content is required', 'error');
+      return;
+    }
+
+    var targetPlayers = [];
+    var targetsRaw = document.getElementById('msg-targets').value.trim();
+    if (targetsRaw) {
+      targetPlayers = targetsRaw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    }
+
+    var body = {
+      content: content,
+      senderName: document.getElementById('msg-sender').value.trim() || 'SYSTEM',
+      scope: document.getElementById('msg-scope').value,
+      channel: document.getElementById('msg-channel').value,
+      allowReply: document.getElementById('msg-allow-reply').checked,
+      targetPlayers: targetPlayers.length > 0 ? targetPlayers : undefined,
+    };
+
+    api('POST', '/messages', body).then(function() {
+      toast('Message broadcast sent');
+      document.getElementById('msg-content').value = '';
+      document.getElementById('msg-targets').value = '';
+      loadMessages();
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Failed to send message: ' + err.message, 'error');
+    });
+  }
+
+  // ── EVENTS ─────────────────────────────────────────────────────
+
+  function loadEvents() {
+    api('GET', '/events').then(function(data) {
+      renderEvents(data.events || []);
+      setStatus(true);
+    }).catch(function(err) {
+      setStatus(false);
+      if (err.message !== 'Unauthorized') toast('Failed to load events: ' + err.message, 'error');
+    });
+  }
+
+  function renderEvents(events) {
+    var container = document.getElementById('event-list');
+    var empty = document.getElementById('events-empty');
+    clearChildren(container);
+
+    if (events.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    events.forEach(function(e) {
+      var item = el('div', { style: { display: 'flex', gap: '12px', padding: '6px 0', borderBottom: '1px solid var(--amber-glow)', fontSize: '12px' } });
+
+      item.appendChild(el('span', { style: { color: 'var(--amber-dim)', fontSize: '10px', whiteSpace: 'nowrap', minWidth: '140px' } }, formatDate(e.createdAt)));
+
+      item.appendChild(el('span', { style: { color: 'var(--green)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', minWidth: '160px' } }, esc(e.action)));
+
+      var details = '';
+      if (e.details && typeof e.details === 'object') {
+        var keys = Object.keys(e.details);
+        details = keys.map(function(k) {
+          return k + ': ' + JSON.stringify(e.details[k]);
+        }).join(' | ');
+      }
+      item.appendChild(el('span', { style: { color: 'var(--amber-dim)', fontSize: '11px', wordBreak: 'break-all' } }, details));
+
+      container.appendChild(item);
+    });
+  }
+
+  // ── STATS ──────────────────────────────────────────────────────
+
+  function loadStats() {
+    api('GET', '/stats').then(function(data) {
+      var s = data.stats || {};
+      document.getElementById('stat-players').textContent = s.playerCount !== undefined ? String(s.playerCount) : '--';
+      document.getElementById('stat-sectors').textContent = s.discoveredSectorCount !== undefined ? String(s.discoveredSectorCount) : '--';
+      document.getElementById('stat-structures').textContent = s.structureCount !== undefined ? String(s.structureCount) : '--';
+      document.getElementById('stats-updated').textContent = 'Last updated: ' + new Date().toLocaleString();
+      setStatus(true);
+    }).catch(function(err) {
+      setStatus(false);
+      if (err.message !== 'Unauthorized') toast('Failed to load stats: ' + err.message, 'error');
+    });
+  }
+
+  // ── Auto-Refresh ───────────────────────────────────────────────
+
+  function startRefresh() {
+    stopRefresh();
+    refreshInterval = setInterval(function() {
+      var activeTab = document.querySelector('#tab-bar .tab.active');
+      if (activeTab) {
+        var name = activeTab.getAttribute('data-tab');
+        if (name === 'players') loadPlayers();
+        else if (name === 'quests') loadQuests();
+        else if (name === 'comms') loadMessages();
+        else if (name === 'events') loadEvents();
+        else if (name === 'stats') loadStats();
+      }
+    }, 30000);
+  }
+
+  function stopRefresh() {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+  }
+
+  // ── Status LED ─────────────────────────────────────────────────
+
+  function setStatus(ok) {
+    var led = document.getElementById('status-led');
+    var text = document.getElementById('status-text');
+    if (ok) {
+      led.className = 'status-led';
+      text.textContent = 'Connected';
+    } else {
+      led.className = 'status-led error';
+      text.textContent = 'Error';
+    }
+  }
+
+  // ── App Init ───────────────────────────────────────────────────
+
+  function showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadPlayers();
+    startRefresh();
+  }
+
+  // ── Wire up event listeners ────────────────────────────────────
+
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('token-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+
+  // Tab bar
+  document.querySelectorAll('#tab-bar .tab').forEach(function(t) {
+    t.addEventListener('click', function() { switchTab(t.getAttribute('data-tab')); });
+  });
+
+  // Quest sub-tabs
+  document.querySelectorAll('#panel-quests .sub-tab').forEach(function(t) {
+    t.addEventListener('click', function() { switchQuestSubTab(t.getAttribute('data-quest-tab')); });
+  });
+
+  // Quest filter
+  document.getElementById('quest-filter').addEventListener('change', loadQuests);
+
+  // Quest actions
+  document.getElementById('create-quest-btn').addEventListener('click', createQuest);
+  document.getElementById('clear-quest-btn').addEventListener('click', clearQuestForm);
+  document.getElementById('import-yaml-btn').addEventListener('click', importYaml);
+  document.getElementById('clear-yaml-btn').addEventListener('click', function() {
+    document.getElementById('q-yaml-input').value = '';
+  });
+
+  // Comms
+  document.getElementById('send-msg-btn').addEventListener('click', sendMessage);
+
+  // Events
+  document.getElementById('refresh-events-btn').addEventListener('click', loadEvents);
+
+  // Player search
+  document.getElementById('player-search').addEventListener('input', filterPlayers);
+
+  // Check for existing session
+  if (getToken()) {
+    fetch(API_BASE + '/stats', {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    }).then(function(res) {
+      if (res.ok) {
+        showApp();
+      } else {
+        clearToken();
+      }
+    }).catch(function() {
+      // Server might be down, show login
+    });
+  }
+
+})();
+</script>
+
+</body>
+</html>

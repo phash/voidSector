@@ -9,19 +9,28 @@ import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
 import { generateStationNpcs, getStationFaction, getPirateLevel } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateNpcCargoTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
+import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkScanEvent } from '../engine/scanEvents.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../engine/combatV2.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
+import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellToStation, calculateCurrentStock, getStationLevel, calculatePrice } from '../engine/npcStationEngine.js';
+import { getStationInventoryItem, upsertInventoryItem, getStationInventory } from '../db/npcStationQueries.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
+import { getOrCreateFactoryState, setActiveRecipe, collectOutput, getFactoryStatus, transferOutputToCargo } from '../engine/productionEngine.js';
+import { placeKontorOrder, cancelKontorOrder, fillKontorOrder, getKontorOrders, getPlayerOrders } from '../engine/kontorEngine.js';
+import { adminBus } from '../adminBus.js';
+import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState } from '@void-sector/shared';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState, ProcessedItemType } from '@void-sector/shared';
+import type { FirstContactEvent } from '@void-sector/shared';
+import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../engine/quadrantEngine.js';
+import { getPlayerKnownQuadrants, addPlayerKnownQuadrant, addPlayerKnownQuadrantsBatch, getQuadrant, getAllDiscoveredQuadrantCoords } from '../db/quadrantQueries.js';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -41,7 +50,7 @@ function rejectGuest(client: Client, action: string): boolean {
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
 const VALID_TRANSFER_RESOURCES = ['ore', 'gas', 'crystal', 'artefact'];
-const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon'];
+const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon', 'factory', 'research_lab', 'kontor'];
 
 function sanitizeChat(text: string): string {
   return text
@@ -566,10 +575,308 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('activateBlueprint', (client, data) => this.handleActivateBlueprint(client, data));
     this.onMessage('getResearchState', (client) => this.handleGetResearchState(client));
 
+    // NPC Station data request
+    this.onMessage('getNpcStation', async (client) => {
+      if (this.state.sector.sectorType !== 'station') return;
+      await this.sendNpcStationUpdate(client, this.state.sector.x, this.state.sector.y);
+    });
+
     // Trade route processing interval
     this.clock.setInterval(() => {
       this.processTradeRoutes().catch(err => console.error('[TRADE ROUTES] Tick error:', err));
     }, 60000);
+
+    // --- Admin Bus ---
+    const onBroadcast = (event: AdminBroadcastEvent) => {
+      for (const client of this.clients) {
+        const auth = client.auth as AuthPayload;
+        if (event.scope === 'universal' || event.targetPlayers.includes(auth.userId)) {
+          client.send('adminMessage', {
+            id: event.messageId,
+            senderName: event.senderName,
+            content: event.content,
+            scope: event.scope,
+            channel: event.channel,
+            allowReply: event.allowReply,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+    };
+    const onQuestCreated = (event: AdminQuestEvent) => {
+      for (const client of this.clients) {
+        const auth = client.auth as AuthPayload;
+        if (event.scope === 'universal' || event.targetPlayers.includes(auth.userId)) {
+          client.send('adminQuestOffer', {
+            questId: event.questId,
+            title: event.title,
+            description: event.description,
+            scope: event.scope,
+          });
+        }
+      }
+    };
+    adminBus.on('adminBroadcast', onBroadcast);
+    adminBus.on('adminQuestCreated', onQuestCreated);
+
+    this.onDispose(() => {
+      adminBus.off('adminBroadcast', onBroadcast);
+      adminBus.off('adminQuestCreated', onQuestCreated);
+    });
+
+    // ── Factory Handlers ──
+
+    this.onMessage('factoryStatus', async (client) => {
+      if (!this.checkRate(client.sessionId, 'factoryStatus', 500)) return;
+      const auth = client.auth as AuthPayload;
+
+      // Find factory at player's base
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) {
+        client.send('factoryUpdate', { error: 'No factory built' });
+        return;
+      }
+
+      await getOrCreateFactoryState(factoryStruct.id, auth.userId);
+      const status = await getFactoryStatus(factoryStruct.id);
+      client.send('factoryUpdate', status);
+    });
+
+    this.onMessage('factorySetRecipe', async (client, data: { recipeId: string }) => {
+      if (!this.checkRate(client.sessionId, 'factorySetRecipe', 1000)) return;
+      if (rejectGuest(client, 'factory')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.recipeId || typeof data.recipeId !== 'string') {
+        client.send('factoryUpdate', { error: 'Invalid recipe ID' });
+        return;
+      }
+
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) {
+        client.send('factoryUpdate', { error: 'No factory built' });
+        return;
+      }
+
+      await getOrCreateFactoryState(factoryStruct.id, auth.userId);
+      const research = await getPlayerResearch(auth.userId);
+      const result = await setActiveRecipe(factoryStruct.id, data.recipeId, research?.blueprints ?? []);
+
+      if (!result.success) {
+        client.send('factoryUpdate', { error: result.error });
+        return;
+      }
+
+      const status = await getFactoryStatus(factoryStruct.id);
+      client.send('factoryUpdate', status);
+    });
+
+    this.onMessage('factoryCollect', async (client) => {
+      if (!this.checkRate(client.sessionId, 'factoryCollect', 1000)) return;
+      if (rejectGuest(client, 'factory')) return;
+      const auth = client.auth as AuthPayload;
+
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) {
+        client.send('factoryUpdate', { error: 'No factory built' });
+        return;
+      }
+
+      const storage = await getStorageInventory(auth.userId);
+      const result = await collectOutput(factoryStruct.id, storage);
+
+      if (result.error) {
+        client.send('factoryUpdate', { error: result.error });
+        return;
+      }
+
+      // Deduct consumed resources from storage
+      for (const [resource, amount] of Object.entries(result.consumed)) {
+        if (amount > 0) {
+          await updateStorageResource(auth.userId, resource as any, -amount);
+        }
+      }
+
+      // Send updated factory status + updated storage
+      const status = await getFactoryStatus(factoryStruct.id);
+      const updatedStorage = await getStorageInventory(auth.userId);
+      client.send('factoryUpdate', status);
+      client.send('storageUpdate', updatedStorage);
+    });
+
+    this.onMessage('factoryTransfer', async (client, data: { itemType: string; amount: number }) => {
+      if (!this.checkRate(client.sessionId, 'factoryTransfer', 500)) return;
+      if (rejectGuest(client, 'factory')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.itemType || !isPositiveInt(data?.amount)) {
+        client.send('factoryUpdate', { error: 'Invalid transfer parameters' });
+        return;
+      }
+
+      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
+      if (!factoryStruct) {
+        client.send('factoryUpdate', { error: 'No factory built' });
+        return;
+      }
+
+      const result = await transferOutputToCargo(factoryStruct.id, data.itemType as ProcessedItemType, data.amount);
+      if (!result.success) {
+        client.send('factoryUpdate', { error: result.error });
+        return;
+      }
+
+      // Add to player cargo
+      await addToCargo(auth.userId, data.itemType as any, data.amount);
+
+      // Send updates
+      const status = await getFactoryStatus(factoryStruct.id);
+      const cargo = await getPlayerCargo(auth.userId);
+      client.send('factoryUpdate', status);
+      client.send('cargoUpdate', cargo);
+    });
+
+    // ── Kontor Handlers ──
+
+    this.onMessage('kontorPlaceOrder', async (client, data: { itemType: string; amount: number; pricePerUnit: number }) => {
+      if (!this.checkRate(client.sessionId, 'kontorPlaceOrder', 1000)) return;
+      if (rejectGuest(client, 'kontor')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.itemType || typeof data.itemType !== 'string') {
+        client.send('kontorUpdate', { error: 'Invalid item type' });
+        return;
+      }
+      if (!isPositiveInt(data?.amount) || !isPositiveInt(data?.pricePerUnit)) {
+        client.send('kontorUpdate', { error: 'Invalid order parameters' });
+        return;
+      }
+
+      const result = await placeKontorOrder(
+        auth.userId,
+        this.state.sector.x,
+        this.state.sector.y,
+        data.itemType,
+        data.amount,
+        data.pricePerUnit
+      );
+
+      if (!result.success) {
+        client.send('kontorUpdate', { error: result.error });
+        return;
+      }
+
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      client.send('kontorUpdate', { orders, placed: result.order });
+    });
+
+    this.onMessage('kontorCancelOrder', async (client, data: { orderId: string }) => {
+      if (!this.checkRate(client.sessionId, 'kontorCancelOrder', 1000)) return;
+      if (rejectGuest(client, 'kontor')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.orderId || typeof data.orderId !== 'string') {
+        client.send('kontorUpdate', { error: 'Invalid order ID' });
+        return;
+      }
+
+      const result = await cancelKontorOrder(data.orderId, auth.userId);
+
+      if (!result.success) {
+        client.send('kontorUpdate', { error: result.error });
+        return;
+      }
+
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      client.send('kontorUpdate', { orders, refunded: result.refunded });
+    });
+
+    this.onMessage('kontorSellTo', async (client, data: { orderId: string; amount: number }) => {
+      if (!this.checkRate(client.sessionId, 'kontorSellTo', 500)) return;
+      if (rejectGuest(client, 'kontor')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.orderId || typeof data.orderId !== 'string') {
+        client.send('kontorUpdate', { error: 'Invalid order ID' });
+        return;
+      }
+      if (!isPositiveInt(data?.amount)) {
+        client.send('kontorUpdate', { error: 'Invalid amount' });
+        return;
+      }
+
+      const result = await fillKontorOrder(data.orderId, auth.userId, data.amount);
+
+      if (!result.success) {
+        client.send('kontorUpdate', { error: result.error });
+        return;
+      }
+
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      const cargo = await getPlayerCargo(auth.userId);
+      client.send('kontorUpdate', { orders, earned: result.earned });
+      client.send('cargoUpdate', cargo);
+    });
+
+    this.onMessage('kontorGetOrders', async (client) => {
+      if (!this.checkRate(client.sessionId, 'kontorGetOrders', 500)) return;
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      client.send('kontorUpdate', { orders });
+    });
+
+    // -----------------------------------------------------------------------
+    // Quadrant handlers
+    // -----------------------------------------------------------------------
+
+    this.onMessage('nameQuadrant', async (client, data: { qx: number; qy: number; name: string }) => {
+      if (!this.checkRate(client.sessionId, 'nameQuadrant', 1000)) return;
+      if (rejectGuest(client, 'nameQuadrant')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!isInt(data?.qx) || !isInt(data?.qy) || typeof data?.name !== 'string') {
+        client.send('nameQuadrantResult', { success: false, error: 'Invalid input' });
+        return;
+      }
+
+      const result = await nameQuadrantEngine(data.qx, data.qy, data.name.trim(), auth.userId);
+      client.send('nameQuadrantResult', result);
+
+      if (result.success) {
+        // Broadcast the new name to all connected players
+        this.broadcast('announcement', {
+          message: `Quadrant (${data.qx},${data.qy}) named "${data.name.trim()}" by ${auth.username}`,
+          type: 'quadrant_named',
+        });
+      }
+    });
+
+    this.onMessage('getKnownQuadrants', async (client) => {
+      if (!this.checkRate(client.sessionId, 'getKnownQuadrants', 500)) return;
+      if (rejectGuest(client, 'getKnownQuadrants')) return;
+      const auth = client.auth as AuthPayload;
+      const known = await getPlayerKnownQuadrants(auth.userId);
+      client.send('knownQuadrants', { quadrants: known });
+    });
+
+    this.onMessage('syncQuadrants', async (client) => {
+      if (!this.checkRate(client.sessionId, 'syncQuadrants', 2000)) return;
+      if (rejectGuest(client, 'syncQuadrants')) return;
+      const auth = client.auth as AuthPayload;
+
+      // Only allowed at stations
+      const isStation = this.state.sector.sectorType === 'station';
+      if (!isStation) {
+        client.send('syncQuadrantsResult', { success: false, error: 'Must be at a station to sync quadrant data' });
+        return;
+      }
+
+      // Get all publicly known quadrant coords and batch-insert into player's known list
+      const allCoords = await getAllDiscoveredQuadrantCoords();
+      await addPlayerKnownQuadrantsBatch(auth.userId, allCoords);
+
+      const known = await getPlayerKnownQuadrants(auth.userId);
+      client.send('syncQuadrantsResult', { success: true, quadrants: known, synced: allCoords.length });
+    });
   }
 
   async onJoin(client: Client, _options: any, auth: AuthPayload) {
@@ -700,6 +1007,11 @@ export class SectorRoom extends Room<SectorRoomState> {
         blueprints: researchData.blueprints,
         activeResearch: activeResearch,
       });
+
+      // Record NPC station visit for XP
+      if (this.state.sector.sectorType === 'station') {
+        recordVisit(this.state.sector.x, this.state.sector.y).catch(() => {});
+      }
     } catch (err) {
       console.error('[JOIN] Error:', err);
       client.send('error', { code: 'JOIN_FAILED', message: 'Failed to join sector' });
@@ -858,6 +1170,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Phase 5: Check for distress calls in comm range
     await this.checkAndEmitDistressCalls(client, auth.userId, targetX, targetY);
 
+    // Quadrant first-contact detection
+    await this.checkFirstContact(client, auth, targetX, targetY);
+
     // Client will leave this room and join the new sector room
   }
 
@@ -993,6 +1308,8 @@ export class SectorRoom extends Room<SectorRoomState> {
             await saveSector(targetSector);
           }
           client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
+          // Quadrant first-contact detection after hyperjump completes
+          await this.checkFirstContact(client, auth, targetX, targetY);
           return;
         }
         const step = steps[stepIndex];
@@ -1533,6 +1850,32 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('storageUpdate', updatedStorage);
   }
 
+  private async sendNpcStationUpdate(client: Client, sx: number, sy: number): Promise<void> {
+    const station = await getOrInitStation(sx, sy);
+    const inventory = await getStationInventory(sx, sy);
+    const level = getStationLevel(station.xp);
+    const items = inventory.map(item => {
+      const currentStock = calculateCurrentStock(item);
+      const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
+      const basePrice = NPC_PRICES[item.itemType as MineableResourceType] || 0;
+      return {
+        itemType: item.itemType,
+        stock: currentStock,
+        maxStock: item.maxStock,
+        buyPrice: Math.ceil(calculatePrice(basePrice, stockRatio) * NPC_BUY_SPREAD),
+        sellPrice: Math.floor(calculatePrice(basePrice, stockRatio) * NPC_SELL_SPREAD),
+      };
+    });
+    const nextLevel = NPC_STATION_LEVELS.find(l => l.xpThreshold > station.xp);
+    client.send('npcStationUpdate', {
+      level: level.level,
+      name: level.name,
+      xp: station.xp,
+      nextLevelXp: nextLevel?.xpThreshold ?? station.xp,
+      inventory: items,
+    });
+  }
+
   private async handleNpcTrade(client: Client, data: NpcTradeMessage) {
     if (!this.checkRate(client.sessionId, 'npcTrade', 250)) {
       client.send('npcTradeResult', { success: false, error: 'Too fast — please wait' });
@@ -1566,38 +1909,82 @@ export class SectorRoom extends Room<SectorRoomState> {
     const bonuses = await this.getPlayerBonuses(auth.userId);
 
     if (isStation) {
-      // Station trade: use cargo
+      // Station trade: use cargo with dynamic pricing from NPC station engine
       const cargo = await getPlayerCargo(auth.userId);
       const cargoTotal = await getCargoTotal(auth.userId);
       const shipStats = this.getShipForClient(client.sessionId);
-
-      const result = validateNpcCargoTrade(action, resource, amount, currentCredits, cargo, cargoTotal, shipStats.cargoCap);
-      if (!result.valid) {
-        client.send('npcTradeResult', { success: false, error: result.error });
-        return;
-      }
-
-      if (action === 'buy') {
-        result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
-      }
+      const sx = this.state.sector.x;
+      const sy = this.state.sector.y;
 
       if (action === 'sell') {
+        // Check cargo has enough
+        if (cargo[resource as MineableResourceType] < amount) {
+          client.send('npcTradeResult', { success: false, error: `Not enough ${resource} in cargo` });
+          return;
+        }
+        // Check station can accept
+        const sellCheck = await canSellToStation(sx, sy, resource, amount);
+        if (!sellCheck.ok) {
+          client.send('npcTradeResult', { success: false, error: 'Station cannot accept more of this resource' });
+          return;
+        }
+        // Execute trade
         const deducted = await deductCargo(auth.userId, resource, amount);
         if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Cargo changed' }); return; }
-        const newCredits = await addCredits(auth.userId, result.totalPrice);
+        // Update station stock
+        const invItem = await getStationInventoryItem(sx, sy, resource);
+        if (invItem) {
+          invItem.stock = Math.min(invItem.stock + amount, invItem.maxStock);
+          invItem.lastUpdated = new Date().toISOString();
+          await upsertInventoryItem(invItem);
+        }
+        const newCredits = await addCredits(auth.userId, sellCheck.price);
+        await recordTrade(sx, sy, amount);
         const updatedCargo = await getPlayerCargo(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
+        // Send station info update (rich format with inventory)
+        await this.sendNpcStationUpdate(client, sx, sy);
       } else {
-        const deducted = await deductCredits(auth.userId, result.totalPrice);
+        // Buy: check station has stock
+        const buyCheck = await canBuyFromStation(sx, sy, resource, amount);
+        if (!buyCheck.ok) {
+          client.send('npcTradeResult', { success: false, error: 'Station does not have enough stock' });
+          return;
+        }
+        // Apply faction bonus
+        let totalPrice = buyCheck.price;
+        totalPrice = Math.ceil(totalPrice * bonuses.tradePriceMultiplier);
+        // Check credits
+        if (currentCredits < totalPrice) {
+          client.send('npcTradeResult', { success: false, error: `Need ${totalPrice} credits (have ${currentCredits})` });
+          return;
+        }
+        // Check cargo space
+        if (cargoTotal + amount > shipStats.cargoCap) {
+          client.send('npcTradeResult', { success: false, error: 'Cargo full' });
+          return;
+        }
+        // Execute trade
+        const deducted = await deductCredits(auth.userId, totalPrice);
         if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
         await addToCargo(auth.userId, resource, amount);
+        // Update station stock
+        const invItem = await getStationInventoryItem(sx, sy, resource);
+        if (invItem) {
+          invItem.stock = Math.max(invItem.stock - amount, 0);
+          invItem.lastUpdated = new Date().toISOString();
+          await upsertInventoryItem(invItem);
+        }
         const newCredits = await getPlayerCredits(auth.userId);
+        await recordTrade(sx, sy, amount);
         const updatedCargo = await getPlayerCargo(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
+        // Send station info update (rich format with inventory)
+        await this.sendNpcStationUpdate(client, sx, sy);
       }
     } else {
       // Home base trade: use storage
@@ -3328,5 +3715,43 @@ export class SectorRoom extends Room<SectorRoomState> {
       blueprints: updated.blueprints,
     });
     client.send('logEntry', `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Quadrant first-contact detection
+  // ---------------------------------------------------------------------------
+  private async checkFirstContact(client: Client, auth: AuthPayload, targetX: number, targetY: number) {
+    try {
+      const { qx, qy } = sectorToQuadrant(targetX, targetY);
+      const currentQ = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+
+      // Only check if entering a different quadrant
+      if (qx === currentQ.qx && qy === currentQ.qy) return;
+
+      // Check if quadrant exists already
+      const existing = await getQuadrant(qx, qy);
+      if (!existing) {
+        // First contact! Create quadrant with player as discoverer
+        const quadrant = await getOrCreateQuadrant(qx, qy, auth.userId);
+        const autoName = generateQuadrantName(quadrant.seed);
+
+        client.send('firstContact', {
+          quadrant,
+          canName: true,
+          autoName,
+        } as FirstContactEvent);
+
+        // Broadcast to all connected players
+        this.broadcast('announcement', {
+          message: `[${quadrant.name}] charted by ${auth.username}`,
+          type: 'quadrant_discovery',
+        });
+      } else {
+        // Quadrant exists but player may not know it yet
+        await addPlayerKnownQuadrant(auth.userId, qx, qy);
+      }
+    } catch (err) {
+      console.error('[checkFirstContact] Error:', err);
+    }
   }
 }

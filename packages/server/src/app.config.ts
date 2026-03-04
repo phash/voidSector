@@ -1,11 +1,17 @@
 import toolsPkg from '@colyseus/tools';
 import { monitor } from '@colyseus/monitor';
 import express from 'express';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { SectorRoom } from './rooms/SectorRoom.js';
 import { register, login, loginAsGuest } from './auth.js';
 import { deleteExpiredGuestPlayers } from './db/queries.js';
 import { runMigrations } from './db/client.js';
 import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
+import { adminRouter } from './adminRoutes.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // @colyseus/tools CJS interop: default.default holds the config function
 const config = (toolsPkg as any).default ?? toolsPkg;
@@ -85,6 +91,10 @@ export default config({
       res.json({ ok: true });
     });
 
+    app.get('/admin', (_req, res) => {
+      res.sendFile(join(__dirname, 'admin', 'console.html'));
+    });
+    app.use('/admin/api', adminRouter);
     app.use('/colyseus', monitor());
   },
 

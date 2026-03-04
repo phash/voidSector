@@ -1,4 +1,4 @@
-import type { SectorType, ShipClass, ResourceType, MineableResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, SectorEnvironment, SectorContent } from './types.js';
+import type { SectorType, ShipClass, ResourceType, MineableResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, SectorEnvironment, SectorContent, ProductionRecipe } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
   'empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate'
@@ -62,6 +62,9 @@ export const STRUCTURE_COSTS: Record<StructureType, Record<MineableResourceType,
   defense_turret: { ore: 40, gas: 10, crystal: 20 },
   station_shield: { ore: 30, gas: 25, crystal: 30 },
   ion_cannon: { ore: 60, gas: 30, crystal: 40 },
+  factory: { ore: 40, gas: 20, crystal: 15 },
+  research_lab: { ore: 30, gas: 25, crystal: 30 },
+  kontor: { ore: 20, gas: 10, crystal: 10 },
 };
 
 export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
@@ -73,6 +76,9 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
   defense_turret: 20,
   station_shield: 20,
   ion_cannon: 25,
+  factory: 20,
+  research_lab: 25,
+  kontor: 15,
 };
 
 export const RELAY_RANGES: Record<StructureType, number> = {
@@ -84,6 +90,9 @@ export const RELAY_RANGES: Record<StructureType, number> = {
   defense_turret: 0,
   station_shield: 0,
   ion_cannon: 0,
+  factory: 0,
+  research_lab: 0,
+  kontor: 0,
 };
 
 // NPC Trade Prices (base prices per unit in credits)
@@ -95,6 +104,41 @@ export const NPC_PRICES: Record<MineableResourceType, number> = {
 
 export const NPC_BUY_SPREAD = 1.2;
 export const NPC_SELL_SPREAD = 0.8;
+
+// NPC Station Levels
+export const NPC_STATION_LEVELS = [
+  { level: 1, name: 'Outpost',     maxStock: 200,   xpThreshold: 0 },
+  { level: 2, name: 'Station',     maxStock: 500,   xpThreshold: 500 },
+  { level: 3, name: 'Hub',         maxStock: 1200,  xpThreshold: 2000 },
+  { level: 4, name: 'Port',        maxStock: 3000,  xpThreshold: 6000 },
+  { level: 5, name: 'Megastation', maxStock: 8000,  xpThreshold: 15000 },
+] as const;
+
+// --- Production Recipes (Factory) ---
+export const PRODUCTION_RECIPES: ProductionRecipe[] = [
+  // Basic (no research needed)
+  { id: 'fuel_cell_basic', outputItem: 'fuel_cell', outputAmount: 1,
+    inputs: [{ resource: 'ore', amount: 2 }, { resource: 'gas', amount: 3 }],
+    cycleSeconds: 120, researchRequired: null },
+  { id: 'alloy_plate_basic', outputItem: 'alloy_plate', outputAmount: 1,
+    inputs: [{ resource: 'ore', amount: 3 }, { resource: 'crystal', amount: 1 }],
+    cycleSeconds: 180, researchRequired: null },
+  // Researchable
+  { id: 'circuit_board_t1', outputItem: 'circuit_board', outputAmount: 1,
+    inputs: [{ resource: 'crystal', amount: 2 }, { resource: 'gas', amount: 2 }],
+    cycleSeconds: 240, researchRequired: 'circuit_board_t1' },
+  { id: 'void_shard_t1', outputItem: 'void_shard', outputAmount: 1,
+    inputs: [{ resource: 'crystal', amount: 3 }, { resource: 'ore', amount: 2 }],
+    cycleSeconds: 300, researchRequired: 'void_shard_t1' },
+  { id: 'bio_extract_t1', outputItem: 'bio_extract', outputAmount: 1,
+    inputs: [{ resource: 'gas', amount: 4 }, { resource: 'crystal', amount: 1 }],
+    cycleSeconds: 360, researchRequired: 'bio_extract_t1' },
+];
+
+export const NPC_XP_DECAY_PER_HOUR = 1;
+export const NPC_XP_VISIT = 5;
+export const NPC_XP_PER_TRADE_UNIT = 1;
+export const NPC_XP_QUEST_COMPLETE = 15;
 
 // Artefact drop chances
 export const ARTEFACT_DROP_CHANCES = {
@@ -756,6 +800,7 @@ export const MONITORS = {
   FACTION: 'FACTION',
   QUESTS: 'QUESTS',
   TECH: 'TECH',
+  QUAD_MAP: 'QUAD-MAP',
 } as const;
 
 export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
@@ -770,6 +815,7 @@ export const RIGHT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.FACTION,
   MONITORS.QUESTS,
   MONITORS.TECH,
+  MONITORS.QUAD_MAP,
 ];
 
 export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
@@ -783,6 +829,7 @@ export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.FACTION,
   MONITORS.QUESTS,
   MONITORS.TECH,
+  MONITORS.QUAD_MAP,
 ];
 
 export const MAIN_MONITORS: MonitorId[] = [
@@ -795,6 +842,7 @@ export const MAIN_MONITORS: MonitorId[] = [
   MONITORS.FACTION,
   MONITORS.QUESTS,
   MONITORS.TECH,
+  MONITORS.QUAD_MAP,
 ];
 
 /** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */
@@ -905,3 +953,10 @@ export const RESEARCH_TICK_MS = 60_000; // 1 tick = 1 minute
 export const AUTOPILOT_STEP_MS = 100;       // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24;      // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7;       // coords-only after 7 days
+
+export const QUADRANT_SIZE = 10_000;
+export const SPAWN_QUADRANT_DISTANCE = 10_000_000;
+export const SPAWN_QUADRANT_BAND = 10;
+export const SPAWN_CLUSTER_MAX_PLAYERS_QUAD = 5;
+export const QUADRANT_NAME_MAX_LENGTH = 24;
+export const QUADRANT_NAME_MIN_LENGTH = 3;

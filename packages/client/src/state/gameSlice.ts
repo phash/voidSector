@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState, FirstContactEvent } from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -141,6 +141,42 @@ export interface GameSlice {
   research: ResearchState;
   pendingBlueprint: string | null;
 
+  // NPC Station
+  npcStationData: {
+    level: number;
+    name: string;
+    xp: number;
+    nextLevelXp: number;
+    inventory: Array<{
+      itemType: string;
+      stock: number;
+      maxStock: number;
+      buyPrice: number;
+      sellPrice: number;
+    }>;
+  } | null;
+
+  // Factory
+  factoryState: {
+    activeRecipe: { id: string; outputItem: string; outputAmount: number; cycleSeconds: number } | null;
+    progress: number;
+    completedCycles: number;
+    output: Record<string, number>;
+    error?: string;
+  } | null;
+
+  // Kontor
+  kontorOrders: Array<{
+    id: string; ownerId: string; itemType: string;
+    amountWanted: number; amountFilled: number;
+    pricePerUnit: number; active: boolean;
+  }>;
+
+  // Quadrant system
+  knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
+  currentQuadrant: { qx: number; qy: number } | null;
+  firstContactEvent: FirstContactEvent | null;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -196,6 +232,12 @@ export interface GameSlice {
   setHomeBase: (coords: { x: number; y: number }) => void;
   setResearch: (research: ResearchState) => void;
   setPendingBlueprint: (moduleId: string | null) => void;
+  setNpcStationData: (data: GameSlice['npcStationData']) => void;
+  setFactoryState: (data: GameSlice['factoryState']) => void;
+  setKontorOrders: (orders: GameSlice['kontorOrders']) => void;
+  setKnownQuadrants: (quadrants: Array<{ qx: number; qy: number; learnedAt: string }>) => void;
+  setCurrentQuadrant: (q: { qx: number; qy: number } | null) => void;
+  setFirstContactEvent: (event: FirstContactEvent | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -251,6 +293,12 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   homeBase: { x: 0, y: 0 },
   research: { unlockedModules: [], blueprints: [], activeResearch: null },
   pendingBlueprint: null,
+  npcStationData: null,
+  factoryState: null,
+  kontorOrders: [],
+  knownQuadrants: [],
+  currentQuadrant: null,
+  firstContactEvent: null,
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -355,4 +403,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setHomeBase: (homeBase) => set({ homeBase }),
   setResearch: (research) => set({ research }),
   setPendingBlueprint: (pendingBlueprint) => set({ pendingBlueprint }),
+  setNpcStationData: (npcStationData) => set({ npcStationData }),
+  setFactoryState: (factoryState) => set({ factoryState }),
+  setKontorOrders: (kontorOrders) => set({ kontorOrders }),
+  setKnownQuadrants: (knownQuadrants) => set({ knownQuadrants }),
+  setCurrentQuadrant: (currentQuadrant) => set({ currentQuadrant }),
+  setFirstContactEvent: (firstContactEvent) => set({ firstContactEvent }),
 });

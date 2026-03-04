@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
 function getWsUrl(): string {
@@ -412,6 +412,20 @@ class GameNetwork {
         store.addLogEntry('Trade complete');
       } else {
         store.addLogEntry(`Trade failed: ${data.error}`);
+      }
+    });
+
+    room.onMessage('npcStationUpdate', (data: any) => {
+      useStore.getState().setNpcStationData(data);
+    });
+
+    room.onMessage('factoryUpdate', (data: any) => {
+      useStore.getState().setFactoryState(data);
+    });
+
+    room.onMessage('kontorUpdate', (data: any) => {
+      if (data.orders) {
+        useStore.getState().setKontorOrders(data.orders);
       }
     });
 
@@ -839,6 +853,70 @@ class GameNetwork {
       }
     });
 
+    // --- Admin Messages ---
+
+    room.onMessage('adminMessage', (data: AdminMessage) => {
+      const store = useStore.getState();
+      store.addChatMessage({
+        id: data.id,
+        senderId: 'admin',
+        senderName: data.senderName,
+        channel: 'direct' as ChatChannel,
+        content: data.content,
+        sentAt: Date.parse(data.createdAt),
+        delayed: false,
+      });
+      const visible = store.sidebarSlots.includes('COMMS')
+        || store.leftSidebarSlots.includes('COMMS')
+        || store.mainMonitorMode === 'COMMS';
+      if (!visible) {
+        store.setAlert('COMMS', true);
+      }
+    });
+
+    room.onMessage('adminQuestOffer', (data: AdminQuestNotification) => {
+      const store = useStore.getState();
+      store.addLogEntry(`New quest available: ${data.title}`);
+      const visible = store.sidebarSlots.includes('QUESTS')
+        || store.leftSidebarSlots.includes('QUESTS')
+        || store.mainMonitorMode === 'QUESTS';
+      if (!visible) {
+        store.setAlert('QUESTS', true);
+      }
+    });
+
+    // --- Quadrant System ---
+
+    room.onMessage('firstContact', (data: FirstContactEvent) => {
+      const store = useStore.getState();
+      store.setFirstContactEvent(data);
+      store.addLogEntry(`[QUADRANT] First contact: ${data.quadrant.name ?? data.autoName}`);
+    });
+
+    room.onMessage('knownQuadrants', (data: { quadrants: Array<{ qx: number; qy: number; learnedAt: string }> }) => {
+      useStore.getState().setKnownQuadrants(data.quadrants);
+    });
+
+    room.onMessage('syncQuadrantsResult', (data: { success: boolean; quadrants?: Array<{ qx: number; qy: number; learnedAt: string }>; synced?: number; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success && data.quadrants) {
+        store.setKnownQuadrants(data.quadrants);
+        store.addLogEntry(`[QUADRANT] Synced ${data.synced ?? data.quadrants.length} quadrants`);
+      } else {
+        store.addLogEntry(`[QUADRANT] Sync failed: ${data.error}`);
+      }
+    });
+
+    room.onMessage('nameQuadrantResult', (data: { success: boolean; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.setFirstContactEvent(null);
+        store.addLogEntry('[QUADRANT] Quadrant named successfully');
+      } else {
+        store.addLogEntry(`[QUADRANT] Naming failed: ${data.error}`);
+      }
+    });
+
     room.onLeave(async (code) => {
       if (code > 1000 && !this.reconnecting) {
         this.reconnecting = true;
@@ -973,6 +1051,10 @@ class GameNetwork {
   sendNpcTrade(resource: string, amount: number, action: 'buy' | 'sell') {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('npcTrade', { resource, amount, action });
+  }
+
+  requestNpcStationData(): void {
+    this.sectorRoom?.send('getNpcStation');
   }
 
   sendUpgradeStructure(structureId: string) {
@@ -1220,6 +1302,25 @@ class GameNetwork {
   sendClaimResearch() { this.sectorRoom?.send('claimResearch', {}); }
   sendActivateBlueprint(moduleId: string) { this.sectorRoom?.send('activateBlueprint', { moduleId }); }
   requestResearchState() { this.sectorRoom?.send('getResearchState', {}); }
+
+  // Factory
+  requestFactoryStatus() { this.sectorRoom?.send('factoryStatus'); }
+  sendFactorySetRecipe(recipeId: string) { this.sectorRoom?.send('factorySetRecipe', { recipeId }); }
+  sendFactoryCollect() { this.sectorRoom?.send('factoryCollect'); }
+  sendFactoryTransfer(itemType: string, amount: number) { this.sectorRoom?.send('factoryTransfer', { itemType, amount }); }
+
+  // Kontor
+  requestKontorOrders(): void { this.sectorRoom?.send('kontorGetOrders'); }
+  sendKontorPlaceOrder(itemType: string, amount: number, pricePerUnit: number): void { this.sectorRoom?.send('kontorPlaceOrder', { itemType, amount, pricePerUnit }); }
+  sendKontorCancel(orderId: string): void { this.sectorRoom?.send('kontorCancelOrder', { orderId }); }
+  sendKontorSellTo(orderId: string, amount: number): void { this.sectorRoom?.send('kontorSellTo', { orderId, amount }); }
+
+  // Quadrant system
+  requestKnownQuadrants() { this.sectorRoom?.send('getKnownQuadrants'); }
+  requestSyncQuadrants() { this.sectorRoom?.send('syncQuadrants'); }
+  sendNameQuadrant(qx: number, qy: number, name: string) {
+    this.sectorRoom?.send('nameQuadrant', { qx, qy, name });
+  }
 }
 
 export const network = new GameNetwork();

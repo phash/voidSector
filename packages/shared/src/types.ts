@@ -134,6 +134,11 @@ export interface CargoState {
   crystal: number;
   slates: number;
   artefact: number;
+  fuel_cell?: number;
+  circuit_board?: number;
+  alloy_plate?: number;
+  void_shard?: number;
+  bio_extract?: number;
 }
 
 export interface MineMessage {
@@ -160,7 +165,7 @@ export interface LocalScanResultMessage {
 }
 
 // Structures
-export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post' | 'defense_turret' | 'station_shield' | 'ion_cannon';
+export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post' | 'defense_turret' | 'station_shield' | 'ion_cannon' | 'factory' | 'research_lab' | 'kontor';
 
 export interface Structure {
   id: string;
@@ -873,4 +878,102 @@ export interface ResearchState {
     startedAt: number;
     completesAt: number;
   } | null;
+}
+
+// --- Admin Messages ---
+export type AdminQuestScope = 'universal' | 'individual' | 'sector';
+
+export interface AdminMessage {
+  id: string;
+  senderName: string;
+  content: string;
+  scope: string;
+  channel: string;
+  allowReply: boolean;
+  createdAt: string;
+}
+
+export interface AdminQuestNotification {
+  questId: string;
+  title: string;
+  description: string;
+  scope: AdminQuestScope;
+}
+
+export interface NpcStationLevel {
+  level: number;
+  name: string;
+  maxStock: number;
+  xpThreshold: number;
+}
+
+export interface NpcStationData {
+  stationX: number;
+  stationY: number;
+  level: number;
+  xp: number;
+  visitCount: number;
+  tradeVolume: number;
+  lastXpDecay: string;
+}
+
+export interface NpcStationInventoryItem {
+  stationX: number;
+  stationY: number;
+  itemType: string;
+  stock: number;
+  maxStock: number;
+  consumptionRate: number;
+  restockRate: number;
+  lastUpdated: string;
+}
+
+// --- Factory & Production ---
+
+export type ProcessedItemType = 'fuel_cell' | 'circuit_board' | 'alloy_plate' | 'void_shard' | 'bio_extract';
+
+export interface ProductionRecipe {
+  id: string;
+  outputItem: ProcessedItemType;
+  outputAmount: number;
+  inputs: Array<{ resource: MineableResourceType; amount: number }>;
+  cycleSeconds: number;
+  researchRequired: string | null;
+}
+
+export interface FactoryState {
+  structureId: string;
+  ownerId: string;
+  activeRecipeId: string | null;
+  cycleStartedAt: number | null;
+  fuelCell: number;
+  circuitBoard: number;
+  alloyPlate: number;
+  voidShard: number;
+  bioExtract: number;
+}
+
+export interface QuadrantConfig {
+  seed: number;
+  resourceFactor: number;   // 0.5 – 1.5
+  stationDensity: number;   // 0.5 – 1.5
+  pirateDensity: number;    // 0.5 – 1.5
+  nebulaThreshold: number;  // 0.5 – 1.5
+  emptyRatio: number;       // 0.5 – 1.5
+}
+
+export interface QuadrantData {
+  qx: number;
+  qy: number;
+  seed: number;
+  name: string | null;
+  discoveredBy: string | null;
+  discoveredAt: string | null;
+  config: QuadrantConfig;
+}
+
+export interface FirstContactEvent {
+  quadrant: QuadrantData;
+  canName: boolean;
+  autoName: string;
 }

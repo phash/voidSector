@@ -1,6 +1,6 @@
 import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
 import { deriveEnvironment, deriveContents } from '@void-sector/shared';
-import type { SectorData, SectorType, SectorResources, MineableResourceType, SectorEnvironment, SectorContent } from '@void-sector/shared';
+import type { SectorData, SectorType, SectorResources, MineableResourceType, SectorEnvironment, SectorContent, QuadrantConfig } from '@void-sector/shared';
 
 /**
  * Simple deterministic hash for coordinates.
@@ -138,5 +138,17 @@ export function generateSector(
     discoveredBy,
     discoveredAt: null,
     metadata,
+  };
+}
+
+/**
+ * Apply quadrant-level resource scaling to sector resources.
+ * Pure function — does not modify the input.
+ */
+export function applyQuadrantFactors(resources: SectorResources, config: QuadrantConfig): SectorResources {
+  return {
+    ore: Math.round(resources.ore * config.resourceFactor),
+    gas: Math.round(resources.gas * config.resourceFactor),
+    crystal: Math.round(resources.crystal * config.resourceFactor),
   };
 }
