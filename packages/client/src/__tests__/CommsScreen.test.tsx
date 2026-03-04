@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CommsScreen } from '../components/CommsScreen';
+import { useStore } from '../state/store';
 import { mockStoreState } from '../test/mockStore';
 
 vi.mock('../network/client', () => ({
@@ -80,5 +81,25 @@ describe('CommsScreen', () => {
     render(<CommsScreen />);
     await userEvent.click(screen.getByText('[SEND]'));
     expect(network.sendChat).not.toHaveBeenCalled();
+  });
+
+  it('does not display duplicate messages when same id is added twice', () => {
+    const msg = {
+      id: 'dup-1', senderId: 's1', senderName: 'PhashX',
+      channel: 'local' as const, content: 'Duplicate test',
+      sentAt: Date.now(), delayed: false,
+    };
+    mockStoreState({
+      chatMessages: [msg],
+      chatChannel: 'local' as const,
+      alerts: {},
+    });
+
+    // Simulate server sending the same message again (e.g. on reconnect)
+    useStore.getState().addChatMessage(msg);
+
+    render(<CommsScreen />);
+    const matches = screen.getAllByText(/Duplicate test/);
+    expect(matches).toHaveLength(1);
   });
 });
