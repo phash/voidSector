@@ -1,9 +1,5 @@
-import { useEffect, useCallback } from 'react';
-import { UnifiedBezel } from './UnifiedBezel';
-import { DesktopLayout } from './DesktopLayout';
-import type { MonitorBezelConfig } from './DesktopLayout';
+import { useEffect } from 'react';
 import { CockpitLayout } from './CockpitLayout';
-import { DetailPanel } from './DetailPanel';
 import { RadarCanvas } from './RadarCanvas';
 import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
@@ -18,7 +14,6 @@ import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
 import { CombatV2Dialog } from './CombatV2Dialog';
 import { BattleResultDialog } from './BattleResultDialog';
-import { DetailViewOverlay } from './DetailViewOverlay';
 import { ModulePanel } from './ModulePanel';
 import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
@@ -27,15 +22,12 @@ import { TechTreePanel } from './TechTreePanel';
 import { TechDetailPanel } from './TechDetailPanel';
 import { BaseOverview } from './BaseOverview';
 import { BaseDetailPanel } from './BaseDetailPanel';
-import { ShipStatusPanel } from './ShipStatusPanel';
-import { CombatStatusPanel } from './CombatStatusPanel';
 import { BlueprintDialog } from './BlueprintDialog';
 import { QuadMapScreen } from './QuadMapScreen';
 import { MehrOverlay } from './MehrOverlay';
 import { useStore } from '../state/store';
 import { useMobileTabs } from '../hooks/useMobileTabs';
-import { MONITORS, MAIN_MONITORS } from '@void-sector/shared';
-import type { ChatChannel } from '@void-sector/shared';
+import { MONITORS } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 // --- SHIP-SYS: Settings + Modules + Hangar ---
@@ -193,12 +185,8 @@ function renderCockpitScreen(monitorId: string) {
   }
 }
 
-const COMMS_MODES: ChatChannel[] = ['direct', 'faction', 'local', 'sector', 'quadrant'];
-
 export function GameScreen() {
   const colorProfile = useStore((s) => s.colorProfile);
-  const mainMode = useStore((s) => s.mainMonitorMode);
-  const setMainMonitorMode = useStore((s) => s.setMainMonitorMode);
   const activeMonitor = useStore((s) => s.activeMonitor);
   const setActiveMonitor = useStore((s) => s.setActiveMonitor);
   const clearAlert = useStore((s) => s.clearAlert);
@@ -208,114 +196,11 @@ export function GameScreen() {
   // Context-aware mobile tabs
   const { tabs: mobileTabs, mehrMonitors, mehrAlertCount } = useMobileTabs();
 
-  // COMMS mode state (chat channel)
-  const chatChannel = useStore((s) => s.chatChannel);
-  const setChatChannel = useStore((s) => s.setChatChannel);
-
-  // SHIP-SYS mode state (from monitorModes store)
-  const shipSysMode = useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'settings';
-  const setMonitorMode = useStore((s) => s.setMonitorMode);
-
-  // Bezel config callback for mode-aware monitors
-  const getBezelConfig = useCallback((monitorId: string): MonitorBezelConfig | undefined => {
-    switch (monitorId) {
-      case MONITORS.COMMS:
-        return {
-          modes: COMMS_MODES,
-          currentMode: chatChannel,
-          onModeChange: (mode: string) => setChatChannel(mode as ChatChannel),
-        };
-      case MONITORS.SHIP_SYS:
-        return {
-          modes: SHIP_SYS_MODES,
-          currentMode: shipSysMode,
-          onModeChange: (mode: string) => setMonitorMode(MONITORS.SHIP_SYS, mode),
-        };
-      default:
-        return undefined;
-    }
-  }, [chatChannel, setChatChannel, shipSysMode, setMonitorMode]);
-
   useEffect(() => {
     const profile = COLOR_PROFILES[colorProfile];
     document.documentElement.style.setProperty('--color-primary', profile.primary);
     document.documentElement.style.setProperty('--color-dim', profile.dim);
   }, [colorProfile]);
-
-  // Grid area: radar canvas inside bezel
-  const gridArea = (
-    <UnifiedBezel
-      variant="main"
-      monitorId="NAV-COM"
-      showNavControls
-      showZoomSlider
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
-        <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-            <RadarCanvas />
-          </div>
-          <BookmarkBar />
-        </div>
-        <DetailViewOverlay />
-      </div>
-    </UnifiedBezel>
-  );
-
-  // Detail area: sector inspection panel
-  const detailArea = (
-    <div style={{ height: '100%', background: '#050505' }}>
-      <div style={{ padding: '6px 12px', fontSize: '0.75rem', letterSpacing: '0.2em', borderBottom: '1px solid var(--color-dim)' }}>
-        <span style={{ opacity: 0.6 }}>DETAIL</span>
-      </div>
-      <DetailPanel />
-    </div>
-  );
-
-  // Controls area: sector info, status bar, nav controls, ship/combat panels
-  const controlsArea = (
-    <div className="main-lower-layout">
-      <div className="main-lower-top">
-        <SectorInfo />
-        <StatusBar />
-      </div>
-      <div className="main-lower-center">
-        <NavControls />
-      </div>
-      <div className="main-lower-bottom">
-        <div className="main-lower-left">
-          <ShipStatusPanel />
-        </div>
-        <div className="main-lower-right">
-          <CombatStatusPanel />
-        </div>
-      </div>
-    </div>
-  );
-
-  // Main area channel bar (NAV split + fullscreen program switching)
-  const mainChannelBar = (
-    <div className="main-channel-bar">
-      <button
-        className={`channel-btn-small ${mainMode === 'split' ? 'active' : ''}`}
-        onClick={() => setMainMonitorMode('split')}
-      >
-        NAV
-      </button>
-      {MAIN_MONITORS.filter(id => id !== MONITORS.NAV_COM).map((id) => (
-        <button
-          key={id}
-          className={`channel-btn-small ${mainMode === id ? 'active' : ''} ${alerts[id] && mainMode !== id ? 'alert' : ''}`}
-          onClick={() => {
-            setMainMonitorMode(id);
-            if (alerts[id]) clearAlert(id);
-          }}
-        >
-          {id.slice(0, 3)}
-        </button>
-      ))}
-    </div>
-  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
