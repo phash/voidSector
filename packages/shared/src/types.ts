@@ -952,3 +952,28 @@ export interface FactoryState {
   voidShard: number;
   bioExtract: number;
 }
+
+export interface QuadrantConfig {
+  seed: number;
+  resourceFactor: number;   // 0.5 – 1.5
+  stationDensity: number;   // 0.5 – 1.5
+  pirateDensity: number;    // 0.5 – 1.5
+  nebulaThreshold: number;  // 0.5 – 1.5
+  emptyRatio: number;       // 0.5 – 1.5
+}
+
+export interface QuadrantData {
+  qx: number;
+  qy: number;
+  seed: number;
+  name: string | null;
+  discoveredBy: string | null;
+  discoveredAt: string | null;
+  config: QuadrantConfig;
+}
+
+export interface FirstContactEvent {
+  quadrant: QuadrantData;
+  canName: boolean;
+  autoName: string;
+}
