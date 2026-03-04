@@ -1346,8 +1346,8 @@
 
 .cockpit-layout {
   display: grid;
-  grid-template-columns: 120px 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 160px 1fr 1fr;
+  grid-template-rows: 3fr 2fr;
   gap: 0;
   height: 100%;
   min-height: 0;
