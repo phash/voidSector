@@ -27,11 +27,11 @@ export const AP_COSTS = {
 };
 
 export const AP_COSTS_BY_SCANNER: Record<number, { areaScan: number; areaScanRadius: number }> = {
-  1: { areaScan: 3, areaScanRadius: 2 },
-  2: { areaScan: 5, areaScanRadius: 3 },
-  3: { areaScan: 8, areaScanRadius: 5 },
-  4: { areaScan: 12, areaScanRadius: 7 },
-  5: { areaScan: 16, areaScanRadius: 9 },
+  1: { areaScan: 3, areaScanRadius: 3 },
+  2: { areaScan: 6, areaScanRadius: 6 },
+  3: { areaScan: 10, areaScanRadius: 9 },
+  4: { areaScan: 14, areaScanRadius: 12 },
+  5: { areaScan: 18, areaScanRadius: 15 },
 };
 
 export const AP_COSTS_LOCAL_SCAN = 1;
