@@ -77,7 +77,7 @@ describe('MiningDetailPanel', () => {
       },
       mining: {
         active: true, resource: 'ore', rate: 2,
-        sectorX: 5, sectorY: 3, startedAt: Date.now(),
+        sectorX: 5, sectorY: 3, startedAt: Date.now(), sectorYield: 100,
       },
     });
     render(<MiningDetailPanel />);
