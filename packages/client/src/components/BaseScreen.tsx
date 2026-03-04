@@ -21,6 +21,8 @@ const STRUCTURE_LABELS: Record<string, string> = {
   storage: 'LAGER',
   trading_post: 'HANDELSPLATZ',
   factory: 'FABRIK',
+  kontor: 'KONTOR',
+  research_lab: 'FORSCHUNGSLABOR',
 };
 
 const btnStyle: React.CSSProperties = {
@@ -41,19 +43,25 @@ export function BaseScreen() {
   const baseName = useStore((s) => s.baseName);
   const factoryState = useStore((s) => s.factoryState);
   const research = useStore((s) => s.research);
+  const kontorOrders = useStore((s) => s.kontorOrders);
   const [transferAmount, setTransferAmount] = useState(1);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [showRecipeSelector, setShowRecipeSelector] = useState(false);
+  const [kontorItemType, setKontorItemType] = useState('ore');
+  const [kontorAmount, setKontorAmount] = useState(100);
+  const [kontorPrice, setKontorPrice] = useState(2);
 
   const hasFactory = baseStructures.some((s: any) => s.type === 'factory');
+  const hasKontor = baseStructures.some((s: any) => s.type === 'kontor');
 
   useEffect(() => {
     network.requestBase();
     network.requestStorage();
     network.requestCredits();
     if (hasFactory) network.requestFactoryStatus();
-  }, [hasFactory]);
+    if (hasKontor) network.requestKontorOrders();
+  }, [hasFactory, hasKontor]);
 
   const hasBase = baseStructures.some((s: any) => s.type === 'base');
 
@@ -279,6 +287,78 @@ export function BaseScreen() {
                     );
                   })}
                 </div>
+              )}
+            </>
+          )}
+
+          {hasKontor && (
+            <>
+              <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px', marginTop: '16px' }}>
+                KONTOR
+              </div>
+
+              <div style={{ fontSize: '0.7rem', marginBottom: 8, border: '1px solid var(--color-dim)', padding: 6 }}>
+                <div style={{ opacity: 0.6, marginBottom: 4 }}>[+] NEW ORDER</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
+                  <label>Item:</label>
+                  <select
+                    value={kontorItemType}
+                    onChange={(e) => setKontorItemType(e.target.value)}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--color-dim)',
+                      color: 'var(--color-primary)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.7rem',
+                      padding: '2px 4px',
+                    }}
+                  >
+                    <option value="ore">ORE</option>
+                    <option value="gas">GAS</option>
+                    <option value="crystal">CRYSTAL</option>
+                  </select>
+                  <label>Amount:</label>
+                  <input
+                    type="number" min={1} value={kontorAmount}
+                    onChange={(e) => setKontorAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                    style={{ width: 60, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', padding: '2px 4px' }}
+                  />
+                  <label>Price/unit:</label>
+                  <input
+                    type="number" min={1} value={kontorPrice}
+                    onChange={(e) => setKontorPrice(Math.max(1, parseInt(e.target.value) || 1))}
+                    style={{ width: 50, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', padding: '2px 4px' }}
+                  />
+                  <button
+                    style={btnStyle}
+                    onClick={() => network.sendKontorPlaceOrder(kontorItemType, kontorAmount, kontorPrice)}
+                  >
+                    PLACE
+                  </button>
+                </div>
+              </div>
+
+              {kontorOrders.length > 0 && (
+                <div style={{ fontSize: '0.7rem' }}>
+                  <div style={{ opacity: 0.6, marginBottom: 4 }}>Active Orders:</div>
+                  {kontorOrders.map((order, idx) => (
+                    <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                      <span>
+                        #{idx + 1} {order.itemType.toUpperCase()} {order.amountWanted}u @{order.pricePerUnit}cr [{order.amountFilled}/{order.amountWanted}] {order.active ? 'ACTIVE' : 'PAUSED'}
+                      </span>
+                      <button
+                        style={{ ...btnStyle, fontSize: '0.6rem', borderColor: '#FF3333', color: '#FF3333' }}
+                        onClick={() => network.sendKontorCancel(order.id)}
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {kontorOrders.length === 0 && (
+                <div style={{ fontSize: '0.7rem', opacity: 0.4 }}>NO ACTIVE ORDERS</div>
               )}
             </>
           )}

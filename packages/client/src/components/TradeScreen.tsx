@@ -29,8 +29,9 @@ export function TradeScreen() {
   const ship = useStore((s) => s.ship);
   const homeBase = useStore((s) => s.homeBase);
   const npcStationData = useStore((s) => s.npcStationData);
+  const kontorOrders = useStore((s) => s.kontorOrders);
   const [amount, setAmount] = useState(1);
-  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes'>('npc');
+  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
 
   const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
   const tier = tradingPost?.tier ?? 0;
@@ -38,9 +39,11 @@ export function TradeScreen() {
   const isStation = currentSector?.type === 'station';
   const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
   const canTrade = isStation || isHomeBase;
+  const hasKontorOrders = kontorOrders.length > 0;
 
   useEffect(() => {
     network.requestCredits();
+    network.requestKontorOrders();
     if (isStation) {
       network.requestNpcStationData();
     } else {
@@ -79,11 +82,12 @@ export function TradeScreen() {
         TRADE — {isStation ? 'STATION' : `T${tier}`} | {credits} CR
       </div>
 
-      <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>NPC HANDEL</button>
         {!isStation && tier >= 2 && <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>MARKT</button>}
         {!isStation && tier >= 2 && <button style={tabStyle(tab === 'slates')} onClick={() => setTab('slates')}>[SLATES]</button>}
         {!isStation && tier >= 3 && <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>ROUTEN</button>}
+        {hasKontorOrders && <button style={tabStyle(tab === 'kontor')} onClick={() => setTab('kontor')}>KONTOR</button>}
       </div>
 
       <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
@@ -305,6 +309,32 @@ export function TradeScreen() {
           )}
 
           {tradeRoutes.length < MAX_TRADE_ROUTES && <NewRouteForm />}
+        </div>
+      )}
+
+      {tab === 'kontor' && hasKontorOrders && (
+        <div>
+          <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
+            KONTOR ORDERS
+          </div>
+          {kontorOrders.map((order, idx) => {
+            const remaining = order.amountWanted - order.amountFilled;
+            const isOwn = order.ownerId === playerId;
+            return (
+              <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, fontSize: '0.7rem' }}>
+                <span>
+                  #{idx + 1} BUYING {order.itemType.toUpperCase()} {remaining}u remaining @{order.pricePerUnit}cr/u
+                </span>
+                <button
+                  style={{ ...btnStyle, fontSize: '0.6rem', opacity: isOwn ? 0.3 : 1, cursor: isOwn ? 'default' : 'pointer' }}
+                  disabled={isOwn}
+                  onClick={() => !isOwn && network.sendKontorSellTo(order.id, amount)}
+                >
+                  SELL
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

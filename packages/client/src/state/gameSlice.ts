@@ -165,6 +165,13 @@ export interface GameSlice {
     error?: string;
   } | null;
 
+  // Kontor
+  kontorOrders: Array<{
+    id: string; ownerId: string; itemType: string;
+    amountWanted: number; amountFilled: number;
+    pricePerUnit: number; active: boolean;
+  }>;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -222,6 +229,7 @@ export interface GameSlice {
   setPendingBlueprint: (moduleId: string | null) => void;
   setNpcStationData: (data: GameSlice['npcStationData']) => void;
   setFactoryState: (data: GameSlice['factoryState']) => void;
+  setKontorOrders: (orders: GameSlice['kontorOrders']) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -279,6 +287,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   pendingBlueprint: null,
   npcStationData: null,
   factoryState: null,
+  kontorOrders: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -385,4 +394,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setPendingBlueprint: (pendingBlueprint) => set({ pendingBlueprint }),
   setNpcStationData: (npcStationData) => set({ npcStationData }),
   setFactoryState: (factoryState) => set({ factoryState }),
+  setKontorOrders: (kontorOrders) => set({ kontorOrders }),
 });

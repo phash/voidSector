@@ -14,6 +14,9 @@ vi.mock('../network/client', () => ({
     sendFactorySetRecipe: vi.fn(),
     sendFactoryCollect: vi.fn(),
     sendFactoryTransfer: vi.fn(),
+    requestKontorOrders: vi.fn(),
+    sendKontorPlaceOrder: vi.fn(),
+    sendKontorCancel: vi.fn(),
   },
 }));
 
@@ -132,5 +135,49 @@ describe('BaseScreen', () => {
     });
     render(<BaseScreen />);
     expect(screen.queryByText(/FACTORY/)).toBeNull();
+  });
+
+  it('shows kontor section when kontor is built', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'k1', type: 'kontor', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      kontorOrders: [
+        { id: 'o1', ownerId: 'test-id', itemType: 'ore', amountWanted: 500, amountFilled: 210, pricePerUnit: 2, active: true },
+      ],
+      credits: 100,
+    });
+    render(<BaseScreen />);
+    // KONTOR appears both in structure list and as section header
+    expect(screen.getAllByText('KONTOR').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(/500u @2cr/)).toBeTruthy();
+    expect(screen.getByText(/210\/500/)).toBeTruthy();
+    expect(screen.getByText('CANCEL')).toBeTruthy();
+  });
+
+  it('does not show kontor section when no kontor built', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      credits: 0,
+    });
+    render(<BaseScreen />);
+    expect(screen.queryByText('KONTOR')).toBeNull();
+  });
+
+  it('shows new order form in kontor section', () => {
+    mockStoreState({
+      baseStructures: [
+        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
+        { id: 'k1', type: 'kontor', tier: 1, sector_x: 0, sector_y: 0 },
+      ],
+      kontorOrders: [],
+      credits: 100,
+    });
+    render(<BaseScreen />);
+    expect(screen.getByText(/NEW ORDER/)).toBeTruthy();
+    expect(screen.getByText('PLACE')).toBeTruthy();
   });
 });

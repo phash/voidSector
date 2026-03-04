@@ -423,6 +423,12 @@ class GameNetwork {
       useStore.getState().setFactoryState(data);
     });
 
+    room.onMessage('kontorUpdate', (data: any) => {
+      if (data.orders) {
+        useStore.getState().setKontorOrders(data.orders);
+      }
+    });
+
     // Upgrade result
     room.onMessage('upgradeResult', (data: { success: boolean; error?: string; newTier?: number }) => {
       const store = useStore.getState();
@@ -1270,6 +1276,12 @@ class GameNetwork {
   sendFactorySetRecipe(recipeId: string) { this.sectorRoom?.send('factorySetRecipe', { recipeId }); }
   sendFactoryCollect() { this.sectorRoom?.send('factoryCollect'); }
   sendFactoryTransfer(itemType: string, amount: number) { this.sectorRoom?.send('factoryTransfer', { itemType, amount }); }
+
+  // Kontor
+  requestKontorOrders(): void { this.sectorRoom?.send('kontorGetOrders'); }
+  sendKontorPlaceOrder(itemType: string, amount: number, pricePerUnit: number): void { this.sectorRoom?.send('kontorPlaceOrder', { itemType, amount, pricePerUnit }); }
+  sendKontorCancel(orderId: string): void { this.sectorRoom?.send('kontorCancelOrder', { orderId }); }
+  sendKontorSellTo(orderId: string, amount: number): void { this.sectorRoom?.send('kontorSellTo', { orderId, amount }); }
 }
 
 export const network = new GameNetwork();

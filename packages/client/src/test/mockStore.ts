@@ -76,6 +76,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     pendingBlueprint: null,
     npcStationData: null,
     factoryState: null,
+    kontorOrders: [],
+    setKontorOrders: vi.fn(),
     setResearch: vi.fn(),
     setFactoryState: vi.fn(),
     setNpcStationData: vi.fn(),

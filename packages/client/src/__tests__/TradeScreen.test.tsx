@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TradeScreen } from '../components/TradeScreen';
 import { mockStoreState } from '../test/mockStore';
 
@@ -13,6 +13,8 @@ vi.mock('../network/client', () => ({
     sendNpcTrade: vi.fn(),
     sendCancelOrder: vi.fn(),
     requestMySlates: vi.fn(),
+    requestKontorOrders: vi.fn(),
+    sendKontorSellTo: vi.fn(),
   },
 }));
 
@@ -131,5 +133,53 @@ describe('TradeScreen', () => {
     render(<TradeScreen />);
     expect(screen.queryByText('MARKT')).toBeNull();
     expect(screen.queryByText('ROUTEN')).toBeNull();
+  });
+
+  it('shows KONTOR tab when kontorOrders are present at station', () => {
+    mockStoreState({
+      baseStructures: [],
+      position: { x: 10, y: 10 },
+      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      credits: 200,
+      cargo: { ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 },
+      kontorOrders: [
+        { id: 'ko1', ownerId: 'other-player', itemType: 'ore', amountWanted: 500, amountFilled: 210, pricePerUnit: 2, active: true },
+      ],
+    });
+    render(<TradeScreen />);
+    expect(screen.getByText('KONTOR')).toBeTruthy();
+  });
+
+  it('hides KONTOR tab when no kontorOrders', () => {
+    mockStoreState({
+      baseStructures: [],
+      position: { x: 10, y: 10 },
+      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      credits: 200,
+      cargo: { ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 },
+      kontorOrders: [],
+    });
+    render(<TradeScreen />);
+    expect(screen.queryByText('KONTOR')).toBeNull();
+  });
+
+  it('disables SELL button for own orders in KONTOR tab', () => {
+    mockStoreState({
+      baseStructures: [],
+      position: { x: 10, y: 10 },
+      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      credits: 200,
+      cargo: { ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 },
+      kontorOrders: [
+        { id: 'ko1', ownerId: 'test-id', itemType: 'ore', amountWanted: 500, amountFilled: 0, pricePerUnit: 2, active: true },
+        { id: 'ko2', ownerId: 'other-player', itemType: 'gas', amountWanted: 200, amountFilled: 0, pricePerUnit: 5, active: true },
+      ],
+    });
+    render(<TradeScreen />);
+    const kontorTab = screen.getByText('KONTOR');
+    fireEvent.click(kontorTab);
+    const sellButtons = screen.getAllByText('SELL');
+    expect(sellButtons[0]).toHaveProperty('disabled', true);
+    expect(sellButtons[1]).toHaveProperty('disabled', false);
   });
 });
