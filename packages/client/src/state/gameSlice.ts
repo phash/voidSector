@@ -193,6 +193,10 @@ export interface GameSlice {
   navTarget: { x: number; y: number } | null;
   autopilotStatus: AutopilotStatusInfo | null;
 
+  // UI selection state (#103, #104)
+  selectedTechModule: string | null;
+  selectedBaseStructure: string | null;
+
   // Quadrant system
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
   currentQuadrant: { qx: number; qy: number } | null;
@@ -265,6 +269,8 @@ export interface GameSlice {
   setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
   setNavTarget: (target: { x: number; y: number } | null) => void;
   setAutopilotStatus: (status: AutopilotStatusInfo | null) => void;
+  setSelectedTechModule: (id: string | null) => void;
+  setSelectedBaseStructure: (id: string | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -327,6 +333,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   kontorOrders: [],
   navTarget: null,
   autopilotStatus: null,
+  selectedTechModule: null,
+  selectedBaseStructure: null,
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
@@ -453,4 +461,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setAutoRefuelConfig: (autoRefuelConfig) => set({ autoRefuelConfig }),
   setNavTarget: (navTarget) => set({ navTarget }),
   setAutopilotStatus: (autopilotStatus) => set({ autopilotStatus }),
+  setSelectedTechModule: (selectedTechModule) => set({ selectedTechModule }),
+  setSelectedBaseStructure: (selectedBaseStructure) => set({ selectedBaseStructure }),
 });
