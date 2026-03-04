@@ -1,7 +1,16 @@
 import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS, HULL_RADAR_PATTERNS } from '@void-sector/shared';
-import type { SectorData, Coords, JumpGateInfo, ScanEvent, HullType } from '@void-sector/shared';
+import type { SectorData, Coords, JumpGateInfo, ScanEvent, HullType, Bookmark } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
+
+const BOOKMARK_COLORS: Record<number, string> = {
+  0: '#33FF33',   // HOME — green
+  1: '#FF6644',   // Slot 1 — red-orange
+  2: '#44AAFF',   // Slot 2 — blue
+  3: '#FFDD22',   // Slot 3 — yellow
+  4: '#44FF88',   // Slot 4 — teal
+  5: '#FF44FF',   // Slot 5 — magenta
+};
 
 export const CELL_SIZES = [
   { w: 48, h: 38, fontSize: 12, coordSize: 8 },
@@ -43,6 +52,8 @@ interface RadarState {
   discoveryTimestamps?: Record<string, number>;
   hullType?: HullType;
   homeBase?: { x: number; y: number };
+  bookmarks?: Bookmark[];
+  animTime?: number;
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
@@ -56,6 +67,12 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   const { w: CELL_W, h: CELL_H, fontSize, coordSize } = cellEntry;
   const FONT = `${fontSize}px 'Share Tech Mono', 'Courier New', monospace`;
   const COORD_FONT = `${coordSize}px 'Share Tech Mono', 'Courier New', monospace`;
+
+  // Build bookmark lookup: "x,y" → slot number
+  const bookmarkMap = new Map<string, number>();
+  for (const bm of (state.bookmarks ?? [])) {
+    bookmarkMap.set(`${bm.sectorX},${bm.sectorY}`, bm.slot);
+  }
 
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = '#050505';
@@ -126,8 +143,26 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       ctx.lineWidth = 2;
       ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
 
+      // Bookmark border (colored per slot)
+      const bmSlot = bookmarkMap.get(`${sx},${sy}`);
+      if (bmSlot !== undefined && BOOKMARK_COLORS[bmSlot]) {
+        ctx.strokeStyle = BOOKMARK_COLORS[bmSlot];
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
+      }
+
+      // Pulsing player border
+      if (isPlayer) {
+        const t = state.animTime ?? 0;
+        const pulse = 0.6 + 0.4 * Math.sin(t / 400);
+        const alpha = Math.round(pulse * 255).toString(16).padStart(2, '0');
+        ctx.strokeStyle = state.themeColor + alpha;
+        ctx.lineWidth = 3 + pulse * 1.5;
+        ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
+      }
+
       // Selected cell highlight
-      if (state.selectedSector && sx === state.selectedSector.x && sy === state.selectedSector.y) {
+      if (state.selectedSector && sx === state.selectedSector.x && sy === state.selectedSector.y && !isPlayer) {
         ctx.strokeStyle = state.themeColor;
         ctx.lineWidth = 3;
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
