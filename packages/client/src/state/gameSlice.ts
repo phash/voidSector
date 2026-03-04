@@ -200,6 +200,9 @@ export interface GameSlice {
   selectedCargoItem: string | null;
   selectedQuest: string | null;
 
+  // Direct chat pre-selection (from context menu)
+  directChatRecipient: { id: string; name: string } | null;
+
   // Quadrant system
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
   currentQuadrant: { qx: number; qy: number } | null;
@@ -277,6 +280,7 @@ export interface GameSlice {
   setSelectedBaseStructure: (id: string | null) => void;
   setSelectedCargoItem: (item: string | null) => void;
   setSelectedQuest: (questId: string | null) => void;
+  setDirectChatRecipient: (recipient: { id: string; name: string } | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -344,6 +348,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   selectedBaseStructure: null,
   selectedCargoItem: null,
   selectedQuest: null,
+  directChatRecipient: null,
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
@@ -487,4 +492,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setSelectedBaseStructure: (selectedBaseStructure) => set({ selectedBaseStructure }),
   setSelectedCargoItem: (selectedCargoItem) => set({ selectedCargoItem }),
   setSelectedQuest: (selectedQuest) => set({ selectedQuest }),
+  setDirectChatRecipient: (directChatRecipient) => set({ directChatRecipient }),
 });

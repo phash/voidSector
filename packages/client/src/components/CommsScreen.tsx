@@ -11,6 +11,8 @@ export function CommsScreen() {
   const clearAlert = useStore(s => s.clearAlert);
   const recentContacts = useStore(s => s.recentContacts);
   const addRecentContact = useStore(s => s.addRecentContact);
+  const openContextMenu = useStore(s => s.openContextMenu);
+  const directChatRecipient = useStore(s => s.directChatRecipient);
   const [input, setInput] = useState('');
   const [recipientId, setRecipientId] = useState('');
   const [recipientName, setRecipientName] = useState('');
@@ -18,6 +20,15 @@ export function CommsScreen() {
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { clearAlert('COMMS'); }, []);
+
+  // Pick up recipient from context menu pre-selection
+  useEffect(() => {
+    if (directChatRecipient) {
+      setRecipientId(directChatRecipient.id);
+      setRecipientName(directChatRecipient.name);
+      useStore.setState({ directChatRecipient: null });
+    }
+  }, [directChatRecipient]);
 
   // Prune old messages (>2h) periodically
   useEffect(() => {
@@ -127,7 +138,13 @@ export function CommsScreen() {
         {filtered.slice(-MAX_VISIBLE_MESSAGES).map(msg => (
           <div key={msg.id} style={{ marginBottom: 2 }}>
             <span style={{ color: 'var(--color-dim)' }}>[{formatTime(msg.sentAt, msg.delayed)}]</span>
-            {' '}<span style={{ color: 'var(--color-primary)' }}>{msg.senderName}:</span>
+            {' '}<span
+              style={{ color: 'var(--color-primary)', cursor: 'pointer' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openContextMenu(msg.senderId, msg.senderName, e.clientX, e.clientY);
+              }}
+            >{msg.senderName}:</span>
             {' '}{msg.content}
           </div>
         ))}
