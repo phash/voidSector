@@ -589,7 +589,7 @@ export interface StationCombatEvent {
   hpLost: number;
 }
 
-export type ScanEventType = 'pirate_ambush' | 'distress_signal' | 'anomaly_reading' | 'artifact_find';
+export type ScanEventType = 'pirate_ambush' | 'distress_signal' | 'anomaly_reading' | 'artifact_find' | 'blueprint_find';
 export type ScanEventStatus = 'discovered' | 'completed';
 
 export interface ScanEvent {
@@ -786,6 +786,8 @@ export interface HyperJumpMessage { targetX: number; targetY: number; }
 export interface AutopilotUpdateMessage { x: number; y: number; remaining: number; }
 export interface AutopilotCompleteMessage { x: number; y: number; }
 
+export type JumpType = 'normal' | 'hyperjump';
+
 // --- Phase 7: Ship Designer ---
 export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
 export type HullSize = 'small' | 'medium' | 'large';
@@ -804,6 +806,7 @@ export interface HullDefinition {
   baseHp: number;
   baseCommRange: number;
   baseScannerLevel: number;
+  baseEngineSpeed: number;
   unlockLevel: number;
   unlockCost: number;
 }
@@ -814,8 +817,14 @@ export interface ModuleDefinition {
   tier: ModuleTier;
   name: string;
   displayName: string;
+  primaryEffect: { stat: string; delta: number; label: string };
+  secondaryEffects: Array<{ stat: string; delta: number; label: string }>;
   effects: Partial<ShipStats>;
   cost: { credits: number; ore?: number; gas?: number; crystal?: number; artefact?: number };
+  researchCost?: { credits: number; ore?: number; gas?: number; crystal?: number; artefact?: number };
+  researchDurationMin?: number;
+  prerequisite?: string;
+  factionRequirement?: { factionId: string; minTier: string };
 }
 
 export interface ShipModule {
@@ -841,6 +850,9 @@ export interface ShipStats {
   weaponPiercing: number;
   pointDefense: number;
   ecmReduction: number;
+  engineSpeed: number;
+  artefactChanceBonus: number;
+  safeSlotBonus: number;
 }
 
 export interface ShipRecord {
@@ -851,4 +863,14 @@ export interface ShipRecord {
   modules: ShipModule[];
   active: boolean;
   createdAt: string;
+}
+
+export interface ResearchState {
+  unlockedModules: string[];
+  blueprints: string[];
+  activeResearch: {
+    moduleId: string;
+    startedAt: number;
+    completesAt: number;
+  } | null;
 }
