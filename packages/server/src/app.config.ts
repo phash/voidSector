@@ -6,6 +6,7 @@ import { register, login, loginAsGuest } from './auth.js';
 import { deleteExpiredGuestPlayers } from './db/queries.js';
 import { runMigrations } from './db/client.js';
 import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
+import { adminRouter } from './adminRoutes.js';
 
 // @colyseus/tools CJS interop: default.default holds the config function
 const config = (toolsPkg as any).default ?? toolsPkg;
@@ -85,6 +86,7 @@ export default config({
       res.json({ ok: true });
     });
 
+    app.use('/admin/api', adminRouter);
     app.use('/colyseus', monitor());
   },
 

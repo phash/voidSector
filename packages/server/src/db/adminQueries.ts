@@ -267,6 +267,37 @@ function mapQuestRow(row: {
   };
 }
 
+export async function updateAdminQuestStatus(
+  id: string,
+  status: string
+): Promise<AdminQuest | null> {
+  const result = await query<{
+    id: string;
+    title: string;
+    description: string;
+    scope: string;
+    quest_type: string;
+    npc_name: string | null;
+    npc_faction: string | null;
+    objectives: unknown[];
+    rewards: Record<string, unknown>;
+    flavor: Record<string, unknown>;
+    sector_x: number | null;
+    sector_y: number | null;
+    target_players: string[];
+    max_acceptances: number;
+    expires_days: number;
+    status: string;
+    created_at: string;
+  }>(
+    `UPDATE admin_quests SET status = $2 WHERE id = $1
+     RETURNING *`,
+    [id, status]
+  );
+  if (result.rows.length === 0) return null;
+  return mapQuestRow(result.rows[0]);
+}
+
 // ── Quest Assignment Queries ────────────────────────────────────────
 
 export interface QuestAssignment {
