@@ -1,3 +1,10 @@
+const CHANNEL_LABELS: Record<string, string> = {
+  quadrant: 'QUADRANT',
+  sector: 'SEKTOR',
+  faction: 'FRAKTION',
+  direct: 'DIREKT',
+};
+
 interface HardwareControlsProps {
   /** Show D-Pad (up/down/left/right) */
   dpad?: boolean;
@@ -74,7 +81,7 @@ export function HardwareControls(props: HardwareControlsProps) {
               data-testid={`hw-channel-${ch}`}
               onClick={() => onChannel?.(ch)}
             >
-              {ch.toUpperCase().slice(0, 4)}
+              {CHANNEL_LABELS[ch] || ch.toUpperCase().slice(0, 4)}
             </button>
           ))}
         </div>

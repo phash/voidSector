@@ -1614,11 +1614,13 @@
 }
 
 .hw-channel-btn {
+  flex: 1;
+  min-height: 28px;
   background: #1a1a1a;
   border: 1px solid #333;
   color: var(--color-dim);
   font-family: var(--font-mono);
-  font-size: 0.5rem;
+  font-size: 0.6rem;
   padding: 3px 6px;
   cursor: pointer;
 }
