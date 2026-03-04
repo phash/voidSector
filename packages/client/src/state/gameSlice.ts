@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent } from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -112,6 +112,9 @@ export interface GameSlice {
   playerUpgrades: PlayerUpgrade[];
   activeBattle: PirateEncounter | null;
   lastBattleResult: { encounter: PirateEncounter; result: BattleResult } | null;
+  activeCombatV2: CombatV2State | null;
+  stationDefenses: StationDefense[];
+  stationCombatEvent: StationCombatEvent | null;
   scanEvents: ScanEvent[];
 
   // Phase 5: Deep Systems
@@ -169,6 +172,9 @@ export interface GameSlice {
   setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
   setActiveBattle: (encounter: PirateEncounter | null) => void;
   setLastBattleResult: (result: { encounter: PirateEncounter; result: BattleResult } | null) => void;
+  setActiveCombatV2: (activeCombatV2: CombatV2State | null) => void;
+  setStationDefenses: (stationDefenses: StationDefense[]) => void;
+  setStationCombatEvent: (stationCombatEvent: StationCombatEvent | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
   addScanEvent: (event: ScanEvent) => void;
   setJumpGateInfo: (gate: JumpGateInfo | null) => void;
@@ -221,6 +227,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   playerUpgrades: [],
   activeBattle: null,
   lastBattleResult: null,
+  activeCombatV2: null,
+  stationDefenses: [],
+  stationCombatEvent: null,
   scanEvents: [],
   jumpGateInfo: null,
   rescuedSurvivors: [],
@@ -316,6 +325,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
   setActiveBattle: (activeBattle) => set({ activeBattle }),
   setLastBattleResult: (lastBattleResult) => set({ lastBattleResult }),
+  setActiveCombatV2: (activeCombatV2) => set({ activeCombatV2 }),
+  setStationDefenses: (stationDefenses) => set({ stationDefenses }),
+  setStationCombatEvent: (stationCombatEvent) => set({ stationCombatEvent }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
   setJumpGateInfo: (jumpGateInfo) => set({ jumpGateInfo }),
