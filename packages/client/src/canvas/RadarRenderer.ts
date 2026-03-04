@@ -51,7 +51,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   const h = ctx.canvas.height / dpr;
   const isDetailView = state.zoomLevel === 4;
   const cellEntry = isDetailView
-    ? { w: Math.floor((w - FRAME_LEFT - FRAME_PAD) / 3), h: Math.floor((h - FRAME_BOTTOM - FRAME_PAD) / 3), fontSize: 14, coordSize: 10 }
+    ? { w: Math.floor((w - FRAME_LEFT - FRAME_PAD) / 3), h: Math.floor((h - FRAME_BOTTOM - FRAME_PAD) / 3), fontSize: 20, coordSize: 10 }
     : (CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1]);
   const { w: CELL_W, h: CELL_H, fontSize, coordSize } = cellEntry;
   const FONT = `${fontSize}px 'Share Tech Mono', 'Courier New', monospace`;
@@ -154,7 +154,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       if (isPlayer) {
         const ownHull = state.hullType ?? 'scout';
         const ownPattern = HULL_RADAR_PATTERNS[ownHull];
-        const ownPixelSize = 2 + state.zoomLevel;
+        const ownPixelSize = isDetailView ? Math.max(8, 2 + state.zoomLevel) : 2 + state.zoomLevel;
         drawHullIcon(ctx, ownPattern, cellX, cellY, state.themeColor, ownPixelSize);
         if (state.zoomLevel >= 1) {
           ctx.font = COORD_FONT;
@@ -189,14 +189,14 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
       // Zoom-4 detail: resources + discovery age
       if (isDetailView && sector) {
-        const lineH = 14;
-        ctx.font = `10px 'Share Tech Mono', monospace`;
+        const lineH = 16;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         let detailY = cellY + CELL_H / 2 + 6;
 
         const res = sector.resources;
         if (res) {
+          ctx.font = `13px 'Share Tech Mono', monospace`;
           if (res.ore > 0)     { ctx.fillStyle = state.themeColor; ctx.fillText(`Ore: ${res.ore}`,     cellX, detailY); detailY += lineH; }
           if (res.gas > 0)     { ctx.fillStyle = state.themeColor; ctx.fillText(`Gas: ${res.gas}`,     cellX, detailY); detailY += lineH; }
           if (res.crystal > 0) { ctx.fillStyle = state.themeColor; ctx.fillText(`Cry: ${res.crystal}`, cellX, detailY); detailY += lineH; }
@@ -205,6 +205,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         // Discovery age
         const ts = state.discoveryTimestamps?.[key];
         if (ts) {
+          ctx.font = `12px 'Share Tech Mono', monospace`;
           const ageMs = Date.now() - ts;
           const ageH = Math.floor(ageMs / 3600000);
           const label = ageH < 1 ? '<1h' : ageH < 24 ? `${ageH}h` : `${Math.floor(ageH / 24)}d`;
