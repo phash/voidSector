@@ -150,6 +150,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     screen: 'game' as const,
     theme: 'amber' as const,
     jumpPending: false,
+    activeProgram: 'NAV-COM',
+    setActiveProgram: vi.fn(),
     ...overrides,
   };
   useStore.setState(state as StoreState);
