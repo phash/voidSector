@@ -37,6 +37,7 @@ export interface UISlice {
   monitorPower: Record<string, boolean>;
   monitorChromeVisible: Record<string, boolean>;
   monitorModes: Record<string, string>;
+  moreOverlayOpen: boolean;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -58,6 +59,7 @@ export interface UISlice {
   setMonitorPower: (monitorId: string, on: boolean) => void;
   setMonitorChromeVisible: (monitorId: string, visible: boolean) => void;
   setMonitorMode: (monitorId: string, mode: string) => void;
+  setMoreOverlayOpen: (open: boolean) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -79,6 +81,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   monitorPower: {},
   monitorChromeVisible: {},
   monitorModes: {},
+  moreOverlayOpen: false,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -133,4 +136,5 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setMonitorMode: (monitorId, mode) => set((s) => ({
     monitorModes: { ...s.monitorModes, [monitorId]: mode },
   })),
+  setMoreOverlayOpen: (open) => set({ moreOverlayOpen: open }),
 });

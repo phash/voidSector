@@ -26,7 +26,9 @@ import { StationCombatOverlay } from './StationCombatOverlay';
 import { TechTreePanel } from './TechTreePanel';
 import { BlueprintDialog } from './BlueprintDialog';
 import { QuadMapScreen } from './QuadMapScreen';
+import { MehrOverlay } from './MehrOverlay';
 import { useStore } from '../state/store';
+import { useMobileTabs } from '../hooks/useMobileTabs';
 import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
 import type { HullType, ShipModule, ModuleCategory, ChatChannel } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
@@ -352,17 +354,6 @@ function renderScreen(monitorId: string) {
   }
 }
 
-const MOBILE_TABS: Array<{ id: string; icon: string; label: string }> = [
-  { id: MONITORS.NAV_COM,   icon: '◉', label: 'NAV' },
-  { id: MONITORS.SHIP_SYS,  icon: '⚙', label: 'SHIP' },
-  { id: MONITORS.MINING,    icon: '⛏', label: 'MINE' },
-  { id: MONITORS.CARGO,     icon: '▤', label: 'CARGO' },
-  { id: MONITORS.COMMS,     icon: '⌘', label: 'COMMS' },
-  { id: MONITORS.BASE_LINK, icon: '⌂', label: 'BASE' },
-  { id: MONITORS.TECH, icon: '\u2697', label: 'TECH' },
-  { id: MONITORS.QUAD_MAP, icon: '\u25A6', label: 'QUAD' },
-];
-
 const COMMS_MODES: ChatChannel[] = ['direct', 'faction', 'local', 'sector', 'quadrant'];
 
 export function GameScreen() {
@@ -373,6 +364,10 @@ export function GameScreen() {
   const setActiveMonitor = useStore((s) => s.setActiveMonitor);
   const clearAlert = useStore((s) => s.clearAlert);
   const alerts = useStore((s) => s.alerts);
+  const setMoreOverlayOpen = useStore((s) => s.setMoreOverlayOpen);
+
+  // Context-aware mobile tabs
+  const { tabs: mobileTabs, mehrMonitors, mehrAlertCount } = useMobileTabs();
 
   // COMMS mode state (chat channel)
   const chatChannel = useStore((s) => s.chatChannel);
@@ -488,22 +483,33 @@ export function GameScreen() {
         {renderScreen(activeMonitor)}
       </div>
 
-      {/* Mobile tabs (< 1024px) */}
-      <div className="mobile-tabs">
-        {MOBILE_TABS.map(({ id, icon, label }) => (
+      {/* Mobile tabs (< 1024px) — context-aware via useMobileTabs() */}
+      <div className="mobile-tabs" data-testid="mobile-tabs">
+        {mobileTabs.map(({ id, icon, label, isMehr }) => (
           <button
             key={id}
-            className={`mobile-tab-btn${activeMonitor === id ? ' active' : ''}${alerts[id] ? ' alert' : ''}`}
+            className={`mobile-tab-btn${!isMehr && activeMonitor === id ? ' active' : ''}${!isMehr && alerts[id] ? ' alert' : ''}`}
+            data-testid={`mobile-tab-${id}`}
             onClick={() => {
-              setActiveMonitor(id);
-              if (alerts[id]) clearAlert(id);
+              if (isMehr) {
+                setMoreOverlayOpen(true);
+              } else {
+                setActiveMonitor(id);
+                if (alerts[id]) clearAlert(id);
+              }
             }}
           >
             <span className="mobile-tab-icon">{icon}</span>
             <span className="mobile-tab-label">{label}</span>
+            {isMehr && mehrAlertCount > 0 && (
+              <span className="mobile-tab-badge" data-testid="mehr-alert-badge">
+                {mehrAlertCount}
+              </span>
+            )}
           </button>
         ))}
       </div>
+      <MehrOverlay monitors={mehrMonitors} />
       <BattleDialog />
       <CombatV2Dialog />
       <StationCombatOverlay />

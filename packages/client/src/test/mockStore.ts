@@ -111,6 +111,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     monitorPower: {},
     monitorChromeVisible: {},
     monitorModes: {},
+    moreOverlayOpen: false,
+    setMoreOverlayOpen: vi.fn(),
     setMonitorPower: vi.fn(),
     setMonitorChromeVisible: vi.fn(),
     setMonitorMode: vi.fn(),
