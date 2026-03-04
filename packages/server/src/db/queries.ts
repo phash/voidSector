@@ -342,7 +342,7 @@ export async function getPlayerCargo(playerId: string): Promise<CargoState> {
     'SELECT resource, quantity FROM cargo WHERE player_id = $1',
     [playerId]
   );
-  const cargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0 };
+  const cargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 };
   for (const row of result.rows) {
     if (row.resource in cargo) {
       cargo[row.resource as ResourceType] = row.quantity;
@@ -573,19 +573,19 @@ export async function deductAlienCredits(playerId: string, amount: number): Prom
   return rows.length > 0;
 }
 
-export async function getStorageInventory(playerId: string): Promise<{ ore: number; gas: number; crystal: number }> {
-  const { rows } = await query<{ ore: number; gas: number; crystal: number }>(
-    'SELECT ore, gas, crystal FROM storage_inventory WHERE player_id = $1',
+export async function getStorageInventory(playerId: string): Promise<{ ore: number; gas: number; crystal: number; artefact: number }> {
+  const { rows } = await query<{ ore: number; gas: number; crystal: number; artefact: number }>(
+    'SELECT ore, gas, crystal, artefact FROM storage_inventory WHERE player_id = $1',
     [playerId]
   );
-  if (rows.length === 0) return { ore: 0, gas: 0, crystal: 0 };
-  return { ore: rows[0].ore, gas: rows[0].gas, crystal: rows[0].crystal };
+  if (rows.length === 0) return { ore: 0, gas: 0, crystal: 0, artefact: 0 };
+  return { ore: rows[0].ore, gas: rows[0].gas, crystal: rows[0].crystal, artefact: rows[0].artefact };
 }
 
 export async function updateStorageResource(
   playerId: string, resource: string, delta: number
 ): Promise<boolean> {
-  const safeCols = ['ore', 'gas', 'crystal'];
+  const safeCols = ['ore', 'gas', 'crystal', 'artefact'];
   if (!safeCols.includes(resource)) return false;
   const { rowCount } = await query(
     `INSERT INTO storage_inventory (player_id, ${resource})
