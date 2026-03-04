@@ -1,0 +1,353 @@
+[     191ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3201/favicon.ico:0
+[   17449ms] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[   17450ms] RangeError: Invalid count value: -8
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[   17452ms] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[   17453ms] RangeError: Invalid count value: -8
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[   17455ms] [ERROR] The above error occurred in the <CargoBar> component:
+
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:22:21)
+    at div
+    at div
+    at CargoScreen (http://localhost:3201/src/components/CargoScreen.tsx:41:17)
+    at div
+    at div
+    at div
+    at div
+    at SidebarBezel (http://localhost:3201/src/components/SidebarBezel.tsx:21:32)
+    at div
+    at div
+    at div
+    at div
+    at DesktopLayout (http://localhost:3201/src/components/DesktopLayout.tsx:22:33)
+    at div
+    at GameScreen (http://localhost:3201/src/components/GameScreen.tsx:246:24)
+    at App (http://localhost:3201/src/App.tsx:25:18)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14031
+[   17455ms] [ERROR] The above error occurred in the <CargoBar> component:
+
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:22:21)
+    at div
+    at div
+    at CargoScreen (http://localhost:3201/src/components/CargoScreen.tsx:41:17)
+    at div
+    at div
+    at div
+    at div
+    at SidebarBezel (http://localhost:3201/src/components/SidebarBezel.tsx:21:32)
+    at div
+    at div
+    at div
+    at div
+    at DesktopLayout (http://localhost:3201/src/components/DesktopLayout.tsx:22:33)
+    at div
+    at GameScreen (http://localhost:3201/src/components/GameScreen.tsx:246:24)
+    at App (http://localhost:3201/src/App.tsx:25:18)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14031
+[   17456ms] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19753:22)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+    at workLoopSync (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19137:13)
+    at renderRootSync (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19116:15)
+    at recoverFromConcurrentError (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:18736:28)
+[  389212ms] [ERROR] WebSocket is already in CLOSING or CLOSED state. @ http://localhost:3201/node_modules/.vite/deps/colyseus__js.js?v=b06aec11:593
+[  405466ms] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[  405467ms] RangeError: Invalid count value: -8
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[  405474ms] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[  405475ms] RangeError: Invalid count value: -8
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[  405475ms] [ERROR] The above error occurred in the <CargoBar> component:
+
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:22:21)
+    at div
+    at div
+    at CargoScreen (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:41:17)
+    at div
+    at div
+    at div
+    at div
+    at SidebarBezel (http://localhost:3201/src/components/SidebarBezel.tsx:21:32)
+    at div
+    at div
+    at div
+    at div
+    at DesktopLayout (http://localhost:3201/src/components/DesktopLayout.tsx:22:33)
+    at div
+    at GameScreen (http://localhost:3201/src/components/GameScreen.tsx:246:24)
+    at App (http://localhost:3201/src/App.tsx:25:18)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14031
+[  405475ms] [ERROR] The above error occurred in the <CargoBar> component:
+
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:22:21)
+    at div
+    at div
+    at CargoScreen (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:41:17)
+    at div
+    at div
+    at div
+    at div
+    at SidebarBezel (http://localhost:3201/src/components/SidebarBezel.tsx:21:32)
+    at div
+    at div
+    at div
+    at div
+    at DesktopLayout (http://localhost:3201/src/components/DesktopLayout.tsx:22:33)
+    at div
+    at GameScreen (http://localhost:3201/src/components/GameScreen.tsx:246:24)
+    at App (http://localhost:3201/src/App.tsx:25:18)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. @ http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14031
+[  405477ms] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx?t=1772534346933:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at mountIndeterminateComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14926:21)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15914:22)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19753:22)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+    at workLoopSync (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19137:13)
+    at renderRootSync (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19116:15)
+    at recoverFromConcurrentError (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:18736:28)
+[  630948ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3201/:0
+[  634317ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3201/:0
+[  637679ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3201/:0
+[  641058ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3201/:0
+[  644426ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3201/:0
+[  647784ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3201/:0
+[  651186ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:3201/:0
+[  686413ms] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at updateFunctionComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14582:28)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15924:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[  686416ms] RangeError: Invalid count value: -8
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at updateFunctionComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14582:28)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15924:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[  686418ms] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at updateFunctionComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14582:28)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15924:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[  686418ms] RangeError: Invalid count value: -8
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at updateFunctionComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14582:28)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15924:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3699:24)
+    at invokeGuardedCallback (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:3733:39)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19765:15)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+[  686420ms] [ERROR] The above error occurred in the <CargoBar> component:
+
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:22:21)
+    at div
+    at div
+    at CargoScreen (http://localhost:3201/src/components/CargoScreen.tsx:41:17)
+    at div
+    at div
+    at div
+    at div
+    at SidebarBezel (http://localhost:3201/src/components/SidebarBezel.tsx:21:32)
+    at div
+    at div
+    at div
+    at div
+    at DesktopLayout (http://localhost:3201/src/components/DesktopLayout.tsx:22:33)
+    at div
+    at GameScreen (http://localhost:3201/src/components/GameScreen.tsx:247:24)
+    at ErrorBoundary (http://localhost:3201/src/components/ErrorBoundary.tsx:7:5)
+    at App (http://localhost:3201/src/App.tsx:26:18)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary. @ http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14031
+[  686420ms] [ERROR] [ErrorBoundary] RangeError: Invalid count value: -6
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at updateFunctionComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14582:28)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15924:22)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19753:22)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+    at workLoopSync (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19137:13)
+    at renderRootSync (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19116:15)
+    at recoverFromConcurrentError (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:18736:28) 
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:22:21)
+    at div
+    at div
+    at CargoScreen (http://localhost:3201/src/components/CargoScreen.tsx:41:17)
+    at div
+    at div
+    at div
+    at div
+    at SidebarBezel (http://localhost:3201/src/components/SidebarBezel.tsx:21:32)
+    at div
+    at div
+    at div
+    at div
+    at DesktopLayout (http://localhost:3201/src/components/DesktopLayout.tsx:22:33)
+    at div
+    at GameScreen (http://localhost:3201/src/components/GameScreen.tsx:247:24)
+    at ErrorBoundary (http://localhost:3201/src/components/ErrorBoundary.tsx:7:5)
+    at App (http://localhost:3201/src/App.tsx:26:18) @ http://localhost:3201/src/components/ErrorBoundary.tsx:13
+[  686420ms] [ERROR] The above error occurred in the <CargoBar> component:
+
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:22:21)
+    at div
+    at div
+    at CargoScreen (http://localhost:3201/src/components/CargoScreen.tsx:41:17)
+    at div
+    at div
+    at div
+    at div
+    at SidebarBezel (http://localhost:3201/src/components/SidebarBezel.tsx:21:32)
+    at div
+    at div
+    at div
+    at div
+    at DesktopLayout (http://localhost:3201/src/components/DesktopLayout.tsx:22:33)
+    at div
+    at GameScreen (http://localhost:3201/src/components/GameScreen.tsx:247:24)
+    at ErrorBoundary (http://localhost:3201/src/components/ErrorBoundary.tsx:7:5)
+    at App (http://localhost:3201/src/App.tsx:26:18)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary. @ http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14031
+[  686420ms] [ERROR] [ErrorBoundary] RangeError: Invalid count value: -8
+    at String.repeat (<anonymous>)
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:25:40)
+    at renderWithHooks (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:11548:26)
+    at updateFunctionComponent (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:14582:28)
+    at beginWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:15924:22)
+    at beginWork$1 (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19753:22)
+    at performUnitOfWork (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19198:20)
+    at workLoopSync (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19137:13)
+    at renderRootSync (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:19116:15)
+    at recoverFromConcurrentError (http://localhost:3201/node_modules/.vite/deps/chunk-4BNWP4XY.js?v=b06aec11:18736:28) 
+    at CargoBar (http://localhost:3201/src/components/CargoScreen.tsx:22:21)
+    at div
+    at div
+    at CargoScreen (http://localhost:3201/src/components/CargoScreen.tsx:41:17)
+    at div
+    at div
+    at div
+    at div
+    at SidebarBezel (http://localhost:3201/src/components/SidebarBezel.tsx:21:32)
+    at div
+    at div
+    at div
+    at div
+    at DesktopLayout (http://localhost:3201/src/components/DesktopLayout.tsx:22:33)
+    at div
+    at GameScreen (http://localhost:3201/src/components/GameScreen.tsx:247:24)
+    at ErrorBoundary (http://localhost:3201/src/components/ErrorBoundary.tsx:7:5)
+    at App (http://localhost:3201/src/App.tsx:26:18) @ http://localhost:3201/src/components/ErrorBoundary.tsx:13
