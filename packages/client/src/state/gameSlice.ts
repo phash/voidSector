@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState, FirstContactEvent } from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -172,6 +172,11 @@ export interface GameSlice {
     pricePerUnit: number; active: boolean;
   }>;
 
+  // Quadrant system
+  knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
+  currentQuadrant: { qx: number; qy: number } | null;
+  firstContactEvent: FirstContactEvent | null;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -230,6 +235,9 @@ export interface GameSlice {
   setNpcStationData: (data: GameSlice['npcStationData']) => void;
   setFactoryState: (data: GameSlice['factoryState']) => void;
   setKontorOrders: (orders: GameSlice['kontorOrders']) => void;
+  setKnownQuadrants: (quadrants: Array<{ qx: number; qy: number; learnedAt: string }>) => void;
+  setCurrentQuadrant: (q: { qx: number; qy: number } | null) => void;
+  setFirstContactEvent: (event: FirstContactEvent | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -288,6 +296,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   npcStationData: null,
   factoryState: null,
   kontorOrders: [],
+  knownQuadrants: [],
+  currentQuadrant: null,
+  firstContactEvent: null,
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -395,4 +406,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setNpcStationData: (npcStationData) => set({ npcStationData }),
   setFactoryState: (factoryState) => set({ factoryState }),
   setKontorOrders: (kontorOrders) => set({ kontorOrders }),
+  setKnownQuadrants: (knownQuadrants) => set({ knownQuadrants }),
+  setCurrentQuadrant: (currentQuadrant) => set({ currentQuadrant }),
+  setFirstContactEvent: (firstContactEvent) => set({ firstContactEvent }),
 });

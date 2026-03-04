@@ -23,6 +23,7 @@ import { HelpOverlay } from './HelpOverlay';
 import { StationCombatOverlay } from './StationCombatOverlay';
 import { TechTreePanel } from './TechTreePanel';
 import { BlueprintDialog } from './BlueprintDialog';
+import { QuadMapScreen } from './QuadMapScreen';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
 import type { HullType, ShipModule, ModuleCategory } from '@void-sector/shared';
@@ -369,6 +370,7 @@ function renderScreen(monitorId: string) {
     case MONITORS.FACTION: return <FactionScreen />;
     case MONITORS.QUESTS: return <QuestsScreen />;
     case MONITORS.TECH: return <TechTreePanel />;
+    case MONITORS.QUAD_MAP: return <QuadMapScreen />;
     default: return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
 }
@@ -380,7 +382,8 @@ const MOBILE_TABS: Array<{ id: string; icon: string; label: string }> = [
   { id: MONITORS.CARGO,     icon: '▤', label: 'CARGO' },
   { id: MONITORS.COMMS,     icon: '⌘', label: 'COMMS' },
   { id: MONITORS.BASE_LINK, icon: '⌂', label: 'BASE' },
-  { id: MONITORS.TECH, icon: '⚗', label: 'TECH' },
+  { id: MONITORS.TECH, icon: '\u2697', label: 'TECH' },
+  { id: MONITORS.QUAD_MAP, icon: '\u25A6', label: 'QUAD' },
 ];
 
 export function GameScreen() {

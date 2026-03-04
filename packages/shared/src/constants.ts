@@ -800,6 +800,7 @@ export const MONITORS = {
   FACTION: 'FACTION',
   QUESTS: 'QUESTS',
   TECH: 'TECH',
+  QUAD_MAP: 'QUAD-MAP',
 } as const;
 
 export type MonitorId = typeof MONITORS[keyof typeof MONITORS];
@@ -814,6 +815,7 @@ export const RIGHT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.FACTION,
   MONITORS.QUESTS,
   MONITORS.TECH,
+  MONITORS.QUAD_MAP,
 ];
 
 export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
@@ -827,6 +829,7 @@ export const LEFT_SIDEBAR_MONITORS: MonitorId[] = [
   MONITORS.FACTION,
   MONITORS.QUESTS,
   MONITORS.TECH,
+  MONITORS.QUAD_MAP,
 ];
 
 export const MAIN_MONITORS: MonitorId[] = [
@@ -839,6 +842,7 @@ export const MAIN_MONITORS: MonitorId[] = [
   MONITORS.FACTION,
   MONITORS.QUESTS,
   MONITORS.TECH,
+  MONITORS.QUAD_MAP,
 ];
 
 /** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */
