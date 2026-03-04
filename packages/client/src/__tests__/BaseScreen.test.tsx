@@ -22,7 +22,7 @@ describe('BaseScreen', () => {
         { id: '1', type: 'base', sector_x: 0, sector_y: 0, created_at: '2026-01-01' },
         { id: '2', type: 'comm_relay', sector_x: 0, sector_y: 0, created_at: '2026-01-02' },
       ],
-      cargo: { ore: 10, gas: 5, crystal: 3, slates: 0 },
+      cargo: { ore: 10, gas: 5, crystal: 3, slates: 0, artefact: 0 },
     });
   });
 
@@ -58,7 +58,7 @@ describe('BaseScreen', () => {
         { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
         { id: 's1', type: 'storage', tier: 1, sector_x: 0, sector_y: 0 },
       ],
-      storage: { ore: 10, gas: 5, crystal: 2 },
+      storage: { ore: 10, gas: 5, crystal: 2, artefact: 0 },
       credits: 0,
     });
     render(<BaseScreen />);

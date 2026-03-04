@@ -1,7 +1,7 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES } from '@void-sector/shared';
-import type { ResourceType } from '@void-sector/shared';
+import type { MineableResourceType } from '@void-sector/shared';
 
 function ResourceBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
@@ -55,7 +55,7 @@ export function MiningScreen() {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-        {RESOURCE_TYPES.map((res: ResourceType) => (
+        {RESOURCE_TYPES.map((res: MineableResourceType) => (
           <button
             key={res}
             className="vs-btn"

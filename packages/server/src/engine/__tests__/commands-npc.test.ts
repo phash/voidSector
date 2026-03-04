@@ -6,7 +6,7 @@ import {
 import type { APState, CargoState } from '@void-sector/shared';
 
 const fullAP: APState = { current: 100, max: 100, lastTick: Date.now(), regenPerSecond: 0.5 };
-const emptyCargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0 };
+const emptyCargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 };
 
 describe('Battle validation', () => {
   it('createPirateEncounter scales with level', () => {

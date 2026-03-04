@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { validateTransfer, validateNpcTrade } from '../commands.js';
 
 describe('validateTransfer', () => {
-  const cargo = { ore: 10, gas: 5, crystal: 2 };
+  const cargo = { ore: 10, gas: 5, crystal: 2, slates: 0, artefact: 0 };
   const storage = { ore: 20, gas: 10, crystal: 5, artefact: 0 };
 
   it('allows toStorage when cargo has enough', () => {

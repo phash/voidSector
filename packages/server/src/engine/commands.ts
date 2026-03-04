@@ -94,16 +94,17 @@ export function validateMine(
   if (!['ore', 'gas', 'crystal'].includes(resource)) {
     return { valid: false, error: 'Invalid resource type' };
   }
+  const mineableRes = resource as MineableResourceType;
   if (currentMining.active) {
     return { valid: false, error: 'Already mining — stop first' };
   }
-  if (sectorResources[resource] <= 0) {
+  if (sectorResources[mineableRes] <= 0) {
     return { valid: false, error: `No ${resource} in this sector` };
   }
   if (cargoTotal >= cargoCap) {
     return { valid: false, error: 'Cargo hold is full' };
   }
-  const state = startMining(resource, sectorX, sectorY, sectorResources[resource]);
+  const state = startMining(resource, sectorX, sectorY, sectorResources[mineableRes]);
   return { valid: true, state };
 }
 

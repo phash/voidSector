@@ -19,7 +19,7 @@ import { network } from '../network/client';
 describe('CargoScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStoreState({ cargo: { ore: 3, gas: 0, crystal: 1, slates: 0 } });
+    mockStoreState({ cargo: { ore: 3, gas: 0, crystal: 1, slates: 0, artefact: 0 } });
   });
 
   it('shows cargo labels', () => {
@@ -72,7 +72,7 @@ describe('CargoScreen', () => {
 
   it('shows slate count when player has slates', () => {
     mockStoreState({
-      cargo: { ore: 1, gas: 0, crystal: 0, slates: 2 },
+      cargo: { ore: 1, gas: 0, crystal: 0, slates: 2, artefact: 0 },
       mySlates: [
         {
           id: 's1',
@@ -97,7 +97,7 @@ describe('CargoScreen', () => {
 
   it('shows create slate buttons', () => {
     mockStoreState({
-      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
+      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       mySlates: [],
       ship: {
         id: 'ship1', ownerId: 'p1', hullType: 'scout' as const,

@@ -264,12 +264,14 @@ export function combatV2ToResult(
   outcome: string;
   lootCredits?: number;
   lootResources?: Record<string, number>;
+  lootArtefact?: number;
   repChange?: number;
   xpGained?: number;
 } {
   if (state.status === 'victory') {
     const level = state.encounter.pirateLevel;
     const lootCredits = level * 10 + Math.floor(seededRng(seed, 900) * 50);
+    const lootArtefact = seededRng(seed, 903) < 0.03 ? 1 : 0;  // 3% chance
     return {
       outcome: 'victory',
       lootCredits,
@@ -277,6 +279,7 @@ export function combatV2ToResult(
         ore: Math.floor(seededRng(seed, 901) * 3),
         crystal: Math.floor(seededRng(seed, 902) * 2),
       },
+      lootArtefact,
       repChange: -3,
       xpGained: level * 5 + state.currentRound * 2,
     };
