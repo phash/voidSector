@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, JumpGateMapEntry, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
 function getWsUrl(): string {
@@ -654,6 +654,10 @@ class GameNetwork {
     // JumpGate info (sent when entering a sector with a gate)
     room.onMessage('jumpGateInfo', (data: JumpGateInfo) => {
       useStore.getState().setJumpGateInfo(data);
+    });
+
+    room.onMessage('knownJumpGates', (data: { gates: JumpGateMapEntry[] }) => {
+      useStore.getState().setKnownJumpGates(data.gates);
     });
 
     room.onMessage('useJumpGateResult', (data: UseJumpGateResultMessage) => {

@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, JumpGateMapEntry, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -130,6 +130,7 @@ export interface GameSlice {
 
   // Phase 5: Deep Systems
   jumpGateInfo: JumpGateInfo | null;
+  knownJumpGates: JumpGateMapEntry[];
   rescuedSurvivors: RescueSurvivor[];
   distressCalls: DistressCall[];
   factionUpgrades: FactionUpgradeState[];
@@ -237,6 +238,7 @@ export interface GameSlice {
   setScanEvents: (events: ScanEvent[]) => void;
   addScanEvent: (event: ScanEvent) => void;
   setJumpGateInfo: (gate: JumpGateInfo | null) => void;
+  setKnownJumpGates: (gates: JumpGateMapEntry[]) => void;
   setRescuedSurvivors: (survivors: RescueSurvivor[]) => void;
   addDistressCall: (call: DistressCall) => void;
   removeDistressCall: (id: string) => void;
@@ -303,6 +305,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   stationCombatEvent: null,
   scanEvents: [],
   jumpGateInfo: null,
+  knownJumpGates: [],
   rescuedSurvivors: [],
   distressCalls: [],
   factionUpgrades: [],
@@ -416,6 +419,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
   setJumpGateInfo: (jumpGateInfo) => set({ jumpGateInfo }),
+  setKnownJumpGates: (knownJumpGates) => set({ knownJumpGates }),
   setRescuedSurvivors: (rescuedSurvivors) => set({ rescuedSurvivors }),
   addDistressCall: (call) => set((s) => ({ distressCalls: [...s.distressCalls, call] })),
   removeDistressCall: (id) => set((s) => ({ distressCalls: s.distressCalls.filter(d => d.id !== id) })),

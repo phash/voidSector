@@ -1,4 +1,6 @@
 import { QUADRANT_SIZE } from '@void-sector/shared';
+import type { JumpGateMapEntry } from '@void-sector/shared';
+import { drawQuadrantJumpGateLines } from './jumpGateOverlay';
 
 export interface QuadrantMapState {
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
@@ -9,6 +11,7 @@ export interface QuadrantMapState {
   zoomLevel: number;
   panOffset: { x: number; y: number };
   animTime: number;
+  knownJumpGates?: JumpGateMapEntry[];
 }
 
 // Cell sizes per zoom level
@@ -141,6 +144,23 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         ctx.fillText('?', cellX, cellY);
       }
     }
+  }
+
+  // --- JumpGate connection lines ---
+  if (state.knownJumpGates && state.knownJumpGates.length > 0) {
+    drawQuadrantJumpGateLines(
+      ctx,
+      state.knownJumpGates,
+      QUADRANT_SIZE,
+      viewQx,
+      viewQy,
+      radiusX,
+      radiusY,
+      gridCenterX,
+      gridCenterY,
+      CELL_W,
+      CELL_H,
+    );
   }
 
   // --- Coordinate frame ---

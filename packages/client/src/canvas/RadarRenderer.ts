@@ -1,8 +1,9 @@
 import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS, HULL_RADAR_PATTERNS } from '@void-sector/shared';
-import type { SectorData, Coords, JumpGateInfo, ScanEvent, HullType, Bookmark } from '@void-sector/shared';
+import type { SectorData, Coords, JumpGateInfo, JumpGateMapEntry, ScanEvent, HullType, Bookmark } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
 import { drawLongJumpCRTEffect } from './JumpAnimation';
+import { drawJumpGateLines } from './jumpGateOverlay';
 
 const BOOKMARK_COLORS: Record<number, string> = {
   0: '#33FF33',   // HOME — green
@@ -49,6 +50,7 @@ interface RadarState {
   jumpAnimation?: JumpAnimationState | null;
   selectedSector?: { x: number; y: number } | null;
   jumpGateInfo?: JumpGateInfo | null;
+  knownJumpGates?: JumpGateMapEntry[];
   scanEvents?: ScanEvent[];
   discoveryTimestamps?: Record<string, number>;
   hullType?: HullType;
@@ -321,6 +323,22 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   // Restore translate after slide phase drawing
   if (animActive && anim.phase === 'slide') {
     ctx.restore();
+  }
+
+  // --- JumpGate connection lines ---
+  if (state.knownJumpGates && state.knownJumpGates.length > 0 && !animActive) {
+    drawJumpGateLines(
+      ctx,
+      state.knownJumpGates,
+      viewX,
+      viewY,
+      radiusX,
+      radiusY,
+      gridCenterX,
+      gridCenterY,
+      CELL_W,
+      CELL_H,
+    );
   }
 
   // --- Nav target dashed line ---
