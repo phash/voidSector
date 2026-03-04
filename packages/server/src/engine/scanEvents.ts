@@ -13,11 +13,11 @@ export interface ScanEventResult {
 }
 
 const EVENT_TYPE_WEIGHTS: { type: ScanEventType; weight: number; immediate: boolean }[] = [
-  { type: 'pirate_ambush', weight: 0.35, immediate: true },
-  { type: 'distress_signal', weight: 0.30, immediate: false },
-  { type: 'anomaly_reading', weight: 0.20, immediate: false },
-  { type: 'artifact_find', weight: 0.10, immediate: false },
-  { type: 'blueprint_find', weight: 0.05, immediate: false },
+  { type: 'pirate_ambush', weight: 0.40, immediate: true },
+  { type: 'distress_signal', weight: 0.05, immediate: false },
+  { type: 'anomaly_reading', weight: 0.30, immediate: false },
+  { type: 'artifact_find', weight: 0.15, immediate: false },
+  { type: 'blueprint_find', weight: 0.10, immediate: false },
 ];
 
 /** Distance from nearest quadrant edge (0 = at edge) */
@@ -98,7 +98,10 @@ function generateEventData(
       };
     case 'blueprint_find': {
       const researchModules = Object.values(MODULES).filter(m => m.researchCost);
-      const pick = researchModules[seed % researchModules.length];
+      if (researchModules.length === 0) {
+        return { moduleId: 'unknown', moduleName: 'Unknown Blueprint' };
+      }
+      const pick = researchModules[((seed % researchModules.length) + researchModules.length) % researchModules.length];
       return { moduleId: pick.id, moduleName: pick.name };
     }
     default:

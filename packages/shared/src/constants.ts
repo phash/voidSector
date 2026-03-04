@@ -1165,7 +1165,7 @@ export const FREQUENCY_MATCH_THRESHOLD = 0.9;
 export const RESCUE_AP_COST = 5;
 export const RESCUE_DELIVER_AP_COST = 3;
 export const RESCUE_EXPIRY_MINUTES = 30;
-export const DISTRESS_CALL_CHANCE = 0.08;
+export const DISTRESS_CALL_CHANCE = 0.005;
 export const DISTRESS_DIRECTION_VARIANCE = 0.3;
 export const RESCUE_REWARDS = {
   scan_event: { credits: 50, rep: 10, xp: 25 },
