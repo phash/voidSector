@@ -15,7 +15,7 @@ Explore, mine, build, communicate: Players move sector by sector through an infi
 | Game Server | [Colyseus](https://colyseus.io/) | Room abstraction, state sync, clustering-ready |
 | Frontend | React 18 + Canvas | Terminal UI, radar rendering with CRT effects |
 | State | Zustand | Client-side state management (game + UI slices) |
-| Testing | Vitest + RTL | 102 tests (server, client, shared) |
+| Testing | Vitest + RTL | 1189 tests (612 server, 386 client, 191 shared) |
 | Database | PostgreSQL 16 | Persistent storage (players, sectors, discoveries) |
 | Cache | Redis 7 | AP state, player positions, sessions |
 | Shared Types | TypeScript Package | Shared interfaces between client and server |
@@ -66,7 +66,7 @@ void-sector/
 │   │       ├── auth.ts              # JWT auth (register/login) + spawn
 │   │       ├── app.config.ts        # Colyseus + Express config
 │   │       ├── index.ts             # Server entry point
-│   │       ├── db/                  # PostgreSQL client, migrations (001-005), queries
+│   │       ├── db/                  # PostgreSQL client, migrations (001-027), queries
 │   │       ├── engine/              # AP, commands, comms, mining, spawn, worldgen
 │   │       └── rooms/               # SectorRoom, schemas, Redis store
 │   └── client/          # React frontend
@@ -105,7 +105,7 @@ void-sector/
 
 - **CRT Theme**: CSS scanlines, flicker animation (with `prefers-reduced-motion` support), vignette, hardware bezel with draggable knobs. 4 color profiles (Amber Classic, Green Phosphor, Ice Blue, High Contrast).
 - **Radar**: HTML5 Canvas renderer at 60fps, DPI-aware, 3 zoom levels, drag-to-pan, sector color accents, jump animation with CRT glitch effects.
-- **Multi-Monitor System**: 5 tab-switchable virtual monitors (NAV-COM, SHIP-SYS, MINING, CARGO, COMMS).
+- **Cockpit Layout**: 6-section grid (program selector, main monitor, detail monitor, settings, navigation, comms). 12 selectable programs with LED indicators, hardware button strips (D-Pad, zoom, power, channel buttons). Mobile uses tab-based layout.
 - **Network**: Singleton `GameNetwork` class managing Colyseus room connections, state sync via Zustand.
 
 ## Features
@@ -130,18 +130,35 @@ void-sector/
 - [x] Resource mining (ore, gas, crystal) with real-time progress
 - [x] Cargo management with jettison
 - [x] Structure building (comm relay, mining station, base)
+- [x] Credits currency, NPC trading, player marketplace
+- [x] Factory & production (5 recipes, cycle times, research gating)
+- [x] Kontor (buy orders, budget reservation)
+
+### Combat
+- [x] 5-round tactical combat (laser/railgun/missile/EMP weapons, shield system)
+- [x] Tactic choices (assault/balanced/defensive) + special actions
+- [x] Station defense system (turrets, shields, ion cannon)
+- [x] NPC encounters (pirate ambush, distress signals, anomalies)
+
+### Tech & Ships
+- [x] Tech tree & research system (artefact costs, prerequisites)
+- [x] 5 ship hull types with distinct stats
+- [x] Hyperdrive v2 (charge-based, lazy regen, fuel efficiency)
+- [x] Persistent autopilot with black hole avoidance
 
 ### Social
-- [x] Communication system with comm range + relay chain routing
-- [x] COMMS monitor with channel tabs (direct, local, faction)
-- [x] Message persistence and delayed delivery
+- [x] Communication system with 5 channels (direct, faction, local, sector, quadrant)
+- [x] Factions (create/join/invite, ranks, faction chat, upgrade tree)
+- [x] Procedural quest system (fetch/delivery/scan/bounty, daily rotation)
 - [x] Cluster spawn system (10M+ sectors from origin)
-- [x] Origin race badges (first arrival + reached)
+- [x] Quadrant system (10K sectors/axis, first-contact naming)
 
 ### Polish
+- [x] 6-section cockpit layout with CRT hardware aesthetic
 - [x] 4 color profiles (Amber Classic, Green Phosphor, Ice Blue, High Contrast)
-- [x] Brightness control knob
-- [x] 102 automated tests (57 server, 40 client, 5 shared)
+- [x] JumpGates (bidirectional + wormholes + frequency minigame)
+- [x] Admin console (quests, broadcasts, economy monitoring)
+- [x] 1189 automated tests
 
 ## License
 

@@ -11,9 +11,9 @@ npm run docker:up           # PostgreSQL + Redis
 npm test                    # All tests
 
 # Per-package tests
-cd packages/server && npx vitest run    # 198 tests
-cd packages/client && npx vitest run    # 132 tests
-cd packages/shared && npx vitest run    # 25 tests
+cd packages/server && npx vitest run    # 612 tests
+cd packages/client && npx vitest run    # 386 tests
+cd packages/shared && npx vitest run    # 191 tests
 ```
 
 ## Code Style
@@ -37,7 +37,7 @@ cd packages/shared && npx vitest run    # 25 tests
 - Tests: Vitest everywhere. Client uses jsdom + RTL + jest-canvas-mock (via jest-shim.ts)
 
 ## DB Migrations
-Files in `packages/server/src/db/migrations/` (001-015). Auto-run on startup.
+Files in `packages/server/src/db/migrations/` (001-027). Auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` for idempotency.
 
 ## Current State
@@ -78,4 +78,22 @@ Branch `feat/combat-v2` (PR #72, merged) adds:
 Combat System v2: 5-round tactical combat with weapon types (laser/railgun/missile/EMP), shield system,
 tactic choices (assault/balanced/defensive), special actions (aim/evade), 13 new ship modules (8 weapons,
 3 shields, point defense, ECM suite), station defense system (turrets/shields/ion cannon with auto-combat),
-CombatV2Dialog UI, DB migration 015, feature-flagged via FEATURE_COMBAT_V2. 355 total tests.
+CombatV2Dialog UI, DB migration 015, feature-flagged via FEATURE_COMBAT_V2.
+
+Re-implementation sprint (PRs #78, #87, #88, merged): Complete code rewrite of shared/server/client.
+Tech tree & research (artefacts, prerequisites), factory & production (5 recipes), kontor (buy orders),
+expanded ship hulls (5 types with stats), hyperdrive v2 (charge system, lazy regen), fuel rework,
+autopilot (persistent routes, black hole avoidance), station reputation, known jumpgate tracking,
+admin console (quests, broadcasts, economy monitoring), NPC station levels (5 tiers, XP, dynamic pricing).
+DB migrations 016-027. 1189 total tests.
+
+Admin economy + quadrants (PR #95, merged): Quadrant system (10K sectors/axis), first-contact naming,
+QUAD-MAP monitor with canvas quadrant renderer, admin economy dashboard.
+
+UI fixes (#103-#106): Tech/Base split views, scan radius display, main-lower always visible,
+scan timeout safety, controls area layout fix.
+
+Monitor rework (#107): 6-section cockpit layout replacing 3-column sidebar design.
+CockpitLayout grid (program selector, main+detail monitors, settings, navigation, comms).
+12 selectable programs, 4 new detail panels (Cargo, Trade, Mining, Quests), TestPattern canvas,
+HardwareControls (D-Pad, zoom, power, channels). Desktop uses cockpit, mobile unchanged.
