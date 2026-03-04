@@ -1508,3 +1508,70 @@ export async function getPlayerStructuresInSector(
   );
   return result.rows;
 }
+
+// --- Tech-Baum: Research ---
+
+export async function getPlayerResearch(userId: string): Promise<{ unlockedModules: string[]; blueprints: string[] }> {
+  const { rows } = await query(
+    'SELECT unlocked_modules, blueprints FROM player_research WHERE user_id = $1',
+    [userId]
+  );
+  if (rows.length === 0) {
+    return { unlockedModules: [], blueprints: [] };
+  }
+  return {
+    unlockedModules: rows[0].unlocked_modules ?? [],
+    blueprints: rows[0].blueprints ?? [],
+  };
+}
+
+export async function addUnlockedModule(userId: string, moduleId: string): Promise<void> {
+  await query(
+    `INSERT INTO player_research (user_id, unlocked_modules)
+     VALUES ($1, ARRAY[$2::text])
+     ON CONFLICT (user_id) DO UPDATE
+     SET unlocked_modules = array_append(player_research.unlocked_modules, $2::text)`,
+    [userId, moduleId]
+  );
+}
+
+export async function addBlueprint(userId: string, moduleId: string): Promise<void> {
+  await query(
+    `INSERT INTO player_research (user_id, blueprints)
+     VALUES ($1, ARRAY[$2::text])
+     ON CONFLICT (user_id) DO UPDATE
+     SET blueprints = array_append(player_research.blueprints, $2::text)`,
+    [userId, moduleId]
+  );
+}
+
+export async function getActiveResearch(userId: string): Promise<{
+  moduleId: string; startedAt: number; completesAt: number;
+} | null> {
+  const { rows } = await query(
+    'SELECT module_id, started_at, completes_at FROM active_research WHERE user_id = $1',
+    [userId]
+  );
+  if (rows.length === 0) return null;
+  return {
+    moduleId: rows[0].module_id,
+    startedAt: Number(rows[0].started_at),
+    completesAt: Number(rows[0].completes_at),
+  };
+}
+
+export async function startActiveResearch(
+  userId: string, moduleId: string, startedAt: number, completesAt: number
+): Promise<void> {
+  await query(
+    `INSERT INTO active_research (user_id, module_id, started_at, completes_at)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (user_id) DO UPDATE
+     SET module_id = $2, started_at = $3, completes_at = $4`,
+    [userId, moduleId, startedAt, completesAt]
+  );
+}
+
+export async function deleteActiveResearch(userId: string): Promise<void> {
+  await query('DELETE FROM active_research WHERE user_id = $1', [userId]);
+}

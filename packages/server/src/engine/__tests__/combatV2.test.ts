@@ -10,7 +10,8 @@ const baseShip: ShipStats = {
   fuelMax: 100, cargoCap: 10, jumpRange: 3, apCostJump: 1,
   fuelPerJump: 1, hp: 100, commRange: 100, scannerLevel: 1, damageMod: 1.0,
   shieldHp: 0, shieldRegen: 0, weaponAttack: 0, weaponType: 'none',
-  weaponPiercing: 0, pointDefense: 0, ecmReduction: 0,
+  weaponPiercing: 0, pointDefense: 0, ecmReduction: 0, engineSpeed: 2,
+  artefactChanceBonus: 0, safeSlotBonus: 0,
 };
 
 const baseEncounter: PirateEncounter = {

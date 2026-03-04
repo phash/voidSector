@@ -19,9 +19,9 @@ import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_AP_DISCOUNT, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, calculateShipStats, validateModuleInstall } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, FEATURE_COMBAT_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState } from '@void-sector/shared';
 
 function isInt(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v);
@@ -443,6 +443,13 @@ export class SectorRoom extends Room<SectorRoomState> {
         client.send('error', { code: 'UNKNOWN_MODULE', message: 'Unknown module' });
         return;
       }
+      // Check if module is unlocked (research/blueprint/tier1)
+      const dbResearch = await getPlayerResearch(auth.userId);
+      const researchState: ResearchState = { ...dbResearch, activeResearch: null };
+      if (!isModuleUnlocked(data.moduleId, researchState)) {
+        client.send('error', { code: 'MODULE_LOCKED', message: 'Module not researched' });
+        return;
+      }
       // Must be at station or home base
       const homeBase = await getPlayerHomeBase(auth.userId);
       const isStation = this.state.sector.sectorType === 'station';
@@ -551,6 +558,13 @@ export class SectorRoom extends Room<SectorRoomState> {
       const inventory = await getModuleInventory(auth.userId);
       client.send('moduleInventory', { modules: inventory });
     });
+
+    // Tech-Baum: Research
+    this.onMessage('startResearch', (client, data) => this.handleStartResearch(client, data));
+    this.onMessage('cancelResearch', (client) => this.handleCancelResearch(client));
+    this.onMessage('claimResearch', (client) => this.handleClaimResearch(client));
+    this.onMessage('activateBlueprint', (client, data) => this.handleActivateBlueprint(client, data));
+    this.onMessage('getResearchState', (client) => this.handleGetResearchState(client));
 
     // Trade route processing interval
     this.clock.setInterval(() => {
@@ -677,6 +691,15 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Phase 4: Send reputation + active quests
       await this.sendReputationUpdate(client, auth.userId);
       await this.sendActiveQuests(client, auth.userId);
+
+      // Send research state
+      const researchData = await getPlayerResearch(auth.userId);
+      const activeResearch = await getActiveResearch(auth.userId);
+      client.send('researchState', {
+        unlockedModules: researchData.unlockedModules,
+        blueprints: researchData.blueprints,
+        activeResearch: activeResearch,
+      });
     } catch (err) {
       console.error('[JOIN] Error:', err);
       client.send('error', { code: 'JOIN_FAILED', message: 'Failed to join sector' });
@@ -740,16 +763,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     const auth = client.auth as AuthPayload;
     const { targetX, targetY } = data;
 
-    // Check fuel
-    const ship = this.getShipForClient(client.sessionId);
-    const currentFuel = await getFuelState(auth.userId);
-    const fuelCost = ship.fuelPerJump;
-    if (currentFuel === null || currentFuel < fuelCost) {
-      client.send('jumpResult', { success: false, error: 'Not enough fuel' });
-      return;
-    }
-
-    // Check mining state and validate jump (rejects if mining is active)
+    // Normal jump: 1 AP, 0 fuel, max range 1
     const mining = await getMiningState(auth.userId);
     const ap = await getAPState(auth.userId);
     const jumpResult = validateJump(
@@ -758,8 +772,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.state.sector.y,
       targetX,
       targetY,
-      ship.jumpRange,
-      AP_COSTS.jump,
+      JUMP_NORMAL_MAX_RANGE,
+      JUMP_NORMAL_AP_COST,
       mining?.active ?? false,
     );
     if (!jumpResult.valid) {
@@ -768,9 +782,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
     await saveAPState(auth.userId, jumpResult.newAP!);
 
-    // Deduct fuel
-    const newFuel = currentFuel - fuelCost;
-    await saveFuelState(auth.userId, newFuel);
+    const ship = this.getShipForClient(client.sessionId);
+    const currentFuel = await getFuelState(auth.userId);
 
     // Load or generate target sector
     let targetSector = await getSector(targetX, targetY);
@@ -786,9 +799,8 @@ export class SectorRoom extends Room<SectorRoomState> {
         error: 'BLACK_HOLE_BLOCKED',
         message: 'Schwarzes Loch erkannt — Sprung abgebrochen',
       });
-      // Refund AP and fuel
+      // Refund AP (normal jump has no fuel cost)
       await saveAPState(auth.userId, ap);
-      await saveFuelState(auth.userId, currentFuel);
       return;
     }
 
@@ -834,12 +846,12 @@ export class SectorRoom extends Room<SectorRoomState> {
       };
     }
 
-    // Tell client to switch rooms
+    // Tell client to switch rooms (normal jump: 0 fuel cost)
     client.send('jumpResult', {
       success: true,
       newSector: targetSector,
       apRemaining: jumpResult.newAP!.current,
-      fuelRemaining: newFuel,
+      fuelRemaining: currentFuel ?? 0,
       gateInfo,
     });
 
@@ -919,10 +931,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Get ship stats
     const ship = this.getShipForClient(client.sessionId);
 
-    // Calculate costs with hyperjump discount
-    const apCost = Math.ceil(distance * ship.apCostJump * HYPERJUMP_AP_DISCOUNT);
-    const shipFar = this.getShipForClient(client.sessionId);
-    const fuelCost = distance * shipFar.fuelPerJump;
+    // Calculate costs with engine-speed-based AP and distance-scaled fuel
+    const apCost = calcHyperjumpAP(ship.engineSpeed);
+    const baseFuelCost = calcHyperjumpFuel(ship.fuelPerJump, distance);
+
+    // Apply pirate zone fuel penalty if source or target is pirate zone
+    const isPirate = sourceSector?.contents?.includes('pirate_zone') ||
+      targetSectorNebula?.contents?.includes('pirate_zone');
+    const fuelCost = isPirate ? Math.ceil(baseFuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY) : baseFuelCost;
 
     // Validate AP
     const ap = await getAPState(auth.userId);
@@ -2692,6 +2708,16 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
     }
 
+    // Handle blueprint find
+    if (event.event_type === 'blueprint_find') {
+      const moduleId = (event.data as Record<string, unknown>)?.moduleId as string;
+      if (moduleId) {
+        await addBlueprint(auth.userId, moduleId);
+        client.send('blueprintFound', { moduleId, moduleName: MODULES[moduleId]?.name ?? moduleId });
+        client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
+      }
+    }
+
     client.send('logEntry', `Event abgeschlossen! +${eventData.rewardCredits ?? 0} CR`);
   }
 
@@ -3157,5 +3183,150 @@ export class SectorRoom extends Room<SectorRoomState> {
         console.error(`[TRADE ROUTES] Error for owner ${ownerId}:`, err);
       }
     }
+  }
+
+  // ─── Tech-Baum: Research Handlers ──────────────────────────────────
+
+  private async handleGetResearchState(client: Client) {
+    const auth = client.auth as AuthPayload;
+    const research = await getPlayerResearch(auth.userId);
+    const active = await getActiveResearch(auth.userId);
+    client.send('researchState', {
+      unlockedModules: research.unlockedModules,
+      blueprints: research.blueprints,
+      activeResearch: active,
+    });
+  }
+
+  private async handleStartResearch(client: Client, data: { moduleId: string }) {
+    const auth = client.auth as AuthPayload;
+    const mod = MODULES[data.moduleId];
+    if (!mod || !mod.researchCost) {
+      client.send('researchResult', { success: false, error: 'Invalid module' });
+      return;
+    }
+
+    // Must be at home base
+    const homeBase = await getPlayerHomeBase(auth.userId);
+    if (!homeBase || homeBase.x !== this.state.sector.x || homeBase.y !== this.state.sector.y) {
+      client.send('researchResult', { success: false, error: 'Must be at home base' });
+      return;
+    }
+
+    // Build research state
+    const dbResearch = await getPlayerResearch(auth.userId);
+    const active = await getActiveResearch(auth.userId);
+    const researchState: ResearchState = {
+      unlockedModules: dbResearch.unlockedModules,
+      blueprints: dbResearch.blueprints,
+      activeResearch: active,
+    };
+
+    // Get player resources
+    const credits = await getPlayerCredits(auth.userId);
+    const cargo = await getPlayerCargo(auth.userId);
+    const storage = await getStorageInventory(auth.userId);
+
+    const resources = {
+      credits,
+      ore: cargo.ore + (storage?.ore ?? 0),
+      gas: cargo.gas + (storage?.gas ?? 0),
+      crystal: cargo.crystal + (storage?.crystal ?? 0),
+      artefact: cargo.artefact + (storage?.artefact ?? 0),
+    };
+
+    // Check faction tiers for special modules
+    const reps = await getPlayerReputations(auth.userId);
+    const factionTiers: Record<string, string> = {};
+    for (const rep of reps) {
+      const tier = getReputationTier(rep.reputation);
+      factionTiers[rep.faction_id] = tier;
+    }
+
+    const validation = canStartResearch(data.moduleId, researchState, resources, factionTiers);
+    if (!validation.valid) {
+      client.send('researchResult', { success: false, error: validation.error });
+      return;
+    }
+
+    // Deduct costs (from credits first, then cargo for resources)
+    const cost = mod.researchCost!;
+    await deductCredits(auth.userId, cost.credits);
+    if (cost.ore) await deductCargo(auth.userId, 'ore', cost.ore);
+    if (cost.gas) await deductCargo(auth.userId, 'gas', cost.gas);
+    if (cost.crystal) await deductCargo(auth.userId, 'crystal', cost.crystal);
+    if (cost.artefact) await deductCargo(auth.userId, 'artefact', cost.artefact);
+
+    // Start research timer
+    const now = Date.now();
+    const durationMs = (mod.researchDurationMin ?? 5) * RESEARCH_TICK_MS;
+    await startActiveResearch(auth.userId, data.moduleId, now, now + durationMs);
+
+    client.send('researchResult', {
+      success: true,
+      activeResearch: { moduleId: data.moduleId, startedAt: now, completesAt: now + durationMs },
+    });
+  }
+
+  private async handleCancelResearch(client: Client) {
+    const auth = client.auth as AuthPayload;
+    const active = await getActiveResearch(auth.userId);
+    if (!active) {
+      client.send('researchResult', { success: false, error: 'No active research' });
+      return;
+    }
+    await deleteActiveResearch(auth.userId);
+    client.send('researchResult', { success: true, activeResearch: null });
+  }
+
+  private async handleClaimResearch(client: Client) {
+    const auth = client.auth as AuthPayload;
+    const active = await getActiveResearch(auth.userId);
+    if (!active) {
+      client.send('researchResult', { success: false, error: 'No active research' });
+      return;
+    }
+    if (Date.now() < active.completesAt) {
+      client.send('researchResult', { success: false, error: 'Research not complete' });
+      return;
+    }
+
+    await addUnlockedModule(auth.userId, active.moduleId);
+    await deleteActiveResearch(auth.userId);
+
+    const research = await getPlayerResearch(auth.userId);
+    client.send('researchResult', {
+      success: true,
+      claimed: active.moduleId,
+      unlockedModules: research.unlockedModules,
+      activeResearch: null,
+    });
+    client.send('logEntry', `FORSCHUNG ABGESCHLOSSEN: ${MODULES[active.moduleId]?.name ?? active.moduleId}`);
+  }
+
+  private async handleActivateBlueprint(client: Client, data: { moduleId: string }) {
+    const auth = client.auth as AuthPayload;
+    const research = await getPlayerResearch(auth.userId);
+    if (!research.blueprints.includes(data.moduleId)) {
+      client.send('researchResult', { success: false, error: 'Blueprint not found' });
+      return;
+    }
+
+    // Move from blueprints to unlocked
+    await addUnlockedModule(auth.userId, data.moduleId);
+    // Remove from blueprints array
+    await query(
+      `UPDATE player_research SET blueprints = array_remove(blueprints, $2::text) WHERE user_id = $1`,
+      [auth.userId, data.moduleId]
+    );
+
+    const updated = await getPlayerResearch(auth.userId);
+    client.send('researchResult', {
+      success: true,
+      activated: data.moduleId,
+      unlockedModules: updated.unlockedModules,
+      blueprints: updated.blueprints,
+    });
+    client.send('logEntry', `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`);
   }
 }
