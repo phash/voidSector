@@ -1451,7 +1451,7 @@ export async function addDiscoveriesBatch(
   const xs = coords.map(c => c.x);
   const ys = coords.map(c => c.y);
   await query(
-    `INSERT INTO discoveries (player_id, sector_x, sector_y)
+    `INSERT INTO player_discoveries (player_id, sector_x, sector_y)
      SELECT $1, unnest($2::int[]), unnest($3::int[])
      ON CONFLICT DO NOTHING`,
     [playerId, xs, ys]
