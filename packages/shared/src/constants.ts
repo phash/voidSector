@@ -1064,6 +1064,16 @@ export const MAIN_MONITORS: MonitorId[] = [
   MONITORS.QUAD_MAP,
 ];
 
+/** Monitors too large for sidebar — redirect to main area when clicked in sidebar */
+export const MAIN_ONLY_MONITORS: ReadonlySet<MonitorId> = new Set([
+  MONITORS.CARGO,
+  MONITORS.TECH,
+  MONITORS.TRADE,
+  MONITORS.FACTION,
+  MONITORS.QUESTS,
+  MONITORS.QUAD_MAP,
+]);
+
 /** @deprecated Use RIGHT_SIDEBAR_MONITORS instead */
 export const SIDEBAR_MONITORS = RIGHT_SIDEBAR_MONITORS;
 
