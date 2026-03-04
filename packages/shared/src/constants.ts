@@ -59,6 +59,9 @@ export const STRUCTURE_COSTS: Record<StructureType, Record<ResourceType, number>
   base: { ore: 50, gas: 30, crystal: 25 },
   storage: { ore: 20, gas: 10, crystal: 5 },
   trading_post: { ore: 30, gas: 20, crystal: 15 },
+  defense_turret: { ore: 40, gas: 10, crystal: 20 },
+  station_shield: { ore: 30, gas: 25, crystal: 30 },
+  ion_cannon: { ore: 60, gas: 30, crystal: 40 },
 };
 
 export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
@@ -67,6 +70,9 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
   base: 25,
   storage: 10,
   trading_post: 15,
+  defense_turret: 20,
+  station_shield: 20,
+  ion_cannon: 25,
 };
 
 export const RELAY_RANGES: Record<StructureType, number> = {
@@ -75,6 +81,9 @@ export const RELAY_RANGES: Record<StructureType, number> = {
   base: 1000,
   storage: 0,
   trading_post: 0,
+  defense_turret: 0,
+  station_shield: 0,
+  ion_cannon: 0,
 };
 
 // NPC Trade Prices (base prices per unit in credits)
