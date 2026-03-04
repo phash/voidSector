@@ -39,6 +39,7 @@ function mockShipStats(overrides: Partial<ShipStats> = {}): ShipStats {
     hyperdriveSpeed: 2,
     hyperdriveRegen: 1.0,
     hyperdriveFuelEfficiency: 0,
+    miningBonus: 0,
     ...overrides,
   };
 }

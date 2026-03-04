@@ -29,6 +29,7 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
     hyperdriveSpeed: hull.baseHyperdriveSpeed,
     hyperdriveRegen: hull.baseHyperdriveRegen,
     hyperdriveFuelEfficiency: hull.baseHyperdriveFuelEfficiency,
+    miningBonus: 0,
   };
 
   for (const mod of modules) {

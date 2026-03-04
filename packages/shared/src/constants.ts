@@ -30,6 +30,8 @@ export const AP_COSTS_BY_SCANNER: Record<number, { areaScan: number; areaScanRad
   1: { areaScan: 3, areaScanRadius: 2 },
   2: { areaScan: 5, areaScanRadius: 3 },
   3: { areaScan: 8, areaScanRadius: 5 },
+  4: { areaScan: 12, areaScanRadius: 7 },
+  5: { areaScan: 16, areaScanRadius: 9 },
 };
 
 export const AP_COSTS_LOCAL_SCAN = 1;
@@ -691,6 +693,190 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchDurationMin: 30,
     prerequisite: 'armor_mk3',
   },
+
+  // === MINING LASER ===
+  mining_laser_mk1: {
+    id: 'mining_laser_mk1', category: 'mining', tier: 1,
+    name: 'MINING LASER MK.I', displayName: 'MINE MK.I',
+    primaryEffect: { stat: 'miningBonus', delta: 0.15, label: 'Mining +15%' },
+    secondaryEffects: [],
+    effects: { miningBonus: 0.15 },
+    cost: { credits: 100, ore: 10 },
+  },
+  mining_laser_mk2: {
+    id: 'mining_laser_mk2', category: 'mining', tier: 2,
+    name: 'MINING LASER MK.II', displayName: 'MINE MK.II',
+    primaryEffect: { stat: 'miningBonus', delta: 0.30, label: 'Mining +30%' },
+    secondaryEffects: [{ stat: 'artefactChanceBonus', delta: 0.01, label: 'Artefakt-Chance +1%' }],
+    effects: { miningBonus: 0.30, artefactChanceBonus: 0.01 },
+    cost: { credits: 300, ore: 20, crystal: 5 },
+    researchCost: { credits: 200, ore: 15 },
+    researchDurationMin: 5,
+    prerequisite: 'mining_laser_mk1',
+  },
+  mining_laser_mk3: {
+    id: 'mining_laser_mk3', category: 'mining', tier: 3,
+    name: 'MINING LASER MK.III', displayName: 'MINE MK.III',
+    primaryEffect: { stat: 'miningBonus', delta: 0.50, label: 'Mining +50%' },
+    secondaryEffects: [{ stat: 'artefactChanceBonus', delta: 0.02, label: 'Artefakt-Chance +2%' }],
+    effects: { miningBonus: 0.50, artefactChanceBonus: 0.02 },
+    cost: { credits: 700, ore: 35, crystal: 15 },
+    researchCost: { credits: 450, ore: 25, crystal: 10 },
+    researchDurationMin: 10,
+    prerequisite: 'mining_laser_mk2',
+  },
+  mining_laser_mk4: {
+    id: 'mining_laser_mk4', category: 'mining', tier: 4,
+    name: 'MINING LASER MK.IV', displayName: 'MINE MK.IV',
+    primaryEffect: { stat: 'miningBonus', delta: 0.75, label: 'Mining +75%' },
+    secondaryEffects: [
+      { stat: 'artefactChanceBonus', delta: 0.04, label: 'Artefakt-Chance +4%' },
+      { stat: 'cargoCap', delta: 3, label: 'Frachtraum +3' },
+    ],
+    effects: { miningBonus: 0.75, artefactChanceBonus: 0.04, cargoCap: 3 },
+    cost: { credits: 1500, ore: 60, crystal: 30, artefact: 2 },
+    researchCost: { credits: 1000, ore: 40, crystal: 20, artefact: 2 },
+    researchDurationMin: 20,
+    prerequisite: 'mining_laser_mk3',
+  },
+  mining_laser_mk5: {
+    id: 'mining_laser_mk5', category: 'mining', tier: 5,
+    name: 'MINING LASER MK.V', displayName: 'MINE MK.V',
+    primaryEffect: { stat: 'miningBonus', delta: 1.00, label: 'Mining +100%' },
+    secondaryEffects: [
+      { stat: 'artefactChanceBonus', delta: 0.08, label: 'Artefakt-Chance +8%' },
+      { stat: 'cargoCap', delta: 5, label: 'Frachtraum +5' },
+    ],
+    effects: { miningBonus: 1.00, artefactChanceBonus: 0.08, cargoCap: 5 },
+    cost: { credits: 4000, ore: 100, crystal: 60, artefact: 6 },
+    researchCost: { credits: 2500, ore: 80, crystal: 50, artefact: 6 },
+    researchDurationMin: 35,
+    prerequisite: 'mining_laser_mk4',
+  },
+
+  // === DRIVE MK.IV & MK.V ===
+  drive_mk4: {
+    id: 'drive_mk4', category: 'drive', tier: 4,
+    name: 'ION DRIVE MK.IV', displayName: 'ION MK.IV',
+    primaryEffect: { stat: 'jumpRange', delta: 4, label: 'Sprungweite +4' },
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 4, label: 'Engine-Speed +4' },
+      { stat: 'hyperdriveRegen', delta: 2.5, label: 'Hyperdrive-Regen +2.5' },
+      { stat: 'hyperdriveFuelEfficiency', delta: 0.3, label: 'Fuel-Effizienz +30%' },
+    ],
+    effects: { jumpRange: 4, apCostJump: -0.7, engineSpeed: 4, hyperdriveRange: 25, hyperdriveSpeed: 6, hyperdriveRegen: 2.5, hyperdriveFuelEfficiency: 0.3 },
+    cost: { credits: 2000, ore: 60, crystal: 30, artefact: 3 },
+    researchCost: { credits: 1200, ore: 50, crystal: 20, artefact: 3 },
+    researchDurationMin: 20,
+    prerequisite: 'drive_mk3',
+  },
+  drive_mk5: {
+    id: 'drive_mk5', category: 'drive', tier: 5,
+    name: 'ION DRIVE MK.V', displayName: 'ION MK.V',
+    primaryEffect: { stat: 'jumpRange', delta: 6, label: 'Sprungweite +6' },
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
+      { stat: 'hyperdriveRegen', delta: 4.0, label: 'Hyperdrive-Regen +4.0' },
+      { stat: 'hyperdriveFuelEfficiency', delta: 0.5, label: 'Fuel-Effizienz +50%' },
+    ],
+    effects: { jumpRange: 6, apCostJump: -1.0, engineSpeed: 5, hyperdriveRange: 50, hyperdriveSpeed: 10, hyperdriveRegen: 4.0, hyperdriveFuelEfficiency: 0.5 },
+    cost: { credits: 5000, ore: 120, crystal: 60, artefact: 8 },
+    researchCost: { credits: 3000, ore: 100, crystal: 50, artefact: 8 },
+    researchDurationMin: 40,
+    prerequisite: 'drive_mk4',
+  },
+
+  // === SCANNER MK.IV & MK.V ===
+  scanner_mk4: {
+    id: 'scanner_mk4', category: 'scanner', tier: 4,
+    name: 'SCANNER MK.IV', displayName: 'SCAN MK.IV',
+    primaryEffect: { stat: 'scannerLevel', delta: 3, label: 'Scan-Level +3' },
+    secondaryEffects: [
+      { stat: 'commRange', delta: 150, label: 'Komm-Reichweite +150' },
+      { stat: 'artefactChanceBonus', delta: 0.05, label: 'Artefakt-Chance +5%' },
+      { stat: 'miningBonus', delta: 0.10, label: 'Mining +10%' },
+    ],
+    effects: { scannerLevel: 3, commRange: 150, artefactChanceBonus: 0.05, miningBonus: 0.10 },
+    cost: { credits: 2000, crystal: 50, gas: 20, artefact: 2 },
+    researchCost: { credits: 1200, crystal: 40, gas: 15, artefact: 2 },
+    researchDurationMin: 22,
+    prerequisite: 'scanner_mk3',
+  },
+  scanner_mk5: {
+    id: 'scanner_mk5', category: 'scanner', tier: 5,
+    name: 'SCANNER MK.V', displayName: 'SCAN MK.V',
+    primaryEffect: { stat: 'scannerLevel', delta: 4, label: 'Scan-Level +4' },
+    secondaryEffects: [
+      { stat: 'commRange', delta: 250, label: 'Komm-Reichweite +250' },
+      { stat: 'artefactChanceBonus', delta: 0.08, label: 'Artefakt-Chance +8%' },
+      { stat: 'miningBonus', delta: 0.15, label: 'Mining +15%' },
+    ],
+    effects: { scannerLevel: 4, commRange: 250, artefactChanceBonus: 0.08, miningBonus: 0.15 },
+    cost: { credits: 5000, crystal: 100, gas: 40, artefact: 6 },
+    researchCost: { credits: 3000, crystal: 80, gas: 30, artefact: 6 },
+    researchDurationMin: 35,
+    prerequisite: 'scanner_mk4',
+  },
+
+  // === ARMOR MK.IV & MK.V ===
+  armor_mk4: {
+    id: 'armor_mk4', category: 'armor', tier: 4,
+    name: 'ARMOR PLATING MK.IV', displayName: 'ARM MK.IV',
+    primaryEffect: { stat: 'hp', delta: 150, label: 'HP +150' },
+    secondaryEffects: [
+      { stat: 'damageMod', delta: -0.30, label: 'Schadensreduktion -30%' },
+      { stat: 'shieldHp', delta: 15, label: 'Schild +15' },
+    ],
+    effects: { hp: 150, damageMod: -0.30, shieldHp: 15 },
+    cost: { credits: 1800, ore: 80, crystal: 40, artefact: 2 },
+    researchCost: { credits: 1200, ore: 60, crystal: 30, artefact: 2 },
+    researchDurationMin: 20,
+    prerequisite: 'armor_mk3',
+  },
+  armor_mk5: {
+    id: 'armor_mk5', category: 'armor', tier: 5,
+    name: 'ARMOR PLATING MK.V', displayName: 'ARM MK.V',
+    primaryEffect: { stat: 'hp', delta: 250, label: 'HP +250' },
+    secondaryEffects: [
+      { stat: 'damageMod', delta: -0.40, label: 'Schadensreduktion -40%' },
+      { stat: 'shieldHp', delta: 30, label: 'Schild +30' },
+    ],
+    effects: { hp: 250, damageMod: -0.40, shieldHp: 30 },
+    cost: { credits: 4500, ore: 150, crystal: 80, artefact: 6 },
+    researchCost: { credits: 3000, ore: 120, crystal: 60, artefact: 6 },
+    researchDurationMin: 35,
+    prerequisite: 'armor_mk4',
+  },
+
+  // === CARGO MK.IV & MK.V ===
+  cargo_mk4: {
+    id: 'cargo_mk4', category: 'cargo', tier: 4,
+    name: 'CARGO BAY MK.IV', displayName: 'CARGO MK.IV',
+    primaryEffect: { stat: 'cargoCap', delta: 40, label: 'Frachtraum +40' },
+    secondaryEffects: [
+      { stat: 'safeSlotBonus', delta: 3, label: 'Safe-Slot +3' },
+      { stat: 'fuelMax', delta: 40, label: 'Fuel-Tank +40' },
+    ],
+    effects: { cargoCap: 40, safeSlotBonus: 3, fuelMax: 40 },
+    cost: { credits: 1500, ore: 50, gas: 20, artefact: 2 },
+    researchCost: { credits: 1000, ore: 40, gas: 15, artefact: 2 },
+    researchDurationMin: 18,
+    prerequisite: 'cargo_mk3',
+  },
+  cargo_mk5: {
+    id: 'cargo_mk5', category: 'cargo', tier: 5,
+    name: 'CARGO BAY MK.V', displayName: 'CARGO MK.V',
+    primaryEffect: { stat: 'cargoCap', delta: 60, label: 'Frachtraum +60' },
+    secondaryEffects: [
+      { stat: 'safeSlotBonus', delta: 5, label: 'Safe-Slot +5' },
+      { stat: 'fuelMax', delta: 80, label: 'Fuel-Tank +80' },
+    ],
+    effects: { cargoCap: 60, safeSlotBonus: 5, fuelMax: 80 },
+    cost: { credits: 4000, ore: 100, gas: 40, artefact: 5 },
+    researchCost: { credits: 2500, ore: 80, gas: 30, artefact: 5 },
+    researchDurationMin: 30,
+    prerequisite: 'cargo_mk4',
+  },
 };
 
 export const SECTOR_COLORS: Record<SectorType | 'home_base', string> = {
@@ -996,6 +1182,8 @@ export const ENGINE_SPEED: Record<string, number> = {
   drive_mk1: 2,
   drive_mk2: 3,
   drive_mk3: 4,
+  drive_mk4: 5,
+  drive_mk5: 5,
   void_drive: 5,
 };
 // Research system

@@ -816,8 +816,8 @@ export type JumpType = 'normal' | 'hyperjump';
 // --- Phase 7: Ship Designer ---
 export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
 export type HullSize = 'small' | 'medium' | 'large';
-export type ModuleCategory = 'drive' | 'cargo' | 'scanner' | 'armor' | 'special' | 'weapon' | 'shield' | 'defense';
-export type ModuleTier = 1 | 2 | 3;
+export type ModuleCategory = 'drive' | 'cargo' | 'scanner' | 'armor' | 'special' | 'weapon' | 'shield' | 'defense' | 'mining';
+export type ModuleTier = 1 | 2 | 3 | 4 | 5;
 
 export interface HullDefinition {
   name: string;
@@ -887,6 +887,7 @@ export interface ShipStats {
   hyperdriveSpeed: number;
   hyperdriveRegen: number;
   hyperdriveFuelEfficiency: number;
+  miningBonus: number;
 }
 
 export interface ShipRecord {
