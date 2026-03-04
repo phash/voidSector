@@ -112,4 +112,87 @@ describe('worldgen', () => {
       }
     }
   });
+
+  it('returns environment and contents fields', () => {
+    const sector = generateSector(0, 0, 'test-user');
+    expect(sector.environment).toBeDefined();
+    expect(sector.contents).toBeDefined();
+    expect(Array.isArray(sector.contents)).toBe(true);
+  });
+
+  it('derives a valid legacy type', () => {
+    for (let x = -5; x <= 5; x++) {
+      for (let y = -5; y <= 5; y++) {
+        const sector = generateSector(x, y, null);
+        expect(['empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate']).toContain(sector.type);
+        expect(['empty', 'nebula']).toContain(sector.environment);
+      }
+    }
+  });
+
+  it('never generates black holes within BLACK_HOLE_MIN_DISTANCE', () => {
+    for (let x = -49; x <= 49; x += 7) {
+      for (let y = -49; y <= 49; y += 7) {
+        const sector = generateSector(x, y, null);
+        expect(sector.environment).not.toBe('black_hole');
+      }
+    }
+  });
+
+  it('generates some black holes far from origin', () => {
+    let found = false;
+    for (let x = 100; x < 1000 && !found; x++) {
+      for (let y = 100; y < 200 && !found; y++) {
+        const sector = generateSector(x, y, null);
+        if (sector.environment === 'black_hole') {
+          expect(sector.contents).toEqual([]);
+          expect(sector.resources).toEqual({ ore: 0, gas: 0, crystal: 0 });
+          expect(sector.type).toBe('empty');
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('station sectors have station in contents', () => {
+    let found = false;
+    for (let x = -30; x <= 30 && !found; x++) {
+      for (let y = -30; y <= 30 && !found; y++) {
+        const sector = generateSector(x, y, null);
+        if (sector.type === 'station') {
+          expect(sector.environment).toBe('empty');
+          expect(sector.contents).toContain('station');
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('pirate sectors have pirate_zone and asteroid_field in contents', () => {
+    let found = false;
+    for (let x = -30; x <= 30 && !found; x++) {
+      for (let y = -30; y <= 30 && !found; y++) {
+        const sector = generateSector(x, y, null);
+        if (sector.type === 'pirate') {
+          expect(sector.contents).toContain('pirate_zone');
+          expect(sector.contents).toContain('asteroid_field');
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
+});
+
+describe('hashCoords', () => {
+  it('is deterministic', () => {
+    expect(hashCoords(5, 10, 77)).toBe(hashCoords(5, 10, 77));
+  });
+
+  it('varies by coordinate', () => {
+    expect(hashCoords(0, 0, 77)).not.toBe(hashCoords(1, 0, 77));
+    expect(hashCoords(0, 0, 77)).not.toBe(hashCoords(0, 1, 77));
+  });
 });
