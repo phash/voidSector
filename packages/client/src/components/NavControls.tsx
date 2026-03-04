@@ -10,6 +10,7 @@ export function NavControls() {
   const ship = useStore((s) => s.ship);
   const mining = useStore((s) => s.mining);
   const autopilot = useStore((s) => s.autopilot);
+  const hyperdrive = useStore((s) => s.hyperdriveState);
 
   if (autopilot?.active) {
     return (
@@ -121,6 +122,26 @@ export function NavControls() {
           [BUILD BASE]
         </button>
       </div>
+      {hyperdrive && hyperdrive.maxCharge > 0 && (
+        <div style={{
+          marginTop: 8,
+          padding: '4px 8px',
+          border: '1px solid #00CCFF33',
+          fontSize: '0.75rem',
+          letterSpacing: '0.1em',
+          color: '#00CCFF',
+        }}>
+          <span>HYPERDRIVE: {Math.floor(hyperdrive.charge)}/{hyperdrive.maxCharge} RNG</span>
+          {hyperdrive.charge < hyperdrive.maxCharge && (
+            <span style={{ color: 'var(--color-dim)', marginLeft: 8 }}>
+              +{hyperdrive.regenPerSecond}/s
+            </span>
+          )}
+          {hyperdrive.charge >= hyperdrive.maxCharge && (
+            <span style={{ color: '#00FF88', marginLeft: 8 }}>CHARGED</span>
+          )}
+        </div>
+      )}
       {isMining && (
         <div style={{
           marginTop: 8,

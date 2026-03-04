@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent } from '@void-sector/shared';
+import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
 function getWsUrl(): string {
@@ -241,6 +241,16 @@ class GameNetwork {
     room.onMessage('fuelUpdate', (data: FuelState) => {
       useStore.getState().setFuel(data);
       if (data.current < data.max * 0.15) useStore.getState().showTip('low_fuel');
+    });
+
+    // Hyperdrive state
+    room.onMessage('hyperdriveUpdate', (data: HyperdriveState) => {
+      useStore.getState().setHyperdriveState(data);
+    });
+
+    // Auto-refuel config
+    room.onMessage('autoRefuelConfig', (data: AutoRefuelConfig) => {
+      useStore.getState().setAutoRefuelConfig(data);
     });
 
     // --- Ship designer messages ---
@@ -1253,6 +1263,11 @@ class GameNetwork {
 
   sendCancelAutopilot() {
     this.sectorRoom?.send('cancelAutopilot');
+  }
+
+  sendSetAutoRefuel(enabled: boolean, maxPricePerUnit: number) {
+    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    this.sectorRoom.send('setAutoRefuel', { enabled, maxPricePerUnit });
   }
 
   sendEmergencyWarp() {
