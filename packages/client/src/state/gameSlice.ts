@@ -306,9 +306,11 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setCargo: (cargo) => set({ cargo }),
 
   addChatMessage: (msg) =>
-    set((s) => ({
-      chatMessages: [...s.chatMessages.slice(-199), msg],
-    })),
+    set((s) => {
+      // Deduplicate by message ID
+      if (s.chatMessages.some(m => m.id === msg.id)) return s;
+      return { chatMessages: [...s.chatMessages.slice(-199), msg] };
+    }),
   setChatChannel: (chatChannel) => set({ chatChannel }),
   setAlert: (monitorId, active) => set((s) => ({
     alerts: { ...s.alerts, [monitorId]: active },
