@@ -92,16 +92,14 @@ export function DesktopLayout({ gridArea, detailArea, controlsArea, mainChannelB
       <div className="main-area">
         {mainChannelBar}
         {mainMode === 'split' ? (
-          <>
-            <div className="main-upper">
-              <div className="main-grid">{gridArea}</div>
-              <div className="main-detail">{detailArea}</div>
-            </div>
-            <div className="main-lower">{controlsArea}</div>
-          </>
+          <div className="main-upper">
+            <div className="main-grid">{gridArea}</div>
+            <div className="main-detail">{detailArea}</div>
+          </div>
         ) : (
           <div className="main-fullscreen">{renderScreen(mainMode)}</div>
         )}
+        <div className="main-lower">{controlsArea}</div>
       </div>
 
       {/* Right sidebar */}

@@ -1083,6 +1083,14 @@ class GameNetwork {
     }
     useStore.getState().startScanAnimation('local');
     this.sectorRoom.send('localScan', {});
+    // Safety: clear scanPending if server never responds
+    setTimeout(() => {
+      const s = useStore.getState();
+      if (s.scanPending) {
+        s.setScanPending(false);
+        s.clearScanAnimation();
+      }
+    }, 10000);
   }
 
   sendAreaScan() {
@@ -1092,6 +1100,14 @@ class GameNetwork {
     }
     useStore.getState().startScanAnimation('area');
     this.sectorRoom.send('areaScan', {});
+    // Safety: clear scanPending if server never responds
+    setTimeout(() => {
+      const s = useStore.getState();
+      if (s.scanPending) {
+        s.setScanPending(false);
+        s.clearScanAnimation();
+      }
+    }, 10000);
   }
 
   requestAP() {
