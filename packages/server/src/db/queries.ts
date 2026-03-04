@@ -1425,7 +1425,7 @@ export async function getSectorsInRange(
   cx: number, cy: number, radius: number
 ): Promise<SectorData[]> {
   const result = await query<any>(
-    `SELECT x, y, type, seed, discovered_by, discovered_at, metadata, resources, environment, contents
+    `SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents
      FROM sectors
      WHERE x BETWEEN $1 AND $2 AND y BETWEEN $3 AND $4`,
     [cx - radius, cx + radius, cy - radius, cy + radius]

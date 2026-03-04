@@ -61,7 +61,7 @@ function sanitizeChat(text: string): string {
     .replace(/<[^>]*>/g, '')
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 }
-const MAX_COORD = 9999;
+const MAX_COORD = 100_000_000;
 
 interface SectorRoomOptions {
   sectorX: number;
@@ -136,15 +136,30 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Handle local scan message
     this.onMessage('localScan', async (client) => {
-      await this.handleLocalScan(client);
+      try {
+        await this.handleLocalScan(client);
+      } catch (err) {
+        console.error('[LOCAL_SCAN] Unhandled error:', err);
+        client.send('localScanResult', { error: 'Server error' });
+      }
     });
 
     // Handle area scan message (with backward compat for 'scan')
     this.onMessage('areaScan', async (client) => {
-      await this.handleAreaScan(client);
+      try {
+        await this.handleAreaScan(client);
+      } catch (err) {
+        console.error('[AREA_SCAN] Unhandled error:', err);
+        client.send('scanResult', { sectors: [], error: 'Server error' });
+      }
     });
     this.onMessage('scan', async (client) => {
-      await this.handleAreaScan(client);
+      try {
+        await this.handleAreaScan(client);
+      } catch (err) {
+        console.error('[SCAN] Unhandled error:', err);
+        client.send('scanResult', { sectors: [], error: 'Server error' });
+      }
     });
 
     // Handle AP query

@@ -207,6 +207,9 @@ class GameNetwork {
     // Errors
     room.onMessage('error', (data: { code: string; message: string }) => {
       const store = useStore.getState();
+      // Reset pending states on any error to prevent permanent UI lockout
+      if (store.scanPending) store.setScanPending(false);
+      if (store.jumpPending) store.setJumpPending(false);
       if (data.code === 'GUEST_RESTRICTED') {
         store.addLogEntry(`GAST-EINSCHRÄNKUNG: ${data.message} — Registriere dich für vollen Zugang!`);
       } else {
