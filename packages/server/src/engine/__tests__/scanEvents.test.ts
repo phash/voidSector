@@ -42,4 +42,25 @@ describe('scanEvents', () => {
       }
     }
   });
+
+  it('distress_signal events include narrative message', () => {
+    for (let i = 0; i < 500; i++) {
+      const result = checkScanEvent(i * 3, i * 7);
+      if (result.hasEvent && result.eventType === 'distress_signal') {
+        expect(typeof (result.data as { message: string }).message).toBe('string');
+        expect((result.data as { message: string }).message.length).toBeGreaterThan(10);
+        return;
+      }
+    }
+  });
+
+  it('returns hasEvent:false for most sectors (low event chance)', () => {
+    // Scan event chance is low — majority of checks should return no event
+    let noEventCount = 0;
+    for (let i = 0; i < 50; i++) {
+      const result = checkScanEvent(i * 37, i * 41 + 13);
+      if (!result.hasEvent) noEventCount++;
+    }
+    expect(noEventCount).toBeGreaterThan(25); // at least 50% of sectors are event-free
+  });
 });
