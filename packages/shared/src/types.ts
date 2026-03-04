@@ -1006,3 +1006,12 @@ export interface FirstContactEvent {
   canName: boolean;
   autoName: string;
 }
+
+export interface JumpGateMapEntry {
+  gateId: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  gateType: string; // 'bidirectional' | 'wormhole'
+}

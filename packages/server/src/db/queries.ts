@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord } from '@void-sector/shared';
+import type { SectorData, PlayerData, CargoState, ResourceType, ShipClass, Bookmark, HullType, ShipModule, ShipRecord, JumpGateMapEntry } from '@void-sector/shared';
 import { SPAWN_CLUSTER_MAX_PLAYERS, SPAWN_CLUSTER_RADIUS } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -1220,6 +1220,44 @@ export async function addGateCode(playerId: string, gateId: string): Promise<voi
   await query(
     `INSERT INTO gate_codes (player_id, gate_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [playerId, gateId]
+  );
+}
+
+// --- Player-Known JumpGates ---
+
+export async function getPlayerKnownJumpGates(playerId: string): Promise<JumpGateMapEntry[]> {
+  const { rows } = await query<{
+    gate_id: string; from_x: number; from_y: number;
+    to_x: number; to_y: number; gate_type: string;
+  }>(
+    `SELECT gate_id, from_x, from_y, to_x, to_y, gate_type
+     FROM player_known_jumpgates WHERE player_id = $1`,
+    [playerId]
+  );
+  return rows.map(r => ({
+    gateId: r.gate_id,
+    fromX: r.from_x,
+    fromY: r.from_y,
+    toX: r.to_x,
+    toY: r.to_y,
+    gateType: r.gate_type,
+  }));
+}
+
+export async function addPlayerKnownJumpGate(
+  playerId: string,
+  gateId: string,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  gateType: string,
+): Promise<void> {
+  await query(
+    `INSERT INTO player_known_jumpgates (player_id, gate_id, from_x, from_y, to_x, to_y, gate_type)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (player_id, gate_id) DO NOTHING`,
+    [playerId, gateId, fromX, fromY, toX, toY, gateType]
   );
 }
 
