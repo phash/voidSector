@@ -245,8 +245,10 @@ export async function getSector(
     discovered_by: string | null;
     discovered_at: string | null;
     metadata: Record<string, unknown>;
+    environment: string;
+    contents: string[];
   }>(
-    'SELECT x, y, type, seed, discovered_by, discovered_at, metadata FROM sectors WHERE x = $1 AND y = $2',
+    'SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents FROM sectors WHERE x = $1 AND y = $2',
     [x, y]
   );
   if (result.rows.length === 0) return null;
@@ -262,13 +264,15 @@ export async function getSector(
     discoveredAt: row.discovered_at,
     metadata: row.metadata,
     resources,
+    environment: (row.environment ?? 'empty') as SectorData['environment'],
+    contents: (row.contents ?? []) as SectorData['contents'],
   };
 }
 
 export async function saveSector(sector: SectorData): Promise<void> {
   await query(
-    `INSERT INTO sectors (x, y, type, seed, discovered_by, discovered_at, metadata)
-     VALUES ($1, $2, $3, $4, $5, NOW(), $6)
+    `INSERT INTO sectors (x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents)
+     VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8)
      ON CONFLICT (x, y) DO NOTHING`,
     [
       sector.x,
@@ -277,6 +281,8 @@ export async function saveSector(sector: SectorData): Promise<void> {
       sector.seed,
       sector.discoveredBy,
       JSON.stringify({ resources: sector.resources || { ore: 0, gas: 0, crystal: 0 } }),
+      sector.environment ?? 'empty',
+      sector.contents ?? [],
     ]
   );
 }
@@ -1381,7 +1387,7 @@ export async function getSectorsInRange(
   cx: number, cy: number, radius: number
 ): Promise<SectorData[]> {
   const result = await query<any>(
-    `SELECT x, y, type, seed, discovered_by, discovered_at, metadata, resources
+    `SELECT x, y, type, seed, discovered_by, discovered_at, metadata, resources, environment, contents
      FROM sectors
      WHERE x BETWEEN $1 AND $2 AND y BETWEEN $3 AND $4`,
     [cx - radius, cx + radius, cy - radius, cy + radius]
@@ -1395,6 +1401,8 @@ export async function getSectorsInRange(
     discoveredAt: r.discovered_at,
     metadata: r.metadata ?? {},
     resources: r.resources,
+    environment: (r.environment ?? 'empty') as SectorData['environment'],
+    contents: (r.contents ?? []) as SectorData['contents'],
   }));
 }
 
