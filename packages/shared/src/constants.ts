@@ -708,7 +708,9 @@ export const NEBULA_ZONE_MIN_RADIUS = 15; // minimum zone radius in sectors
 export const NEBULA_ZONE_MAX_RADIUS = 50; // maximum zone radius in sectors
 export const NEBULA_SAFE_ORIGIN = 200;  // no nebula zones within this many sectors of origin
 
-// Two-stage worldgen: environment weights (first roll)
+// Two-stage worldgen: environment weights (first roll).
+// Weights intentionally sum to 0.70; the remaining 0.30 gap falls through
+// to 'empty' as the default in rollEnvironment().
 export const ENVIRONMENT_WEIGHTS: Record<string, number> = {
   empty: 0.55,
   nebula: 0.15,

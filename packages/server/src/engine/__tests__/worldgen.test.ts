@@ -184,6 +184,7 @@ describe('worldgen', () => {
     }
     expect(found).toBe(true);
   });
+
   // --- Two-stage worldgen tests ---
 
   it('empty sectors yield zero resources', () => {

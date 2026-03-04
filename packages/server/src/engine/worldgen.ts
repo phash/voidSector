@@ -1,4 +1,4 @@
-import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE, BLACK_HOLE_CLUSTER_GRID, BLACK_HOLE_CLUSTER_CHANCE, BLACK_HOLE_CLUSTER_MIN_RADIUS, BLACK_HOLE_CLUSTER_MAX_RADIUS, ENVIRONMENT_WEIGHTS, CONTENT_WEIGHTS, NEBULA_CONTENT_ENABLED } from '@void-sector/shared';
+import { WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE, BLACK_HOLE_CLUSTER_GRID, BLACK_HOLE_CLUSTER_CHANCE, BLACK_HOLE_CLUSTER_MIN_RADIUS, BLACK_HOLE_CLUSTER_MAX_RADIUS, ENVIRONMENT_WEIGHTS, CONTENT_WEIGHTS, NEBULA_CONTENT_ENABLED } from '@void-sector/shared';
 import { legacySectorType } from '@void-sector/shared';
 import type { SectorData, SectorType, SectorResources, MineableResourceType, SectorEnvironment, SectorContent, QuadrantConfig, BlackHoleCluster } from '@void-sector/shared';
 
@@ -123,7 +123,7 @@ function rollEnvironment(x: number, y: number, seed: number): SectorEnvironment 
 
   // Black hole: standalone chance (rare, far from origin)
   if (distFromOrigin > BLACK_HOLE_MIN_DISTANCE) {
-    const bhRoll = ((seed >>> 0) & 0xFF) / 255;
+    const bhRoll = (seed >>> 0) / 0x100000000;
     if (bhRoll < BLACK_HOLE_SPAWN_CHANCE) {
       return 'black_hole';
     }
@@ -173,14 +173,6 @@ function rollContent(seed: number, environment: SectorEnvironment): SectorConten
   return [];
 }
 
-/**
- * Map environment + contents to a legacy SectorType for resource yield lookup
- * and backward compatibility.
- */
-function deriveLegacyType(environment: SectorEnvironment, contents: SectorContent[]): SectorType {
-  return legacySectorType(environment, contents);
-}
-
 function generateResources(type: SectorType, seed: number): SectorResources {
   const base = SECTOR_RESOURCE_YIELDS[type];
   const resources: SectorResources = { ore: 0, gas: 0, crystal: 0 };
@@ -225,7 +217,7 @@ export function generateSector(
   const contents = rollContent(seed, environment);
 
   // Derive legacy type from environment + contents
-  const type = deriveLegacyType(environment, contents);
+  const type = legacySectorType(environment, contents);
 
   // Special metadata: some stations are ancient variants
   const metadata: Record<string, unknown> = {};
