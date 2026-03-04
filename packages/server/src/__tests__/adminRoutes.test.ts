@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Request, Response } from 'express';
 
+// Mock adminBus before importing the router
+vi.mock('../adminBus.js', () => ({
+  adminBus: {
+    broadcast: vi.fn(),
+    questCreated: vi.fn(),
+  },
+}));
+
 // Mock adminQueries before importing the router
 vi.mock('../db/adminQueries.js', () => ({
   getAllPlayers: vi.fn(),

@@ -16,6 +16,7 @@ import {
   getServerStats,
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput } from './db/adminQueries.js';
+import { adminBus } from './adminBus.js';
 
 export const adminRouter = Router();
 
@@ -100,6 +101,18 @@ adminRouter.post('/quests', async (req: Request, res: Response) => {
 
     const questId = await createAdminQuest(questInput);
     await logAdminEvent('create_quest', { questId, title: questInput.title });
+
+    // Emit to SectorRoom instances via event bus
+    adminBus.questCreated({
+      questId,
+      title: questInput.title,
+      description: questInput.description,
+      scope: (questInput.scope ?? 'universal') as 'universal' | 'individual' | 'sector',
+      targetPlayers: questInput.targetPlayers ?? [],
+      sectorX: questInput.sectorX,
+      sectorY: questInput.sectorY,
+    });
+
     res.status(201).json({ id: questId });
   } catch (err) {
     console.error('Admin create quest error:', err);
@@ -174,6 +187,18 @@ adminRouter.post('/messages', async (req: Request, res: Response) => {
 
     const messageId = await createAdminMessage(messageInput);
     await logAdminEvent('create_message', { messageId, content: messageInput.content });
+
+    // Emit to SectorRoom instances via event bus
+    adminBus.broadcast({
+      senderName: messageInput.senderName ?? 'SYSTEM',
+      content: messageInput.content,
+      scope: (messageInput.scope ?? 'universal') as 'universal' | 'individual',
+      targetPlayers: messageInput.targetPlayers ?? [],
+      channel: messageInput.channel ?? 'direct',
+      allowReply: messageInput.allowReply ?? false,
+      messageId,
+    });
+
     res.status(201).json({ id: messageId });
   } catch (err) {
     console.error('Admin create message error:', err);
