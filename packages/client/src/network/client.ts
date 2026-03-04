@@ -78,6 +78,8 @@ class GameNetwork {
         discoveredBy: null,
         discoveredAt: null,
         metadata: {},
+        environment: state.sector.environment ?? 'empty',
+        contents: state.sector.contents ?? [],
       };
       useStore.getState().setCurrentSector(sector);
       useStore.getState().addDiscoveries([sector]);
@@ -180,6 +182,8 @@ class GameNetwork {
             type: d.type as SectorData['type'],
             seed: d.seed ?? 0,
             resources: { ore: 0, gas: 0, crystal: 0 },
+            environment: (d as any).environment ?? 'empty',
+            contents: (d as any).contents ?? [],
           });
         }
       }
@@ -773,6 +777,8 @@ class GameNetwork {
             type: d.type as SectorData['type'],
             seed: d.seed ?? 0,
             resources: { ore: 0, gas: 0, crystal: 0 },
+            environment: (d as any).environment ?? 'empty',
+            contents: (d as any).contents ?? [],
           });
         }
       }

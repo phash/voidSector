@@ -1,5 +1,6 @@
-import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN } from '@void-sector/shared';
-import type { SectorData, SectorType, SectorResources, ResourceType } from '@void-sector/shared';
+import { SECTOR_WEIGHTS, SECTOR_TYPES, WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
+import { deriveEnvironment, deriveContents } from '@void-sector/shared';
+import type { SectorData, SectorType, SectorResources, ResourceType, SectorEnvironment, SectorContent } from '@void-sector/shared';
 
 /**
  * Simple deterministic hash for coordinates.
@@ -93,8 +94,31 @@ export function generateSector(
   discoveredBy: string | null
 ): SectorData {
   const seed = hashCoords(x, y, WORLD_SEED);
-  // Nebula zones override individual sector types (zones trump random distribution)
+  const distFromOrigin = Math.max(Math.abs(x), Math.abs(y));
+
+  // Black hole check — rare, only far from origin
+  if (distFromOrigin > BLACK_HOLE_MIN_DISTANCE) {
+    const bhRoll = ((seed >>> 0) & 0xFF) / 255;
+    if (bhRoll < BLACK_HOLE_SPAWN_CHANCE) {
+      return {
+        x, y, seed,
+        environment: 'black_hole' as SectorEnvironment,
+        contents: [],
+        type: 'empty',
+        discoveredBy,
+        discoveredAt: null,
+        metadata: {},
+        resources: { ore: 0, gas: 0, crystal: 0 },
+      };
+    }
+  }
+
+  // Legacy type generation (preserved for determinism)
   const type = isInNebulaZone(x, y) ? 'nebula' : sectorTypeFromSeed(seed);
+
+  // Derive environment and contents from legacy type
+  const environment = deriveEnvironment(type);
+  const contents = deriveContents(type);
 
   // Special metadata: some stations are ancient variants
   const metadata: Record<string, unknown> = {};
@@ -106,10 +130,10 @@ export function generateSector(
   }
 
   return {
-    x,
-    y,
+    x, y, seed,
+    environment,
+    contents,
     type,
-    seed,
     resources: generateResources(type, seed),
     discoveredBy,
     discoveredAt: null,

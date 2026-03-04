@@ -131,6 +131,11 @@ export function DetailPanel() {
               },
             })}
           >{sector.type.toUpperCase()}</button></div>
+          {(sector as any).environment === 'black_hole' && (
+            <div style={{ color: '#FF3333', marginTop: 4, fontSize: '0.7rem' }}>
+              WARNUNG: SCHWARZES LOCH — UNPASSIERBAR
+            </div>
+          )}
           {sector.resources && (
             <>
               <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>RESOURCES</div>

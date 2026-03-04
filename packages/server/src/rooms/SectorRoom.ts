@@ -778,6 +778,19 @@ export class SectorRoom extends Room<SectorRoomState> {
       await saveSector(targetSector);
     }
 
+    // Block entry to black holes
+    if (targetSector.environment === 'black_hole') {
+      client.send('jumpResult', {
+        success: false,
+        error: 'BLACK_HOLE_BLOCKED',
+        message: 'Schwarzes Loch erkannt — Sprung abgebrochen',
+      });
+      // Refund AP and fuel
+      await saveAPState(auth.userId, ap);
+      await saveFuelState(auth.userId, currentFuel);
+      return;
+    }
+
     // Record discovery
     await addDiscovery(auth.userId, targetX, targetY);
 
@@ -882,13 +895,23 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Nebula zones block hyperjump in both directions
     const sourceSector = await getSector(pos.x, pos.y);
-    if (sourceSector?.type === 'nebula') {
+    if (sourceSector?.environment === 'nebula') {
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump from nebula sector' });
       return;
     }
     const targetSectorNebula = await getSector(targetX, targetY);
-    if (targetSectorNebula?.type === 'nebula') {
+    if (targetSectorNebula?.environment === 'nebula') {
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump into nebula sector' });
+      return;
+    }
+
+    // Black holes block hyperjump in both directions
+    if (sourceSector?.environment === 'black_hole') {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Schwarzes Loch — Hyperjump nicht möglich' });
+      return;
+    }
+    if (targetSectorNebula?.environment === 'black_hole') {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Schwarzes Loch am Ziel — Hyperjump nicht möglich' });
       return;
     }
 

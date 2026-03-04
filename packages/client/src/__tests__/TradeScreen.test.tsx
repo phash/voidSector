@@ -25,7 +25,7 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 5, y: 5 },
-      currentSector: { x: 5, y: 5, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {} },
+      currentSector: { x: 5, y: 5, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: [] },
     });
     render(<TradeScreen />);
     expect(screen.getByText(/KEIN HANDEL/)).toBeTruthy();
@@ -58,7 +58,7 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
-      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {} },
+      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
       credits: 200,
       cargo: { ore: 3, gas: 1, crystal: 0, slates: 0 },
     });
@@ -94,7 +94,7 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [{ id: 'tp1', type: 'trading_post', tier: 3, sector_x: 0, sector_y: 0 }],
       position: { x: 10, y: 10 },
-      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {} },
+      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
       credits: 500,
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0 },
     });

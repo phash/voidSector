@@ -18,8 +18,8 @@ describe('DetailPanel', () => {
     mockStoreState({
       selectedSector: { x: 5, y: 3 },
       discoveries: {
-        '0:0': { x: 0, y: 0, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {} },
-        '5:3': { x: 5, y: 3, type: 'nebula', seed: 99, discoveredBy: null, discoveredAt: null, metadata: {} },
+        '0:0': { x: 0, y: 0, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: [] },
+        '5:3': { x: 5, y: 3, type: 'nebula', seed: 99, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'nebula' as const, contents: [] },
       },
     });
     render(<DetailPanel />);
@@ -41,7 +41,7 @@ describe('DetailPanel', () => {
       selectedSector: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
       discoveries: {
-        '0:0': { x: 0, y: 0, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {} },
+        '0:0': { x: 0, y: 0, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: [] },
       },
     });
     render(<DetailPanel />);
@@ -72,7 +72,7 @@ describe('DetailPanel', () => {
         's1': { sessionId: 's1', username: 'SpacePilot', x: 0, y: 0, connected: true },
       },
       discoveries: {
-        '0:0': { x: 0, y: 0, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {} },
+        '0:0': { x: 0, y: 0, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: [] },
       },
     });
     render(<DetailPanel />);
@@ -83,7 +83,7 @@ describe('DetailPanel', () => {
     mockStoreState({
       selectedSector: { x: 2, y: 3 },
       discoveries: {
-        '2:3': { x: 2, y: 3, type: 'asteroid_field', seed: 77, discoveredBy: null, discoveredAt: null, metadata: {} },
+        '2:3': { x: 2, y: 3, type: 'asteroid_field', seed: 77, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: [] },
       },
     });
     // Simulate what the fixed localScanResult handler does:
@@ -91,6 +91,7 @@ describe('DetailPanel', () => {
     useStore.getState().addDiscoveries([{
       x: 2, y: 3, type: 'asteroid_field', seed: 77,
       discoveredBy: null, discoveredAt: null, metadata: {},
+      environment: 'empty' as const, contents: ['asteroid_field' as const],
       resources: { ore: 120, gas: 45, crystal: 8 },
     }]);
     render(<DetailPanel />);

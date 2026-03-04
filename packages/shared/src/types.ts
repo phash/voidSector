@@ -1,5 +1,14 @@
 export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly' | 'pirate';
 
+export type SectorEnvironment = 'empty' | 'nebula' | 'black_hole';
+export type SectorContent =
+  | 'asteroid_field'
+  | 'station'
+  | 'anomaly'
+  | 'pirate_zone'
+  | 'home_base'
+  | 'player_base';
+
 export type ResourceType = 'ore' | 'gas' | 'crystal';
 
 export interface SectorResources {
@@ -17,11 +26,40 @@ export interface SectorData {
   x: number;
   y: number;
   type: SectorType;
+  environment: SectorEnvironment;
+  contents: SectorContent[];
   seed: number;
   discoveredBy: string | null;
   discoveredAt: string | null;
   metadata: Record<string, unknown>;
   resources?: SectorResources;
+}
+
+/** Derive legacy SectorType from environment + contents (for backward compat) */
+export function legacySectorType(env: SectorEnvironment, contents: SectorContent[]): SectorType {
+  if (contents.includes('pirate_zone') && contents.includes('asteroid_field')) return 'pirate';
+  if (contents.includes('station')) return 'station';
+  if (contents.includes('anomaly')) return 'anomaly';
+  if (contents.includes('asteroid_field')) return 'asteroid_field';
+  if (contents.includes('pirate_zone')) return 'pirate';
+  if (env === 'nebula') return 'nebula';
+  return 'empty';
+}
+
+/** Derive environment from legacy SectorType */
+export function deriveEnvironment(type: SectorType): SectorEnvironment {
+  return type === 'nebula' ? 'nebula' : 'empty';
+}
+
+/** Derive contents from legacy SectorType */
+export function deriveContents(type: SectorType): SectorContent[] {
+  switch (type) {
+    case 'asteroid_field': return ['asteroid_field'];
+    case 'station': return ['station'];
+    case 'anomaly': return ['anomaly'];
+    case 'pirate': return ['pirate_zone', 'asteroid_field'];
+    default: return [];
+  }
 }
 
 export interface PlayerData {

@@ -1,4 +1,4 @@
-import type { SectorType, ShipClass, ResourceType, StructureType, HullType, HullDefinition, ModuleDefinition } from './types.js';
+import type { SectorType, ShipClass, ResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, SectorEnvironment, SectorContent } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
   'empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate'
@@ -473,6 +473,15 @@ export const NEBULA_ZONE_MIN_RADIUS = 15; // minimum zone radius in sectors
 export const NEBULA_ZONE_MAX_RADIUS = 50; // maximum zone radius in sectors
 export const NEBULA_SAFE_ORIGIN = 200;  // no nebula zones within this many sectors of origin
 
+// Black hole generation
+export const BLACK_HOLE_SPAWN_CHANCE = 0.005;    // 0.5% of sectors far from origin
+export const BLACK_HOLE_MIN_DISTANCE = 50;        // minimum Chebyshev distance from origin
+
+// Environment modifiers
+export const NEBULA_SCANNER_MALUS = 1;            // -1 sector scan range in nebula
+export const NEBULA_PIRATE_SPAWN_MODIFIER = 0.7;  // -30% pirate spawn in nebula
+export const EMPTY_FUEL_MODIFIER = 0.8;           // -20% fuel cost in empty space
+
 // Hull-specific pixel patterns for radar rendering (3x3 grids, 1 = filled pixel)
 export const HULL_RADAR_PATTERNS: Record<HullType, number[][]> = {
   scout:      [[0,1,0], [1,1,1], [0,1,0]],    // cross — nimble interceptor
@@ -496,6 +505,40 @@ export const SYMBOLS = {
   iron: '\u26CF',
   homeBase: '\u2302',
 } as const;
+
+// Environment-specific radar colors
+export const ENVIRONMENT_COLORS: Record<SectorEnvironment, string> = {
+  empty: '#FFB000',
+  nebula: '#00BFFF',
+  black_hole: '#1A1A1A',
+};
+
+// Environment-specific radar symbols
+export const ENVIRONMENT_SYMBOLS: Record<SectorEnvironment, string> = {
+  empty: '\u00B7',     // ·
+  nebula: '\u2592',    // ▒
+  black_hole: 'o',
+};
+
+// Content overlay symbols for radar
+export const CONTENT_SYMBOLS: Partial<Record<SectorContent, string>> = {
+  asteroid_field: '\u25C6', // ◆
+  station: 'S',
+  home_base: 'H',
+  player_base: 'B',
+  anomaly: '\u25CA',        // ◊
+  pirate_zone: '\u2620',    // ☠
+};
+
+// Content overlay colors
+export const CONTENT_COLORS: Partial<Record<SectorContent, string>> = {
+  asteroid_field: '#FF8C00',
+  station: '#00FF88',
+  anomaly: '#FF00FF',
+  pirate_zone: '#FF3333',
+  home_base: '#FFFFFF',
+  player_base: '#FFFFFF',
+};
 
 // Colors — Amber-Monochrom as per visual_design.md
 export const THEME = {
