@@ -34,6 +34,8 @@ export interface UISlice {
   detailView: { type: string; data?: Record<string, any> } | null;
   leftCollapsed: boolean;
   rightCollapsed: boolean;
+  monitorPower: Record<string, boolean>;
+  monitorChromeVisible: Record<string, boolean>;
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
@@ -52,6 +54,8 @@ export interface UISlice {
   setDetailView: (view: { type: string; data?: Record<string, any> } | null) => void;
   setLeftCollapsed: (val: boolean) => void;
   setRightCollapsed: (val: boolean) => void;
+  setMonitorPower: (monitorId: string, on: boolean) => void;
+  setMonitorChromeVisible: (monitorId: string, visible: boolean) => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -70,6 +74,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   detailView: null,
   leftCollapsed: false,
   rightCollapsed: false,
+  monitorPower: {},
+  monitorChromeVisible: {},
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -115,4 +121,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   setDetailView: (view) => set({ detailView: view }),
   setLeftCollapsed: (val) => set({ leftCollapsed: val }),
   setRightCollapsed: (val) => set({ rightCollapsed: val }),
+  setMonitorPower: (monitorId, on) => set((s) => ({
+    monitorPower: { ...s.monitorPower, [monitorId]: on },
+  })),
+  setMonitorChromeVisible: (monitorId, visible) => set((s) => ({
+    monitorChromeVisible: { ...s.monitorChromeVisible, [monitorId]: visible },
+  })),
 });
