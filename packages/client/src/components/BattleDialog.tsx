@@ -24,6 +24,7 @@ const ANCIENT_ART = [
 
 export function BattleDialog() {
   const activeBattle = useStore((s) => s.activeBattle);
+  const activeCombatV2 = useStore((s) => s.activeCombatV2);
 
   useEffect(() => {
     if (!activeBattle) return;
@@ -36,6 +37,8 @@ export function BattleDialog() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [activeBattle]);
 
+  // If combat v2 is active, don't render v1 dialog
+  if (activeCombatV2) return null;
   if (!activeBattle) return null;
 
   const { pirateLevel, pirateHp, pirateDamage, canNegotiate, negotiateCost, sectorX, sectorY } = activeBattle;
