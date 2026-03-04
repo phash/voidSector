@@ -482,6 +482,72 @@ export interface AvailableQuest {
   requiredTier: ReputationTier;
 }
 
+// ─── Admin Console Types ──────────────────────────────────────────────────────
+
+export type AdminQuestScope = 'universal' | 'individual' | 'sector';
+export type AdminQuestType = 'fetch' | 'delivery' | 'scan' | 'bounty' | 'custom';
+export type AdminQuestStatus = 'active' | 'paused' | 'expired' | 'deleted';
+export type AdminMessageScope = 'universal' | 'quadrant' | 'individual';
+export type AdminAssignmentStatus = 'pending' | 'accepted' | 'completed' | 'declined' | 'expired';
+
+export interface AdminQuestObjective {
+  type: AdminQuestType;
+  description: string;
+  targetX?: number;
+  targetY?: number;
+  resource?: ResourceType;
+  amount?: number;
+  progress?: number;
+  fulfilled: boolean;
+}
+
+export interface AdminQuest {
+  id: string;
+  title: string;
+  description: string;
+  scope: AdminQuestScope;
+  questType: AdminQuestType;
+  objectives: AdminQuestObjective[];
+  rewards: QuestRewards;
+  npcName: string;
+  npcFactionId: NpcFactionId;
+  targetSectorX?: number;
+  targetSectorY?: number;
+  targetPlayerIds?: string[];
+  maxAcceptances?: number;
+  acceptanceCount: number;
+  status: AdminQuestStatus;
+  createdAt: number;
+  expiresAt?: number;
+  introText?: string;
+  completionText?: string;
+}
+
+/** Sent to client when an admin quest is offered */
+export interface AdminQuestOffer {
+  adminQuestId: string;
+  title: string;
+  description: string;
+  objectives: AdminQuestObjective[];
+  rewards: QuestRewards;
+  npcName: string;
+  npcFactionId: NpcFactionId;
+  introText?: string;
+  scope: AdminQuestScope;
+}
+
+/** Sent to client as a COMM message from admin */
+export interface AdminCommMessage {
+  id: string;
+  adminName: string;
+  scope: AdminMessageScope;
+  content: string;
+  allowReply: boolean;
+  sentAt: number;
+}
+
+// ─── End Admin Console Types ──────────────────────────────────────────────────
+
 export type BattleAction = 'flee' | 'fight' | 'negotiate';
 export type BattleOutcome = 'victory' | 'defeat' | 'escaped' | 'caught' | 'negotiated';
 

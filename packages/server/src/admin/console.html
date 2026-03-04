@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>voidSector // ADMIN CONSOLE</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <style>
+    :root {
+      --green: #39ff14;
+      --green-dim: #1a7a09;
+      --green-mid: #2bc30e;
+      --amber: #ffb000;
+      --red: #ff3333;
+      --bg: #050a05;
+      --bg2: #0a120a;
+      --bg3: #0f1a0f;
+      --border: #1a3a1a;
+      --font: 'Courier New', Courier, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* CRT scanline effect */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+    }
+    body {
+      background: var(--bg);
+      color: var(--green);
+      font-family: var(--font);
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── LOGIN SCREEN ── */
+    #loginScreen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh; gap: 20px;
+    }
+    .login-box {
+      border: 1px solid var(--green-dim);
+      padding: 40px; width: 420px; background: var(--bg2);
+      box-shadow: 0 0 30px rgba(57,255,20,0.1);
+    }
+    .ascii-logo {
+      color: var(--green); font-size: 11px; line-height: 1.2;
+      text-align: center; margin-bottom: 24px; white-space: pre;
+      text-shadow: 0 0 8px var(--green);
+    }
+    .login-box label { display: block; color: var(--green-mid); margin-bottom: 6px; }
+    .login-box input {
+      width: 100%; background: var(--bg); border: 1px solid var(--green-dim);
+      color: var(--green); font-family: var(--font); font-size: 14px;
+      padding: 8px 12px; outline: none; margin-bottom: 16px;
+    }
+    .login-box input:focus { border-color: var(--green); box-shadow: 0 0 8px rgba(57,255,20,0.3); }
+    .login-error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      background: transparent; border: 1px solid var(--green-dim);
+      color: var(--green); font-family: var(--font); font-size: 13px;
+      padding: 6px 16px; cursor: pointer; transition: all 0.15s;
+    }
+    .btn:hover { border-color: var(--green); background: rgba(57,255,20,0.07); box-shadow: 0 0 8px rgba(57,255,20,0.2); }
+    .btn:active { background: rgba(57,255,20,0.15); }
+    .btn-primary { border-color: var(--green); background: rgba(57,255,20,0.1); }
+    .btn-danger { border-color: var(--red); color: var(--red); }
+    .btn-danger:hover { background: rgba(255,51,51,0.07); }
+    .btn-amber { border-color: var(--amber); color: var(--amber); }
+    .btn-sm { padding: 3px 10px; font-size: 12px; }
+
+    /* ── MAIN LAYOUT ── */
+    #app { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 20px; border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .header-title {
+      font-size: 16px; letter-spacing: 4px; text-transform: uppercase;
+      text-shadow: 0 0 12px var(--green);
+    }
+    .header-title span { color: var(--green-dim); }
+    .header-right { display: flex; align-items: center; gap: 16px; color: var(--green-dim); font-size: 12px; }
+    .status-dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; background: var(--green);
+      box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* Tab bar */
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--bg2); padding: 0 20px;
+    }
+    .tab {
+      padding: 10px 20px; cursor: pointer; color: var(--green-dim);
+      border-bottom: 2px solid transparent; font-size: 12px; letter-spacing: 2px;
+      transition: all 0.15s; text-transform: uppercase;
+    }
+    .tab:hover { color: var(--green); }
+    .tab.active { color: var(--green); border-bottom-color: var(--green); text-shadow: 0 0 8px var(--green); }
+    .tab-badge {
+      display: inline-block; background: var(--red); color: #fff;
+      font-size: 10px; padding: 1px 5px; margin-left: 6px; border-radius: 2px;
+    }
+
+    /* Content area */
+    .content { flex: 1; padding: 20px; overflow-y: auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Panels */
+    .panel-title {
+      font-size: 14px; letter-spacing: 3px; color: var(--green);
+      text-shadow: 0 0 8px var(--green); margin-bottom: 16px;
+      border-bottom: 1px solid var(--border); padding-bottom: 8px;
+    }
+    .panel-title::before { content: '// '; color: var(--green-dim); }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; padding: 6px 10px; font-size: 11px; letter-spacing: 2px;
+      color: var(--green-dim); border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+    td { padding: 6px 10px; border-bottom: 1px solid rgba(26,58,26,0.5); font-size: 12px; }
+    tr:hover td { background: rgba(57,255,20,0.03); }
+    .online-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; margin-right: 6px;
+    }
+    .online-dot.online { background: var(--green); box-shadow: 0 0 5px var(--green); }
+    .online-dot.offline { background: #333; }
+    .coord { color: var(--amber); font-size: 11px; }
+    .level-badge {
+      display: inline-block; background: rgba(57,255,20,0.1);
+      border: 1px solid var(--green-dim); padding: 1px 6px; font-size: 11px;
+    }
+
+    /* Forms */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 11px; color: var(--green-dim); letter-spacing: 1px; text-transform: uppercase; }
+    input[type="text"], input[type="number"], input[type="email"],
+    select, textarea {
+      background: var(--bg); border: 1px solid var(--green-dim);
+      color: var(--green); font-family: var(--font); font-size: 13px;
+      padding: 6px 10px; outline: none; width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--green); box-shadow: 0 0 6px rgba(57,255,20,0.2);
+    }
+    select option { background: var(--bg); }
+    textarea { min-height: 80px; resize: vertical; }
+    .form-section {
+      background: var(--bg2); border: 1px solid var(--border);
+      padding: 16px; margin-bottom: 16px;
+    }
+    .form-section-title {
+      font-size: 11px; color: var(--green-dim); letter-spacing: 2px;
+      margin-bottom: 12px; text-transform: uppercase;
+    }
+    .checkbox-group { display: flex; align-items: center; gap: 10px; }
+    input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--green); cursor: pointer; }
+
+    /* Quest list */
+    .quest-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      padding: 12px 16px; margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 12px;
+    }
+    .quest-card:hover { border-color: var(--green-dim); }
+    .quest-info h3 { font-size: 13px; margin-bottom: 4px; }
+    .quest-info p { font-size: 11px; color: var(--green-dim); max-width: 600px; }
+    .quest-meta {
+      display: flex; gap: 12px; margin-top: 6px;
+      font-size: 11px; color: var(--green-dim);
+    }
+    .quest-meta .scope-tag {
+      padding: 2px 8px; border: 1px solid;
+      text-transform: uppercase; font-size: 10px; letter-spacing: 1px;
+    }
+    .scope-universal { border-color: var(--green); color: var(--green); }
+    .scope-individual { border-color: var(--amber); color: var(--amber); }
+    .scope-sector { border-color: #6688ff; color: #6688ff; }
+    .status-active { color: var(--green); }
+    .status-paused { color: var(--amber); }
+    .status-expired, .status-deleted { color: var(--red); }
+    .quest-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* COMM message list */
+    .comm-item {
+      background: var(--bg2); border-left: 3px solid var(--green-dim);
+      padding: 10px 14px; margin-bottom: 8px;
+    }
+    .comm-item.has-replies { border-left-color: var(--amber); }
+    .comm-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .comm-sender { font-size: 12px; color: var(--green); }
+    .comm-time { font-size: 11px; color: var(--green-dim); }
+    .comm-scope-badge {
+      font-size: 10px; padding: 1px 6px; border: 1px solid var(--green-dim);
+      color: var(--green-dim); text-transform: uppercase;
+    }
+    .comm-content { font-size: 12px; color: var(--green-mid); margin: 4px 0; }
+    .comm-replies { font-size: 11px; color: var(--amber); margin-top: 4px; }
+
+    /* Event log */
+    .event-item {
+      display: flex; gap: 12px; padding: 6px 10px;
+      border-bottom: 1px solid rgba(26,58,26,0.3); font-size: 12px;
+    }
+    .event-time { color: var(--green-dim); min-width: 180px; }
+    .event-type { color: var(--amber); min-width: 160px; }
+    .event-label { color: var(--green-mid); }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .stat-box {
+      background: var(--bg2); border: 1px solid var(--border);
+      padding: 16px; text-align: center;
+    }
+    .stat-value { font-size: 28px; color: var(--green); text-shadow: 0 0 12px var(--green); }
+    .stat-label { font-size: 11px; color: var(--green-dim); margin-top: 4px; letter-spacing: 1px; }
+
+    /* YAML editor */
+    .yaml-editor {
+      font-size: 12px; min-height: 280px; font-family: var(--font);
+      background: var(--bg); color: var(--green); border: 1px solid var(--green-dim);
+      padding: 12px; white-space: pre; overflow-x: auto;
+    }
+    .yaml-preview {
+      font-size: 11px; color: var(--green-dim);
+      background: var(--bg3); border: 1px solid var(--border);
+      padding: 10px; max-height: 200px; overflow-y: auto;
+    }
+
+    /* Alert */
+    .alert {
+      padding: 8px 14px; margin-bottom: 12px; font-size: 12px;
+      border-left: 3px solid; display: none;
+    }
+    .alert.show { display: block; }
+    .alert-success { border-color: var(--green); background: rgba(57,255,20,0.06); color: var(--green); }
+    .alert-error { border-color: var(--red); background: rgba(255,51,51,0.06); color: var(--red); }
+
+    /* Objectives builder */
+    .objectives-list { display: flex; flex-direction: column; gap: 8px; }
+    .objective-row {
+      display: flex; gap: 8px; align-items: flex-end;
+      background: var(--bg); border: 1px solid var(--border); padding: 8px;
+    }
+    .objective-row select, .objective-row input { flex: 1; }
+
+    /* Tabs inside form */
+    .form-tabs { display: flex; gap: 0; margin-bottom: 16px; }
+    .form-tab {
+      padding: 6px 16px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--green-dim); cursor: pointer;
+      font-family: var(--font); font-size: 12px;
+    }
+    .form-tab.active { background: var(--bg2); color: var(--green); border-color: var(--green-dim); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--green-dim); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--green); }
+
+    .refresh-info { font-size: 11px; color: var(--green-dim); margin-bottom: 12px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+    .empty-state { color: var(--green-dim); font-size: 12px; padding: 20px; text-align: center; }
+    .loading { color: var(--green-dim); font-size: 12px; padding: 10px; }
+
+    /* Inbox replies */
+    .reply-item {
+      background: var(--bg3); border-left: 3px solid var(--amber);
+      padding: 8px 12px; margin-bottom: 6px; font-size: 12px;
+    }
+    .reply-header { color: var(--amber); margin-bottom: 3px; font-size: 11px; }
+    .reply-content { color: var(--green-mid); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="ascii-logo">
+ __   _______ __________ _____ _  _ ___ _____ ___  ___
+ \ \ / /  _  |_   _|  _ \_   _| \| | __/ __|_   _/ _ \\
+  \ V /| | | | | | | | | || | |  ` | _| |__  | || | | |
+   \_/ |_| |_| |_| |_| |_||_| |_|\_|___\___| |_||_| |_|
+            ADMIN CONSOLE // RESTRICTED ACCESS</div>
+    <label for="tokenInput">ADMIN TOKEN</label>
+    <input type="password" id="tokenInput" placeholder="Enter admin token..." autocomplete="off">
+    <button class="btn btn-primary" style="width:100%" onclick="doLogin()">[ AUTHENTICATE ]</button>
+    <div class="login-error" id="loginError">⚠ AUTHENTICATION FAILED — INVALID TOKEN</div>
+  </div>
+</div>
+
+<!-- ══════════ MAIN APP ══════════ -->
+<div id="app">
+  <div class="header">
+    <div class="header-title">void<span>Sector</span> // ADMIN CONSOLE</div>
+    <div class="header-right">
+      <span><span class="status-dot"></span> ONLINE</span>
+      <span id="headerClock">--:--:--</span>
+      <button class="btn btn-sm btn-danger" onclick="logout()">LOGOUT</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('players')">PLAYERS</div>
+    <div class="tab" onclick="switchTab('quests')">QUESTS</div>
+    <div class="tab" onclick="switchTab('comms')">COMMS</div>
+    <div class="tab" onclick="switchTab('inbox')">INBOX <span class="tab-badge" id="inboxBadge" style="display:none">0</span></div>
+    <div class="tab" onclick="switchTab('events')">EVENTS</div>
+    <div class="tab" onclick="switchTab('stats')">STATS</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ─── PLAYERS PANEL ─── -->
+    <div class="panel active" id="panel-players">
+      <div class="panel-title">ACTIVE PILOTS</div>
+      <div class="refresh-info" id="playersRefreshInfo">Auto-refresh every 10s</div>
+      <div id="playersTableWrap">
+        <div class="loading">Loading player data...</div>
+      </div>
+    </div>
+
+    <!-- ─── QUESTS PANEL ─── -->
+    <div class="panel" id="panel-quests">
+      <div class="panel-title">QUEST MANAGEMENT</div>
+
+      <!-- Create / Import tabs -->
+      <div class="form-tabs">
+        <button class="form-tab active" onclick="switchFormTab('questCreate')">CREATE QUEST</button>
+        <button class="form-tab" onclick="switchFormTab('questImport')">IMPORT YAML</button>
+        <button class="form-tab" onclick="switchFormTab('questList')">QUEST LIST</button>
+      </div>
+
+      <!-- Create Quest Form -->
+      <div id="questCreate">
+        <div id="questCreateAlert" class="alert"></div>
+
+        <div class="form-section">
+          <div class="form-section-title">SCOPE &amp; TYPE</div>
+          <div class="form-grid cols-3">
+            <div class="form-group">
+              <label>Scope</label>
+              <select id="qScope" onchange="onScopeChange()">
+                <option value="universal">Universal (alle Spieler)</option>
+                <option value="individual">Individual (bestimmte Spieler)</option>
+                <option value="sector">Sektor (versteckt in Sektor)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Quest-Typ</label>
+              <select id="qType">
+                <option value="fetch">Fetch (Ressourcen sammeln)</option>
+                <option value="delivery">Delivery (Lieferung)</option>
+                <option value="scan">Scan (Sektor scannen)</option>
+                <option value="bounty">Bounty (Piraten eliminieren)</option>
+                <option value="custom">Custom (frei definiert)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Expires In (Tage)</label>
+              <input type="number" id="qExpiresDays" value="7" min="1" max="365">
+            </div>
+          </div>
+        </div>
+
+        <!-- Scope-specific fields -->
+        <div id="scopeFieldsSector" class="form-section" style="display:none">
+          <div class="form-section-title">SEKTOR-KOORDINATEN</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Sektor X</label>
+              <input type="number" id="qSectorX" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label>Sektor Y</label>
+              <input type="number" id="qSectorY" placeholder="0">
+            </div>
+          </div>
+        </div>
+
+        <div id="scopeFieldsIndividual" class="form-section" style="display:none">
+          <div class="form-section-title">ZIELSPIELER (Usernames oder IDs, kommagetrennt)</div>
+          <div class="form-group">
+            <label>Spieler</label>
+            <input type="text" id="qTargetPlayers" placeholder="PlayerOne, PlayerTwo">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">QUEST-INHALT</div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Titel</label>
+              <input type="text" id="qTitle" placeholder="Die verlorene Ladung">
+            </div>
+            <div class="form-group full">
+              <label>Beschreibung</label>
+              <textarea id="qDescription" placeholder="Beschreibung der Quest..."></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Intro-Text (NPC-Dialog, optional)</label>
+              <textarea id="qIntroText" style="min-height:60px" placeholder="Pilot, ich brauche deine Hilfe..."></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Abschluss-Text (optional)</label>
+              <textarea id="qCompletionText" style="min-height:60px" placeholder="Ausgezeichnet, du hast..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">NPC</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>NPC Name</label>
+              <input type="text" id="qNpcName" value="ADMIN" placeholder="Commander Vex">
+            </div>
+            <div class="form-group">
+              <label>NPC Fraktion</label>
+              <select id="qNpcFaction">
+                <option value="independent">Independent</option>
+                <option value="traders">Traders</option>
+                <option value="scientists">Scientists</option>
+                <option value="pirates">Pirates</option>
+                <option value="ancients">Ancients</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Max. Annahmen (leer = unbegrenzt)</label>
+              <input type="number" id="qMaxAccept" placeholder="unbegrenzt" min="1">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">ZIELE</div>
+          <div class="objectives-list" id="objectivesList"></div>
+          <button class="btn btn-sm" style="margin-top:8px" onclick="addObjective()">+ ZIEL HINZUFÜGEN</button>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">BELOHNUNGEN</div>
+          <div class="form-grid cols-3">
+            <div class="form-group">
+              <label>Credits</label>
+              <input type="number" id="qRewardCredits" value="1000" min="0">
+            </div>
+            <div class="form-group">
+              <label>XP</label>
+              <input type="number" id="qRewardXp" value="100" min="0">
+            </div>
+            <div class="form-group">
+              <label>Reputation (NPC-Fraktion)</label>
+              <input type="number" id="qRewardRep" value="10" min="-100" max="100">
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="createQuest()">[ QUEST ERSTELLEN &amp; AKTIVIEREN ]</button>
+      </div>
+
+      <!-- Import YAML -->
+      <div id="questImport" style="display:none">
+        <div id="questImportAlert" class="alert"></div>
+        <div class="form-section">
+          <div class="form-section-title">YAML EINFÜGEN</div>
+          <p style="font-size:11px;color:var(--green-dim);margin-bottom:10px">
+            Generiere eine Quest mit der QUEST-ENGINE (siehe QUEST_ENGINE.md) und füge das YAML hier ein.
+          </p>
+          <textarea class="yaml-editor" id="yamlInput" spellcheck="false" placeholder="# Quest YAML einfügen...
+version: '1.0'
+quest:
+  title: 'Quest Name'
+  description: '...'
+  scope: universal
+  type: fetch
+  ..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <button class="btn" onclick="parseYaml()">[ YAML PRÜFEN ]</button>
+          <button class="btn btn-primary" onclick="importYaml()">[ IMPORTIEREN &amp; AKTIVIEREN ]</button>
+        </div>
+        <div id="yamlPreview" class="yaml-preview" style="display:none"></div>
+        <hr class="divider">
+        <div class="form-section">
+          <div class="form-section-title">YAML FORMAT (Referenz)</div>
+          <pre style="font-size:11px;color:var(--green-dim);line-height:1.6">version: '1.0'
+quest:
+  title: 'Die Verlorene Ladung'
+  description: 'Sammle Ressourcen und liefere sie ab.'
+  scope: universal          # universal | individual | sector
+  type: fetch               # fetch | delivery | scan | bounty | custom
+  npc_name: 'Commander Vex'
+  npc_faction: pirates      # traders | scientists | pirates | ancients | independent
+  expires_days: 7
+  max_acceptances: 50       # optional
+  sector:                   # nur für scope: sector
+    x: 12
+    y: -5
+  target_players:           # nur für scope: individual (Usernames)
+    - PlayerOne
+    - PlayerTwo
+  objectives:
+    - type: fetch
+      description: '50 Erz sammeln'
+      resource: ore
+      amount: 50
+    - type: delivery
+      description: 'Zur Basisstation liefern'
+      target_x: 5
+      target_y: 3
+  rewards:
+    credits: 5000
+    xp: 200
+    reputation:
+      faction: traders
+      amount: 15
+  flavor:
+    intro_text: 'Pilot, ich brauche deine Hilfe...'
+    completion_text: 'Ausgezeichnet!'</pre>
+        </div>
+      </div>
+
+      <!-- Quest List -->
+      <div id="questList" style="display:none">
+        <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
+          <select id="questListFilter" onchange="loadQuests()" style="width:auto">
+            <option value="">Alle (außer gelöscht)</option>
+            <option value="active">Aktiv</option>
+            <option value="paused">Pausiert</option>
+            <option value="expired">Abgelaufen</option>
+          </select>
+          <button class="btn btn-sm" onclick="loadQuests()">↻ AKTUALISIEREN</button>
+        </div>
+        <div id="questsListWrap"><div class="loading">Lade Quests...</div></div>
+      </div>
+    </div>
+
+    <!-- ─── COMMS PANEL ─── -->
+    <div class="panel" id="panel-comms">
+      <div class="panel-title">KOMMUNKATIONS-ZENTRALE</div>
+      <div id="commsAlert" class="alert"></div>
+
+      <div class="form-section">
+        <div class="form-section-title">NACHRICHT SENDEN</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Absender-Name</label>
+            <input type="text" id="commSender" value="ADMIN" placeholder="Commander Rex">
+          </div>
+          <div class="form-group">
+            <label>Nachrichtentyp</label>
+            <select id="commScope" onchange="onCommScopeChange()">
+              <option value="universal">Universal (alle Spieler)</option>
+              <option value="quadrant">Quadrant (Sektor-Bereich)</option>
+              <option value="individual">Individuell (bestimmte Spieler)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="commSectorFields" style="display:none">
+          <hr class="divider">
+          <div class="form-section-title">ZIEL-SEKTOR</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Sektor X</label>
+              <input type="number" id="commSectorX" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label>Sektor Y</label>
+              <input type="number" id="commSectorY" placeholder="0">
+            </div>
+          </div>
+        </div>
+
+        <div id="commPlayerFields" style="display:none">
+          <hr class="divider">
+          <div class="form-section-title">ZIELSPIELER (Usernames oder IDs, kommagetrennt)</div>
+          <div class="form-group">
+            <label>Spieler</label>
+            <input type="text" id="commTargetPlayers" placeholder="PlayerOne, PlayerTwo">
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="form-group full" style="margin-bottom:12px">
+          <label>Nachricht</label>
+          <textarea id="commContent" style="min-height:100px" placeholder="Nachrichtentext..."></textarea>
+        </div>
+        <div class="checkbox-group" style="margin-bottom:16px">
+          <input type="checkbox" id="commAllowReply">
+          <label for="commAllowReply" style="text-transform:none;font-size:13px;color:var(--green)">
+            Bidirektional — Spieler können antworten
+          </label>
+        </div>
+        <button class="btn btn-primary" onclick="sendComm()">[ NACHRICHT SENDEN ]</button>
+      </div>
+
+      <hr class="divider">
+      <div class="panel-title" style="margin-top:0">GESENDETE NACHRICHTEN</div>
+      <button class="btn btn-sm" onclick="loadComms()" style="margin-bottom:12px">↻ AKTUALISIEREN</button>
+      <div id="commsListWrap"><div class="loading">Lade Nachrichten...</div></div>
+    </div>
+
+    <!-- ─── INBOX PANEL ─── -->
+    <div class="panel" id="panel-inbox">
+      <div class="panel-title">SPIELER-ANTWORTEN (INBOX)</div>
+      <button class="btn btn-sm" onclick="loadInbox()" style="margin-bottom:12px">↻ AKTUALISIEREN</button>
+      <div id="inboxWrap"><div class="loading">Lade Antworten...</div></div>
+    </div>
+
+    <!-- ─── EVENTS PANEL ─── -->
+    <div class="panel" id="panel-events">
+      <div class="panel-title">GAME EVENTS</div>
+      <div id="eventsAlert" class="alert"></div>
+
+      <div class="form-section">
+        <div class="form-section-title">EVENT AUSLÖSEN</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Event-Typ</label>
+            <select id="eventType">
+              <option value="resource_surge">Resource Surge (Ressourcen-Boost in Sektor)</option>
+              <option value="pirate_wave">Pirate Wave (Piraten-Angriffswelle)</option>
+              <option value="distress_call">Distress Call (Notruf)</option>
+              <option value="anomaly">Anomaly (Anomalie erscheint)</option>
+              <option value="server_announcement">Server Announcement</option>
+              <option value="maintenance_warning">Maintenance Warning</option>
+              <option value="custom">Custom Event</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Label / Beschreibung</label>
+            <input type="text" id="eventLabel" placeholder="Event-Beschreibung">
+          </div>
+          <div class="form-group">
+            <label>Ziel-Sektor X (optional)</label>
+            <input type="number" id="eventSectorX" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>Ziel-Sektor Y (optional)</label>
+            <input type="number" id="eventSectorY" placeholder="0">
+          </div>
+          <div class="form-group full">
+            <label>Payload (JSON, optional)</label>
+            <input type="text" id="eventPayload" placeholder='{"intensity": 2}'>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="triggerEvent()">[ EVENT AUSLÖSEN ]</button>
+      </div>
+
+      <hr class="divider">
+      <div class="panel-title" style="margin-top:0">EVENT LOG</div>
+      <button class="btn btn-sm" onclick="loadEvents()" style="margin-bottom:12px">↻ AKTUALISIEREN</button>
+      <div id="eventsLogWrap"><div class="loading">Lade Event-Log...</div></div>
+    </div>
+
+    <!-- ─── STATS PANEL ─── -->
+    <div class="panel" id="panel-stats">
+      <div class="panel-title">SERVER STATISTICS</div>
+      <button class="btn btn-sm" onclick="loadStats()" style="margin-bottom:16px">↻ AKTUALISIEREN</button>
+      <div class="stats-grid" id="statsGrid">
+        <div class="loading">Lade Statistiken...</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let adminToken = '';
+let autoRefreshTimer = null;
+let inboxCount = 0;
+
+const API = (path) => `/admin/api${path}`;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) return;
+  try {
+    const r = await fetch(API('/ping'), {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (r.ok) {
+      adminToken = token;
+      sessionStorage.setItem('adminToken', token);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      initApp();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+    }
+  } catch {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function logout() {
+  adminToken = '';
+  sessionStorage.removeItem('adminToken');
+  clearInterval(autoRefreshTimer);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+async function apiFetch(path, opts = {}) {
+  const r = await fetch(API(path), {
+    ...opts,
+    headers: {
+      'Authorization': `Bearer ${adminToken}`,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  if (r.status === 401) { logout(); throw new Error('Unauthorized'); }
+  return r;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function initApp() {
+  addObjective(); // Start with one objective
+  loadPlayers();
+  loadStats();
+  loadComms();
+  loadEvents();
+  loadInbox();
+  startClock();
+  autoRefreshTimer = setInterval(() => {
+    if (currentTab === 'players') loadPlayers();
+    loadInbox(); // Always check inbox for new replies
+  }, 10000);
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+function startClock() {
+  const el = document.getElementById('headerClock');
+  setInterval(() => {
+    el.textContent = new Date().toTimeString().slice(0, 8);
+  }, 1000);
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+let currentTab = 'players';
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  if (tab === 'players') loadPlayers();
+  if (tab === 'quests') { loadQuests(); }
+  if (tab === 'comms') loadComms();
+  if (tab === 'events') loadEvents();
+  if (tab === 'stats') loadStats();
+  if (tab === 'inbox') loadInbox();
+}
+
+function switchFormTab(id) {
+  ['questCreate', 'questImport', 'questList'].forEach(t => {
+    document.getElementById(t).style.display = t === id ? 'block' : 'none';
+  });
+  document.querySelectorAll('.form-tab').forEach((t, i) => {
+    t.classList.toggle('active', ['questCreate','questImport','questList'][i] === id);
+  });
+  if (id === 'questList') loadQuests();
+}
+
+// ── Players ───────────────────────────────────────────────────────────────────
+async function loadPlayers() {
+  try {
+    const r = await apiFetch('/players');
+    const { players } = await r.json();
+    const now = Date.now();
+    const rows = players.map(p => {
+      const online = p.position !== null;
+      const posStr = p.position ? `<span class="coord">[${p.position.x}, ${p.position.y}]</span>` : '<span style="color:#333">—</span>';
+      return `<tr>
+        <td><span class="online-dot ${online ? 'online' : 'offline'}"></span>${esc(p.username)}</td>
+        <td>${posStr}</td>
+        <td><span class="level-badge">LVL ${p.level}</span></td>
+        <td>${p.xp.toLocaleString()} XP</td>
+        <td>${p.credits.toLocaleString()} CR</td>
+        <td style="color:${p.isGuest ? 'var(--amber)' : 'var(--green-dim)'}">
+          ${p.isGuest ? 'GAST' : 'PILOT'}
+        </td>
+        <td style="color:var(--green-dim);font-size:11px">${fmtDate(p.createdAt)}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('playersTableWrap').innerHTML = players.length === 0
+      ? '<div class="empty-state">Keine Spieler gefunden.</div>'
+      : `<table>
+          <thead><tr>
+            <th>Pilot</th><th>Position</th><th>Level</th><th>XP</th><th>Credits</th><th>Typ</th><th>Registriert</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    document.getElementById('playersRefreshInfo').textContent =
+      `${players.length} Spieler // Letzte Aktualisierung: ${new Date().toTimeString().slice(0,8)} (auto-refresh 10s)`;
+  } catch(e) {
+    document.getElementById('playersTableWrap').innerHTML = '<div class="empty-state" style="color:var(--red)">Fehler beim Laden.</div>';
+  }
+}
+
+// ── Quest Form ────────────────────────────────────────────────────────────────
+function onScopeChange() {
+  const scope = document.getElementById('qScope').value;
+  document.getElementById('scopeFieldsSector').style.display = scope === 'sector' ? 'block' : 'none';
+  document.getElementById('scopeFieldsIndividual').style.display = scope === 'individual' ? 'block' : 'none';
+}
+
+let objectiveCount = 0;
+function addObjective() {
+  objectiveCount++;
+  const div = document.createElement('div');
+  div.className = 'objective-row';
+  div.id = `obj_${objectiveCount}`;
+  div.innerHTML = `
+    <select onchange="onObjTypeChange(${objectiveCount})" style="flex:0 0 120px">
+      <option value="fetch">Fetch</option>
+      <option value="delivery">Delivery</option>
+      <option value="scan">Scan</option>
+      <option value="bounty">Bounty</option>
+      <option value="custom">Custom</option>
+    </select>
+    <input type="text" placeholder="Beschreibung" class="obj-desc">
+    <div class="obj-extra" style="display:flex;gap:6px;flex:1">
+      <input type="text" placeholder="Ressource (ore/gas/crystal)" class="obj-resource">
+      <input type="number" placeholder="Menge" class="obj-amount" style="flex:0 0 80px">
+    </div>
+    <button class="btn btn-sm btn-danger" onclick="removeObjective(${objectiveCount})">✕</button>
+  `;
+  document.getElementById('objectivesList').appendChild(div);
+}
+
+function removeObjective(id) {
+  const el = document.getElementById(`obj_${id}`);
+  if (el) el.remove();
+}
+
+function onObjTypeChange(id) {
+  const row = document.getElementById(`obj_${id}`);
+  const type = row.querySelector('select').value;
+  const extra = row.querySelector('.obj-extra');
+  if (type === 'fetch') {
+    extra.innerHTML = `<input type="text" placeholder="Ressource (ore/gas/crystal)" class="obj-resource"><input type="number" placeholder="Menge" class="obj-amount" style="flex:0 0 80px">`;
+  } else if (['delivery','scan','bounty'].includes(type)) {
+    extra.innerHTML = `<input type="number" placeholder="Ziel X" class="obj-tx" style="flex:0 0 80px"><input type="number" placeholder="Ziel Y" class="obj-ty" style="flex:0 0 80px">`;
+  } else {
+    extra.innerHTML = `<input type="text" placeholder="Extra-Info (optional)" class="obj-extra-info">`;
+  }
+}
+
+function getObjectives() {
+  const rows = document.querySelectorAll('.objective-row');
+  return Array.from(rows).map(row => {
+    const type = row.querySelector('select').value;
+    const desc = row.querySelector('.obj-desc')?.value || '';
+    const obj = { type, description: desc, fulfilled: false };
+    if (type === 'fetch') {
+      obj.resource = row.querySelector('.obj-resource')?.value || 'ore';
+      obj.amount = Number(row.querySelector('.obj-amount')?.value || 0);
+    } else if (['delivery','scan','bounty'].includes(type)) {
+      obj.targetX = Number(row.querySelector('.obj-tx')?.value || 0);
+      obj.targetY = Number(row.querySelector('.obj-ty')?.value || 0);
+    }
+    return obj;
+  });
+}
+
+async function createQuest() {
+  const scope = document.getElementById('qScope').value;
+  const body = {
+    title: document.getElementById('qTitle').value.trim(),
+    description: document.getElementById('qDescription').value.trim(),
+    scope,
+    questType: document.getElementById('qType').value,
+    npcName: document.getElementById('qNpcName').value.trim() || 'ADMIN',
+    npcFactionId: document.getElementById('qNpcFaction').value,
+    objectives: getObjectives(),
+    rewards: {
+      credits: Number(document.getElementById('qRewardCredits').value) || 0,
+      xp: Number(document.getElementById('qRewardXp').value) || 0,
+      reputation: Number(document.getElementById('qRewardRep').value) || 0,
+    },
+    introText: document.getElementById('qIntroText').value.trim() || null,
+    completionText: document.getElementById('qCompletionText').value.trim() || null,
+  };
+
+  const days = Number(document.getElementById('qExpiresDays').value);
+  if (days > 0) {
+    const d = new Date(); d.setDate(d.getDate() + days);
+    body.expiresAt = d.toISOString();
+  }
+  const maxA = document.getElementById('qMaxAccept').value;
+  if (maxA) body.maxAcceptances = Number(maxA);
+
+  if (scope === 'sector') {
+    body.targetSectorX = Number(document.getElementById('qSectorX').value);
+    body.targetSectorY = Number(document.getElementById('qSectorY').value);
+  }
+  if (scope === 'individual') {
+    body.targetPlayerIds = document.getElementById('qTargetPlayers').value
+      .split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  if (!body.title || !body.description) {
+    showAlert('questCreateAlert', 'Titel und Beschreibung sind Pflichtfelder.', 'error');
+    return;
+  }
+
+  try {
+    const r = await apiFetch('/quests', { method: 'POST', body: JSON.stringify(body) });
+    const data = await r.json();
+    if (r.ok) {
+      showAlert('questCreateAlert', `✓ Quest "${data.quest.title}" erstellt und aktiviert!`, 'success');
+    } else {
+      showAlert('questCreateAlert', `Fehler: ${data.error}`, 'error');
+    }
+  } catch(e) {
+    showAlert('questCreateAlert', 'Netzwerkfehler.', 'error');
+  }
+}
+
+// ── YAML Import ───────────────────────────────────────────────────────────────
+function parseYaml() {
+  const raw = document.getElementById('yamlInput').value;
+  try {
+    const parsed = jsyaml.load(raw);
+    document.getElementById('yamlPreview').style.display = 'block';
+    document.getElementById('yamlPreview').textContent = JSON.stringify(parsed, null, 2);
+    showAlert('questImportAlert', '✓ YAML ist valide — Inhalt unten geprüft.', 'success');
+    return parsed;
+  } catch(e) {
+    showAlert('questImportAlert', `YAML-Fehler: ${e.message}`, 'error');
+    return null;
+  }
+}
+
+async function importYaml() {
+  const raw = document.getElementById('yamlInput').value.trim();
+  if (!raw) { showAlert('questImportAlert', 'Kein YAML eingegeben.', 'error'); return; }
+  const parsed = parseYaml();
+  if (!parsed) return;
+
+  const q = parsed.quest;
+  if (!q) { showAlert('questImportAlert', 'YAML muss ein "quest:" Objekt enthalten.', 'error'); return; }
+
+  // Map YAML to API body
+  const days = q.expires_days || 7;
+  const d = new Date(); d.setDate(d.getDate() + days);
+  const body = {
+    title: q.title || 'Unbekannte Quest',
+    description: q.description || '',
+    scope: q.scope || 'universal',
+    questType: q.type || 'custom',
+    npcName: q.npc_name || 'ADMIN',
+    npcFactionId: q.npc_faction || 'independent',
+    expiresAt: d.toISOString(),
+    maxAcceptances: q.max_acceptances || null,
+    objectives: (q.objectives || []).map(o => ({
+      type: o.type || 'custom',
+      description: o.description || '',
+      resource: o.resource || undefined,
+      amount: o.amount || undefined,
+      targetX: o.target_x || undefined,
+      targetY: o.target_y || undefined,
+      fulfilled: false,
+    })),
+    rewards: {
+      credits: q.rewards?.credits || 0,
+      xp: q.rewards?.xp || 0,
+      reputation: q.rewards?.reputation?.amount || 0,
+      rivalFactionId: q.rewards?.reputation?.faction || undefined,
+    },
+    introText: q.flavor?.intro_text || null,
+    completionText: q.flavor?.completion_text || null,
+    targetSectorX: q.sector?.x ?? null,
+    targetSectorY: q.sector?.y ?? null,
+    targetPlayerIds: q.target_players || null,
+    yamlSource: raw,
+  };
+
+  try {
+    const r = await apiFetch('/quests', { method: 'POST', body: JSON.stringify(body) });
+    const data = await r.json();
+    if (r.ok) {
+      showAlert('questImportAlert', `✓ Quest "${data.quest.title}" importiert und aktiviert!`, 'success');
+      document.getElementById('yamlInput').value = '';
+      document.getElementById('yamlPreview').style.display = 'none';
+    } else {
+      showAlert('questImportAlert', `Fehler: ${data.error}`, 'error');
+    }
+  } catch(e) {
+    showAlert('questImportAlert', 'Netzwerkfehler.', 'error');
+  }
+}
+
+// ── Quest List ────────────────────────────────────────────────────────────────
+async function loadQuests() {
+  const filter = document.getElementById('questListFilter')?.value || '';
+  try {
+    const r = await apiFetch('/quests' + (filter ? `?status=${filter}` : ''));
+    const { quests } = await r.json();
+    if (quests.length === 0) {
+      document.getElementById('questsListWrap').innerHTML = '<div class="empty-state">Keine Quests gefunden.</div>';
+      return;
+    }
+    document.getElementById('questsListWrap').innerHTML = quests.map(q => `
+      <div class="quest-card">
+        <div class="quest-info">
+          <h3>${esc(q.title)}</h3>
+          <p>${esc(q.description)}</p>
+          <div class="quest-meta">
+            <span class="scope-tag scope-${q.scope}">${q.scope}</span>
+            <span>${q.questType}</span>
+            <span class="status-${q.status}">${q.status.toUpperCase()}</span>
+            <span>${q.acceptanceCount} Annahmen${q.maxAcceptances ? ' / ' + q.maxAcceptances : ''}</span>
+            ${q.targetSectorX != null ? `<span style="color:#6688ff">Sektor [${q.targetSectorX}, ${q.targetSectorY}]</span>` : ''}
+            ${q.expiresAt ? `<span>Läuft ab: ${fmtDate(q.expiresAt)}</span>` : ''}
+          </div>
+        </div>
+        <div class="quest-actions">
+          ${q.status === 'active' ? `<button class="btn btn-sm btn-amber" onclick="setQuestStatus('${q.id}','paused')">PAUSE</button>` : ''}
+          ${q.status === 'paused' ? `<button class="btn btn-sm" onclick="setQuestStatus('${q.id}','active')">AKTIVIEREN</button>` : ''}
+          ${q.status !== 'deleted' ? `<button class="btn btn-sm btn-danger" onclick="setQuestStatus('${q.id}','deleted')">LÖSCHEN</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    document.getElementById('questsListWrap').innerHTML = '<div class="empty-state" style="color:var(--red)">Fehler beim Laden.</div>';
+  }
+}
+
+async function setQuestStatus(id, status) {
+  if (status === 'deleted' && !confirm('Quest wirklich löschen?')) return;
+  try {
+    await apiFetch(`/quests/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+    loadQuests();
+  } catch(e) {}
+}
+
+// ── COMMS ─────────────────────────────────────────────────────────────────────
+function onCommScopeChange() {
+  const scope = document.getElementById('commScope').value;
+  document.getElementById('commSectorFields').style.display = scope === 'quadrant' ? 'block' : 'none';
+  document.getElementById('commPlayerFields').style.display = scope === 'individual' ? 'block' : 'none';
+}
+
+async function sendComm() {
+  const scope = document.getElementById('commScope').value;
+  const body = {
+    adminName: document.getElementById('commSender').value.trim() || 'ADMIN',
+    scope,
+    content: document.getElementById('commContent').value.trim(),
+    allowReply: document.getElementById('commAllowReply').checked,
+  };
+  if (!body.content) { showAlert('commsAlert', 'Nachrichtentext ist leer.', 'error'); return; }
+  if (scope === 'quadrant') {
+    body.targetSectorX = Number(document.getElementById('commSectorX').value);
+    body.targetSectorY = Number(document.getElementById('commSectorY').value);
+  }
+  if (scope === 'individual') {
+    body.targetPlayerIds = document.getElementById('commTargetPlayers').value
+      .split(',').map(s => s.trim()).filter(Boolean);
+    if (!body.targetPlayerIds.length) {
+      showAlert('commsAlert', 'Keine Zielspieler angegeben.', 'error');
+      return;
+    }
+  }
+  try {
+    const r = await apiFetch('/comms', { method: 'POST', body: JSON.stringify(body) });
+    const data = await r.json();
+    if (r.ok) {
+      showAlert('commsAlert', '✓ Nachricht gesendet!', 'success');
+      document.getElementById('commContent').value = '';
+      loadComms();
+    } else {
+      showAlert('commsAlert', `Fehler: ${data.error}`, 'error');
+    }
+  } catch(e) {
+    showAlert('commsAlert', 'Netzwerkfehler.', 'error');
+  }
+}
+
+async function loadComms() {
+  try {
+    const r = await apiFetch('/comms');
+    const { messages } = await r.json();
+    if (!messages.length) {
+      document.getElementById('commsListWrap').innerHTML = '<div class="empty-state">Keine Nachrichten.</div>';
+      return;
+    }
+    document.getElementById('commsListWrap').innerHTML = messages.map(m => `
+      <div class="comm-item ${m.allowReply ? 'has-replies' : ''}">
+        <div class="comm-header">
+          <span class="comm-sender">Admin:${esc(m.adminName)}</span>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span class="comm-scope-badge">${m.scope}</span>
+            ${m.allowReply ? '<span style="color:var(--amber);font-size:11px">↔ BIDIREKTIONAL</span>' : ''}
+            <span class="comm-time">${fmtDate(m.sentAt)}</span>
+          </div>
+        </div>
+        <div class="comm-content">${esc(m.content)}</div>
+        ${m.targetSectorX != null ? `<div style="font-size:11px;color:#6688ff;margin-top:3px">Sektor [${m.targetSectorX}, ${m.targetSectorY}]</div>` : ''}
+        ${m.targetPlayerIds ? `<div style="font-size:11px;color:var(--amber);margin-top:3px">→ ${m.targetPlayerIds.join(', ')}</div>` : ''}
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+// ── Inbox ─────────────────────────────────────────────────────────────────────
+async function loadInbox() {
+  try {
+    const r = await apiFetch('/comms/inbox');
+    const { replies } = await r.json();
+    const badge = document.getElementById('inboxBadge');
+    if (replies.length > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = replies.length;
+    } else {
+      badge.style.display = 'none';
+    }
+    if (!replies.length) {
+      document.getElementById('inboxWrap').innerHTML = '<div class="empty-state">Keine Spieler-Antworten.</div>';
+      return;
+    }
+    document.getElementById('inboxWrap').innerHTML = replies.map(rep => `
+      <div class="reply-item">
+        <div class="reply-header">
+          ${esc(rep.username)} → Admin:${esc(rep.admin_name)}
+          <span style="float:right">${fmtDate(rep.sent_at)}</span>
+        </div>
+        <div style="font-size:10px;color:var(--green-dim);margin-bottom:4px">
+          Re: "${esc((rep.original_message || '').slice(0, 60))}${rep.original_message?.length > 60 ? '...' : ''}"
+        </div>
+        <div class="reply-content">${esc(rep.content)}</div>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+async function triggerEvent() {
+  const body = {
+    eventType: document.getElementById('eventType').value,
+    label: document.getElementById('eventLabel').value.trim() || undefined,
+    targetSectorX: document.getElementById('eventSectorX').value !== ''
+      ? Number(document.getElementById('eventSectorX').value) : undefined,
+    targetSectorY: document.getElementById('eventSectorY').value !== ''
+      ? Number(document.getElementById('eventSectorY').value) : undefined,
+  };
+  const payloadStr = document.getElementById('eventPayload').value.trim();
+  if (payloadStr) {
+    try { body.payload = JSON.parse(payloadStr); }
+    catch { showAlert('eventsAlert', 'Payload ist kein valides JSON.', 'error'); return; }
+  }
+  try {
+    const r = await apiFetch('/events', { method: 'POST', body: JSON.stringify(body) });
+    if (r.ok) {
+      showAlert('eventsAlert', `✓ Event "${body.eventType}" ausgelöst!`, 'success');
+      document.getElementById('eventLabel').value = '';
+      document.getElementById('eventPayload').value = '';
+      loadEvents();
+    } else {
+      const d = await r.json();
+      showAlert('eventsAlert', `Fehler: ${d.error}`, 'error');
+    }
+  } catch(e) {
+    showAlert('eventsAlert', 'Netzwerkfehler.', 'error');
+  }
+}
+
+async function loadEvents() {
+  try {
+    const r = await apiFetch('/events?limit=50');
+    const { events } = await r.json();
+    if (!events.length) {
+      document.getElementById('eventsLogWrap').innerHTML = '<div class="empty-state">Keine Events.</div>';
+      return;
+    }
+    document.getElementById('eventsLogWrap').innerHTML = events.map(e => `
+      <div class="event-item">
+        <span class="event-time">${fmtDate(e.triggered_at)}</span>
+        <span class="event-type">${esc(e.event_type)}</span>
+        <span class="event-label">${esc(e.label || '')}
+          ${e.target_sector_x != null ? `<span class="coord">[${e.target_sector_x},${e.target_sector_y}]</span>` : ''}
+        </span>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await apiFetch('/stats');
+    const { stats } = await r.json();
+    document.getElementById('statsGrid').innerHTML = [
+      ['GESAMT PILOTEN', stats.totalPlayers],
+      ['GAST-ACCOUNTS', stats.totalGuests],
+      ['ADMIN QUESTS', stats.totalQuests],
+      ['AKTIVE QUESTS', stats.activeAdminQuests],
+      ['COMM-NACHRICHTEN', stats.totalMessages],
+    ].map(([label, val]) => `
+      <div class="stat-box">
+        <div class="stat-value">${val}</div>
+        <div class="stat-label">${label}</div>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(str) {
+  if (!str) return '—';
+  try {
+    const d = new Date(str);
+    return d.toLocaleDateString('de-DE') + ' ' + d.toTimeString().slice(0,8);
+  } catch { return str; }
+}
+
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `alert alert-${type} show`;
+  el.textContent = msg;
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+// Check if already authenticated (session storage)
+window.addEventListener('load', () => {
+  const saved = sessionStorage.getItem('adminToken');
+  if (saved) {
+    document.getElementById('tokenInput').value = saved;
+    adminToken = saved;
+    doLogin();
+  }
+});
+
+// Enter key on login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
+    doLogin();
+  }
+});
+</script>
+</body>
+</html>

@@ -2,6 +2,10 @@ import colyseus from 'colyseus';
 import type { Client } from 'colyseus';
 const { Room, ServerError } = colyseus;
 
+import { adminBus } from '../adminBus.js';
+import type { AdminBroadcast, AdminQuestOffer as AdminQuestOfferBus, AdminGameEvent } from '../adminBus.js';
+import { createAdminQuestAssignment, getAdminQuestsForSector, acceptAdminQuestAssignment, declineAdminQuestAssignment, createAdminMessageReply } from '../db/adminQueries.js';
+
 import { SectorRoomState, PlayerSchema } from './schema/SectorState.js';
 import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
@@ -60,6 +64,10 @@ export class SectorRoom extends Room<SectorRoomState> {
   private combatV2States = new Map<string, CombatV2State>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
   private rateLimits = new Map<string, Map<string, number>>();
+  // adminBus listener references (kept so we can remove them on dispose)
+  private _adminCommListener: ((msg: AdminBroadcast) => void) | null = null;
+  private _adminQuestListener: ((offer: AdminQuestOfferBus) => void) | null = null;
+  private _adminEventListener: ((event: AdminGameEvent) => void) | null = null;
 
   private checkRate(sessionId: string, action: string, intervalMs: number): boolean {
     let map = this.rateLimits.get(sessionId);
@@ -107,6 +115,20 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.state.sector.seed = sectorData.seed;
 
     this.roomId = `sector_${sectorX}_${sectorY}`;
+
+    // ── Admin Bus subscriptions ──────────────────────────────────────────────
+    this._adminCommListener = (msg: AdminBroadcast) => {
+      this._relayAdminComm(msg);
+    };
+    this._adminQuestListener = (offer: AdminQuestOfferBus) => {
+      this._relayAdminQuestOffer(offer);
+    };
+    this._adminEventListener = (event: AdminGameEvent) => {
+      this._relayAdminEvent(event);
+    };
+    adminBus.on('admin:comm', this._adminCommListener);
+    adminBus.on('admin:questOffer', this._adminQuestListener);
+    adminBus.on('admin:event', this._adminEventListener);
 
     // Handle jump message
     this.onMessage('jump', async (client, data: JumpMessage) => {
@@ -279,6 +301,39 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('getActiveQuests', async (client) => {
       await this.handleGetActiveQuests(client);
+    });
+
+    // Admin-quest accept / decline (client responds to admin quest offer in COMM)
+    this.onMessage('acceptAdminQuest', async (client, data: { adminQuestId: string }) => {
+      if (!data.adminQuestId) return;
+      const auth = client.auth as AuthPayload;
+      try {
+        await acceptAdminQuestAssignment(data.adminQuestId, auth.userId);
+        client.send('adminQuestAccepted', { adminQuestId: data.adminQuestId });
+      } catch {
+        client.send('error', { code: 'ADMIN_QUEST_ERROR', message: 'Could not accept quest' });
+      }
+    });
+    this.onMessage('declineAdminQuest', async (client, data: { adminQuestId: string }) => {
+      if (!data.adminQuestId) return;
+      const auth = client.auth as AuthPayload;
+      try {
+        await declineAdminQuestAssignment(data.adminQuestId, auth.userId);
+        client.send('adminQuestDeclined', { adminQuestId: data.adminQuestId });
+      } catch {}
+    });
+
+    // Reply to bidirectional admin COMM message
+    this.onMessage('replyAdminComm', async (client, data: { adminMessageId: string; content: string }) => {
+      if (!data.adminMessageId || !data.content) return;
+      const auth = client.auth as AuthPayload;
+      const content = String(data.content).slice(0, 500).replace(/<[^>]*>/g, '');
+      try {
+        await createAdminMessageReply(data.adminMessageId, auth.userId, content);
+        client.send('adminCommReplySent', { ok: true });
+      } catch {
+        client.send('error', { code: 'COMM_REPLY_ERROR', message: 'Could not send reply' });
+      }
     });
     this.onMessage('getReputation', async (client) => {
       await this.handleGetReputation(client);
@@ -726,6 +781,69 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.rateLimits.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
+  }
+
+  onDispose() {
+    // Remove adminBus listeners to prevent memory leaks
+    if (this._adminCommListener) adminBus.off('admin:comm', this._adminCommListener);
+    if (this._adminQuestListener) adminBus.off('admin:questOffer', this._adminQuestListener);
+    if (this._adminEventListener) adminBus.off('admin:event', this._adminEventListener);
+  }
+
+  // ── Admin Bus relay helpers ────────────────────────────────────────────────
+
+  private _relayAdminComm(msg: AdminBroadcast): void {
+    const sectorX = this.state.sector.x;
+    const sectorY = this.state.sector.y;
+
+    if (msg.scope === 'universal') {
+      // Send to every connected client in this room
+      this.broadcast('adminComm', msg);
+      return;
+    }
+    if (msg.scope === 'quadrant' && msg.targetSectorX === sectorX && msg.targetSectorY === sectorY) {
+      this.broadcast('adminComm', msg);
+      return;
+    }
+    if (msg.scope === 'individual' && msg.targetPlayerIds) {
+      for (const [, client] of this.clients.entries()) {
+        const auth = client.auth as AuthPayload;
+        if (msg.targetPlayerIds.includes(auth.userId)) {
+          client.send('adminComm', msg);
+        }
+      }
+    }
+  }
+
+  private async _relayAdminQuestOffer(offer: AdminQuestOfferBus): Promise<void> {
+    if (offer.scope === 'universal') {
+      // Create pending assignment for each connected player and broadcast offer
+      for (const [, client] of this.clients.entries()) {
+        const auth = client.auth as AuthPayload;
+        try {
+          await createAdminQuestAssignment(offer.adminQuestId, auth.userId, offer.objectives as unknown[]);
+        } catch { /* already assigned */ }
+        client.send('adminQuestOffer', offer);
+      }
+      return;
+    }
+    if (offer.scope === 'individual' && offer.targetPlayerIds) {
+      for (const [, client] of this.clients.entries()) {
+        const auth = client.auth as AuthPayload;
+        if (offer.targetPlayerIds.includes(auth.userId)) {
+          client.send('adminQuestOffer', offer);
+        }
+      }
+    }
+  }
+
+  private _relayAdminEvent(event: AdminGameEvent): void {
+    const sectorX = this.state.sector.x;
+    const sectorY = this.state.sector.y;
+    const targeted = event.targetSectorX != null;
+    if (!targeted || (event.targetSectorX === sectorX && event.targetSectorY === sectorY)) {
+      this.broadcast('adminEvent', event);
+    }
   }
 
   private async handleJump(client: Client, data: JumpMessage) {
@@ -1242,6 +1360,25 @@ export class SectorRoom extends Room<SectorRoomState> {
     for (const s of sectors) {
       await this.checkQuestProgress(client, auth.userId, 'scan', { sectorX: s.x, sectorY: s.y });
     }
+
+    // Admin sector quests: check the current sector for hidden quests
+    try {
+      const adminSectorQuests = await getAdminQuestsForSector(sectorX, sectorY);
+      for (const aq of adminSectorQuests) {
+        await createAdminQuestAssignment(aq.id, auth.userId, aq.objectives as unknown[]);
+        client.send('adminQuestOffer', {
+          adminQuestId: aq.id,
+          scope: 'sector',
+          title: aq.title,
+          description: aq.description,
+          objectives: aq.objectives,
+          rewards: aq.rewards,
+          npcName: aq.npcName,
+          npcFactionId: aq.npcFactionId,
+          introText: aq.introText,
+        });
+      }
+    } catch { /* non-critical */ }
   }
 
   private async handleMine(client: Client, data: MineMessage) {
