@@ -20,6 +20,7 @@ import { DetailViewOverlay } from './DetailViewOverlay';
 import { ModulePanel } from './ModulePanel';
 import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
+import { StationCombatOverlay } from './StationCombatOverlay';
 import { useStore } from '../state/store';
 import { MONITORS, MAIN_MONITORS, HULLS, MODULES } from '@void-sector/shared';
 import type { HullType, ShipModule, ModuleCategory } from '@void-sector/shared';
@@ -478,6 +479,7 @@ export function GameScreen() {
       </div>
       <BattleDialog />
       <CombatV2Dialog />
+      <StationCombatOverlay />
       <BattleResultDialog />
       <HelpOverlay />
     </div>
