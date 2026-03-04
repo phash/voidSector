@@ -77,6 +77,16 @@ html, body {
   animation: ap-flash 0.4s ease-out;
 }
 
+/* Select/option styling — ensure dark background for all profiles */
+select {
+  background: #050505;
+  color: var(--color-primary);
+}
+select option {
+  background: #050505;
+  color: var(--color-primary);
+}
+
 /* CRT Amber Scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #0a0a0a; border-left: 1px solid rgba(255, 176, 0, 0.1); }

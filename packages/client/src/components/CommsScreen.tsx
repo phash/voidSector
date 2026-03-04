@@ -4,6 +4,8 @@ import { network } from '../network/client';
 import type { ChatChannel } from '@void-sector/shared';
 
 const CHANNELS: ChatChannel[] = ['direct', 'faction', 'local'];
+const MAX_VISIBLE_MESSAGES = 15;
+const MESSAGE_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 export function CommsScreen() {
   const messages = useStore(s => s.chatMessages);
@@ -14,6 +16,19 @@ export function CommsScreen() {
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { clearAlert('COMMS'); }, []);
+
+  // Prune old messages (>2h) periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const current = useStore.getState().chatMessages;
+      const pruned = current.filter(m => now - m.sentAt < MESSAGE_MAX_AGE_MS);
+      if (pruned.length < current.length) {
+        useStore.setState({ chatMessages: pruned });
+      }
+    }, 60_000); // check every minute
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     logRef.current?.scrollTo(0, logRef.current.scrollHeight);
@@ -36,8 +51,8 @@ export function CommsScreen() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 8, gap: 8 }}>
-      <div style={{ display: 'flex', gap: 4 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 8, gap: 8 }}>
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
         {CHANNELS.map(ch => (
           <button key={ch} className="vs-btn"
             style={ch === channel ? { background: 'var(--color-primary)', color: '#000' } : {}}
@@ -48,10 +63,10 @@ export function CommsScreen() {
       </div>
 
       <div ref={logRef} style={{
-        flex: 1, overflow: 'auto', fontSize: '0.8rem',
+        flex: 1, minHeight: 0, overflow: 'auto', fontSize: '0.8rem',
         border: '1px solid var(--color-dim)', padding: 6,
       }}>
-        {filtered.map(msg => (
+        {filtered.slice(-MAX_VISIBLE_MESSAGES).map(msg => (
           <div key={msg.id} style={{ marginBottom: 2 }}>
             <span style={{ color: 'var(--color-dim)' }}>[{formatTime(msg.sentAt, msg.delayed)}]</span>
             {' '}<span style={{ color: 'var(--color-primary)' }}>{msg.senderName}:</span>
@@ -63,7 +78,7 @@ export function CommsScreen() {
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 4 }}>
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
         <input type="text" value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
