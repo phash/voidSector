@@ -198,10 +198,12 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.fillText(isHome ? 'HOME BASE' : 'YOU', cellX, cellY + CELL_H / 2 - 2);
         }
       } else if (sector) {
-        const symbol = isHome ? SYMBOLS.homeBase : getSectorSymbol(sector.type);
+        const symbol = isHome ? SYMBOLS.homeBase : getSectorSymbol(sector.type, (sector as any).environment);
         const sectorColor = isHome
           ? SECTOR_COLORS.home_base
-          : SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty;
+          : (sector as any).environment === 'black_hole'
+            ? '#1A1A1A'
+            : SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty;
         ctx.fillStyle = sectorColor;
         ctx.shadowBlur = 0;
         ctx.fillText(symbol, cellX, cellY);
@@ -210,7 +212,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.font = COORD_FONT;
           ctx.fillStyle = sectorColor;
           ctx.textBaseline = 'bottom';
-          const label = isHome ? 'HOME' : getSectorLabel(sector.type);
+          const label = isHome ? 'HOME' : getSectorLabel(sector.type, (sector as any).environment);
           ctx.fillText(label, cellX, cellY + CELL_H / 2 - 2);
         }
       } else {
@@ -366,7 +368,8 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   }
 }
 
-function getSectorSymbol(type: string): string {
+function getSectorSymbol(type: string, environment?: string): string {
+  if (environment === 'black_hole') return 'o';
   switch (type) {
     case 'asteroid_field': return SYMBOLS.asteroid_field;
     case 'nebula': return SYMBOLS.nebula;
@@ -378,7 +381,8 @@ function getSectorSymbol(type: string): string {
   }
 }
 
-function getSectorLabel(type: string): string {
+function getSectorLabel(type: string, environment?: string): string {
+  if (environment === 'black_hole') return 'BLACK HOLE';
   switch (type) {
     case 'asteroid_field': return 'ASTEROID';
     case 'nebula': return 'NEBULA';

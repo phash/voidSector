@@ -18,6 +18,8 @@ const defaultSector: SectorData = {
   discoveredBy: null,
   discoveredAt: null,
   metadata: {},
+  environment: 'empty' as const,
+  contents: [],
 };
 
 const defaultCargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0 };
