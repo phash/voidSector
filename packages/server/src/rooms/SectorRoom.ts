@@ -20,6 +20,7 @@ import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellT
 import { getStationInventoryItem, upsertInventoryItem, getStationInventory } from '../db/npcStationQueries.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
 import { getOrCreateFactoryState, setActiveRecipe, collectOutput, getFactoryStatus, transferOutputToCargo } from '../engine/productionEngine.js';
+import { placeKontorOrder, cancelKontorOrder, fillKontorOrder, getKontorOrders, getPlayerOrders } from '../engine/kontorEngine.js';
 import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { query } from '../db/client.js';
@@ -730,6 +731,94 @@ export class SectorRoom extends Room<SectorRoomState> {
       const cargo = await getPlayerCargo(auth.userId);
       client.send('factoryUpdate', status);
       client.send('cargoUpdate', cargo);
+    });
+
+    // ── Kontor Handlers ──
+
+    this.onMessage('kontorPlaceOrder', async (client, data: { itemType: string; amount: number; pricePerUnit: number }) => {
+      if (!this.checkRate(client.sessionId, 'kontorPlaceOrder', 1000)) return;
+      if (rejectGuest(client, 'kontor')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.itemType || typeof data.itemType !== 'string') {
+        client.send('kontorUpdate', { error: 'Invalid item type' });
+        return;
+      }
+      if (!isPositiveInt(data?.amount) || !isPositiveInt(data?.pricePerUnit)) {
+        client.send('kontorUpdate', { error: 'Invalid order parameters' });
+        return;
+      }
+
+      const result = await placeKontorOrder(
+        auth.userId,
+        this.state.sector.x,
+        this.state.sector.y,
+        data.itemType,
+        data.amount,
+        data.pricePerUnit
+      );
+
+      if (!result.success) {
+        client.send('kontorUpdate', { error: result.error });
+        return;
+      }
+
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      client.send('kontorUpdate', { orders, placed: result.order });
+    });
+
+    this.onMessage('kontorCancelOrder', async (client, data: { orderId: string }) => {
+      if (!this.checkRate(client.sessionId, 'kontorCancelOrder', 1000)) return;
+      if (rejectGuest(client, 'kontor')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.orderId || typeof data.orderId !== 'string') {
+        client.send('kontorUpdate', { error: 'Invalid order ID' });
+        return;
+      }
+
+      const result = await cancelKontorOrder(data.orderId, auth.userId);
+
+      if (!result.success) {
+        client.send('kontorUpdate', { error: result.error });
+        return;
+      }
+
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      client.send('kontorUpdate', { orders, refunded: result.refunded });
+    });
+
+    this.onMessage('kontorSellTo', async (client, data: { orderId: string; amount: number }) => {
+      if (!this.checkRate(client.sessionId, 'kontorSellTo', 500)) return;
+      if (rejectGuest(client, 'kontor')) return;
+      const auth = client.auth as AuthPayload;
+
+      if (!data?.orderId || typeof data.orderId !== 'string') {
+        client.send('kontorUpdate', { error: 'Invalid order ID' });
+        return;
+      }
+      if (!isPositiveInt(data?.amount)) {
+        client.send('kontorUpdate', { error: 'Invalid amount' });
+        return;
+      }
+
+      const result = await fillKontorOrder(data.orderId, auth.userId, data.amount);
+
+      if (!result.success) {
+        client.send('kontorUpdate', { error: result.error });
+        return;
+      }
+
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      const cargo = await getPlayerCargo(auth.userId);
+      client.send('kontorUpdate', { orders, earned: result.earned });
+      client.send('cargoUpdate', cargo);
+    });
+
+    this.onMessage('kontorGetOrders', async (client) => {
+      if (!this.checkRate(client.sessionId, 'kontorGetOrders', 500)) return;
+      const orders = await getKontorOrders(this.state.sector.x, this.state.sector.y);
+      client.send('kontorUpdate', { orders });
     });
   }
 
