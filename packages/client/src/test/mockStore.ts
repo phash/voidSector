@@ -101,6 +101,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     hasSeenTip: vi.fn(),
     alienCredits: 0,
     chatMessages: [],
+    recentContacts: [],
+    addRecentContact: vi.fn(),
     isGuest: false,
     sidebarSlots: ['SHIP-SYS', 'COMMS'] as [string, string],
     leftSidebarSlots: ['LOG', 'SHIP-SYS'] as [string, string],

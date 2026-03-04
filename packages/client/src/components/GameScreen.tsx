@@ -363,7 +363,7 @@ const MOBILE_TABS: Array<{ id: string; icon: string; label: string }> = [
   { id: MONITORS.QUAD_MAP, icon: '\u25A6', label: 'QUAD' },
 ];
 
-const COMMS_MODES: ChatChannel[] = ['direct', 'faction', 'local'];
+const COMMS_MODES: ChatChannel[] = ['direct', 'faction', 'local', 'sector', 'quadrant'];
 
 export function GameScreen() {
   const colorProfile = useStore((s) => s.colorProfile);

@@ -215,7 +215,7 @@ export interface BuildResultMessage {
 }
 
 // Communication
-export type ChatChannel = 'direct' | 'faction' | 'local';
+export type ChatChannel = 'direct' | 'faction' | 'local' | 'sector' | 'quadrant';
 
 export interface ChatMessage {
   id: string;

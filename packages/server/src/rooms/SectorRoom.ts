@@ -25,6 +25,8 @@ import { getOrCreateFactoryState, setActiveRecipe, collectOutput, getFactoryStat
 import { placeKontorOrder, cancelKontorOrder, fillKontorOrder, getKontorOrders, getPlayerOrders } from '../engine/kontorEngine.js';
 import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
+import { commsBus } from '../commsBus.js';
+import type { CommsBroadcastEvent } from '../commsBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState, getHyperdriveState, setHyperdriveState } from './services/RedisAPStore.js';
 import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate, saveAutopilotRoute, getActiveAutopilotRoute, updateAutopilotStep, pauseAutopilotRoute, cancelAutopilotRoute, completeAutopilotRoute, getPlayerStationRep, updatePlayerStationRep } from '../db/queries.js';
@@ -644,9 +646,32 @@ export class SectorRoom extends Room<SectorRoomState> {
     adminBus.on('adminBroadcast', onBroadcast);
     adminBus.on('adminQuestCreated', onQuestCreated);
 
+    // Cross-room COMMS relay for sector/quadrant channels
+    const onCommsBroadcast = (event: CommsBroadcastEvent) => {
+      // Skip messages that originated in this room (already broadcast locally)
+      if (event.sectorX === this.state.sector.x && event.sectorY === this.state.sector.y) return;
+
+      const { qx: myQx, qy: myQy } = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+
+      if (event.channel === 'quadrant' && event.quadrantX === myQx && event.quadrantY === myQy) {
+        this.broadcast('chatMessage', event.message);
+      }
+      // For direct messages relayed cross-room
+      if (event.message.channel === 'direct' && event.message.recipientId) {
+        for (const c of this.clients) {
+          const cAuth = c.auth as AuthPayload;
+          if (cAuth.userId === event.message.recipientId) {
+            c.send('chatMessage', event.message);
+          }
+        }
+      }
+    };
+    commsBus.on('commsBroadcast', onCommsBroadcast);
+
     this.onDispose(() => {
       adminBus.off('adminBroadcast', onBroadcast);
       adminBus.off('adminQuestCreated', onQuestCreated);
+      commsBus.off('commsBroadcast', onCommsBroadcast);
     });
 
     // ── Factory Handlers ──
@@ -2358,7 +2383,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
 
     // Validate channel
-    const VALID_CHANNELS = ['local', 'direct', 'faction'] as const;
+    const VALID_CHANNELS = ['local', 'direct', 'faction', 'sector', 'quadrant'] as const;
     if (!VALID_CHANNELS.includes(data.channel as any)) {
       client.send('error', { code: 'INVALID_CHANNEL', message: 'Unknown channel' });
       return;
@@ -2412,6 +2437,32 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     if (data.channel === 'local') {
       this.broadcast('chatMessage', chatMsg);
+    } else if (data.channel === 'sector') {
+      // Broadcast to all players in the same sector (this room)
+      this.broadcast('chatMessage', chatMsg);
+      // Also emit to commsBus for other rooms at the same coordinates
+      const { qx, qy } = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+      commsBus.broadcast({
+        channel: 'sector',
+        sectorX: this.state.sector.x,
+        sectorY: this.state.sector.y,
+        quadrantX: qx,
+        quadrantY: qy,
+        message: chatMsg,
+      });
+    } else if (data.channel === 'quadrant') {
+      // Broadcast to all players in this room (same quadrant)
+      this.broadcast('chatMessage', chatMsg);
+      // Emit to commsBus for other rooms in the same quadrant
+      const { qx, qy } = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+      commsBus.broadcast({
+        channel: 'quadrant',
+        sectorX: this.state.sector.x,
+        sectorY: this.state.sector.y,
+        quadrantX: qx,
+        quadrantY: qy,
+        message: chatMsg,
+      });
     } else if (data.channel === 'direct' && data.recipientId) {
       const recipientClient = this.clients.find(
         c => (c.auth as AuthPayload).userId === data.recipientId
@@ -2419,6 +2470,16 @@ export class SectorRoom extends Room<SectorRoomState> {
       if (recipientClient) {
         recipientClient.send('chatMessage', chatMsg);
       }
+      // Also emit to commsBus for cross-room direct delivery
+      const { qx, qy } = sectorToQuadrant(this.state.sector.x, this.state.sector.y);
+      commsBus.broadcast({
+        channel: 'sector', // use sector channel for routing, message.channel is 'direct'
+        sectorX: this.state.sector.x,
+        sectorY: this.state.sector.y,
+        quadrantX: qx,
+        quadrantY: qy,
+        message: chatMsg,
+      });
       client.send('chatMessage', chatMsg);
     }
   }

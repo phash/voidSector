@@ -88,6 +88,7 @@ export interface GameSlice {
   // Chat / COMMS
   chatMessages: ChatMessage[];
   chatChannel: ChatChannel;
+  recentContacts: Array<{ id: string; name: string }>;
 
   // Alerts
   alerts: Record<string, boolean>;
@@ -215,6 +216,7 @@ export interface GameSlice {
   setCargo: (cargo: CargoState) => void;
   addChatMessage: (msg: ChatMessage) => void;
   setChatChannel: (channel: ChatChannel) => void;
+  addRecentContact: (id: string, name: string) => void;
   setAlert: (monitorId: string, active: boolean) => void;
   clearAlert: (monitorId: string) => void;
   setSelectedSector: (sector: { x: number; y: number } | null) => void;
@@ -283,6 +285,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   activeMonitor: 'NAV-COM',
   chatMessages: [],
   chatChannel: 'local' as ChatChannel,
+  recentContacts: [],
   alerts: {},
   selectedSector: null,
   baseStructures: [],
@@ -390,6 +393,12 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
       return { chatMessages: [...s.chatMessages.slice(-199), msg] };
     }),
   setChatChannel: (chatChannel) => set({ chatChannel }),
+  addRecentContact: (id, name) =>
+    set((s) => {
+      const MAX_CONTACTS = 20;
+      const filtered = s.recentContacts.filter(c => c.id !== id);
+      return { recentContacts: [{ id, name }, ...filtered].slice(0, MAX_CONTACTS) };
+    }),
   setAlert: (monitorId, active) => set((s) => ({
     alerts: { ...s.alerts, [monitorId]: active },
   })),
