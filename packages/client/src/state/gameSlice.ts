@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent } from '@void-sector/shared';
+import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, AdminCommMessage, AdminQuestOffer } from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -137,6 +137,10 @@ export interface GameSlice {
   baseName: string;
   homeBase: { x: number; y: number };
 
+  // Admin Console: incoming messages + quest offers
+  adminComms: AdminCommMessage[];
+  adminQuestOffers: AdminQuestOffer[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -190,6 +194,9 @@ export interface GameSlice {
   setModuleInventory: (modules: string[]) => void;
   setBaseName: (name: string) => void;
   setHomeBase: (coords: { x: number; y: number }) => void;
+  addAdminComm: (msg: AdminCommMessage) => void;
+  addAdminQuestOffer: (offer: AdminQuestOffer) => void;
+  dismissAdminQuestOffer: (adminQuestId: string) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set) => ({
@@ -243,6 +250,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   moduleInventory: [],
   baseName: '',
   homeBase: { x: 0, y: 0 },
+  adminComms: [],
+  adminQuestOffers: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -343,4 +352,13 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set)
   setModuleInventory: (moduleInventory) => set({ moduleInventory }),
   setBaseName: (baseName) => set({ baseName }),
   setHomeBase: (homeBase) => set({ homeBase }),
+  addAdminComm: (msg) => set((s) => ({ adminComms: [...s.adminComms.slice(-99), msg] })),
+  addAdminQuestOffer: (offer) => set((s) => {
+    // avoid duplicates
+    if (s.adminQuestOffers.some(o => o.adminQuestId === offer.adminQuestId)) return s;
+    return { adminQuestOffers: [...s.adminQuestOffers, offer] };
+  }),
+  dismissAdminQuestOffer: (adminQuestId) => set((s) => ({
+    adminQuestOffers: s.adminQuestOffers.filter(o => o.adminQuestId !== adminQuestId),
+  })),
 });

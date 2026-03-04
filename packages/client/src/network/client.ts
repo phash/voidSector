@@ -515,6 +515,38 @@ class GameNetwork {
       store.setPlayerUpgrades(data.upgrades);
     });
 
+    // ── Admin Console messages ─────────────────────────────────────────────
+    room.onMessage('adminComm', (data) => {
+      const store = useStore.getState();
+      store.addAdminComm(data);
+      // Always alert COMMS for admin messages — high priority
+      store.setAlert('COMMS', true);
+    });
+
+    room.onMessage('adminQuestOffer', (data) => {
+      const store = useStore.getState();
+      store.addAdminQuestOffer(data);
+      store.setAlert('COMMS', true);
+    });
+
+    room.onMessage('adminEvent', (data) => {
+      useStore.getState().addLogEntry(`[ADMIN EVENT] ${data.label ?? data.eventType}`);
+    });
+
+    room.onMessage('adminQuestAccepted', (data) => {
+      const store = useStore.getState();
+      store.dismissAdminQuestOffer(data.adminQuestId);
+      store.addLogEntry('Quest angenommen.');
+    });
+
+    room.onMessage('adminQuestDeclined', (data) => {
+      useStore.getState().dismissAdminQuestOffer(data.adminQuestId);
+    });
+
+    room.onMessage('adminCommReplySent', () => {
+      useStore.getState().addLogEntry('Antwort gesendet.');
+    });
+
     room.onMessage('battleResult', (data) => {
       const store = useStore.getState();
       const encounter = store.activeBattle;
@@ -1014,6 +1046,21 @@ class GameNetwork {
   sendAbandonQuest(questId: string) {
     if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
     this.sectorRoom.send('abandonQuest', { questId });
+  }
+
+  sendAcceptAdminQuest(adminQuestId: string) {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('acceptAdminQuest', { adminQuestId });
+  }
+
+  sendDeclineAdminQuest(adminQuestId: string) {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('declineAdminQuest', { adminQuestId });
+  }
+
+  sendAdminCommReply(adminMessageId: string, content: string) {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('replyAdminComm', { adminMessageId, content });
   }
 
   requestActiveQuests() {
