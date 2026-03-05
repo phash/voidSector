@@ -1407,7 +1407,7 @@ export function getArticlesByCategory(
 /**
  * Full-text search across title, tags and body (case-insensitive).
  * Returns matching articles ordered by relevance:
- *   1. title match  2. tag match  3. body match
+ *   1. title match  2. tag match  3. summary match  4. body match
  */
 export function searchArticles(query: string): CompendiumArticle[] {
   if (!query || !query.trim()) return [];
@@ -1415,6 +1415,7 @@ export function searchArticles(query: string): CompendiumArticle[] {
 
   const titleMatches: CompendiumArticle[] = [];
   const tagMatches: CompendiumArticle[] = [];
+  const summaryMatches: CompendiumArticle[] = [];
   const bodyMatches: CompendiumArticle[] = [];
 
   for (const article of COMPENDIUM_ARTICLES) {
@@ -1422,10 +1423,12 @@ export function searchArticles(query: string): CompendiumArticle[] {
       titleMatches.push(article);
     } else if (article.tags?.some((t) => t.toLowerCase().includes(q))) {
       tagMatches.push(article);
+    } else if (article.summary.toLowerCase().includes(q)) {
+      summaryMatches.push(article);
     } else if (article.body.toLowerCase().includes(q)) {
       bodyMatches.push(article);
     }
   }
 
-  return [...titleMatches, ...tagMatches, ...bodyMatches];
+  return [...titleMatches, ...tagMatches, ...summaryMatches, ...bodyMatches];
 }
