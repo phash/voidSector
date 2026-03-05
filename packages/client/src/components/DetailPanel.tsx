@@ -13,6 +13,7 @@ import {
 import type { ChatChannel } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
+import { PlayerGatePanel } from './PlayerGatePanel';
 
 type DrillDown =
   | { type: 'player'; username: string; sessionId: string }
@@ -85,6 +86,7 @@ export function DetailPanel() {
 
   const fuel = useStore((s) => s.fuel);
   const jumpGateInfo = useStore((s) => s.jumpGateInfo);
+  const playerGateInfo = useStore((s) => s.playerGateInfo);
   const scanEvents = useStore((s) => s.scanEvents);
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
   const bookmarks = useStore((s) => s.bookmarks);
@@ -214,6 +216,7 @@ export function DetailPanel() {
           <RefuelPanel fuel={fuel} isFreeRefuel={isFreeRefuel} />
         )}
         {isPlayerHere && jumpGateInfo && <JumpGatePanel gate={jumpGateInfo} />}
+        {isPlayerHere && playerGateInfo && <PlayerGatePanel />}
         {isPlayerHere && sector?.type === 'station' && rescuedSurvivors.length > 0 && (
           <button
             className="vs-btn"
@@ -313,6 +316,8 @@ export function DetailPanel() {
           )}
           {/* JumpGate visible on main view too */}
           {isPlayerHere && jumpGateInfo && <JumpGatePanel gate={jumpGateInfo} />}
+          {/* Player-built jumpgate panel */}
+          {isPlayerHere && playerGateInfo && <PlayerGatePanel />}
 
           {/* Rescue button - distress signal scan event at this sector */}
           {isPlayerHere &&
@@ -342,7 +347,7 @@ export function DetailPanel() {
             )}
 
           {/* Multi-content features */}
-          {(jumpGateInfo || sectorScanEvents.length > 0) && (
+          {(jumpGateInfo || playerGateInfo || sectorScanEvents.length > 0) && (
             <div style={{ marginTop: 8 }}>
               <div
                 style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.7em', letterSpacing: '0.1em' }}
@@ -351,6 +356,12 @@ export function DetailPanel() {
               </div>
               {jumpGateInfo && (
                 <div style={{ color: '#00BFFF' }}>◆ JUMPGATE ({jumpGateInfo.gateType})</div>
+              )}
+              {playerGateInfo && (
+                <div style={{ color: '#00BFFF' }}>
+                  ◆ SPIELER-GATE [L{playerGateInfo.gate.levelConnection}/L
+                  {playerGateInfo.gate.levelDistance}]
+                </div>
               )}
               {sectorScanEvents.map((e) => (
                 <div key={e.id}>
