@@ -9,10 +9,7 @@ import type {
 } from '@void-sector/shared';
 
 import { calculateCurrentAP, spendAP } from '../../engine/ap.js';
-import {
-  validateBattleAction,
-  createPirateEncounter,
-} from '../../engine/commands.js';
+import { validateBattleAction, createPirateEncounter } from '../../engine/commands.js';
 import { getPirateLevel } from '../../engine/npcgen.js';
 import {
   initCombatV2,
