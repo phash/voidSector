@@ -42,6 +42,8 @@ import {
   JUMPGATE_FUEL_COST,
   JUMPGATE_BUILD_COST,
   JUMPGATE_UPGRADE_COSTS,
+  JUMPGATE_DISTANCE_LIMITS,
+  JUMPGATE_CONNECTION_LIMITS,
   STRUCTURE_AP_COSTS,
   RESCUE_AP_COST,
   RESCUE_EXPIRY_MINUTES,
@@ -108,6 +110,10 @@ import {
   upgradeJumpGate,
   updateJumpGateToll,
   deleteJumpGate,
+  getJumpGateLinks,
+  insertJumpGateLink,
+  removeJumpGateLink,
+  countJumpGateLinks,
   addToCargo,
 } from '../../db/queries.js';
 import {
@@ -536,7 +542,7 @@ export class WorldService {
   async handleCreateSlate(client: Client, data: CreateSlateMessage): Promise<void> {
     if (rejectGuest(client, 'Data Slates erstellen')) return;
     const auth = client.auth as AuthPayload;
-    if (!['sector', 'area'].includes(data.slateType)) {
+    if (!['sector', 'area', 'jumpgate'].includes(data.slateType)) {
       client.send('createSlateResult', { success: false, error: 'Invalid slate type' });
       return;
     }
@@ -566,7 +572,21 @@ export class WorldService {
     const sectorX = this.ctx._px(client.sessionId);
     const sectorY = this.ctx._py(client.sessionId);
 
-    if (data.slateType === 'sector') {
+    if (data.slateType === 'jumpgate') {
+      const gate = await getPlayerJumpGate(sectorX, sectorY);
+      if (!gate || gate.ownerId !== auth.userId) {
+        client.send('createSlateResult', { success: false, error: 'You must be at your own jumpgate' });
+        return;
+      }
+      sectorData = [
+        {
+          gateId: gate.id,
+          sectorX,
+          sectorY,
+          ownerName: auth.username,
+        },
+      ];
+    } else if (data.slateType === 'sector') {
       const sector = await getSector(sectorX, sectorY);
       const resources = sector?.resources ?? { ore: 0, gas: 0, crystal: 0 };
       sectorData = [
@@ -650,6 +670,114 @@ export class WorldService {
     client.send('activateSlateResult', { success: true, sectorsAdded: sectors.length });
     const cargo = await getPlayerCargo(auth.userId);
     client.send('cargoUpdate', cargo);
+  }
+
+  async handleLinkJumpgate(client: Client, data: { slateId: string }): Promise<void> {
+    if (rejectGuest(client, 'Verknüpfen')) return;
+    const auth = client.auth as AuthPayload;
+
+    // Get player's gate at current sector
+    const sx = this.ctx._px(client.sessionId);
+    const sy = this.ctx._py(client.sessionId);
+    const myGate = await getPlayerJumpGate(sx, sy);
+    if (!myGate || myGate.ownerId !== auth.userId) {
+      client.send('error', { code: 'LINK_FAIL', message: 'You must be at your own jumpgate' });
+      return;
+    }
+
+    // Get slate from cargo
+    const slate = await getSlateById(data.slateId);
+    if (!slate || slate.owner_id !== auth.userId || slate.slate_type !== 'jumpgate') {
+      client.send('error', { code: 'LINK_FAIL', message: 'Jumpgate slate not found in cargo' });
+      return;
+    }
+    if (slate.status !== 'available') {
+      client.send('error', { code: 'LINK_FAIL', message: 'Slate is listed on market' });
+      return;
+    }
+
+    // Extract target gate info from the slate's metadata
+    const slateMeta = (slate.sector_data as any[])[0];
+    const targetGateId = slateMeta.gateId;
+
+    // Look up the target gate by ID
+    const targetGate = await getPlayerJumpGateById(targetGateId);
+    if (!targetGate || !targetGate.ownerId) {
+      client.send('error', { code: 'LINK_FAIL', message: 'Target gate no longer exists' });
+      return;
+    }
+
+    // Prevent self-linking
+    if (myGate.id === targetGateId) {
+      client.send('error', { code: 'LINK_FAIL', message: 'Cannot link a gate to itself' });
+      return;
+    }
+
+    // Check distance (Manhattan distance)
+    const dist = Math.abs(myGate.sectorX - targetGate.sectorX) + Math.abs(myGate.sectorY - targetGate.sectorY);
+    const maxDist = JUMPGATE_DISTANCE_LIMITS[myGate.levelDistance] + JUMPGATE_DISTANCE_LIMITS[targetGate.levelDistance];
+    if (dist > maxDist) {
+      client.send('error', { code: 'LINK_FAIL', message: `Distance ${dist} exceeds max range ${maxDist}` });
+      return;
+    }
+
+    // Check connection slots on both gates
+    const myLinks = await countJumpGateLinks(myGate.id);
+    if (myLinks >= JUMPGATE_CONNECTION_LIMITS[myGate.levelConnection]) {
+      client.send('error', { code: 'LINK_FAIL', message: 'No free connection slots on your gate' });
+      return;
+    }
+    const targetLinks = await countJumpGateLinks(targetGateId);
+    if (targetLinks >= JUMPGATE_CONNECTION_LIMITS[targetGate.levelConnection]) {
+      client.send('error', { code: 'LINK_FAIL', message: 'Target gate has no free connection slots' });
+      return;
+    }
+
+    // Create bidirectional link, consume the slate
+    await insertJumpGateLink(myGate.id, targetGateId);
+    await removeSlateFromCargo(auth.userId);
+    await deleteSlate(data.slateId);
+
+    client.send('jumpgateLinkResult', { success: true });
+    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('logEntry', `Gate bei (${targetGate.sectorX}, ${targetGate.sectorY}) verknüpft`);
+  }
+
+  async handleUnlinkJumpgate(client: Client, data: { gateId: string; linkedGateId: string }): Promise<void> {
+    if (rejectGuest(client, 'Trennen')) return;
+    const auth = client.auth as AuthPayload;
+
+    // Verify ownership of the gate being unlinked from
+    const gate = await getPlayerJumpGateById(data.gateId);
+    if (!gate || gate.ownerId !== auth.userId) {
+      client.send('error', { code: 'UNLINK_FAIL', message: 'Not your gate' });
+      return;
+    }
+
+    // Look up the linked gate to get its info for the returned slate
+    const linkedGate = await getPlayerJumpGateById(data.linkedGateId);
+    if (!linkedGate) {
+      client.send('error', { code: 'UNLINK_FAIL', message: 'Linked gate not found' });
+      return;
+    }
+
+    await removeJumpGateLink(data.gateId, data.linkedGateId);
+
+    // Return a jumpgate data slate to the player
+    const slateData = [
+      {
+        gateId: linkedGate.id,
+        sectorX: linkedGate.sectorX,
+        sectorY: linkedGate.sectorY,
+        ownerName: linkedGate.ownerName ?? 'Unknown',
+      },
+    ];
+    await createDataSlate(auth.userId, 'jumpgate', slateData);
+    await addSlateToCargo(auth.userId);
+
+    client.send('jumpgateUnlinkResult', { success: true });
+    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('logEntry', 'Verbindung getrennt. Gate-Slate zurückerhalten.');
   }
 
   async handleNpcBuyback(client: Client, data: NpcBuybackMessage): Promise<void> {

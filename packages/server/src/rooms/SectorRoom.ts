@@ -562,6 +562,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('setJumpgateToll', async (client, data: { gateId: string; toll: number }) => {
       await this.world.handleSetJumpgateToll(client, data);
     });
+    this.onMessage('linkJumpgate', async (client, data: { slateId: string }) => {
+      await this.world.handleLinkJumpgate(client, data);
+    });
+    this.onMessage('unlinkJumpgate', async (client, data: { gateId: string; linkedGateId: string }) => {
+      await this.world.handleUnlinkJumpgate(client, data);
+    });
 
     // ── Trade Routes ────────────────────────────────────────────────
     this.onMessage('configureRoute', (client, data) =>
