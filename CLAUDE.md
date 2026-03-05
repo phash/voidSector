@@ -11,8 +11,8 @@ npm run docker:up           # PostgreSQL + Redis
 npm test                    # All tests
 
 # Per-package tests
-cd packages/server && npx vitest run    # 612 tests
-cd packages/client && npx vitest run    # 386 tests
+cd packages/server && npx vitest run    # 620 tests
+cd packages/client && npx vitest run    # 405 tests
 cd packages/shared && npx vitest run    # 191 tests
 ```
 
@@ -25,7 +25,7 @@ cd packages/shared && npx vitest run    # 191 tests
 - Conventional commits: `feat:`, `fix:`, `test:`, `docs:`
 
 ## Architecture
-- **Server**: Colyseus rooms (SectorRoom per quadrant, QUADRANT_SIZE=10,000), PostgreSQL (queries.ts), Redis (AP state)
+- **Server**: Colyseus rooms (SectorRoom per quadrant, QUADRANT_SIZE=10,000), PostgreSQL (queries.ts), Redis (AP state). SectorRoom delegates to 10 domain services (NavigationService, ScanService, CombatService, MiningService, EconomyService, FactionService, QuestService, ChatService, ShipService, WorldService) via ServiceContext DI. Structured logging via pino.
 - **Client**: React + Zustand (gameSlice + uiSlice), Canvas radar (RadarRenderer), singleton GameNetwork
 - **Shared**: types.ts + constants.ts, consumed by both packages
 
@@ -111,3 +111,7 @@ Quadrant room refactor: Changed from per-sector rooms (`sector_x_y`) to per-quad
 (`quadrant_qx_qy`, QUADRANT_SIZE=10,000). filterBy(['quadrantX','quadrantY']).
 Intra-quadrant sector changes via `moveSector` message (no room transition).
 Cross-quadrant moves via `crossQuadrant` flag in jumpResult → full room leave/join.
+
+Codebase review (#133): SectorRoom.ts decomposed from 4,605 lines into 807-line orchestrator + 10 domain services.
+ESLint + Prettier configs added. pino structured logging (46 console statements replaced). 6 failing tests fixed.
+Playwright E2E infrastructure with 54 test specs across 5 suites. 1,216 total unit tests (all passing).
