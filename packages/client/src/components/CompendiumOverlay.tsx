@@ -234,7 +234,7 @@ export function CompendiumOverlay() {
     if (article && !expandedCategories.has(article.category)) {
       setExpandedCategories((prev) => new Set(prev).add(article.category));
     }
-  }, [article]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [article]); // eslint-disable-line
 
   // Keyboard shortcuts
   useEffect(() => {
