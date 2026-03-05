@@ -10,12 +10,17 @@ vi.mock('../adminBus.js', () => ({
   },
 }));
 
+// Mock RedisAPStore
+vi.mock('../rooms/services/RedisAPStore.js', () => ({
+  getPlayerPosition: vi.fn(),
+  savePlayerPosition: vi.fn(),
+}));
+
 // Mock adminQueries before importing the router
 vi.mock('../db/adminQueries.js', () => ({
   getAllPlayers: vi.fn(),
   getPlayerById: vi.fn(),
   getPlayerFullProfile: vi.fn(),
-  adminSetPlayerPosition: vi.fn(),
   adminSetPlayerCredits: vi.fn(),
   adminSetCargoItem: vi.fn(),
   createAdminQuest: vi.fn(),
@@ -34,11 +39,13 @@ vi.mock('../db/adminQueries.js', () => ({
 }));
 
 import { adminAuth, adminRouter } from '../adminRoutes.js';
+import { getPlayerPosition, savePlayerPosition } from '../rooms/services/RedisAPStore.js';
+const mockGetPlayerPosition = vi.mocked(getPlayerPosition);
+const mockSavePlayerPosition = vi.mocked(savePlayerPosition);
 import {
   getAllPlayers,
   getPlayerById,
   getPlayerFullProfile,
-  adminSetPlayerPosition,
   adminSetPlayerCredits,
   adminSetCargoItem,
   createAdminQuest,
@@ -59,7 +66,6 @@ import {
 const mockGetAllPlayers = vi.mocked(getAllPlayers);
 const mockGetPlayerById = vi.mocked(getPlayerById);
 const mockGetPlayerFullProfile = vi.mocked(getPlayerFullProfile);
-const mockAdminSetPlayerPosition = vi.mocked(adminSetPlayerPosition);
 const mockAdminSetPlayerCredits = vi.mocked(adminSetPlayerCredits);
 const mockAdminSetCargoItem = vi.mocked(adminSetCargoItem);
 const mockCreateAdminQuest = vi.mocked(createAdminQuest);
@@ -254,13 +260,15 @@ describe('adminRoutes', () => {
         ships: [{ id: 's1', hullType: 'scout', name: 'AEGIS', active: true, modules: [], fuel: 100 }],
       };
       mockGetPlayerFullProfile.mockResolvedValueOnce(player);
+      mockGetPlayerPosition.mockResolvedValueOnce({ x: 42, y: 99 });
 
       const handler = getRouteHandler('get', '/players/:id')!;
       const req = createMockReq({ params: { id: 'p1' } as any });
       const res = createMockRes();
       await handler(req, res);
 
-      expect(res._json).toEqual({ player });
+      expect((res._json as any).player.positionX).toBe(42);
+      expect((res._json as any).player.positionY).toBe(99);
       expect(mockLogAdminEvent).toHaveBeenCalledWith('get_player', { playerId: 'p1' });
     });
 
@@ -278,8 +286,9 @@ describe('adminRoutes', () => {
   });
 
   describe('PATCH /players/:id/position', () => {
-    it('sets player position and emits event', async () => {
-      mockAdminSetPlayerPosition.mockResolvedValueOnce(true);
+    it('sets player position in Redis and emits event', async () => {
+      mockGetPlayerById.mockResolvedValueOnce({ id: 'p1', username: 'alice', positionX: 0, positionY: 0, xp: 0, level: 1, factionId: null });
+      mockSavePlayerPosition.mockResolvedValueOnce(undefined);
 
       const handler = getRouteHandler('patch', '/players/:id/position')!;
       const req = createMockReq({ params: { id: 'p1' } as any, body: { x: 100, y: 200 } });
@@ -287,7 +296,7 @@ describe('adminRoutes', () => {
       await handler(req, res);
 
       expect(res._json).toEqual({ ok: true });
-      expect(mockAdminSetPlayerPosition).toHaveBeenCalledWith('p1', 100, 200);
+      expect(mockSavePlayerPosition).toHaveBeenCalledWith('p1', 100, 200);
       expect(mockLogAdminEvent).toHaveBeenCalledWith('set_player_position', { playerId: 'p1', x: 100, y: 200 });
     });
 
@@ -302,7 +311,7 @@ describe('adminRoutes', () => {
     });
 
     it('returns 404 when player not found', async () => {
-      mockAdminSetPlayerPosition.mockResolvedValueOnce(false);
+      mockGetPlayerById.mockResolvedValueOnce(null);
 
       const handler = getRouteHandler('patch', '/players/:id/position')!;
       const req = createMockReq({ params: { id: 'nope' } as any, body: { x: 0, y: 0 } });

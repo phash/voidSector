@@ -5,7 +5,6 @@ import {
   getAllPlayers,
   getPlayerById,
   getPlayerFullProfile,
-  adminSetPlayerPosition,
   adminSetPlayerCredits,
   adminSetCargoItem,
   createAdminQuest,
@@ -24,6 +23,10 @@ import {
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput, AdminStoryInput } from './db/adminQueries.js';
 import type { AdminPlayerUpdateEvent } from './adminBus.js';
+import {
+  getPlayerPosition,
+  savePlayerPosition,
+} from './rooms/services/RedisAPStore.js';
 import { adminBus } from './adminBus.js';
 import { logger } from './utils/logger.js';
 
@@ -75,6 +78,11 @@ adminRouter.get('/players/:id', async (req: Request, res: Response) => {
       res.status(404).json({ error: 'Player not found' });
       return;
     }
+    const pos = await getPlayerPosition(req.params.id as string);
+    if (pos) {
+      player.positionX = pos.x;
+      player.positionY = pos.y;
+    }
     await logAdminEvent('get_player', { playerId: req.params.id });
     res.json({ player });
   } catch (err) {
@@ -90,11 +98,12 @@ adminRouter.patch('/players/:id/position', async (req: Request, res: Response) =
       res.status(400).json({ error: 'x and y must be numbers' });
       return;
     }
-    const ok = await adminSetPlayerPosition(req.params.id as string, Math.round(x), Math.round(y));
-    if (!ok) {
+    const player = await getPlayerById(req.params.id as string);
+    if (!player) {
       res.status(404).json({ error: 'Player not found' });
       return;
     }
+    await savePlayerPosition(req.params.id as string, Math.round(x), Math.round(y));
     const updates: AdminPlayerUpdateEvent['updates'] = {
       positionX: Math.round(x),
       positionY: Math.round(y),

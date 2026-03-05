@@ -23,6 +23,9 @@ import {
   logAdminEvent,
   getAdminEvents,
   getServerStats,
+  createAdminStory,
+  getAdminStories,
+  getAdminStoryById,
 } from '../db/adminQueries.js';
 
 const mockQuery = vi.mocked(query);
@@ -38,24 +41,8 @@ describe('adminQueries', () => {
     it('returns all players mapped to camelCase', async () => {
       mockQuery.mockResolvedValueOnce(
         mockQueryResult([
-          {
-            id: 'p1',
-            username: 'alice',
-            position_x: 5,
-            position_y: 10,
-            xp: 100,
-            level: 3,
-            faction_id: 'f1',
-          },
-          {
-            id: 'p2',
-            username: 'bob',
-            position_x: -2,
-            position_y: 0,
-            xp: 50,
-            level: 1,
-            faction_id: null,
-          },
+          { id: 'p1', username: 'alice', xp: 100, level: 3, faction_id: 'f1' },
+          { id: 'p2', username: 'bob', xp: 50, level: 1, faction_id: null },
         ]),
       );
 
@@ -64,8 +51,8 @@ describe('adminQueries', () => {
       expect(players[0]).toEqual({
         id: 'p1',
         username: 'alice',
-        positionX: 5,
-        positionY: 10,
+        positionX: 0,
+        positionY: 0,
         xp: 100,
         level: 3,
         factionId: 'f1',
@@ -84,24 +71,14 @@ describe('adminQueries', () => {
   describe('getPlayerById', () => {
     it('returns player when found', async () => {
       mockQuery.mockResolvedValueOnce(
-        mockQueryResult([
-          {
-            id: 'p1',
-            username: 'alice',
-            position_x: 0,
-            position_y: 0,
-            xp: 0,
-            level: 1,
-            faction_id: null,
-          },
-        ]),
+        mockQueryResult([{ id: 'p1', username: 'alice', xp: 0, level: 1, faction_id: null }]),
       );
 
       const player = await getPlayerById('p1');
       expect(player).not.toBeNull();
       expect(player!.id).toBe('p1');
       expect(player!.username).toBe('alice');
-      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), ['p1']);
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE p.id = $1'), ['p1']);
     });
 
     it('returns null when not found', async () => {
@@ -114,24 +91,14 @@ describe('adminQueries', () => {
   describe('getPlayerByUsername', () => {
     it('returns player when found by username', async () => {
       mockQuery.mockResolvedValueOnce(
-        mockQueryResult([
-          {
-            id: 'p2',
-            username: 'bob',
-            position_x: 1,
-            position_y: 2,
-            xp: 10,
-            level: 2,
-            faction_id: 'f1',
-          },
-        ]),
+        mockQueryResult([{ id: 'p2', username: 'bob', xp: 10, level: 2, faction_id: 'f1' }]),
       );
 
       const player = await getPlayerByUsername('bob');
       expect(player).not.toBeNull();
       expect(player!.username).toBe('bob');
       expect(player!.factionId).toBe('f1');
-      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE username = $1'), [
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE p.username = $1'), [
         'bob',
       ]);
     });
@@ -625,6 +592,163 @@ describe('adminQueries', () => {
       expect(stats.playerCount).toBe(0);
       expect(stats.structureCount).toBe(0);
       expect(stats.discoveredSectorCount).toBe(0);
+    });
+  });
+
+  // ── Admin Story Queries ──────────────────────────────────────────
+
+  describe('admin story queries', () => {
+    describe('createAdminStory', () => {
+      it('inserts story and returns id', async () => {
+        mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'story-1' }]));
+
+        const id = await createAdminStory({ title: 'Test Story', summary: 'A summary' });
+        expect(id).toBe('story-1');
+        expect(mockQuery).toHaveBeenCalledWith(
+          expect.stringContaining('INSERT INTO admin_stories'),
+          expect.arrayContaining(['Test Story', 'A summary']),
+        );
+      });
+
+      it('passes optional fields with defaults', async () => {
+        mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'story-2' }]));
+
+        await createAdminStory({
+          title: 'Full Story',
+          summary: 'Full summary',
+          scenario: 'Login flow',
+          steps: [{ step: 1, action: 'Click login', result: 'Form appears' }],
+          findings: [
+            {
+              type: 'bug',
+              severity: 'high',
+              title: 'Broken button',
+              description: 'Button does not work',
+              suggestion: 'Fix the handler',
+            },
+          ],
+          screenshotPaths: ['/img/shot1.png'],
+          status: 'published',
+        });
+
+        const params = mockQuery.mock.calls[0][1] as unknown[];
+        expect(params[0]).toBe('Full Story');
+        expect(params[1]).toBe('Full summary');
+        expect(params[2]).toBe('Login flow');
+        expect(params[3]).toBe(
+          JSON.stringify([{ step: 1, action: 'Click login', result: 'Form appears' }]),
+        );
+        expect(params[4]).toBe(
+          JSON.stringify([
+            {
+              type: 'bug',
+              severity: 'high',
+              title: 'Broken button',
+              description: 'Button does not work',
+              suggestion: 'Fix the handler',
+            },
+          ]),
+        );
+        expect(params[5]).toEqual(['/img/shot1.png']);
+        expect(params[6]).toBe('published');
+      });
+
+      it('uses defaults for optional fields', async () => {
+        mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'story-3' }]));
+
+        await createAdminStory({ title: 'Minimal', summary: 'Just basics' });
+
+        const params = mockQuery.mock.calls[0][1] as unknown[];
+        expect(params[2]).toBe(''); // scenario default
+        expect(params[3]).toBe('[]'); // steps default
+        expect(params[4]).toBe('[]'); // findings default
+        expect(params[5]).toEqual([]); // screenshotPaths default
+        expect(params[6]).toBe('draft'); // status default
+      });
+    });
+
+    describe('getAdminStories', () => {
+      const storyRow = {
+        id: 's1',
+        title: 'Story 1',
+        summary: 'Summary 1',
+        scenario: 'Scenario 1',
+        steps: [{ step: 1, action: 'Do thing', result: 'Thing done' }],
+        findings: [],
+        screenshot_paths: ['/img/s1.png'],
+        status: 'draft',
+        created_at: '2026-01-01T00:00:00Z',
+      };
+
+      it('returns stories with default limit', async () => {
+        mockQuery.mockResolvedValueOnce(mockQueryResult([storyRow]));
+
+        const stories = await getAdminStories();
+        expect(stories).toHaveLength(1);
+        expect(stories[0].id).toBe('s1');
+        expect(stories[0].title).toBe('Story 1');
+        expect(stories[0].screenshotPaths).toEqual(['/img/s1.png']);
+        expect(stories[0].createdAt).toBe('2026-01-01T00:00:00Z');
+        expect(mockQuery).toHaveBeenCalledWith(
+          expect.stringContaining('ORDER BY created_at DESC'),
+          [50],
+        );
+      });
+
+      it('respects custom limit', async () => {
+        mockQuery.mockResolvedValueOnce(mockQueryResult());
+
+        await getAdminStories(10);
+        expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('LIMIT $1'), [10]);
+      });
+
+      it('returns empty array when no stories', async () => {
+        mockQuery.mockResolvedValueOnce(mockQueryResult());
+        const stories = await getAdminStories();
+        expect(stories).toEqual([]);
+      });
+    });
+
+    describe('getAdminStoryById', () => {
+      it('returns story when found', async () => {
+        mockQuery.mockResolvedValueOnce(
+          mockQueryResult([
+            {
+              id: 's1',
+              title: 'Story 1',
+              summary: 'Summary 1',
+              scenario: 'Scenario 1',
+              steps: [],
+              findings: [
+                {
+                  type: 'recommendation',
+                  severity: 'low',
+                  title: 'Improve UX',
+                  description: 'Could be better',
+                  suggestion: 'Add tooltip',
+                },
+              ],
+              screenshot_paths: [],
+              status: 'published',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        );
+
+        const story = await getAdminStoryById('s1');
+        expect(story).not.toBeNull();
+        expect(story!.id).toBe('s1');
+        expect(story!.findings).toHaveLength(1);
+        expect(story!.findings[0].type).toBe('recommendation');
+        expect(story!.scenario).toBe('Scenario 1');
+        expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), ['s1']);
+      });
+
+      it('returns null when story not found', async () => {
+        mockQuery.mockResolvedValueOnce(mockQueryResult());
+        const story = await getAdminStoryById('nonexistent');
+        expect(story).toBeNull();
+      });
     });
   });
 });

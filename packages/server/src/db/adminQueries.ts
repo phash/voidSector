@@ -16,21 +16,20 @@ export async function getAllPlayers(): Promise<AdminPlayer[]> {
   const result = await query<{
     id: string;
     username: string;
-    position_x: number;
-    position_y: number;
     xp: number;
     level: number;
     faction_id: string | null;
   }>(
-    `SELECT id, username, position_x, position_y, xp, level, faction_id
-     FROM players
-     ORDER BY username ASC`,
+    `SELECT p.id, p.username, p.xp, p.level, fm.faction_id
+     FROM players p
+     LEFT JOIN faction_members fm ON fm.player_id = p.id
+     ORDER BY p.username ASC`,
   );
   return result.rows.map((row) => ({
     id: row.id,
     username: row.username,
-    positionX: row.position_x,
-    positionY: row.position_y,
+    positionX: 0,
+    positionY: 0,
     xp: row.xp,
     level: row.level,
     factionId: row.faction_id,
@@ -41,15 +40,14 @@ export async function getPlayerById(id: string): Promise<AdminPlayer | null> {
   const result = await query<{
     id: string;
     username: string;
-    position_x: number;
-    position_y: number;
     xp: number;
     level: number;
     faction_id: string | null;
   }>(
-    `SELECT id, username, position_x, position_y, xp, level, faction_id
-     FROM players
-     WHERE id = $1`,
+    `SELECT p.id, p.username, p.xp, p.level, fm.faction_id
+     FROM players p
+     LEFT JOIN faction_members fm ON fm.player_id = p.id
+     WHERE p.id = $1`,
     [id],
   );
   if (result.rows.length === 0) return null;
@@ -57,8 +55,8 @@ export async function getPlayerById(id: string): Promise<AdminPlayer | null> {
   return {
     id: row.id,
     username: row.username,
-    positionX: row.position_x,
-    positionY: row.position_y,
+    positionX: 0,
+    positionY: 0,
     xp: row.xp,
     level: row.level,
     factionId: row.faction_id,
@@ -82,15 +80,15 @@ export async function getPlayerFullProfile(id: string): Promise<AdminPlayerFull 
   const playerResult = await query<{
     id: string;
     username: string;
-    position_x: number;
-    position_y: number;
     xp: number;
     level: number;
     faction_id: string | null;
     credits: number;
   }>(
-    `SELECT id, username, position_x, position_y, xp, level, faction_id, credits
-     FROM players WHERE id = $1`,
+    `SELECT p.id, p.username, p.xp, p.level, p.credits, fm.faction_id
+     FROM players p
+     LEFT JOIN faction_members fm ON fm.player_id = p.id
+     WHERE p.id = $1`,
     [id],
   );
   if (playerResult.rows.length === 0) return null;
@@ -126,8 +124,8 @@ export async function getPlayerFullProfile(id: string): Promise<AdminPlayerFull 
   return {
     id: p.id,
     username: p.username,
-    positionX: p.position_x,
-    positionY: p.position_y,
+    positionX: 0,
+    positionY: 0,
     xp: p.xp,
     level: p.level,
     factionId: p.faction_id,
@@ -135,18 +133,6 @@ export async function getPlayerFullProfile(id: string): Promise<AdminPlayerFull 
     cargo,
     ships,
   };
-}
-
-export async function adminSetPlayerPosition(
-  id: string,
-  x: number,
-  y: number,
-): Promise<boolean> {
-  const result = await query(
-    `UPDATE players SET position_x = $2, position_y = $3 WHERE id = $1`,
-    [id, x, y],
-  );
-  return (result.rowCount ?? 0) > 0;
 }
 
 export async function adminSetPlayerCredits(id: string, amount: number): Promise<boolean> {
@@ -176,15 +162,14 @@ export async function getPlayerByUsername(username: string): Promise<AdminPlayer
   const result = await query<{
     id: string;
     username: string;
-    position_x: number;
-    position_y: number;
     xp: number;
     level: number;
     faction_id: string | null;
   }>(
-    `SELECT id, username, position_x, position_y, xp, level, faction_id
-     FROM players
-     WHERE username = $1`,
+    `SELECT p.id, p.username, p.xp, p.level, fm.faction_id
+     FROM players p
+     LEFT JOIN faction_members fm ON fm.player_id = p.id
+     WHERE p.username = $1`,
     [username],
   );
   if (result.rows.length === 0) return null;
@@ -192,8 +177,8 @@ export async function getPlayerByUsername(username: string): Promise<AdminPlayer
   return {
     id: row.id,
     username: row.username,
-    positionX: row.position_x,
-    positionY: row.position_y,
+    positionX: 0,
+    positionY: 0,
     xp: row.xp,
     level: row.level,
     factionId: row.faction_id,
