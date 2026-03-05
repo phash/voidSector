@@ -7,16 +7,14 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining, calculateMinedAmount } from '../engine/mining.js';
-import { generateStationNpcs, getStationFaction, getPirateLevel, hasShipyard } from '../engine/npcgen.js';
+import { generateStationNpcs, getStationFaction, hasShipyard } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
-import { validateJump, validateMine, validateJettison, validateLocalScan, validateAreaScan, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, validateBattleAction, createPirateEncounter, getReputationTier, calculateLevel } from '../engine/commands.js';
-import { checkScanEvent } from '../engine/scanEvents.js';
+import { validateJump, validateMine, validateJettison, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import { calculateAutopilotPath, calculateAutopilotCosts, getNextSegment, STEP_INTERVAL_MS, STEP_INTERVAL_MIN_MS } from '../engine/autopilot.js';
 import { hashCoords, isInBlackHoleCluster } from '../engine/worldgen.js';
-import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../engine/combatV2.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellToStation, calculateCurrentStock, getStationLevel, calculatePrice } from '../engine/npcStationEngine.js';
 import { getStationInventoryItem, upsertInventoryItem, getStationInventory } from '../db/npcStationQueries.js';
@@ -37,6 +35,8 @@ import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngi
 import { getPlayerKnownQuadrants, addPlayerKnownQuadrant, addPlayerKnownQuadrantsBatch, getQuadrant, getAllDiscoveredQuadrantCoords } from '../db/quadrantQueries.js';
 import type { ServiceContext } from './services/ServiceContext.js';
 import { NavigationService } from './services/NavigationService.js';
+import { ScanService } from './services/ScanService.js';
+import { CombatService } from './services/CombatService.js';
 import { isInt, isPositiveInt, isGuest, rejectGuest, MAX_COORD } from './services/utils.js';
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
@@ -74,6 +74,8 @@ export class SectorRoom extends Room<SectorRoomState> {
   // Service architecture
   private serviceCtx!: ServiceContext;
   private navigation!: NavigationService;
+  private scanning!: ScanService;
+  private combat!: CombatService;
 
   /** Get a player's current sector X coordinate */
   private _px(sid: string): number { return this.state.players.get(sid)?.x ?? 0; }
@@ -133,6 +135,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       checkRate: this.checkRate.bind(this),
       getShipForClient: this.getShipForClient.bind(this),
       getPlayerBonuses: this.getPlayerBonuses.bind(this),
+      _px: this._px.bind(this),
+      _py: this._py.bind(this),
+      _pst: this._pst.bind(this),
       send: (client, type, data) => client.send(type, data),
       broadcast: (type, data, opts) => this.broadcast(type, data, opts),
       disposeCallbacks: this.disposeCallbacks,
@@ -140,8 +145,12 @@ export class SectorRoom extends Room<SectorRoomState> {
       checkFirstContact: this.checkFirstContact.bind(this),
       checkQuestProgress: this.checkQuestProgress.bind(this),
       checkAndEmitDistressCalls: this.checkAndEmitDistressCalls.bind(this),
+      applyReputationChange: this.applyReputationChange.bind(this),
+      applyXpGain: this.applyXpGain.bind(this),
     };
     this.navigation = new NavigationService(this.serviceCtx);
+    this.scanning = new ScanService(this.serviceCtx);
+    this.combat = new CombatService(this.serviceCtx);
 
     // Handle intra-quadrant sector move (no room leave/join needed)
     this.onMessage('moveSector', async (client, data: { sectorX: number; sectorY: number }) => {
@@ -166,7 +175,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Handle local scan message
     this.onMessage('localScan', async (client) => {
       try {
-        await this.handleLocalScan(client);
+        await this.scanning.handleLocalScan(client);
       } catch (err) {
         console.error('[LOCAL_SCAN] Unhandled error:', err);
         client.send('localScanResult', { error: 'Server error' });
@@ -176,7 +185,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     // Handle area scan message (with backward compat for 'scan')
     this.onMessage('areaScan', async (client) => {
       try {
-        await this.handleAreaScan(client);
+        await this.scanning.handleAreaScan(client);
       } catch (err) {
         console.error('[AREA_SCAN] Unhandled error:', err);
         client.send('scanResult', { sectors: [], error: 'Server error' });
@@ -184,7 +193,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('scan', async (client) => {
       try {
-        await this.handleAreaScan(client);
+        await this.scanning.handleAreaScan(client);
       } catch (err) {
         console.error('[SCAN] Unhandled error:', err);
         client.send('scanResult', { sectors: [], error: 'Server error' });
@@ -349,22 +358,22 @@ export class SectorRoom extends Room<SectorRoomState> {
       await this.handleGetReputation(client);
     });
     this.onMessage('battleAction', async (client, data: BattleActionMessage) => {
-      await this.handleBattleAction(client, data);
+      await this.combat.handleBattleAction(client, data);
     });
     this.onMessage('combatV2Action', async (client, data: CombatV2ActionMessage) => {
-      await this.handleCombatV2Action(client, data);
+      await this.combat.handleCombatV2Action(client, data);
     });
     this.onMessage('combatV2Flee', async (client, data: CombatV2FleeMessage) => {
-      await this.handleCombatV2Flee(client, data);
+      await this.combat.handleCombatV2Flee(client, data);
     });
     this.onMessage('installDefense', async (client, data: { defenseType: string }) => {
-      await this.handleInstallDefense(client, data);
+      await this.combat.handleInstallDefense(client, data);
     });
     this.onMessage('repairStation', async (client, data: { sectorX: number; sectorY: number }) => {
-      await this.handleRepairStation(client, data);
+      await this.combat.handleRepairStation(client, data);
     });
     this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
-      await this.handleCompleteScanEvent(client, data);
+      await this.scanning.handleCompleteScanEvent(client, data);
     });
 
     // Phase 5: Fuel
@@ -1330,115 +1339,6 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   // handleEmergencyWarp → NavigationService
-
-  private async handleLocalScan(client: Client) {
-    if (!this.checkRate(client.sessionId, 'localScan', 1000)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
-    const auth = client.auth as AuthPayload;
-    const ap = await getAPState(auth.userId);
-    const currentAP = calculateCurrentAP(ap, Date.now());
-    const scannerLevel = this.getShipForClient(client.sessionId).scannerLevel;
-
-    const result = validateLocalScan(currentAP, AP_COSTS_LOCAL_SCAN, scannerLevel);
-    if (!result.valid) {
-      client.send('error', { code: 'LOCAL_SCAN_FAIL', message: result.error! });
-      return;
-    }
-
-    await saveAPState(auth.userId, result.newAP!);
-
-    const sectorData = await getSector(this._px(client.sessionId), this._py(client.sessionId));
-    const resources = sectorData?.resources ?? { ore: 0, gas: 0, crystal: 0 };
-
-    client.send('localScanResult', {
-      resources,
-      hiddenSignatures: result.hiddenSignatures,
-    });
-    client.send('apUpdate', result.newAP!);
-
-    // Phase 4: Check for scan events (pass environment for pirate frequency scaling)
-    const env = (this._pst(client.sessionId) === 'nebula' ? 'nebula' : 'empty') as import('@void-sector/shared').SectorEnvironment;
-    await this.checkAndEmitScanEvents(client, [{ x: this._px(client.sessionId), y: this._py(client.sessionId), environment: env }]);
-  }
-
-  private async handleAreaScan(client: Client) {
-    if (!this.checkRate(client.sessionId, 'areaScan', 1000)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
-    const auth = client.auth as AuthPayload;
-    const ap = await getAPState(auth.userId);
-    const currentAP = calculateCurrentAP(ap, Date.now());
-    const scannerLevel = this.getShipForClient(client.sessionId).scannerLevel;
-
-    const scanResult = validateAreaScan(currentAP, scannerLevel);
-    if (!scanResult.valid) {
-      client.send('error', { code: 'SCAN_FAIL', message: scanResult.error! });
-      return;
-    }
-
-    await saveAPState(auth.userId, scanResult.newAP!);
-
-    // Apply faction scan radius bonus
-    const bonuses = await this.getPlayerBonuses(auth.userId);
-    const radius = scanResult.radius + bonuses.scanRadiusBonus;
-    const sectorX = this._px(client.sessionId);
-    const sectorY = this._py(client.sessionId);
-
-    // Nebula interference: area scan is blocked inside nebula sectors
-    const currentSectorData = await getSector(sectorX, sectorY);
-    if (currentSectorData?.type === 'nebula') {
-      client.send('error', { code: 'SCAN_FAIL', message: 'Nebula interference: only local scan available in nebula sectors' });
-      return;
-    }
-
-    // Batch load existing sectors
-    const existingSectors = await getSectorsInRange(sectorX, sectorY, radius);
-    const existingMap = new Map(existingSectors.map(s => [`${s.x}:${s.y}`, s]));
-
-    const sectors: SectorData[] = [];
-    const newSectors: SectorData[] = [];
-    const allCoords: { x: number; y: number }[] = [];
-
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        const tx = sectorX + dx;
-        const ty = sectorY + dy;
-        const key = `${tx}:${ty}`;
-        let sector = existingMap.get(key);
-        if (!sector) {
-          sector = generateSector(tx, ty, auth.userId);
-          newSectors.push(sector);
-        }
-        sectors.push(sector);
-        allCoords.push({ x: tx, y: ty });
-      }
-    }
-
-    // Batch save new sectors and discoveries
-    for (const s of newSectors) await saveSector(s);
-    await addDiscoveriesBatch(auth.userId, allCoords);
-
-    // Phase 4: Check for scan events in scanned sectors (skip pirate ambush — remote scan can't trigger physical encounters)
-    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y, environment: s.environment })), false);
-
-    // Nebula fog: hide contents of nebula sectors when scanned from outside
-    const foggedSectors = sectors.map(s => {
-      if (s.environment === 'nebula') {
-        return {
-          ...s,
-          resources: { ore: 0, gas: 0, crystal: 0 },
-          contents: [],
-          type: 'nebula' as const,
-          metadata: {},
-        };
-      }
-      return s;
-    });
-
-    client.send('scanResult', { sectors: foggedSectors, apRemaining: scanResult.newAP!.current });
-
-    // Phase 4: Check quest progress for scan quests
-    for (const s of sectors) {
-      await this.checkQuestProgress(client, auth.userId, 'scan', { sectorX: s.x, sectorY: s.y });
-    }
-  }
 
   private async handleMine(client: Client, data: MineMessage) {
     if (!this.checkRate(client.sessionId, 'mine', 500)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
@@ -2593,413 +2493,6 @@ export class SectorRoom extends Room<SectorRoomState> {
       await setPlayerLevel(playerId, newLevel);
       client.send('logEntry', `LEVEL UP! Du bist jetzt Level ${newLevel}`);
     }
-  }
-
-  private async handleBattleAction(client: Client, data: BattleActionMessage) {
-    const auth = client.auth as AuthPayload;
-    const ship = this.getShipForClient(client.sessionId);
-    const ap = await getAPState(auth.userId);
-    const currentAP = calculateCurrentAP(ap, Date.now());
-    const credits = await getPlayerCredits(auth.userId);
-    const cargo = await getPlayerCargo(auth.userId);
-    const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
-
-    const pirateLevel = getPirateLevel(data.sectorX, data.sectorY);
-    const encounter = createPirateEncounter(pirateLevel, data.sectorX, data.sectorY, pirateRep);
-
-    // Ship attack power (base from ship class + combat_plating upgrade + faction bonus)
-    let shipAttack = 10;
-    const upgrades = await getPlayerUpgrades(auth.userId);
-    if (upgrades.some(u => u.upgrade_id === 'combat_plating' && u.active)) {
-      shipAttack = Math.round(shipAttack * 1.2);
-    }
-    const bonuses = await this.getPlayerBonuses(auth.userId);
-    shipAttack = Math.round(shipAttack * bonuses.combatMultiplier);
-
-    const battleSeed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17);
-    const validation = validateBattleAction(
-      data.action, currentAP, encounter, credits, cargo, shipAttack, battleSeed,
-    );
-
-    if (!validation.valid) {
-      client.send('battleResult', { success: false, error: validation.error });
-      return;
-    }
-
-    const result = validation.result!;
-
-    // Apply AP cost (flee)
-    if (validation.newAP) {
-      await saveAPState(auth.userId, validation.newAP);
-      client.send('apUpdate', validation.newAP);
-    }
-
-    // Apply outcomes
-    if (result.outcome === 'victory' && result.lootCredits) {
-      await addCredits(auth.userId, result.lootCredits);
-      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-      if (result.lootResources) {
-        for (const [res, amount] of Object.entries(result.lootResources)) {
-          if (amount && amount > 0) await addToCargo(auth.userId, res as ResourceType, amount);
-        }
-        client.send('cargoUpdate', await getPlayerCargo(auth.userId));
-      }
-      if (result.lootArtefact && result.lootArtefact > 0) {
-        await addToCargo(auth.userId, 'artefact' as ResourceType, result.lootArtefact);
-      }
-    }
-
-    if (result.outcome === 'defeat' && result.cargoLost) {
-      for (const [res, amount] of Object.entries(result.cargoLost)) {
-        if (amount && amount > 0) await deductCargo(auth.userId, res, amount);
-      }
-      client.send('cargoUpdate', await getPlayerCargo(auth.userId));
-    }
-
-    if (result.outcome === 'negotiated') {
-      await deductCredits(auth.userId, encounter.negotiateCost);
-      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-    }
-
-    // Reputation changes
-    if (result.repChange) {
-      await this.applyReputationChange(auth.userId, 'pirates', result.repChange, client);
-    }
-
-    // XP
-    if (result.xpGained) {
-      await this.applyXpGain(auth.userId, result.xpGained, client);
-    }
-
-    // Log battle
-    await insertBattleLog(auth.userId, pirateLevel, data.sectorX, data.sectorY, data.action, result.outcome, result.lootResources ?? null);
-
-    client.send('battleResult', { success: true, encounter, result });
-
-    // Log entry
-    const outcomeMessages: Record<string, string> = {
-      victory: `SIEG! Piraten besiegt. +${result.lootCredits ?? 0} CR`,
-      defeat: 'NIEDERLAGE. Cargo verloren.',
-      escaped: 'Erfolgreich geflohen!',
-      caught: 'Flucht fehlgeschlagen — Kampf erzwungen.',
-      negotiated: `Verhandelt. -${encounter.negotiateCost} CR`,
-    };
-    client.send('logEntry', outcomeMessages[result.outcome] ?? `Kampf: ${result.outcome}`);
-
-    // Check bounty quests
-    if (result.outcome === 'victory') {
-      await this.checkQuestProgress(client, auth.userId, 'battle_won', { sectorX: data.sectorX, sectorY: data.sectorY });
-    }
-  }
-
-  private async handleCombatV2Action(client: Client, data: CombatV2ActionMessage) {
-    const auth = client.auth as AuthPayload;
-    const sessionId = client.sessionId;
-    const state = this.combatV2States.get(sessionId);
-
-    if (!state || state.status !== 'active') {
-      client.send('combatV2Result', { success: false, error: 'No active combat' });
-      return;
-    }
-
-    const validTactics = ['assault', 'balanced', 'defensive'];
-    const validSpecials = ['aim', 'evade', 'none'];
-    if (!validTactics.includes(data.tactic) || !validSpecials.includes(data.specialAction)) {
-      client.send('combatV2Result', { success: false, error: 'Invalid tactic or action' });
-      return;
-    }
-
-    const ship = this.getShipForClient(sessionId);
-    const bonuses = await this.getPlayerBonuses(auth.userId);
-    const seed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17 + state.currentRound * 7);
-
-    const result = resolveRound(
-      state, ship, data.tactic as any, data.specialAction as any,
-      bonuses.combatMultiplier, seed,
-    );
-
-    this.combatV2States.set(sessionId, result.state);
-
-    if (result.state.status !== 'active') {
-      this.combatV2States.delete(sessionId);
-      const finalResult = combatV2ToResult(result.state, seed);
-
-      // Apply outcomes
-      if (result.state.status === 'victory') {
-        if (finalResult.lootCredits) {
-          await addCredits(auth.userId, finalResult.lootCredits);
-        }
-        if (finalResult.lootResources) {
-          for (const [resource, amount] of Object.entries(finalResult.lootResources)) {
-            if (amount > 0) await addToCargo(auth.userId, resource as ResourceType, amount);
-          }
-        }
-        if (finalResult.lootArtefact && finalResult.lootArtefact > 0) {
-          await addToCargo(auth.userId, 'artefact' as ResourceType, finalResult.lootArtefact);
-        }
-      }
-      if (finalResult.repChange) {
-        await this.applyReputationChange(auth.userId, 'pirates', finalResult.repChange, client);
-      }
-
-      await insertBattleLogV2(
-        auth.userId, state.encounter.pirateLevel,
-        data.sectorX, data.sectorY,
-        'combat_v2', result.state.status,
-        finalResult.lootResources ?? null,
-        result.state.currentRound, result.state.rounds,
-        result.state.playerHp,
-      );
-
-      client.send('combatV2Result', {
-        success: true,
-        round: result.round,
-        state: result.state,
-        finalResult,
-      });
-      return;
-    }
-
-    client.send('combatV2Result', {
-      success: true,
-      round: result.round,
-      state: result.state,
-    });
-  }
-
-  private async handleCombatV2Flee(client: Client, data: CombatV2FleeMessage) {
-    const auth = client.auth as AuthPayload;
-    const sessionId = client.sessionId;
-    const state = this.combatV2States.get(sessionId);
-
-    if (!state || state.status !== 'active') {
-      client.send('combatV2Result', { success: false, error: 'No active combat' });
-      return;
-    }
-
-    const ap = await getAPState(auth.userId);
-    const currentAP = calculateCurrentAP(ap, Date.now());
-    const newAP = spendAP(currentAP, BATTLE_AP_COST_FLEE);
-    if (!newAP) {
-      client.send('combatV2Result', { success: false, error: 'Nicht genug AP zum Fliehen (2 AP)' });
-      return;
-    }
-
-    const ship = this.getShipForClient(sessionId);
-    const seed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17);
-    const fleeResult = attemptFlee(state, ship, seed);
-
-    await saveAPState(auth.userId, newAP);
-    client.send('apUpdate', newAP);
-
-    if (fleeResult.escaped) {
-      this.combatV2States.delete(sessionId);
-      client.send('combatV2Result', {
-        success: true,
-        state: fleeResult.state,
-        finalResult: { outcome: 'escaped' },
-      });
-    } else {
-      this.combatV2States.set(sessionId, fleeResult.state);
-      client.send('combatV2Result', {
-        success: true,
-        state: fleeResult.state,
-        finalResult: { outcome: 'caught' },
-      });
-    }
-  }
-
-  private async handleInstallDefense(client: Client, data: { defenseType: string }) {
-    if (rejectGuest(client, 'Verteidigung bauen')) return;
-    if (!this.checkRate(client.sessionId, 'build', 2000)) {
-      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
-      return;
-    }
-    const auth = client.auth as AuthPayload;
-    const def = STATION_DEFENSE_DEFS[data.defenseType];
-    if (!def) {
-      client.send('error', { code: 'INVALID_INPUT', message: 'Unknown defense type' });
-      return;
-    }
-
-    const sectorX = this._px(client.sessionId);
-    const sectorY = this._py(client.sessionId);
-    const structures = await getPlayerStructuresInSector(auth.userId, sectorX, sectorY);
-    const hasBase = structures.some(s => s.type === 'base');
-    if (!hasBase) {
-      client.send('installDefenseResult', { success: false, error: 'Keine Basis in diesem Sektor' });
-      return;
-    }
-
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < def.cost.credits) {
-      client.send('installDefenseResult', { success: false, error: 'Nicht genug Credits' });
-      return;
-    }
-    const cargo = await getPlayerCargo(auth.userId);
-    for (const [resource, amount] of Object.entries(def.cost)) {
-      if (resource === 'credits') continue;
-      if ((cargo[resource as keyof typeof cargo] ?? 0) < (amount ?? 0)) {
-        client.send('installDefenseResult', { success: false, error: `Nicht genug ${resource}` });
-        return;
-      }
-    }
-
-    // Deduct resources
-    await deductCredits(auth.userId, def.cost.credits);
-    for (const [resource, amount] of Object.entries(def.cost)) {
-      if (resource === 'credits' || !amount) continue;
-      await deductCargo(auth.userId, resource, amount);
-    }
-
-    try {
-      const result = await installStationDefense(auth.userId, sectorX, sectorY, data.defenseType);
-      client.send('installDefenseResult', { success: true, defenseType: data.defenseType, id: result.id });
-      const updatedCargo = await getPlayerCargo(auth.userId);
-      client.send('cargoUpdate', updatedCargo);
-      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-    } catch (err: any) {
-      if (err.code === '23505') {
-        client.send('installDefenseResult', { success: false, error: 'Verteidigung bereits installiert' });
-        return;
-      }
-      client.send('installDefenseResult', { success: false, error: 'Installation fehlgeschlagen' });
-    }
-  }
-
-  private async handleRepairStation(client: Client, data: { sectorX: number; sectorY: number }) {
-    if (rejectGuest(client, 'Reparieren')) return;
-    const auth = client.auth as AuthPayload;
-
-    const hp = await getStructureHp(auth.userId, data.sectorX, data.sectorY);
-    if (!hp) {
-      client.send('repairResult', { success: false, error: 'Keine Basis gefunden' });
-      return;
-    }
-    if (hp.currentHp >= hp.maxHp) {
-      client.send('repairResult', { success: false, error: 'Basis ist nicht beschädigt' });
-      return;
-    }
-
-    const hpToRepair = hp.maxHp - hp.currentHp;
-    const costCredits = hpToRepair * STATION_REPAIR_CR_PER_HP;
-    const costOre = hpToRepair * STATION_REPAIR_ORE_PER_HP;
-
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < costCredits) {
-      client.send('repairResult', { success: false, error: `Kosten: ${costCredits} CR, ${costOre} Erz — nicht genug Credits` });
-      return;
-    }
-    const cargo = await getPlayerCargo(auth.userId);
-    if ((cargo.ore ?? 0) < costOre) {
-      client.send('repairResult', { success: false, error: `Kosten: ${costCredits} CR, ${costOre} Erz — nicht genug Erz` });
-      return;
-    }
-
-    await deductCredits(auth.userId, costCredits);
-    await deductCargo(auth.userId, 'ore', costOre);
-    await updateStructureHp(auth.userId, data.sectorX, data.sectorY, hp.maxHp);
-
-    client.send('repairResult', { success: true, newHp: hp.maxHp, maxHp: hp.maxHp });
-    const updatedCargo = await getPlayerCargo(auth.userId);
-    client.send('cargoUpdate', updatedCargo);
-    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-  }
-
-  private async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number; environment?: import('@void-sector/shared').SectorEnvironment }[], includeImmediateEvents = true) {
-    const auth = client.auth as AuthPayload;
-    for (const sector of scannedSectors) {
-      const eventResult = checkScanEvent(sector.x, sector.y, sector.environment ?? 'empty');
-      if (!eventResult.hasEvent || !eventResult.eventType) continue;
-
-      if (eventResult.isImmediate && eventResult.eventType === 'pirate_ambush') {
-        if (!includeImmediateEvents) continue;
-        const pirateLevel = (eventResult.data?.pirateLevel as number) ?? 1;
-        const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
-        const encounter = createPirateEncounter(pirateLevel, sector.x, sector.y, pirateRep);
-        client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
-        // Init combat v2 state
-        if (FEATURE_COMBAT_V2) {
-          const combatShip = this.getShipForClient(client.sessionId);
-          const combatState = initCombatV2(encounter, combatShip);
-          this.combatV2States.set(client.sessionId, combatState);
-          client.send('combatV2Init', { state: combatState });
-        }
-        client.send('logEntry', `WARNUNG: Piraten-Hinterhalt bei (${sector.x}, ${sector.y})!`);
-      } else {
-        const eventId = await insertScanEvent(
-          auth.userId, sector.x, sector.y,
-          eventResult.eventType, eventResult.data ?? {},
-        );
-        if (eventId) {
-          client.send('scanEventDiscovered', {
-            event: {
-              id: eventId,
-              eventType: eventResult.eventType,
-              sectorX: sector.x,
-              sectorY: sector.y,
-              status: 'discovered',
-              data: eventResult.data ?? {},
-              createdAt: Date.now(),
-            },
-          });
-          const eventNames: Record<string, string> = {
-            distress_signal: 'Notsignal',
-            anomaly_reading: 'Anomalie',
-            artifact_find: 'Artefakt-Signal',
-          };
-          client.send('logEntry', `${eventNames[eventResult.eventType] ?? 'Event'} entdeckt bei (${sector.x}, ${sector.y})`);
-        }
-      }
-    }
-  }
-
-  private async handleCompleteScanEvent(client: Client, data: CompleteScanEventMessage) {
-    const auth = client.auth as AuthPayload;
-    const events = await getPlayerScanEvents(auth.userId, 'discovered');
-    const event = events.find(e => e.id === data.eventId);
-
-    if (!event) {
-      client.send('logEntry', 'Event nicht gefunden.');
-      return;
-    }
-
-    const completed = await completeScanEvent(data.eventId, auth.userId);
-    if (!completed) return;
-
-    // Apply rewards based on event type
-    const eventData = event.data as Record<string, number>;
-    if (eventData.rewardCredits) {
-      await addCredits(auth.userId, eventData.rewardCredits);
-      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-    }
-    if (eventData.rewardXp) {
-      await this.applyXpGain(auth.userId, eventData.rewardXp, client);
-    }
-    if (eventData.rewardRep) {
-      const repFaction = event.event_type === 'anomaly_reading' ? 'scientists'
-        : event.event_type === 'artifact_find' ? 'ancients'
-        : 'traders';
-      await this.applyReputationChange(auth.userId, repFaction as NpcFactionId, eventData.rewardRep, client);
-    }
-    if (eventData.rewardArtefact && eventData.rewardArtefact > 0) {
-      await addToCargo(auth.userId, 'artefact' as ResourceType, eventData.rewardArtefact);
-      const updatedCargo = await getPlayerCargo(auth.userId);
-      client.send('cargoUpdate', updatedCargo);
-      client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
-    }
-
-    // Handle blueprint find
-    if (event.event_type === 'blueprint_find') {
-      const moduleId = (event.data as Record<string, unknown>)?.moduleId as string;
-      if (moduleId) {
-        await addBlueprint(auth.userId, moduleId);
-        client.send('blueprintFound', { moduleId, moduleName: MODULES[moduleId]?.name ?? moduleId });
-        client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
-      }
-    }
-
-    client.send('logEntry', `Event abgeschlossen! +${eventData.rewardCredits ?? 0} CR`);
   }
 
   private async checkQuestProgress(client: Client, playerId: string, action: string, context: Record<string, any>) {
