@@ -17,6 +17,7 @@ import {
   STEP_INTERVAL_MIN_MS,
 } from '../../engine/autopilot.js';
 import { hashCoords, isInBlackHoleCluster } from '../../engine/worldgen.js';
+import { findReachableGates } from '../../engine/jumpgateRouting.js';
 import { getReputationTier } from '../../engine/commands.js';
 import { getStationFaction } from '../../engine/npcgen.js';
 import { recordVisit } from '../../engine/npcStationEngine.js';
@@ -27,6 +28,7 @@ import {
   addDiscovery,
   getPlayerCredits,
   deductCredits,
+  addCredits,
   getPlayerHomeBase,
   playerHasGateCode,
   getJumpGate,
@@ -44,6 +46,10 @@ import {
   updatePlayerStationRep,
   getPlayerStationRep,
   addPlayerKnownJumpGate,
+  getPlayerJumpGate,
+  getAllPlayerGates,
+  getAllJumpGateLinks,
+  getJumpGateLinks,
 } from '../../db/queries.js';
 import {
   getAPState,
@@ -80,6 +86,7 @@ import {
   WORLD_SEED,
   BLACK_HOLE_SPAWN_CHANCE,
   BLACK_HOLE_MIN_DISTANCE,
+  JUMPGATE_FUEL_COST,
 } from '@void-sector/shared';
 
 export class NavigationService {
@@ -132,8 +139,79 @@ export class NavigationService {
       }
     }
 
+    // Check for JumpGate at this sector
+    await this.detectAndSendJumpGate(client, auth, sectorX, sectorY);
+
+    // Check for player-built JumpGate at this sector
+    await this.detectAndSendPlayerGate(client, sectorX, sectorY);
+
     // Quadrant first-contact detection
     await this.ctx.checkFirstContact(client, auth, sectorX, sectorY);
+  }
+
+  /**
+   * Detect jumpgate at sector and send info to client.
+   * Returns gateInfo object if gate found (for handleJump's jumpResult), or null.
+   */
+  async detectAndSendJumpGate(
+    client: Client,
+    auth: AuthPayload,
+    sectorX: number,
+    sectorY: number,
+    returnInfo = false,
+  ): Promise<import('@void-sector/shared').JumpGateInfo | null> {
+    if (!checkJumpGate(sectorX, sectorY)) return null;
+
+    let gate = await getJumpGate(sectorX, sectorY);
+    if (!gate) {
+      const gateData = generateGateTarget(sectorX, sectorY);
+      const gateId = `gate_${sectorX}_${sectorY}`;
+      await insertJumpGate({ id: gateId, sectorX, sectorY, ...gateData });
+      gate = { id: gateId, sectorX, sectorY, ...gateData };
+
+      // #137: Auto-create return gate for bidirectional gates
+      if (gateData.gateType === 'bidirectional') {
+        const returnGateId = `gate_${gateData.targetX}_${gateData.targetY}`;
+        await insertJumpGate({
+          id: returnGateId,
+          sectorX: gateData.targetX,
+          sectorY: gateData.targetY,
+          targetX: sectorX,
+          targetY: sectorY,
+          gateType: 'bidirectional',
+          requiresCode: gateData.requiresCode,
+          requiresMinigame: gateData.requiresMinigame,
+          accessCode: gateData.accessCode,
+        });
+      }
+    }
+
+    const hasCode = gate.requiresCode ? await playerHasGateCode(auth.userId, gate.id) : true;
+    const gateInfo = {
+      id: gate.id,
+      gateType: gate.gateType,
+      requiresCode: gate.requiresCode,
+      requiresMinigame: gate.requiresMinigame,
+      hasCode,
+    };
+
+    // Record discovered jumpgate for map display
+    await addPlayerKnownJumpGate(
+      auth.userId,
+      gate.id,
+      sectorX,
+      sectorY,
+      gate.targetX,
+      gate.targetY,
+      gate.gateType,
+    );
+
+    // For moveSector/onJoin, send directly; for handleJump, return for inclusion in jumpResult
+    if (!returnInfo) {
+      client.send('jumpGateInfo', gateInfo);
+    }
+
+    return gateInfo;
   }
 
   async handleJump(client: Client, data: JumpMessage): Promise<void> {
@@ -230,35 +308,7 @@ export class NavigationService {
     });
 
     // Phase 5: Check for JumpGate at target sector
-    let gateInfo = null;
-    if (checkJumpGate(targetX, targetY)) {
-      let gate = await getJumpGate(targetX, targetY);
-      if (!gate) {
-        const gateData = generateGateTarget(targetX, targetY);
-        const gateId = `gate_${targetX}_${targetY}`;
-        await insertJumpGate({ id: gateId, sectorX: targetX, sectorY: targetY, ...gateData });
-        gate = { id: gateId, sectorX: targetX, sectorY: targetY, ...gateData };
-      }
-      const hasCode = gate.requiresCode ? await playerHasGateCode(auth.userId, gate.id) : true;
-      gateInfo = {
-        id: gate.id,
-        gateType: gate.gateType,
-        requiresCode: gate.requiresCode,
-        requiresMinigame: gate.requiresMinigame,
-        hasCode,
-      };
-
-      // Record discovered jumpgate for map display
-      await addPlayerKnownJumpGate(
-        auth.userId,
-        gate.id,
-        targetX,
-        targetY,
-        gate.targetX,
-        gate.targetY,
-        gate.gateType,
-      );
-    }
+    const gateInfo = await this.detectAndSendJumpGate(client, auth, targetX, targetY, true);
 
     // Check if target is in the same quadrant
     const { qx: curQx, qy: curQy } = sectorToQuadrant(currentX, currentY);
@@ -284,6 +334,9 @@ export class NavigationService {
       gateInfo,
       crossQuadrant,
     });
+
+    // Check for player-built JumpGate at target sector
+    await this.detectAndSendPlayerGate(client, targetX, targetY);
 
     // Phase 5: Check for distress calls in comm range
     await this.ctx.checkAndEmitDistressCalls(client, auth.userId, targetX, targetY);
@@ -1205,5 +1258,294 @@ export class NavigationService {
       creditCost,
       credits: remainingCredits,
     });
+  }
+
+  // ── Player Gate Travel ─────────────────────────────────────────────
+
+  /**
+   * Detect player-built jumpgate at sector and send info to client.
+   * Called from handleMoveSector / onJoin alongside detectAndSendJumpGate.
+   */
+  async detectAndSendPlayerGate(
+    client: Client,
+    sectorX: number,
+    sectorY: number,
+  ): Promise<void> {
+    const gate = await getPlayerJumpGate(sectorX, sectorY);
+    if (!gate) return;
+
+    // Build gate graph for BFS
+    const { gatesMap, linksMap } = await this.buildGateGraph();
+
+    // Get reachable destinations via BFS
+    const destinations = findReachableGates(gate.id, gatesMap, linksMap);
+
+    // Get direct links for UI display
+    const links = await getJumpGateLinks(gate.id);
+
+    client.send('playerGateInfo', {
+      gate: {
+        id: gate.id,
+        sectorX: gate.sectorX,
+        sectorY: gate.sectorY,
+        ownerId: gate.ownerId,
+        ownerName: gate.ownerName,
+        tollCredits: gate.tollCredits,
+        levelConnection: gate.levelConnection,
+        levelDistance: gate.levelDistance,
+        linkedGates: links,
+      },
+      destinations,
+    });
+  }
+
+  /**
+   * Build the gate graph (gates map + links map) from DB for BFS routing.
+   */
+  private async buildGateGraph(): Promise<{
+    gatesMap: Map<string, { id: string; sectorX: number; sectorY: number; tollCredits: number }>;
+    linksMap: Map<string, string[]>;
+  }> {
+    const [allGates, allLinks] = await Promise.all([
+      getAllPlayerGates(),
+      getAllJumpGateLinks(),
+    ]);
+
+    const gatesMap = new Map<string, { id: string; sectorX: number; sectorY: number; tollCredits: number }>();
+    for (const g of allGates) {
+      gatesMap.set(g.id, {
+        id: g.id,
+        sectorX: g.sectorX,
+        sectorY: g.sectorY,
+        tollCredits: g.tollCredits,
+      });
+    }
+
+    const linksMap = new Map<string, string[]>();
+    for (const link of allLinks) {
+      const existing = linksMap.get(link.gateId) ?? [];
+      existing.push(link.linkedGateId);
+      linksMap.set(link.gateId, existing);
+    }
+
+    return { gatesMap, linksMap };
+  }
+
+  /**
+   * Handle player using a player-built jumpgate network.
+   * Uses BFS to find the route and handles toll credit distribution.
+   */
+  async handleUsePlayerGate(
+    client: Client,
+    data: { gateId: string; destinationGateId: string },
+  ): Promise<void> {
+    if (!this.ctx.checkRate(client.sessionId, 'usePlayerGate', 1000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
+
+    const auth = client.auth as AuthPayload;
+
+    // Verify player is at the gate's sector
+    const sx = this.ctx._px(client.sessionId);
+    const sy = this.ctx._py(client.sessionId);
+    const gate = await getPlayerJumpGate(sx, sy);
+    if (!gate || gate.id !== data.gateId) {
+      client.send('error', { code: 'GATE_FAIL', message: 'Not at this gate' });
+      return;
+    }
+
+    // Reject if mining is active
+    const mining = await getMiningState(auth.userId);
+    if (mining?.active) {
+      client.send('error', { code: 'GATE_FAIL', message: 'Cannot travel while mining' });
+      return;
+    }
+
+    // Build gate graph from DB and run BFS
+    const { gatesMap, linksMap } = await this.buildGateGraph();
+    const destinations = findReachableGates(data.gateId, gatesMap, linksMap);
+
+    const destination = destinations.find((r) => r.gateId === data.destinationGateId);
+    if (!destination) {
+      client.send('error', { code: 'GATE_FAIL', message: 'Destination not reachable' });
+      return;
+    }
+
+    // Check fuel first (before credits to avoid refund complexity)
+    const currentFuel = await getFuelState(auth.userId);
+    if (currentFuel === null || currentFuel < JUMPGATE_FUEL_COST) {
+      client.send('error', { code: 'GATE_FAIL', message: 'Not enough fuel' });
+      return;
+    }
+
+    // Check credits
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < destination.totalCost) {
+      client.send('error', {
+        code: 'GATE_FAIL',
+        message: `Need ${destination.totalCost} credits (have ${credits})`,
+      });
+      return;
+    }
+
+    // Deduct fuel
+    await saveFuelState(auth.userId, currentFuel - JUMPGATE_FUEL_COST);
+
+    // Deduct total cost from traveler and distribute tolls
+    if (destination.totalCost > 0) {
+      const deducted = await deductCredits(auth.userId, destination.totalCost);
+      if (!deducted) {
+        // Refund fuel
+        await saveFuelState(auth.userId, currentFuel);
+        client.send('error', { code: 'GATE_FAIL', message: 'Insufficient credits' });
+        return;
+      }
+
+      // Distribute tolls to gate owners along the route.
+      // BFS gives us totalCost but not the path. We trace it by running a
+      // simple BFS from start to destination and crediting each hop's
+      // origin gate owner their toll.
+      await this.distributeTolls(
+        data.gateId,
+        data.destinationGateId,
+        auth.userId,
+        gatesMap,
+        linksMap,
+      );
+    }
+
+    const targetX = destination.sectorX;
+    const targetY = destination.sectorY;
+
+    // Load or generate target sector
+    let targetSector = await getSector(targetX, targetY);
+    if (!targetSector) {
+      targetSector = generateSector(targetX, targetY, auth.userId);
+      await saveSector(targetSector);
+    }
+
+    // Record discovery
+    await addDiscovery(auth.userId, targetX, targetY);
+
+    // Check cross-quadrant
+    const { qx: curQx, qy: curQy } = sectorToQuadrant(sx, sy);
+    const { qx: tgtQx, qy: tgtQy } = sectorToQuadrant(targetX, targetY);
+    const crossQuadrant = curQx !== tgtQx || curQy !== tgtQy;
+
+    if (!crossQuadrant) {
+      // Intra-quadrant: update player position in-place
+      const player = this.ctx.state.players.get(client.sessionId);
+      if (player) {
+        player.x = targetX;
+        player.y = targetY;
+      }
+      this.ctx.playerSectorData.set(client.sessionId, targetSector);
+      await savePlayerPosition(auth.userId, targetX, targetY);
+    }
+
+    const ship = this.ctx.getShipForClient(client.sessionId);
+    const remainingCredits = await getPlayerCredits(auth.userId);
+
+    client.send('playerGateResult', {
+      success: true,
+      newSector: targetSector,
+      targetX,
+      targetY,
+      credits: remainingCredits,
+      fuel: {
+        current: currentFuel - JUMPGATE_FUEL_COST,
+        max: ship.fuelMax,
+      },
+      hops: destination.hops,
+      tollPaid: destination.totalCost,
+      crossQuadrant,
+    });
+
+    // Check for JumpGate at target sector
+    await this.detectAndSendJumpGate(client, auth, targetX, targetY, false);
+
+    // Check for player gate at target sector
+    await this.detectAndSendPlayerGate(client, targetX, targetY);
+
+    // Quadrant first-contact detection
+    await this.ctx.checkFirstContact(client, auth, targetX, targetY);
+
+    logger.info(
+      {
+        username: auth.username,
+        from: `${sx},${sy}`,
+        to: `${targetX},${targetY}`,
+        hops: destination.hops,
+        tollPaid: destination.totalCost,
+        crossQuadrant,
+      },
+      'Player gate travel',
+    );
+  }
+
+  /**
+   * Trace the BFS path from start to destination and credit each gate owner
+   * their toll along the route.
+   */
+  private async distributeTolls(
+    startGateId: string,
+    destGateId: string,
+    travelerId: string,
+    gatesMap: Map<string, { id: string; sectorX: number; sectorY: number; tollCredits: number }>,
+    linksMap: Map<string, string[]>,
+  ): Promise<void> {
+    // BFS to find the path from start to destination
+    const visited = new Set<string>([startGateId]);
+    const parent = new Map<string, string>(); // child -> parent
+    const queue: string[] = [];
+
+    const neighbors = linksMap.get(startGateId) ?? [];
+    for (const n of neighbors) {
+      if (!visited.has(n)) {
+        visited.add(n);
+        parent.set(n, startGateId);
+        queue.push(n);
+      }
+    }
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (current === destGateId) break;
+
+      const nextNeighbors = linksMap.get(current) ?? [];
+      for (const n of nextNeighbors) {
+        if (!visited.has(n)) {
+          visited.add(n);
+          parent.set(n, current);
+          queue.push(n);
+        }
+      }
+    }
+
+    // Reconstruct path: destGateId <- ... <- startGateId
+    const path: string[] = [];
+    let current: string | undefined = destGateId;
+    while (current && current !== startGateId) {
+      path.unshift(current);
+      current = parent.get(current);
+    }
+    if (current === startGateId) {
+      path.unshift(startGateId);
+    }
+
+    // Credit each hop's origin gate owner their toll
+    // Path: [start, hop1, hop2, ..., dest]
+    // Each hop from path[i] to path[i+1] costs path[i]'s toll
+    for (let i = 0; i < path.length - 1; i++) {
+      const hopGate = gatesMap.get(path[i]);
+      if (!hopGate || hopGate.tollCredits <= 0) continue;
+
+      // Get the owner from the DB (gatesMap doesn't have ownerId)
+      const fullGate = await getPlayerJumpGate(hopGate.sectorX, hopGate.sectorY);
+      if (fullGate && fullGate.ownerId && fullGate.ownerId !== travelerId) {
+        await addCredits(fullGate.ownerId, hopGate.tollCredits);
+      }
+    }
   }
 }

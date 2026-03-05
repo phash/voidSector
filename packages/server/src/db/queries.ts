@@ -1529,6 +1529,30 @@ export async function getPlayerGateTollConfig(gateId: string): Promise<{ ownerId
   return rows[0] ?? null;
 }
 
+export async function getAllPlayerGates(): Promise<Array<{
+  id: string; sectorX: number; sectorY: number; tollCredits: number; ownerId: string;
+}>> {
+  const { rows } = await query(
+    `SELECT id, sector_x as "sectorX", sector_y as "sectorY",
+            toll_credits as "tollCredits", owner_id as "ownerId"
+     FROM jumpgates
+     WHERE owner_id IS NOT NULL`,
+    [],
+  );
+  return rows;
+}
+
+export async function getAllJumpGateLinks(): Promise<Array<{
+  gateId: string; linkedGateId: string;
+}>> {
+  const { rows } = await query(
+    `SELECT gate_id as "gateId", linked_gate_id as "linkedGateId"
+     FROM jumpgate_links`,
+    [],
+  );
+  return rows;
+}
+
 // --- Phase 5: Rescued Survivors ---
 
 export async function getPlayerSurvivors(
