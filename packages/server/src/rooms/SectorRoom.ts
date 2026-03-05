@@ -7,9 +7,8 @@ import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
-import { generateStationNpcs, getStationFaction, hasShipyard } from '../engine/npcgen.js';
-import { generateStationQuests } from '../engine/questgen.js';
-import { validateJump, validateBuild, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, getReputationTier, calculateLevel } from '../engine/commands.js';
+import { hasShipyard } from '../engine/npcgen.js';
+import { validateJump, validateBuild, validateCreateSlate, validateNpcBuyback, getReputationTier } from '../engine/commands.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
@@ -24,9 +23,9 @@ import { commsBus } from '../commsBus.js';
 import type { CommsBroadcastEvent } from '../commsBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState, getHyperdriveState, setHyperdriveState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate, saveAutopilotRoute, getActiveAutopilotRoute, updateAutopilotStep, pauseAutopilotRoute, cancelAutopilotRoute, completeAutopilotRoute, getPlayerStationRep, updatePlayerStationRep } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, STATION_REP_VISIT, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HULL_PRICES, STATION_SHIPYARD_LEVEL_THRESHOLD, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch, WORLD_SEED, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, HyperdriveState, ResearchState } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, getPlayerFaction, getFactionUpgrades, getPlayerReputations, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, getPlayerHomeBase, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getPlayerResearch, addUnlockedModule, getActiveResearch, startActiveResearch, deleteActiveResearch, saveAutopilotRoute, getActiveAutopilotRoute, pauseAutopilotRoute, updatePlayerStationRep, getJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerKnownJumpGates } from '../db/queries.js';
+import { RECONNECTION_TIMEOUT_S, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_EXPIRY_MINUTES, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HULLS, MODULES, STATION_REP_VISIT, FEATURE_HYPERDRIVE_V2, RESEARCH_TICK_MS, HULL_PRICES, STATION_SHIPYARD_LEVEL_THRESHOLD, calculateShipStats, validateModuleInstall, createHyperdriveState, calculateCurrentCharge, isModuleUnlocked, canStartResearch } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, MineableResourceType, BuildMessage, SendChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, BattleActionMessage, CompleteScanEventMessage, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, ResearchState, ChatMessage } from '@void-sector/shared';
 import type { FirstContactEvent } from '@void-sector/shared';
 import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../engine/quadrantEngine.js';
 import { getPlayerKnownQuadrants, addPlayerKnownQuadrant, addPlayerKnownQuadrantsBatch, getQuadrant, getAllDiscoveredQuadrantCoords } from '../db/quadrantQueries.js';
@@ -36,15 +35,12 @@ import { ScanService } from './services/ScanService.js';
 import { CombatService } from './services/CombatService.js';
 import { MiningService } from './services/MiningService.js';
 import { EconomyService } from './services/EconomyService.js';
+import { FactionService } from './services/FactionService.js';
+import { QuestService } from './services/QuestService.js';
+import { ChatService } from './services/ChatService.js';
 import { isInt, isPositiveInt, isGuest, rejectGuest, MAX_COORD } from './services/utils.js';
 
 const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon', 'factory', 'research_lab', 'kontor'];
-
-function sanitizeChat(text: string): string {
-  return text
-    .replace(/<[^>]*>/g, '')
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-}
 
 interface SectorRoomOptions {
   quadrantX: number;
@@ -75,6 +71,9 @@ export class SectorRoom extends Room<SectorRoomState> {
   private combat!: CombatService;
   private mining!: MiningService;
   private economy!: EconomyService;
+  private factions!: FactionService;
+  private quests!: QuestService;
+  private chat!: ChatService;
 
   /** Get a player's current sector X coordinate */
   private _px(sid: string): number { return this.state.players.get(sid)?.x ?? 0; }
@@ -139,19 +138,53 @@ export class SectorRoom extends Room<SectorRoomState> {
       _pst: this._pst.bind(this),
       send: (client, type, data) => client.send(type, data),
       broadcast: (type, data, opts) => this.broadcast(type, data, opts),
+      broadcastToFaction: (msg, memberIds) => {
+        for (const c of this.clients) {
+          const cAuth = c.auth as AuthPayload;
+          if (memberIds.has(cAuth.userId)) {
+            c.send('chatMessage', msg);
+          }
+        }
+      },
+      broadcastToSector: (msg, sectorX, sectorY) => {
+        for (const c of this.clients) {
+          if (this._px(c.sessionId) === sectorX && this._py(c.sessionId) === sectorY) {
+            c.send('chatMessage', msg);
+          }
+        }
+      },
+      sendToPlayer: (userId, type, data) => {
+        const recipient = this.clients.find(
+          c => (c.auth as AuthPayload).userId === userId
+        );
+        if (recipient) {
+          recipient.send(type, data);
+        }
+      },
       disposeCallbacks: this.disposeCallbacks,
       roomId: this.roomId,
       checkFirstContact: this.checkFirstContact.bind(this),
-      checkQuestProgress: this.checkQuestProgress.bind(this),
+      // These will be wired to QuestService after instantiation
+      checkQuestProgress: null as any,
       checkAndEmitDistressCalls: this.checkAndEmitDistressCalls.bind(this),
-      applyReputationChange: this.applyReputationChange.bind(this),
-      applyXpGain: this.applyXpGain.bind(this),
+      applyReputationChange: null as any,
+      applyXpGain: null as any,
     };
+
+    // Instantiate services
     this.navigation = new NavigationService(this.serviceCtx);
     this.scanning = new ScanService(this.serviceCtx);
     this.combat = new CombatService(this.serviceCtx);
     this.mining = new MiningService(this.serviceCtx);
     this.economy = new EconomyService(this.serviceCtx);
+    this.factions = new FactionService(this.serviceCtx);
+    this.quests = new QuestService(this.serviceCtx);
+    this.chat = new ChatService(this.serviceCtx);
+
+    // Wire quest/reputation callbacks to QuestService
+    this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
+    this.serviceCtx.applyReputationChange = this.quests.applyReputationChange.bind(this.quests);
+    this.serviceCtx.applyXpGain = this.quests.applyXpGain.bind(this.quests);
 
     // Handle intra-quadrant sector move (no room leave/join needed)
     this.onMessage('moveSector', async (client, data: { sectorX: number; sectorY: number }) => {
@@ -246,7 +279,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     this.onMessage('chat', async (client, data: SendChatMessage) => {
-      await this.handleChat(client, data);
+      await this.chat.handleChat(client, data);
     });
 
     this.onMessage('getBase', async (client) => {
@@ -327,36 +360,36 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     this.onMessage('createFaction', async (client, data: CreateFactionMessage) => {
-      await this.handleCreateFaction(client, data);
+      await this.factions.handleCreateFaction(client, data);
     });
 
     this.onMessage('getFaction', async (client) => {
-      await this.sendFactionData(client);
+      await this.factions.sendFactionData(client);
     });
 
     this.onMessage('factionAction', async (client, data: FactionActionMessage) => {
-      await this.handleFactionAction(client, data);
+      await this.factions.handleFactionAction(client, data);
     });
 
     this.onMessage('respondInvite', async (client, data: { inviteId: string; accept: boolean }) => {
-      await this.handleRespondInvite(client, data);
+      await this.factions.handleRespondInvite(client, data);
     });
 
     // Phase 4: NPC Ecosystem
     this.onMessage('getStationNpcs', async (client, data: GetStationNpcsMessage) => {
-      await this.handleGetStationNpcs(client, data);
+      await this.quests.handleGetStationNpcs(client, data);
     });
     this.onMessage('acceptQuest', async (client, data: AcceptQuestMessage) => {
-      await this.handleAcceptQuest(client, data);
+      await this.quests.handleAcceptQuest(client, data);
     });
     this.onMessage('abandonQuest', async (client, data: AbandonQuestMessage) => {
-      await this.handleAbandonQuest(client, data);
+      await this.quests.handleAbandonQuest(client, data);
     });
     this.onMessage('getActiveQuests', async (client) => {
-      await this.handleGetActiveQuests(client);
+      await this.quests.handleGetActiveQuests(client);
     });
     this.onMessage('getReputation', async (client) => {
-      await this.handleGetReputation(client);
+      await this.quests.handleGetReputation(client);
     });
     this.onMessage('battleAction', async (client, data: BattleActionMessage) => {
       await this.combat.handleBattleAction(client, data);
@@ -387,7 +420,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('frequencyMatch', (client, data) => this.handleFrequencyMatch(client, data));
     this.onMessage('rescue', (client, data) => this.handleRescue(client, data));
     this.onMessage('deliverSurvivors', (client, data) => this.handleDeliverSurvivors(client, data));
-    this.onMessage('factionUpgrade', (client, data) => this.handleFactionUpgrade(client, data));
+    this.onMessage('factionUpgrade', (client, data) => this.factions.handleFactionUpgrade(client, data));
     this.onMessage('configureRoute', (client, data) => this.handleConfigureRoute(client, data));
     this.onMessage('toggleRoute', (client, data) => this.handleToggleRoute(client, data));
     this.onMessage('deleteRoute', (client, data) => this.handleDeleteRoute(client, data));
@@ -973,8 +1006,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('allDiscoveries', { discoveries: allDiscoveries });
 
       // Phase 4: Send reputation + active quests
-      await this.sendReputationUpdate(client, auth.userId);
-      await this.sendActiveQuests(client, auth.userId);
+      await this.quests.sendReputationUpdate(client, auth.userId);
+      await this.quests.sendActiveQuests(client, auth.userId);
 
       // Send research state
       const researchData = await getPlayerResearch(auth.userId);
@@ -1156,121 +1189,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
   }
 
-  private async handleChat(client: Client, data: SendChatMessage) {
-    if (!this.checkRate(client.sessionId, 'chat', 500)) {
-      client.send('error', { code: 'RATE_LIMIT', message: 'Zu viele Nachrichten — bitte kurz warten' });
-      return;
-    }
-    if (isGuest(client) && data.channel === 'faction') {
-      client.send('error', { code: 'GUEST_RESTRICTED', message: 'Fraktions-Chat ist für Gäste nicht verfügbar' });
-      return;
-    }
-    const auth = client.auth as AuthPayload;
-
-    // Validate channel
-    const VALID_CHANNELS = ['direct', 'faction', 'sector', 'quadrant'] as const;
-    if (!VALID_CHANNELS.includes(data.channel as any)) {
-      client.send('error', { code: 'INVALID_CHANNEL', message: 'Unknown channel' });
-      return;
-    }
-
-    const cleanContent = sanitizeChat(data.content.trim());
-    if (!cleanContent || cleanContent.length === 0) return;
-    if (data.content.length > 500) {
-      client.send('error', { code: 'MSG_TOO_LONG', message: 'Message too long (max 500 chars)' });
-      return;
-    }
-
-    if (data.channel === 'faction') {
-      const faction = await getPlayerFaction(auth.userId);
-      if (!faction) {
-        client.send('error', { code: 'NO_FACTION', message: 'Not in a faction' });
-        return;
-      }
-      const msg = await saveMessage(auth.userId, null, 'faction', cleanContent);
-      const chatMsg: ChatMessage = {
-        id: msg.id,
-        senderId: auth.userId,
-        senderName: auth.username,
-        channel: 'faction',
-        content: cleanContent,
-        sentAt: new Date(msg.sent_at).getTime(),
-        delayed: false,
-      };
-      const memberIds = new Set(await getFactionMembersByPlayerIds(faction.id));
-      for (const c of this.clients) {
-        const cAuth = c.auth as AuthPayload;
-        if (memberIds.has(cAuth.userId)) {
-          c.send('chatMessage', chatMsg);
-        }
-      }
-      return;
-    }
-
-    const msg = await saveMessage(auth.userId, data.recipientId ?? null, data.channel, cleanContent);
-
-    const chatMsg: ChatMessage = {
-      id: msg.id,
-      senderId: auth.userId,
-      senderName: auth.username,
-      channel: data.channel,
-      recipientId: data.recipientId,
-      content: cleanContent,
-      sentAt: new Date(msg.sent_at).getTime(),
-      delayed: false,
-    };
-
-    if (data.channel === 'sector') {
-      const senderX = this._px(client.sessionId);
-      const senderY = this._py(client.sessionId);
-      for (const c of this.clients) {
-        if (this._px(c.sessionId) === senderX && this._py(c.sessionId) === senderY) {
-          c.send('chatMessage', chatMsg);
-        }
-      }
-      // Also emit to commsBus for other rooms at the same coordinates
-      const { qx, qy } = sectorToQuadrant(this._px(client.sessionId), this._py(client.sessionId));
-      commsBus.broadcast({
-        channel: 'sector',
-        sectorX: this._px(client.sessionId),
-        sectorY: this._py(client.sessionId),
-        quadrantX: qx,
-        quadrantY: qy,
-        message: chatMsg,
-      });
-    } else if (data.channel === 'quadrant') {
-      // Broadcast to all players in this room (same quadrant)
-      this.broadcast('chatMessage', chatMsg);
-      // Emit to commsBus for other rooms in the same quadrant
-      const { qx, qy } = sectorToQuadrant(this._px(client.sessionId), this._py(client.sessionId));
-      commsBus.broadcast({
-        channel: 'quadrant',
-        sectorX: this._px(client.sessionId),
-        sectorY: this._py(client.sessionId),
-        quadrantX: qx,
-        quadrantY: qy,
-        message: chatMsg,
-      });
-    } else if (data.channel === 'direct' && data.recipientId) {
-      const recipientClient = this.clients.find(
-        c => (c.auth as AuthPayload).userId === data.recipientId
-      );
-      if (recipientClient) {
-        recipientClient.send('chatMessage', chatMsg);
-      }
-      // Also emit to commsBus for cross-room direct delivery
-      const { qx, qy } = sectorToQuadrant(this._px(client.sessionId), this._py(client.sessionId));
-      commsBus.broadcast({
-        channel: 'sector', // use sector channel for routing, message.channel is 'direct'
-        sectorX: this._px(client.sessionId),
-        sectorY: this._py(client.sessionId),
-        quadrantX: qx,
-        quadrantY: qy,
-        message: chatMsg,
-      });
-      client.send('chatMessage', chatMsg);
-    }
-  }
+  // handleChat → ChatService
 
   // handleTransfer, sendNpcStationUpdate, handleNpcTrade, handleUpgradeStructure, handlePlaceOrder → EconomyService
 
@@ -1478,469 +1397,13 @@ export class SectorRoom extends Room<SectorRoomState> {
     client.send('cargoUpdate', updatedCargo);
   }
 
-  private async sendFactionData(client: Client) {
-    const auth = client.auth as AuthPayload;
-    const factionRow = await getPlayerFaction(auth.userId);
+  // sendFactionData, handleCreateFaction, handleFactionAction, handleJoinFaction,
+  // handleJoinByCode, handleLeaveFaction, handleFactionInvite, handleRespondInvite,
+  // handleFactionUpgrade → FactionService
 
-    if (!factionRow) {
-      const invites = await getPlayerFactionInvites(auth.userId);
-      client.send('factionData', { faction: null, members: [], invites });
-      return;
-    }
-
-    const members = await getFactionMembers(factionRow.id);
-    const invites = await getPlayerFactionInvites(auth.userId);
-
-    client.send('factionData', {
-      faction: {
-        id: factionRow.id,
-        name: factionRow.name,
-        tag: factionRow.tag,
-        leaderId: factionRow.leader_id,
-        leaderName: factionRow.leader_name,
-        joinMode: factionRow.join_mode,
-        inviteCode: factionRow.invite_code,
-        memberCount: Number(factionRow.member_count),
-        createdAt: new Date(factionRow.created_at).getTime(),
-      },
-      members: members.map(m => ({
-        playerId: m.player_id,
-        playerName: m.player_name,
-        rank: m.rank,
-        joinedAt: new Date(m.joined_at).getTime(),
-      })),
-      invites,
-    });
-  }
-
-  private async handleCreateFaction(client: Client, data: CreateFactionMessage) {
-    if (rejectGuest(client, 'Fraktionen')) return;
-    const auth = client.auth as AuthPayload;
-
-    if (!data.name || data.name.trim().length < 3 || data.name.trim().length > 64) {
-      client.send('createFactionResult', { success: false, error: 'Name must be 3-64 characters' });
-      return;
-    }
-    if (!data.tag || data.tag.trim().length < 3 || data.tag.trim().length > 5) {
-      client.send('createFactionResult', { success: false, error: 'Tag must be 3-5 characters' });
-      return;
-    }
-    if (!['open', 'code', 'invite'].includes(data.joinMode)) {
-      client.send('createFactionResult', { success: false, error: 'Invalid join mode' });
-      return;
-    }
-
-    const existing = await getPlayerFaction(auth.userId);
-    if (existing) {
-      client.send('createFactionResult', { success: false, error: 'Already in a faction' });
-      return;
-    }
-
-    try {
-      await createFaction(auth.userId, data.name.trim(), data.tag.trim().toUpperCase(), data.joinMode);
-      await this.sendFactionData(client);
-      client.send('createFactionResult', { success: true });
-    } catch (err: any) {
-      if (err.code === '23505') {
-        client.send('createFactionResult', { success: false, error: 'Name or tag already taken' });
-      } else {
-        throw err;
-      }
-    }
-  }
-
-  private async handleFactionAction(client: Client, data: FactionActionMessage) {
-    if (rejectGuest(client, 'Fraktionen')) return;
-    const auth = client.auth as AuthPayload;
-    const myFaction = await getPlayerFaction(auth.userId);
-
-    if (data.action === 'join') {
-      return this.handleJoinFaction(client, auth, data);
-    }
-    if (data.action === 'joinCode') {
-      return this.handleJoinByCode(client, auth, data);
-    }
-    if (data.action === 'leave') {
-      return this.handleLeaveFaction(client, auth, myFaction);
-    }
-
-    if (!myFaction) {
-      client.send('factionActionResult', { success: false, action: data.action, error: 'Not in a faction' });
-      return;
-    }
-
-    const myRank = myFaction.player_rank;
-
-    if (data.action === 'invite') {
-      return this.handleFactionInvite(client, auth, myFaction, data);
-    }
-
-    if (data.action === 'disband') {
-      const v = validateFactionAction('disband', myRank);
-      if (!v.valid) {
-        client.send('factionActionResult', { success: false, action: 'disband', error: v.error });
-        return;
-      }
-      await disbandFaction(myFaction.id);
-      client.send('factionActionResult', { success: true, action: 'disband' });
-      await this.sendFactionData(client);
-      return;
-    }
-
-    if (data.action === 'setJoinMode') {
-      const v = validateFactionAction('setJoinMode', myRank);
-      if (!v.valid) {
-        client.send('factionActionResult', { success: false, action: 'setJoinMode', error: v.error });
-        return;
-      }
-      if (!data.joinMode || !['open', 'code', 'invite'].includes(data.joinMode)) {
-        client.send('factionActionResult', { success: false, action: 'setJoinMode', error: 'Invalid mode' });
-        return;
-      }
-      await updateFactionJoinMode(myFaction.id, data.joinMode);
-      client.send('factionActionResult', { success: true, action: 'setJoinMode' });
-      await this.sendFactionData(client);
-      return;
-    }
-
-    if (!data.targetPlayerId) {
-      client.send('factionActionResult', { success: false, action: data.action, error: 'No target' });
-      return;
-    }
-
-    const targetMembers = await getFactionMembers(myFaction.id);
-    const target = targetMembers.find(m => m.player_id === data.targetPlayerId);
-    if (!target) {
-      client.send('factionActionResult', { success: false, action: data.action, error: 'Target not in faction' });
-      return;
-    }
-
-    const v = validateFactionAction(data.action, myRank, target.rank);
-    if (!v.valid) {
-      client.send('factionActionResult', { success: false, action: data.action, error: v.error });
-      return;
-    }
-
-    if (data.action === 'kick') {
-      await removeFactionMember(myFaction.id, data.targetPlayerId);
-    } else if (data.action === 'promote') {
-      await updateMemberRank(myFaction.id, data.targetPlayerId, 'officer');
-    } else if (data.action === 'demote') {
-      await updateMemberRank(myFaction.id, data.targetPlayerId, 'member');
-    }
-
-    client.send('factionActionResult', { success: true, action: data.action });
-    await this.sendFactionData(client);
-  }
-
-  private async handleJoinFaction(client: Client, auth: AuthPayload, data: FactionActionMessage) {
-    if (!data.targetPlayerId) {
-      client.send('factionActionResult', { success: false, action: 'join', error: 'No faction specified' });
-      return;
-    }
-    const existing = await getPlayerFaction(auth.userId);
-    if (existing) {
-      client.send('factionActionResult', { success: false, action: 'join', error: 'Already in a faction' });
-      return;
-    }
-    const faction = await getFactionById(data.targetPlayerId);
-    if (!faction || faction.join_mode !== 'open') {
-      client.send('factionActionResult', { success: false, action: 'join', error: 'Faction not open' });
-      return;
-    }
-    await addFactionMember(data.targetPlayerId, auth.userId);
-    client.send('factionActionResult', { success: true, action: 'join' });
-    await this.sendFactionData(client);
-  }
-
-  private async handleJoinByCode(client: Client, auth: AuthPayload, data: FactionActionMessage) {
-    if (!data.code) {
-      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'No code' });
-      return;
-    }
-    const existing = await getPlayerFaction(auth.userId);
-    if (existing) {
-      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'Already in a faction' });
-      return;
-    }
-    const faction = await getFactionByCode(data.code.toUpperCase());
-    if (!faction || faction.join_mode !== 'code') {
-      client.send('factionActionResult', { success: false, action: 'joinCode', error: 'Invalid code' });
-      return;
-    }
-    await addFactionMember(faction.id, auth.userId);
-    client.send('factionActionResult', { success: true, action: 'joinCode' });
-    await this.sendFactionData(client);
-  }
-
-  private async handleLeaveFaction(client: Client, auth: AuthPayload, faction: any) {
-    if (!faction) {
-      client.send('factionActionResult', { success: false, action: 'leave', error: 'Not in faction' });
-      return;
-    }
-    if (faction.player_rank === 'leader') {
-      client.send('factionActionResult', { success: false, action: 'leave', error: 'Leader cannot leave — disband instead' });
-      return;
-    }
-    await removeFactionMember(faction.id, auth.userId);
-    client.send('factionActionResult', { success: true, action: 'leave' });
-    await this.sendFactionData(client);
-  }
-
-  private async handleFactionInvite(client: Client, auth: AuthPayload, faction: any, data: FactionActionMessage) {
-    const v = validateFactionAction('invite', faction.player_rank);
-    if (!v.valid) {
-      client.send('factionActionResult', { success: false, action: 'invite', error: v.error });
-      return;
-    }
-    if (!data.targetPlayerName) {
-      client.send('factionActionResult', { success: false, action: 'invite', error: 'No player name' });
-      return;
-    }
-    const targetId = await getPlayerIdByUsername(data.targetPlayerName);
-    if (!targetId) {
-      client.send('factionActionResult', { success: false, action: 'invite', error: 'Player not found' });
-      return;
-    }
-    const targetFaction = await getPlayerFaction(targetId);
-    if (targetFaction) {
-      client.send('factionActionResult', { success: false, action: 'invite', error: 'Player already in a faction' });
-      return;
-    }
-    await createFactionInvite(faction.id, auth.userId, targetId);
-    client.send('factionActionResult', { success: true, action: 'invite' });
-  }
-
-  private async handleRespondInvite(client: Client, data: { inviteId: string; accept: boolean }) {
-    const auth = client.auth as AuthPayload;
-    const invite = await respondToInvite(data.inviteId, auth.userId, data.accept);
-    if (!invite) {
-      client.send('factionActionResult', { success: false, action: 'respondInvite', error: 'Invite not found' });
-      return;
-    }
-    if (data.accept) {
-      await addFactionMember(invite.faction_id, auth.userId);
-    }
-    client.send('factionActionResult', { success: true, action: 'respondInvite' });
-    await this.sendFactionData(client);
-  }
-
-  // --- Phase 4: NPC Ecosystem Handlers ---
-
-  private async handleGetStationNpcs(client: Client, data: GetStationNpcsMessage) {
-    const auth = client.auth as AuthPayload;
-    const npcs = generateStationNpcs(data.sectorX, data.sectorY);
-    const reps = await getPlayerReputations(auth.userId);
-    const faction = getStationFaction(data.sectorX, data.sectorY);
-    const factionRep = reps.find(r => r.faction_id === faction)?.reputation ?? 0;
-    const tier = getReputationTier(factionRep) as ReputationTier;
-    const dayOfYear = Math.floor(Date.now() / 86400000);
-    const quests = generateStationQuests(data.sectorX, data.sectorY, dayOfYear, tier);
-    client.send('stationNpcsResult', { npcs, quests });
-  }
-
-  private async handleAcceptQuest(client: Client, data: AcceptQuestMessage) {
-    const auth = client.auth as AuthPayload;
-    const count = await getActiveQuestCount(auth.userId);
-    const validation = validateAcceptQuest(count);
-    if (!validation.valid) {
-      client.send('acceptQuestResult', { success: false, error: validation.error });
-      return;
-    }
-
-    // Regenerate quest from template to validate it exists
-    const reps = await getPlayerReputations(auth.userId);
-    const faction = getStationFaction(data.stationX, data.stationY);
-    const factionRep = reps.find(r => r.faction_id === faction)?.reputation ?? 0;
-    const tier = getReputationTier(factionRep) as ReputationTier;
-    const dayOfYear = Math.floor(Date.now() / 86400000);
-    const available = generateStationQuests(data.stationX, data.stationY, dayOfYear, tier);
-    const questTemplate = available.find(q => q.templateId === data.templateId);
-
-    if (!questTemplate) {
-      client.send('acceptQuestResult', { success: false, error: 'Quest not available' });
-      return;
-    }
-
-    const expiresAt = new Date(Date.now() + QUEST_EXPIRY_DAYS * 86400000);
-    const questId = await insertQuest(
-      auth.userId, data.templateId, data.stationX, data.stationY,
-      questTemplate.objectives, questTemplate.rewards, expiresAt,
-    );
-
-    const quest: Quest = {
-      id: questId,
-      templateId: data.templateId,
-      npcName: questTemplate.npcName,
-      npcFactionId: questTemplate.npcFactionId,
-      title: questTemplate.title,
-      description: questTemplate.description,
-      stationX: data.stationX,
-      stationY: data.stationY,
-      objectives: questTemplate.objectives,
-      rewards: questTemplate.rewards,
-      status: 'active',
-      acceptedAt: Date.now(),
-      expiresAt: expiresAt.getTime(),
-    };
-
-    client.send('acceptQuestResult', { success: true, quest });
-    client.send('logEntry', `Quest angenommen: ${quest.title}`);
-  }
-
-  private async handleAbandonQuest(client: Client, data: AbandonQuestMessage) {
-    const auth = client.auth as AuthPayload;
-    const updated = await updateQuestStatus(data.questId, 'abandoned');
-    client.send('abandonQuestResult', { success: updated, error: updated ? undefined : 'Quest not found' });
-    if (updated) {
-      await this.sendActiveQuests(client, auth.userId);
-    }
-  }
-
-  private async handleGetActiveQuests(client: Client) {
-    const auth = client.auth as AuthPayload;
-    await this.sendActiveQuests(client, auth.userId);
-  }
-
-  private async sendActiveQuests(client: Client, playerId: string) {
-    const rows = await getActiveQuests(playerId);
-    const quests: Quest[] = rows.map(r => ({
-      id: r.id,
-      templateId: r.template_id,
-      npcName: '',
-      npcFactionId: 'independent' as NpcFactionId,
-      title: r.template_id,
-      description: '',
-      stationX: r.station_x,
-      stationY: r.station_y,
-      objectives: r.objectives,
-      rewards: r.rewards,
-      status: r.status,
-      acceptedAt: new Date(r.accepted_at).getTime(),
-      expiresAt: new Date(r.expires_at).getTime(),
-    }));
-    client.send('activeQuests', { quests });
-  }
-
-  private async handleGetReputation(client: Client) {
-    const auth = client.auth as AuthPayload;
-    await this.sendReputationUpdate(client, auth.userId);
-  }
-
-  private async sendReputationUpdate(client: Client, playerId: string) {
-    const reps = await getPlayerReputations(playerId);
-    const upgrades = await getPlayerUpgrades(playerId);
-
-    const reputations: PlayerReputation[] = ['traders', 'scientists', 'pirates', 'ancients'].map(fid => {
-      const rep = reps.find(r => r.faction_id === fid)?.reputation ?? 0;
-      return { factionId: fid as NpcFactionId, reputation: rep, tier: getReputationTier(rep) as ReputationTier };
-    });
-
-    const playerUpgrades: PlayerUpgrade[] = upgrades.map(u => ({
-      upgradeId: u.upgrade_id as any,
-      active: u.active,
-      unlockedAt: new Date(u.unlocked_at).getTime(),
-    }));
-
-    client.send('reputationUpdate', { reputations, upgrades: playerUpgrades });
-  }
-
-  private async applyReputationChange(playerId: string, factionId: NpcFactionId, delta: number, client: Client) {
-    const newRep = await setPlayerReputation(playerId, factionId, delta);
-    const tier = getReputationTier(newRep);
-
-    // Check upgrade unlock/deactivation
-    for (const [upgradeId, upgrade] of Object.entries(FACTION_UPGRADES)) {
-      if (upgrade.factionId === factionId) {
-        const shouldBeActive = tier === 'honored';
-        await upsertPlayerUpgrade(playerId, upgradeId, shouldBeActive);
-      }
-    }
-
-    await this.sendReputationUpdate(client, playerId);
-  }
-
-  private async applyXpGain(playerId: string, xp: number, client: Client) {
-    const result = await addPlayerXp(playerId, xp);
-    const newLevel = calculateLevel(result.xp);
-    if (newLevel > result.level) {
-      await setPlayerLevel(playerId, newLevel);
-      client.send('logEntry', `LEVEL UP! Du bist jetzt Level ${newLevel}`);
-    }
-  }
-
-  private async checkQuestProgress(client: Client, playerId: string, action: string, context: Record<string, any>) {
-    const rows = await getActiveQuests(playerId);
-    const cargo = await getPlayerCargo(playerId);
-    for (const row of rows) {
-      const objectives = row.objectives as QuestObjective[];
-      let updated = false;
-
-      for (const obj of objectives) {
-        if (obj.fulfilled) continue;
-
-        if (obj.type === 'scan' && action === 'scan' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
-          obj.fulfilled = true;
-          updated = true;
-        }
-
-        if (obj.type === 'fetch' && action === 'arrive' && context.sectorX === row.station_x && context.sectorY === row.station_y) {
-          if (obj.resource && obj.amount && ((cargo as any)[obj.resource] ?? 0) >= obj.amount) {
-            obj.fulfilled = true;
-            updated = true;
-          }
-        }
-
-        if (obj.type === 'delivery' && action === 'arrive' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
-          obj.fulfilled = true;
-          updated = true;
-        }
-
-        if (obj.type === 'bounty' && action === 'battle_won' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
-          obj.fulfilled = true;
-          updated = true;
-        }
-      }
-
-      if (updated) {
-        await updateQuestObjectives(row.id, objectives);
-        client.send('questProgress', { questId: row.id, objectives });
-
-        if (objectives.every(o => o.fulfilled)) {
-          await updateQuestStatus(row.id, 'completed');
-          const rewards = row.rewards;
-
-          if (rewards.credits) {
-            await addCredits(playerId, rewards.credits);
-            client.send('creditsUpdate', { credits: await getPlayerCredits(playerId) });
-          }
-          if (rewards.xp) await this.applyXpGain(playerId, rewards.xp, client);
-          if (rewards.reputation) {
-            // Determine quest faction from template_id prefix
-            const factionId = row.template_id.split('_')[0] as string;
-            const validFactions = ['traders', 'scientists', 'pirates', 'ancients'];
-            if (validFactions.includes(factionId)) {
-              await this.applyReputationChange(playerId, factionId as NpcFactionId, rewards.reputation, client);
-            }
-          }
-          if (rewards.reputationPenalty && rewards.rivalFactionId) {
-            await this.applyReputationChange(playerId, rewards.rivalFactionId as NpcFactionId, -rewards.reputationPenalty, client);
-          }
-
-          // Deduct fetch resources from cargo
-          for (const obj of objectives) {
-            if (obj.type === 'fetch' && obj.resource && obj.amount) {
-              await deductCargo(playerId, obj.resource, obj.amount);
-            }
-          }
-          client.send('cargoUpdate', await getPlayerCargo(playerId));
-
-          client.send('logEntry', `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`);
-          await this.sendActiveQuests(client, playerId);
-        }
-      }
-    }
-  }
+  // handleGetStationNpcs, handleAcceptQuest, handleAbandonQuest, handleGetActiveQuests,
+  // sendActiveQuests, handleGetReputation, sendReputationUpdate, applyReputationChange,
+  // applyXpGain, checkQuestProgress → QuestService
 
   // ─── Phase 5: Jump Gate Handlers ──────────────────────────────────
 
@@ -2085,68 +1548,13 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     await deletePlayerSurvivors(auth.userId);
     await addCredits(auth.userId, totalCredits);
-    await this.applyXpGain(auth.userId, totalXp, client);
+    await this.quests.applyXpGain(auth.userId, totalXp, client);
 
     client.send('deliverSurvivorsResult', {
       success: true,
       credits: totalCredits,
       rep: totalRep,
       xp: totalXp,
-    });
-  }
-
-  // ─── Phase 5: Faction Upgrade Handler ─────────────────────────────
-
-  private async handleFactionUpgrade(client: Client, data: FactionUpgradeMessage): Promise<void> {
-    const auth = client.auth as AuthPayload;
-    const { tier, choice } = data;
-
-    // Validate tier exists
-    const tierDef = FACTION_UPGRADE_TIERS[tier];
-    if (!tierDef) {
-      client.send('factionUpgradeResult', { success: false, error: 'Invalid tier' });
-      return;
-    }
-
-    // Must be in a faction as leader
-    const faction = await getPlayerFaction(auth.userId);
-    if (!faction) {
-      client.send('factionUpgradeResult', { success: false, error: 'Not in a faction' });
-      return;
-    }
-
-    const members = await getFactionMembers(faction.id);
-    const member = members.find((m: any) => m.player_id === auth.userId);
-    if (!member || member.rank !== 'leader') {
-      client.send('factionUpgradeResult', { success: false, error: 'Only faction leader can upgrade' });
-      return;
-    }
-
-    // Check prerequisites (previous tiers must be chosen)
-    const existing = await getFactionUpgrades(faction.id);
-    if (tier > 1 && !existing.some((u: any) => u.tier === tier - 1)) {
-      client.send('factionUpgradeResult', { success: false, error: `Tier ${tier - 1} must be chosen first` });
-      return;
-    }
-    if (existing.some((u: any) => u.tier === tier)) {
-      client.send('factionUpgradeResult', { success: false, error: 'Tier already chosen' });
-      return;
-    }
-
-    // Check credits
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < tierDef.cost) {
-      client.send('factionUpgradeResult', { success: false, error: 'Not enough credits' });
-      return;
-    }
-
-    await deductCredits(auth.userId, tierDef.cost);
-    await setFactionUpgrade(faction.id, tier, choice, auth.userId);
-
-    const upgrades = await getFactionUpgrades(faction.id);
-    client.send('factionUpgradeResult', {
-      success: true,
-      upgrades: upgrades.map((u: any) => ({ tier: u.tier, choice: u.choice as FactionUpgradeChoice, chosenAt: Date.now() })),
     });
   }
 

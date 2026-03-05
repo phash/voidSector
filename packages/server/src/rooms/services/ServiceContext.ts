@@ -1,5 +1,5 @@
 import type { Client } from 'colyseus';
-import type { SectorData, ShipStats, HullType, CombatV2State, NpcFactionId } from '@void-sector/shared';
+import type { SectorData, ShipStats, HullType, CombatV2State, NpcFactionId, ChatMessage } from '@void-sector/shared';
 import type { FactionBonuses } from '../../engine/factionBonuses.js';
 import type { AuthPayload } from '../../auth.js';
 import type { SectorRoomState } from '../schema/SectorState.js';
@@ -30,6 +30,11 @@ export interface ServiceContext {
   // Communication
   send: (client: Client, type: string, data: unknown) => void;
   broadcast: (type: string, data: unknown, options?: { except?: Client }) => void;
+
+  // Chat-specific communication (needs access to clients list)
+  broadcastToFaction: (msg: ChatMessage, memberIds: Set<string>) => void;
+  broadcastToSector: (msg: ChatMessage, sectorX: number, sectorY: number) => void;
+  sendToPlayer: (userId: string, type: string, data: unknown) => void;
 
   // Dispose callbacks
   disposeCallbacks: Array<() => void>;
