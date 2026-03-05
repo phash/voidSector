@@ -6,30 +6,27 @@ import { SectorRoomState, PlayerSchema } from './schema/SectorState.js';
 import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
 import { calculateCurrentAP, spendAP } from '../engine/ap.js';
-import { stopMining, calculateMinedAmount } from '../engine/mining.js';
+import { stopMining } from '../engine/mining.js';
 import { generateStationNpcs, getStationFaction, hasShipyard } from '../engine/npcgen.js';
 import { generateStationQuests } from '../engine/questgen.js';
-import { validateJump, validateMine, validateJettison, validateBuild, validateTransfer, validateNpcTrade, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, getReputationTier, calculateLevel } from '../engine/commands.js';
+import { validateJump, validateBuild, validateCreateSlate, validateNpcBuyback, validateFactionAction, validateAcceptQuest, getReputationTier, calculateLevel } from '../engine/commands.js';
 import { checkJumpGate, generateGateTarget } from '../engine/jumpgates.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../engine/rescue.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import { calculateAutopilotPath, calculateAutopilotCosts, getNextSegment, STEP_INTERVAL_MS, STEP_INTERVAL_MIN_MS } from '../engine/autopilot.js';
 import { hashCoords, isInBlackHoleCluster } from '../engine/worldgen.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
-import { getOrInitStation, recordVisit, recordTrade, canBuyFromStation, canSellToStation, calculateCurrentStock, getStationLevel, calculatePrice } from '../engine/npcStationEngine.js';
-import { getStationInventoryItem, upsertInventoryItem, getStationInventory } from '../db/npcStationQueries.js';
+import { getOrInitStation, recordVisit, getStationLevel } from '../engine/npcStationEngine.js';
 import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../engine/tradeRoutes.js';
-import { getOrCreateFactoryState, setActiveRecipe, collectOutput, getFactoryStatus, transferOutputToCargo } from '../engine/productionEngine.js';
-import { placeKontorOrder, cancelKontorOrder, fillKontorOrder, getKontorOrders, getPlayerOrders } from '../engine/kontorEngine.js';
 import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
 import { commsBus } from '../commsBus.js';
 import type { CommsBroadcastEvent } from '../commsBus.js';
 import { query } from '../db/client.js';
 import { getAPState, saveAPState, savePlayerPosition, getPlayerPosition, getMiningState, saveMiningState, getFuelState, saveFuelState, getHyperdriveState, setHyperdriveState } from './services/RedisAPStore.js';
-import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, jettisonCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, upgradeStructureTier, createTradeOrder, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, findPlayerByUsername, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, playerHasBaseAtSector, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate, saveAutopilotRoute, getActiveAutopilotRoute, updateAutopilotStep, pauseAutopilotRoute, cancelAutopilotRoute, completeAutopilotRoute, getPlayerStationRep, updatePlayerStationRep } from '../db/queries.js';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, STORAGE_TIERS, TRADING_POST_TIERS, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, FUEL_COST_PER_UNIT, FREE_REFUEL_MAX_SHIPS, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, NPC_STATION_LEVELS, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, getFuelRepPriceModifier, STATION_REP_VISIT, STATION_REP_TRADE, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HULL_PRICES, STATION_SHIPYARD_LEVEL_THRESHOLD, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch, WORLD_SEED, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
-import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, HyperdriveState, ResearchState, ProcessedItemType } from '@void-sector/shared';
+import { getSector, saveSector, addDiscovery, getPlayerDiscoveries, getPlayerCargo, addToCargo, getCargoTotal, awardBadge, hasAnyoneBadge, createStructure, deductCargo, saveMessage, getPendingMessages, markMessagesDelivered, getActiveShip, getRecentMessages, getPlayerBaseStructures, getStorageInventory, updateStorageResource, getPlayerCredits, addCredits, deductCredits, getAlienCredits, getPlayerStructure, getActiveTradeOrders, getPlayerTradeOrders, fulfillTradeOrder, cancelTradeOrder, createDataSlate, getPlayerSlates, getSlateById, deleteSlate, updateSlateStatus, updateSlateOwner, addSlateToCargo, removeSlateFromCargo, createSlateTradeOrder, getTradeOrderById, createFaction, getFactionById, getPlayerFaction, getFactionMembers, addFactionMember, removeFactionMember, updateMemberRank, updateFactionJoinMode, getFactionByCode, disbandFaction, createFactionInvite, getPlayerFactionInvites, respondToInvite, getPlayerIdByUsername, getFactionMembersByPlayerIds, getPlayerReputations, getPlayerReputation, setPlayerReputation, getPlayerUpgrades, upsertPlayerUpgrade, getActiveQuests, getActiveQuestCount, insertQuest, updateQuestStatus, getQuestById, addPlayerXp, setPlayerLevel, insertScanEvent, getPlayerScanEvents, completeScanEvent, insertBattleLog, insertBattleLogV2, updateQuestObjectives, getJumpGate, insertJumpGate, playerHasGateCode, addGateCode, getPlayerSurvivors, insertRescuedSurvivor, deletePlayerSurvivors, insertDistressCall, insertPlayerDistressCall, getPlayerDistressCalls, completeDistressCall, getFactionUpgrades, setFactionUpgrade, getPlayerTradeRoutes, insertTradeRoute, updateTradeRouteActive, deleteTradeRoute, updateTradeRouteLastCycle, getActiveTradeRoutes, getPlayerBookmarks, setPlayerBookmark, clearPlayerBookmark, isRouteDiscovered, getPlayerHomeBase, getPlayerShips, createShip, switchActiveShip, updateShipModules, renameShip, renameBase, getModuleInventory, addModuleToInventory, removeModuleFromInventory, getPlayerLevel, getSectorsInRange, addDiscoveriesBatch, getStationDefenses, installStationDefense, getStructureHp, updateStructureHp, insertStationBattleLog, getPlayerStructuresInSector, getPlayerResearch, addUnlockedModule, addBlueprint, getActiveResearch, startActiveResearch, deleteActiveResearch, getPlayerKnownJumpGates, addPlayerKnownJumpGate, saveAutopilotRoute, getActiveAutopilotRoute, updateAutopilotStep, pauseAutopilotRoute, cancelAutopilotRoute, completeAutopilotRoute, getPlayerStationRep, updatePlayerStationRep } from '../db/queries.js';
+import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, RADAR_RADIUS, RECONNECTION_TIMEOUT_S, SLATE_NPC_PRICE_PER_SECTOR, MAX_ACTIVE_QUESTS, QUEST_EXPIRY_DAYS, FACTION_UPGRADES, BATTLE_NEGOTIATE_COST_PER_LEVEL, JUMPGATE_FUEL_COST, RESCUE_AP_COST, RESCUE_DELIVER_AP_COST, RESCUE_EXPIRY_MINUTES, FACTION_UPGRADE_TIERS, MAX_TRADE_ROUTES, FREQUENCY_MATCH_THRESHOLD, NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, HYPERJUMP_PIRATE_FUEL_PENALTY, AUTOPILOT_STEP_MS, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, EMERGENCY_WARP_FUEL_GRANT, HULLS, MODULES, REP_PRICE_MODIFIERS, STATION_REP_VISIT, FEATURE_COMBAT_V2, FEATURE_HYPERDRIVE_V2, BATTLE_AP_COST_FLEE, STATION_DEFENSE_DEFS, STATION_REPAIR_CR_PER_HP, STATION_REPAIR_ORE_PER_HP, JUMP_NORMAL_AP_COST, JUMP_NORMAL_MAX_RANGE, RESEARCH_TICK_MS, HULL_FUEL_MULTIPLIER, HULL_PRICES, STATION_SHIPYARD_LEVEL_THRESHOLD, HYPERJUMP_FUEL_PER_SECTOR, calculateShipStats, validateModuleInstall, calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, createHyperdriveState, calculateCurrentCharge, spendCharge, isModuleUnlocked, isModuleFreelyAvailable, canStartResearch, WORLD_SEED, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE } from '@void-sector/shared';
+import type { SectorData, JumpMessage, MineMessage, JettisonMessage, ResourceType, MineableResourceType, CargoState, BuildMessage, SendChatMessage, ChatMessage, TransferMessage, NpcTradeMessage, UpgradeStructureMessage, PlaceOrderMessage, CreateSlateMessage, ActivateSlateMessage, NpcBuybackMessage, ListSlateMessage, CreateFactionMessage, FactionActionMessage, GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId, BattleActionMessage, CompleteScanEventMessage, PirateEncounter, BattleResult, RefuelMessage, UseJumpGateMessage, RescueMessage, DeliverSurvivorsMessage, FactionUpgradeMessage, ConfigureRouteMessage, ToggleRouteMessage, DeleteRouteMessage, FactionUpgradeChoice, SetBookmarkMessage, ClearBookmarkMessage, HyperJumpMessage, HullType, ShipStats, ShipModule, ShipRecord, CombatV2ActionMessage, CombatV2FleeMessage, CombatV2State, HyperdriveState, ResearchState } from '@void-sector/shared';
 import type { FirstContactEvent } from '@void-sector/shared';
 import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../engine/quadrantEngine.js';
 import { getPlayerKnownQuadrants, addPlayerKnownQuadrant, addPlayerKnownQuadrantsBatch, getQuadrant, getAllDiscoveredQuadrantCoords } from '../db/quadrantQueries.js';
@@ -37,10 +34,10 @@ import type { ServiceContext } from './services/ServiceContext.js';
 import { NavigationService } from './services/NavigationService.js';
 import { ScanService } from './services/ScanService.js';
 import { CombatService } from './services/CombatService.js';
+import { MiningService } from './services/MiningService.js';
+import { EconomyService } from './services/EconomyService.js';
 import { isInt, isPositiveInt, isGuest, rejectGuest, MAX_COORD } from './services/utils.js';
 
-const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
-const VALID_TRANSFER_RESOURCES = ['ore', 'gas', 'crystal', 'artefact'];
 const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon', 'factory', 'research_lab', 'kontor'];
 
 function sanitizeChat(text: string): string {
@@ -76,6 +73,8 @@ export class SectorRoom extends Room<SectorRoomState> {
   private navigation!: NavigationService;
   private scanning!: ScanService;
   private combat!: CombatService;
+  private mining!: MiningService;
+  private economy!: EconomyService;
 
   /** Get a player's current sector X coordinate */
   private _px(sid: string): number { return this.state.players.get(sid)?.x ?? 0; }
@@ -151,6 +150,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.navigation = new NavigationService(this.serviceCtx);
     this.scanning = new ScanService(this.serviceCtx);
     this.combat = new CombatService(this.serviceCtx);
+    this.mining = new MiningService(this.serviceCtx);
+    this.economy = new EconomyService(this.serviceCtx);
 
     // Handle intra-quadrant sector move (no room leave/join needed)
     this.onMessage('moveSector', async (client, data: { sectorX: number; sectorY: number }) => {
@@ -217,15 +218,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     this.onMessage('mine', async (client, data: MineMessage) => {
-      await this.handleMine(client, data);
+      await this.mining.handleMine(client, data);
     });
 
     this.onMessage('stopMine', async (client) => {
-      await this.handleStopMine(client);
+      await this.mining.handleStopMine(client);
     });
 
     this.onMessage('jettison', async (client, data: JettisonMessage) => {
-      await this.handleJettison(client, data);
+      await this.mining.handleJettison(client, data);
     });
 
     this.onMessage('getCargo', async (client) => {
@@ -261,19 +262,19 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     this.onMessage('transfer', async (client, data: TransferMessage) => {
-      await this.handleTransfer(client, data);
+      await this.economy.handleTransfer(client, data);
     });
 
     this.onMessage('npcTrade', async (client, data: NpcTradeMessage) => {
-      await this.handleNpcTrade(client, data);
+      await this.economy.handleNpcTrade(client, data);
     });
 
     this.onMessage('upgradeStructure', async (client, data: UpgradeStructureMessage) => {
-      await this.handleUpgradeStructure(client, data);
+      await this.economy.handleUpgradeStructure(client, data);
     });
 
     this.onMessage('placeOrder', async (client, data: PlaceOrderMessage) => {
-      await this.handlePlaceOrder(client, data);
+      await this.economy.handlePlaceOrder(client, data);
     });
 
     this.onMessage('getTradeOrders', async (client) => {
@@ -378,7 +379,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Phase 5: Fuel
     this.onMessage('refuel', async (client, data: RefuelMessage) => {
-      await this.handleRefuel(client, data);
+      await this.economy.handleRefuel(client, data);
     });
 
     // Phase 5: Deep Systems
@@ -664,7 +665,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     // NPC Station data request
     this.onMessage('getNpcStation', async (client) => {
       if (this._pst(client.sessionId) !== 'station') return;
-      await this.sendNpcStationUpdate(client, this._px(client.sessionId), this._py(client.sessionId));
+      await this.economy.sendNpcStationUpdate(client, this._px(client.sessionId), this._py(client.sessionId));
     });
 
     // Trade route processing interval
@@ -732,204 +733,40 @@ export class SectorRoom extends Room<SectorRoomState> {
       commsBus.off('commsBroadcast', onCommsBroadcast);
     });
 
-    // ── Factory Handlers ──
+    // ── Factory Handlers (delegated to EconomyService) ──
 
     this.onMessage('factoryStatus', async (client) => {
-      if (!this.checkRate(client.sessionId, 'factoryStatus', 500)) return;
-      const auth = client.auth as AuthPayload;
-
-      // Find factory at player's base
-      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
-      if (!factoryStruct) {
-        client.send('factoryUpdate', { error: 'No factory built' });
-        return;
-      }
-
-      await getOrCreateFactoryState(factoryStruct.id, auth.userId);
-      const status = await getFactoryStatus(factoryStruct.id);
-      client.send('factoryUpdate', status);
+      await this.economy.handleFactoryStatus(client);
     });
 
     this.onMessage('factorySetRecipe', async (client, data: { recipeId: string }) => {
-      if (!this.checkRate(client.sessionId, 'factorySetRecipe', 1000)) return;
-      if (rejectGuest(client, 'factory')) return;
-      const auth = client.auth as AuthPayload;
-
-      if (!data?.recipeId || typeof data.recipeId !== 'string') {
-        client.send('factoryUpdate', { error: 'Invalid recipe ID' });
-        return;
-      }
-
-      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
-      if (!factoryStruct) {
-        client.send('factoryUpdate', { error: 'No factory built' });
-        return;
-      }
-
-      await getOrCreateFactoryState(factoryStruct.id, auth.userId);
-      const research = await getPlayerResearch(auth.userId);
-      const result = await setActiveRecipe(factoryStruct.id, data.recipeId, research?.blueprints ?? []);
-
-      if (!result.success) {
-        client.send('factoryUpdate', { error: result.error });
-        return;
-      }
-
-      const status = await getFactoryStatus(factoryStruct.id);
-      client.send('factoryUpdate', status);
+      await this.economy.handleFactorySetRecipe(client, data);
     });
 
     this.onMessage('factoryCollect', async (client) => {
-      if (!this.checkRate(client.sessionId, 'factoryCollect', 1000)) return;
-      if (rejectGuest(client, 'factory')) return;
-      const auth = client.auth as AuthPayload;
-
-      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
-      if (!factoryStruct) {
-        client.send('factoryUpdate', { error: 'No factory built' });
-        return;
-      }
-
-      const storage = await getStorageInventory(auth.userId);
-      const result = await collectOutput(factoryStruct.id, storage);
-
-      if (result.error) {
-        client.send('factoryUpdate', { error: result.error });
-        return;
-      }
-
-      // Deduct consumed resources from storage
-      for (const [resource, amount] of Object.entries(result.consumed)) {
-        if (amount > 0) {
-          await updateStorageResource(auth.userId, resource as any, -amount);
-        }
-      }
-
-      // Send updated factory status + updated storage
-      const status = await getFactoryStatus(factoryStruct.id);
-      const updatedStorage = await getStorageInventory(auth.userId);
-      client.send('factoryUpdate', status);
-      client.send('storageUpdate', updatedStorage);
+      await this.economy.handleFactoryCollect(client);
     });
 
     this.onMessage('factoryTransfer', async (client, data: { itemType: string; amount: number }) => {
-      if (!this.checkRate(client.sessionId, 'factoryTransfer', 500)) return;
-      if (rejectGuest(client, 'factory')) return;
-      const auth = client.auth as AuthPayload;
-
-      if (!data?.itemType || !isPositiveInt(data?.amount)) {
-        client.send('factoryUpdate', { error: 'Invalid transfer parameters' });
-        return;
-      }
-
-      const factoryStruct = await getPlayerStructure(auth.userId, 'factory');
-      if (!factoryStruct) {
-        client.send('factoryUpdate', { error: 'No factory built' });
-        return;
-      }
-
-      const result = await transferOutputToCargo(factoryStruct.id, data.itemType as ProcessedItemType, data.amount);
-      if (!result.success) {
-        client.send('factoryUpdate', { error: result.error });
-        return;
-      }
-
-      // Add to player cargo
-      await addToCargo(auth.userId, data.itemType as any, data.amount);
-
-      // Send updates
-      const status = await getFactoryStatus(factoryStruct.id);
-      const cargo = await getPlayerCargo(auth.userId);
-      client.send('factoryUpdate', status);
-      client.send('cargoUpdate', cargo);
+      await this.economy.handleFactoryTransfer(client, data);
     });
 
-    // ── Kontor Handlers ──
+    // ── Kontor Handlers (delegated to EconomyService) ──
 
     this.onMessage('kontorPlaceOrder', async (client, data: { itemType: string; amount: number; pricePerUnit: number }) => {
-      if (!this.checkRate(client.sessionId, 'kontorPlaceOrder', 1000)) return;
-      if (rejectGuest(client, 'kontor')) return;
-      const auth = client.auth as AuthPayload;
-
-      if (!data?.itemType || typeof data.itemType !== 'string') {
-        client.send('kontorUpdate', { error: 'Invalid item type' });
-        return;
-      }
-      if (!isPositiveInt(data?.amount) || !isPositiveInt(data?.pricePerUnit)) {
-        client.send('kontorUpdate', { error: 'Invalid order parameters' });
-        return;
-      }
-
-      const result = await placeKontorOrder(
-        auth.userId,
-        this._px(client.sessionId),
-        this._py(client.sessionId),
-        data.itemType,
-        data.amount,
-        data.pricePerUnit
-      );
-
-      if (!result.success) {
-        client.send('kontorUpdate', { error: result.error });
-        return;
-      }
-
-      const orders = await getKontorOrders(this._px(client.sessionId), this._py(client.sessionId));
-      client.send('kontorUpdate', { orders, placed: result.order });
+      await this.economy.handleKontorPlaceOrder(client, data);
     });
 
     this.onMessage('kontorCancelOrder', async (client, data: { orderId: string }) => {
-      if (!this.checkRate(client.sessionId, 'kontorCancelOrder', 1000)) return;
-      if (rejectGuest(client, 'kontor')) return;
-      const auth = client.auth as AuthPayload;
-
-      if (!data?.orderId || typeof data.orderId !== 'string') {
-        client.send('kontorUpdate', { error: 'Invalid order ID' });
-        return;
-      }
-
-      const result = await cancelKontorOrder(data.orderId, auth.userId);
-
-      if (!result.success) {
-        client.send('kontorUpdate', { error: result.error });
-        return;
-      }
-
-      const orders = await getKontorOrders(this._px(client.sessionId), this._py(client.sessionId));
-      client.send('kontorUpdate', { orders, refunded: result.refunded });
+      await this.economy.handleKontorCancelOrder(client, data);
     });
 
     this.onMessage('kontorSellTo', async (client, data: { orderId: string; amount: number }) => {
-      if (!this.checkRate(client.sessionId, 'kontorSellTo', 500)) return;
-      if (rejectGuest(client, 'kontor')) return;
-      const auth = client.auth as AuthPayload;
-
-      if (!data?.orderId || typeof data.orderId !== 'string') {
-        client.send('kontorUpdate', { error: 'Invalid order ID' });
-        return;
-      }
-      if (!isPositiveInt(data?.amount)) {
-        client.send('kontorUpdate', { error: 'Invalid amount' });
-        return;
-      }
-
-      const result = await fillKontorOrder(data.orderId, auth.userId, data.amount);
-
-      if (!result.success) {
-        client.send('kontorUpdate', { error: result.error });
-        return;
-      }
-
-      const orders = await getKontorOrders(this._px(client.sessionId), this._py(client.sessionId));
-      const cargo = await getPlayerCargo(auth.userId);
-      client.send('kontorUpdate', { orders, earned: result.earned });
-      client.send('cargoUpdate', cargo);
+      await this.economy.handleKontorSellTo(client, data);
     });
 
     this.onMessage('kontorGetOrders', async (client) => {
-      if (!this.checkRate(client.sessionId, 'kontorGetOrders', 500)) return;
-      const orders = await getKontorOrders(this._px(client.sessionId), this._py(client.sessionId));
-      client.send('kontorUpdate', { orders });
+      await this.economy.handleKontorGetOrders(client);
     });
 
     // -----------------------------------------------------------------------
@@ -1261,170 +1098,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   // handleJump, handleHyperJump, handleCancelAutopilot, handleStartAutopilot,
   // handleGetAutopilotStatus, startAutopilotTimer, tryAutoRefuel → NavigationService
 
-  private async handleRefuel(client: Client, data: RefuelMessage) {
-    if (!isPositiveInt(data.amount)) {
-      client.send('refuelResult', { success: false, error: 'Invalid amount' });
-      return;
-    }
-    const auth = client.auth as AuthPayload;
-
-    // Must be at a station or own base
-    const isStation = this._pst(client.sessionId) === 'station';
-    const hasBaseHere = await playerHasBaseAtSector(
-      auth.userId, this._px(client.sessionId), this._py(client.sessionId)
-    );
-    if (!isStation && !hasBaseHere) {
-      client.send('refuelResult', { success: false, error: 'Must be at a station or your base to refuel' });
-      return;
-    }
-
-    const ship = this.getShipForClient(client.sessionId);
-    const currentFuel = await getFuelState(auth.userId) ?? 0;
-    const tankSpace = ship.fuelMax - currentFuel;
-
-    if (tankSpace <= 0) {
-      client.send('refuelResult', { success: false, error: 'Fuel tank is full' });
-      return;
-    }
-
-    const amount = Math.min(data.amount, tankSpace);
-
-    const playerShips = await getPlayerShips(auth.userId);
-    const isFreeRefuel = hasBaseHere && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
-
-    // Apply reputation price modifier at stations — use the better of station-rep vs faction-rep
-    let priceModifier = 1.0;
-    if (isStation && !isFreeRefuel) {
-      const sx = this._px(client.sessionId);
-      const sy = this._py(client.sessionId);
-
-      // Faction reputation modifier
-      const sectorFaction = getStationFaction(sx, sy);
-      let factionModifier = 1.0;
-      if (sectorFaction) {
-        const factionRep = await getPlayerReputation(auth.userId, sectorFaction);
-        const tier = getReputationTier(factionRep);
-        factionModifier = REP_PRICE_MODIFIERS[tier] ?? 1.0;
-      }
-
-      // Per-station reputation modifier (more granular)
-      const stationRep = await getPlayerStationRep(auth.userId, sx, sy);
-      const stationModifier = getFuelRepPriceModifier(stationRep);
-
-      // Use the better (lower) modifier
-      priceModifier = Math.min(factionModifier, stationModifier);
-    }
-
-    const cost = isFreeRefuel ? 0 : Math.ceil(amount * FUEL_COST_PER_UNIT * priceModifier);
-
-    if (cost > 0) {
-      const credits = await getPlayerCredits(auth.userId);
-      if (credits < cost) {
-        client.send('refuelResult', { success: false, error: 'Not enough credits' });
-        return;
-      }
-      await deductCredits(auth.userId, cost);
-    }
-
-    const newFuel = currentFuel + amount;
-    await saveFuelState(auth.userId, newFuel);
-
-    const remainingCredits = await getPlayerCredits(auth.userId);
-
-    client.send('refuelResult', {
-      success: true,
-      fuel: { current: newFuel, max: ship.fuelMax },
-      credits: remainingCredits,
-    });
-  }
-
-  // handleEmergencyWarp → NavigationService
-
-  private async handleMine(client: Client, data: MineMessage) {
-    if (!this.checkRate(client.sessionId, 'mine', 500)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
-    if (!data.resource || !VALID_MINE_RESOURCES.includes(data.resource)) {
-      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
-      return;
-    }
-    const auth = client.auth as AuthPayload;
-    const { resource } = data;
-
-    const sectorData = await getSector(this._px(client.sessionId), this._py(client.sessionId));
-    if (!sectorData?.resources) {
-      client.send('error', { code: 'NO_RESOURCES', message: 'No resources in this sector' });
-      return;
-    }
-
-    const current = await getMiningState(auth.userId);
-    const cargoTotal = await getCargoTotal(auth.userId);
-    const ship = this.getShipForClient(client.sessionId);
-
-    const result = validateMine(
-      resource,
-      sectorData.resources,
-      current,
-      cargoTotal,
-      ship.cargoCap,
-      this._px(client.sessionId),
-      this._py(client.sessionId),
-    );
-    if (!result.valid) {
-      client.send('error', { code: 'MINE_FAILED', message: result.error! });
-      return;
-    }
-
-    // Apply faction mining bonus
-    const bonuses = await this.getPlayerBonuses(auth.userId);
-    result.state!.rate *= bonuses.miningRateMultiplier;
-
-    await saveMiningState(auth.userId, result.state!);
-    client.send('miningUpdate', result.state!);
-  }
-
-  private async handleStopMine(client: Client) {
-    const auth = client.auth as AuthPayload;
-
-    const mining = await getMiningState(auth.userId);
-    if (!mining.active) {
-      client.send('error', { code: 'NOT_MINING', message: 'Not currently mining' });
-      return;
-    }
-
-    const cargoTotal = await getCargoTotal(auth.userId);
-    const ship = this.getShipForClient(client.sessionId);
-    const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
-    const result = stopMining(mining, cargoSpace);
-
-    if (result.mined > 0 && result.resource) {
-      await addToCargo(auth.userId, result.resource, result.mined);
-    }
-
-    await saveMiningState(auth.userId, result.newState);
-
-    const cargo = await getPlayerCargo(auth.userId);
-    client.send('miningUpdate', result.newState);
-    client.send('cargoUpdate', cargo);
-  }
-
-  private async handleJettison(client: Client, data: JettisonMessage) {
-    if (rejectGuest(client, 'Abwerfen')) return;
-    const auth = client.auth as AuthPayload;
-    const { resource } = data;
-
-    const cargo = await getPlayerCargo(auth.userId);
-    const currentAmount = cargo[resource as keyof CargoState] ?? 0;
-
-    const result = validateJettison(resource, currentAmount);
-    if (!result.valid) {
-      client.send('error', { code: 'JETTISON_FAILED', message: result.error! });
-      return;
-    }
-
-    const jettisoned = await jettisonCargo(auth.userId, resource);
-    const updatedCargo = await getPlayerCargo(auth.userId);
-    client.send('cargoUpdate', updatedCargo);
-    client.send('logEntry', `FRACHT ABGEWORFEN: ${jettisoned} ${resource.toUpperCase()}`);
-  }
+  // handleRefuel, handleMine, handleStopMine, handleJettison → MiningService / EconomyService
 
   private async handleBuild(client: Client, data: BuildMessage) {
     if (rejectGuest(client, 'Bauen')) return;
@@ -1598,307 +1272,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
   }
 
-  private async handleTransfer(client: Client, data: TransferMessage) {
-    if (!this.checkRate(client.sessionId, 'transfer', 500)) { client.send('transferResult', { success: false, error: 'Too fast' }); return; }
-    if (!isPositiveInt(data.amount) || !VALID_TRANSFER_RESOURCES.includes(data.resource)) {
-      client.send('transferResult', { success: false, error: 'Invalid transfer parameters' });
-      return;
-    }
-    const auth = client.auth as AuthPayload;
-    const { resource, amount, direction } = data;
-
-    const player = await findPlayerByUsername(auth.username);
-    if (!player) { client.send('error', { code: 'NO_PLAYER', message: 'Player not found' }); return; }
-    if (this._px(client.sessionId) !== player.homeBase.x || this._py(client.sessionId) !== player.homeBase.y) {
-      client.send('transferResult', { success: false, error: 'Must be at home base' });
-      return;
-    }
-
-    const storageStruct = await getPlayerStructure(auth.userId, 'storage');
-    // Home base always provides basic tier 1 storage, even without a storage structure
-    const storageTier = storageStruct?.tier ?? 1;
-
-    const currentCargo = await getPlayerCargo(auth.userId);
-    const storage = await getStorageInventory(auth.userId);
-    const result = validateTransfer(direction, resource, amount, currentCargo, storage, storageTier);
-    if (!result.valid) {
-      client.send('transferResult', { success: false, error: result.error });
-      return;
-    }
-
-    if (direction === 'toStorage') {
-      const deducted = await deductCargo(auth.userId, resource, amount);
-      if (!deducted) { client.send('transferResult', { success: false, error: 'Cargo changed' }); return; }
-      await updateStorageResource(auth.userId, resource, amount);
-    } else {
-      await updateStorageResource(auth.userId, resource, -amount);
-      await addToCargo(auth.userId, resource, amount);
-    }
-
-    const updatedCargo = await getPlayerCargo(auth.userId);
-    const updatedStorage = await getStorageInventory(auth.userId);
-    client.send('transferResult', { success: true, cargo: updatedCargo, storage: updatedStorage });
-    client.send('cargoUpdate', updatedCargo);
-    client.send('storageUpdate', updatedStorage);
-  }
-
-  private async sendNpcStationUpdate(client: Client, sx: number, sy: number): Promise<void> {
-    const station = await getOrInitStation(sx, sy);
-    const inventory = await getStationInventory(sx, sy);
-    const level = getStationLevel(station.xp);
-    const items = inventory.map(item => {
-      const currentStock = calculateCurrentStock(item);
-      const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
-      const basePrice = NPC_PRICES[item.itemType as MineableResourceType] || 0;
-      return {
-        itemType: item.itemType,
-        stock: currentStock,
-        maxStock: item.maxStock,
-        buyPrice: Math.ceil(calculatePrice(basePrice, stockRatio) * NPC_BUY_SPREAD),
-        sellPrice: Math.floor(calculatePrice(basePrice, stockRatio) * NPC_SELL_SPREAD),
-      };
-    });
-    const nextLevel = NPC_STATION_LEVELS.find(l => l.xpThreshold > station.xp);
-    client.send('npcStationUpdate', {
-      level: level.level,
-      name: level.name,
-      xp: station.xp,
-      nextLevelXp: nextLevel?.xpThreshold ?? station.xp,
-      inventory: items,
-    });
-  }
-
-  private async handleNpcTrade(client: Client, data: NpcTradeMessage) {
-    if (!this.checkRate(client.sessionId, 'npcTrade', 250)) {
-      client.send('npcTradeResult', { success: false, error: 'Too fast — please wait' });
-      return;
-    }
-    if (data.resource === 'artefact') {
-      client.send('npcTradeResult', { success: false, error: 'Artefakte können nicht an NPCs gehandelt werden' });
-      return;
-    }
-    if (!isPositiveInt(data.amount) || !VALID_MINE_RESOURCES.includes(data.resource)) {
-      client.send('npcTradeResult', { success: false, error: 'Invalid trade parameters' });
-      return;
-    }
-    const auth = client.auth as AuthPayload;
-    const { resource, amount, action } = data;
-
-    const player = await findPlayerByUsername(auth.username);
-    if (!player) return;
-
-    const isStation = this._pst(client.sessionId) === 'station';
-    const isHomeBase = this._px(client.sessionId) === player.homeBase.x &&
-                       this._py(client.sessionId) === player.homeBase.y;
-    if (!isStation && !isHomeBase) {
-      client.send('npcTradeResult', { success: false, error: 'Must be at a station or home base' });
-      return;
-    }
-
-    const currentCredits = await getPlayerCredits(auth.userId);
-
-    // Apply faction trade price bonus (discount on buy prices)
-    const bonuses = await this.getPlayerBonuses(auth.userId);
-
-    if (isStation) {
-      // Station trade: use cargo with dynamic pricing from NPC station engine
-      const cargo = await getPlayerCargo(auth.userId);
-      const cargoTotal = await getCargoTotal(auth.userId);
-      const shipStats = this.getShipForClient(client.sessionId);
-      const sx = this._px(client.sessionId);
-      const sy = this._py(client.sessionId);
-
-      if (action === 'sell') {
-        // Check cargo has enough
-        if (cargo[resource as MineableResourceType] < amount) {
-          client.send('npcTradeResult', { success: false, error: `Not enough ${resource} in cargo` });
-          return;
-        }
-        // Check station can accept
-        const sellCheck = await canSellToStation(sx, sy, resource, amount);
-        if (!sellCheck.ok) {
-          client.send('npcTradeResult', { success: false, error: 'Station cannot accept more of this resource' });
-          return;
-        }
-        // Execute trade
-        const deducted = await deductCargo(auth.userId, resource, amount);
-        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Cargo changed' }); return; }
-        // Update station stock
-        const invItem = await getStationInventoryItem(sx, sy, resource);
-        if (invItem) {
-          invItem.stock = Math.min(invItem.stock + amount, invItem.maxStock);
-          invItem.lastUpdated = new Date().toISOString();
-          await upsertInventoryItem(invItem);
-        }
-        const newCredits = await addCredits(auth.userId, sellCheck.price);
-        await recordTrade(sx, sy, amount);
-        updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
-        const updatedCargo = await getPlayerCargo(auth.userId);
-        client.send('npcTradeResult', { success: true, credits: newCredits });
-        client.send('creditsUpdate', { credits: newCredits });
-        client.send('cargoUpdate', updatedCargo);
-        // Send station info update (rich format with inventory)
-        await this.sendNpcStationUpdate(client, sx, sy);
-      } else {
-        // Buy: check station has stock
-        const buyCheck = await canBuyFromStation(sx, sy, resource, amount);
-        if (!buyCheck.ok) {
-          client.send('npcTradeResult', { success: false, error: 'Station does not have enough stock' });
-          return;
-        }
-        // Apply faction bonus
-        let totalPrice = buyCheck.price;
-        totalPrice = Math.ceil(totalPrice * bonuses.tradePriceMultiplier);
-        // Check credits
-        if (currentCredits < totalPrice) {
-          client.send('npcTradeResult', { success: false, error: `Need ${totalPrice} credits (have ${currentCredits})` });
-          return;
-        }
-        // Check cargo space
-        if (cargoTotal + amount > shipStats.cargoCap) {
-          client.send('npcTradeResult', { success: false, error: 'Cargo full' });
-          return;
-        }
-        // Execute trade
-        const deducted = await deductCredits(auth.userId, totalPrice);
-        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
-        await addToCargo(auth.userId, resource, amount);
-        // Update station stock
-        const invItem = await getStationInventoryItem(sx, sy, resource);
-        if (invItem) {
-          invItem.stock = Math.max(invItem.stock - amount, 0);
-          invItem.lastUpdated = new Date().toISOString();
-          await upsertInventoryItem(invItem);
-        }
-        const newCredits = await getPlayerCredits(auth.userId);
-        await recordTrade(sx, sy, amount);
-        updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
-        const updatedCargo = await getPlayerCargo(auth.userId);
-        client.send('npcTradeResult', { success: true, credits: newCredits });
-        client.send('creditsUpdate', { credits: newCredits });
-        client.send('cargoUpdate', updatedCargo);
-        // Send station info update (rich format with inventory)
-        await this.sendNpcStationUpdate(client, sx, sy);
-      }
-    } else {
-      // Home base trade: use storage
-      const storageStruct = await getPlayerStructure(auth.userId, 'storage');
-      const storageTier = storageStruct?.tier ?? 1;
-      const storage = await getStorageInventory(auth.userId);
-
-      const result = validateNpcTrade(action, resource, amount, currentCredits, storage, storageTier);
-      if (!result.valid) {
-        client.send('npcTradeResult', { success: false, error: result.error });
-        return;
-      }
-
-      if (action === 'buy') {
-        result.totalPrice = Math.ceil(result.totalPrice * bonuses.tradePriceMultiplier);
-      }
-
-      if (action === 'sell') {
-        await updateStorageResource(auth.userId, resource, -amount);
-        const newCredits = await addCredits(auth.userId, result.totalPrice);
-        const updatedStorage = await getStorageInventory(auth.userId);
-        client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
-        client.send('creditsUpdate', { credits: newCredits });
-        client.send('storageUpdate', updatedStorage);
-      } else {
-        const deducted = await deductCredits(auth.userId, result.totalPrice);
-        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
-        await updateStorageResource(auth.userId, resource, amount);
-        const newCredits = await getPlayerCredits(auth.userId);
-        const updatedStorage = await getStorageInventory(auth.userId);
-        client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
-        client.send('creditsUpdate', { credits: newCredits });
-        client.send('storageUpdate', updatedStorage);
-      }
-    }
-  }
-
-  private async handleUpgradeStructure(client: Client, data: UpgradeStructureMessage) {
-    const auth = client.auth as AuthPayload;
-    const { structureId } = data;
-
-    const struct = await query<{ id: string; type: string; tier: number; owner_id: string }>(
-      'SELECT id, type, tier, owner_id FROM structures WHERE id = $1',
-      [structureId]
-    );
-    const row = struct.rows[0];
-    if (!row || row.owner_id !== auth.userId) {
-      client.send('upgradeResult', { success: false, error: 'Structure not found' });
-      return;
-    }
-
-    const tierMap = row.type === 'storage' ? STORAGE_TIERS : row.type === 'trading_post' ? TRADING_POST_TIERS : null;
-    if (!tierMap) {
-      client.send('upgradeResult', { success: false, error: 'Not upgradeable' });
-      return;
-    }
-
-    const nextTier = row.tier + 1;
-    const nextConfig = tierMap[nextTier];
-    if (!nextConfig) {
-      client.send('upgradeResult', { success: false, error: 'Already max tier' });
-      return;
-    }
-
-    const cost = nextConfig.upgradeCost;
-    if (cost > 0) {
-      const deducted = await deductCredits(auth.userId, cost);
-      if (!deducted) {
-        client.send('upgradeResult', { success: false, error: `Need ${cost} credits` });
-        return;
-      }
-    }
-
-    const newTier = await upgradeStructureTier(structureId);
-    const upgradeCredits = await getPlayerCredits(auth.userId);
-    client.send('upgradeResult', { success: true, newTier, creditsRemaining: upgradeCredits });
-    client.send('creditsUpdate', { credits: upgradeCredits });
-
-    const structures = await getPlayerBaseStructures(auth.userId);
-    client.send('baseData', { structures });
-  }
-
-  private async handlePlaceOrder(client: Client, data: PlaceOrderMessage) {
-    if (rejectGuest(client, 'Markthandel')) return;
-    if (!isPositiveInt(data.amount) || !isPositiveInt(data.pricePerUnit) || data.pricePerUnit > 999999) {
-      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid amount or price' });
-      return;
-    }
-    if (!VALID_MINE_RESOURCES.includes(data.resource)) {
-      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
-      return;
-    }
-    const auth = client.auth as AuthPayload;
-    const { resource, amount, pricePerUnit, type } = data;
-
-    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
-    if (!tradingPost || tradingPost.tier < 2) {
-      client.send('error', { code: 'NO_MARKET', message: 'Need Trading Post Tier 2+' });
-      return;
-    }
-
-    if (type === 'sell') {
-      const storage = await getStorageInventory(auth.userId);
-      if (storage[resource as keyof typeof storage] < amount) {
-        client.send('error', { code: 'INSUFFICIENT', message: `Not enough ${resource} in storage` });
-        return;
-      }
-      await updateStorageResource(auth.userId, resource, -amount);
-    } else {
-      const totalCost = pricePerUnit * amount;
-      const deducted = await deductCredits(auth.userId, totalCost);
-      if (!deducted) {
-        client.send('error', { code: 'INSUFFICIENT', message: 'Not enough credits' });
-        return;
-      }
-    }
-
-    const order = await createTradeOrder(auth.userId, resource, amount, pricePerUnit, type);
-    client.send('orderPlaced', { success: true, orderId: order.id });
-  }
+  // handleTransfer, sendNpcStationUpdate, handleNpcTrade, handleUpgradeStructure, handlePlaceOrder → EconomyService
 
   private mapSlateRow(row: any) {
     return {
