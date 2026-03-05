@@ -4,6 +4,10 @@ import yaml from 'js-yaml';
 import {
   getAllPlayers,
   getPlayerById,
+  getPlayerFullProfile,
+  adminSetPlayerPosition,
+  adminSetPlayerCredits,
+  adminSetCargoItem,
   createAdminQuest,
   getAdminQuests,
   getAdminQuestById,
@@ -14,8 +18,12 @@ import {
   logAdminEvent,
   getAdminEvents,
   getServerStats,
+  createAdminStory,
+  getAdminStories,
+  getAdminStoryById,
 } from './db/adminQueries.js';
-import type { AdminQuestInput, AdminMessageInput } from './db/adminQueries.js';
+import type { AdminQuestInput, AdminMessageInput, AdminStoryInput } from './db/adminQueries.js';
+import type { AdminPlayerUpdateEvent } from './adminBus.js';
 import { adminBus } from './adminBus.js';
 import { logger } from './utils/logger.js';
 
@@ -62,7 +70,7 @@ adminRouter.get('/players', async (_req: Request, res: Response) => {
 
 adminRouter.get('/players/:id', async (req: Request, res: Response) => {
   try {
-    const player = await getPlayerById(req.params.id as string);
+    const player = await getPlayerFullProfile(req.params.id as string);
     if (!player) {
       res.status(404).json({ error: 'Player not found' });
       return;
@@ -71,6 +79,80 @@ adminRouter.get('/players/:id', async (req: Request, res: Response) => {
     res.json({ player });
   } catch (err) {
     logger.error({ err }, 'Admin get player error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.patch('/players/:id/position', async (req: Request, res: Response) => {
+  try {
+    const { x, y } = req.body;
+    if (typeof x !== 'number' || typeof y !== 'number') {
+      res.status(400).json({ error: 'x and y must be numbers' });
+      return;
+    }
+    const ok = await adminSetPlayerPosition(req.params.id as string, Math.round(x), Math.round(y));
+    if (!ok) {
+      res.status(404).json({ error: 'Player not found' });
+      return;
+    }
+    const updates: AdminPlayerUpdateEvent['updates'] = {
+      positionX: Math.round(x),
+      positionY: Math.round(y),
+    };
+    adminBus.playerUpdated({ playerId: req.params.id as string, updates });
+    await logAdminEvent('set_player_position', { playerId: req.params.id, x, y });
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, 'Admin set player position error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.patch('/players/:id/credits', async (req: Request, res: Response) => {
+  try {
+    const { amount } = req.body;
+    if (typeof amount !== 'number' || amount < 0) {
+      res.status(400).json({ error: 'amount must be a non-negative number' });
+      return;
+    }
+    const ok = await adminSetPlayerCredits(req.params.id as string, Math.round(amount));
+    if (!ok) {
+      res.status(404).json({ error: 'Player not found' });
+      return;
+    }
+    const updates: AdminPlayerUpdateEvent['updates'] = { credits: Math.round(amount) };
+    adminBus.playerUpdated({ playerId: req.params.id as string, updates });
+    await logAdminEvent('set_player_credits', { playerId: req.params.id, amount });
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, 'Admin set player credits error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.patch('/players/:id/cargo', async (req: Request, res: Response) => {
+  try {
+    const { resource, amount } = req.body;
+    if (typeof resource !== 'string' || !resource) {
+      res.status(400).json({ error: 'resource must be a non-empty string' });
+      return;
+    }
+    if (typeof amount !== 'number' || amount < 0) {
+      res.status(400).json({ error: 'amount must be a non-negative number' });
+      return;
+    }
+    const player = await getPlayerById(req.params.id as string);
+    if (!player) {
+      res.status(404).json({ error: 'Player not found' });
+      return;
+    }
+    await adminSetCargoItem(req.params.id as string, resource, Math.round(amount));
+    const cargoUpdate: Record<string, number> = { [resource]: Math.round(amount) };
+    adminBus.playerUpdated({ playerId: req.params.id as string, updates: { cargo: cargoUpdate } });
+    await logAdminEvent('set_player_cargo', { playerId: req.params.id, resource, amount });
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, 'Admin set player cargo error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -254,6 +336,60 @@ adminRouter.get('/stats', async (_req: Request, res: Response) => {
     res.json({ stats });
   } catch (err) {
     logger.error({ err }, 'Admin get stats error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Stories ─────────────────────────────────────────────────────────
+
+adminRouter.post('/stories', async (req: Request, res: Response) => {
+  try {
+    const storyInput = req.body as AdminStoryInput;
+    if (!storyInput.title || !storyInput.summary) {
+      res.status(400).json({ error: 'title and summary are required' });
+      return;
+    }
+
+    const validStatuses = ['draft', 'published', 'archived'];
+    if (storyInput.status && !validStatuses.includes(storyInput.status)) {
+      res
+        .status(400)
+        .json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+      return;
+    }
+
+    const storyId = await createAdminStory(storyInput);
+    await logAdminEvent('create_story', { storyId, title: storyInput.title });
+    res.status(201).json({ id: storyId });
+  } catch (err) {
+    logger.error({ err }, 'Admin create story error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.get('/stories', async (req: Request, res: Response) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+    const stories = await getAdminStories(limit);
+    await logAdminEvent('list_stories', { count: stories.length });
+    res.json({ stories });
+  } catch (err) {
+    logger.error({ err }, 'Admin list stories error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.get('/stories/:id', async (req: Request, res: Response) => {
+  try {
+    const story = await getAdminStoryById(req.params.id as string);
+    if (!story) {
+      res.status(404).json({ error: 'Story not found' });
+      return;
+    }
+    await logAdminEvent('get_story', { storyId: req.params.id });
+    res.json({ story });
+  } catch (err) {
+    logger.error({ err }, 'Admin get story error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -65,6 +65,113 @@ export async function getPlayerById(id: string): Promise<AdminPlayer | null> {
   };
 }
 
+export interface AdminPlayerFull extends AdminPlayer {
+  credits: number;
+  cargo: Record<string, number>;
+  ships: Array<{
+    id: string;
+    hullType: string;
+    name: string;
+    active: boolean;
+    modules: string[];
+    fuel: number;
+  }>;
+}
+
+export async function getPlayerFullProfile(id: string): Promise<AdminPlayerFull | null> {
+  const playerResult = await query<{
+    id: string;
+    username: string;
+    position_x: number;
+    position_y: number;
+    xp: number;
+    level: number;
+    faction_id: string | null;
+    credits: number;
+  }>(
+    `SELECT id, username, position_x, position_y, xp, level, faction_id, credits
+     FROM players WHERE id = $1`,
+    [id],
+  );
+  if (playerResult.rows.length === 0) return null;
+  const p = playerResult.rows[0];
+
+  const cargoResult = await query<{ resource: string; quantity: number }>(
+    `SELECT resource, quantity FROM cargo WHERE player_id = $1`,
+    [id],
+  );
+  const cargo: Record<string, number> = {};
+  for (const row of cargoResult.rows) cargo[row.resource] = row.quantity;
+
+  const shipsResult = await query<{
+    id: string;
+    hull_type: string;
+    name: string;
+    active: boolean;
+    modules: string[];
+    fuel: number;
+  }>(
+    `SELECT id, hull_type, name, active, modules, fuel FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
+    [id],
+  );
+  const ships = shipsResult.rows.map((s) => ({
+    id: s.id,
+    hullType: s.hull_type,
+    name: s.name,
+    active: s.active,
+    modules: s.modules ?? [],
+    fuel: s.fuel,
+  }));
+
+  return {
+    id: p.id,
+    username: p.username,
+    positionX: p.position_x,
+    positionY: p.position_y,
+    xp: p.xp,
+    level: p.level,
+    factionId: p.faction_id,
+    credits: p.credits,
+    cargo,
+    ships,
+  };
+}
+
+export async function adminSetPlayerPosition(
+  id: string,
+  x: number,
+  y: number,
+): Promise<boolean> {
+  const result = await query(
+    `UPDATE players SET position_x = $2, position_y = $3 WHERE id = $1`,
+    [id, x, y],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function adminSetPlayerCredits(id: string, amount: number): Promise<boolean> {
+  const result = await query(`UPDATE players SET credits = $2 WHERE id = $1`, [id, amount]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function adminSetCargoItem(
+  id: string,
+  resource: string,
+  amount: number,
+): Promise<void> {
+  if (amount <= 0) {
+    await query(`DELETE FROM cargo WHERE player_id = $1 AND resource = $2`, [id, resource]);
+  } else {
+    await query(
+      `INSERT INTO cargo (player_id, resource, quantity)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (player_id, resource)
+       DO UPDATE SET quantity = $3`,
+      [id, resource, amount],
+    );
+  }
+}
+
 export async function getPlayerByUsername(username: string): Promise<AdminPlayer | null> {
   const result = await query<{
     id: string;
@@ -555,14 +662,142 @@ export interface ServerStats {
 }
 
 export async function getServerStats(): Promise<ServerStats> {
-  const [players, structures, sectors] = await Promise.all([
-    query<{ count: string }>('SELECT COUNT(*) AS count FROM players'),
-    query<{ count: string }>('SELECT COUNT(*) AS count FROM structures'),
-    query<{ count: string }>('SELECT COUNT(*) AS count FROM discovered_sectors'),
+  const safeCount = async (sql: string): Promise<number> => {
+    try {
+      const res = await query<{ count: string }>(sql);
+      return parseInt(res.rows[0].count, 10);
+    } catch {
+      return 0;
+    }
+  };
+  const [playerCount, structureCount, discoveredSectorCount] = await Promise.all([
+    safeCount('SELECT COUNT(*) AS count FROM players'),
+    safeCount('SELECT COUNT(*) AS count FROM structures'),
+    safeCount('SELECT COUNT(*) AS count FROM discovered_sectors'),
   ]);
+  return { playerCount, structureCount, discoveredSectorCount };
+}
+
+// ── Admin Story Queries ─────────────────────────────────────────────
+
+export interface AdminStoryStep {
+  step: number;
+  action: string;
+  result: string;
+  screenshot?: string;
+}
+
+export interface AdminStoryFinding {
+  type: 'bug' | 'flaw' | 'recommendation';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  suggestion: string;
+}
+
+export interface AdminStoryInput {
+  title: string;
+  summary: string;
+  scenario?: string;
+  steps?: AdminStoryStep[];
+  findings?: AdminStoryFinding[];
+  screenshotPaths?: string[];
+  status?: string;
+}
+
+export interface AdminStory {
+  id: string;
+  title: string;
+  summary: string;
+  scenario: string;
+  steps: AdminStoryStep[];
+  findings: AdminStoryFinding[];
+  screenshotPaths: string[];
+  status: string;
+  createdAt: string;
+}
+
+export async function createAdminStory(input: AdminStoryInput): Promise<string> {
+  const result = await query<{ id: string }>(
+    `INSERT INTO admin_stories
+       (title, summary, scenario, steps, findings, screenshot_paths, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id`,
+    [
+      input.title,
+      input.summary,
+      input.scenario ?? '',
+      JSON.stringify(input.steps ?? []),
+      JSON.stringify(input.findings ?? []),
+      input.screenshotPaths ?? [],
+      input.status ?? 'draft',
+    ],
+  );
+  return result.rows[0].id;
+}
+
+export async function getAdminStories(limit = 50): Promise<AdminStory[]> {
+  const result = await query<{
+    id: string;
+    title: string;
+    summary: string;
+    scenario: string;
+    steps: AdminStoryStep[];
+    findings: AdminStoryFinding[];
+    screenshot_paths: string[];
+    status: string;
+    created_at: string;
+  }>(
+    `SELECT id, title, summary, scenario, steps, findings, screenshot_paths, status, created_at
+     FROM admin_stories
+     ORDER BY created_at DESC
+     LIMIT $1`,
+    [limit],
+  );
+  return result.rows.map(mapStoryRow);
+}
+
+export async function getAdminStoryById(id: string): Promise<AdminStory | null> {
+  const result = await query<{
+    id: string;
+    title: string;
+    summary: string;
+    scenario: string;
+    steps: AdminStoryStep[];
+    findings: AdminStoryFinding[];
+    screenshot_paths: string[];
+    status: string;
+    created_at: string;
+  }>(
+    `SELECT id, title, summary, scenario, steps, findings, screenshot_paths, status, created_at
+     FROM admin_stories
+     WHERE id = $1`,
+    [id],
+  );
+  if (result.rows.length === 0) return null;
+  return mapStoryRow(result.rows[0]);
+}
+
+function mapStoryRow(row: {
+  id: string;
+  title: string;
+  summary: string;
+  scenario: string;
+  steps: AdminStoryStep[];
+  findings: AdminStoryFinding[];
+  screenshot_paths: string[];
+  status: string;
+  created_at: string;
+}): AdminStory {
   return {
-    playerCount: parseInt(players.rows[0].count, 10),
-    structureCount: parseInt(structures.rows[0].count, 10),
-    discoveredSectorCount: parseInt(sectors.rows[0].count, 10),
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    scenario: row.scenario,
+    steps: row.steps,
+    findings: row.findings,
+    screenshotPaths: row.screenshot_paths,
+    status: row.status,
+    createdAt: row.created_at,
   };
 }

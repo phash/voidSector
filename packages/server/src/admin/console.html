@@ -564,6 +564,7 @@ button.success:hover {
     <div class="tab" data-tab="comms">Comms</div>
     <div class="tab" data-tab="events">Events</div>
     <div class="tab" data-tab="stats">Stats</div>
+    <div class="tab" data-tab="stories">Stories</div>
   </div>
 
   <div id="content">
@@ -816,6 +817,16 @@ expiresDays: 14"></textarea>
       </div>
     </div>
 
+    <!-- ── STORIES Tab ──────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-stories">
+      <div class="section-title">Playtest Stories</div>
+      <div style="color:var(--amber-dim);font-size:11px;margin-bottom:16px;letter-spacing:0.5px">
+        Automated UI playtest reports from /playtest command
+      </div>
+      <div id="stories-empty" class="empty-state" style="display:none">No stories yet. Run /playtest to create one.</div>
+      <div id="stories-list" style="display:flex;flex-direction:column;gap:16px;overflow:auto;max-height:calc(100vh - 200px);padding-right:8px"></div>
+    </div>
+
   </div>
 </div>
 
@@ -991,6 +1002,7 @@ expiresDays: 14"></textarea>
     else if (name === 'comms') loadMessages();
     else if (name === 'events') loadEvents();
     else if (name === 'stats') loadStats();
+    else if (name === 'stories') loadStories();
   }
 
   function switchQuestSubTab(name) {
@@ -1080,20 +1092,116 @@ expiresDays: 14"></textarea>
       header.appendChild(closeBtn);
       panel.appendChild(header);
 
+      // Basic info
       var grid = el('dl', { className: 'detail-grid' });
       var fields = [
         ['ID', p.id],
-        ['Username', p.username],
         ['Level', String(p.level)],
         ['XP', String(p.xp)],
         ['Position', '(' + p.positionX + ', ' + p.positionY + ')'],
-        ['Faction ID', p.factionId || 'none'],
+        ['Faction', p.factionId || 'none'],
+        ['Credits', String(p.credits !== undefined ? p.credits : '\u2014')],
       ];
       fields.forEach(function(f) {
         grid.appendChild(el('dt', null, f[0]));
         grid.appendChild(el('dd', null, esc(f[1])));
       });
       panel.appendChild(grid);
+
+      // Cargo
+      var cargoKeys = p.cargo ? Object.keys(p.cargo).filter(function(k) { return p.cargo[k] > 0; }) : [];
+      var cargoSection = el('div', { style: 'margin-top:12px' });
+      cargoSection.appendChild(el('h4', { style: 'margin:0 0 6px' }, 'Cargo'));
+      if (cargoKeys.length === 0) {
+        cargoSection.appendChild(el('p', { style: 'color:#888;font-size:12px' }, 'Empty'));
+      } else {
+        var cargoList = el('dl', { className: 'detail-grid' });
+        cargoKeys.forEach(function(k) {
+          cargoList.appendChild(el('dt', null, k));
+          cargoList.appendChild(el('dd', null, String(p.cargo[k])));
+        });
+        cargoSection.appendChild(cargoList);
+      }
+      panel.appendChild(cargoSection);
+
+      // Ships
+      var shipsSection = el('div', { style: 'margin-top:12px' });
+      shipsSection.appendChild(el('h4', { style: 'margin:0 0 6px' }, 'Ships'));
+      if (!p.ships || p.ships.length === 0) {
+        shipsSection.appendChild(el('p', { style: 'color:#888;font-size:12px' }, 'No ships'));
+      } else {
+        p.ships.forEach(function(s) {
+          var shipRow = el('div', { style: 'font-size:12px;margin-bottom:4px;color:#aaa' });
+          shipRow.textContent = (s.active ? '\u2605 ' : '  ') + s.name + ' [' + s.hullType + '] fuel:' + s.fuel;
+          shipsSection.appendChild(shipRow);
+        });
+      }
+      panel.appendChild(shipsSection);
+
+      // Edit: Position
+      var editPos = el('div', { style: 'margin-top:14px;border-top:1px solid #333;padding-top:10px' });
+      editPos.appendChild(el('h4', { style: 'margin:0 0 6px' }, 'Edit Position'));
+      var posRow = el('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' });
+      var inputPX = el('input', { type: 'number', value: String(p.positionX), style: 'width:80px', placeholder: 'X' });
+      var inputPY = el('input', { type: 'number', value: String(p.positionY), style: 'width:80px', placeholder: 'Y' });
+      var btnPos = el('button', null, 'Set Position');
+      btnPos.addEventListener('click', function() {
+        var x = parseInt(inputPX.value, 10);
+        var y = parseInt(inputPY.value, 10);
+        if (isNaN(x) || isNaN(y)) { toast('Invalid coordinates', 'error'); return; }
+        api('PATCH', '/players/' + encodeURIComponent(p.id) + '/position', { x: x, y: y }).then(function() {
+          toast('Position updated', 'success');
+        }).catch(function(err) { toast('Error: ' + err.message, 'error'); });
+      });
+      posRow.appendChild(el('span', { style: 'color:#aaa;font-size:12px' }, 'X:'));
+      posRow.appendChild(inputPX);
+      posRow.appendChild(el('span', { style: 'color:#aaa;font-size:12px' }, 'Y:'));
+      posRow.appendChild(inputPY);
+      posRow.appendChild(btnPos);
+      editPos.appendChild(posRow);
+      panel.appendChild(editPos);
+
+      // Edit: Credits
+      var editCr = el('div', { style: 'margin-top:10px' });
+      editCr.appendChild(el('h4', { style: 'margin:0 0 6px' }, 'Edit Credits'));
+      var crRow = el('div', { style: 'display:flex;gap:8px;align-items:center' });
+      var inputCr = el('input', { type: 'number', value: String(p.credits || 0), style: 'width:120px', placeholder: 'Amount' });
+      var btnCr = el('button', null, 'Set Credits');
+      btnCr.addEventListener('click', function() {
+        var amount = parseInt(inputCr.value, 10);
+        if (isNaN(amount) || amount < 0) { toast('Invalid amount', 'error'); return; }
+        api('PATCH', '/players/' + encodeURIComponent(p.id) + '/credits', { amount: amount }).then(function() {
+          toast('Credits updated', 'success');
+        }).catch(function(err) { toast('Error: ' + err.message, 'error'); });
+      });
+      crRow.appendChild(inputCr);
+      crRow.appendChild(btnCr);
+      editCr.appendChild(crRow);
+      panel.appendChild(editCr);
+
+      // Edit: Cargo item
+      var editCargo = el('div', { style: 'margin-top:10px' });
+      editCargo.appendChild(el('h4', { style: 'margin:0 0 6px' }, 'Edit Cargo Item'));
+      var cargoEditRow = el('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' });
+      var inputRes = el('input', { type: 'text', style: 'width:100px', placeholder: 'resource' });
+      var inputAmt = el('input', { type: 'number', value: '0', style: 'width:80px', placeholder: 'qty' });
+      var btnCargo = el('button', null, 'Set Cargo');
+      btnCargo.addEventListener('click', function() {
+        var res = inputRes.value.trim();
+        var amt = parseInt(inputAmt.value, 10);
+        if (!res) { toast('Enter resource name', 'error'); return; }
+        if (isNaN(amt) || amt < 0) { toast('Invalid quantity', 'error'); return; }
+        api('PATCH', '/players/' + encodeURIComponent(p.id) + '/cargo', { resource: res, amount: amt }).then(function() {
+          toast('Cargo updated', 'success');
+        }).catch(function(err) { toast('Error: ' + err.message, 'error'); });
+      });
+      cargoEditRow.appendChild(el('span', { style: 'color:#aaa;font-size:12px' }, 'Resource:'));
+      cargoEditRow.appendChild(inputRes);
+      cargoEditRow.appendChild(el('span', { style: 'color:#aaa;font-size:12px' }, 'Qty:'));
+      cargoEditRow.appendChild(inputAmt);
+      cargoEditRow.appendChild(btnCargo);
+      editCargo.appendChild(cargoEditRow);
+      panel.appendChild(editCargo);
 
       container.appendChild(panel);
     }).catch(function(err) {
@@ -1651,6 +1759,143 @@ expiresDays: 14"></textarea>
     });
   }
 
+  // ── STORIES ─────────────────────────────────────────────────────
+
+  function loadStories() {
+    api('GET', '/stories').then(function(data) {
+      renderStories(data.stories || []);
+      setStatus(true);
+    }).catch(function(err) {
+      setStatus(false);
+      if (err.message !== 'Unauthorized') toast('Failed to load stories: ' + err.message, 'error');
+    });
+  }
+
+  function renderStories(stories) {
+    var container = document.getElementById('stories-list');
+    var empty = document.getElementById('stories-empty');
+    clearChildren(container);
+
+    if (stories.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    stories.forEach(function(story) {
+      container.appendChild(renderStoryCard(story));
+    });
+  }
+
+  function renderStoryCard(story) {
+    var card = el('div', { className: 'stat-card', style: { padding: '16px', cursor: 'pointer' } });
+
+    // ── Header row: title + date ──
+    var header = el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' } });
+    header.appendChild(el('span', { style: { color: 'var(--amber-full)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' } }, esc(story.title)));
+    header.appendChild(el('span', { style: { color: 'var(--amber-dim)', fontSize: '10px', whiteSpace: 'nowrap', marginLeft: '12px' } }, formatDate(story.createdAt)));
+    card.appendChild(header);
+
+    // ── Summary ──
+    card.appendChild(el('div', { style: { color: 'var(--amber-dim)', fontSize: '11px', lineHeight: '1.6', marginBottom: '8px' } }, esc(story.summary)));
+
+    // ── Finding counts row ──
+    var findings = story.findings || [];
+    var bugCount = 0;
+    var flawCount = 0;
+    var recCount = 0;
+    findings.forEach(function(f) {
+      if (f.type === 'bug') bugCount++;
+      else if (f.type === 'flaw') flawCount++;
+      else if (f.type === 'recommendation') recCount++;
+    });
+
+    var countsRow = el('div', { style: { display: 'flex', gap: '16px', fontSize: '11px', letterSpacing: '0.5px' } });
+    countsRow.appendChild(el('span', { style: { color: '#FF4444' } }, 'BUGS: ' + bugCount));
+    countsRow.appendChild(el('span', { style: { color: '#FFB000' } }, 'FLAWS: ' + flawCount));
+    countsRow.appendChild(el('span', { style: { color: '#44AAFF' } }, 'RECS: ' + recCount));
+
+    if (story.status) {
+      var statusColor = story.status === 'pass' ? 'var(--green)' : story.status === 'fail' ? 'var(--red)' : 'var(--amber-dim)';
+      countsRow.appendChild(el('span', { style: { color: statusColor, marginLeft: 'auto', textTransform: 'uppercase' } }, esc(story.status)));
+    }
+
+    card.appendChild(countsRow);
+
+    // ── Expandable detail section ──
+    var detail = el('div', { style: { display: 'none', marginTop: '12px', borderTop: '1px solid var(--amber-faint)', paddingTop: '12px' } });
+
+    // Scenario
+    if (story.scenario) {
+      detail.appendChild(el('div', { style: { color: 'var(--amber)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' } }, 'SCENARIO'));
+      detail.appendChild(el('div', { style: { color: 'var(--amber-dim)', fontSize: '11px', lineHeight: '1.6', marginBottom: '12px' } }, esc(story.scenario)));
+    }
+
+    // Steps
+    var steps = story.steps || [];
+    if (steps.length > 0) {
+      detail.appendChild(el('div', { style: { color: 'var(--amber)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' } }, 'STEPS'));
+      var stepsList = el('div', { style: { marginBottom: '12px' } });
+      steps.forEach(function(s, i) {
+        var stepNum = s.step !== undefined ? s.step : (i + 1);
+        var stepLine = el('div', { style: { color: 'var(--amber-dim)', fontSize: '11px', lineHeight: '1.6', paddingLeft: '8px' } });
+        stepLine.appendChild(el('span', { style: { color: 'var(--amber)' } }, stepNum + '. '));
+        stepLine.appendChild(document.createTextNode(esc(s.action)));
+        if (s.result) {
+          stepLine.appendChild(el('span', { style: { color: 'var(--amber-faint)' } }, ' → '));
+          stepLine.appendChild(el('span', { style: { color: 'var(--amber-dim)' } }, esc(s.result)));
+        }
+        stepsList.appendChild(stepLine);
+      });
+      detail.appendChild(stepsList);
+    }
+
+    // Findings
+    if (findings.length > 0) {
+      detail.appendChild(el('div', { style: { color: 'var(--amber)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' } }, 'FINDINGS'));
+      findings.forEach(function(f) {
+        var findingCard = el('div', { style: { background: 'var(--bg)', border: '1px solid var(--amber-faint)', padding: '10px', marginBottom: '8px' } });
+
+        // Type + severity badges + title row
+        var badgeRow = el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' } });
+
+        var typeColors = { bug: '#FF4444', flaw: '#FFB000', recommendation: '#44AAFF' };
+        var typeLabels = { bug: 'BUG', flaw: 'FLAW', recommendation: 'REC' };
+        var typeColor = typeColors[f.type] || 'var(--amber)';
+        badgeRow.appendChild(el('span', { style: { color: '#000', background: typeColor, padding: '1px 6px', fontSize: '9px', fontWeight: 'bold', letterSpacing: '1px' } }, typeLabels[f.type] || esc(f.type).toUpperCase()));
+
+        var sevColors = { critical: '#FF4444', high: '#FF8800', medium: '#FFB000', low: 'var(--amber-dim)' };
+        var sevColor = sevColors[f.severity] || 'var(--amber-dim)';
+        badgeRow.appendChild(el('span', { style: { color: '#000', background: sevColor, padding: '1px 6px', fontSize: '9px', fontWeight: 'bold', letterSpacing: '1px' } }, esc(f.severity).toUpperCase()));
+
+        badgeRow.appendChild(el('span', { style: { color: 'var(--amber-full)', fontSize: '11px', fontWeight: 'bold' } }, esc(f.title)));
+        findingCard.appendChild(badgeRow);
+
+        // Description
+        if (f.description) {
+          findingCard.appendChild(el('div', { style: { color: 'var(--amber-dim)', fontSize: '11px', lineHeight: '1.5', marginBottom: '4px' } }, esc(f.description)));
+        }
+
+        // Suggestion
+        if (f.suggestion) {
+          findingCard.appendChild(el('div', { style: { color: 'var(--cyan)', fontSize: '11px', lineHeight: '1.5' } }, esc(f.suggestion)));
+        }
+
+        detail.appendChild(findingCard);
+      });
+    }
+
+    card.appendChild(detail);
+
+    // ── Click to toggle expand ──
+    card.addEventListener('click', function() {
+      var isVisible = detail.style.display !== 'none';
+      detail.style.display = isVisible ? 'none' : 'block';
+    });
+
+    return card;
+  }
+
   // ── Auto-Refresh ───────────────────────────────────────────────
 
   function startRefresh() {
@@ -1664,6 +1909,7 @@ expiresDays: 14"></textarea>
         else if (name === 'comms') loadMessages();
         else if (name === 'events') loadEvents();
         else if (name === 'stats') loadStats();
+        else if (name === 'stories') loadStories();
       }
     }, 30000);
   }

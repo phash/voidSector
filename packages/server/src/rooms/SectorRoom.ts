@@ -12,7 +12,7 @@ import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { recordVisit } from '../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../engine/quadrantEngine.js';
 import { adminBus } from '../adminBus.js';
-import type { AdminBroadcastEvent, AdminQuestEvent } from '../adminBus.js';
+import type { AdminBroadcastEvent, AdminQuestEvent, AdminPlayerUpdateEvent } from '../adminBus.js';
 import { commsBus } from '../commsBus.js';
 import type { CommsBroadcastEvent } from '../commsBus.js';
 import {
@@ -644,8 +644,31 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       }
     };
+    const onPlayerUpdate = (event: AdminPlayerUpdateEvent) => {
+      for (const client of this.clients) {
+        const auth = client.auth as AuthPayload;
+        if (auth.userId === event.playerId) {
+          if (event.updates.credits !== undefined) {
+            client.send('creditsUpdate', { credits: event.updates.credits });
+          }
+          if (event.updates.cargo !== undefined) {
+            // Send full cargo refresh after admin edit
+            getPlayerCargo(event.playerId)
+              .then((cargo) => client.send('cargoUpdate', cargo))
+              .catch(() => {});
+          }
+          if (event.updates.positionX !== undefined && event.updates.positionY !== undefined) {
+            client.send('adminTeleport', {
+              x: event.updates.positionX,
+              y: event.updates.positionY,
+            });
+          }
+        }
+      }
+    };
     adminBus.on('adminBroadcast', onBroadcast);
     adminBus.on('adminQuestCreated', onQuestCreated);
+    adminBus.on('adminPlayerUpdate', onPlayerUpdate);
 
     // Cross-room COMMS relay for sector/quadrant channels
     const onCommsBroadcast = (event: CommsBroadcastEvent) => {
@@ -675,6 +698,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.disposeCallbacks.push(() => {
       adminBus.off('adminBroadcast', onBroadcast);
       adminBus.off('adminQuestCreated', onQuestCreated);
+      adminBus.off('adminPlayerUpdate', onPlayerUpdate);
       commsBus.off('commsBroadcast', onCommsBroadcast);
     });
   }

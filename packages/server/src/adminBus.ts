@@ -20,6 +20,16 @@ export interface AdminQuestEvent {
   sectorY?: number;
 }
 
+export interface AdminPlayerUpdateEvent {
+  playerId: string;
+  updates: {
+    positionX?: number;
+    positionY?: number;
+    credits?: number;
+    cargo?: Record<string, number>;
+  };
+}
+
 class AdminBus extends EventEmitter {
   broadcast(event: AdminBroadcastEvent): void {
     this.emit('adminBroadcast', event);
@@ -27,6 +37,10 @@ class AdminBus extends EventEmitter {
 
   questCreated(event: AdminQuestEvent): void {
     this.emit('adminQuestCreated', event);
+  }
+
+  playerUpdated(event: AdminPlayerUpdateEvent): void {
+    this.emit('adminPlayerUpdate', event);
   }
 }
 

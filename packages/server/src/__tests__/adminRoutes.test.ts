@@ -6,6 +6,7 @@ vi.mock('../adminBus.js', () => ({
   adminBus: {
     broadcast: vi.fn(),
     questCreated: vi.fn(),
+    playerUpdated: vi.fn(),
   },
 }));
 
@@ -13,6 +14,10 @@ vi.mock('../adminBus.js', () => ({
 vi.mock('../db/adminQueries.js', () => ({
   getAllPlayers: vi.fn(),
   getPlayerById: vi.fn(),
+  getPlayerFullProfile: vi.fn(),
+  adminSetPlayerPosition: vi.fn(),
+  adminSetPlayerCredits: vi.fn(),
+  adminSetCargoItem: vi.fn(),
   createAdminQuest: vi.fn(),
   getAdminQuests: vi.fn(),
   getAdminQuestById: vi.fn(),
@@ -23,12 +28,19 @@ vi.mock('../db/adminQueries.js', () => ({
   logAdminEvent: vi.fn(),
   getAdminEvents: vi.fn(),
   getServerStats: vi.fn(),
+  createAdminStory: vi.fn(),
+  getAdminStories: vi.fn(),
+  getAdminStoryById: vi.fn(),
 }));
 
 import { adminAuth, adminRouter } from '../adminRoutes.js';
 import {
   getAllPlayers,
   getPlayerById,
+  getPlayerFullProfile,
+  adminSetPlayerPosition,
+  adminSetPlayerCredits,
+  adminSetCargoItem,
   createAdminQuest,
   getAdminQuests,
   getAdminQuestById,
@@ -39,10 +51,17 @@ import {
   logAdminEvent,
   getAdminEvents,
   getServerStats,
+  createAdminStory,
+  getAdminStories,
+  getAdminStoryById,
 } from '../db/adminQueries.js';
 
 const mockGetAllPlayers = vi.mocked(getAllPlayers);
 const mockGetPlayerById = vi.mocked(getPlayerById);
+const mockGetPlayerFullProfile = vi.mocked(getPlayerFullProfile);
+const mockAdminSetPlayerPosition = vi.mocked(adminSetPlayerPosition);
+const mockAdminSetPlayerCredits = vi.mocked(adminSetPlayerCredits);
+const mockAdminSetCargoItem = vi.mocked(adminSetCargoItem);
 const mockCreateAdminQuest = vi.mocked(createAdminQuest);
 const mockGetAdminQuests = vi.mocked(getAdminQuests);
 const mockGetAdminQuestById = vi.mocked(getAdminQuestById);
@@ -53,6 +72,9 @@ const mockGetAdminReplies = vi.mocked(getAdminReplies);
 const mockLogAdminEvent = vi.mocked(logAdminEvent);
 const mockGetAdminEvents = vi.mocked(getAdminEvents);
 const mockGetServerStats = vi.mocked(getServerStats);
+const mockCreateAdminStory = vi.mocked(createAdminStory);
+const mockGetAdminStories = vi.mocked(getAdminStories);
+const mockGetAdminStoryById = vi.mocked(getAdminStoryById);
 
 // ── Test Helpers ────────────────────────────────────────────────────
 
@@ -218,7 +240,7 @@ describe('adminRoutes', () => {
   });
 
   describe('GET /players/:id', () => {
-    it('returns player when found', async () => {
+    it('returns full player profile when found', async () => {
       const player = {
         id: 'p1',
         username: 'alice',
@@ -227,8 +249,11 @@ describe('adminRoutes', () => {
         xp: 100,
         level: 2,
         factionId: null,
+        credits: 500,
+        cargo: { ore: 10 },
+        ships: [{ id: 's1', hullType: 'scout', name: 'AEGIS', active: true, modules: [], fuel: 100 }],
       };
-      mockGetPlayerById.mockResolvedValueOnce(player);
+      mockGetPlayerFullProfile.mockResolvedValueOnce(player);
 
       const handler = getRouteHandler('get', '/players/:id')!;
       const req = createMockReq({ params: { id: 'p1' } as any });
@@ -240,7 +265,7 @@ describe('adminRoutes', () => {
     });
 
     it('returns 404 when player not found', async () => {
-      mockGetPlayerById.mockResolvedValueOnce(null);
+      mockGetPlayerFullProfile.mockResolvedValueOnce(null);
 
       const handler = getRouteHandler('get', '/players/:id')!;
       const req = createMockReq({ params: { id: 'nonexistent' } as any });
@@ -249,6 +274,100 @@ describe('adminRoutes', () => {
 
       expect(res._status).toBe(404);
       expect(res._json).toEqual({ error: 'Player not found' });
+    });
+  });
+
+  describe('PATCH /players/:id/position', () => {
+    it('sets player position and emits event', async () => {
+      mockAdminSetPlayerPosition.mockResolvedValueOnce(true);
+
+      const handler = getRouteHandler('patch', '/players/:id/position')!;
+      const req = createMockReq({ params: { id: 'p1' } as any, body: { x: 100, y: 200 } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._json).toEqual({ ok: true });
+      expect(mockAdminSetPlayerPosition).toHaveBeenCalledWith('p1', 100, 200);
+      expect(mockLogAdminEvent).toHaveBeenCalledWith('set_player_position', { playerId: 'p1', x: 100, y: 200 });
+    });
+
+    it('returns 400 for invalid coordinates', async () => {
+      const handler = getRouteHandler('patch', '/players/:id/position')!;
+      const req = createMockReq({ params: { id: 'p1' } as any, body: { x: 'bad', y: 200 } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual({ error: 'x and y must be numbers' });
+    });
+
+    it('returns 404 when player not found', async () => {
+      mockAdminSetPlayerPosition.mockResolvedValueOnce(false);
+
+      const handler = getRouteHandler('patch', '/players/:id/position')!;
+      const req = createMockReq({ params: { id: 'nope' } as any, body: { x: 0, y: 0 } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._status).toBe(404);
+    });
+  });
+
+  describe('PATCH /players/:id/credits', () => {
+    it('sets player credits and emits event', async () => {
+      mockAdminSetPlayerCredits.mockResolvedValueOnce(true);
+
+      const handler = getRouteHandler('patch', '/players/:id/credits')!;
+      const req = createMockReq({ params: { id: 'p1' } as any, body: { amount: 9999 } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._json).toEqual({ ok: true });
+      expect(mockAdminSetPlayerCredits).toHaveBeenCalledWith('p1', 9999);
+    });
+
+    it('returns 400 for negative amount', async () => {
+      const handler = getRouteHandler('patch', '/players/:id/credits')!;
+      const req = createMockReq({ params: { id: 'p1' } as any, body: { amount: -1 } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._status).toBe(400);
+    });
+  });
+
+  describe('PATCH /players/:id/cargo', () => {
+    it('sets cargo item for player', async () => {
+      mockGetPlayerById.mockResolvedValueOnce({ id: 'p1', username: 'alice', positionX: 0, positionY: 0, xp: 0, level: 1, factionId: null });
+      mockAdminSetCargoItem.mockResolvedValueOnce(undefined);
+
+      const handler = getRouteHandler('patch', '/players/:id/cargo')!;
+      const req = createMockReq({ params: { id: 'p1' } as any, body: { resource: 'ore', amount: 50 } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._json).toEqual({ ok: true });
+      expect(mockAdminSetCargoItem).toHaveBeenCalledWith('p1', 'ore', 50);
+    });
+
+    it('returns 400 when resource is missing', async () => {
+      const handler = getRouteHandler('patch', '/players/:id/cargo')!;
+      const req = createMockReq({ params: { id: 'p1' } as any, body: { amount: 10 } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._status).toBe(400);
+    });
+
+    it('returns 404 when player not found', async () => {
+      mockGetPlayerById.mockResolvedValueOnce(null);
+
+      const handler = getRouteHandler('patch', '/players/:id/cargo')!;
+      const req = createMockReq({ params: { id: 'nope' } as any, body: { resource: 'ore', amount: 10 } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._status).toBe(404);
     });
   });
 
@@ -660,6 +779,178 @@ describe('adminRoutes', () => {
 
       expect(res._status).toBe(500);
       expect(res._json).toEqual({ error: 'Internal server error' });
+    });
+  });
+
+  // ── Stories ────────────────────────────────────────────────────────
+
+  describe('stories routes', () => {
+    describe('POST /stories', () => {
+      it('creates a story and returns id', async () => {
+        mockCreateAdminStory.mockResolvedValueOnce('story-1');
+
+        const handler = getRouteHandler('post', '/stories')!;
+        expect(handler).toBeDefined();
+
+        const req = createMockReq({
+          body: { title: 'Login Test', summary: 'Testing the login flow' },
+        });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._status).toBe(201);
+        expect(res._json).toEqual({ id: 'story-1' });
+        expect(mockCreateAdminStory).toHaveBeenCalledWith({
+          title: 'Login Test',
+          summary: 'Testing the login flow',
+        });
+        expect(mockLogAdminEvent).toHaveBeenCalledWith('create_story', {
+          storyId: 'story-1',
+          title: 'Login Test',
+        });
+      });
+
+      it('rejects story without title', async () => {
+        const handler = getRouteHandler('post', '/stories')!;
+        const req = createMockReq({
+          body: { summary: 'No title here' },
+        });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._status).toBe(400);
+        expect(res._json).toEqual({ error: 'title and summary are required' });
+      });
+
+      it('rejects story without summary', async () => {
+        const handler = getRouteHandler('post', '/stories')!;
+        const req = createMockReq({
+          body: { title: 'No summary' },
+        });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._status).toBe(400);
+        expect(res._json).toEqual({ error: 'title and summary are required' });
+      });
+
+      it('returns 500 on error', async () => {
+        mockCreateAdminStory.mockRejectedValueOnce(new Error('DB down'));
+
+        const handler = getRouteHandler('post', '/stories')!;
+        const req = createMockReq({
+          body: { title: 'Failing Story', summary: 'Will fail' },
+        });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._status).toBe(500);
+        expect(res._json).toEqual({ error: 'Internal server error' });
+      });
+    });
+
+    describe('GET /stories', () => {
+      it('returns stories with default limit', async () => {
+        const stories = [
+          {
+            id: 's1',
+            title: 'Story 1',
+            summary: 'Summary 1',
+            scenario: 'Scenario 1',
+            steps: [],
+            findings: [],
+            screenshotPaths: [],
+            status: 'draft',
+            createdAt: '2026-01-01',
+          },
+        ];
+        mockGetAdminStories.mockResolvedValueOnce(stories);
+
+        const handler = getRouteHandler('get', '/stories')!;
+        expect(handler).toBeDefined();
+
+        const req = createMockReq({ query: {} });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._json).toEqual({ stories });
+        expect(mockGetAdminStories).toHaveBeenCalledWith(50);
+        expect(mockLogAdminEvent).toHaveBeenCalledWith('list_stories', { count: 1 });
+      });
+
+      it('passes custom limit when provided', async () => {
+        mockGetAdminStories.mockResolvedValueOnce([]);
+
+        const handler = getRouteHandler('get', '/stories')!;
+        const req = createMockReq({ query: { limit: '10' } });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(mockGetAdminStories).toHaveBeenCalledWith(10);
+      });
+
+      it('returns 500 on error', async () => {
+        mockGetAdminStories.mockRejectedValueOnce(new Error('DB down'));
+
+        const handler = getRouteHandler('get', '/stories')!;
+        const req = createMockReq({ query: {} });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._status).toBe(500);
+        expect(res._json).toEqual({ error: 'Internal server error' });
+      });
+    });
+
+    describe('GET /stories/:id', () => {
+      it('returns story when found', async () => {
+        const story = {
+          id: 's1',
+          title: 'Story 1',
+          summary: 'Summary 1',
+          scenario: 'Scenario 1',
+          steps: [{ step: 1, action: 'Click', result: 'Opened' }],
+          findings: [],
+          screenshotPaths: ['/img/s1.png'],
+          status: 'published',
+          createdAt: '2026-01-01',
+        };
+        mockGetAdminStoryById.mockResolvedValueOnce(story);
+
+        const handler = getRouteHandler('get', '/stories/:id')!;
+        expect(handler).toBeDefined();
+
+        const req = createMockReq({ params: { id: 's1' } as any });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._json).toEqual({ story });
+        expect(mockLogAdminEvent).toHaveBeenCalledWith('get_story', { storyId: 's1' });
+      });
+
+      it('returns 404 when story not found', async () => {
+        mockGetAdminStoryById.mockResolvedValueOnce(null);
+
+        const handler = getRouteHandler('get', '/stories/:id')!;
+        const req = createMockReq({ params: { id: 'nonexistent' } as any });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._status).toBe(404);
+        expect(res._json).toEqual({ error: 'Story not found' });
+      });
+
+      it('returns 500 on error', async () => {
+        mockGetAdminStoryById.mockRejectedValueOnce(new Error('DB down'));
+
+        const handler = getRouteHandler('get', '/stories/:id')!;
+        const req = createMockReq({ params: { id: 's1' } as any });
+        const res = createMockRes();
+        await handler(req, res);
+
+        expect(res._status).toBe(500);
+        expect(res._json).toEqual({ error: 'Internal server error' });
+      });
     });
   });
 });
