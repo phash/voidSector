@@ -62,7 +62,7 @@ adminRouter.get('/players', async (_req: Request, res: Response) => {
 
 adminRouter.get('/players/:id', async (req: Request, res: Response) => {
   try {
-    const player = await getPlayerById(req.params.id);
+    const player = await getPlayerById(req.params.id as string);
     if (!player) {
       res.status(404).json({ error: 'Player not found' });
       return;
@@ -135,7 +135,7 @@ adminRouter.get('/quests', async (req: Request, res: Response) => {
 
 adminRouter.get('/quests/:id', async (req: Request, res: Response) => {
   try {
-    const quest = await getAdminQuestById(req.params.id);
+    const quest = await getAdminQuestById(req.params.id as string);
     if (!quest) {
       res.status(404).json({ error: 'Quest not found' });
       return;
@@ -158,11 +158,13 @@ adminRouter.patch('/quests/:id', async (req: Request, res: Response) => {
 
     const validStatuses = ['active', 'paused', 'completed', 'cancelled'];
     if (!validStatuses.includes(status)) {
-      res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+      res
+        .status(400)
+        .json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
       return;
     }
 
-    const quest = await updateAdminQuestStatus(req.params.id, status);
+    const quest = await updateAdminQuestStatus(req.params.id as string, status);
     if (!quest) {
       res.status(404).json({ error: 'Quest not found' });
       return;
@@ -221,7 +223,7 @@ adminRouter.get('/messages', async (req: Request, res: Response) => {
 
 adminRouter.get('/messages/:id/replies', async (req: Request, res: Response) => {
   try {
-    const replies = await getAdminReplies(req.params.id);
+    const replies = await getAdminReplies(req.params.id as string);
     await logAdminEvent('list_replies', { messageId: req.params.id, count: replies.length });
     res.json({ replies });
   } catch (err) {

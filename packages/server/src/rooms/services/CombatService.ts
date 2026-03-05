@@ -1,16 +1,27 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import type { BattleActionMessage, CombatV2ActionMessage, CombatV2FleeMessage, ResourceType } from '@void-sector/shared';
+import type {
+  BattleActionMessage,
+  CombatV2ActionMessage,
+  CombatV2FleeMessage,
+  ResourceType,
+} from '@void-sector/shared';
 
 import { calculateCurrentAP, spendAP } from '../../engine/ap.js';
-import { validateBattleAction, createPirateEncounter, getPirateLevel } from '../../engine/commands.js';
-import { initCombatV2, resolveRound, attemptFlee, combatV2ToResult } from '../../engine/combatV2.js';
-import { rejectGuest } from './utils.js';
 import {
-  getAPState,
-  saveAPState,
-} from './RedisAPStore.js';
+  validateBattleAction,
+  createPirateEncounter,
+} from '../../engine/commands.js';
+import { getPirateLevel } from '../../engine/npcgen.js';
+import {
+  initCombatV2,
+  resolveRound,
+  attemptFlee,
+  combatV2ToResult,
+} from '../../engine/combatV2.js';
+import { rejectGuest } from './utils.js';
+import { getAPState, saveAPState } from './RedisAPStore.js';
 import {
   getPlayerCredits,
   addCredits,
@@ -53,7 +64,7 @@ export class CombatService {
     // Ship attack power (base from ship class + combat_plating upgrade + faction bonus)
     let shipAttack = 10;
     const upgrades = await getPlayerUpgrades(auth.userId);
-    if (upgrades.some(u => u.upgrade_id === 'combat_plating' && u.active)) {
+    if (upgrades.some((u) => u.upgrade_id === 'combat_plating' && u.active)) {
       shipAttack = Math.round(shipAttack * 1.2);
     }
     const bonuses = await this.ctx.getPlayerBonuses(auth.userId);
@@ -61,7 +72,13 @@ export class CombatService {
 
     const battleSeed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17);
     const validation = validateBattleAction(
-      data.action, currentAP, encounter, credits, cargo, shipAttack, battleSeed,
+      data.action,
+      currentAP,
+      encounter,
+      credits,
+      cargo,
+      shipAttack,
+      battleSeed,
     );
 
     if (!validation.valid) {
@@ -115,7 +132,15 @@ export class CombatService {
     }
 
     // Log battle
-    await insertBattleLog(auth.userId, pirateLevel, data.sectorX, data.sectorY, data.action, result.outcome, result.lootResources ?? null);
+    await insertBattleLog(
+      auth.userId,
+      pirateLevel,
+      data.sectorX,
+      data.sectorY,
+      data.action,
+      result.outcome,
+      result.lootResources ?? null,
+    );
 
     client.send('battleResult', { success: true, encounter, result });
 
@@ -131,7 +156,10 @@ export class CombatService {
 
     // Check bounty quests
     if (result.outcome === 'victory') {
-      await this.ctx.checkQuestProgress(client, auth.userId, 'battle_won', { sectorX: data.sectorX, sectorY: data.sectorY });
+      await this.ctx.checkQuestProgress(client, auth.userId, 'battle_won', {
+        sectorX: data.sectorX,
+        sectorY: data.sectorY,
+      });
     }
   }
 
@@ -157,8 +185,12 @@ export class CombatService {
     const seed = Date.now() ^ (data.sectorX * 31 + data.sectorY * 17 + state.currentRound * 7);
 
     const result = resolveRound(
-      state, ship, data.tactic as any, data.specialAction as any,
-      bonuses.combatMultiplier, seed,
+      state,
+      ship,
+      data.tactic as any,
+      data.specialAction as any,
+      bonuses.combatMultiplier,
+      seed,
     );
 
     this.ctx.combatV2States.set(sessionId, result.state);
@@ -186,11 +218,15 @@ export class CombatService {
       }
 
       await insertBattleLogV2(
-        auth.userId, state.encounter.pirateLevel,
-        data.sectorX, data.sectorY,
-        'combat_v2', result.state.status,
+        auth.userId,
+        state.encounter.pirateLevel,
+        data.sectorX,
+        data.sectorY,
+        'combat_v2',
+        result.state.status,
         finalResult.lootResources ?? null,
-        result.state.currentRound, result.state.rounds,
+        result.state.currentRound,
+        result.state.rounds,
         result.state.playerHp,
       );
 
@@ -268,9 +304,12 @@ export class CombatService {
     const sectorX = this.ctx._px(client.sessionId);
     const sectorY = this.ctx._py(client.sessionId);
     const structures = await getPlayerStructuresInSector(auth.userId, sectorX, sectorY);
-    const hasBase = structures.some(s => s.type === 'base');
+    const hasBase = structures.some((s) => s.type === 'base');
     if (!hasBase) {
-      client.send('installDefenseResult', { success: false, error: 'Keine Basis in diesem Sektor' });
+      client.send('installDefenseResult', {
+        success: false,
+        error: 'Keine Basis in diesem Sektor',
+      });
       return;
     }
 
@@ -297,20 +336,30 @@ export class CombatService {
 
     try {
       const result = await installStationDefense(auth.userId, sectorX, sectorY, data.defenseType);
-      client.send('installDefenseResult', { success: true, defenseType: data.defenseType, id: result.id });
+      client.send('installDefenseResult', {
+        success: true,
+        defenseType: data.defenseType,
+        id: result.id,
+      });
       const updatedCargo = await getPlayerCargo(auth.userId);
       client.send('cargoUpdate', updatedCargo);
       client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     } catch (err: any) {
       if (err.code === '23505') {
-        client.send('installDefenseResult', { success: false, error: 'Verteidigung bereits installiert' });
+        client.send('installDefenseResult', {
+          success: false,
+          error: 'Verteidigung bereits installiert',
+        });
         return;
       }
       client.send('installDefenseResult', { success: false, error: 'Installation fehlgeschlagen' });
     }
   }
 
-  async handleRepairStation(client: Client, data: { sectorX: number; sectorY: number }): Promise<void> {
+  async handleRepairStation(
+    client: Client,
+    data: { sectorX: number; sectorY: number },
+  ): Promise<void> {
     if (rejectGuest(client, 'Reparieren')) return;
     const auth = client.auth as AuthPayload;
 
@@ -330,12 +379,18 @@ export class CombatService {
 
     const credits = await getPlayerCredits(auth.userId);
     if (credits < costCredits) {
-      client.send('repairResult', { success: false, error: `Kosten: ${costCredits} CR, ${costOre} Erz — nicht genug Credits` });
+      client.send('repairResult', {
+        success: false,
+        error: `Kosten: ${costCredits} CR, ${costOre} Erz — nicht genug Credits`,
+      });
       return;
     }
     const cargo = await getPlayerCargo(auth.userId);
     if ((cargo.ore ?? 0) < costOre) {
-      client.send('repairResult', { success: false, error: `Kosten: ${costCredits} CR, ${costOre} Erz — nicht genug Erz` });
+      client.send('repairResult', {
+        success: false,
+        error: `Kosten: ${costCredits} CR, ${costOre} Erz — nicht genug Erz`,
+      });
       return;
     }
 

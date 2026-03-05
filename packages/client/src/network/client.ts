@@ -1,7 +1,46 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
 import { QUADRANT_SIZE } from '@void-sector/shared';
-import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, JumpGateMapEntry, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
+import type {
+  APState,
+  SectorData,
+  SectorEnvironment,
+  SectorContent,
+  MiningState,
+  CargoState,
+  SectorResources,
+  ChatMessage,
+  ChatChannel,
+  StructureType,
+  StorageInventory,
+  DataSlate,
+  FactionDataMessage,
+  FuelState,
+  JumpGateInfo,
+  JumpGateMapEntry,
+  UseJumpGateResultMessage,
+  FrequencyMatchResultMessage,
+  RescueSurvivor,
+  RescueResultMessage,
+  DeliverSurvivorsResultMessage,
+  DistressCall,
+  FactionUpgradeState,
+  FactionUpgradeResultMessage,
+  FactionUpgradeChoice,
+  TradeRoute,
+  ConfigureRouteMessage,
+  ConfigureRouteResultMessage,
+  CreateCustomSlateMessage,
+  Bookmark,
+  CombatV2State,
+  CombatV2RoundResult,
+  StationCombatEvent,
+  AdminMessage,
+  AdminQuestNotification,
+  FirstContactEvent,
+  HyperdriveState,
+  AutoRefuelConfig,
+} from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
 /** Schema-level player object from Colyseus room state. */
@@ -79,8 +118,12 @@ class GameNetwork {
     const { qx: targetQx, qy: targetQy } = sectorToQuadrant(x, y);
 
     // Same quadrant: send moveSector message (no room leave/join)
-    if (this.sectorRoom && this.currentQuadrant &&
-        this.currentQuadrant.qx === targetQx && this.currentQuadrant.qy === targetQy) {
+    if (
+      this.sectorRoom &&
+      this.currentQuadrant &&
+      this.currentQuadrant.qx === targetQx &&
+      this.currentQuadrant.qy === targetQy
+    ) {
       this.sectorRoom.send('moveSector', { sectorX: x, sectorY: y });
       store.setPosition({ x, y });
       store.resetPan();
@@ -125,48 +168,52 @@ class GameNetwork {
 
   private setupRoomListeners(room: Room) {
     // State change: sync players
-    (room.state as unknown as SectorRoomState).players.onAdd((player: RoomPlayerSchema, sessionId: string) => {
-      const store = useStore.getState();
-      store.setPlayer(sessionId, {
-        sessionId,
-        username: player.username,
-        x: player.x,
-        y: player.y,
-        connected: player.connected,
-      });
-      // Alert if another player enters our sector
-      if (player.x === store.position.x && player.y === store.position.y) {
-        store.addLogEntry(`KONTAKT: ${player.username} betritt Sektor`);
-        if (!isMonitorVisible('NAV-COM')) {
-          store.setAlert('NAV-COM', true);
-        }
-      }
-      // Track position changes within the quadrant room
-      player.onChange(() => {
-        const s = useStore.getState();
-        const prev = s.players[sessionId];
-        s.setPlayer(sessionId, {
+    (room.state as unknown as SectorRoomState).players.onAdd(
+      (player: RoomPlayerSchema, sessionId: string) => {
+        const store = useStore.getState();
+        store.setPlayer(sessionId, {
           sessionId,
           username: player.username,
           x: player.x,
           y: player.y,
           connected: player.connected,
         });
-        // Alert if player moved INTO our sector
-        const wasInSector = prev && prev.x === s.position.x && prev.y === s.position.y;
-        const nowInSector = player.x === s.position.x && player.y === s.position.y;
-        if (!wasInSector && nowInSector) {
-          s.addLogEntry(`KONTAKT: ${player.username} betritt Sektor`);
+        // Alert if another player enters our sector
+        if (player.x === store.position.x && player.y === store.position.y) {
+          store.addLogEntry(`KONTAKT: ${player.username} betritt Sektor`);
           if (!isMonitorVisible('NAV-COM')) {
-            s.setAlert('NAV-COM', true);
+            store.setAlert('NAV-COM', true);
           }
         }
-      });
-    });
+        // Track position changes within the quadrant room
+        player.onChange(() => {
+          const s = useStore.getState();
+          const prev = s.players[sessionId];
+          s.setPlayer(sessionId, {
+            sessionId,
+            username: player.username,
+            x: player.x,
+            y: player.y,
+            connected: player.connected,
+          });
+          // Alert if player moved INTO our sector
+          const wasInSector = prev && prev.x === s.position.x && prev.y === s.position.y;
+          const nowInSector = player.x === s.position.x && player.y === s.position.y;
+          if (!wasInSector && nowInSector) {
+            s.addLogEntry(`KONTAKT: ${player.username} betritt Sektor`);
+            if (!isMonitorVisible('NAV-COM')) {
+              s.setAlert('NAV-COM', true);
+            }
+          }
+        });
+      },
+    );
 
-    (room.state as unknown as SectorRoomState).players.onRemove((_player: RoomPlayerSchema, sessionId: string) => {
-      useStore.getState().removePlayer(sessionId);
-    });
+    (room.state as unknown as SectorRoomState).players.onRemove(
+      (_player: RoomPlayerSchema, sessionId: string) => {
+        useStore.getState().removePlayer(sessionId);
+      },
+    );
 
     // Sector data (sent by server on join and on moveSector)
     room.onMessage('sectorData', (sector: SectorData) => {
@@ -189,54 +236,54 @@ class GameNetwork {
     });
 
     // Jump result
-    room.onMessage('jumpResult', (data: {
-      success: boolean;
-      error?: string;
-      newSector?: SectorData;
-      apRemaining?: number;
-      fuelRemaining?: number;
-      crossQuadrant?: boolean;
-    }) => {
-      useStore.getState().setJumpPending(false);
-      if (data.fuelRemaining !== undefined) {
-        const currentFuel = useStore.getState().fuel;
-        if (currentFuel) {
-          useStore.setState({ fuel: { ...currentFuel, current: data.fuelRemaining } });
-        }
-      }
-      if (data.success && data.newSector) {
-        const store = useStore.getState();
-        const dx = data.newSector.x - store.position.x;
-        const dy = data.newSector.y - store.position.y;
-        store.startJumpAnimation(dx, dy);
-        const newSector = data.newSector;
-        const needsRoomChange = data.crossQuadrant === true;
-        setTimeout(async () => {
-          useStore.getState().addDiscoveries([newSector]);
-          useStore.getState().addLogEntry(
-            `Jumped to (${newSector.x}, ${newSector.y}) — ${newSector.type}`
-          );
-          if (needsRoomChange) {
-            // Cross-quadrant: need to leave and join new quadrant room
-            await this.joinSector(newSector.x, newSector.y);
-          } else {
-            // Same quadrant: server already moved us, just update local state
-            useStore.getState().setPosition({ x: newSector.x, y: newSector.y });
-            useStore.getState().setCurrentSector(newSector);
-            useStore.getState().resetPan();
+    room.onMessage(
+      'jumpResult',
+      (data: {
+        success: boolean;
+        error?: string;
+        newSector?: SectorData;
+        apRemaining?: number;
+        fuelRemaining?: number;
+        crossQuadrant?: boolean;
+      }) => {
+        useStore.getState().setJumpPending(false);
+        if (data.fuelRemaining !== undefined) {
+          const currentFuel = useStore.getState().fuel;
+          if (currentFuel) {
+            useStore.setState({ fuel: { ...currentFuel, current: data.fuelRemaining } });
           }
-          useStore.getState().clearJumpAnimation();
-        }, 800);
-      } else {
-        useStore.getState().addLogEntry(`Jump failed: ${data.error}`);
-      }
-    });
+        }
+        if (data.success && data.newSector) {
+          const store = useStore.getState();
+          const dx = data.newSector.x - store.position.x;
+          const dy = data.newSector.y - store.position.y;
+          store.startJumpAnimation(dx, dy);
+          const newSector = data.newSector;
+          const needsRoomChange = data.crossQuadrant === true;
+          setTimeout(async () => {
+            useStore.getState().addDiscoveries([newSector]);
+            useStore
+              .getState()
+              .addLogEntry(`Jumped to (${newSector.x}, ${newSector.y}) — ${newSector.type}`);
+            if (needsRoomChange) {
+              // Cross-quadrant: need to leave and join new quadrant room
+              await this.joinSector(newSector.x, newSector.y);
+            } else {
+              // Same quadrant: server already moved us, just update local state
+              useStore.getState().setPosition({ x: newSector.x, y: newSector.y });
+              useStore.getState().setCurrentSector(newSector);
+              useStore.getState().resetPan();
+            }
+            useStore.getState().clearJumpAnimation();
+          }, 800);
+        } else {
+          useStore.getState().addLogEntry(`Jump failed: ${data.error}`);
+        }
+      },
+    );
 
     // Scan result (area scan)
-    room.onMessage('scanResult', (data: {
-      sectors: SectorData[];
-      apRemaining: number;
-    }) => {
+    room.onMessage('scanResult', (data: { sectors: SectorData[]; apRemaining: number }) => {
       const store = useStore.getState();
       // Don't clear scan animation immediately — let it finish naturally
       store.setScanPending(false);
@@ -245,14 +292,12 @@ class GameNetwork {
       if (currentAP) {
         store.setAP({ ...currentAP, current: data.apRemaining });
       }
-      store.addLogEntry(
-        `Scan complete: ${data.sectors.length} sectors revealed`
-      );
+      store.addLogEntry(`Scan complete: ${data.sectors.length} sectors revealed`);
       // Stats: count area scan
       store.incrementStat('sectorsScanned');
       // Alert LOG if interesting sectors found
       const hasInteresting = data.sectors.some(
-        (s) => s.type === 'pirate' || s.type === 'anomaly' || s.type === 'station'
+        (s) => s.type === 'pirate' || s.type === 'anomaly' || s.type === 'station',
       );
       if (hasInteresting) {
         if (!isMonitorVisible('LOG')) {
@@ -262,28 +307,33 @@ class GameNetwork {
     });
 
     // Local scan result
-    room.onMessage('localScanResult', (data: { resources: SectorResources; hiddenSignatures: boolean }) => {
-      const store = useStore.getState();
-      store.setScanPending(false);
-      if (store.currentSector) {
-        const updatedSector = { ...store.currentSector, resources: data.resources };
-        store.setCurrentSector(updatedSector);
-        store.addDiscoveries([updatedSector]);
-      }
-      if (data.hiddenSignatures) {
-        store.addLogEntry('UNKNOWN SIGNATURES DETECTED — SCANNER UPGRADE REQUIRED');
-      }
-      store.addLogEntry(`Local scan: Ore ${data.resources.ore}, Gas ${data.resources.gas}, Crystal ${data.resources.crystal}`);
-      // Stats: count scan
-      store.incrementStat('sectorsScanned');
-      // Stats: check for players in same sector
-      const playersHere = Object.values(store.players).filter(
-        p => p.x === store.position.x && p.y === store.position.y
-      );
-      if (playersHere.length > 0) {
-        store.incrementStat('playersEncountered');
-      }
-    });
+    room.onMessage(
+      'localScanResult',
+      (data: { resources: SectorResources; hiddenSignatures: boolean }) => {
+        const store = useStore.getState();
+        store.setScanPending(false);
+        if (store.currentSector) {
+          const updatedSector = { ...store.currentSector, resources: data.resources };
+          store.setCurrentSector(updatedSector);
+          store.addDiscoveries([updatedSector]);
+        }
+        if (data.hiddenSignatures) {
+          store.addLogEntry('UNKNOWN SIGNATURES DETECTED — SCANNER UPGRADE REQUIRED');
+        }
+        store.addLogEntry(
+          `Local scan: Ore ${data.resources.ore}, Gas ${data.resources.gas}, Crystal ${data.resources.crystal}`,
+        );
+        // Stats: count scan
+        store.incrementStat('sectorsScanned');
+        // Stats: check for players in same sector
+        const playersHere = Object.values(store.players).filter(
+          (p) => p.x === store.position.x && p.y === store.position.y,
+        );
+        if (playersHere.length > 0) {
+          store.incrementStat('playersEncountered');
+        }
+      },
+    );
 
     // Discoveries (from scan/jump — server sends array of sector coords)
     room.onMessage('discoveries', (data: DiscoveryItem[]) => {
@@ -292,14 +342,15 @@ class GameNetwork {
       for (const d of data) {
         if (d.type) {
           sectorData.push({
-            x: d.x, y: d.y,
+            x: d.x,
+            y: d.y,
             type: d.type as SectorData['type'],
             seed: d.seed ?? 0,
             resources: { ore: 0, gas: 0, crystal: 0 },
-            environment: d.environment ?? 'empty',
-            contents: d.contents ?? [],
+            environment: (d.environment ?? 'empty') as SectorEnvironment,
+            contents: (d.contents ?? []) as SectorContent[],
             discoveredBy: d.discoveredBy ?? null,
-            discoveredAt: d.discoveredAt ?? null,
+            discoveredAt: d.discoveredAt != null ? String(d.discoveredAt) : null,
             metadata: d.metadata ?? {},
           });
         }
@@ -317,7 +368,9 @@ class GameNetwork {
       if (store.scanPending) store.setScanPending(false);
       if (store.jumpPending) store.setJumpPending(false);
       if (data.code === 'GUEST_RESTRICTED') {
-        store.addLogEntry(`GAST-EINSCHRÄNKUNG: ${data.message} — Registriere dich für vollen Zugang!`);
+        store.addLogEntry(
+          `GAST-EINSCHRÄNKUNG: ${data.message} — Registriere dich für vollen Zugang!`,
+        );
       } else {
         store.addLogEntry(`ERROR: ${data.message}`);
       }
@@ -381,16 +434,19 @@ class GameNetwork {
       }
     });
 
-    room.onMessage('moduleRemoved', (data: { modules: any[]; stats: any; returnedModule: string }) => {
-      const ship = useStore.getState().ship;
-      if (ship) {
-        useStore.setState({
-          ship: { ...ship, modules: data.modules, stats: data.stats },
-        });
-      }
-      const inv = useStore.getState().moduleInventory;
-      useStore.setState({ moduleInventory: [...inv, data.returnedModule] });
-    });
+    room.onMessage(
+      'moduleRemoved',
+      (data: { modules: any[]; stats: any; returnedModule: string }) => {
+        const ship = useStore.getState().ship;
+        if (ship) {
+          useStore.setState({
+            ship: { ...ship, modules: data.modules, stats: data.stats },
+          });
+        }
+        const inv = useStore.getState().moduleInventory;
+        useStore.setState({ moduleInventory: [...inv, data.returnedModule] });
+      },
+    );
 
     room.onMessage('buyModuleResult', (data: { success: boolean; moduleId: string }) => {
       if (data.success) {
@@ -428,7 +484,10 @@ class GameNetwork {
             ...useStore.getState().research,
             unlockedModules: data.unlockedModules,
             blueprints: data.blueprints ?? useStore.getState().research.blueprints,
-            activeResearch: data.activeResearch !== undefined ? data.activeResearch : useStore.getState().research.activeResearch,
+            activeResearch:
+              data.activeResearch !== undefined
+                ? data.activeResearch
+                : useStore.getState().research.activeResearch,
           };
         }
         if (data.activeResearch !== undefined && !patch.research) {
@@ -449,20 +508,23 @@ class GameNetwork {
       });
     });
 
-    room.onMessage('refuelResult', (data: { success: boolean; error?: string; fuel?: FuelState; credits?: number }) => {
-      const store = useStore.getState();
-      if (data.success) {
-        if (data.fuel) {
-          store.setFuel(data.fuel);
+    room.onMessage(
+      'refuelResult',
+      (data: { success: boolean; error?: string; fuel?: FuelState; credits?: number }) => {
+        const store = useStore.getState();
+        if (data.success) {
+          if (data.fuel) {
+            store.setFuel(data.fuel);
+          }
+          if (data.credits !== undefined) {
+            store.setCredits(data.credits);
+          }
+          store.addLogEntry('Refueled successfully');
+        } else {
+          store.addLogEntry(`Refuel failed: ${data.error}`);
         }
-        if (data.credits !== undefined) {
-          store.setCredits(data.credits);
-        }
-        store.addLogEntry('Refueled successfully');
-      } else {
-        store.addLogEntry(`Refuel failed: ${data.error}`);
-      }
-    });
+      },
+    );
 
     // Chat messages
     room.onMessage('chatMessage', (data: ChatMessage) => {
@@ -550,14 +612,17 @@ class GameNetwork {
     });
 
     // Upgrade result
-    room.onMessage('upgradeResult', (data: { success: boolean; error?: string; newTier?: number }) => {
-      const store = useStore.getState();
-      if (data.success) {
-        store.addLogEntry(`Upgraded to tier ${data.newTier}`);
-      } else {
-        store.addLogEntry(`Upgrade failed: ${data.error}`);
-      }
-    });
+    room.onMessage(
+      'upgradeResult',
+      (data: { success: boolean; error?: string; newTier?: number }) => {
+        const store = useStore.getState();
+        if (data.success) {
+          store.addLogEntry(`Upgraded to tier ${data.newTier}`);
+        } else {
+          store.addLogEntry(`Upgrade failed: ${data.error}`);
+        }
+      },
+    );
 
     // Trade orders
     room.onMessage('tradeOrders', (data: { orders: any[] }) => {
@@ -655,7 +720,9 @@ class GameNetwork {
     // Phase 4: NPC Ecosystem
     room.onMessage('stationNpcsResult', (data) => {
       const store = useStore.getState();
-      store.addLogEntry(`Station: ${data.npcs.length} NPCs, ${data.quests.length} Quests verfügbar`);
+      store.addLogEntry(
+        `Station: ${data.npcs.length} NPCs, ${data.quests.length} Quests verfügbar`,
+      );
       window.dispatchEvent(new CustomEvent('stationNpcsResult', { detail: data }));
     });
 
@@ -680,8 +747,8 @@ class GameNetwork {
 
     room.onMessage('questProgress', (data) => {
       const store = useStore.getState();
-      const quests = store.activeQuests.map(q =>
-        q.id === data.questId ? { ...q, objectives: data.objectives } : q
+      const quests = store.activeQuests.map((q) =>
+        q.id === data.questId ? { ...q, objectives: data.objectives } : q,
       );
       store.setActiveQuests(quests);
       store.addLogEntry('Quest-Fortschritt aktualisiert');
@@ -730,7 +797,9 @@ class GameNetwork {
 
     room.onMessage('stationUnderAttack', (data: StationCombatEvent) => {
       useStore.getState().setStationCombatEvent(data);
-      useStore.getState().addLogEntry(`STATION UNTER ANGRIFF in (${data.sectorX}, ${data.sectorY})!`);
+      useStore
+        .getState()
+        .addLogEntry(`STATION UNTER ANGRIFF in (${data.sectorX}, ${data.sectorY})!`);
     });
 
     room.onMessage('stationDefended', (data: StationCombatEvent) => {
@@ -750,7 +819,7 @@ class GameNetwork {
     });
 
     room.onMessage('logEntry', (data) => {
-      useStore.getState().addLogEntry(typeof data === 'string' ? data : data.message ?? '');
+      useStore.getState().addLogEntry(typeof data === 'string' ? data : (data.message ?? ''));
     });
 
     // --- Phase 5: Deep Systems ---
@@ -790,7 +859,9 @@ class GameNetwork {
     room.onMessage('rescueResult', (data: RescueResultMessage) => {
       const store = useStore.getState();
       if (data.success) {
-        store.addLogEntry(`${data.survivorsRescued} ÜBERLEBENDE GEBORGEN — ${data.safeSlotsFree} Slots frei`);
+        store.addLogEntry(
+          `${data.survivorsRescued} ÜBERLEBENDE GEBORGEN — ${data.safeSlotsFree} Slots frei`,
+        );
       } else {
         store.addLogEntry(`RETTUNG FEHLGESCHLAGEN: ${data.error}`);
       }
@@ -801,7 +872,9 @@ class GameNetwork {
       if (data.success) {
         store.setRescuedSurvivors([]);
         if (data.credits !== undefined) store.setCredits(data.credits);
-        store.addLogEntry(`ÜBERLEBENDE ABGELIEFERT — +${data.credits} CR, +${data.rep} REP, +${data.xp} XP`);
+        store.addLogEntry(
+          `ÜBERLEBENDE ABGELIEFERT — +${data.credits} CR, +${data.rep} REP, +${data.xp} XP`,
+        );
       } else {
         store.addLogEntry(`ABLIEFERUNG FEHLGESCHLAGEN: ${data.error}`);
       }
@@ -814,7 +887,9 @@ class GameNetwork {
     room.onMessage('distressCallReceived', (data: DistressCall) => {
       const store = useStore.getState();
       store.addDistressCall(data);
-      store.addLogEntry(`NOTRUF EMPFANGEN — Richtung: ${data.direction}, ~${data.estimatedDistance} Sektoren`);
+      store.addLogEntry(
+        `NOTRUF EMPFANGEN — Richtung: ${data.direction}, ~${data.estimatedDistance} Sektoren`,
+      );
       if (!isMonitorVisible('LOG')) store.setAlert('LOG', true);
       if (!isMonitorVisible('COMMS')) store.setAlert('COMMS', true);
     });
@@ -854,65 +929,89 @@ class GameNetwork {
       }
     });
 
-    room.onMessage('toggleRouteResult', (data: { success: boolean; error?: string; routeId?: string; active?: boolean }) => {
-      const store = useStore.getState();
-      if (data.success && data.routeId !== undefined) {
-        const updated = store.tradeRoutes.map(r =>
-          r.id === data.routeId ? { ...r, active: data.active! } : r
-        );
-        store.setTradeRoutes(updated);
-      }
-    });
+    room.onMessage(
+      'toggleRouteResult',
+      (data: { success: boolean; error?: string; routeId?: string; active?: boolean }) => {
+        const store = useStore.getState();
+        if (data.success && data.routeId !== undefined) {
+          const updated = store.tradeRoutes.map((r) =>
+            r.id === data.routeId ? { ...r, active: data.active! } : r,
+          );
+          store.setTradeRoutes(updated);
+        }
+      },
+    );
 
-    room.onMessage('deleteRouteResult', (data: { success: boolean; error?: string; routeId?: string }) => {
-      const store = useStore.getState();
-      if (data.success && data.routeId) {
-        store.setTradeRoutes(store.tradeRoutes.filter(r => r.id !== data.routeId));
-        store.addLogEntry('HANDELSROUTE GELÖSCHT');
-      }
-    });
+    room.onMessage(
+      'deleteRouteResult',
+      (data: { success: boolean; error?: string; routeId?: string }) => {
+        const store = useStore.getState();
+        if (data.success && data.routeId) {
+          store.setTradeRoutes(store.tradeRoutes.filter((r) => r.id !== data.routeId));
+          store.addLogEntry('HANDELSROUTE GELÖSCHT');
+        }
+      },
+    );
 
     // --- Hyperjump / Autopilot ---
 
-    room.onMessage('autopilotStart', (data: { targetX: number; targetY: number; totalSteps: number; costs?: { totalFuel: number; totalAP: number; estimatedTime: number }; currentStep?: number }) => {
-      const store = useStore.getState();
-      store.setAutopilot({
-        targetX: data.targetX,
-        targetY: data.targetY,
-        remaining: data.totalSteps,
-        active: true,
-      });
-      store.setNavTarget({ x: data.targetX, y: data.targetY });
-      store.setAutopilotStatus({
-        targetX: data.targetX,
-        targetY: data.targetY,
-        currentStep: data.currentStep ?? 0,
-        totalSteps: data.totalSteps,
-        status: 'active',
-        useHyperjump: false,
-      });
-    });
-
-    room.onMessage('autopilotUpdate', (data: { x: number; y: number; remaining: number; currentStep?: number; totalSteps?: number }) => {
-      const store = useStore.getState();
-      store.setPosition({ x: data.x, y: data.y });
-      store.setAutopilot({
-        ...(store.autopilot || { targetX: 0, targetY: 0, active: true }),
-        remaining: data.remaining,
-      });
-      // Update autopilot status with progress
-      const existing = store.autopilotStatus;
-      if (existing) {
-        store.setAutopilotStatus({
-          ...existing,
-          currentStep: data.currentStep ?? (existing.totalSteps - data.remaining),
-          totalSteps: data.totalSteps ?? existing.totalSteps,
-          status: 'active',
+    room.onMessage(
+      'autopilotStart',
+      (data: {
+        targetX: number;
+        targetY: number;
+        totalSteps: number;
+        costs?: { totalFuel: number; totalAP: number; estimatedTime: number };
+        currentStep?: number;
+      }) => {
+        const store = useStore.getState();
+        store.setAutopilot({
+          targetX: data.targetX,
+          targetY: data.targetY,
+          remaining: data.totalSteps,
+          active: true,
         });
-      }
-      // Auto-center camera on ship during autopilot
-      store.resetPan();
-    });
+        store.setNavTarget({ x: data.targetX, y: data.targetY });
+        store.setAutopilotStatus({
+          targetX: data.targetX,
+          targetY: data.targetY,
+          currentStep: data.currentStep ?? 0,
+          totalSteps: data.totalSteps,
+          status: 'active',
+          useHyperjump: false,
+        });
+      },
+    );
+
+    room.onMessage(
+      'autopilotUpdate',
+      (data: {
+        x: number;
+        y: number;
+        remaining: number;
+        currentStep?: number;
+        totalSteps?: number;
+      }) => {
+        const store = useStore.getState();
+        store.setPosition({ x: data.x, y: data.y });
+        store.setAutopilot({
+          ...(store.autopilot || { targetX: 0, targetY: 0, active: true }),
+          remaining: data.remaining,
+        });
+        // Update autopilot status with progress
+        const existing = store.autopilotStatus;
+        if (existing) {
+          store.setAutopilotStatus({
+            ...existing,
+            currentStep: data.currentStep ?? existing.totalSteps - data.remaining,
+            totalSteps: data.totalSteps ?? existing.totalSteps,
+            status: 'active',
+          });
+        }
+        // Auto-center camera on ship during autopilot
+        store.resetPan();
+      },
+    );
 
     room.onMessage('autopilotComplete', async (data: { x: number; y: number }) => {
       const store = useStore.getState();
@@ -971,63 +1070,70 @@ class GameNetwork {
       }
     });
 
-    room.onMessage('autopilotStatus', (data: {
-      active: boolean;
-      targetX?: number;
-      targetY?: number;
-      currentStep?: number;
-      totalSteps?: number;
-      remaining?: number;
-      eta?: number;
-      useHyperjump?: boolean;
-    }) => {
-      const store = useStore.getState();
-      if (!data.active) {
-        store.setAutopilotStatus(null);
-        return;
-      }
-      store.setAutopilotStatus({
-        targetX: data.targetX ?? 0,
-        targetY: data.targetY ?? 0,
-        currentStep: data.currentStep ?? 0,
-        totalSteps: data.totalSteps ?? 0,
-        status: 'active',
-        useHyperjump: data.useHyperjump ?? false,
-        eta: data.eta,
-      });
-      if (data.targetX !== undefined && data.targetY !== undefined) {
-        store.setNavTarget({ x: data.targetX, y: data.targetY });
-      }
-    });
-
-    room.onMessage('emergencyWarpResult', (data: {
-      success: boolean;
-      error?: string;
-      newSector?: SectorData;
-      fuelGranted?: number;
-      creditCost?: number;
-      credits?: number;
-    }) => {
-      if (data.success && data.newSector) {
+    room.onMessage(
+      'autopilotStatus',
+      (data: {
+        active: boolean;
+        targetX?: number;
+        targetY?: number;
+        currentStep?: number;
+        totalSteps?: number;
+        remaining?: number;
+        eta?: number;
+        useHyperjump?: boolean;
+      }) => {
         const store = useStore.getState();
-        store.startJumpAnimation(0, 0);
-        const newSector = data.newSector;
-        const costMsg = data.creditCost && data.creditCost > 0
-          ? ` (Kosten: ${data.creditCost} Credits)`
-          : ' (GRATIS)';
-        setTimeout(async () => {
-          store.addDiscoveries([newSector]);
-          store.addLogEntry(`NOTWARP zur Basis (${newSector.x}, ${newSector.y})${costMsg}`);
-          if (data.credits !== undefined) {
-            useStore.setState({ credits: data.credits });
-          }
-          await this.joinSector(newSector.x, newSector.y);
-          useStore.getState().clearJumpAnimation();
-        }, 800);
-      } else {
-        useStore.getState().addLogEntry(`Notwarp fehlgeschlagen: ${data.error}`);
-      }
-    });
+        if (!data.active) {
+          store.setAutopilotStatus(null);
+          return;
+        }
+        store.setAutopilotStatus({
+          targetX: data.targetX ?? 0,
+          targetY: data.targetY ?? 0,
+          currentStep: data.currentStep ?? 0,
+          totalSteps: data.totalSteps ?? 0,
+          status: 'active',
+          useHyperjump: data.useHyperjump ?? false,
+          eta: data.eta,
+        });
+        if (data.targetX !== undefined && data.targetY !== undefined) {
+          store.setNavTarget({ x: data.targetX, y: data.targetY });
+        }
+      },
+    );
+
+    room.onMessage(
+      'emergencyWarpResult',
+      (data: {
+        success: boolean;
+        error?: string;
+        newSector?: SectorData;
+        fuelGranted?: number;
+        creditCost?: number;
+        credits?: number;
+      }) => {
+        if (data.success && data.newSector) {
+          const store = useStore.getState();
+          store.startJumpAnimation(0, 0);
+          const newSector = data.newSector;
+          const costMsg =
+            data.creditCost && data.creditCost > 0
+              ? ` (Kosten: ${data.creditCost} Credits)`
+              : ' (GRATIS)';
+          setTimeout(async () => {
+            store.addDiscoveries([newSector]);
+            store.addLogEntry(`NOTWARP zur Basis (${newSector.x}, ${newSector.y})${costMsg}`);
+            if (data.credits !== undefined) {
+              useStore.setState({ credits: data.credits });
+            }
+            await this.joinSector(newSector.x, newSector.y);
+            useStore.getState().clearJumpAnimation();
+          }, 800);
+        } else {
+          useStore.getState().addLogEntry(`Notwarp fehlgeschlagen: ${data.error}`);
+        }
+      },
+    );
 
     room.onMessage('allDiscoveries', (data: { discoveries: DiscoveryItem[] }) => {
       const store = useStore.getState();
@@ -1036,7 +1142,9 @@ class GameNetwork {
       const sectorData: SectorData[] = [];
       for (const d of data.discoveries) {
         const key = `${d.x}:${d.y}`;
-        timestamps[key] = d.discoveredAt;
+        if (d.discoveredAt != null) {
+          timestamps[key] = d.discoveredAt;
+        }
         // Populate fog-of-war map with sector data if available
         if (d.type) {
           sectorData.push({
@@ -1045,10 +1153,10 @@ class GameNetwork {
             type: d.type as SectorData['type'],
             seed: d.seed ?? 0,
             resources: { ore: 0, gas: 0, crystal: 0 },
-            environment: d.environment ?? 'empty',
-            contents: d.contents ?? [],
+            environment: (d.environment ?? 'empty') as SectorEnvironment,
+            contents: (d.contents ?? []) as SectorContent[],
             discoveredBy: d.discoveredBy ?? null,
-            discoveredAt: d.discoveredAt ?? null,
+            discoveredAt: d.discoveredAt != null ? String(d.discoveredAt) : null,
             metadata: d.metadata ?? {},
           });
         }
@@ -1100,19 +1208,30 @@ class GameNetwork {
       store.incrementStat('quadrantsFirstDiscovered');
     });
 
-    room.onMessage('knownQuadrants', (data: { quadrants: Array<{ qx: number; qy: number; learnedAt: string }> }) => {
-      useStore.getState().setKnownQuadrants(data.quadrants);
-    });
+    room.onMessage(
+      'knownQuadrants',
+      (data: { quadrants: Array<{ qx: number; qy: number; learnedAt: string }> }) => {
+        useStore.getState().setKnownQuadrants(data.quadrants);
+      },
+    );
 
-    room.onMessage('syncQuadrantsResult', (data: { success: boolean; quadrants?: Array<{ qx: number; qy: number; learnedAt: string }>; synced?: number; error?: string }) => {
-      const store = useStore.getState();
-      if (data.success && data.quadrants) {
-        store.setKnownQuadrants(data.quadrants);
-        store.addLogEntry(`[QUADRANT] Synced ${data.synced ?? data.quadrants.length} quadrants`);
-      } else {
-        store.addLogEntry(`[QUADRANT] Sync failed: ${data.error}`);
-      }
-    });
+    room.onMessage(
+      'syncQuadrantsResult',
+      (data: {
+        success: boolean;
+        quadrants?: Array<{ qx: number; qy: number; learnedAt: string }>;
+        synced?: number;
+        error?: string;
+      }) => {
+        const store = useStore.getState();
+        if (data.success && data.quadrants) {
+          store.setKnownQuadrants(data.quadrants);
+          store.addLogEntry(`[QUADRANT] Synced ${data.synced ?? data.quadrants.length} quadrants`);
+        } else {
+          store.addLogEntry(`[QUADRANT] Sync failed: ${data.error}`);
+        }
+      },
+    );
 
     room.onMessage('nameQuadrantResult', (data: { success: boolean; error?: string }) => {
       const store = useStore.getState();
@@ -1141,14 +1260,16 @@ class GameNetwork {
         while (attempt < maxRetries) {
           attempt++;
           const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), 15000);
-          await new Promise(r => setTimeout(r, delay));
+          await new Promise((r) => setTimeout(r, delay));
           useStore.getState().addLogEntry(`Reconnect Versuch ${attempt}/${maxRetries}...`);
           try {
             await this.joinSector(store.position.x, store.position.y);
             useStore.getState().addLogEntry('VERBINDUNG WIEDERHERGESTELLT');
             this.reconnecting = false;
             return;
-          } catch { /* continue */ }
+          } catch {
+            /* continue */
+          }
         }
         useStore.getState().addLogEntry('RECONNECT FEHLGESCHLAGEN — Bitte Seite neu laden');
         this.reconnecting = false;
@@ -1364,17 +1485,26 @@ class GameNetwork {
   }
 
   requestStationNpcs(sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('getStationNpcs', { sectorX, sectorY });
   }
 
   sendAcceptQuest(templateId: string, stationX: number, stationY: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('acceptQuest', { templateId, stationX, stationY });
   }
 
   sendAbandonQuest(questId: string) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('abandonQuest', { questId });
   }
 
@@ -1384,32 +1514,50 @@ class GameNetwork {
   }
 
   sendBattleAction(action: string, sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('battleAction', { action, sectorX, sectorY });
   }
 
   sendCombatV2Action(tactic: string, specialAction: string, sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('combatV2Action', { tactic, specialAction, sectorX, sectorY });
   }
 
   sendCombatV2Flee(sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
   }
 
   sendInstallDefense(defenseType: string) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('installDefense', { defenseType });
   }
 
   sendRepairStation(sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('repairStation', { sectorX, sectorY });
   }
 
   sendCompleteScanEvent(eventId: string) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('completeScanEvent', { eventId });
   }
 
@@ -1429,51 +1577,79 @@ class GameNetwork {
   // --- Phase 5: Deep Systems ---
 
   sendUseJumpGate(gateId: string, accessCode?: string) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('useJumpGate', { gateId, accessCode });
   }
 
   sendFrequencyMatch(gateId: string, matched: boolean) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('frequencyMatch', { gateId, matched });
   }
 
   sendRescue(sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('rescue', { sectorX, sectorY });
   }
 
   sendDeliverSurvivors(stationX: number, stationY: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('deliverSurvivors', { stationX, stationY });
   }
 
   sendFactionUpgrade(tier: number, choice: FactionUpgradeChoice) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('factionUpgrade', { tier, choice });
   }
 
   sendConfigureRoute(config: ConfigureRouteMessage) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('configureRoute', config);
   }
 
   sendToggleRoute(routeId: string, active: boolean) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('toggleRoute', { routeId, active });
   }
 
   sendDeleteRoute(routeId: string) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('deleteRoute', { routeId });
   }
 
   // Bookmarks
-  requestBookmarks() { this.sectorRoom?.send('getBookmarks'); }
+  requestBookmarks() {
+    this.sectorRoom?.send('getBookmarks');
+  }
   sendSetBookmark(slot: number, sectorX: number, sectorY: number, label: string) {
     this.sectorRoom?.send('setBookmark', { slot, sectorX, sectorY, label });
   }
-  sendClearBookmark(slot: number) { this.sectorRoom?.send('clearBookmark', { slot }); }
+  sendClearBookmark(slot: number) {
+    this.sectorRoom?.send('clearBookmark', { slot });
+  }
 
   // Hyperjump / Autopilot
   sendHyperJump(targetX: number, targetY: number) {
@@ -1497,7 +1673,10 @@ class GameNetwork {
   }
 
   sendSetAutoRefuel(enabled: boolean, maxPricePerUnit: number) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('setAutoRefuel', { enabled, maxPricePerUnit });
   }
 
@@ -1510,15 +1689,22 @@ class GameNetwork {
   }
 
   sendCreateCustomSlate(data: CreateCustomSlateMessage) {
-    if (!this.sectorRoom) { useStore.getState().addLogEntry('NOT CONNECTED'); return; }
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
     this.sectorRoom.send('createCustomSlate', data);
   }
 
   // --- Ship designer ---
 
-  sendGetShips() { this.sectorRoom?.send('getShips'); }
+  sendGetShips() {
+    this.sectorRoom?.send('getShips');
+  }
 
-  sendSwitchShip(shipId: string) { this.sectorRoom?.send('switchShip', { shipId }); }
+  sendSwitchShip(shipId: string) {
+    this.sectorRoom?.send('switchShip', { shipId });
+  }
 
   sendInstallModule(shipId: string, moduleId: string, slotIndex: number) {
     this.sectorRoom?.send('installModule', { shipId, moduleId, slotIndex });
@@ -1528,7 +1714,9 @@ class GameNetwork {
     this.sectorRoom?.send('removeModule', { shipId, slotIndex });
   }
 
-  sendBuyModule(moduleId: string) { this.sectorRoom?.send('buyModule', { moduleId }); }
+  sendBuyModule(moduleId: string) {
+    this.sectorRoom?.send('buyModule', { moduleId });
+  }
 
   sendBuyHull(hullType: string, name: string) {
     this.sectorRoom?.send('buyHull', { hullType, name });
@@ -1538,32 +1726,66 @@ class GameNetwork {
     this.sectorRoom?.send('renameShip', { shipId, name });
   }
 
-  sendRenameBase(name: string) { this.sectorRoom?.send('renameBase', { name }); }
+  sendRenameBase(name: string) {
+    this.sectorRoom?.send('renameBase', { name });
+  }
 
-  sendGetModuleInventory() { this.sectorRoom?.send('getModuleInventory'); }
+  sendGetModuleInventory() {
+    this.sectorRoom?.send('getModuleInventory');
+  }
 
   // Tech-Baum: Research
-  sendStartResearch(moduleId: string) { this.sectorRoom?.send('startResearch', { moduleId }); }
-  sendCancelResearch() { this.sectorRoom?.send('cancelResearch', {}); }
-  sendClaimResearch() { this.sectorRoom?.send('claimResearch', {}); }
-  sendActivateBlueprint(moduleId: string) { this.sectorRoom?.send('activateBlueprint', { moduleId }); }
-  requestResearchState() { this.sectorRoom?.send('getResearchState', {}); }
+  sendStartResearch(moduleId: string) {
+    this.sectorRoom?.send('startResearch', { moduleId });
+  }
+  sendCancelResearch() {
+    this.sectorRoom?.send('cancelResearch', {});
+  }
+  sendClaimResearch() {
+    this.sectorRoom?.send('claimResearch', {});
+  }
+  sendActivateBlueprint(moduleId: string) {
+    this.sectorRoom?.send('activateBlueprint', { moduleId });
+  }
+  requestResearchState() {
+    this.sectorRoom?.send('getResearchState', {});
+  }
 
   // Factory
-  requestFactoryStatus() { this.sectorRoom?.send('factoryStatus'); }
-  sendFactorySetRecipe(recipeId: string) { this.sectorRoom?.send('factorySetRecipe', { recipeId }); }
-  sendFactoryCollect() { this.sectorRoom?.send('factoryCollect'); }
-  sendFactoryTransfer(itemType: string, amount: number) { this.sectorRoom?.send('factoryTransfer', { itemType, amount }); }
+  requestFactoryStatus() {
+    this.sectorRoom?.send('factoryStatus');
+  }
+  sendFactorySetRecipe(recipeId: string) {
+    this.sectorRoom?.send('factorySetRecipe', { recipeId });
+  }
+  sendFactoryCollect() {
+    this.sectorRoom?.send('factoryCollect');
+  }
+  sendFactoryTransfer(itemType: string, amount: number) {
+    this.sectorRoom?.send('factoryTransfer', { itemType, amount });
+  }
 
   // Kontor
-  requestKontorOrders(): void { this.sectorRoom?.send('kontorGetOrders'); }
-  sendKontorPlaceOrder(itemType: string, amount: number, pricePerUnit: number): void { this.sectorRoom?.send('kontorPlaceOrder', { itemType, amount, pricePerUnit }); }
-  sendKontorCancel(orderId: string): void { this.sectorRoom?.send('kontorCancelOrder', { orderId }); }
-  sendKontorSellTo(orderId: string, amount: number): void { this.sectorRoom?.send('kontorSellTo', { orderId, amount }); }
+  requestKontorOrders(): void {
+    this.sectorRoom?.send('kontorGetOrders');
+  }
+  sendKontorPlaceOrder(itemType: string, amount: number, pricePerUnit: number): void {
+    this.sectorRoom?.send('kontorPlaceOrder', { itemType, amount, pricePerUnit });
+  }
+  sendKontorCancel(orderId: string): void {
+    this.sectorRoom?.send('kontorCancelOrder', { orderId });
+  }
+  sendKontorSellTo(orderId: string, amount: number): void {
+    this.sectorRoom?.send('kontorSellTo', { orderId, amount });
+  }
 
   // Quadrant system
-  requestKnownQuadrants() { this.sectorRoom?.send('getKnownQuadrants'); }
-  requestSyncQuadrants() { this.sectorRoom?.send('syncQuadrants'); }
+  requestKnownQuadrants() {
+    this.sectorRoom?.send('getKnownQuadrants');
+  }
+  requestSyncQuadrants() {
+    this.sectorRoom?.send('syncQuadrants');
+  }
   sendNameQuadrant(qx: number, qy: number, name: string) {
     this.sectorRoom?.send('nameQuadrant', { qx, qy, name });
   }

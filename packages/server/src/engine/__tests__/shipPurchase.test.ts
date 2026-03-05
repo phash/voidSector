@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { hasShipyard } from '../npcgen.js';
 import { HULL_PRICES, STATION_SHIPYARD_LEVEL_THRESHOLD, HULLS } from '@void-sector/shared';
-import type { HullType } from '@void-sector/shared';
+import type { HullType, ShipRecord } from '@void-sector/shared';
 
 // ---------------------------------------------------------------------------
 // hasShipyard
@@ -83,7 +83,7 @@ describe('ShipRecord shipColor', () => {
   });
 
   it('shipColor can be omitted', () => {
-    const record = {
+    const record: ShipRecord = {
       id: 'ship-2',
       ownerId: 'player-1',
       hullType: 'cruiser' as HullType,

@@ -1,10 +1,6 @@
 import { PRODUCTION_RECIPES } from '@void-sector/shared';
 import type { ProductionRecipe, FactoryState, ProcessedItemType } from '@void-sector/shared';
-import {
-  getFactoryState,
-  upsertFactoryState,
-  updateFactoryOutput,
-} from '../db/factoryQueries.js';
+import { getFactoryState, upsertFactoryState, updateFactoryOutput } from '../db/factoryQueries.js';
 
 // ---------------------------------------------------------------------------
 // Pure functions (exported for testing)
@@ -17,7 +13,7 @@ import {
 export function calculateCompletedCycles(
   recipe: ProductionRecipe,
   startedAt: number,
-  now: number
+  now: number,
 ): number {
   const elapsed = (now - startedAt) / 1000;
   if (elapsed < 0) return 0;
@@ -31,7 +27,7 @@ export function calculateCompletedCycles(
 export function calculateProgress(
   recipe: ProductionRecipe,
   startedAt: number,
-  now: number
+  now: number,
 ): number {
   const elapsed = (now - startedAt) / 1000;
   if (elapsed < 0) return 0;
@@ -59,7 +55,7 @@ const ITEM_TO_STATE_KEY: Record<ProcessedItemType, keyof FactoryState> = {
  */
 export async function getOrCreateFactoryState(
   structureId: string,
-  ownerId: string
+  ownerId: string,
 ): Promise<FactoryState> {
   let state = await getFactoryState(structureId);
   if (!state) {
@@ -87,7 +83,7 @@ export async function getOrCreateFactoryState(
 export async function setActiveRecipe(
   structureId: string,
   recipeId: string,
-  playerBlueprints: string[]
+  playerBlueprints: string[],
 ): Promise<{ success: boolean; error?: string }> {
   const recipe = PRODUCTION_RECIPES.find((r) => r.id === recipeId);
   if (!recipe) return { success: false, error: 'Unknown recipe' };
@@ -112,7 +108,7 @@ export async function setActiveRecipe(
  */
 export async function collectOutput(
   structureId: string,
-  storageInventory: Record<string, number>
+  storageInventory: Record<string, number>,
 ): Promise<{
   collected: Record<string, number>;
   consumed: Record<string, number>;
@@ -153,7 +149,7 @@ async function collectWithCycles(
   state: FactoryState,
   recipe: ProductionRecipe,
   cycles: number,
-  now: number
+  now: number,
 ): Promise<{ collected: Record<string, number>; consumed: Record<string, number> }> {
   const consumed: Record<string, number> = {};
   for (const input of recipe.inputs) {
@@ -190,7 +186,7 @@ export async function getFactoryStatus(structureId: string): Promise<{
 }> {
   const state = await getFactoryState(structureId);
   if (!state || !state.activeRecipeId || !state.cycleStartedAt) {
-    const output = state
+    const output: Record<string, number> = state
       ? {
           fuel_cell: state.fuelCell,
           circuit_board: state.circuitBoard,
@@ -227,7 +223,7 @@ export async function getFactoryStatus(structureId: string): Promise<{
 export async function transferOutputToCargo(
   structureId: string,
   itemType: ProcessedItemType,
-  amount: number
+  amount: number,
 ): Promise<{ success: boolean; error?: string }> {
   if (amount <= 0) return { success: false, error: 'Invalid amount' };
 

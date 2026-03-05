@@ -9,7 +9,11 @@ import {
   WORLD_SEED,
   RESOURCE_TYPES,
 } from '@void-sector/shared';
-import type { NpcStationData, NpcStationInventoryItem, MineableResourceType } from '@void-sector/shared';
+import type {
+  NpcStationData,
+  NpcStationInventoryItem,
+  MineableResourceType,
+} from '@void-sector/shared';
 import { hashCoords } from './worldgen.js';
 import {
   getStationData,
@@ -28,7 +32,7 @@ import {
  * Returns the highest level whose xpThreshold is <= the given XP.
  */
 export function getStationLevel(xp: number): { level: number; name: string; maxStock: number } {
-  let best = NPC_STATION_LEVELS[0];
+  let best: (typeof NPC_STATION_LEVELS)[number] = NPC_STATION_LEVELS[0];
   for (const entry of NPC_STATION_LEVELS) {
     if (xp >= entry.xpThreshold) {
       best = entry;
@@ -43,7 +47,7 @@ export function getStationLevel(xp: number): { level: number; name: string; maxS
  */
 export function calculateCurrentStock(
   item: NpcStationInventoryItem,
-  now: Date = new Date()
+  now: Date = new Date(),
 ): number {
   const elapsedMs = now.getTime() - new Date(item.lastUpdated).getTime();
   const elapsedHours = elapsedMs / (1000 * 60 * 60);
@@ -58,10 +62,7 @@ export function calculateCurrentStock(
  * Apply lazy XP decay since last decay timestamp.
  * XP never drops below the current level's threshold.
  */
-export function applyXpDecay(
-  station: NpcStationData,
-  now: Date = new Date()
-): NpcStationData {
+export function applyXpDecay(station: NpcStationData, now: Date = new Date()): NpcStationData {
   const elapsedMs = now.getTime() - new Date(station.lastXpDecay).getTime();
   const elapsedHours = elapsedMs / (1000 * 60 * 60);
   if (elapsedHours <= 0) return station;
@@ -69,7 +70,7 @@ export function applyXpDecay(
   const decay = NPC_XP_DECAY_PER_HOUR * elapsedHours;
   const currentLevel = getStationLevel(station.xp);
   const levelThreshold = NPC_STATION_LEVELS.find(
-    (l) => l.level === currentLevel.level
+    (l) => l.level === currentLevel.level,
   )!.xpThreshold;
 
   const newXp = Math.max(levelThreshold, Math.floor(station.xp - decay));
@@ -98,11 +99,7 @@ export function calculatePrice(basePrice: number, stockRatio: number): number {
  * Initialise station inventory rows for ore/gas/crystal.
  * Uses hashCoords for deterministic starting stock (50-80% of maxStock, varied per resource).
  */
-export async function initStationInventory(
-  x: number,
-  y: number,
-  maxStock: number
-): Promise<void> {
+export async function initStationInventory(x: number, y: number, maxStock: number): Promise<void> {
   const resources: MineableResourceType[] = ['ore', 'gas', 'crystal'];
   const now = new Date().toISOString();
 
@@ -136,10 +133,7 @@ export async function initStationInventory(
  * Get or initialise a station record. If no DB row exists, creates one
  * from deterministic seed data and also initialises inventory.
  */
-export async function getOrInitStation(
-  x: number,
-  y: number
-): Promise<NpcStationData> {
+export async function getOrInitStation(x: number, y: number): Promise<NpcStationData> {
   const existing = await getStationData(x, y);
   if (existing) return existing;
 
@@ -180,11 +174,7 @@ export async function recordVisit(x: number, y: number): Promise<void> {
 /**
  * Record a trade: adds units * NPC_XP_PER_TRADE_UNIT XP and accumulates trade volume.
  */
-export async function recordTrade(
-  x: number,
-  y: number,
-  units: number
-): Promise<void> {
+export async function recordTrade(x: number, y: number, units: number): Promise<void> {
   const station = await getOrInitStation(x, y);
   const decayed = applyXpDecay(station);
   const newXp = decayed.xp + units * NPC_XP_PER_TRADE_UNIT;
@@ -206,7 +196,7 @@ export async function canBuyFromStation(
   x: number,
   y: number,
   itemType: string,
-  amount: number
+  amount: number,
 ): Promise<{ ok: boolean; stock: number; price: number }> {
   await getOrInitStation(x, y);
   const item = await getStationInventoryItem(x, y, itemType);
@@ -234,7 +224,7 @@ export async function canSellToStation(
   x: number,
   y: number,
   itemType: string,
-  amount: number
+  amount: number,
 ): Promise<{ ok: boolean; capacity: number; price: number }> {
   await getOrInitStation(x, y);
   const item = await getStationInventoryItem(x, y, itemType);

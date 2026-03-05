@@ -2,6 +2,8 @@ import toolsPkg from '@colyseus/tools';
 import { monitor } from '@colyseus/monitor';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import express from 'express';
+import type { Request, Response } from 'express';
+import type { Server } from '@colyseus/core';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { SectorRoom } from './rooms/SectorRoom.js';
@@ -19,24 +21,29 @@ const __dirname = dirname(__filename);
 const config = (toolsPkg as any).default ?? toolsPkg;
 
 export default config({
-  initializeTransport: (options: any) => new WebSocketTransport({
-    ...options,
-    pingInterval: 10000,   // 10s (default: 3s) — more tolerant for cloudflare tunnels
-    pingMaxRetries: 3,     // 3 retries (default: 2)
-  }),
+  initializeTransport: (options: any) =>
+    new WebSocketTransport({
+      ...options,
+      pingInterval: 10000, // 10s (default: 3s) — more tolerant for cloudflare tunnels
+      pingMaxRetries: 3, // 3 retries (default: 2)
+    }),
 
-  initializeGameServer: (gameServer) => {
-    gameServer.define('sector', SectorRoom)
-      .filterBy(['quadrantX', 'quadrantY']);
+  initializeGameServer: (gameServer: Server) => {
+    gameServer.define('sector', SectorRoom).filterBy(['quadrantX', 'quadrantY']);
   },
 
-  initializeExpress: (app) => {
+  initializeExpress: (app: express.Express) => {
     app.use(express.json());
 
-    app.post('/api/register', async (req, res) => {
+    app.post('/api/register', async (req: Request, res: Response) => {
       try {
         const { username, password } = req.body;
-        if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+        if (
+          !username ||
+          !password ||
+          typeof username !== 'string' ||
+          typeof password !== 'string'
+        ) {
           res.status(400).json({ error: 'Username and password required' });
           return;
         }
@@ -61,7 +68,7 @@ export default config({
       }
     });
 
-    app.post('/api/login', async (req, res) => {
+    app.post('/api/login', async (req: Request, res: Response) => {
       try {
         const { username, password } = req.body;
         const result = await login(username, password);
@@ -82,7 +89,7 @@ export default config({
       }
     });
 
-    app.post('/api/guest', async (_req, res) => {
+    app.post('/api/guest', async (_req: Request, res: Response) => {
       try {
         const result = await loginAsGuest();
         res.json({
@@ -96,11 +103,11 @@ export default config({
       }
     });
 
-    app.get('/healthz', (_req, res) => {
+    app.get('/healthz', (_req: Request, res: Response) => {
       res.json({ ok: true });
     });
 
-    app.get('/admin', (_req, res) => {
+    app.get('/admin', (_req: Request, res: Response) => {
       res.sendFile(join(__dirname, 'admin', 'console.html'));
     });
     app.use('/admin/api', adminRouter);
