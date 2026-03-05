@@ -71,6 +71,27 @@ describe('SettingsPanel', () => {
     expect(slider.step).toBe('0.1');
   });
 
+  it('renders kompendium button', () => {
+    render(<SettingsPanel />);
+    expect(screen.getByTestId('kompendium-btn')).toBeInTheDocument();
+    expect(screen.getByText('◈ KOMPENDIUM')).toBeInTheDocument();
+  });
+
+  it('clicking kompendium button calls openCompendium', async () => {
+    const openCompendium = vi.fn();
+    mockStoreState({
+      username: 'TestPilot',
+      colorProfile: 'Amber Classic',
+      brightness: 1.0,
+      setColorProfile: vi.fn(),
+      setBrightness: vi.fn(),
+      openCompendium,
+    });
+    render(<SettingsPanel />);
+    await userEvent.click(screen.getByTestId('kompendium-btn'));
+    expect(openCompendium).toHaveBeenCalled();
+  });
+
   it('renders logout button', () => {
     render(<SettingsPanel />);
     expect(screen.getByText('VERLASSEN')).toBeInTheDocument();

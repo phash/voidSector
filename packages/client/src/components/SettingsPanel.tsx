@@ -18,6 +18,7 @@ export const SettingsPanel: React.FC = () => {
   const setColorProfile = useStore((s) => s.setColorProfile);
   const brightness = useStore((s) => s.brightness);
   const setBrightness = useStore((s) => s.setBrightness);
+  const openCompendium = useStore((s) => s.openCompendium);
 
   const handleLogout = () => {
     try {
@@ -66,6 +67,16 @@ export const SettingsPanel: React.FC = () => {
           data-testid="brightness-slider"
         />
         <span>{brightness.toFixed(1)}</span>
+      </div>
+
+      <div className="settings-row">
+        <button
+          className="vs-btn-sm"
+          onClick={() => openCompendium()}
+          data-testid="kompendium-btn"
+        >
+          ◈ KOMPENDIUM
+        </button>
       </div>
 
       <div className="settings-row">
