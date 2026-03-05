@@ -68,9 +68,7 @@ export function HelpOverlay() {
           {activeTip.body}
         </div>
         {activeTip.articleId && (
-          <div
-            style={{ marginTop: '10px' }}
-          >
+          <div style={{ marginTop: '10px' }}>
             <button
               onClick={() => {
                 openCompendium(activeTip.articleId);

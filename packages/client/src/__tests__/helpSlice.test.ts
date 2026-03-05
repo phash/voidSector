@@ -1,6 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createStore } from 'zustand';
 import { createHelpSlice, HELP_TIPS } from '../state/helpSlice';
+
+beforeEach(() => {
+  try {
+    localStorage.removeItem('vs_seen_tips');
+  } catch {
+    /* noop */
+  }
+});
 
 // Mock compendium data
 vi.mock('../data/compendium', () => ({
@@ -11,7 +19,7 @@ vi.mock('../data/compendium', () => ({
         title: 'ERSTE SCHRITTE',
         summary: 'Willkommen bei voidSector! Lerne die Grundlagen.',
       },
-      'mining': {
+      mining: {
         id: 'mining',
         title: 'MINING',
         summary: 'Erz, Gas und Kristalle abbauen.',

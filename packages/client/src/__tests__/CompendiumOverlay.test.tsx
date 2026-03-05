@@ -17,10 +17,8 @@ function setupStore(overrides: Record<string, unknown> = {}) {
     compendiumSearch: '',
     openCompendium: vi.fn(),
     closeCompendium: () => useStore.setState({ compendiumOpen: false }),
-    setCompendiumArticle: (id: string) =>
-      useStore.setState({ compendiumArticleId: id }),
-    setCompendiumSearch: (query: string) =>
-      useStore.setState({ compendiumSearch: query }),
+    setCompendiumArticle: (id: string) => useStore.setState({ compendiumArticleId: id }),
+    setCompendiumSearch: (query: string) => useStore.setState({ compendiumSearch: query }),
     showArticlePopup: vi.fn(),
     ...overrides,
   } as any);
@@ -88,13 +86,9 @@ describe('CompendiumOverlay', () => {
     const catButton = screen.getByTestId('compendium-cat-grundlagen');
     fireEvent.click(catButton); // expand
     const articles = getArticlesByCategory('grundlagen');
-    expect(
-      screen.getByTestId(`compendium-item-${articles[0].id}`)
-    ).toBeDefined();
+    expect(screen.getByTestId(`compendium-item-${articles[0].id}`)).toBeDefined();
     fireEvent.click(catButton); // collapse
-    expect(
-      screen.queryByTestId(`compendium-item-${articles[0].id}`)
-    ).toBeNull();
+    expect(screen.queryByTestId(`compendium-item-${articles[0].id}`)).toBeNull();
   });
 
   it('displays selected article content', () => {
@@ -120,9 +114,7 @@ describe('CompendiumOverlay', () => {
   });
 
   it('renders seeAlso links for articles that have them', () => {
-    const article = COMPENDIUM_ARTICLES.find(
-      (a) => a.seeAlso && a.seeAlso.length > 0
-    )!;
+    const article = COMPENDIUM_ARTICLES.find((a) => a.seeAlso && a.seeAlso.length > 0)!;
     setupStore({ compendiumOpen: true, compendiumArticleId: article.id });
     render(<CompendiumOverlay />);
     expect(screen.getByTestId('compendium-see-also')).toBeDefined();
@@ -130,17 +122,13 @@ describe('CompendiumOverlay', () => {
     for (const refId of article.seeAlso!) {
       const refArticle = getArticle(refId);
       if (refArticle) {
-        expect(
-          screen.getByTestId(`compendium-see-also-${refId}`)
-        ).toBeDefined();
+        expect(screen.getByTestId(`compendium-see-also-${refId}`)).toBeDefined();
       }
     }
   });
 
   it('navigates to article via seeAlso link click', () => {
-    const article = COMPENDIUM_ARTICLES.find(
-      (a) => a.seeAlso && a.seeAlso.length > 0
-    )!;
+    const article = COMPENDIUM_ARTICLES.find((a) => a.seeAlso && a.seeAlso.length > 0)!;
     setupStore({ compendiumOpen: true, compendiumArticleId: article.id });
     render(<CompendiumOverlay />);
     const firstRef = article.seeAlso![0];

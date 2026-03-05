@@ -85,8 +85,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'UNIVERSUM & WELTGENERIERUNG',
     category: 'grundlagen',
     icon: '🌌',
-    summary:
-      'Das Universum ist ein unendliches 2D-Gitter mit deterministischer Seed-Generierung.',
+    summary: 'Das Universum ist ein unendliches 2D-Gitter mit deterministischer Seed-Generierung.',
     body: [
       '**Koordinatensystem**',
       '',
@@ -206,8 +205,16 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     ].join('\n'),
     seeAlso: ['universum', 'mining', 'npc-stationen', 'combat-v2', 'strukturen'],
     tags: [
-      'sektor', 'sektortyp', 'empty', 'asteroid', 'nebula', 'station',
-      'anomaly', 'pirate', 'home_base', 'heimatbasis',
+      'sektor',
+      'sektortyp',
+      'empty',
+      'asteroid',
+      'nebula',
+      'station',
+      'anomaly',
+      'pirate',
+      'home_base',
+      'heimatbasis',
     ],
   },
   {
@@ -215,8 +222,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'AKTIONSPUNKTE (AP)',
     category: 'grundlagen',
     icon: '⚡',
-    summary:
-      'Aktionspunkte steuern alle Aktionen. Max 100 AP, Regeneration 0.5 AP/s.',
+    summary: 'Aktionspunkte steuern alle Aktionen. Max 100 AP, Regeneration 0.5 AP/s.',
     body: [
       '**AP-Grundwerte**',
       '| Parameter   | Wert                        |',
@@ -245,8 +251,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'XP & LEVEL-SYSTEM',
     category: 'grundlagen',
     icon: '📊',
-    summary:
-      '10 Level mit steigenden XP-Schwellen. Hoehere Level schalten neue Schiffe frei.',
+    summary: '10 Level mit steigenden XP-Schwellen. Hoehere Level schalten neue Schiffe frei.',
     body: [
       '**Level-Tabelle**',
       '| Level | XP-Schwelle | Freischaltungen               |',
@@ -277,8 +282,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'NAVIGATION & SPRINGEN',
     category: 'navigation',
     icon: '➤',
-    summary:
-      'Bewege dich sektorweise durch das Universum. Jeder Sprung kostet AP und Treibstoff.',
+    summary: 'Bewege dich sektorweise durch das Universum. Jeder Sprung kostet AP und Treibstoff.',
     body: [
       '**Grundbewegung**',
       '- Sprung zu Nachbarsektor: 1-2 AP (hull-abhaengig) + Fuel',
@@ -304,8 +308,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'HYPERJUMP',
     category: 'navigation',
     icon: '⚡',
-    summary:
-      'Direktsprung zu entfernten Sektoren mit erhoehten AP- und Fuel-Kosten.',
+    summary: 'Direktsprung zu entfernten Sektoren mit erhoehten AP- und Fuel-Kosten.',
     body: [
       '**Hyperjump-Kosten**',
       '| Parameter           | Wert              |',
@@ -329,8 +332,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'AUTOPILOT',
     category: 'navigation',
     icon: '🤖',
-    summary:
-      'Automatische Navigation zu entdeckten Sektoren mit persistenten Routen.',
+    summary: 'Automatische Navigation zu entdeckten Sektoren mit persistenten Routen.',
     body: [
       '**Funktionsweise**',
       '- Navigiere automatisch zu bereits entdeckten Sektoren',
@@ -355,8 +357,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'BOOKMARKS',
     category: 'navigation',
     icon: '📌',
-    summary:
-      '5 benutzerdefinierte Wegpunkte plus automatische HOME- und SHIP-Marker.',
+    summary: '5 benutzerdefinierte Wegpunkte plus automatische HOME- und SHIP-Marker.',
     body: [
       '**Bookmark-Slots**',
       '| Slot | Name | Beschreibung                  |',
@@ -419,8 +420,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'NOTWARP (EMERGENCY WARP)',
     category: 'navigation',
     icon: '🆘',
-    summary:
-      'Notfall-Teleport zur Heimatbasis. Gratis innerhalb 200 Sektoren, danach 5 CR/Sektor.',
+    summary: 'Notfall-Teleport zur Heimatbasis. Gratis innerhalb 200 Sektoren, danach 5 CR/Sektor.',
     body: [
       '**Notwarp-Parameter**',
       '| Parameter           | Wert                       |',
@@ -509,8 +509,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'ARTEFAKTE',
     category: 'ressourcen',
     icon: '❋',
-    summary:
-      'Seltene Ressource aus Scan-Events. Benoetigt fuer hochstufige Forschung und Module.',
+    summary: 'Seltene Ressource aus Scan-Events. Benoetigt fuer hochstufige Forschung und Module.',
     body: [
       '**Artefakte finden**',
       '- Nicht abbaubar — nur ueber Scan-Events und Kaempfe',
@@ -535,8 +534,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'CARGO & FRACHTVERWALTUNG',
     category: 'ressourcen',
     icon: '📦',
-    summary:
-      'Verwalte deine Fracht. Cargo-Kapazitaet haengt vom Schiffstyp und Modulen ab.',
+    summary: 'Verwalte deine Fracht. Cargo-Kapazitaet haengt vom Schiffstyp und Modulen ab.',
     body: [
       '**Cargo pro Schiff**',
       '| Hull       | Basis-Cargo |',
@@ -606,8 +604,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'COMBAT V2 — TAKTISCHES KAMPFSYSTEM',
     category: 'kampf',
     icon: '⚔',
-    summary:
-      '5-Runden-Kampf mit Taktikwahl, Spezialaktionen, Schilden und 4 Waffentypen.',
+    summary: '5-Runden-Kampf mit Taktikwahl, Spezialaktionen, Schilden und 4 Waffentypen.',
     body: [
       '**Grundmechanik**',
       '- 5 Runden pro Kampf (COMBAT_V2_MAX_ROUNDS = 5)',
@@ -641,8 +638,15 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     ].join('\n'),
     seeAlso: ['waffen', 'schilde', 'station-defense', 'piraten'],
     tags: [
-      'kampf', 'combat', 'taktik', 'assault', 'defensive', 'balanced',
-      'waffe', 'schild', 'runde',
+      'kampf',
+      'combat',
+      'taktik',
+      'assault',
+      'defensive',
+      'balanced',
+      'waffe',
+      'schild',
+      'runde',
     ],
   },
   {
@@ -650,8 +654,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'PIRATEN & LEGACY-COMBAT',
     category: 'kampf',
     icon: '☠',
-    summary:
-      'Piraten-Sektoren loesen automatischen Kampf aus. Piraten-Level skaliert mit Distanz.',
+    summary: 'Piraten-Sektoren loesen automatischen Kampf aus. Piraten-Level skaliert mit Distanz.',
     body: [
       '**Legacy/Auto-Battle Parameter**',
       '| Parameter              | Wert                         |',
@@ -677,8 +680,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'STATION DEFENSE — BASISVERTEIDIGUNG',
     category: 'kampf',
     icon: '🛡',
-    summary:
-      'Schuetze deine Basis mit Geschuetztuerme, Schildgeneratoren und einer Ionenkanone.',
+    summary: 'Schuetze deine Basis mit Geschuetztuerme, Schildgeneratoren und einer Ionenkanone.',
     body: [
       '**Verteidigungsstrukturen**',
       '| Typ              | Baukosten                          |',
@@ -709,8 +711,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'WAFFEN-MODULE',
     category: 'kampf',
     icon: '🔫',
-    summary:
-      '8 Waffen in 4 Typen (Laser, Railgun, Missile, EMP) mit je 1-3 Tiers.',
+    summary: '8 Waffen in 4 Typen (Laser, Railgun, Missile, EMP) mit je 1-3 Tiers.',
     body: [
       '**Laser**',
       '| Modul          | Tier | ATK | Kosten                    |',
@@ -740,8 +741,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'SCHILD-MODULE',
     category: 'kampf',
     icon: '🛡',
-    summary:
-      '3 Schild-Tiers mit steigender Kapazitaet und Regeneration plus Verteidigungs-Module.',
+    summary: '3 Schild-Tiers mit steigender Kapazitaet und Regeneration plus Verteidigungs-Module.',
     body: [
       '**Schild-Generatoren**',
       '| Modul          | Tier | Schild-HP | Regen/Runde |',
@@ -771,8 +771,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'NPC-HANDEL',
     category: 'handel',
     icon: '💰',
-    summary:
-      'Kaufe und verkaufe Ressourcen an NPC-Stationen. Preise variieren nach Fuellstand.',
+    summary: 'Kaufe und verkaufe Ressourcen an NPC-Stationen. Preise variieren nach Fuellstand.',
     body: [
       '**Handelsspanne**',
       '- Kauf-Spread: +20% (×1.2 — Stationen verkaufen teurer)',
@@ -834,8 +833,16 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     ].join('\n'),
     seeAlso: ['npc-handel', 'sektoren', 'fraktionen'],
     tags: [
-      'station', 'npc', 'level', 'outpost', 'hub', 'port', 'megastation',
-      'inventar', 'stock', 'xp',
+      'station',
+      'npc',
+      'level',
+      'outpost',
+      'hub',
+      'port',
+      'megastation',
+      'inventar',
+      'stock',
+      'xp',
     ],
   },
   {
@@ -843,8 +850,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'KONTOR (EINKAUFSKONTOR)',
     category: 'handel',
     icon: '📋',
-    summary:
-      'Erstelle Kaufauftraege an deiner Basis. Andere Spieler befuellen sie gegen Credits.',
+    summary: 'Erstelle Kaufauftraege an deiner Basis. Andere Spieler befuellen sie gegen Credits.',
     body: [
       '**Mechanik**',
       '- Kaufauftrag erstellen: Item-Typ, Menge, Preis/Einheit',
@@ -873,8 +879,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'HANDELSROUTEN',
     category: 'handel',
     icon: '🔄',
-    summary:
-      'Automatisiere Handel mit bis zu 3 Routen. Zykluszeit: 15-120 Minuten.',
+    summary: 'Automatisiere Handel mit bis zu 3 Routen. Zykluszeit: 15-120 Minuten.',
     body: [
       '**Handelsrouten-Parameter**',
       '| Parameter       | Wert            |',
@@ -931,8 +936,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'RAUMSCHIFFE',
     category: 'technik',
     icon: '🚀',
-    summary:
-      '5 Huelltypen von Scout bis Battleship. Jeder Typ hat eigene Staerken und Schwaechen.',
+    summary: '5 Huelltypen von Scout bis Battleship. Jeder Typ hat eigene Staerken und Schwaechen.',
     body: [
       '**Huelltypen**',
       '| Hull       | Name            | Slots | Fuel | Cargo | Jump | HP  | Unlock           |',
@@ -995,8 +999,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'TECH TREE & FORSCHUNG',
     category: 'technik',
     icon: '🔬',
-    summary:
-      'Erforsche hoehere Module im Research Lab. Tier 1 frei, Tier 2-3 erfordern Forschung.',
+    summary: 'Erforsche hoehere Module im Research Lab. Tier 1 frei, Tier 2-3 erfordern Forschung.',
     body: [
       '**Grundprinzip**',
       '- Tier-1-Module: Frei kaufbar (kein Research noetig)',
@@ -1030,8 +1033,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'FACTORY & PRODUKTION',
     category: 'technik',
     icon: '🏭',
-    summary:
-      'Verarbeite Basisressourcen zu Guetern. 5 Rezepte mit 120-360s Zykluszeit.',
+    summary: 'Verarbeite Basisressourcen zu Guetern. 5 Rezepte mit 120-360s Zykluszeit.',
     body: [
       '**Produktionsrezepte**',
       '| Rezept          | Output         | Inputs             | Zeit |',
@@ -1097,8 +1099,14 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     ].join('\n'),
     seeAlso: ['npc-stationen', 'npc-handel', 'quests'],
     tags: [
-      'fraktion', 'reputation', 'traders', 'scientists', 'pirates', 'ancients',
-      'honored', 'upgrade',
+      'fraktion',
+      'reputation',
+      'traders',
+      'scientists',
+      'pirates',
+      'ancients',
+      'honored',
+      'upgrade',
     ],
   },
   {
@@ -1106,8 +1114,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'QUESTS',
     category: 'sozial',
     icon: '📜',
-    summary:
-      'Bis zu 3 aktive Quests gleichzeitig. 4 Typen: fetch, delivery, scan, bounty.',
+    summary: 'Bis zu 3 aktive Quests gleichzeitig. 4 Typen: fetch, delivery, scan, bounty.',
     body: [
       '**Quest-Parameter**',
       '| Parameter          | Wert                         |',
@@ -1203,8 +1210,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'SCANNEN',
     category: 'sozial',
     icon: '📡',
-    summary:
-      'Scanne Sektoren um Inhalte zu entdecken. Area-Scan deckt groessere Bereiche ab.',
+    summary: 'Scanne Sektoren um Inhalte zu entdecken. Area-Scan deckt groessere Bereiche ab.',
     body: [
       '**Scan-Kosten**',
       '- Lokaler Scan: 1 AP',
@@ -1275,8 +1281,14 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     ].join('\n'),
     seeAlso: ['station-defense', 'factory', 'kontor', 'forschung'],
     tags: [
-      'struktur', 'basisbau', 'building', 'storage', 'trading-post',
-      'comm-relay', 'mining-station', 'base',
+      'struktur',
+      'basisbau',
+      'building',
+      'storage',
+      'trading-post',
+      'comm-relay',
+      'mining-station',
+      'base',
     ],
   },
   {
@@ -1284,8 +1296,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'NEBEL-ZONEN',
     category: 'fortgeschritten',
     icon: '🌫',
-    summary:
-      'Grossflaechige Nebel-Zonen mit Scanner-Malus und reduzierter Piraten-Praesenz.',
+    summary: 'Grossflaechige Nebel-Zonen mit Scanner-Malus und reduzierter Piraten-Praesenz.',
     body: [
       '**Nebel-Generation**',
       'Seed-basierte Blob-Generierung fuer grossflaechige Nebel:',
@@ -1309,8 +1320,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'MONITORSYSTEM',
     category: 'fortgeschritten',
     icon: '🖥',
-    summary:
-      '12 Monitor-Programme im CRT-Stil: von NAV-COM ueber TRADE bis QUAD-MAP.',
+    summary: '12 Monitor-Programme im CRT-Stil: von NAV-COM ueber TRADE bis QUAD-MAP.',
     body: [
       '**6-Sektionen Cockpit-Layout**',
       '- Sec 1: Program Selector — 12-Button vertikale Leiste',
@@ -1337,9 +1347,22 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     ].join('\n'),
     seeAlso: ['grundlagen-start'],
     tags: [
-      'monitor', 'ui', 'cockpit', 'layout', 'crt', 'nav-com', 'ship-sys',
-      'mining', 'cargo', 'comms', 'base-link', 'trade', 'faction', 'quests',
-      'tech', 'quad-map',
+      'monitor',
+      'ui',
+      'cockpit',
+      'layout',
+      'crt',
+      'nav-com',
+      'ship-sys',
+      'mining',
+      'cargo',
+      'comms',
+      'base-link',
+      'trade',
+      'faction',
+      'quests',
+      'tech',
+      'quad-map',
     ],
   },
   {
@@ -1347,8 +1370,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     title: 'ADMIN-KONSOLE',
     category: 'fortgeschritten',
     icon: '⚙',
-    summary:
-      'REST-API fuer Spielverwaltung: Spieler, Quests, Broadcasts, Statistiken.',
+    summary: 'REST-API fuer Spielverwaltung: Spieler, Quests, Broadcasts, Statistiken.',
     body: [
       '**Authentifizierung**',
       'REST-API unter /admin/ mit Bearer-Token (ADMIN_TOKEN).',
@@ -1384,9 +1406,7 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
 // Helper functions
 // ---------------------------------------------------------------------------
 
-const articleMap = new Map<string, CompendiumArticle>(
-  COMPENDIUM_ARTICLES.map((a) => [a.id, a])
-);
+const articleMap = new Map<string, CompendiumArticle>(COMPENDIUM_ARTICLES.map((a) => [a.id, a]));
 
 /**
  * Retrieve a single article by its unique ID.
@@ -1398,9 +1418,7 @@ export function getArticle(id: string): CompendiumArticle | undefined {
 /**
  * Return all articles belonging to a given category, preserving insertion order.
  */
-export function getArticlesByCategory(
-  cat: CompendiumCategory
-): CompendiumArticle[] {
+export function getArticlesByCategory(cat: CompendiumCategory): CompendiumArticle[] {
   return COMPENDIUM_ARTICLES.filter((a) => a.category === cat);
 }
 

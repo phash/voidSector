@@ -13,10 +13,7 @@ import type { CompendiumArticle, CompendiumCategory } from '../data/compendium';
 // Body renderer — converts simple markup to React elements
 // ---------------------------------------------------------------------------
 
-function renderBody(
-  body: string,
-  onNavigate: (id: string) => void
-): ReactNode[] {
+function renderBody(body: string, onNavigate: (id: string) => void): ReactNode[] {
   const paragraphs = body.split(/\n\n+/);
   const elements: ReactNode[] = [];
 
@@ -26,8 +23,7 @@ function renderBody(
 
     // Check if this paragraph is a table (all non-empty lines start with |)
     const nonEmpty = lines.filter((l) => l.trim().length > 0);
-    const isTable =
-      nonEmpty.length > 0 && nonEmpty.every((l) => l.trim().startsWith('|'));
+    const isTable = nonEmpty.length > 0 && nonEmpty.every((l) => l.trim().startsWith('|'));
 
     if (isTable) {
       const rows: ReactNode[] = [];
@@ -67,9 +63,9 @@ function renderBody(
                 >
                   {cell}
                 </td>
-              )
+              ),
             )}
-          </tr>
+          </tr>,
         );
       }
       elements.push(
@@ -84,7 +80,7 @@ function renderBody(
           }}
         >
           <tbody>{rows}</tbody>
-        </table>
+        </table>,
       );
       continue;
     }
@@ -105,7 +101,7 @@ function renderBody(
               {renderInline(item.text, `${pi}-${item.idx}`, onNavigate)}
             </li>
           ))}
-        </ul>
+        </ul>,
       );
       listBuffer = [];
     };
@@ -128,12 +124,9 @@ function renderBody(
       // Arrow cross-references
       if (line.trim().startsWith('\u2192')) {
         lineElements.push(
-          <span
-            key={`${pi}-${li}`}
-            style={{ color: 'var(--color-primary)', display: 'block' }}
-          >
+          <span key={`${pi}-${li}`} style={{ color: 'var(--color-primary)', display: 'block' }}>
             {renderInline(line, `${pi}-${li}`, onNavigate)}
-          </span>
+          </span>,
         );
         continue;
       }
@@ -143,9 +136,7 @@ function renderBody(
       }
       if (line.trim().length > 0) {
         lineElements.push(
-          <span key={`${pi}-${li}`}>
-            {renderInline(line, `${pi}-${li}`, onNavigate)}
-          </span>
+          <span key={`${pi}-${li}`}>{renderInline(line, `${pi}-${li}`, onNavigate)}</span>,
         );
       }
     }
@@ -155,17 +146,13 @@ function renderBody(
 
     // Use <div> instead of <p> when content contains block elements (lists)
     const hasBlockContent = lineElements.some(
-      (el) =>
-        el !== null &&
-        typeof el === 'object' &&
-        'type' in el &&
-        el.type === 'ul'
+      (el) => el !== null && typeof el === 'object' && 'type' in el && el.type === 'ul',
     );
     const Tag = hasBlockContent ? 'div' : 'p';
     elements.push(
       <Tag key={`p-${pi}`} style={{ margin: '6px 0' }}>
         {lineElements}
-      </Tag>
+      </Tag>,
     );
   }
 
@@ -176,7 +163,7 @@ function renderBody(
 function renderInline(
   text: string,
   keyPrefix: string,
-  _onNavigate: (id: string) => void
+  _onNavigate: (id: string) => void,
 ): ReactNode[] {
   const parts: ReactNode[] = [];
   const regex = /\*\*(.+?)\*\*/g;
@@ -186,32 +173,21 @@ function renderInline(
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(
-        <span key={`${keyPrefix}-t${idx++}`}>
-          {text.slice(lastIndex, match.index)}
-        </span>
-      );
+      parts.push(<span key={`${keyPrefix}-t${idx++}`}>{text.slice(lastIndex, match.index)}</span>);
     }
     parts.push(
-      <strong
-        key={`${keyPrefix}-b${idx++}`}
-        style={{ color: 'var(--color-primary)' }}
-      >
+      <strong key={`${keyPrefix}-b${idx++}`} style={{ color: 'var(--color-primary)' }}>
         {match[1]}
-      </strong>
+      </strong>,
     );
     lastIndex = regex.lastIndex;
   }
 
   if (lastIndex < text.length) {
-    parts.push(
-      <span key={`${keyPrefix}-t${idx++}`}>{text.slice(lastIndex)}</span>
-    );
+    parts.push(<span key={`${keyPrefix}-t${idx++}`}>{text.slice(lastIndex)}</span>);
   }
 
-  return parts.length > 0
-    ? parts
-    : [<span key={`${keyPrefix}-empty`}>{text}</span>];
+  return parts.length > 0 ? parts : [<span key={`${keyPrefix}-empty`}>{text}</span>];
 }
 
 // ---------------------------------------------------------------------------
@@ -227,19 +203,11 @@ export function CompendiumOverlay() {
   const setSearch = useStore((s) => s.setCompendiumSearch);
 
   const searchRef = useRef<HTMLInputElement>(null);
-  const [expandedCategories, setExpandedCategories] = useState<
-    Set<CompendiumCategory>
-  >(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<CompendiumCategory>>(new Set());
 
-  const article = useMemo(
-    () => (articleId ? getArticle(articleId) : undefined),
-    [articleId]
-  );
+  const article = useMemo(() => (articleId ? getArticle(articleId) : undefined), [articleId]);
 
-  const searchResults = useMemo(
-    () => (search.trim() ? searchArticles(search) : []),
-    [search]
-  );
+  const searchResults = useMemo(() => (search.trim() ? searchArticles(search) : []), [search]);
 
   const toggleCategory = useCallback((cat: CompendiumCategory) => {
     setExpandedCategories((prev) => {
@@ -258,7 +226,7 @@ export function CompendiumOverlay() {
       setArticle(id);
       setSearch('');
     },
-    [setArticle, setSearch]
+    [setArticle, setSearch],
   );
 
   // Auto-expand category of active article
@@ -616,11 +584,7 @@ function ArticleView({
   );
 }
 
-function WelcomePage({
-  onNavigate,
-}: {
-  onNavigate: (id: string) => void;
-}) {
+function WelcomePage({ onNavigate }: { onNavigate: (id: string) => void }) {
   return (
     <div>
       <h2
@@ -636,8 +600,7 @@ function WelcomePage({
         ◈ KOMPENDIUM
       </h2>
       <p style={{ margin: '0 0 16px' }}>
-        Willkommen im Kompendium. Waehle einen Artikel aus der Seitenleiste
-        oder nutze die Suche.
+        Willkommen im Kompendium. Waehle einen Artikel aus der Seitenleiste oder nutze die Suche.
       </p>
       {COMPENDIUM_CATEGORIES.map((cat) => {
         const articles = getArticlesByCategory(cat.id);

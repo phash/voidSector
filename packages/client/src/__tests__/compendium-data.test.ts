@@ -31,25 +31,20 @@ describe('Compendium Data', () => {
       for (const a of COMPENDIUM_ARTICLES) {
         expect(
           validCats.has(a.category),
-          `article ${a.id} has invalid category '${a.category}'`
+          `article ${a.id} has invalid category '${a.category}'`,
         ).toBe(true);
       }
     });
 
     it('every article has a non-empty icon', () => {
       for (const a of COMPENDIUM_ARTICLES) {
-        expect(a.icon.length, `article ${a.id} missing icon`).toBeGreaterThan(
-          0
-        );
+        expect(a.icon.length, `article ${a.id} missing icon`).toBeGreaterThan(0);
       }
     });
 
     it('every article has a non-empty summary', () => {
       for (const a of COMPENDIUM_ARTICLES) {
-        expect(
-          a.summary.length,
-          `article ${a.id} missing summary`
-        ).toBeGreaterThan(0);
+        expect(a.summary.length, `article ${a.id} missing summary`).toBeGreaterThan(0);
       }
     });
 
@@ -104,10 +99,7 @@ describe('Compendium Data', () => {
     it('every category has at least one article', () => {
       for (const cat of COMPENDIUM_CATEGORIES) {
         const articles = getArticlesByCategory(cat.id);
-        expect(
-          articles.length,
-          `category '${cat.id}' has no articles`
-        ).toBeGreaterThan(0);
+        expect(articles.length, `category '${cat.id}' has no articles`).toBeGreaterThan(0);
       }
     });
 
@@ -129,7 +121,7 @@ describe('Compendium Data', () => {
           for (const ref of a.seeAlso) {
             expect(
               allIds.has(ref),
-              `article '${a.id}' references non-existent seeAlso '${ref}'`
+              `article '${a.id}' references non-existent seeAlso '${ref}'`,
             ).toBe(true);
           }
         }
@@ -139,10 +131,9 @@ describe('Compendium Data', () => {
     it('seeAlso does not reference the article itself', () => {
       for (const a of COMPENDIUM_ARTICLES) {
         if (a.seeAlso) {
-          expect(
-            a.seeAlso.includes(a.id),
-            `article '${a.id}' references itself in seeAlso`
-          ).toBe(false);
+          expect(a.seeAlso.includes(a.id), `article '${a.id}' references itself in seeAlso`).toBe(
+            false,
+          );
         }
       }
     });
@@ -183,9 +174,7 @@ describe('Compendium Data', () => {
 
     it('returns empty array for non-matching category', () => {
       // Force a type-cast for testing purposes
-      const articles = getArticlesByCategory(
-        'nonexistent' as CompendiumCategory
-      );
+      const articles = getArticlesByCategory('nonexistent' as CompendiumCategory);
       expect(articles).toEqual([]);
     });
 
@@ -221,9 +210,7 @@ describe('Compendium Data', () => {
       const lower = searchArticles('mining');
       const upper = searchArticles('MINING');
       expect(lower.length).toBe(upper.length);
-      expect(lower.map((a) => a.id).sort()).toEqual(
-        upper.map((a) => a.id).sort()
-      );
+      expect(lower.map((a) => a.id).sort()).toEqual(upper.map((a) => a.id).sort());
     });
 
     it('returns empty array for empty query', () => {
@@ -266,21 +253,15 @@ describe('Compendium Data', () => {
       for (const a of COMPENDIUM_ARTICLES) {
         expect(
           a.body.length,
-          `article '${a.id}' body too short (${a.body.length} chars)`
+          `article '${a.id}' body too short (${a.body.length} chars)`,
         ).toBeGreaterThanOrEqual(100);
       }
     });
 
     it('every article summary is between 20 and 200 characters', () => {
       for (const a of COMPENDIUM_ARTICLES) {
-        expect(
-          a.summary.length,
-          `article '${a.id}' summary too short`
-        ).toBeGreaterThanOrEqual(20);
-        expect(
-          a.summary.length,
-          `article '${a.id}' summary too long`
-        ).toBeLessThanOrEqual(200);
+        expect(a.summary.length, `article '${a.id}' summary too short`).toBeGreaterThanOrEqual(20);
+        expect(a.summary.length, `article '${a.id}' summary too long`).toBeLessThanOrEqual(200);
       }
     });
 
@@ -289,7 +270,7 @@ describe('Compendium Data', () => {
         if (a.tags) {
           expect(
             a.tags.length,
-            `article '${a.id}' should have at least 2 tags`
+            `article '${a.id}' should have at least 2 tags`,
           ).toBeGreaterThanOrEqual(2);
         }
       }

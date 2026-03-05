@@ -70,11 +70,7 @@ export const SettingsPanel: React.FC = () => {
       </div>
 
       <div className="settings-row">
-        <button
-          className="vs-btn-sm"
-          onClick={() => openCompendium()}
-          data-testid="kompendium-btn"
-        >
+        <button className="vs-btn-sm" onClick={() => openCompendium()} data-testid="kompendium-btn">
           ◈ KOMPENDIUM
         </button>
       </div>
