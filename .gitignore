@@ -4,3 +4,6 @@ dist/
 *.local
 .worktrees/
 .playwright-mcp/
+coverage/
+test-results/
+playwright-report/

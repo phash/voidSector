@@ -7,9 +7,9 @@ on:
     branches: [master]
 
 jobs:
-  lint-and-test:
+  # ── Stage 1: Lint ──────────────────────────────────────────────
+  lint:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +23,32 @@ jobs:
 
       - name: Build shared package
         run: npm run build -w packages/shared
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier check
+        run: npx prettier --check "packages/*/src/**/*.{ts,tsx}"
+
+  # ── Stage 2: Type Check ───────────────────────────────────────
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build -w packages/shared
+
+      - name: TypeScript check (shared)
+        run: npx tsc --noEmit -p packages/shared/tsconfig.json
 
       - name: TypeScript check (server)
         run: npx tsc --noEmit -p packages/server/tsconfig.json
@@ -30,13 +56,10 @@ jobs:
       - name: TypeScript check (client)
         run: npx tsc --noEmit -p packages/client/tsconfig.json
 
-      - name: Run tests
-        run: npm test
-
-  build-client:
+  # ── Stage 3: Unit Tests (per package, parallel) ───────────────
+  test-shared:
     runs-on: ubuntu-latest
-    needs: lint-and-test
-
+    needs: typecheck
     steps:
       - uses: actions/checkout@v4
 
@@ -50,6 +73,97 @@ jobs:
 
       - name: Build shared package
         run: npm run build -w packages/shared
+
+      - name: Run shared tests with coverage
+        run: npx vitest run --coverage --coverage.reporter=json-summary
+        working-directory: packages/shared
+
+      - name: Upload shared coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-shared
+          path: packages/shared/coverage/
+          retention-days: 7
+
+  test-server:
+    runs-on: ubuntu-latest
+    needs: typecheck
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build -w packages/shared
+
+      - name: Run server tests with coverage
+        run: npx vitest run --coverage --coverage.reporter=json-summary
+        working-directory: packages/server
+
+      - name: Upload server coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-server
+          path: packages/server/coverage/
+          retention-days: 7
+
+  test-client:
+    runs-on: ubuntu-latest
+    needs: typecheck
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared package
+        run: npm run build -w packages/shared
+
+      - name: Run client tests with coverage
+        run: npx vitest run --coverage --coverage.reporter=json-summary
+        working-directory: packages/client
+
+      - name: Upload client coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-client
+          path: packages/client/coverage/
+          retention-days: 7
+
+  # ── Stage 4: Build ────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, test-shared, test-server, test-client]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared
+        run: npm run build -w packages/shared
+
+      - name: Build server
+        run: npm run build -w packages/server
 
       - name: Build client
         run: npm run build -w packages/client
@@ -60,3 +174,35 @@ jobs:
           name: client-dist
           path: packages/client/dist/
           retention-days: 7
+
+  # ── Stage 5: Coverage Summary ─────────────────────────────────
+  coverage-report:
+    runs-on: ubuntu-latest
+    needs: [test-shared, test-server, test-client]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-all/
+
+      - name: Coverage summary
+        run: |
+          echo "## Coverage Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Package | Lines | Branches | Functions |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---------|-------|----------|-----------|" >> "$GITHUB_STEP_SUMMARY"
+          for pkg in shared server client; do
+            FILE="coverage-all/coverage-${pkg}/coverage-summary.json"
+            if [ -f "$FILE" ]; then
+              LINES=$(jq -r '.total.lines.pct' "$FILE" 2>/dev/null || echo "n/a")
+              BRANCHES=$(jq -r '.total.branches.pct' "$FILE" 2>/dev/null || echo "n/a")
+              FUNCS=$(jq -r '.total.functions.pct' "$FILE" 2>/dev/null || echo "n/a")
+              echo "| ${pkg} | ${LINES}% | ${BRANCHES}% | ${FUNCS}% |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| ${pkg} | n/a | n/a | n/a |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
