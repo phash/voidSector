@@ -261,6 +261,13 @@ export function CompendiumOverlay() {
     [setArticle, setSearch]
   );
 
+  // Auto-expand category of active article
+  useEffect(() => {
+    if (article && !expandedCategories.has(article.category)) {
+      setExpandedCategories((prev) => new Set(prev).add(article.category));
+    }
+  }, [article]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Keyboard shortcuts
   useEffect(() => {
     if (!open) return;
@@ -279,11 +286,6 @@ export function CompendiumOverlay() {
   }, [open, closeCompendium]);
 
   if (!open) return null;
-
-  // Expand category of active article automatically
-  if (article && !expandedCategories.has(article.category)) {
-    setExpandedCategories((prev) => new Set(prev).add(article.category));
-  }
 
   const isSearching = search.trim().length > 0;
 
