@@ -31,6 +31,7 @@ import { QuestService } from './services/QuestService.js';
 import { ChatService } from './services/ChatService.js';
 import { ShipService } from './services/ShipService.js';
 import { WorldService } from './services/WorldService.js';
+import { logger } from '../utils/logger.js';
 
 interface SectorRoomOptions {
   quadrantX: number;
@@ -187,7 +188,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       try {
         await this.navigation.handleMoveSector(client, data);
       } catch (err) {
-        console.error('[MOVE_SECTOR] Error:', err);
+        logger.error({ err }, 'moveSector error');
         client.send('error', { code: 'MOVE_FAILED', message: 'Failed to move sector' });
       }
     });
@@ -195,7 +196,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       try {
         await this.navigation.handleJump(client, data);
       } catch (err) {
-        console.error('[JUMP] Unhandled error:', err);
+        logger.error({ err }, 'Jump unhandled error');
         client.send('jumpResult', { success: false, error: 'Server error' });
       }
     });
@@ -220,7 +221,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       try {
         await this.scanning.handleLocalScan(client);
       } catch (err) {
-        console.error('[LOCAL_SCAN] Unhandled error:', err);
+        logger.error({ err }, 'localScan unhandled error');
         client.send('localScanResult', { error: 'Server error' });
       }
     });
@@ -228,7 +229,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       try {
         await this.scanning.handleAreaScan(client);
       } catch (err) {
-        console.error('[AREA_SCAN] Unhandled error:', err);
+        logger.error({ err }, 'areaScan unhandled error');
         client.send('scanResult', { sectors: [], error: 'Server error' });
       }
     });
@@ -236,7 +237,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       try {
         await this.scanning.handleAreaScan(client);
       } catch (err) {
-        console.error('[SCAN] Unhandled error:', err);
+        logger.error({ err }, 'scan unhandled error');
         client.send('scanResult', { sectors: [], error: 'Server error' });
       }
     });
@@ -479,7 +480,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // ── Trade Route Processing Interval ─────────────────────────────
     this.clock.setInterval(() => {
-      this.world.processTradeRoutes().catch(err => console.error('[TRADE ROUTES] Tick error:', err));
+      this.world.processTradeRoutes().catch(err => logger.error({ err }, 'Trade routes tick error'));
     }, 60000);
 
     // ── Admin Bus ───────────────────────────────────────────────────
@@ -736,10 +737,10 @@ export class SectorRoom extends Room<SectorRoomState> {
           this.navigation.startAutopilotTimer(client, auth, activeRoute.path, activeRoute.currentStep, activeRoute.useHyperjump, stats);
         }
       } catch (err) {
-        console.error('[JOIN] Autopilot resume error:', err);
+        logger.error({ err }, 'Join autopilot resume error');
       }
     } catch (err) {
-      console.error('[JOIN] Error:', err);
+      logger.error({ err }, 'Join error');
       client.send('error', { code: 'JOIN_FAILED', message: 'Failed to join sector' });
       client.leave();
     }

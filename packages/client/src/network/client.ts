@@ -4,6 +4,39 @@ import { QUADRANT_SIZE } from '@void-sector/shared';
 import type { APState, SectorData, MiningState, CargoState, SectorResources, ChatMessage, ChatChannel, StructureType, StorageInventory, DataSlate, FactionDataMessage, FuelState, JumpGateInfo, JumpGateMapEntry, UseJumpGateResultMessage, FrequencyMatchResultMessage, RescueSurvivor, RescueResultMessage, DeliverSurvivorsResultMessage, DistressCall, FactionUpgradeState, FactionUpgradeResultMessage, FactionUpgradeChoice, TradeRoute, ConfigureRouteMessage, ConfigureRouteResultMessage, CreateCustomSlateMessage, Bookmark, CombatV2State, CombatV2RoundResult, StationCombatEvent, AdminMessage, AdminQuestNotification, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
+/** Schema-level player object from Colyseus room state. */
+interface RoomPlayerSchema {
+  username: string;
+  x: number;
+  y: number;
+  connected: boolean;
+  onChange(cb: () => void): void;
+}
+
+/** Players map from Colyseus room state with onAdd/onRemove callbacks. */
+interface RoomPlayersMap {
+  onAdd(cb: (player: RoomPlayerSchema, sessionId: string) => void): void;
+  onRemove(cb: (player: RoomPlayerSchema, sessionId: string) => void): void;
+}
+
+/** Colyseus room state shape for SectorRoom. */
+interface SectorRoomState {
+  players: RoomPlayersMap;
+}
+
+/** Discovery data item as sent by the server, includes optional sector fields. */
+interface DiscoveryItem {
+  x: number;
+  y: number;
+  type?: string;
+  seed?: number;
+  discoveredAt?: number;
+  environment?: string;
+  contents?: string[];
+  discoveredBy?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
 function getWsUrl(): string {
   if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
   const loc = window.location;
@@ -92,7 +125,7 @@ class GameNetwork {
 
   private setupRoomListeners(room: Room) {
     // State change: sync players
-    (room.state as any).players.onAdd((player: any, sessionId: string) => {
+    (room.state as unknown as SectorRoomState).players.onAdd((player: RoomPlayerSchema, sessionId: string) => {
       const store = useStore.getState();
       store.setPlayer(sessionId, {
         sessionId,
@@ -131,7 +164,7 @@ class GameNetwork {
       });
     });
 
-    (room.state as any).players.onRemove((_player: any, sessionId: string) => {
+    (room.state as unknown as SectorRoomState).players.onRemove((_player: RoomPlayerSchema, sessionId: string) => {
       useStore.getState().removePlayer(sessionId);
     });
 
@@ -253,7 +286,7 @@ class GameNetwork {
     });
 
     // Discoveries (from scan/jump — server sends array of sector coords)
-    room.onMessage('discoveries', (data: Array<{ x: number; y: number; type?: string; seed?: number }>) => {
+    room.onMessage('discoveries', (data: DiscoveryItem[]) => {
       const store = useStore.getState();
       const sectorData: SectorData[] = [];
       for (const d of data) {
@@ -263,11 +296,11 @@ class GameNetwork {
             type: d.type as SectorData['type'],
             seed: d.seed ?? 0,
             resources: { ore: 0, gas: 0, crystal: 0 },
-            environment: (d as any).environment ?? 'empty',
-            contents: (d as any).contents ?? [],
-            discoveredBy: (d as any).discoveredBy ?? null,
-            discoveredAt: (d as any).discoveredAt ?? null,
-            metadata: (d as any).metadata ?? {},
+            environment: d.environment ?? 'empty',
+            contents: d.contents ?? [],
+            discoveredBy: d.discoveredBy ?? null,
+            discoveredAt: d.discoveredAt ?? null,
+            metadata: d.metadata ?? {},
           });
         }
       }
@@ -996,7 +1029,7 @@ class GameNetwork {
       }
     });
 
-    room.onMessage('allDiscoveries', (data: { discoveries: { x: number; y: number; discoveredAt: number; type?: string; seed?: number }[] }) => {
+    room.onMessage('allDiscoveries', (data: { discoveries: DiscoveryItem[] }) => {
       const store = useStore.getState();
       // Merge discovery timestamps
       const timestamps: Record<string, number> = { ...store.discoveryTimestamps };
@@ -1012,11 +1045,11 @@ class GameNetwork {
             type: d.type as SectorData['type'],
             seed: d.seed ?? 0,
             resources: { ore: 0, gas: 0, crystal: 0 },
-            environment: (d as any).environment ?? 'empty',
-            contents: (d as any).contents ?? [],
-            discoveredBy: (d as any).discoveredBy ?? null,
-            discoveredAt: (d as any).discoveredAt ?? null,
-            metadata: (d as any).metadata ?? {},
+            environment: d.environment ?? 'empty',
+            contents: d.contents ?? [],
+            discoveredBy: d.discoveredBy ?? null,
+            discoveredAt: d.discoveredAt ?? null,
+            metadata: d.metadata ?? {},
           });
         }
       }

@@ -2,6 +2,7 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { logger } from '../utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -43,7 +44,7 @@ export async function runMigrations(): Promise<void> {
     if (!file.endsWith('.sql')) continue;
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
     await pool.query(sql);
-    console.log(`Migration applied: ${file}`);
+    logger.info({ file }, 'Migration applied');
   }
 }
 

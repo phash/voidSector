@@ -10,6 +10,7 @@ import { deleteExpiredGuestPlayers } from './db/queries.js';
 import { runMigrations } from './db/client.js';
 import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
 import { adminRouter } from './adminRoutes.js';
+import { logger } from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -55,7 +56,7 @@ export default config({
           res.status(409).json({ error: 'Username already taken' });
           return;
         }
-        console.error('Registration error:', err);
+        logger.error({ err }, 'Registration error');
         res.status(500).json({ error: 'Internal server error' });
       }
     });
@@ -76,7 +77,7 @@ export default config({
           lastPosition: lastPos ?? { x: result.player.homeBase.x, y: result.player.homeBase.y },
         });
       } catch (err) {
-        console.error('Login error:', err);
+        logger.error({ err }, 'Login error');
         res.status(500).json({ error: 'Internal server error' });
       }
     });
@@ -90,7 +91,7 @@ export default config({
           lastPosition: { x: result.player.homeBase.x, y: result.player.homeBase.y },
         });
       } catch (err) {
-        console.error('Guest login error:', err);
+        logger.error({ err }, 'Guest login error');
         res.status(500).json({ error: 'Internal server error' });
       }
     });
@@ -110,8 +111,8 @@ export default config({
     await runMigrations();
     const expiredGuests = await deleteExpiredGuestPlayers();
     if (expiredGuests > 0) {
-      console.log(`Cleaned up ${expiredGuests} expired guest accounts`);
+      logger.info({ expiredGuests }, 'Cleaned up expired guest accounts');
     }
-    console.log('Migrations complete, server starting...');
+    logger.info('Migrations complete, server starting...');
   },
 });

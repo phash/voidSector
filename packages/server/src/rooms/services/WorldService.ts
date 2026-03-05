@@ -18,6 +18,7 @@ import type {
   MineableResourceType,
 } from '@void-sector/shared';
 
+import { logger } from '../../utils/logger.js';
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { validateBuild, validateCreateSlate, validateNpcBuyback } from '../../engine/commands.js';
 import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../../engine/rescue.js';
@@ -783,11 +784,11 @@ export class WorldService {
             // Update last cycle
             await updateTradeRouteLastCycle(route.id);
           } catch (err) {
-            console.error(`[TRADE ROUTE] Error processing ${route.id}:`, err);
+            logger.error({ err, routeId: route.id }, 'Trade route processing error');
           }
         }
       } catch (err) {
-        console.error(`[TRADE ROUTES] Error for owner ${ownerId}:`, err);
+        logger.error({ err, ownerId }, 'Trade routes error for owner');
       }
     }
   }
@@ -885,7 +886,7 @@ export class WorldService {
         await addPlayerKnownQuadrant(auth.userId, qx, qy);
       }
     } catch (err) {
-      console.error('[checkFirstContact] Error:', err);
+      logger.error({ err }, 'checkFirstContact error');
     }
   }
 }

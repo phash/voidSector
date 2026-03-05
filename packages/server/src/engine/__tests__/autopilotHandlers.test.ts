@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ShipStats } from '@void-sector/shared';
+import { mockQueryResult } from '../../test/mockFactories.js';
 
 /**
  * Integration tests for the autopilot handler flow.
@@ -111,7 +112,7 @@ describe('autopilot start flow', () => {
     expect(costs.estimatedTime).toBe(8 * STEP_INTERVAL_MS);
 
     // 3. Save route to DB
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'INSERT', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'INSERT'));
     const now = Date.now();
     await saveAutopilotRoute('player-1', target.x, target.y, false, path, now);
 
@@ -193,7 +194,7 @@ describe('autopilot progress flow', () => {
   });
 
   it('updates DB step after each tick', async () => {
-    mockQuery.mockResolvedValue({ rows: [], rowCount: 1, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValue(mockQueryResult([], 'UPDATE'));
 
     await updateAutopilotStep('player-1', 3, Date.now());
     expect(mockQuery).toHaveBeenCalledWith(
@@ -249,7 +250,7 @@ describe('autopilot pause on resource exhaustion', () => {
   });
 
   it('persists pause status to DB', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE', 1));
 
     const paused = await pauseAutopilotRoute('player-1');
     expect(paused).toBe(true);
@@ -268,8 +269,7 @@ describe('autopilot resume after relog', () => {
     const route = mockRouteRow({ currentStep: 4 });
 
     // Mock DB returning active route
-    mockQuery.mockResolvedValueOnce({
-      rows: [{
+    mockQuery.mockResolvedValueOnce(mockQueryResult([{
         user_id: route.userId,
         target_x: route.targetX,
         target_y: route.targetY,
@@ -280,9 +280,7 @@ describe('autopilot resume after relog', () => {
         started_at: String(route.startedAt),
         last_step_at: String(route.lastStepAt),
         status: 'active',
-      }],
-      rowCount: 1, command: 'SELECT', oid: 0, fields: [],
-    } as any);
+    }]));
 
     const activeRoute = await getActiveAutopilotRoute('player-1');
     expect(activeRoute).not.toBeNull();
@@ -296,9 +294,7 @@ describe('autopilot resume after relog', () => {
   });
 
   it('does not resume if no active route', async () => {
-    mockQuery.mockResolvedValueOnce({
-      rows: [], rowCount: 0, command: 'SELECT', oid: 0, fields: [],
-    } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult());
 
     const activeRoute = await getActiveAutopilotRoute('player-1');
     expect(activeRoute).toBeNull();
@@ -322,7 +318,7 @@ describe('autopilot resume after relog', () => {
 // ---------------------------------------------------------------------------
 describe('autopilot cancel', () => {
   it('cancels active route in DB', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE', 1));
 
     const cancelled = await cancelAutopilotRoute('player-1');
     expect(cancelled).toBe(true);
@@ -333,7 +329,7 @@ describe('autopilot cancel', () => {
   });
 
   it('cancel is safe when no active route exists', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE'));
 
     const cancelled = await cancelAutopilotRoute('player-1');
     expect(cancelled).toBe(false);
@@ -352,7 +348,7 @@ describe('autopilot cancel', () => {
 // ---------------------------------------------------------------------------
 describe('autopilot completion', () => {
   it('marks route as completed in DB when path exhausted', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE'));
 
     await completeAutopilotRoute('player-1');
     expect(mockQuery).toHaveBeenCalledWith(
@@ -371,7 +367,7 @@ describe('autopilot completion', () => {
     expect(path).toHaveLength(3);
 
     // 2. Simulate save
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'INSERT', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'INSERT'));
     await saveAutopilotRoute('player-1', target.x, target.y, false, path, Date.now());
 
     // 3. Step through the route
@@ -388,7 +384,7 @@ describe('autopilot completion', () => {
       positions.push(seg.moves[seg.moves.length - 1]);
 
       // Simulate DB step update
-      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'UPDATE', oid: 0, fields: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE'));
       await updateAutopilotStep('player-1', step, Date.now());
     }
 
@@ -396,7 +392,7 @@ describe('autopilot completion', () => {
     expect(positions).toEqual([{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }]);
 
     // 4. Complete
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE'));
     await completeAutopilotRoute('player-1');
   });
 
@@ -483,13 +479,12 @@ describe('autopilot edge cases', () => {
 
   it('onLeave pauses active route for later resume', async () => {
     // Simulate: route active at step 3, player disconnects
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE', 1));
     const paused = await pauseAutopilotRoute('player-1');
     expect(paused).toBe(true);
 
     // Simulate: player reconnects, route should be resumable
-    mockQuery.mockResolvedValueOnce({
-      rows: [{
+    mockQuery.mockResolvedValueOnce(mockQueryResult([{
         user_id: 'player-1',
         target_x: 5, target_y: 3,
         use_hyperjump: false,
@@ -499,9 +494,7 @@ describe('autopilot edge cases', () => {
         started_at: String(Date.now()),
         last_step_at: String(Date.now()),
         status: 'active', // would be 'paused' but after resume it's 'active' again
-      }],
-      rowCount: 1, command: 'SELECT', oid: 0, fields: [],
-    } as any);
+    }]));
 
     const route = await getActiveAutopilotRoute('player-1');
     expect(route).not.toBeNull();
@@ -514,12 +507,12 @@ describe('autopilot edge cases', () => {
 
   it('concurrent cancel during stepping is safe', async () => {
     // Cancel returns true even if timer was already cleared
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE', 1));
     const cancelled = await cancelAutopilotRoute('player-1');
     expect(cancelled).toBe(true);
 
     // Second cancel returns false (already cancelled)
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0, command: 'UPDATE', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE'));
     const cancelled2 = await cancelAutopilotRoute('player-1');
     expect(cancelled2).toBe(false);
   });

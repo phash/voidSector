@@ -3,6 +3,7 @@ import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import type { JumpMessage, HyperJumpMessage, ShipStats } from '@void-sector/shared';
 import { isInt, rejectGuest, MAX_COORD } from './utils.js';
+import { logger } from '../../utils/logger.js';
 
 import { generateSector } from '../../engine/worldgen.js';
 import { calculateCurrentAP } from '../../engine/ap.js';
@@ -122,7 +123,7 @@ export class NavigationService {
     if (!this.ctx.checkRate(client.sessionId, 'jump', 300)) { client.send('jumpResult', { success: false, error: 'Too fast' }); return; }
     if (!isInt(data.targetX) || !isInt(data.targetY) ||
         Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
-      console.warn(`[SECURITY] handleJump invalid coords from ${(client.auth as AuthPayload)?.username}: (${data.targetX},${data.targetY})`);
+      logger.warn({ username: (client.auth as AuthPayload)?.username, targetX: data.targetX, targetY: data.targetY }, 'handleJump invalid coords');
       client.send('jumpResult', { success: false, error: 'Invalid coordinates' });
       return;
     }
@@ -253,11 +254,11 @@ export class NavigationService {
 
   async handleHyperJump(client: Client, data: HyperJumpMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
-    console.log(`[HYPERJUMP] ${auth.username} attempting jump to (${data.targetX},${data.targetY})`);
+    logger.info({ username: auth.username, targetX: data.targetX, targetY: data.targetY }, 'Hyperjump attempt');
     if (!this.ctx.checkRate(client.sessionId, 'hyperJump', 1000)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
     if (!isInt(data.targetX) || !isInt(data.targetY) ||
         Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
-      console.warn(`[SECURITY] handleHyperJump invalid coords from ${auth.username}: (${data.targetX},${data.targetY})`);
+      logger.warn({ username: auth.username, targetX: data.targetX, targetY: data.targetY }, 'handleHyperJump invalid coords');
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
       return;
     }
@@ -265,7 +266,7 @@ export class NavigationService {
 
     // Reject if already in autopilot
     if (this.ctx.autopilotTimers.has(client.sessionId)) {
-      console.log(`[HYPERJUMP] ${auth.username} rejected: autopilot active`);
+      logger.info({ username: auth.username }, 'Hyperjump rejected: autopilot active');
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Autopilot already active' });
       return;
     }
@@ -273,11 +274,11 @@ export class NavigationService {
     // Validate target is discovered
     const discovered = await isRouteDiscovered(auth.userId, targetX, targetY);
     if (!discovered) {
-      console.log(`[HYPERJUMP] ${auth.username} target (${targetX},${targetY}) NOT discovered — rejecting (userId=${auth.userId})`);
+      logger.info({ username: auth.username, targetX, targetY, userId: auth.userId }, 'Hyperjump target not discovered');
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Target sector not discovered' });
       return;
     }
-    console.log(`[HYPERJUMP] ${auth.username} target discovered, proceeding...`);
+    logger.info({ username: auth.username }, 'Hyperjump target discovered, proceeding');
 
     // Nebula blocking: can't hyperjump into or out of nebula
     const currentX = this.ctx.state.players.get(client.sessionId)?.x ?? 0;
@@ -471,7 +472,7 @@ export class NavigationService {
           stepIndex++;
           client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
         } catch (err) {
-          console.error('[HYPERJUMP] Autopilot step error:', err);
+          logger.error({ err }, 'Hyperjump autopilot step error');
           clearInterval(timer);
           this.ctx.autopilotTimers.delete(client.sessionId);
           client.send('autopilotComplete', { x: -1, y: -1 });
@@ -560,7 +561,7 @@ export class NavigationService {
           stepIndex++;
           client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
         } catch (err) {
-          console.error('[HYPERJUMP] Autopilot step error:', err);
+          logger.error({ err }, 'Hyperjump V1 autopilot step error');
           clearInterval(timer);
           this.ctx.autopilotTimers.delete(client.sessionId);
           client.send('autopilotComplete', { x: -1, y: -1 });
@@ -912,7 +913,7 @@ export class NavigationService {
           totalSteps: path.length,
         });
       } catch (err) {
-        console.error('[AUTOPILOT] Step error:', err);
+        logger.error({ err }, 'Autopilot step error');
         clearInterval(timer);
         this.ctx.autopilotTimers.delete(client.sessionId);
         try {

@@ -1,12 +1,13 @@
 import { query, runMigrations } from '../db/client.js';
 import { createPlayer } from '../db/queries.js';
 import bcrypt from 'bcrypt';
+import { logger } from '../utils/logger.js';
 
 const SALT_ROUNDS = 10;
 
 async function reseed() {
   await runMigrations();
-  console.log('Migrations complete');
+  logger.info('Migrations complete');
 
   // 1. Full wipe: all sectors, all players, all quadrants, all discoveries
   const tables = [
@@ -30,13 +31,13 @@ async function reseed() {
   for (const table of tables) {
     try {
       const del = await query(`DELETE FROM ${table}`);
-      console.log(`Cleared ${table}: ${del.rowCount} rows`);
+      logger.info({ table, rowCount: del.rowCount }, 'Cleared table');
     } catch (err: any) {
-      console.log(`Skip ${table}: ${err.message}`);
+      logger.info({ table, error: err.message }, 'Skipped table');
     }
   }
 
-  console.log('Redis will be flushed separately');
+  logger.info('Redis will be flushed separately');
 
   // 3. Create test accounts — all spawn in quadrant (3000,3000), sector ~(1234,1234)
   //    absolute = quadrant * QUADRANT_SIZE + sector = 3000 * 10000 + 1234 = 30001234
@@ -49,14 +50,14 @@ async function reseed() {
 
   for (const acct of accounts) {
     const player = await createPlayer(acct.username, passwordHash, acct.homeBase);
-    console.log(`Created ${acct.username} (id: ${player.id}) at (${acct.homeBase.x}, ${acct.homeBase.y})`);
+    logger.info({ username: acct.username, id: player.id, x: acct.homeBase.x, y: acct.homeBase.y }, 'Created player');
   }
 
-  console.log('Reseed complete');
+  logger.info('Reseed complete');
   process.exit(0);
 }
 
 reseed().catch(err => {
-  console.error('Reseed failed:', err);
+  logger.error({ err }, 'Reseed failed');
   process.exit(1);
 });

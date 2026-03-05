@@ -17,6 +17,7 @@ import {
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput } from './db/adminQueries.js';
 import { adminBus } from './adminBus.js';
+import { logger } from './utils/logger.js';
 
 export const adminRouter = Router();
 
@@ -54,7 +55,7 @@ adminRouter.get('/players', async (_req: Request, res: Response) => {
     await logAdminEvent('list_players', { count: players.length });
     res.json({ players });
   } catch (err) {
-    console.error('Admin list players error:', err);
+    logger.error({ err }, 'Admin list players error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -69,7 +70,7 @@ adminRouter.get('/players/:id', async (req: Request, res: Response) => {
     await logAdminEvent('get_player', { playerId: req.params.id });
     res.json({ player });
   } catch (err) {
-    console.error('Admin get player error:', err);
+    logger.error({ err }, 'Admin get player error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -115,7 +116,7 @@ adminRouter.post('/quests', async (req: Request, res: Response) => {
 
     res.status(201).json({ id: questId });
   } catch (err) {
-    console.error('Admin create quest error:', err);
+    logger.error({ err }, 'Admin create quest error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -127,7 +128,7 @@ adminRouter.get('/quests', async (req: Request, res: Response) => {
     await logAdminEvent('list_quests', { count: quests.length, statusFilter });
     res.json({ quests });
   } catch (err) {
-    console.error('Admin list quests error:', err);
+    logger.error({ err }, 'Admin list quests error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -142,7 +143,7 @@ adminRouter.get('/quests/:id', async (req: Request, res: Response) => {
     await logAdminEvent('get_quest', { questId: req.params.id });
     res.json({ quest });
   } catch (err) {
-    console.error('Admin get quest error:', err);
+    logger.error({ err }, 'Admin get quest error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -170,7 +171,7 @@ adminRouter.patch('/quests/:id', async (req: Request, res: Response) => {
     await logAdminEvent('update_quest_status', { questId: req.params.id, status });
     res.json({ quest });
   } catch (err) {
-    console.error('Admin update quest error:', err);
+    logger.error({ err }, 'Admin update quest error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -201,7 +202,7 @@ adminRouter.post('/messages', async (req: Request, res: Response) => {
 
     res.status(201).json({ id: messageId });
   } catch (err) {
-    console.error('Admin create message error:', err);
+    logger.error({ err }, 'Admin create message error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -213,7 +214,7 @@ adminRouter.get('/messages', async (req: Request, res: Response) => {
     await logAdminEvent('list_messages', { count: messages.length });
     res.json({ messages });
   } catch (err) {
-    console.error('Admin list messages error:', err);
+    logger.error({ err }, 'Admin list messages error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -224,7 +225,7 @@ adminRouter.get('/messages/:id/replies', async (req: Request, res: Response) => 
     await logAdminEvent('list_replies', { messageId: req.params.id, count: replies.length });
     res.json({ replies });
   } catch (err) {
-    console.error('Admin list replies error:', err);
+    logger.error({ err }, 'Admin list replies error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -237,7 +238,7 @@ adminRouter.get('/events', async (req: Request, res: Response) => {
     const events = await getAdminEvents(limit);
     res.json({ events });
   } catch (err) {
-    console.error('Admin list events error:', err);
+    logger.error({ err }, 'Admin list events error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -250,7 +251,7 @@ adminRouter.get('/stats', async (_req: Request, res: Response) => {
     await logAdminEvent('get_stats');
     res.json({ stats });
   } catch (err) {
-    console.error('Admin get stats error:', err);
+    logger.error({ err }, 'Admin get stats error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

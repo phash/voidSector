@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mockQueryResult } from '../test/mockFactories.js';
 
 vi.mock('../db/client.js', () => ({
   query: vi.fn(),
@@ -35,12 +36,10 @@ describe('adminQueries', () => {
 
   describe('getAllPlayers', () => {
     it('returns all players mapped to camelCase', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
           { id: 'p1', username: 'alice', position_x: 5, position_y: 10, xp: 100, level: 3, faction_id: 'f1' },
           { id: 'p2', username: 'bob', position_x: -2, position_y: 0, xp: 50, level: 1, faction_id: null },
-        ],
-      } as any);
+      ]));
 
       const players = await getAllPlayers();
       expect(players).toHaveLength(2);
@@ -60,7 +59,7 @@ describe('adminQueries', () => {
     });
 
     it('returns empty array when no players', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
       const players = await getAllPlayers();
       expect(players).toEqual([]);
     });
@@ -68,9 +67,9 @@ describe('adminQueries', () => {
 
   describe('getPlayerById', () => {
     it('returns player when found', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'p1', username: 'alice', position_x: 0, position_y: 0, xp: 0, level: 1, faction_id: null }],
-      } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
+        { id: 'p1', username: 'alice', position_x: 0, position_y: 0, xp: 0, level: 1, faction_id: null },
+      ]));
 
       const player = await getPlayerById('p1');
       expect(player).not.toBeNull();
@@ -83,7 +82,7 @@ describe('adminQueries', () => {
     });
 
     it('returns null when not found', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
       const player = await getPlayerById('nonexistent');
       expect(player).toBeNull();
     });
@@ -91,9 +90,9 @@ describe('adminQueries', () => {
 
   describe('getPlayerByUsername', () => {
     it('returns player when found by username', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'p2', username: 'bob', position_x: 1, position_y: 2, xp: 10, level: 2, faction_id: 'f1' }],
-      } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
+        { id: 'p2', username: 'bob', position_x: 1, position_y: 2, xp: 10, level: 2, faction_id: 'f1' },
+      ]));
 
       const player = await getPlayerByUsername('bob');
       expect(player).not.toBeNull();
@@ -106,7 +105,7 @@ describe('adminQueries', () => {
     });
 
     it('returns null when username not found', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
       const player = await getPlayerByUsername('nobody');
       expect(player).toBeNull();
     });
@@ -116,7 +115,7 @@ describe('adminQueries', () => {
 
   describe('createAdminQuest', () => {
     it('inserts quest and returns id', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'quest-1' }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'quest-1' }]));
 
       const id = await createAdminQuest({ title: 'Test Quest', description: 'A test' });
       expect(id).toBe('quest-1');
@@ -127,7 +126,7 @@ describe('adminQueries', () => {
     });
 
     it('passes optional fields with defaults', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'quest-2' }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'quest-2' }]));
 
       await createAdminQuest({
         title: 'Fetch Quest',
@@ -183,7 +182,7 @@ describe('adminQueries', () => {
     };
 
     it('returns all quests without filter', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [questRow] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([questRow]));
 
       const quests = await getAdminQuests();
       expect(quests).toHaveLength(1);
@@ -197,7 +196,7 @@ describe('adminQueries', () => {
     });
 
     it('filters by status when provided', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
 
       await getAdminQuests('expired');
       expect(mockQuery).toHaveBeenCalledWith(
@@ -209,8 +208,7 @@ describe('adminQueries', () => {
 
   describe('getAdminQuestById', () => {
     it('returns quest with assignment count', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{
           id: 'q1',
           title: 'Quest 1',
           description: 'Desc',
@@ -229,8 +227,7 @@ describe('adminQueries', () => {
           status: 'active',
           created_at: '2026-01-01T00:00:00Z',
           assignment_count: '5',
-        }],
-      } as any);
+      }]));
 
       const quest = await getAdminQuestById('q1');
       expect(quest).not.toBeNull();
@@ -243,7 +240,7 @@ describe('adminQueries', () => {
     });
 
     it('returns null when quest not found', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
       const quest = await getAdminQuestById('nonexistent');
       expect(quest).toBeNull();
     });
@@ -253,7 +250,7 @@ describe('adminQueries', () => {
 
   describe('createQuestAssignment', () => {
     it('inserts assignment and returns id', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'assign-1' }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'assign-1' }]));
 
       const id = await createQuestAssignment('q1', 'p1');
       expect(id).toBe('assign-1');
@@ -266,12 +263,10 @@ describe('adminQueries', () => {
 
   describe('getPlayerAdminQuests', () => {
     it('returns player assignments in descending order', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
           { id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'offered', accepted_at: null, completed_at: null, created_at: '2026-01-02' },
           { id: 'a2', quest_id: 'q2', player_id: 'p1', status: 'accepted', accepted_at: '2026-01-01', completed_at: null, created_at: '2026-01-01' },
-        ],
-      } as any);
+      ]));
 
       const assignments = await getPlayerAdminQuests('p1');
       expect(assignments).toHaveLength(2);
@@ -285,7 +280,7 @@ describe('adminQueries', () => {
     });
 
     it('returns empty array for player with no quests', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
       const assignments = await getPlayerAdminQuests('p99');
       expect(assignments).toEqual([]);
     });
@@ -293,9 +288,9 @@ describe('adminQueries', () => {
 
   describe('updateQuestAssignment', () => {
     it('updates status to accepted with accepted_at timestamp', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'accepted', accepted_at: '2026-01-01', completed_at: null, created_at: '2026-01-01' }],
-      } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
+        { id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'accepted', accepted_at: '2026-01-01', completed_at: null, created_at: '2026-01-01' },
+      ]));
 
       const assignment = await updateQuestAssignment('a1', 'accepted');
       expect(assignment).not.toBeNull();
@@ -307,9 +302,9 @@ describe('adminQueries', () => {
     });
 
     it('updates status to completed with completed_at timestamp', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'completed', accepted_at: '2026-01-01', completed_at: '2026-01-02', created_at: '2026-01-01' }],
-      } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
+        { id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'completed', accepted_at: '2026-01-01', completed_at: '2026-01-02', created_at: '2026-01-01' },
+      ]));
 
       const assignment = await updateQuestAssignment('a1', 'completed');
       expect(assignment).not.toBeNull();
@@ -321,9 +316,9 @@ describe('adminQueries', () => {
     });
 
     it('updates status to failed with completed_at timestamp', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'failed', accepted_at: '2026-01-01', completed_at: '2026-01-02', created_at: '2026-01-01' }],
-      } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
+        { id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'failed', accepted_at: '2026-01-01', completed_at: '2026-01-02', created_at: '2026-01-01' },
+      ]));
 
       await updateQuestAssignment('a1', 'failed');
       expect(mockQuery).toHaveBeenCalledWith(
@@ -333,7 +328,7 @@ describe('adminQueries', () => {
     });
 
     it('returns null when assignment not found', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
       const assignment = await updateQuestAssignment('nonexistent', 'accepted');
       expect(assignment).toBeNull();
     });
@@ -343,7 +338,7 @@ describe('adminQueries', () => {
 
   describe('createAdminMessage', () => {
     it('inserts message and returns id', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'msg-1' }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'msg-1' }]));
 
       const id = await createAdminMessage({ content: 'Hello world' });
       expect(id).toBe('msg-1');
@@ -354,7 +349,7 @@ describe('adminQueries', () => {
     });
 
     it('passes all optional fields', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'msg-2' }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'msg-2' }]));
 
       await createAdminMessage({
         senderName: 'Admin',
@@ -375,7 +370,7 @@ describe('adminQueries', () => {
     });
 
     it('uses defaults for optional fields', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'msg-3' }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'msg-3' }]));
 
       await createAdminMessage({ content: 'Default test' });
 
@@ -390,8 +385,7 @@ describe('adminQueries', () => {
 
   describe('getAdminMessages', () => {
     it('returns messages with default limit', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{
           id: 'msg-1',
           sender_name: 'SYSTEM',
           content: 'Hello',
@@ -400,8 +394,7 @@ describe('adminQueries', () => {
           channel: 'direct',
           allow_reply: false,
           created_at: '2026-01-01T00:00:00Z',
-        }],
-      } as any);
+      }]));
 
       const messages = await getAdminMessages();
       expect(messages).toHaveLength(1);
@@ -414,7 +407,7 @@ describe('adminQueries', () => {
     });
 
     it('respects custom limit', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
 
       await getAdminMessages(10);
       expect(mockQuery).toHaveBeenCalledWith(
@@ -428,7 +421,7 @@ describe('adminQueries', () => {
 
   describe('createAdminReply', () => {
     it('inserts reply and returns id', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'reply-1' }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 'reply-1' }]));
 
       const id = await createAdminReply('msg-1', 'p1', 'Thanks!');
       expect(id).toBe('reply-1');
@@ -441,12 +434,10 @@ describe('adminQueries', () => {
 
   describe('getAdminReplies', () => {
     it('returns replies for a message in ascending order', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
           { id: 'r1', message_id: 'msg-1', player_id: 'p1', content: 'Reply 1', created_at: '2026-01-01' },
           { id: 'r2', message_id: 'msg-1', player_id: 'p2', content: 'Reply 2', created_at: '2026-01-02' },
-        ],
-      } as any);
+      ]));
 
       const replies = await getAdminReplies('msg-1');
       expect(replies).toHaveLength(2);
@@ -460,7 +451,7 @@ describe('adminQueries', () => {
     });
 
     it('returns empty array when no replies', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
       const replies = await getAdminReplies('msg-99');
       expect(replies).toEqual([]);
     });
@@ -470,7 +461,7 @@ describe('adminQueries', () => {
 
   describe('logAdminEvent', () => {
     it('inserts event and returns id', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 42 }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 42 }]));
 
       const id = await logAdminEvent('quest_created', { questId: 'q1' });
       expect(id).toBe(42);
@@ -481,7 +472,7 @@ describe('adminQueries', () => {
     });
 
     it('uses empty object for details when omitted', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ id: 43 }] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult([{ id: 43 }]));
 
       await logAdminEvent('server_start');
       const params = mockQuery.mock.calls[0][1] as unknown[];
@@ -492,11 +483,9 @@ describe('adminQueries', () => {
 
   describe('getAdminEvents', () => {
     it('returns events with default limit', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [
+      mockQuery.mockResolvedValueOnce(mockQueryResult([
           { id: 1, action: 'quest_created', details: { questId: 'q1' }, created_at: '2026-01-01' },
-        ],
-      } as any);
+      ]));
 
       const events = await getAdminEvents();
       expect(events).toHaveLength(1);
@@ -509,7 +498,7 @@ describe('adminQueries', () => {
     });
 
     it('respects custom limit', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [] } as any);
+      mockQuery.mockResolvedValueOnce(mockQueryResult());
 
       await getAdminEvents(25);
       expect(mockQuery).toHaveBeenCalledWith(
@@ -524,9 +513,9 @@ describe('adminQueries', () => {
   describe('getServerStats', () => {
     it('returns combined counts from three tables', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '42' }] } as any)
-        .mockResolvedValueOnce({ rows: [{ count: '15' }] } as any)
-        .mockResolvedValueOnce({ rows: [{ count: '200' }] } as any);
+        .mockResolvedValueOnce(mockQueryResult([{ count: '42' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '15' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '200' }]));
 
       const stats = await getServerStats();
       expect(stats).toEqual({
@@ -542,9 +531,9 @@ describe('adminQueries', () => {
 
     it('returns zero counts for empty tables', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any)
-        .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any)
-        .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any);
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]));
 
       const stats = await getServerStats();
       expect(stats.playerCount).toBe(0);

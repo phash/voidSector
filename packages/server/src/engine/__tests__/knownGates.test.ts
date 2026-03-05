@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { JumpGateMapEntry } from '@void-sector/shared';
+import { mockQueryResult } from '../../test/mockFactories.js';
 
 vi.mock('../../db/client.js', () => ({
   query: vi.fn(),
@@ -19,7 +20,7 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 describe('getPlayerKnownJumpGates', () => {
   it('returns empty array when player has no known gates', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0, command: 'SELECT', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult());
     const result = await getPlayerKnownJumpGates('player-1');
     expect(result).toEqual([]);
     expect(mockQuery).toHaveBeenCalledOnce();
@@ -30,13 +31,10 @@ describe('getPlayerKnownJumpGates', () => {
   });
 
   it('returns mapped JumpGateMapEntry array', async () => {
-    mockQuery.mockResolvedValueOnce({
-      rows: [
+    mockQuery.mockResolvedValueOnce(mockQueryResult([
         { gate_id: 'gate_10_20', from_x: 10, from_y: 20, to_x: 100, to_y: 200, gate_type: 'bidirectional' },
         { gate_id: 'gate_30_40', from_x: 30, from_y: 40, to_x: 300, to_y: 400, gate_type: 'wormhole' },
-      ],
-      rowCount: 2, command: 'SELECT', oid: 0, fields: [],
-    } as any);
+    ]));
 
     const result = await getPlayerKnownJumpGates('player-1');
 
@@ -60,7 +58,7 @@ describe('getPlayerKnownJumpGates', () => {
   });
 
   it('passes correct playerId to query', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0, command: 'SELECT', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult());
     await getPlayerKnownJumpGates('uuid-abc-123');
     expect(mockQuery).toHaveBeenCalledWith(
       expect.any(String),
@@ -74,7 +72,7 @@ describe('getPlayerKnownJumpGates', () => {
 // ---------------------------------------------------------------------------
 describe('addPlayerKnownJumpGate', () => {
   it('inserts gate with correct parameters', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'INSERT', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'INSERT'));
 
     await addPlayerKnownJumpGate('player-1', 'gate_10_20', 10, 20, 100, 200, 'bidirectional');
 
@@ -86,7 +84,7 @@ describe('addPlayerKnownJumpGate', () => {
   });
 
   it('uses ON CONFLICT DO NOTHING for idempotent inserts', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0, command: 'INSERT', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'INSERT'));
 
     await addPlayerKnownJumpGate('player-1', 'gate_10_20', 10, 20, 100, 200, 'wormhole');
 
@@ -96,7 +94,7 @@ describe('addPlayerKnownJumpGate', () => {
   });
 
   it('handles wormhole gate type', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'INSERT', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'INSERT'));
 
     await addPlayerKnownJumpGate('player-1', 'gate_50_60', 50, 60, 500, 600, 'wormhole');
 
@@ -107,7 +105,7 @@ describe('addPlayerKnownJumpGate', () => {
   });
 
   it('handles negative coordinates', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1, command: 'INSERT', oid: 0, fields: [] } as any);
+    mockQuery.mockResolvedValueOnce(mockQueryResult([], 'INSERT'));
 
     await addPlayerKnownJumpGate('player-1', 'gate_-10_-20', -10, -20, -100, -200, 'bidirectional');
 

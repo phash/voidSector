@@ -1,11 +1,12 @@
 import { runMigrations, pool } from './client.js';
+import { logger } from '../utils/logger.js';
 
 async function main() {
   try {
     await runMigrations();
-    console.log('All migrations complete.');
+    logger.info('All migrations complete');
   } catch (err) {
-    console.error('Migration failed:', err);
+    logger.error({ err }, 'Migration failed');
     process.exit(1);
   } finally {
     await pool.end();
