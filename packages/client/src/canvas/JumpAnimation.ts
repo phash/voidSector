@@ -95,11 +95,12 @@ export function drawLongJumpCRTEffect(
 ) {
   if (!state.active || !state.isLongJump) return;
 
-  const intensity = state.phase === 'glitch'
-    ? 0.6 + 0.4 * (1 - state.progress)
-    : state.phase === 'slide'
-      ? 0.4 * (1 - state.progress)
-      : 0.2 * (1 - state.progress);
+  const intensity =
+    state.phase === 'glitch'
+      ? 0.6 + 0.4 * (1 - state.progress)
+      : state.phase === 'slide'
+        ? 0.4 * (1 - state.progress)
+        : 0.2 * (1 - state.progress);
 
   // Intense scanlines
   ctx.save();

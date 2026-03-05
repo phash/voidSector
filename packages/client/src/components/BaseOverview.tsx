@@ -41,12 +41,14 @@ export function BaseOverview() {
 
   if (!hasBase) {
     return (
-      <div style={{
-        padding: '12px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '0.7rem',
-        lineHeight: 1.8,
-      }}>
+      <div
+        style={{
+          padding: '12px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.7rem',
+          lineHeight: 1.8,
+        }}
+      >
         <div style={{ letterSpacing: '0.2em', marginBottom: 4, opacity: 0.6 }}>
           BASE-LINK — NO SIGNAL
         </div>
@@ -59,21 +61,25 @@ export function BaseOverview() {
   }
 
   return (
-    <div style={{
-      padding: '8px 12px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.65rem',
-      lineHeight: 1.6,
-      height: '100%',
-      overflow: 'auto',
-    }}>
-      <div style={{
-        letterSpacing: '0.15em',
-        fontSize: '0.7rem',
-        marginBottom: 4,
-        borderBottom: '1px solid var(--color-dim)',
-        paddingBottom: 2,
-      }}>
+    <div
+      style={{
+        padding: '8px 12px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.65rem',
+        lineHeight: 1.6,
+        height: '100%',
+        overflow: 'auto',
+      }}
+    >
+      <div
+        style={{
+          letterSpacing: '0.15em',
+          fontSize: '0.7rem',
+          marginBottom: 4,
+          borderBottom: '1px solid var(--color-dim)',
+          paddingBottom: 2,
+        }}
+      >
         {baseName || 'HEIMATBASIS'} — CONNECTED
       </div>
 
@@ -81,12 +87,14 @@ export function BaseOverview() {
         CREDITS: <span style={{ color: 'var(--color-primary)' }}>{credits.toLocaleString()}</span>
       </div>
 
-      <div style={{
-        fontSize: '0.55rem',
-        letterSpacing: '0.1em',
-        color: 'var(--color-dim)',
-        marginBottom: 4,
-      }}>
+      <div
+        style={{
+          fontSize: '0.55rem',
+          letterSpacing: '0.1em',
+          color: 'var(--color-dim)',
+          marginBottom: 4,
+        }}
+      >
         GEBÄUDE ({baseStructures.length})
       </div>
 
@@ -100,7 +108,8 @@ export function BaseOverview() {
             alignItems: 'center',
             padding: '4px 6px',
             cursor: 'pointer',
-            borderLeft: selectedId === s.id ? '2px solid var(--color-primary)' : '2px solid transparent',
+            borderLeft:
+              selectedId === s.id ? '2px solid var(--color-primary)' : '2px solid transparent',
             background: selectedId === s.id ? 'rgba(255,176,0,0.05)' : 'transparent',
             marginBottom: 2,
           }}

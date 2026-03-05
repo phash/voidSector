@@ -5,16 +5,10 @@ import type { SendChatMessage, ChatMessage } from '@void-sector/shared';
 import { isGuest } from './utils.js';
 import { commsBus } from '../../commsBus.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
-import {
-  saveMessage,
-  getPlayerFaction,
-  getFactionMembersByPlayerIds,
-} from '../../db/queries.js';
+import { saveMessage, getPlayerFaction, getFactionMembersByPlayerIds } from '../../db/queries.js';
 
 function sanitizeChat(text: string): string {
-  return text
-    .replace(/<[^>]*>/g, '')
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  return text.replace(/<[^>]*>/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 }
 
 export class ChatService {
@@ -22,11 +16,17 @@ export class ChatService {
 
   async handleChat(client: Client, data: SendChatMessage): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'chat', 500)) {
-      this.ctx.send(client, 'error', { code: 'RATE_LIMIT', message: 'Zu viele Nachrichten — bitte kurz warten' });
+      this.ctx.send(client, 'error', {
+        code: 'RATE_LIMIT',
+        message: 'Zu viele Nachrichten — bitte kurz warten',
+      });
       return;
     }
     if (isGuest(client) && data.channel === 'faction') {
-      this.ctx.send(client, 'error', { code: 'GUEST_RESTRICTED', message: 'Fraktions-Chat ist für Gäste nicht verfügbar' });
+      this.ctx.send(client, 'error', {
+        code: 'GUEST_RESTRICTED',
+        message: 'Fraktions-Chat ist für Gäste nicht verfügbar',
+      });
       return;
     }
     const auth = client.auth as AuthPayload;
@@ -41,7 +41,10 @@ export class ChatService {
     const cleanContent = sanitizeChat(data.content.trim());
     if (!cleanContent || cleanContent.length === 0) return;
     if (data.content.length > 500) {
-      this.ctx.send(client, 'error', { code: 'MSG_TOO_LONG', message: 'Message too long (max 500 chars)' });
+      this.ctx.send(client, 'error', {
+        code: 'MSG_TOO_LONG',
+        message: 'Message too long (max 500 chars)',
+      });
       return;
     }
 
@@ -66,7 +69,12 @@ export class ChatService {
       return;
     }
 
-    const msg = await saveMessage(auth.userId, data.recipientId ?? null, data.channel, cleanContent);
+    const msg = await saveMessage(
+      auth.userId,
+      data.recipientId ?? null,
+      data.channel,
+      cleanContent,
+    );
 
     const chatMsg: ChatMessage = {
       id: msg.id,
@@ -97,7 +105,10 @@ export class ChatService {
       // Broadcast to all players in this room (same quadrant)
       this.ctx.broadcast('chatMessage', chatMsg);
       // Emit to commsBus for other rooms in the same quadrant
-      const { qx, qy } = sectorToQuadrant(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+      const { qx, qy } = sectorToQuadrant(
+        this.ctx._px(client.sessionId),
+        this.ctx._py(client.sessionId),
+      );
       commsBus.broadcast({
         channel: 'quadrant',
         sectorX: this.ctx._px(client.sessionId),
@@ -109,7 +120,10 @@ export class ChatService {
     } else if (data.channel === 'direct' && data.recipientId) {
       this.ctx.sendToPlayer(data.recipientId, 'chatMessage', chatMsg);
       // Also emit to commsBus for cross-room direct delivery
-      const { qx, qy } = sectorToQuadrant(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+      const { qx, qy } = sectorToQuadrant(
+        this.ctx._px(client.sessionId),
+        this.ctx._py(client.sessionId),
+      );
       commsBus.broadcast({
         channel: 'sector', // use sector channel for routing, message.channel is 'direct'
         sectorX: this.ctx._px(client.sessionId),

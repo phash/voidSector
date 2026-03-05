@@ -14,9 +14,15 @@ vi.mock('../network/client', () => ({
 import { network } from '../network/client';
 
 const sectorWithResources = {
-  x: 0, y: 0, type: 'asteroid_field' as const, seed: 42,
-  discoveredBy: null, discoveredAt: null, metadata: {},
-  environment: 'empty' as const, contents: ['asteroid_field' as const],
+  x: 0,
+  y: 0,
+  type: 'asteroid_field' as const,
+  seed: 42,
+  discoveredBy: null,
+  discoveredAt: null,
+  metadata: {},
+  environment: 'empty' as const,
+  contents: ['asteroid_field' as const],
   resources: { ore: 20, gas: 2, crystal: 3 },
 };
 
@@ -51,8 +57,13 @@ describe('MiningScreen', () => {
     mockStoreState({
       currentSector: sectorWithResources,
       mining: {
-        active: true, resource: 'ore', sectorX: 0, sectorY: 0,
-        startedAt: Date.now(), rate: 0.1, sectorYield: 20,
+        active: true,
+        resource: 'ore',
+        sectorX: 0,
+        sectorY: 0,
+        startedAt: Date.now(),
+        rate: 0.1,
+        sectorYield: 20,
       },
     });
     render(<MiningScreen />);
@@ -85,8 +96,13 @@ describe('MiningScreen', () => {
     mockStoreState({
       currentSector: sectorWithResources,
       mining: {
-        active: true, resource: 'ore', sectorX: 0, sectorY: 0,
-        startedAt: Date.now(), rate: 0.1, sectorYield: 20,
+        active: true,
+        resource: 'ore',
+        sectorX: 0,
+        sectorY: 0,
+        startedAt: Date.now(),
+        rate: 0.1,
+        sectorYield: 20,
       },
     });
     render(<MiningScreen />);
@@ -98,8 +114,13 @@ describe('MiningScreen', () => {
     mockStoreState({
       currentSector: sectorWithResources,
       mining: {
-        active: true, resource: 'ore', sectorX: 0, sectorY: 0,
-        startedAt: Date.now(), rate: 0.1, sectorYield: 20,
+        active: true,
+        resource: 'ore',
+        sectorX: 0,
+        sectorY: 0,
+        startedAt: Date.now(),
+        rate: 0.1,
+        sectorYield: 20,
       },
     });
     render(<MiningScreen />);
@@ -111,8 +132,13 @@ describe('MiningScreen', () => {
     mockStoreState({
       currentSector: sectorWithResources,
       mining: {
-        active: true, resource: 'ore', sectorX: 0, sectorY: 0,
-        startedAt: Date.now(), rate: 0.1, sectorYield: 20,
+        active: true,
+        resource: 'ore',
+        sectorX: 0,
+        sectorY: 0,
+        startedAt: Date.now(),
+        rate: 0.1,
+        sectorYield: 20,
       },
     });
     render(<MiningScreen />);

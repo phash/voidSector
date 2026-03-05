@@ -1,12 +1,27 @@
 const SHIP_NAMES = [
-  'ISS Meridian', 'ISS Kahlur', 'ISS Volantis', 'Freighter Kova-7',
-  'Scout Vessel Argent', 'ISS Prometheus', 'Miner Hex-9', 'ISS Dawnbreaker',
-  'Cargo Runner Tethys', 'ISS Valkyr', 'Station Tender Orion-3', 'ISS Centauri',
+  'ISS Meridian',
+  'ISS Kahlur',
+  'ISS Volantis',
+  'Freighter Kova-7',
+  'Scout Vessel Argent',
+  'ISS Prometheus',
+  'Miner Hex-9',
+  'ISS Dawnbreaker',
+  'Cargo Runner Tethys',
+  'ISS Valkyr',
+  'Station Tender Orion-3',
+  'ISS Centauri',
 ];
 
 const CREW_NAMES = [
-  'Captain Ryn', 'Pilot Sasha', 'Engineer Kael', 'Commander Voss',
-  'Lt. Mira', 'Chief Tomas', 'Dr. Elara', 'Navigator Dex',
+  'Captain Ryn',
+  'Pilot Sasha',
+  'Engineer Kael',
+  'Commander Voss',
+  'Lt. Mira',
+  'Chief Tomas',
+  'Dr. Elara',
+  'Navigator Dex',
 ];
 
 const STORIES: Array<(ship: string, crew: string, x: number, y: number) => string> = [
@@ -29,9 +44,9 @@ const STORIES: Array<(ship: string, crew: string, x: number, y: number) => strin
 ];
 
 export function generateDistressMessage(sectorX: number, sectorY: number, seed: number): string {
-  const shipIdx = ((seed >>> 0) % SHIP_NAMES.length + SHIP_NAMES.length) % SHIP_NAMES.length;
-  const crewIdx = ((seed >>> 8) % CREW_NAMES.length + CREW_NAMES.length) % CREW_NAMES.length;
-  const storyIdx = ((seed >>> 16) % STORIES.length + STORIES.length) % STORIES.length;
+  const shipIdx = (((seed >>> 0) % SHIP_NAMES.length) + SHIP_NAMES.length) % SHIP_NAMES.length;
+  const crewIdx = (((seed >>> 8) % CREW_NAMES.length) + CREW_NAMES.length) % CREW_NAMES.length;
+  const storyIdx = (((seed >>> 16) % STORIES.length) + STORIES.length) % STORIES.length;
   const ship = SHIP_NAMES[shipIdx];
   const crew = CREW_NAMES[crewIdx];
   return STORIES[storyIdx](ship, crew, sectorX, sectorY);

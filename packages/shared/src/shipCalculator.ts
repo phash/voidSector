@@ -57,13 +57,16 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
 }
 
 export function validateModuleInstall(
-  hullType: HullType, currentModules: ShipModule[], moduleId: string, slotIndex: number
+  hullType: HullType,
+  currentModules: ShipModule[],
+  moduleId: string,
+  slotIndex: number,
 ): { valid: boolean; error?: string } {
   const hull = HULLS[hullType];
   const moduleDef = MODULES[moduleId];
   if (!moduleDef) return { valid: false, error: 'Unknown module' };
   if (slotIndex < 0 || slotIndex >= hull.slots) return { valid: false, error: 'Invalid slot' };
-  if (currentModules.some(m => m.slotIndex === slotIndex)) {
+  if (currentModules.some((m) => m.slotIndex === slotIndex)) {
     return { valid: false, error: 'Slot occupied' };
   }
   return { valid: true };

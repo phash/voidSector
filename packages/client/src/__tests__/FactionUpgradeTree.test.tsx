@@ -93,9 +93,7 @@ describe('FactionUpgradeTree', () => {
     mockStoreState({
       faction: baseFaction,
       factionMembers: baseMembers,
-      factionUpgrades: [
-        { tier: 1, choice: 'A', chosenAt: new Date().toISOString() },
-      ],
+      factionUpgrades: [{ tier: 1, choice: 'A', chosenAt: new Date().toISOString() }],
       player: { id: 'p1', username: 'TestPlayer' },
     } as any);
     render(<FactionScreen />);

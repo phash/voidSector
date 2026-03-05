@@ -6,7 +6,13 @@ interface Props {
   onCancel: () => void;
 }
 
-function drawSineWave(ctx: CanvasRenderingContext2D, width: number, y: number, freq: number, amp: number) {
+function drawSineWave(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  y: number,
+  freq: number,
+  amp: number,
+) {
   ctx.beginPath();
   for (let x = 0; x < width; x++) {
     const val = Math.sin((x / width) * freq * Math.PI * 2) * amp * 0.4;
@@ -53,8 +59,8 @@ export const FrequencyMinigame: React.FC<Props> = ({ onComplete, onCancel }) => 
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') setPlayerFreq(f => Math.max(0.5, f - 0.1));
-      if (e.key === 'ArrowRight') setPlayerFreq(f => Math.min(10, f + 0.1));
+      if (e.key === 'ArrowLeft') setPlayerFreq((f) => Math.max(0.5, f - 0.1));
+      if (e.key === 'ArrowRight') setPlayerFreq((f) => Math.min(10, f + 0.1));
       if (e.key === 'Enter' && matchPercent >= FREQUENCY_MATCH_THRESHOLD) onComplete(true);
       if (e.key === 'Escape') onCancel();
     };
@@ -63,7 +69,7 @@ export const FrequencyMinigame: React.FC<Props> = ({ onComplete, onCancel }) => 
   }, [matchPercent, onComplete, onCancel]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    setPlayerFreq(f => {
+    setPlayerFreq((f) => {
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
       return Math.max(0.5, Math.min(10, f + delta));
     });
@@ -74,12 +80,22 @@ export const FrequencyMinigame: React.FC<Props> = ({ onComplete, onCancel }) => 
   }, []);
 
   return (
-    <div style={{
-      background: 'rgba(5, 5, 5, 0.95)',
-      border: '1px solid rgba(255, 176, 0, 0.4)',
-      padding: 12,
-    }}>
-      <div style={{ color: '#FFB000', textAlign: 'center', marginBottom: 8, letterSpacing: '0.2em', fontSize: '0.85rem' }}>
+    <div
+      style={{
+        background: 'rgba(5, 5, 5, 0.95)',
+        border: '1px solid rgba(255, 176, 0, 0.4)',
+        padding: 12,
+      }}
+    >
+      <div
+        style={{
+          color: '#FFB000',
+          textAlign: 'center',
+          marginBottom: 8,
+          letterSpacing: '0.2em',
+          fontSize: '0.85rem',
+        }}
+      >
         GATE FREQUENCY LOCK
       </div>
       <canvas

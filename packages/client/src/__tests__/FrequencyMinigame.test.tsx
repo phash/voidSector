@@ -13,9 +13,7 @@ describe('FrequencyMinigame', () => {
   });
 
   it('renders canvas element', () => {
-    const { container } = render(
-      <FrequencyMinigame onComplete={onComplete} onCancel={onCancel} />
-    );
+    const { container } = render(<FrequencyMinigame onComplete={onComplete} onCancel={onCancel} />);
     const canvas = container.querySelector('canvas');
     expect(canvas).toBeTruthy();
     expect(canvas!.width).toBe(280);

@@ -247,10 +247,16 @@ describe('Hyperdrive V2 — Charge System', () => {
 
     it('applies hull multiplier (scout is cheaper)', () => {
       const scoutCost = calcHyperjumpFuelV2(
-        HYPERJUMP_FUEL_PER_SECTOR, 10, HULL_FUEL_MULTIPLIER.scout, 0,
+        HYPERJUMP_FUEL_PER_SECTOR,
+        10,
+        HULL_FUEL_MULTIPLIER.scout,
+        0,
       );
       const battleshipCost = calcHyperjumpFuelV2(
-        HYPERJUMP_FUEL_PER_SECTOR, 10, HULL_FUEL_MULTIPLIER.battleship, 0,
+        HYPERJUMP_FUEL_PER_SECTOR,
+        10,
+        HULL_FUEL_MULTIPLIER.battleship,
+        0,
       );
       expect(scoutCost).toBeLessThan(battleshipCost);
     });
@@ -275,7 +281,10 @@ describe('Hyperdrive V2 — Charge System', () => {
 
     it('pirate fuel penalty multiplies the V2 cost', () => {
       const baseCost = calcHyperjumpFuelV2(
-        HYPERJUMP_FUEL_PER_SECTOR, 10, HULL_FUEL_MULTIPLIER.scout, 0,
+        HYPERJUMP_FUEL_PER_SECTOR,
+        10,
+        HULL_FUEL_MULTIPLIER.scout,
+        0,
       );
       const pirateCost = Math.ceil(baseCost * HYPERJUMP_PIRATE_FUEL_PENALTY);
       expect(pirateCost).toBeGreaterThan(baseCost);
@@ -346,9 +355,8 @@ describe('Hyperdrive V2 — Charge System', () => {
       const AUTOPILOT_STEP_MS = 100;
       const speed0 = 0;
       // When hyperdriveSpeed is 0, we use default
-      const result = speed0 > 0
-        ? Math.max(20, Math.floor(AUTOPILOT_STEP_MS / speed0))
-        : AUTOPILOT_STEP_MS;
+      const result =
+        speed0 > 0 ? Math.max(20, Math.floor(AUTOPILOT_STEP_MS / speed0)) : AUTOPILOT_STEP_MS;
       expect(result).toBe(100);
     });
   });

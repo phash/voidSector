@@ -95,7 +95,10 @@ describe('worldgen', () => {
     outer: for (let x = -1500; x <= 1500; x += 5) {
       for (let y = -1500; y <= 1500; y += 5) {
         if (x * x + y * y < 200 * 200) continue; // skip safe origin area
-        if (isInNebulaZone(x, y)) { found = true; break outer; }
+        if (isInNebulaZone(x, y)) {
+          found = true;
+          break outer;
+        }
       }
     }
     expect(found).toBe(true);
@@ -124,7 +127,9 @@ describe('worldgen', () => {
     for (let x = -5; x <= 5; x++) {
       for (let y = -5; y <= 5; y++) {
         const sector = generateSector(x, y, null);
-        expect(['empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate']).toContain(sector.type);
+        expect(['empty', 'nebula', 'asteroid_field', 'station', 'anomaly', 'pirate']).toContain(
+          sector.type,
+        );
         expect(['empty', 'nebula']).toContain(sector.environment);
       }
     }
@@ -276,7 +281,7 @@ describe('worldgen', () => {
     // Verify determinism — same call should produce same result
     for (const { x, y, cluster } of results) {
       const again = isInBlackHoleCluster(x, y);
-      expect((again !== null)).toBe(cluster);
+      expect(again !== null).toBe(cluster);
     }
   });
 

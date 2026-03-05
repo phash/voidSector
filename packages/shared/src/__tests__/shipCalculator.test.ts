@@ -17,30 +17,24 @@ describe('calculateShipStats', () => {
       { moduleId: 'drive_mk2', slotIndex: 0 },
       { moduleId: 'cargo_mk1', slotIndex: 1 },
     ]);
-    expect(stats.jumpRange).toBe(7);  // 5 + 2
-    expect(stats.cargoCap).toBe(8);   // 3 + 5
+    expect(stats.jumpRange).toBe(7); // 5 + 2
+    expect(stats.cargoCap).toBe(8); // 3 + 5
     expect(stats.apCostJump).toBe(0.8); // 1 - 0.2
   });
 
   it('clamps AP cost to minimum 0.5', () => {
-    const stats = calculateShipStats('scout', [
-      { moduleId: 'drive_mk3', slotIndex: 0 },
-    ]);
-    expect(stats.apCostJump).toBe(0.5);  // 1 - 0.5 = 0.5
+    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk3', slotIndex: 0 }]);
+    expect(stats.apCostJump).toBe(0.5); // 1 - 0.5 = 0.5
   });
 
   it('stacks armor damage reduction', () => {
-    const stats = calculateShipStats('cruiser', [
-      { moduleId: 'armor_mk3', slotIndex: 0 },
-    ]);
-    expect(stats.hp).toBe(200);         // 100 + 100
+    const stats = calculateShipStats('cruiser', [{ moduleId: 'armor_mk3', slotIndex: 0 }]);
+    expect(stats.hp).toBe(200); // 100 + 100
     expect(stats.damageMod).toBe(0.75); // 1.0 + (-0.25)
   });
 
   it('ignores unknown modules', () => {
-    const stats = calculateShipStats('scout', [
-      { moduleId: 'nonexistent', slotIndex: 0 },
-    ]);
+    const stats = calculateShipStats('scout', [{ moduleId: 'nonexistent', slotIndex: 0 }]);
     expect(stats.fuelMax).toBe(80); // unchanged
   });
 
@@ -88,7 +82,7 @@ describe('calculateShipStats', () => {
   it('sets piercing from railgun', () => {
     const stats = calculateShipStats('battleship', [{ moduleId: 'railgun_mk2', slotIndex: 0 }]);
     expect(stats.weaponAttack).toBe(22);
-    expect(stats.weaponPiercing).toBe(0.50);
+    expect(stats.weaponPiercing).toBe(0.5);
     expect(stats.weaponType).toBe('railgun');
   });
 
@@ -97,7 +91,7 @@ describe('calculateShipStats', () => {
       { moduleId: 'point_defense', slotIndex: 0 },
       { moduleId: 'ecm_suite', slotIndex: 1 },
     ]);
-    expect(stats.pointDefense).toBe(0.60);
+    expect(stats.pointDefense).toBe(0.6);
     expect(stats.ecmReduction).toBe(0.15);
   });
 
@@ -110,7 +104,7 @@ describe('calculateShipStats', () => {
     expect(stats.weaponAttack).toBe(28);
     expect(stats.shieldHp).toBe(60);
     expect(stats.hp).toBe(150 + 50); // battleship base + armor
-    expect(stats.damageMod).toBe(0.90); // 1.0 + (-0.10)
+    expect(stats.damageMod).toBe(0.9); // 1.0 + (-0.10)
   });
 
   it('preserves existing stat behavior', () => {
@@ -146,7 +140,12 @@ describe('validateModuleInstall', () => {
   });
 
   it('rejects occupied slot', () => {
-    const result = validateModuleInstall('scout', [{ moduleId: 'drive_mk1', slotIndex: 0 }], 'cargo_mk1', 0);
+    const result = validateModuleInstall(
+      'scout',
+      [{ moduleId: 'drive_mk1', slotIndex: 0 }],
+      'cargo_mk1',
+      0,
+    );
     expect(result.valid).toBe(false);
     expect(result.error).toContain('occupied');
   });
@@ -162,7 +161,12 @@ describe('validateModuleInstall', () => {
   });
 
   it('accepts install in different slot', () => {
-    const result = validateModuleInstall('freighter', [{ moduleId: 'drive_mk1', slotIndex: 0 }], 'cargo_mk1', 1);
+    const result = validateModuleInstall(
+      'freighter',
+      [{ moduleId: 'drive_mk1', slotIndex: 0 }],
+      'cargo_mk1',
+      1,
+    );
     expect(result.valid).toBe(true);
   });
 });

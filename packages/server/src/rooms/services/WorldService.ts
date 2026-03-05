@@ -21,9 +21,23 @@ import type {
 import { logger } from '../../utils/logger.js';
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { validateBuild, validateCreateSlate, validateNpcBuyback } from '../../engine/commands.js';
-import { checkDistressCall, generateDistressCallData, calculateRescueReward, canRescue } from '../../engine/rescue.js';
-import { isRouteCycleDue, calculateRouteFuelCost, validateRouteConfig } from '../../engine/tradeRoutes.js';
-import { sectorToQuadrant, getOrCreateQuadrant, nameQuadrant as nameQuadrantEngine, generateQuadrantName } from '../../engine/quadrantEngine.js';
+import {
+  checkDistressCall,
+  generateDistressCallData,
+  calculateRescueReward,
+  canRescue,
+} from '../../engine/rescue.js';
+import {
+  isRouteCycleDue,
+  calculateRouteFuelCost,
+  validateRouteConfig,
+} from '../../engine/tradeRoutes.js';
+import {
+  sectorToQuadrant,
+  getOrCreateQuadrant,
+  nameQuadrant as nameQuadrantEngine,
+  generateQuadrantName,
+} from '../../engine/quadrantEngine.js';
 import {
   JUMPGATE_FUEL_COST,
   RESCUE_AP_COST,
@@ -95,7 +109,19 @@ import {
 } from '../../db/quadrantQueries.js';
 import { isInt, rejectGuest } from './utils.js';
 
-const VALID_STRUCTURE_TYPES = ['comm_relay', 'mining_station', 'base', 'storage', 'trading_post', 'defense_turret', 'station_shield', 'ion_cannon', 'factory', 'research_lab', 'kontor'];
+const VALID_STRUCTURE_TYPES = [
+  'comm_relay',
+  'mining_station',
+  'base',
+  'storage',
+  'trading_post',
+  'defense_turret',
+  'station_shield',
+  'ion_cannon',
+  'factory',
+  'research_lab',
+  'kontor',
+];
 
 export class WorldService {
   constructor(private ctx: ServiceContext) {}
@@ -199,7 +225,10 @@ export class WorldService {
 
   async handleBuild(client: Client, data: BuildMessage): Promise<void> {
     if (rejectGuest(client, 'Bauen')) return;
-    if (!this.ctx.checkRate(client.sessionId, 'build', 2000)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
+    if (!this.ctx.checkRate(client.sessionId, 'build', 2000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
     if (!data.type || !VALID_STRUCTURE_TYPES.includes(data.type)) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid structure type' });
       return;
@@ -221,7 +250,10 @@ export class WorldService {
       if (amount > 0) {
         const deducted = await deductCargo(auth.userId, resource, amount);
         if (!deducted) {
-          client.send('buildResult', { success: false, error: `Insufficient ${resource} (concurrent modification)` });
+          client.send('buildResult', {
+            success: false,
+            error: `Insufficient ${resource} (concurrent modification)`,
+          });
           return;
         }
       }
@@ -230,12 +262,17 @@ export class WorldService {
     let structure;
     try {
       structure = await createStructure(
-        auth.userId, data.type,
-        this.ctx._px(client.sessionId), this.ctx._py(client.sessionId)
+        auth.userId,
+        data.type,
+        this.ctx._px(client.sessionId),
+        this.ctx._py(client.sessionId),
       );
     } catch (err: any) {
       if (err.code === '23505') {
-        client.send('buildResult', { success: false, error: 'Structure already exists in this sector' });
+        client.send('buildResult', {
+          success: false,
+          error: 'Structure already exists in this sector',
+        });
         return;
       }
       client.send('buildResult', { success: false, error: 'Build failed — try again' });
@@ -283,8 +320,13 @@ export class WorldService {
     const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
     const validation = validateCreateSlate(
-      { ap: currentAP.current, scannerLevel: ship.scannerLevel, cargoTotal, cargoCap: ship.cargoCap },
-      data.slateType
+      {
+        ap: currentAP.current,
+        scannerLevel: ship.scannerLevel,
+        cargoTotal,
+        cargoCap: ship.cargoCap,
+      },
+      data.slateType,
     );
     if (!validation.valid) {
       client.send('createSlateResult', { success: false, error: validation.error });
@@ -299,11 +341,16 @@ export class WorldService {
     if (data.slateType === 'sector') {
       const sector = await getSector(sectorX, sectorY);
       const resources = sector?.resources ?? { ore: 0, gas: 0, crystal: 0 };
-      sectorData = [{
-        x: sectorX, y: sectorY,
-        type: sector?.type ?? 'empty',
-        ore: resources.ore ?? 0, gas: resources.gas ?? 0, crystal: resources.crystal ?? 0,
-      }];
+      sectorData = [
+        {
+          x: sectorX,
+          y: sectorY,
+          type: sector?.type ?? 'empty',
+          ore: resources.ore ?? 0,
+          gas: resources.gas ?? 0,
+          crystal: resources.crystal ?? 0,
+        },
+      ];
     } else {
       const radius = validation.radius!;
       const discoveries = await getPlayerDiscoveries(auth.userId);
@@ -314,9 +361,12 @@ export class WorldService {
           if (sector) {
             const resources = sector.resources ?? { ore: 0, gas: 0, crystal: 0 };
             sectorData.push({
-              x: disc.x, y: disc.y,
+              x: disc.x,
+              y: disc.y,
               type: sector.type ?? 'empty',
-              ore: resources.ore ?? 0, gas: resources.gas ?? 0, crystal: resources.crystal ?? 0,
+              ore: resources.ore ?? 0,
+              gas: resources.gas ?? 0,
+              crystal: resources.crystal ?? 0,
             });
           }
         }
@@ -501,11 +551,17 @@ export class WorldService {
       success: true,
       targetX: gate.targetX,
       targetY: gate.targetY,
-      fuel: { current: currentFuel - JUMPGATE_FUEL_COST, max: this.ctx.getShipForClient(client.sessionId).fuelMax },
+      fuel: {
+        current: currentFuel - JUMPGATE_FUEL_COST,
+        max: this.ctx.getShipForClient(client.sessionId).fuelMax,
+      },
     });
   }
 
-  async handleFrequencyMatch(client: Client, data: { gateId: string; matched: boolean }): Promise<void> {
+  async handleFrequencyMatch(
+    client: Client,
+    data: { gateId: string; matched: boolean },
+  ): Promise<void> {
     const auth = client.auth as AuthPayload;
 
     if (!data.matched) {
@@ -530,7 +586,10 @@ export class WorldService {
       success: true,
       targetX: gate.targetX,
       targetY: gate.targetY,
-      fuel: { current: currentFuel - JUMPGATE_FUEL_COST, max: this.ctx.getShipForClient(client.sessionId).fuelMax },
+      fuel: {
+        current: currentFuel - JUMPGATE_FUEL_COST,
+        max: this.ctx.getShipForClient(client.sessionId).fuelMax,
+      },
     });
   }
 
@@ -541,7 +600,10 @@ export class WorldService {
     const ship = this.ctx.getShipForClient(client.sessionId);
 
     // Must be at the sector
-    if (data.sectorX !== this.ctx._px(client.sessionId) || data.sectorY !== this.ctx._py(client.sessionId)) {
+    if (
+      data.sectorX !== this.ctx._px(client.sessionId) ||
+      data.sectorY !== this.ctx._py(client.sessionId)
+    ) {
       client.send('rescueResult', { success: false, error: 'Not at rescue location' });
       return;
     }
@@ -592,9 +654,13 @@ export class WorldService {
     }
 
     // Calculate rewards
-    let totalCredits = 0, totalRep = 0, totalXp = 0;
+    let totalCredits = 0,
+      totalRep = 0,
+      totalXp = 0;
     for (const s of survivors) {
-      const reward = calculateRescueReward(s.sourceType as 'scan_event' | 'npc_quest' | 'comm_distress');
+      const reward = calculateRescueReward(
+        s.sourceType as 'scan_event' | 'npc_quest' | 'comm_distress',
+      );
       totalCredits += reward.credits * s.survivorCount;
       totalRep += reward.rep * s.survivorCount;
       totalXp += reward.xp * s.survivorCount;
@@ -614,7 +680,12 @@ export class WorldService {
 
   // ── Distress Call Detection ─────────────────────────────────────────
 
-  async checkAndEmitDistressCalls(client: Client, userId: string, playerX: number, playerY: number): Promise<void> {
+  async checkAndEmitDistressCalls(
+    client: Client,
+    userId: string,
+    playerX: number,
+    playerY: number,
+  ): Promise<void> {
     const ship = this.ctx.getShipForClient(client.sessionId);
     const commRange = ship.commRange;
 
@@ -635,10 +706,17 @@ export class WorldService {
 
           try {
             await insertDistressCall(distressId, sx, sy, 1, expiresAt);
-          } catch { /* already exists */ }
+          } catch {
+            /* already exists */
+          }
 
           const callData = generateDistressCallData(playerX, playerY, sx, sy);
-          await insertPlayerDistressCall(userId, distressId, callData.direction, callData.estimatedDistance);
+          await insertPlayerDistressCall(
+            userId,
+            distressId,
+            callData.direction,
+            callData.estimatedDistance,
+          );
 
           client.send('distressCallReceived', {
             id: distressId,
@@ -668,7 +746,10 @@ export class WorldService {
 
     // Validate config
     const routes = await getPlayerTradeRoutes(auth.userId);
-    const validation = validateRouteConfig({ cycleMinutes: data.cycleMinutes, routeCount: routes.length });
+    const validation = validateRouteConfig({
+      cycleMinutes: data.cycleMinutes,
+      routeCount: routes.length,
+    });
     if (!validation.valid) {
       client.send('configureRouteResult', { success: false, error: validation.error });
       return;
@@ -714,7 +795,10 @@ export class WorldService {
   async handleDeleteRoute(client: Client, data: DeleteRouteMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
     const deleted = await deleteTradeRoute(data.routeId, auth.userId);
-    client.send('deleteRouteResult', { success: deleted, error: deleted ? undefined : 'Route not found' });
+    client.send('deleteRouteResult', {
+      success: deleted,
+      error: deleted ? undefined : 'Route not found',
+    });
   }
 
   async processTradeRoutes(): Promise<void> {
@@ -745,7 +829,12 @@ export class WorldService {
 
           try {
             // Calculate fuel cost
-            const fuelCost = calculateRouteFuelCost(tradingPost.sector_x, tradingPost.sector_y, route.targetX, route.targetY);
+            const fuelCost = calculateRouteFuelCost(
+              tradingPost.sector_x,
+              tradingPost.sector_y,
+              route.targetX,
+              route.targetY,
+            );
             if (!currentFuel || currentFuel < fuelCost) {
               await updateTradeRouteActive(route.id, false);
               continue;
@@ -758,7 +847,8 @@ export class WorldService {
                 const available = storage[route.sellResource as keyof typeof storage] || 0;
                 const sellQty = Math.min(route.sellAmount, available);
                 if (sellQty > 0) {
-                  const price = NPC_PRICES[route.sellResource as MineableResourceType] * NPC_SELL_SPREAD;
+                  const price =
+                    NPC_PRICES[route.sellResource as MineableResourceType] * NPC_SELL_SPREAD;
                   await addCredits(ownerId, Math.floor(sellQty * price));
                   await updateStorageResource(ownerId, route.sellResource, -sellQty);
                 }
@@ -795,7 +885,10 @@ export class WorldService {
 
   // ── Quadrant Handlers ───────────────────────────────────────────────
 
-  async handleNameQuadrant(client: Client, data: { qx: number; qy: number; name: string }): Promise<void> {
+  async handleNameQuadrant(
+    client: Client,
+    data: { qx: number; qy: number; name: string },
+  ): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'nameQuadrant', 1000)) return;
     if (rejectGuest(client, 'nameQuadrant')) return;
     const auth = client.auth as AuthPayload;
@@ -841,7 +934,10 @@ export class WorldService {
     // Only allowed at stations
     const isStation = this.ctx._pst(client.sessionId) === 'station';
     if (!isStation) {
-      client.send('syncQuadrantsResult', { success: false, error: 'Must be at a station to sync quadrant data' });
+      client.send('syncQuadrantsResult', {
+        success: false,
+        error: 'Must be at a station to sync quadrant data',
+      });
       return;
     }
 
@@ -850,15 +946,27 @@ export class WorldService {
     await addPlayerKnownQuadrantsBatch(auth.userId, allCoords);
 
     const known = await getPlayerKnownQuadrants(auth.userId);
-    client.send('syncQuadrantsResult', { success: true, quadrants: known, synced: allCoords.length });
+    client.send('syncQuadrantsResult', {
+      success: true,
+      quadrants: known,
+      synced: allCoords.length,
+    });
   }
 
   // ── First Contact ───────────────────────────────────────────────────
 
-  async checkFirstContact(client: Client, auth: AuthPayload, targetX: number, targetY: number): Promise<void> {
+  async checkFirstContact(
+    client: Client,
+    auth: AuthPayload,
+    targetX: number,
+    targetY: number,
+  ): Promise<void> {
     try {
       const { qx, qy } = sectorToQuadrant(targetX, targetY);
-      const currentQ = sectorToQuadrant(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+      const currentQ = sectorToQuadrant(
+        this.ctx._px(client.sessionId),
+        this.ctx._py(client.sessionId),
+      );
 
       // Only check if entering a different quadrant
       if (qx === currentQ.qx && qy === currentQ.qy) return;

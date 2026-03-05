@@ -50,14 +50,17 @@ async function reseed() {
 
   for (const acct of accounts) {
     const player = await createPlayer(acct.username, passwordHash, acct.homeBase);
-    logger.info({ username: acct.username, id: player.id, x: acct.homeBase.x, y: acct.homeBase.y }, 'Created player');
+    logger.info(
+      { username: acct.username, id: player.id, x: acct.homeBase.x, y: acct.homeBase.y },
+      'Created player',
+    );
   }
 
   logger.info('Reseed complete');
   process.exit(0);
 }
 
-reseed().catch(err => {
+reseed().catch((err) => {
   logger.error({ err }, 'Reseed failed');
   process.exit(1);
 });

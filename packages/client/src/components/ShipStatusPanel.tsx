@@ -14,9 +14,7 @@ const linkBtn: React.CSSProperties = {
   textAlign: 'left' as const,
 };
 
-const DISPLAY_CATEGORIES: ModuleCategory[] = [
-  'drive', 'scanner', 'cargo', 'armor', 'mining',
-];
+const DISPLAY_CATEGORIES: ModuleCategory[] = ['drive', 'scanner', 'cargo', 'armor', 'mining'];
 
 const CATEGORY_LABELS: Record<string, string> = {
   drive: 'DRIVE',
@@ -72,13 +70,15 @@ export function ShipStatusPanel() {
 
   if (!ship) {
     return (
-      <div style={{
-        padding: '4px 8px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '0.6rem',
-        color: 'var(--color-dim)',
-        opacity: 0.5,
-      }}>
+      <div
+        style={{
+          padding: '4px 8px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.6rem',
+          color: 'var(--color-dim)',
+          opacity: 0.5,
+        }}
+      >
         NO SHIP DATA
       </div>
     );
@@ -88,27 +88,33 @@ export function ShipStatusPanel() {
   const { stats } = ship;
 
   return (
-    <div style={{
-      padding: '4px 8px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.6rem',
-      color: 'var(--color-primary)',
-    }}>
-      {/* Ship name and hull */}
-      <div style={{
+    <div
+      style={{
+        padding: '4px 8px',
+        fontFamily: 'var(--font-mono)',
         fontSize: '0.6rem',
-        letterSpacing: '0.15em',
-        borderBottom: '1px solid var(--color-dim)',
-        paddingBottom: 2,
-        marginBottom: 4,
-      }}>
+        color: 'var(--color-primary)',
+      }}
+    >
+      {/* Ship name and hull */}
+      <div
+        style={{
+          fontSize: '0.6rem',
+          letterSpacing: '0.15em',
+          borderBottom: '1px solid var(--color-dim)',
+          paddingBottom: 2,
+          marginBottom: 4,
+        }}
+      >
         {ship.name}
       </div>
-      <div style={{
-        fontSize: '0.55rem',
-        color: 'var(--color-dim)',
-        marginBottom: 6,
-      }}>
+      <div
+        style={{
+          fontSize: '0.55rem',
+          color: 'var(--color-dim)',
+          marginBottom: 6,
+        }}
+      >
         {hull?.name ?? ship.hullType.toUpperCase()}
       </div>
 
@@ -119,10 +125,12 @@ export function ShipStatusPanel() {
         return (
           <div key={cat} style={statRow}>
             <span style={labelStyle}>{CATEGORY_LABELS[cat]}</span>
-            <span style={{
-              ...valueStyle,
-              opacity: moduleName ? 1 : 0.4,
-            }}>
+            <span
+              style={{
+                ...valueStyle,
+                opacity: moduleName ? 1 : 0.4,
+              }}
+            >
               {moduleName ?? '---'}
             </span>
           </div>
@@ -159,9 +167,21 @@ export function ShipStatusPanel() {
       </div>
 
       {/* Quick-access to module/hangar screens */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 6, borderTop: '1px solid var(--color-dim)', paddingTop: 4 }}>
-        <button style={linkBtn} onClick={() => setActiveProgram('MODULES')}>[MODULES]</button>
-        <button style={linkBtn} onClick={() => setActiveProgram('HANGAR')}>[HANGAR]</button>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          marginTop: 6,
+          borderTop: '1px solid var(--color-dim)',
+          paddingTop: 4,
+        }}
+      >
+        <button style={linkBtn} onClick={() => setActiveProgram('MODULES')}>
+          [MODULES]
+        </button>
+        <button style={linkBtn} onClick={() => setActiveProgram('HANGAR')}>
+          [HANGAR]
+        </button>
       </div>
     </div>
   );

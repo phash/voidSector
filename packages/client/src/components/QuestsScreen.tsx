@@ -36,8 +36,11 @@ export function QuestsScreen() {
   const isAtStation = currentSector?.type === 'station';
 
   const tierColors: Record<string, string> = {
-    hostile: '#FF3333', unfriendly: '#FF8C00', neutral: '#FFB000',
-    friendly: '#00FF88', honored: '#00BFFF',
+    hostile: '#FF3333',
+    unfriendly: '#FF8C00',
+    neutral: '#FFB000',
+    friendly: '#00FF88',
+    honored: '#00BFFF',
   };
 
   const tabLabels: Record<string, string> = {
@@ -65,7 +68,10 @@ export function QuestsScreen() {
               background: tab === t ? '#FFB000' : '#1a1a1a',
               color: tab === t ? '#000' : '#FFB000',
               border: '1px solid #FFB000',
-              padding: '2px 6px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit',
+              padding: '2px 6px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
             }}
           >
             {tabLabels[t]}
@@ -76,13 +82,30 @@ export function QuestsScreen() {
       {/* Active quests tab */}
       {tab === 'active' && (
         <div>
-          <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- AKTIVE QUESTS ({activeQuests.length}/3) ---</div>
-          {activeQuests.length === 0 && <div style={{ color: 'rgba(255,176,0,0.5)' }}>Keine aktiven Quests</div>}
+          <div style={{ color: '#FFB000', marginBottom: '4px' }}>
+            --- AKTIVE QUESTS ({activeQuests.length}/3) ---
+          </div>
+          {activeQuests.length === 0 && (
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Keine aktiven Quests</div>
+          )}
           {activeQuests.map((q) => (
-            <div key={q.id} style={{ border: '1px solid rgba(255,176,0,0.3)', padding: '4px', marginBottom: '4px' }}>
+            <div
+              key={q.id}
+              style={{
+                border: '1px solid rgba(255,176,0,0.3)',
+                padding: '4px',
+                marginBottom: '4px',
+              }}
+            >
               <div style={{ color: '#FFB000' }}>{q.title}</div>
               {q.objectives.map((obj) => (
-                <div key={obj.description} style={{ color: obj.fulfilled ? '#00FF88' : 'rgba(255,176,0,0.6)', paddingLeft: '8px' }}>
+                <div
+                  key={obj.description}
+                  style={{
+                    color: obj.fulfilled ? '#00FF88' : 'rgba(255,176,0,0.6)',
+                    paddingLeft: '8px',
+                  }}
+                >
                   {obj.fulfilled ? '[x]' : '[ ]'} {obj.description}
                 </div>
               ))}
@@ -91,7 +114,16 @@ export function QuestsScreen() {
               </div>
               <button
                 onClick={() => network.sendAbandonQuest(q.id)}
-                style={{ background: 'none', color: '#FF3333', border: '1px solid #FF3333', padding: '1px 4px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '10px', marginTop: '2px' }}
+                style={{
+                  background: 'none',
+                  color: '#FF3333',
+                  border: '1px solid #FF3333',
+                  padding: '1px 4px',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  fontSize: '10px',
+                  marginTop: '2px',
+                }}
               >
                 [ABBRECHEN]
               </button>
@@ -104,8 +136,12 @@ export function QuestsScreen() {
       {tab === 'station' && (
         <div>
           <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- STATION ---</div>
-          {!isAtStation && <div style={{ color: 'rgba(255,176,0,0.5)' }}>Nicht an einer Station</div>}
-          {isAtStation && stationNpcs.length === 0 && <div style={{ color: 'rgba(255,176,0,0.5)' }}>Lade NPCs...</div>}
+          {!isAtStation && (
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Nicht an einer Station</div>
+          )}
+          {isAtStation && stationNpcs.length === 0 && (
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Lade NPCs...</div>
+          )}
           {stationNpcs.map((npc) => (
             <div key={npc.id} style={{ color: '#00FF88', marginBottom: '2px' }}>
               {npc.name} [{npc.factionId.toUpperCase()}]
@@ -113,17 +149,37 @@ export function QuestsScreen() {
           ))}
           {availableQuests.length > 0 && (
             <>
-              <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>VERFUGBARE QUESTS:</div>
+              <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>
+                VERFUGBARE QUESTS:
+              </div>
               {availableQuests.map((q) => (
-                <div key={q.templateId} style={{ border: '1px solid rgba(255,176,0,0.3)', padding: '4px', marginBottom: '4px' }}>
+                <div
+                  key={q.templateId}
+                  style={{
+                    border: '1px solid rgba(255,176,0,0.3)',
+                    padding: '4px',
+                    marginBottom: '4px',
+                  }}
+                >
                   <div style={{ color: '#FFB000' }}>{q.title}</div>
-                  <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>{q.description}</div>
+                  <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
+                    {q.description}
+                  </div>
                   <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
                     +{q.rewards.credits} CR | +{q.rewards.xp} XP | +{q.rewards.reputation} REP
                   </div>
                   <button
                     onClick={() => network.sendAcceptQuest(q.templateId, position.x, position.y)}
-                    style={{ background: '#1a1a1a', color: '#00FF88', border: '1px solid #00FF88', padding: '1px 4px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '10px', marginTop: '2px' }}
+                    style={{
+                      background: '#1a1a1a',
+                      color: '#00FF88',
+                      border: '1px solid #00FF88',
+                      padding: '1px 4px',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      fontSize: '10px',
+                      marginTop: '2px',
+                    }}
                   >
                     [ANNEHMEN]
                   </button>
@@ -144,20 +200,33 @@ export function QuestsScreen() {
                 {r.factionId.toUpperCase()} [{r.tier.toUpperCase()}]
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <div style={{ width: '120px', height: '8px', background: '#1a1a1a', border: '1px solid rgba(255,176,0,0.3)' }}>
-                  <div style={{
-                    width: `${Math.max(0, (r.reputation + 100) / 2)}%`,
-                    height: '100%',
-                    background: tierColors[r.tier] ?? '#FFB000',
-                  }} />
+                <div
+                  style={{
+                    width: '120px',
+                    height: '8px',
+                    background: '#1a1a1a',
+                    border: '1px solid rgba(255,176,0,0.3)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.max(0, (r.reputation + 100) / 2)}%`,
+                      height: '100%',
+                      background: tierColors[r.tier] ?? '#FFB000',
+                    }}
+                  />
                 </div>
-                <span style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>{r.reputation}</span>
+                <span style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
+                  {r.reputation}
+                </span>
               </div>
             </div>
           ))}
           {playerUpgrades.length > 0 && (
             <>
-              <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>UPGRADES:</div>
+              <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>
+                UPGRADES:
+              </div>
               {playerUpgrades.map((u) => (
                 <div key={u.upgradeId} style={{ color: u.active ? '#00FF88' : '#FF3333' }}>
                   {u.active ? '[ON]' : '[OFF]'} {u.upgradeId.toUpperCase().replace('_', ' ')}
@@ -172,26 +241,48 @@ export function QuestsScreen() {
       {tab === 'events' && (
         <div>
           <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- SCAN EVENTS ---</div>
-          {scanEvents.filter(e => e.status === 'discovered').length === 0 && (
+          {scanEvents.filter((e) => e.status === 'discovered').length === 0 && (
             <div style={{ color: 'rgba(255,176,0,0.5)' }}>Keine aktiven Events</div>
           )}
-          {scanEvents.filter(e => e.status === 'discovered').map((e) => {
-            const typeLabels: Record<string, string> = {
-              distress_signal: 'NOTSIGNAL', anomaly_reading: 'ANOMALIE', artifact_find: 'ARTEFAKT',
-            };
-            return (
-              <div key={e.id} style={{ border: '1px solid rgba(255,176,0,0.3)', padding: '4px', marginBottom: '4px' }}>
-                <div style={{ color: '#FF00FF' }}>{typeLabels[e.eventType] ?? e.eventType}</div>
-                <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>Sektor ({innerCoord(e.sectorX)}, {innerCoord(e.sectorY)})</div>
-                <button
-                  onClick={() => network.sendCompleteScanEvent(e.id)}
-                  style={{ background: '#1a1a1a', color: '#00FF88', border: '1px solid #00FF88', padding: '1px 4px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '10px', marginTop: '2px' }}
+          {scanEvents
+            .filter((e) => e.status === 'discovered')
+            .map((e) => {
+              const typeLabels: Record<string, string> = {
+                distress_signal: 'NOTSIGNAL',
+                anomaly_reading: 'ANOMALIE',
+                artifact_find: 'ARTEFAKT',
+              };
+              return (
+                <div
+                  key={e.id}
+                  style={{
+                    border: '1px solid rgba(255,176,0,0.3)',
+                    padding: '4px',
+                    marginBottom: '4px',
+                  }}
                 >
-                  [UNTERSUCHEN]
-                </button>
-              </div>
-            );
-          })}
+                  <div style={{ color: '#FF00FF' }}>{typeLabels[e.eventType] ?? e.eventType}</div>
+                  <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
+                    Sektor ({innerCoord(e.sectorX)}, {innerCoord(e.sectorY)})
+                  </div>
+                  <button
+                    onClick={() => network.sendCompleteScanEvent(e.id)}
+                    style={{
+                      background: '#1a1a1a',
+                      color: '#00FF88',
+                      border: '1px solid #00FF88',
+                      padding: '1px 4px',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      fontSize: '10px',
+                      marginTop: '2px',
+                    }}
+                  >
+                    [UNTERSUCHEN]
+                  </button>
+                </div>
+              );
+            })}
         </div>
       )}
 
@@ -204,14 +295,17 @@ export function QuestsScreen() {
           {distressCalls.length > 0 && (
             <div style={{ marginBottom: '8px' }}>
               <div style={{ color: '#FF3333', marginBottom: '4px' }}>AKTIVE NOTRUFE:</div>
-              {distressCalls.map(call => {
+              {distressCalls.map((call) => {
                 const minutesLeft = Math.max(0, Math.ceil((call.expiresAt - Date.now()) / 60000));
                 return (
-                  <div key={call.id} style={{
-                    border: '1px solid rgba(255, 51, 51, 0.3)',
-                    padding: '4px',
-                    marginBottom: '4px',
-                  }}>
+                  <div
+                    key={call.id}
+                    style={{
+                      border: '1px solid rgba(255, 51, 51, 0.3)',
+                      padding: '4px',
+                      marginBottom: '4px',
+                    }}
+                  >
                     <div style={{ color: '#FF3333' }}>DISTRESS SIGNAL</div>
                     <div>RICHTUNG: {call.direction}</div>
                     <div>ENTFERNUNG: ~{call.estimatedDistance} SEKTOREN</div>
@@ -232,12 +326,15 @@ export function QuestsScreen() {
           {rescuedSurvivors.length > 0 && (
             <div>
               <div style={{ color: '#00FF88', marginBottom: '4px' }}>ÜBERLEBENDE AN BORD:</div>
-              {rescuedSurvivors.map(s => (
-                <div key={s.id} style={{
-                  border: '1px solid rgba(0, 255, 136, 0.3)',
-                  padding: '4px',
-                  marginBottom: '4px',
-                }}>
+              {rescuedSurvivors.map((s) => (
+                <div
+                  key={s.id}
+                  style={{
+                    border: '1px solid rgba(0, 255, 136, 0.3)',
+                    padding: '4px',
+                    marginBottom: '4px',
+                  }}
+                >
                   <div>{s.survivorCount} Überlebende</div>
                   <div style={{ fontSize: '10px', opacity: 0.5 }}>
                     Geborgen bei ({innerCoord(s.sectorX)}, {innerCoord(s.sectorY)})

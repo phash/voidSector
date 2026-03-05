@@ -6,15 +6,27 @@ import { MONITORS } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
 
 const emptySector: SectorData = {
-  x: 0, y: 0, type: 'empty', seed: 42,
-  discoveredBy: null, discoveredAt: null, metadata: {},
-  environment: 'empty', contents: [],
+  x: 0,
+  y: 0,
+  type: 'empty',
+  seed: 42,
+  discoveredBy: null,
+  discoveredAt: null,
+  metadata: {},
+  environment: 'empty',
+  contents: [],
 };
 
 const stationSector: SectorData = {
-  x: 1, y: 1, type: 'station', seed: 99,
-  discoveredBy: null, discoveredAt: null, metadata: {},
-  environment: 'empty', contents: ['station'],
+  x: 1,
+  y: 1,
+  type: 'station',
+  seed: 99,
+  discoveredBy: null,
+  discoveredAt: null,
+  metadata: {},
+  environment: 'empty',
+  contents: ['station'],
 };
 
 describe('useMobileTabs', () => {

@@ -20,10 +20,7 @@ export async function getFactoryState(structureId: string): Promise<FactoryState
     alloy_plate: number;
     void_shard: number;
     bio_extract: number;
-  }>(
-    'SELECT * FROM factory_state WHERE structure_id = $1',
-    [structureId]
-  );
+  }>('SELECT * FROM factory_state WHERE structure_id = $1', [structureId]);
   if (rows.length === 0) return null;
   const r = rows[0];
   return {
@@ -61,21 +58,21 @@ export async function upsertFactoryState(state: FactoryState): Promise<void> {
       state.alloyPlate,
       state.voidShard,
       state.bioExtract,
-    ]
+    ],
   );
 }
 
 export async function updateFactoryOutput(
   structureId: string,
   itemType: string,
-  delta: number
+  delta: number,
 ): Promise<void> {
   if (!VALID_ITEM_COLUMNS.has(itemType)) {
     throw new Error(`Invalid item type: ${itemType}`);
   }
   // itemType is validated above against the known set of column names
-  await query(
-    `UPDATE factory_state SET ${itemType} = ${itemType} + $1 WHERE structure_id = $2`,
-    [delta, structureId]
-  );
+  await query(`UPDATE factory_state SET ${itemType} = ${itemType} + $1 WHERE structure_id = $2`, [
+    delta,
+    structureId,
+  ]);
 }

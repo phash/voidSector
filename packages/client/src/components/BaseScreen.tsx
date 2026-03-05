@@ -75,11 +75,19 @@ export function BaseScreen() {
   const storageStruct = baseStructures.find((s: any) => s.type === 'storage');
   const tradingPostStruct = baseStructures.find((s: any) => s.type === 'trading_post');
   const storageTier = storageStruct?.tier ?? 0;
-  const storageCap = storageTier > 0 ? STORAGE_TIERS[storageTier]?.capacity ?? 0 : 0;
+  const storageCap = storageTier > 0 ? (STORAGE_TIERS[storageTier]?.capacity ?? 0) : 0;
   const storageTotal = storage.ore + storage.gas + storage.crystal + storage.artefact;
 
   return (
-    <div style={{ padding: '12px', fontSize: '0.8rem', lineHeight: 1.8, height: '100%', overflow: 'auto' }}>
+    <div
+      style={{
+        padding: '12px',
+        fontSize: '0.8rem',
+        lineHeight: 1.8,
+        height: '100%',
+        overflow: 'auto',
+      }}
+    >
       <div style={{ letterSpacing: '0.2em', marginBottom: '4px', opacity: 0.6 }}>
         BASE-LINK — {hasBase ? 'CONNECTED' : 'NO SIGNAL'}
       </div>
@@ -97,8 +105,12 @@ export function BaseScreen() {
                 autoFocus
                 placeholder="Basisname..."
               />
-              <button style={btnStyle} onClick={handleRenameBase}>OK</button>
-              <button style={btnStyle} onClick={() => setRenaming(false)}>X</button>
+              <button style={btnStyle} onClick={handleRenameBase}>
+                OK
+              </button>
+              <button style={btnStyle} onClick={() => setRenaming(false)}>
+                X
+              </button>
             </>
           ) : (
             <>
@@ -130,11 +142,20 @@ export function BaseScreen() {
         </div>
       ) : (
         <>
-          <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px' }}>
+          <div
+            style={{
+              borderBottom: '1px solid var(--color-dim)',
+              paddingBottom: '4px',
+              marginBottom: '8px',
+            }}
+          >
             STRUCTURES
           </div>
           {baseStructures.map((s: any) => (
-            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              key={s.id}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
               <span>{STRUCTURE_LABELS[s.type] || s.type.toUpperCase()}</span>
               <span style={{ opacity: 0.5, fontSize: '0.7rem' }}>
                 {s.tier > 1 ? `T${s.tier}` : ''} [ACTIVE]
@@ -144,26 +165,51 @@ export function BaseScreen() {
 
           {storageStruct && (
             <>
-              <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px', marginTop: '16px' }}>
+              <div
+                style={{
+                  borderBottom: '1px solid var(--color-dim)',
+                  paddingBottom: '4px',
+                  marginBottom: '8px',
+                  marginTop: '16px',
+                }}
+              >
                 LAGER ({storageTotal}/{storageCap})
               </div>
-              <div>ERZ: {storage.ore} &nbsp; GAS: {storage.gas} &nbsp; KRISTALL: {storage.crystal} &nbsp; ARTEFAKT: {storage.artefact}</div>
+              <div>
+                ERZ: {storage.ore} &nbsp; GAS: {storage.gas} &nbsp; KRISTALL: {storage.crystal}{' '}
+                &nbsp; ARTEFAKT: {storage.artefact}
+              </div>
 
               <div style={{ marginTop: 8, fontSize: '0.7rem' }}>
                 <label>MENGE: </label>
                 <input
-                  type="number" min={1} value={transferAmount}
+                  type="number"
+                  min={1}
+                  value={transferAmount}
                   onChange={(e) => setTransferAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                  style={{ width: 50, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', padding: '2px 4px' }}
+                  style={{
+                    width: 50,
+                    background: 'transparent',
+                    border: '1px solid var(--color-dim)',
+                    color: 'var(--color-primary)',
+                    fontFamily: 'var(--font-mono)',
+                    padding: '2px 4px',
+                  }}
                 />
               </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
                 {(['ore', 'gas', 'crystal', 'artefact'] as const).map((res) => (
                   <div key={res} style={{ display: 'flex', gap: 2 }}>
-                    <button style={btnStyle} onClick={() => network.sendTransfer(res, transferAmount, 'toStorage')}>
+                    <button
+                      style={btnStyle}
+                      onClick={() => network.sendTransfer(res, transferAmount, 'toStorage')}
+                    >
                       {res.toUpperCase()} → LAGER
                     </button>
-                    <button style={btnStyle} onClick={() => network.sendTransfer(res, transferAmount, 'fromStorage')}>
+                    <button
+                      style={btnStyle}
+                      onClick={() => network.sendTransfer(res, transferAmount, 'fromStorage')}
+                    >
                       LAGER → {res.toUpperCase()}
                     </button>
                   </div>
@@ -171,8 +217,12 @@ export function BaseScreen() {
               </div>
 
               {storageTier < 3 && (
-                <button style={{ ...btnStyle, marginTop: 8 }} onClick={() => network.sendUpgradeStructure(storageStruct.id)}>
-                  UPGRADE LAGER T{storageTier + 1} ({STORAGE_TIERS[storageTier + 1]?.upgradeCost} CR)
+                <button
+                  style={{ ...btnStyle, marginTop: 8 }}
+                  onClick={() => network.sendUpgradeStructure(storageStruct.id)}
+                >
+                  UPGRADE LAGER T{storageTier + 1} ({STORAGE_TIERS[storageTier + 1]?.upgradeCost}{' '}
+                  CR)
                 </button>
               )}
             </>
@@ -183,18 +233,32 @@ export function BaseScreen() {
               style={{ ...btnStyle, marginTop: 8 }}
               onClick={() => network.sendUpgradeStructure(tradingPostStruct.id)}
             >
-              UPGRADE HANDELSPLATZ T{(tradingPostStruct.tier ?? 1) + 1} ({TRADING_POST_TIERS[(tradingPostStruct.tier ?? 1) + 1]?.upgradeCost} CR)
+              UPGRADE HANDELSPLATZ T{(tradingPostStruct.tier ?? 1) + 1} (
+              {TRADING_POST_TIERS[(tradingPostStruct.tier ?? 1) + 1]?.upgradeCost} CR)
             </button>
           )}
 
           {hasFactory && (
             <>
-              <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px', marginTop: '16px' }}>
+              <div
+                style={{
+                  borderBottom: '1px solid var(--color-dim)',
+                  paddingBottom: '4px',
+                  marginBottom: '8px',
+                  marginTop: '16px',
+                }}
+              >
                 FACTORY {factoryState?.activeRecipe ? '— ACTIVE' : '— IDLE'}
               </div>
 
               {factoryState?.error && (
-                <div style={{ color: 'var(--color-warning, #f55)', fontSize: '0.7rem', marginBottom: 4 }}>
+                <div
+                  style={{
+                    color: 'var(--color-warning, #f55)',
+                    fontSize: '0.7rem',
+                    marginBottom: 4,
+                  }}
+                >
                   ERROR: {factoryState.error}
                 </div>
               )}
@@ -205,7 +269,8 @@ export function BaseScreen() {
                     Recipe: {factoryState.activeRecipe.outputItem.replace(/_/g, ' ').toUpperCase()}
                   </div>
                   <div style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)' }}>
-                    Progress: {(() => {
+                    Progress:{' '}
+                    {(() => {
                       const pct = Math.min(factoryState.progress, 1);
                       const filled = Math.round(pct * 10);
                       const empty = 10 - filled;
@@ -222,7 +287,10 @@ export function BaseScreen() {
                         COLLECT
                       </button>
                     )}
-                    <button style={btnStyle} onClick={() => setShowRecipeSelector(!showRecipeSelector)}>
+                    <button
+                      style={btnStyle}
+                      onClick={() => setShowRecipeSelector(!showRecipeSelector)}
+                    >
                       CHANGE RECIPE
                     </button>
                   </div>
@@ -230,7 +298,10 @@ export function BaseScreen() {
               ) : (
                 <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>
                   No recipe selected.{' '}
-                  <button style={btnStyle} onClick={() => setShowRecipeSelector(!showRecipeSelector)}>
+                  <button
+                    style={btnStyle}
+                    onClick={() => setShowRecipeSelector(!showRecipeSelector)}
+                  >
                     SELECT RECIPE
                   </button>
                 </div>
@@ -238,10 +309,14 @@ export function BaseScreen() {
 
               {factoryState && Object.values(factoryState.output).some((v) => v > 0) && (
                 <div style={{ marginTop: 8 }}>
-                  <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: 2 }}>Factory Storage:</div>
+                  <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: 2 }}>
+                    Factory Storage:
+                  </div>
                   <div style={{ fontSize: '0.7rem', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {Object.entries(factoryState.output).map(([item, qty]) => (
-                      <span key={item}>{item}: {qty}</span>
+                      <span key={item}>
+                        {item}: {qty}
+                      </span>
                     ))}
                   </div>
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
@@ -262,9 +337,12 @@ export function BaseScreen() {
 
               {showRecipeSelector && (
                 <div style={{ marginTop: 8, border: '1px solid var(--color-dim)', padding: 6 }}>
-                  <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: 4 }}>Select Recipe:</div>
+                  <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: 4 }}>
+                    Select Recipe:
+                  </div>
                   {PRODUCTION_RECIPES.map((r) => {
-                    const locked = r.researchRequired && !research.unlockedModules.includes(r.researchRequired);
+                    const locked =
+                      r.researchRequired && !research.unlockedModules.includes(r.researchRequired);
                     const inputStr = r.inputs.map((i) => `${i.amount} ${i.resource}`).join(', ');
                     return (
                       <div key={r.id} style={{ fontSize: '0.7rem', marginBottom: 2 }}>
@@ -274,13 +352,21 @@ export function BaseScreen() {
                           </span>
                         ) : (
                           <button
-                            style={{ ...btnStyle, textAlign: 'left', width: '100%', border: 'none', padding: '2px 0' }}
+                            style={{
+                              ...btnStyle,
+                              textAlign: 'left',
+                              width: '100%',
+                              border: 'none',
+                              padding: '2px 0',
+                            }}
                             onClick={() => {
                               network.sendFactorySetRecipe(r.id);
                               setShowRecipeSelector(false);
                             }}
                           >
-                            {'> '}{r.outputItem.replace(/_/g, ' ').toUpperCase()} — {inputStr} — {r.cycleSeconds}s
+                            {'> '}
+                            {r.outputItem.replace(/_/g, ' ').toUpperCase()} — {inputStr} —{' '}
+                            {r.cycleSeconds}s
                           </button>
                         )}
                       </div>
@@ -293,13 +379,35 @@ export function BaseScreen() {
 
           {hasKontor && (
             <>
-              <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px', marginTop: '16px' }}>
+              <div
+                style={{
+                  borderBottom: '1px solid var(--color-dim)',
+                  paddingBottom: '4px',
+                  marginBottom: '8px',
+                  marginTop: '16px',
+                }}
+              >
                 KONTOR
               </div>
 
-              <div style={{ fontSize: '0.7rem', marginBottom: 8, border: '1px solid var(--color-dim)', padding: 6 }}>
+              <div
+                style={{
+                  fontSize: '0.7rem',
+                  marginBottom: 8,
+                  border: '1px solid var(--color-dim)',
+                  padding: 6,
+                }}
+              >
                 <div style={{ opacity: 0.6, marginBottom: 4 }}>[+] NEW ORDER</div>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 4,
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    marginBottom: 4,
+                  }}
+                >
                   <label>Item:</label>
                   <select
                     value={kontorItemType}
@@ -319,19 +427,41 @@ export function BaseScreen() {
                   </select>
                   <label>Amount:</label>
                   <input
-                    type="number" min={1} value={kontorAmount}
+                    type="number"
+                    min={1}
+                    value={kontorAmount}
                     onChange={(e) => setKontorAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                    style={{ width: 60, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', padding: '2px 4px' }}
+                    style={{
+                      width: 60,
+                      background: 'transparent',
+                      border: '1px solid var(--color-dim)',
+                      color: 'var(--color-primary)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.7rem',
+                      padding: '2px 4px',
+                    }}
                   />
                   <label>Price/unit:</label>
                   <input
-                    type="number" min={1} value={kontorPrice}
+                    type="number"
+                    min={1}
+                    value={kontorPrice}
                     onChange={(e) => setKontorPrice(Math.max(1, parseInt(e.target.value) || 1))}
-                    style={{ width: 50, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', padding: '2px 4px' }}
+                    style={{
+                      width: 50,
+                      background: 'transparent',
+                      border: '1px solid var(--color-dim)',
+                      color: 'var(--color-primary)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.7rem',
+                      padding: '2px 4px',
+                    }}
                   />
                   <button
                     style={btnStyle}
-                    onClick={() => network.sendKontorPlaceOrder(kontorItemType, kontorAmount, kontorPrice)}
+                    onClick={() =>
+                      network.sendKontorPlaceOrder(kontorItemType, kontorAmount, kontorPrice)
+                    }
                   >
                     PLACE
                   </button>
@@ -342,12 +472,27 @@ export function BaseScreen() {
                 <div style={{ fontSize: '0.7rem' }}>
                   <div style={{ opacity: 0.6, marginBottom: 4 }}>Active Orders:</div>
                   {kontorOrders.map((order, idx) => (
-                    <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                    <div
+                      key={order.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 2,
+                      }}
+                    >
                       <span>
-                        #{idx + 1} {order.itemType.toUpperCase()} {order.amountWanted}u @{order.pricePerUnit}cr [{order.amountFilled}/{order.amountWanted}] {order.active ? 'ACTIVE' : 'PAUSED'}
+                        #{idx + 1} {order.itemType.toUpperCase()} {order.amountWanted}u @
+                        {order.pricePerUnit}cr [{order.amountFilled}/{order.amountWanted}]{' '}
+                        {order.active ? 'ACTIVE' : 'PAUSED'}
                       </span>
                       <button
-                        style={{ ...btnStyle, fontSize: '0.6rem', borderColor: '#FF3333', color: '#FF3333' }}
+                        style={{
+                          ...btnStyle,
+                          fontSize: '0.6rem',
+                          borderColor: '#FF3333',
+                          color: '#FF3333',
+                        }}
                         onClick={() => network.sendKontorCancel(order.id)}
                       >
                         CANCEL
@@ -363,10 +508,20 @@ export function BaseScreen() {
             </>
           )}
 
-          <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: '4px', marginBottom: '8px', marginTop: '16px' }}>
+          <div
+            style={{
+              borderBottom: '1px solid var(--color-dim)',
+              paddingBottom: '4px',
+              marginBottom: '8px',
+              marginTop: '16px',
+            }}
+          >
             CARGO ON SHIP
           </div>
-          <div>ERZ: {cargo.ore} &nbsp; GAS: {cargo.gas} &nbsp; KRISTALL: {cargo.crystal} &nbsp; ARTEFAKT: {cargo.artefact}</div>
+          <div>
+            ERZ: {cargo.ore} &nbsp; GAS: {cargo.gas} &nbsp; KRISTALL: {cargo.crystal} &nbsp;
+            ARTEFAKT: {cargo.artefact}
+          </div>
         </>
       )}
     </div>

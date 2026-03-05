@@ -16,8 +16,13 @@ import { network } from '../network/client';
 
 const baseCombatState: CombatV2State = {
   encounter: {
-    pirateLevel: 3, pirateHp: 50, pirateDamage: 14,
-    sectorX: 10, sectorY: 20, canNegotiate: false, negotiateCost: 30,
+    pirateLevel: 3,
+    pirateHp: 50,
+    pirateDamage: 14,
+    sectorX: 10,
+    sectorY: 20,
+    canNegotiate: false,
+    negotiateCost: 30,
   },
   currentRound: 0,
   maxRounds: 5,
@@ -87,15 +92,24 @@ describe('CombatV2Dialog', () => {
     const stateWithRound = {
       ...baseCombatState,
       currentRound: 1,
-      rounds: [{
-        round: 1, tactic: 'balanced' as const, specialAction: 'none' as const,
-        playerAttack: 18, enemyAttack: 12,
-        playerShieldDmg: 12, playerHullDmg: 0,
-        enemyShieldDmg: 0, enemyHullDmg: 18,
-        playerShieldAfter: 48, playerHpAfter: 100,
-        enemyShieldAfter: 0, enemyHpAfter: 32,
-        specialEffects: [],
-      }],
+      rounds: [
+        {
+          round: 1,
+          tactic: 'balanced' as const,
+          specialAction: 'none' as const,
+          playerAttack: 18,
+          enemyAttack: 12,
+          playerShieldDmg: 12,
+          playerHullDmg: 0,
+          enemyShieldDmg: 0,
+          enemyHullDmg: 18,
+          playerShieldAfter: 48,
+          playerHpAfter: 100,
+          enemyShieldAfter: 0,
+          enemyHpAfter: 32,
+          specialEffects: [],
+        },
+      ],
     };
     mockStoreState({ activeCombatV2: stateWithRound });
     render(<CombatV2Dialog />);

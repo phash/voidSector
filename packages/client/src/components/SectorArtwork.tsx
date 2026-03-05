@@ -10,34 +10,10 @@ const SECTOR_ASCII: Record<string, string[]> = {
     '   \\___/',
     '  *  .  *',
   ],
-  nebula: [
-    '  . ~ ~ ~ .',
-    ' ~ . * . ~ ~',
-    '~ * . ~ . * ~',
-    ' ~ ~ . ~ ~ ~',
-    '  . ~ * ~ .',
-  ],
-  station: [
-    '   [===]',
-    '  /|   |\\',
-    ' / | H | \\',
-    '|  |___|  |',
-    ' \\_______/',
-  ],
-  anomaly: [
-    '   / \\ / \\',
-    '  | ? ? ? |',
-    '   \\ | / ',
-    '    \\|/',
-    '     *',
-  ],
-  pirate: [
-    '    _____',
-    '   / x x \\',
-    '  |  ___  |',
-    '   \\/ | \\/',
-    '      |',
-  ],
+  nebula: ['  . ~ ~ ~ .', ' ~ . * . ~ ~', '~ * . ~ . * ~', ' ~ ~ . ~ ~ ~', '  . ~ * ~ .'],
+  station: ['   [===]', '  /|   |\\', ' / | H | \\', '|  |___|  |', ' \\_______/'],
+  anomaly: ['   / \\ / \\', '  | ? ? ? |', '   \\ | / ', '    \\|/', '     *'],
+  pirate: ['    _____', '   / x x \\', '  |  ___  |', '   \\/ | \\/', '      |'],
 };
 
 interface SectorArtworkProps {
@@ -49,20 +25,23 @@ interface SectorArtworkProps {
 export function SectorArtwork({ sectorType, stationVariant, faction }: SectorArtworkProps) {
   let svgUrl: string | undefined;
   if (sectorType === 'station') {
-    svgUrl = getStationArtwork(stationVariant ?? 'trading_post')
-      ?? getStationArtwork(faction ?? 'independent')
-      ?? undefined;
+    svgUrl =
+      getStationArtwork(stationVariant ?? 'trading_post') ??
+      getStationArtwork(faction ?? 'independent') ??
+      undefined;
   } else {
     svgUrl = getAlienArtwork(sectorType) ?? undefined;
   }
 
   if (svgUrl) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '8px 0',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '8px 0',
+        }}
+      >
         <img
           src={svgUrl}
           alt={sectorType}
@@ -83,17 +62,21 @@ export function SectorArtwork({ sectorType, stationVariant, faction }: SectorArt
   if (!ascii) return null;
 
   return (
-    <div style={{
-      fontFamily: "'Share Tech Mono', monospace",
-      fontSize: '0.6rem',
-      lineHeight: 1.3,
-      color: 'var(--color-primary)',
-      textAlign: 'center',
-      opacity: 0.7,
-      padding: '4px 0',
-    }}>
+    <div
+      style={{
+        fontFamily: "'Share Tech Mono', monospace",
+        fontSize: '0.6rem',
+        lineHeight: 1.3,
+        color: 'var(--color-primary)',
+        textAlign: 'center',
+        opacity: 0.7,
+        padding: '4px 0',
+      }}
+    >
       {ascii.map((line, i) => (
-        <div key={i} style={{ whiteSpace: 'pre' }}>{line}</div>
+        <div key={i} style={{ whiteSpace: 'pre' }}>
+          {line}
+        </div>
       ))}
     </div>
   );

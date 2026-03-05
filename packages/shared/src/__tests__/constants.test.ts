@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { SECTOR_RESOURCE_YIELDS, SECTOR_TYPES, RESOURCE_TYPES, SECTOR_WEIGHTS, AP_COSTS, AP_DEFAULTS, STRUCTURE_COSTS, STRUCTURE_AP_COSTS, RELAY_RANGES, PRODUCTION_RECIPES } from '../constants';
+import {
+  SECTOR_RESOURCE_YIELDS,
+  SECTOR_TYPES,
+  RESOURCE_TYPES,
+  SECTOR_WEIGHTS,
+  AP_COSTS,
+  AP_DEFAULTS,
+  STRUCTURE_COSTS,
+  STRUCTURE_AP_COSTS,
+  RELAY_RANGES,
+  PRODUCTION_RECIPES,
+} from '../constants';
 
 describe('constants', () => {
   it('sector weights sum to 1', () => {
@@ -73,12 +84,12 @@ describe('constants', () => {
   });
 
   it('PRODUCTION_RECIPES has unique IDs', () => {
-    const ids = PRODUCTION_RECIPES.map(r => r.id);
+    const ids = PRODUCTION_RECIPES.map((r) => r.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('PRODUCTION_RECIPES covers all processed item types', () => {
-    const outputItems = new Set(PRODUCTION_RECIPES.map(r => r.outputItem));
+    const outputItems = new Set(PRODUCTION_RECIPES.map((r) => r.outputItem));
     expect(outputItems.has('fuel_cell')).toBe(true);
     expect(outputItems.has('circuit_board')).toBe(true);
     expect(outputItems.has('alloy_plate')).toBe(true);

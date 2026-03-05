@@ -20,7 +20,11 @@ export const SettingsPanel: React.FC = () => {
   const setBrightness = useStore((s) => s.setBrightness);
 
   const handleLogout = () => {
-    try { localStorage.removeItem('vs_token'); } catch { /* noop */ }
+    try {
+      localStorage.removeItem('vs_token');
+    } catch {
+      /* noop */
+    }
     window.location.reload();
   };
 
@@ -42,7 +46,9 @@ export const SettingsPanel: React.FC = () => {
           data-testid="color-profile-select"
         >
           {Object.keys(COLOR_PROFILES).map((name) => (
-            <option key={name} value={name}>{name}</option>
+            <option key={name} value={name}>
+              {name}
+            </option>
           ))}
         </select>
       </div>

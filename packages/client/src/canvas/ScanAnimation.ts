@@ -8,15 +8,15 @@
 export interface ScanAnimationState {
   active: boolean;
   type: 'local' | 'area';
-  pulseCount: number;      // current pulse (0, 1, 2)
-  progress: number;        // 0–1 within current pulse
+  pulseCount: number; // current pulse (0, 1, 2)
+  progress: number; // 0–1 within current pulse
   startTime: number;
-  totalDuration: number;   // ms
+  totalDuration: number; // ms
 }
 
-const AREA_PULSE_DURATION = 800;  // ms per pulse ring
+const AREA_PULSE_DURATION = 800; // ms per pulse ring
 const LOCAL_PULSE_DURATION = 500;
-const SETTLE_PAUSE = 200;         // ms pause between pulses
+const SETTLE_PAUSE = 200; // ms pause between pulses
 const NUM_PULSES = 3;
 
 export function createScanAnimation(type: 'local' | 'area'): ScanAnimationState {
@@ -74,9 +74,10 @@ export function drawScanOverlay(
     for (let p = 0; p <= pulseCount; p++) {
       const pProgress = p < pulseCount ? 1 : progress;
       const radius = pProgress * scanRange * cellSize;
-      const alpha = p < pulseCount
-        ? 0.08  // older pulses are faint
-        : 0.25 * (1 - progress * 0.6);  // current pulse fades
+      const alpha =
+        p < pulseCount
+          ? 0.08 // older pulses are faint
+          : 0.25 * (1 - progress * 0.6); // current pulse fades
 
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -118,7 +119,7 @@ export function drawScanOverlay(
     // Horizontal scanline displacement
     const numBars = 2 + pulseCount;
     for (let i = 0; i < numBars; i++) {
-      const barY = ((now * 0.3 + i * 137) % h);
+      const barY = (now * 0.3 + i * 137) % h;
       const barH = 2 + Math.random() * 3;
       const shift = (Math.random() - 0.5) * 6 * glitchIntensity;
       ctx.save();

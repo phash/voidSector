@@ -72,7 +72,9 @@ function loadSeenTips(): Set<string> {
 function saveSeenTips(tips: Set<string>) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...tips]));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export const createHelpSlice: StateCreator<HelpSlice> = (set, get) => ({
@@ -81,7 +83,7 @@ export const createHelpSlice: StateCreator<HelpSlice> = (set, get) => ({
 
   showTip: (tipId) => {
     if (get().seenTips.has(tipId)) return;
-    const tip = HELP_TIPS.find(t => t.id === tipId);
+    const tip = HELP_TIPS.find((t) => t.id === tipId);
     if (!tip) return;
     const newSeen = new Set(get().seenTips);
     newSeen.add(tipId);

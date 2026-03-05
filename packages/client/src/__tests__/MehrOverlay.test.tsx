@@ -15,10 +15,8 @@ const TEST_MONITORS = [
 function setupStore(overrides: Record<string, unknown> = {}) {
   mockStoreState({
     moreOverlayOpen: false,
-    setMoreOverlayOpen: (open: boolean) =>
-      useStore.setState({ moreOverlayOpen: open }),
-    setActiveMonitor: (monitor: string) =>
-      useStore.setState({ activeMonitor: monitor }),
+    setMoreOverlayOpen: (open: boolean) => useStore.setState({ moreOverlayOpen: open }),
+    setActiveMonitor: (monitor: string) => useStore.setState({ activeMonitor: monitor }),
     clearAlert: (monitorId: string) =>
       useStore.setState((s) => {
         const next = { ...s.alerts };

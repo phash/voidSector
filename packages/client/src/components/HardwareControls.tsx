@@ -29,22 +29,52 @@ interface HardwareControlsProps {
 
 export function HardwareControls(props: HardwareControlsProps) {
   const {
-    dpad, onDpad,
-    zoom, zoomValue = 2, onZoom, zoomMin = 0, zoomMax = 4,
-    power, powerOn, onPower,
-    channels, activeChannel, onChannel, channelAlerts,
+    dpad,
+    onDpad,
+    zoom,
+    zoomValue = 2,
+    onZoom,
+    zoomMin = 0,
+    zoomMax = 4,
+    power,
+    powerOn,
+    onPower,
+    channels,
+    activeChannel,
+    onChannel,
+    channelAlerts,
   } = props;
 
   return (
     <div className="hw-controls" data-testid="hardware-controls">
       {dpad && (
         <div className="hw-dpad" data-testid="hw-dpad">
-          <button className="hw-dpad-btn" data-testid="hw-dpad-up" onClick={() => onDpad?.('up')}>▲</button>
+          <button className="hw-dpad-btn" data-testid="hw-dpad-up" onClick={() => onDpad?.('up')}>
+            ▲
+          </button>
           <div className="hw-dpad-row">
-            <button className="hw-dpad-btn" data-testid="hw-dpad-left" onClick={() => onDpad?.('left')}>◀</button>
-            <button className="hw-dpad-btn" data-testid="hw-dpad-right" onClick={() => onDpad?.('right')}>▶</button>
+            <button
+              className="hw-dpad-btn"
+              data-testid="hw-dpad-left"
+              onClick={() => onDpad?.('left')}
+            >
+              ◀
+            </button>
+            <button
+              className="hw-dpad-btn"
+              data-testid="hw-dpad-right"
+              onClick={() => onDpad?.('right')}
+            >
+              ▶
+            </button>
           </div>
-          <button className="hw-dpad-btn" data-testid="hw-dpad-down" onClick={() => onDpad?.('down')}>▼</button>
+          <button
+            className="hw-dpad-btn"
+            data-testid="hw-dpad-down"
+            onClick={() => onDpad?.('down')}
+          >
+            ▼
+          </button>
         </div>
       )}
 

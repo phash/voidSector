@@ -44,26 +44,31 @@ export function LoginScreen() {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100%',
-      padding: '16px',
-      position: 'relative',
-      zIndex: 1,
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        padding: '16px',
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
       <h1 style={{ fontSize: '1.5rem', letterSpacing: '0.3em', marginBottom: '32px' }}>
         VOID SECTOR
       </h1>
-      <form onSubmit={handleSubmit} style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        width: '100%',
-        maxWidth: '300px',
-      }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          width: '100%',
+          maxWidth: '300px',
+        }}
+      >
         <input
           type="text"
           placeholder="USERNAME"

@@ -10,7 +10,13 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function costLine(cost: { credits: number; ore?: number; gas?: number; crystal?: number; artefact?: number }): string {
+function costLine(cost: {
+  credits: number;
+  ore?: number;
+  gas?: number;
+  crystal?: number;
+  artefact?: number;
+}): string {
   const parts: string[] = [`${cost.credits} CR`];
   if (cost.ore) parts.push(`${cost.ore} ERZ`);
   if (cost.gas) parts.push(`${cost.gas} GAS`);
@@ -64,14 +70,16 @@ export function TechDetailPanel() {
 
   if (!selectedModuleId) {
     return (
-      <div style={{
-        padding: '12px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '0.7rem',
-        color: 'var(--color-dim)',
-        textAlign: 'center',
-        marginTop: 24,
-      }}>
+      <div
+        style={{
+          padding: '12px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.7rem',
+          color: 'var(--color-dim)',
+          textAlign: 'center',
+          marginTop: 24,
+        }}
+      >
         MODUL AUSWÄHLEN
       </div>
     );
@@ -100,21 +108,25 @@ export function TechDetailPanel() {
   const prerequisiteMod = mod.prerequisite ? MODULES[mod.prerequisite] : null;
 
   return (
-    <div style={{
-      padding: '8px 12px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.65rem',
-      lineHeight: 1.6,
-      height: '100%',
-      overflow: 'auto',
-    }}>
+    <div
+      style={{
+        padding: '8px 12px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.65rem',
+        lineHeight: 1.6,
+        height: '100%',
+        overflow: 'auto',
+      }}
+    >
       {/* Header */}
-      <div style={{
-        fontSize: '0.75rem',
-        color: 'var(--color-primary)',
-        fontWeight: 'bold',
-        marginBottom: 4,
-      }}>
+      <div
+        style={{
+          fontSize: '0.75rem',
+          color: 'var(--color-primary)',
+          fontWeight: 'bold',
+          marginBottom: 4,
+        }}
+      >
         {mod.name}
       </div>
       <div style={{ color: 'var(--color-dim)', marginBottom: 8 }}>
@@ -122,13 +134,20 @@ export function TechDetailPanel() {
       </div>
 
       {/* Effects */}
-      <div style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: 4, marginBottom: 6 }}>
-        <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em', marginBottom: 2 }}>
+      <div
+        style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: 4, marginBottom: 6 }}
+      >
+        <div
+          style={{
+            color: 'var(--color-dim)',
+            fontSize: '0.55rem',
+            letterSpacing: '0.1em',
+            marginBottom: 2,
+          }}
+        >
           EFFEKTE
         </div>
-        <div style={{ color: 'var(--color-primary)' }}>
-          {mod.primaryEffect.label}
-        </div>
+        <div style={{ color: 'var(--color-primary)' }}>{mod.primaryEffect.label}</div>
         {mod.secondaryEffects.map((eff, i) => (
           <div key={i} style={{ color: 'var(--color-dim)' }}>
             {eff.label}
@@ -140,9 +159,11 @@ export function TechDetailPanel() {
       {prerequisiteMod && (
         <div style={{ marginBottom: 6 }}>
           <span style={{ color: 'var(--color-dim)' }}>VORAUSSETZUNG: </span>
-          <span style={{
-            color: research.unlockedModules.includes(prerequisiteMod.id) ? '#00FF88' : '#FF3333',
-          }}>
+          <span
+            style={{
+              color: research.unlockedModules.includes(prerequisiteMod.id) ? '#00FF88' : '#FF3333',
+            }}
+          >
             {prerequisiteMod.name}
           </span>
         </div>
@@ -151,7 +172,14 @@ export function TechDetailPanel() {
       {/* Research cost */}
       {mod.researchCost && (
         <div style={{ marginBottom: 6 }}>
-          <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em', marginBottom: 2 }}>
+          <div
+            style={{
+              color: 'var(--color-dim)',
+              fontSize: '0.55rem',
+              letterSpacing: '0.1em',
+              marginBottom: 2,
+            }}
+          >
             FORSCHUNGSKOSTEN
           </div>
           <div>{costLine(mod.researchCost)}</div>
@@ -165,7 +193,14 @@ export function TechDetailPanel() {
 
       {/* Purchase cost */}
       <div style={{ marginBottom: 8 }}>
-        <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em', marginBottom: 2 }}>
+        <div
+          style={{
+            color: 'var(--color-dim)',
+            fontSize: '0.55rem',
+            letterSpacing: '0.1em',
+            marginBottom: 2,
+          }}
+        >
           KAUFPREIS
         </div>
         <div>{costLine(mod.cost)}</div>
@@ -173,12 +208,8 @@ export function TechDetailPanel() {
 
       {/* Status + Actions */}
       <div style={{ borderTop: '1px solid var(--color-dim)', paddingTop: 6 }}>
-        {isFree && (
-          <div style={{ color: '#00FF88' }}>FREI VERFÜGBAR</div>
-        )}
-        {isUnlocked && !isFree && (
-          <div style={{ color: '#00FF88' }}>ERFORSCHT ✓</div>
-        )}
+        {isFree && <div style={{ color: '#00FF88' }}>FREI VERFÜGBAR</div>}
+        {isUnlocked && !isFree && <div style={{ color: '#00FF88' }}>ERFORSCHT ✓</div>}
         {hasBP && !isUnlocked && (
           <div style={{ marginBottom: 6 }}>
             <div style={{ color: '#00BFFF', marginBottom: 4 }}>BLAUPAUSE VORHANDEN</div>
@@ -221,9 +252,7 @@ export function TechDetailPanel() {
               </button>
             )}
             {isAtHome && !researchCheck.valid && (
-              <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>
-                {researchCheck.error}
-              </div>
+              <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>{researchCheck.error}</div>
             )}
           </div>
         )}

@@ -44,41 +44,47 @@ export class CrtErrorBoundary extends Component<Props, State> {
 
     if (this.state.rebooting) {
       return (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          background: '#050505',
-          fontFamily: "'Share Tech Mono', 'Courier New', monospace",
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            color: '#FF3333',
-            fontSize: '0.8rem',
-            letterSpacing: '0.2em',
-            animation: 'crt-flicker 0.15s infinite',
-            textAlign: 'center',
-          }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            background: '#050505',
+            fontFamily: "'Share Tech Mono', 'Courier New', monospace",
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              color: '#FF3333',
+              fontSize: '0.8rem',
+              letterSpacing: '0.2em',
+              animation: 'crt-flicker 0.15s infinite',
+              textAlign: 'center',
+            }}
+          >
             <div style={{ marginBottom: 8 }}>SYSTEM FAULT</div>
-            <div style={{
-              width: '80%',
-              margin: '0 auto',
-              height: 2,
-              background: 'linear-gradient(90deg, transparent, #FF3333, transparent)',
-              animation: 'crt-glitch-bar 0.3s infinite',
-            }} />
-            <div style={{ marginTop: 12, color: '#FFB000', fontSize: '0.7rem' }}>
-              REBOOTING...
-            </div>
-            <div style={{
-              marginTop: 8,
-              fontSize: '0.6rem',
-              color: 'var(--color-dim)',
-              maxWidth: 200,
-              wordBreak: 'break-word',
-            }}>
+            <div
+              style={{
+                width: '80%',
+                margin: '0 auto',
+                height: 2,
+                background: 'linear-gradient(90deg, transparent, #FF3333, transparent)',
+                animation: 'crt-glitch-bar 0.3s infinite',
+              }}
+            />
+            <div style={{ marginTop: 12, color: '#FFB000', fontSize: '0.7rem' }}>REBOOTING...</div>
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: '0.6rem',
+                color: 'var(--color-dim)',
+                maxWidth: 200,
+                wordBreak: 'break-word',
+              }}
+            >
               {this.state.error?.message}
             </div>
           </div>
@@ -87,19 +93,36 @@ export class CrtErrorBoundary extends Component<Props, State> {
     }
 
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        background: '#050505',
-        fontFamily: "'Share Tech Mono', 'Courier New', monospace",
-      }}>
-        <div style={{ color: '#FFB000', fontSize: '0.8rem', letterSpacing: '0.15em', marginBottom: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          background: '#050505',
+          fontFamily: "'Share Tech Mono', 'Courier New', monospace",
+        }}
+      >
+        <div
+          style={{
+            color: '#FFB000',
+            fontSize: '0.8rem',
+            letterSpacing: '0.15em',
+            marginBottom: 12,
+          }}
+        >
           MONITOR OFFLINE
         </div>
-        <div style={{ color: 'var(--color-dim)', fontSize: '0.65rem', marginBottom: 12, textAlign: 'center', maxWidth: 200 }}>
+        <div
+          style={{
+            color: 'var(--color-dim)',
+            fontSize: '0.65rem',
+            marginBottom: 12,
+            textAlign: 'center',
+            maxWidth: 200,
+          }}
+        >
           {this.state.error?.message}
         </div>
         <button

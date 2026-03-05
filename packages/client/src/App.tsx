@@ -10,9 +10,7 @@ export function App() {
 
   if (screen === 'login') {
     return (
-      <MonitorBezel
-        monitorId="VOID-SEC"
-      >
+      <MonitorBezel monitorId="VOID-SEC">
         <LoginScreen />
       </MonitorBezel>
     );

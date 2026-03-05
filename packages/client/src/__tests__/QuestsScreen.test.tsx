@@ -32,14 +32,32 @@ describe('QuestsScreen', () => {
 
   it('shows active quest with objectives', () => {
     mockStoreState({
-      activeQuests: [{
-        id: 'q1', templateId: 't1', npcName: 'Zar', npcFactionId: 'traders',
-        title: 'Erz-Lieferung', description: 'Bringe 3 Ore',
-        stationX: 10, stationY: 20,
-        objectives: [{ type: 'fetch', description: '3 ore', resource: 'ore', amount: 3, progress: 0, fulfilled: false }],
-        rewards: { credits: 30, xp: 10, reputation: 5 },
-        status: 'active', acceptedAt: Date.now(), expiresAt: Date.now() + 86400000,
-      }],
+      activeQuests: [
+        {
+          id: 'q1',
+          templateId: 't1',
+          npcName: 'Zar',
+          npcFactionId: 'traders',
+          title: 'Erz-Lieferung',
+          description: 'Bringe 3 Ore',
+          stationX: 10,
+          stationY: 20,
+          objectives: [
+            {
+              type: 'fetch',
+              description: '3 ore',
+              resource: 'ore',
+              amount: 3,
+              progress: 0,
+              fulfilled: false,
+            },
+          ],
+          rewards: { credits: 30, xp: 10, reputation: 5 },
+          status: 'active',
+          acceptedAt: Date.now(),
+          expiresAt: Date.now() + 86400000,
+        },
+      ],
     });
     render(<QuestsScreen />);
     expect(screen.getByText('Erz-Lieferung')).toBeDefined();
@@ -69,14 +87,32 @@ describe('QuestsScreen', () => {
 
   it('shows abandon button for active quest', async () => {
     mockStoreState({
-      activeQuests: [{
-        id: 'q1', templateId: 't1', npcName: 'Zar', npcFactionId: 'traders',
-        title: 'Test Quest', description: 'Test',
-        stationX: 5, stationY: 5,
-        objectives: [{ type: 'fetch', description: 'Get ore', resource: 'ore', amount: 1, progress: 0, fulfilled: false }],
-        rewards: { credits: 10, xp: 5, reputation: 2 },
-        status: 'active', acceptedAt: Date.now(), expiresAt: Date.now() + 86400000,
-      }],
+      activeQuests: [
+        {
+          id: 'q1',
+          templateId: 't1',
+          npcName: 'Zar',
+          npcFactionId: 'traders',
+          title: 'Test Quest',
+          description: 'Test',
+          stationX: 5,
+          stationY: 5,
+          objectives: [
+            {
+              type: 'fetch',
+              description: 'Get ore',
+              resource: 'ore',
+              amount: 1,
+              progress: 0,
+              fulfilled: false,
+            },
+          ],
+          rewards: { credits: 10, xp: 5, reputation: 2 },
+          status: 'active',
+          acceptedAt: Date.now(),
+          expiresAt: Date.now() + 86400000,
+        },
+      ],
     });
     render(<QuestsScreen />);
     await userEvent.click(screen.getByText('[ABBRECHEN]'));

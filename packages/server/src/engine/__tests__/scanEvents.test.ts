@@ -9,7 +9,13 @@ describe('scanEvents', () => {
   });
 
   it('returns valid event types when event occurs (nebula has high chance)', () => {
-    const validTypes = ['pirate_ambush', 'distress_signal', 'anomaly_reading', 'artifact_find', 'blueprint_find'];
+    const validTypes = [
+      'pirate_ambush',
+      'distress_signal',
+      'anomaly_reading',
+      'artifact_find',
+      'blueprint_find',
+    ];
     let foundEvent = false;
     for (let i = 0; i < 100; i++) {
       const result = checkScanEvent(i * 7, i * 13, 'nebula');
@@ -91,7 +97,7 @@ describe('scanEvents', () => {
 
     it('nebula sectors have high chance', () => {
       const chance = getEffectiveEventChance('nebula', 5000, 5000);
-      expect(chance).toBe(0.30);
+      expect(chance).toBe(0.3);
     });
 
     it('nebula at quadrant edges has very high chance', () => {

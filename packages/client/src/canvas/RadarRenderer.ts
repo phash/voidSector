@@ -1,17 +1,32 @@
-import { SYMBOLS, SECTOR_COLORS, STALENESS_DIM_HOURS, STALENESS_FADE_DAYS, HULL_RADAR_PATTERNS, innerCoord } from '@void-sector/shared';
-import type { SectorData, Coords, JumpGateInfo, JumpGateMapEntry, ScanEvent, HullType, Bookmark } from '@void-sector/shared';
+import {
+  SYMBOLS,
+  SECTOR_COLORS,
+  STALENESS_DIM_HOURS,
+  STALENESS_FADE_DAYS,
+  HULL_RADAR_PATTERNS,
+  innerCoord,
+} from '@void-sector/shared';
+import type {
+  SectorData,
+  Coords,
+  JumpGateInfo,
+  JumpGateMapEntry,
+  ScanEvent,
+  HullType,
+  Bookmark,
+} from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
 import { drawLongJumpCRTEffect } from './JumpAnimation';
 import { drawJumpGateLines } from './jumpGateOverlay';
 
 const BOOKMARK_COLORS: Record<number, string> = {
-  0: '#33FF33',   // HOME — green
-  1: '#FF6644',   // Slot 1 — red-orange
-  2: '#44AAFF',   // Slot 2 — blue
-  3: '#FFDD22',   // Slot 3 — yellow
-  4: '#44FF88',   // Slot 4 — teal
-  5: '#FF44FF',   // Slot 5 — magenta
+  0: '#33FF33', // HOME — green
+  1: '#FF6644', // Slot 1 — red-orange
+  2: '#44AAFF', // Slot 2 — blue
+  3: '#FFDD22', // Slot 3 — yellow
+  4: '#44FF88', // Slot 4 — teal
+  5: '#FF44FF', // Slot 5 — magenta
 };
 
 export const CELL_SIZES = [
@@ -22,11 +37,15 @@ export const CELL_SIZES = [
 ];
 
 // Coordinate frame margins (exported for click offset calculation)
-export const FRAME_LEFT = 40;   // space for row numbers (Y coordinates)
+export const FRAME_LEFT = 40; // space for row numbers (Y coordinates)
 export const FRAME_BOTTOM = 24; // space for column numbers (X coordinates)
-export const FRAME_PAD = 8;     // padding on right/top
+export const FRAME_PAD = 8; // padding on right/top
 
-export function calculateVisibleRadius(canvasW: number, canvasH: number, zoomLevel: number): { radiusX: number; radiusY: number } {
+export function calculateVisibleRadius(
+  canvasW: number,
+  canvasH: number,
+  zoomLevel: number,
+): { radiusX: number; radiusY: number } {
   if (zoomLevel === 4) {
     return { radiusX: 1, radiusY: 1 }; // always 3×3
   }
@@ -67,7 +86,12 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   const h = ctx.canvas.height / dpr;
   const isDetailView = state.zoomLevel === 4;
   const cellEntry = isDetailView
-    ? { w: Math.floor((w - FRAME_LEFT - FRAME_PAD) / 3), h: Math.floor((h - FRAME_BOTTOM - FRAME_PAD) / 3), fontSize: 20, coordSize: 10 }
+    ? {
+        w: Math.floor((w - FRAME_LEFT - FRAME_PAD) / 3),
+        h: Math.floor((h - FRAME_BOTTOM - FRAME_PAD) / 3),
+        fontSize: 20,
+        coordSize: 10,
+      }
     : (CELL_SIZES[state.zoomLevel] ?? CELL_SIZES[1]);
   const { w: CELL_W, h: CELL_H, fontSize, coordSize } = cellEntry;
   const FONT = `${fontSize}px 'Share Tech Mono', 'Courier New', monospace`;
@@ -75,7 +99,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
   // Build bookmark lookup: "x,y" → slot number
   const bookmarkMap = new Map<string, number>();
-  for (const bm of (state.bookmarks ?? [])) {
+  for (const bm of state.bookmarks ?? []) {
     bookmarkMap.set(`${bm.sectorX},${bm.sectorY}`, bm.slot);
   }
 
@@ -162,7 +186,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ? SECTOR_COLORS.home_base
           : (sector as any).environment === 'black_hole'
             ? '#1A1A1A'
-            : SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty;
+            : (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty);
         const prevAlpha = ctx.globalAlpha;
         ctx.fillStyle = sectorBgColor;
         ctx.globalAlpha = prevAlpha * 0.08;
@@ -174,14 +198,21 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       if (isPlayer) {
         const t = state.animTime ?? 0;
         const pulse = 0.6 + 0.4 * Math.sin(t / 400);
-        const alpha = Math.round(pulse * 255).toString(16).padStart(2, '0');
+        const alpha = Math.round(pulse * 255)
+          .toString(16)
+          .padStart(2, '0');
         ctx.strokeStyle = state.themeColor + alpha;
         ctx.lineWidth = 3 + pulse * 1.5;
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
       }
 
       // Selected cell highlight
-      if (state.selectedSector && sx === state.selectedSector.x && sy === state.selectedSector.y && !isPlayer) {
+      if (
+        state.selectedSector &&
+        sx === state.selectedSector.x &&
+        sy === state.selectedSector.y &&
+        !isPlayer
+      ) {
         ctx.strokeStyle = state.themeColor;
         ctx.lineWidth = 3;
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
@@ -232,12 +263,14 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.arc(cellX, cellY, 2, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          const symbol = isHome ? SYMBOLS.homeBase : getSectorSymbol(sector.type, (sector as any).environment);
+          const symbol = isHome
+            ? SYMBOLS.homeBase
+            : getSectorSymbol(sector.type, (sector as any).environment);
           const sectorColor = isHome
             ? SECTOR_COLORS.home_base
             : (sector as any).environment === 'black_hole'
               ? '#1A1A1A'
-              : SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty;
+              : (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty);
           ctx.fillStyle = sectorColor;
           ctx.shadowBlur = 0;
           ctx.fillText(symbol, cellX, cellY);
@@ -247,7 +280,9 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
             ctx.fillStyle = sectorColor;
             ctx.textAlign = labelLeftAlign ? 'left' : 'center';
             ctx.textBaseline = 'bottom';
-            const label = isHome ? 'HOME' : getSectorLabel(sector.type, (sector as any).environment);
+            const label = isHome
+              ? 'HOME'
+              : getSectorLabel(sector.type, (sector as any).environment);
             ctx.fillText(label, labelX, cellY + CELL_H / 2 - 2);
           }
         }
@@ -271,9 +306,21 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         const res = sector.resources;
         if (res) {
           ctx.font = `13px 'Share Tech Mono', monospace`;
-          if (res.ore > 0)     { ctx.fillStyle = state.themeColor; ctx.fillText(`Ore: ${res.ore}`,     cellX, detailY); detailY += lineH; }
-          if (res.gas > 0)     { ctx.fillStyle = state.themeColor; ctx.fillText(`Gas: ${res.gas}`,     cellX, detailY); detailY += lineH; }
-          if (res.crystal > 0) { ctx.fillStyle = state.themeColor; ctx.fillText(`Cry: ${res.crystal}`, cellX, detailY); detailY += lineH; }
+          if (res.ore > 0) {
+            ctx.fillStyle = state.themeColor;
+            ctx.fillText(`Ore: ${res.ore}`, cellX, detailY);
+            detailY += lineH;
+          }
+          if (res.gas > 0) {
+            ctx.fillStyle = state.themeColor;
+            ctx.fillText(`Gas: ${res.gas}`, cellX, detailY);
+            detailY += lineH;
+          }
+          if (res.crystal > 0) {
+            ctx.fillStyle = state.themeColor;
+            ctx.fillText(`Cry: ${res.crystal}`, cellX, detailY);
+            detailY += lineH;
+          }
         }
 
         // Discovery age
@@ -296,7 +343,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         }
         if (state.scanEvents) {
           const sectorEvents = state.scanEvents.filter(
-            e => e.sectorX === sx && e.sectorY === sy && e.status === 'discovered'
+            (e) => e.sectorX === sx && e.sectorY === sy && e.status === 'discovered',
           );
           for (const ev of sectorEvents) {
             features.push(ev.eventType === 'distress_signal' ? '#FF3333' : '#FF00FF');
@@ -329,7 +376,13 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         const dotBaseX = cellX - CELL_W / 2 + 5;
 
         // Helper to draw 3-dot indicator (horizontal row)
-        const drawDots = (baseX: number, baseY: number, value: number, maxValue: number, color: string) => {
+        const drawDots = (
+          baseX: number,
+          baseY: number,
+          value: number,
+          maxValue: number,
+          color: string,
+        ) => {
           if (maxValue <= 0) return;
           const pct = Math.min(1, value / maxValue);
           if (pct >= 1) {
@@ -434,7 +487,11 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const player = playerList[i];
       const dx = player.x - viewX;
       const dy = player.y - viewY;
-      if (Math.abs(dx) <= radiusX && Math.abs(dy) <= radiusY && !(player.x === state.position.x && player.y === state.position.y)) {
+      if (
+        Math.abs(dx) <= radiusX &&
+        Math.abs(dy) <= radiusY &&
+        !(player.x === state.position.x && player.y === state.position.y)
+      ) {
         const sectorKey = `${player.x}:${player.y}`;
         if (drawnSectors.has(sectorKey)) continue;
         drawnSectors.add(sectorKey);
@@ -472,7 +529,11 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const screenX = gridCenterX + (t.x - viewX) * CELL_W;
       const screenY = gridCenterY + (t.y - viewY) * CELL_H;
       const inBounds = Math.abs(t.x - viewX) <= radiusX && Math.abs(t.y - viewY) <= radiusY;
-      if (!inBounds) { prevSX = screenX; prevSY = screenY; continue; }
+      if (!inBounds) {
+        prevSX = screenX;
+        prevSY = screenY;
+        continue;
+      }
 
       const opacity = 0.8 - (i / trail.length) * 0.7;
       ctx.save();
@@ -617,26 +678,39 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 function getSectorSymbol(type: string, environment?: string): string {
   if (environment === 'black_hole') return 'o';
   switch (type) {
-    case 'asteroid_field': return SYMBOLS.asteroid_field;
-    case 'nebula': return SYMBOLS.nebula;
-    case 'station': return SYMBOLS.station;
-    case 'anomaly': return SYMBOLS.anomaly;
-    case 'pirate': return SYMBOLS.pirate;
+    case 'asteroid_field':
+      return SYMBOLS.asteroid_field;
+    case 'nebula':
+      return SYMBOLS.nebula;
+    case 'station':
+      return SYMBOLS.station;
+    case 'anomaly':
+      return SYMBOLS.anomaly;
+    case 'pirate':
+      return SYMBOLS.pirate;
     case 'empty':
-    default: return SYMBOLS.empty;
+    default:
+      return SYMBOLS.empty;
   }
 }
 
 function getSectorLabel(type: string, environment?: string): string {
   if (environment === 'black_hole') return 'BLACK HOLE';
   switch (type) {
-    case 'asteroid_field': return 'ASTEROID';
-    case 'nebula': return 'NEBULA';
-    case 'station': return 'STATION';
-    case 'anomaly': return 'ANOMALY';
-    case 'pirate': return 'PIRATE';
-    case 'empty': return 'EMPTY';
-    default: return type.toUpperCase();
+    case 'asteroid_field':
+      return 'ASTEROID';
+    case 'nebula':
+      return 'NEBULA';
+    case 'station':
+      return 'STATION';
+    case 'anomaly':
+      return 'ANOMALY';
+    case 'pirate':
+      return 'PIRATE';
+    case 'empty':
+      return 'EMPTY';
+    default:
+      return type.toUpperCase();
   }
 }
 
@@ -647,7 +721,12 @@ function drawFeatureDot(ctx: CanvasRenderingContext2D, x: number, y: number, col
   ctx.fill();
 }
 
-export function drawGlitchOverlay(ctx: CanvasRenderingContext2D, width: number, height: number, intensity: number) {
+export function drawGlitchOverlay(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  intensity: number,
+) {
   // Scanline displacement
   const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
@@ -680,7 +759,7 @@ function drawHullIcon(
   centerX: number,
   centerY: number,
   color: string,
-  pixelSize: number = 2
+  pixelSize: number = 2,
 ) {
   const rows = pattern.length;
   const cols = pattern[0].length;
@@ -694,12 +773,7 @@ function drawHullIcon(
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if (pattern[r][c]) {
-        ctx.fillRect(
-          offsetX + c * pixelSize,
-          offsetY + r * pixelSize,
-          pixelSize,
-          pixelSize
-        );
+        ctx.fillRect(offsetX + c * pixelSize, offsetY + r * pixelSize, pixelSize, pixelSize);
       }
     }
   }
@@ -714,7 +788,7 @@ function drawGlowText(
   x: number,
   y: number,
   color: string,
-  blur: number
+  blur: number,
 ) {
   ctx.fillStyle = color;
   ctx.shadowColor = color;

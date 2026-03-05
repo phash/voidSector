@@ -24,8 +24,13 @@ describe('BattleDialog', () => {
   it('shows battle dialog with encounter info', () => {
     mockStoreState({
       activeBattle: {
-        pirateLevel: 3, pirateHp: 50, pirateDamage: 14,
-        sectorX: 10, sectorY: 20, canNegotiate: false, negotiateCost: 30,
+        pirateLevel: 3,
+        pirateHp: 50,
+        pirateDamage: 14,
+        sectorX: 10,
+        sectorY: 20,
+        canNegotiate: false,
+        negotiateCost: 30,
       },
     });
     render(<BattleDialog />);
@@ -38,8 +43,13 @@ describe('BattleDialog', () => {
   it('shows negotiate when canNegotiate is true', () => {
     mockStoreState({
       activeBattle: {
-        pirateLevel: 2, pirateHp: 40, pirateDamage: 11,
-        sectorX: 5, sectorY: 5, canNegotiate: true, negotiateCost: 20,
+        pirateLevel: 2,
+        pirateHp: 40,
+        pirateDamage: 11,
+        sectorX: 5,
+        sectorY: 5,
+        canNegotiate: true,
+        negotiateCost: 20,
       },
     });
     render(<BattleDialog />);
@@ -50,8 +60,13 @@ describe('BattleDialog', () => {
   it('hides negotiate when canNegotiate is false', () => {
     mockStoreState({
       activeBattle: {
-        pirateLevel: 1, pirateHp: 30, pirateDamage: 8,
-        sectorX: 10, sectorY: 20, canNegotiate: false, negotiateCost: 10,
+        pirateLevel: 1,
+        pirateHp: 30,
+        pirateDamage: 8,
+        sectorX: 10,
+        sectorY: 20,
+        canNegotiate: false,
+        negotiateCost: 10,
       },
     });
     render(<BattleDialog />);
@@ -62,8 +77,13 @@ describe('BattleDialog', () => {
   it('sends battle action on fight click', async () => {
     mockStoreState({
       activeBattle: {
-        pirateLevel: 1, pirateHp: 30, pirateDamage: 8,
-        sectorX: 10, sectorY: 20, canNegotiate: false, negotiateCost: 10,
+        pirateLevel: 1,
+        pirateHp: 30,
+        pirateDamage: 8,
+        sectorX: 10,
+        sectorY: 20,
+        canNegotiate: false,
+        negotiateCost: 10,
       },
     });
     render(<BattleDialog />);
@@ -74,8 +94,13 @@ describe('BattleDialog', () => {
   it('sends flee action on flee click', async () => {
     mockStoreState({
       activeBattle: {
-        pirateLevel: 1, pirateHp: 30, pirateDamage: 8,
-        sectorX: 5, sectorY: 15, canNegotiate: false, negotiateCost: 10,
+        pirateLevel: 1,
+        pirateHp: 30,
+        pirateDamage: 8,
+        sectorX: 5,
+        sectorY: 15,
+        canNegotiate: false,
+        negotiateCost: 10,
       },
     });
     render(<BattleDialog />);

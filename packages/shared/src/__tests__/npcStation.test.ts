@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { NPC_STATION_LEVELS, NPC_XP_DECAY_PER_HOUR, NPC_XP_VISIT, NPC_XP_PER_TRADE_UNIT, NPC_XP_QUEST_COMPLETE } from '../constants';
+import {
+  NPC_STATION_LEVELS,
+  NPC_XP_DECAY_PER_HOUR,
+  NPC_XP_VISIT,
+  NPC_XP_PER_TRADE_UNIT,
+  NPC_XP_QUEST_COMPLETE,
+} from '../constants';
 
 describe('NPC Station constants', () => {
   it('has 5 station levels', () => {
@@ -8,7 +14,9 @@ describe('NPC Station constants', () => {
 
   it('levels are ordered by xpThreshold', () => {
     for (let i = 1; i < NPC_STATION_LEVELS.length; i++) {
-      expect(NPC_STATION_LEVELS[i].xpThreshold).toBeGreaterThan(NPC_STATION_LEVELS[i - 1].xpThreshold);
+      expect(NPC_STATION_LEVELS[i].xpThreshold).toBeGreaterThan(
+        NPC_STATION_LEVELS[i - 1].xpThreshold,
+      );
     }
   });
 

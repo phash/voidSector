@@ -1,10 +1,7 @@
 import { query } from './client.js';
 import type { NpcStationData, NpcStationInventoryItem } from '@void-sector/shared';
 
-export async function getStationData(
-  x: number,
-  y: number
-): Promise<NpcStationData | null> {
+export async function getStationData(x: number, y: number): Promise<NpcStationData | null> {
   const result = await query<{
     station_x: number;
     station_y: number;
@@ -17,7 +14,7 @@ export async function getStationData(
     `SELECT station_x, station_y, level, xp, visit_count, trade_volume, last_xp_decay
      FROM npc_station_data
      WHERE station_x = $1 AND station_y = $2`,
-    [x, y]
+    [x, y],
   );
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
@@ -42,13 +39,21 @@ export async function upsertStationData(data: NpcStationData): Promise<void> {
        visit_count = EXCLUDED.visit_count,
        trade_volume = EXCLUDED.trade_volume,
        last_xp_decay = EXCLUDED.last_xp_decay`,
-    [data.stationX, data.stationY, data.level, data.xp, data.visitCount, data.tradeVolume, data.lastXpDecay]
+    [
+      data.stationX,
+      data.stationY,
+      data.level,
+      data.xp,
+      data.visitCount,
+      data.tradeVolume,
+      data.lastXpDecay,
+    ],
   );
 }
 
 export async function getStationInventory(
   x: number,
-  y: number
+  y: number,
 ): Promise<NpcStationInventoryItem[]> {
   const result = await query<{
     station_x: number;
@@ -63,7 +68,7 @@ export async function getStationInventory(
     `SELECT station_x, station_y, item_type, stock, max_stock, consumption_rate, restock_rate, last_updated
      FROM npc_station_inventory
      WHERE station_x = $1 AND station_y = $2`,
-    [x, y]
+    [x, y],
   );
   return result.rows.map((row) => ({
     stationX: row.station_x,
@@ -87,14 +92,23 @@ export async function upsertInventoryItem(item: NpcStationInventoryItem): Promis
        consumption_rate = EXCLUDED.consumption_rate,
        restock_rate = EXCLUDED.restock_rate,
        last_updated = EXCLUDED.last_updated`,
-    [item.stationX, item.stationY, item.itemType, item.stock, item.maxStock, item.consumptionRate, item.restockRate, item.lastUpdated]
+    [
+      item.stationX,
+      item.stationY,
+      item.itemType,
+      item.stock,
+      item.maxStock,
+      item.consumptionRate,
+      item.restockRate,
+      item.lastUpdated,
+    ],
   );
 }
 
 export async function getStationInventoryItem(
   x: number,
   y: number,
-  itemType: string
+  itemType: string,
 ): Promise<NpcStationInventoryItem | null> {
   const result = await query<{
     station_x: number;
@@ -109,7 +123,7 @@ export async function getStationInventoryItem(
     `SELECT station_x, station_y, item_type, stock, max_stock, consumption_rate, restock_rate, last_updated
      FROM npc_station_inventory
      WHERE station_x = $1 AND station_y = $2 AND item_type = $3`,
-    [x, y, itemType]
+    [x, y, itemType],
   );
   if (result.rows.length === 0) return null;
   const row = result.rows[0];

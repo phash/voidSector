@@ -48,7 +48,7 @@ function rowToOrder(row: KontorOrderRow): KontorOrder {
 }
 
 export async function createKontorOrder(
-  order: Omit<KontorOrder, 'id' | 'amountFilled' | 'active' | 'createdAt'>
+  order: Omit<KontorOrder, 'id' | 'amountFilled' | 'active' | 'createdAt'>,
 ): Promise<KontorOrder> {
   const { rows } = await query<KontorOrderRow>(
     `INSERT INTO kontor_orders (owner_id, sector_x, sector_y, item_type, amount_wanted, price_per_unit, budget_reserved, expires_at)
@@ -63,16 +63,13 @@ export async function createKontorOrder(
       order.pricePerUnit,
       order.budgetReserved,
       order.expiresAt,
-    ]
+    ],
   );
   return rowToOrder(rows[0]);
 }
 
 export async function getKontorOrderById(id: string): Promise<KontorOrder | null> {
-  const { rows } = await query<KontorOrderRow>(
-    'SELECT * FROM kontor_orders WHERE id = $1',
-    [id]
-  );
+  const { rows } = await query<KontorOrderRow>('SELECT * FROM kontor_orders WHERE id = $1', [id]);
   if (rows.length === 0) return null;
   return rowToOrder(rows[0]);
 }
@@ -80,7 +77,7 @@ export async function getKontorOrderById(id: string): Promise<KontorOrder | null
 export async function getKontorOrdersBySector(x: number, y: number): Promise<KontorOrder[]> {
   const { rows } = await query<KontorOrderRow>(
     'SELECT * FROM kontor_orders WHERE sector_x = $1 AND sector_y = $2 AND active = TRUE ORDER BY created_at ASC',
-    [x, y]
+    [x, y],
   );
   return rows.map(rowToOrder);
 }
@@ -88,21 +85,18 @@ export async function getKontorOrdersBySector(x: number, y: number): Promise<Kon
 export async function getPlayerKontorOrders(ownerId: string): Promise<KontorOrder[]> {
   const { rows } = await query<KontorOrderRow>(
     'SELECT * FROM kontor_orders WHERE owner_id = $1 AND active = TRUE ORDER BY created_at ASC',
-    [ownerId]
+    [ownerId],
   );
   return rows.map(rowToOrder);
 }
 
 export async function updateKontorOrderFilled(id: string, additionalFilled: number): Promise<void> {
-  await query(
-    'UPDATE kontor_orders SET amount_filled = amount_filled + $2 WHERE id = $1',
-    [id, additionalFilled]
-  );
+  await query('UPDATE kontor_orders SET amount_filled = amount_filled + $2 WHERE id = $1', [
+    id,
+    additionalFilled,
+  ]);
 }
 
 export async function deactivateKontorOrder(id: string): Promise<void> {
-  await query(
-    'UPDATE kontor_orders SET active = FALSE WHERE id = $1',
-    [id]
-  );
+  await query('UPDATE kontor_orders SET active = FALSE WHERE id = $1', [id]);
 }

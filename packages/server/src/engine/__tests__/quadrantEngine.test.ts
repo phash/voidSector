@@ -211,8 +211,11 @@ describe('validateQuadrantName', () => {
 describe('getOrCreateQuadrant', () => {
   it('returns existing quadrant from DB', async () => {
     const existing: QuadrantData = {
-      qx: 1, qy: 2, seed: 999,
-      name: 'TestQuad', discoveredBy: 'player-1',
+      qx: 1,
+      qy: 2,
+      seed: 999,
+      name: 'TestQuad',
+      discoveredBy: 'player-1',
       discoveredAt: '2026-01-01T00:00:00.000Z',
       config: {
         seed: 999,
@@ -263,8 +266,11 @@ describe('getOrCreateQuadrant', () => {
 describe('nameQuadrant', () => {
   function recentQuadrant(overrides: Partial<QuadrantData> = {}): QuadrantData {
     return {
-      qx: 1, qy: 2, seed: 123,
-      name: 'AutoName-3', discoveredBy: 'player-1',
+      qx: 1,
+      qy: 2,
+      seed: 123,
+      name: 'AutoName-3',
+      discoveredBy: 'player-1',
       discoveredAt: new Date(Date.now() - 10_000).toISOString(), // 10s ago (within window)
       config: {
         seed: 123,
@@ -300,9 +306,11 @@ describe('nameQuadrant', () => {
   });
 
   it('fails if naming window expired (60s)', async () => {
-    mockGetQuadrant.mockResolvedValueOnce(recentQuadrant({
-      discoveredAt: new Date(Date.now() - 61_000).toISOString(),
-    }));
+    mockGetQuadrant.mockResolvedValueOnce(
+      recentQuadrant({
+        discoveredAt: new Date(Date.now() - 61_000).toISOString(),
+      }),
+    );
     const result = await nameQuadrant(1, 2, 'TooLate', 'player-1');
     expect(result.success).toBe(false);
     expect(result.error).toContain('Naming window expired');

@@ -7,16 +7,28 @@ export type Screen = 'login' | 'game';
 export type ThemeColor = 'amber';
 
 function safeGetItem(key: string): string | null {
-  try { return localStorage.getItem(key); } catch { return null; }
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
 function safeSetItem(key: string, value: string): void {
-  try { localStorage.setItem(key, value); } catch { /* quota exceeded or private mode */ }
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* quota exceeded or private mode */
+  }
 }
 
 function safeJsonParse<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
-  try { return JSON.parse(raw); } catch { return fallback; }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
 }
 
 export interface UISlice {
@@ -98,37 +110,44 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     set({ colorProfile: profile });
   },
   setZoomLevel: (level) => set({ zoomLevel: Math.max(0, Math.min(4, level)) }),
-  setPanOffset: (offset) => set((s) => {
-    if (s.zoomLevel === 4) return {}; // no pan in 3×3 detail view
-    return {
-      panOffset: {
-        x: Math.max(-50, Math.min(50, Math.round(offset.x))),
-        y: Math.max(-50, Math.min(50, Math.round(offset.y))),
-      },
-    };
-  }),
+  setPanOffset: (offset) =>
+    set((s) => {
+      if (s.zoomLevel === 4) return {}; // no pan in 3×3 detail view
+      return {
+        panOffset: {
+          x: Math.max(-50, Math.min(50, Math.round(offset.x))),
+          y: Math.max(-50, Math.min(50, Math.round(offset.y))),
+        },
+      };
+    }),
   resetPan: () => set({ panOffset: { x: 0, y: 0 } }),
-  startJumpAnimation: (dx, dy, distance?) => set({ jumpAnimation: createJumpAnimation(dx, dy, distance) }),
+  startJumpAnimation: (dx, dy, distance?) =>
+    set({ jumpAnimation: createJumpAnimation(dx, dy, distance) }),
   clearJumpAnimation: () => set({ jumpAnimation: null }),
   setAutoFollow: (autoFollow) => set({ autoFollow }),
   setDetailView: (view) => set({ detailView: view }),
-  setMonitorPower: (monitorId, on) => set((s) => ({
-    monitorPower: { ...s.monitorPower, [monitorId]: on },
-  })),
-  setMonitorChromeVisible: (monitorId, visible) => set((s) => ({
-    monitorChromeVisible: { ...s.monitorChromeVisible, [monitorId]: visible },
-  })),
-  setMonitorMode: (monitorId, mode) => set((s) => ({
-    monitorModes: { ...s.monitorModes, [monitorId]: mode },
-  })),
+  setMonitorPower: (monitorId, on) =>
+    set((s) => ({
+      monitorPower: { ...s.monitorPower, [monitorId]: on },
+    })),
+  setMonitorChromeVisible: (monitorId, visible) =>
+    set((s) => ({
+      monitorChromeVisible: { ...s.monitorChromeVisible, [monitorId]: visible },
+    })),
+  setMonitorMode: (monitorId, mode) =>
+    set((s) => ({
+      monitorModes: { ...s.monitorModes, [monitorId]: mode },
+    })),
   setMoreOverlayOpen: (open) => set({ moreOverlayOpen: open }),
-  startScanAnimation: (type) => set({ scanAnimation: createScanAnimation(type), scanPending: true }),
+  startScanAnimation: (type) =>
+    set({ scanAnimation: createScanAnimation(type), scanPending: true }),
   clearScanAnimation: () => set({ scanAnimation: null, scanPending: false }),
   setScanPending: (pending) => set({ scanPending: pending }),
   setActiveProgram: (program) => {
     safeSetItem('vs-active-program', program);
     set({ activeProgram: program });
   },
-  openContextMenu: (playerId, playerName, x, y) => set({ contextMenu: { playerId, playerName, x, y } }),
+  openContextMenu: (playerId, playerName, x, y) =>
+    set({ contextMenu: { playerId, playerName, x, y } }),
   closeContextMenu: () => set({ contextMenu: null }),
 });

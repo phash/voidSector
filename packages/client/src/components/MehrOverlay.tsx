@@ -21,11 +21,7 @@ export function MehrOverlay({ monitors }: MehrOverlayProps) {
   };
 
   return (
-    <div
-      className="mehr-overlay"
-      data-testid="mehr-overlay"
-      onClick={() => setOpen(false)}
-    >
+    <div className="mehr-overlay" data-testid="mehr-overlay" onClick={() => setOpen(false)}>
       <div
         className="mehr-overlay-content"
         data-testid="mehr-overlay-content"

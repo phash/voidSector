@@ -15,7 +15,7 @@ export async function placeKontorOrder(
   sectorY: number,
   itemType: string,
   amount: number,
-  pricePerUnit: number
+  pricePerUnit: number,
 ): Promise<{ success: boolean; order?: KontorOrder; error?: string }> {
   if (amount <= 0 || !Number.isInteger(amount)) {
     return { success: false, error: 'Invalid amount' };
@@ -51,7 +51,7 @@ export async function placeKontorOrder(
 
 export async function cancelKontorOrder(
   orderId: string,
-  ownerId: string
+  ownerId: string,
 ): Promise<{ success: boolean; refunded: number; error?: string }> {
   const order = await getKontorOrderById(orderId);
   if (!order) {
@@ -78,7 +78,7 @@ export async function cancelKontorOrder(
 export async function fillKontorOrder(
   orderId: string,
   sellerId: string,
-  amount: number
+  amount: number,
 ): Promise<{ success: boolean; earned: number; error?: string }> {
   if (amount <= 0 || !Number.isInteger(amount)) {
     return { success: false, earned: 0, error: 'Invalid amount' };

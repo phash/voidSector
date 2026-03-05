@@ -1,6 +1,8 @@
 import {
-  TRADE_ROUTE_MIN_CYCLE, TRADE_ROUTE_MAX_CYCLE,
-  TRADE_ROUTE_FUEL_PER_DISTANCE, MAX_TRADE_ROUTES,
+  TRADE_ROUTE_MIN_CYCLE,
+  TRADE_ROUTE_MAX_CYCLE,
+  TRADE_ROUTE_FUEL_PER_DISTANCE,
+  MAX_TRADE_ROUTES,
 } from '@void-sector/shared';
 
 export function isRouteCycleDue(lastCycleAt: number | null, cycleMinutes: number): boolean {
@@ -9,12 +11,20 @@ export function isRouteCycleDue(lastCycleAt: number | null, cycleMinutes: number
   return elapsed >= cycleMinutes * 60 * 1000;
 }
 
-export function calculateRouteFuelCost(fromX: number, fromY: number, toX: number, toY: number): number {
+export function calculateRouteFuelCost(
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+): number {
   const dist = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
   return Math.ceil(dist * TRADE_ROUTE_FUEL_PER_DISTANCE);
 }
 
-export function validateRouteConfig(config: { cycleMinutes: number; routeCount?: number }): { valid: boolean; error?: string } {
+export function validateRouteConfig(config: { cycleMinutes: number; routeCount?: number }): {
+  valid: boolean;
+  error?: string;
+} {
   if (config.cycleMinutes < TRADE_ROUTE_MIN_CYCLE) {
     return { valid: false, error: `Minimum cycle is ${TRADE_ROUTE_MIN_CYCLE} minutes` };
   }

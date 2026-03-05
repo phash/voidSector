@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { SECTOR_RESOURCE_YIELDS, ENVIRONMENT_WEIGHTS, CONTENT_WEIGHTS, RESOURCE_REGEN_PER_MINUTE, CRYSTAL_REGEN_PER_MINUTE } from '@void-sector/shared';
+import {
+  SECTOR_RESOURCE_YIELDS,
+  ENVIRONMENT_WEIGHTS,
+  CONTENT_WEIGHTS,
+  RESOURCE_REGEN_PER_MINUTE,
+  CRYSTAL_REGEN_PER_MINUTE,
+} from '@void-sector/shared';
 
 describe('worldgen rebalance (#113)', () => {
   it('asteroids always have ore', () => {
@@ -24,7 +30,7 @@ describe('worldgen rebalance (#113)', () => {
   });
 
   it('environment weights favor empty at 70%+', () => {
-    expect(ENVIRONMENT_WEIGHTS.empty).toBeGreaterThanOrEqual(0.70);
+    expect(ENVIRONMENT_WEIGHTS.empty).toBeGreaterThanOrEqual(0.7);
   });
 
   it('content weights have more asteroids than before', () => {

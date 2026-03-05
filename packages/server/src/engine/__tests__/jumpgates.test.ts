@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { checkJumpGate, generateGateTarget, getDirectionFromAngle, calculateDirection } from '../jumpgates.js';
+import {
+  checkJumpGate,
+  generateGateTarget,
+  getDirectionFromAngle,
+  calculateDirection,
+} from '../jumpgates.js';
 
 describe('JumpGate Generation', () => {
   it('should deterministically detect gates', () => {

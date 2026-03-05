@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useCanvas } from '../canvas/useCanvas';
-import { drawRadar, CELL_SIZES, FRAME_LEFT, FRAME_PAD, FRAME_BOTTOM } from '../canvas/RadarRenderer';
+import {
+  drawRadar,
+  CELL_SIZES,
+  FRAME_LEFT,
+  FRAME_PAD,
+  FRAME_BOTTOM,
+} from '../canvas/RadarRenderer';
 import { updateJumpAnimation } from '../canvas/JumpAnimation';
 import { updateScanAnimation, drawScanOverlay } from '../canvas/ScanAnimation';
 import { useStore } from '../state/store';
@@ -99,8 +105,10 @@ export function RadarCanvas() {
     if (!canvas) return;
     let dragging = false;
     let dragMoved = false;
-    let dragStartX = 0, dragStartY = 0;
-    let panStartX = 0, panStartY = 0;
+    let dragStartX = 0,
+      dragStartY = 0;
+    let panStartX = 0,
+      panStartY = 0;
 
     const onPointerDown = (e: PointerEvent) => {
       dragging = true;
@@ -145,7 +153,9 @@ export function RadarCanvas() {
       dragging = false;
     };
 
-    const onDblClick = () => { useStore.getState().resetPan(); };
+    const onDblClick = () => {
+      useStore.getState().resetPan();
+    };
 
     // Double-tap detection for touch devices
     const onTouchEnd = (e: TouchEvent) => {
@@ -195,16 +205,12 @@ export function RadarCanvas() {
         }}
       />
       <div className="mobile-zoom-controls">
-        <button
-          className="mobile-zoom-btn"
-          onClick={handleZoomIn}
-          aria-label="Zoom in"
-        >+</button>
-        <button
-          className="mobile-zoom-btn"
-          onClick={handleZoomOut}
-          aria-label="Zoom out"
-        >−</button>
+        <button className="mobile-zoom-btn" onClick={handleZoomIn} aria-label="Zoom in">
+          +
+        </button>
+        <button className="mobile-zoom-btn" onClick={handleZoomOut} aria-label="Zoom out">
+          −
+        </button>
       </div>
     </div>
   );

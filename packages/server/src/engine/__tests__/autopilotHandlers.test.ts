@@ -75,9 +75,14 @@ function mockRouteRow(overrides: Partial<AutopilotRouteRow> = {}): AutopilotRout
     targetY: 3,
     useHyperjump: false,
     path: [
-      { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 },
-      { x: 4, y: 0 }, { x: 5, y: 0 }, { x: 5, y: 1 },
-      { x: 5, y: 2 }, { x: 5, y: 3 },
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 3, y: 0 },
+      { x: 4, y: 0 },
+      { x: 5, y: 0 },
+      { x: 5, y: 1 },
+      { x: 5, y: 2 },
+      { x: 5, y: 3 },
     ],
     currentStep: 0,
     totalSteps: 8,
@@ -133,7 +138,9 @@ describe('autopilot start flow', () => {
     expect(costs.totalAP).toBeGreaterThan(0);
     // With speed 3, 10 steps = ceil(10/3) = 4 batches
     // Tick ms = max(20, floor(100/3)) = 33
-    expect(costs.estimatedTime).toBe(4 * Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / 3)));
+    expect(costs.estimatedTime).toBe(
+      4 * Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / 3)),
+    );
   });
 
   it('rejects start when same sector', () => {
@@ -254,10 +261,9 @@ describe('autopilot pause on resource exhaustion', () => {
 
     const paused = await pauseAutopilotRoute('player-1');
     expect(paused).toBe(true);
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining("SET status = 'paused'"),
-      ['player-1'],
-    );
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("SET status = 'paused'"), [
+      'player-1',
+    ]);
   });
 });
 
@@ -269,18 +275,22 @@ describe('autopilot resume after relog', () => {
     const route = mockRouteRow({ currentStep: 4 });
 
     // Mock DB returning active route
-    mockQuery.mockResolvedValueOnce(mockQueryResult([{
-        user_id: route.userId,
-        target_x: route.targetX,
-        target_y: route.targetY,
-        use_hyperjump: route.useHyperjump,
-        path: route.path,
-        current_step: route.currentStep,
-        total_steps: route.totalSteps,
-        started_at: String(route.startedAt),
-        last_step_at: String(route.lastStepAt),
-        status: 'active',
-    }]));
+    mockQuery.mockResolvedValueOnce(
+      mockQueryResult([
+        {
+          user_id: route.userId,
+          target_x: route.targetX,
+          target_y: route.targetY,
+          use_hyperjump: route.useHyperjump,
+          path: route.path,
+          current_step: route.currentStep,
+          total_steps: route.totalSteps,
+          started_at: String(route.startedAt),
+          last_step_at: String(route.lastStepAt),
+          status: 'active',
+        },
+      ]),
+    );
 
     const activeRoute = await getActiveAutopilotRoute('player-1');
     expect(activeRoute).not.toBeNull();
@@ -322,10 +332,9 @@ describe('autopilot cancel', () => {
 
     const cancelled = await cancelAutopilotRoute('player-1');
     expect(cancelled).toBe(true);
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining("SET status = 'cancelled'"),
-      ['player-1'],
-    );
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("SET status = 'cancelled'"), [
+      'player-1',
+    ]);
   });
 
   it('cancel is safe when no active route exists', async () => {
@@ -336,7 +345,10 @@ describe('autopilot cancel', () => {
   });
 
   it('getNextSegment returns empty after cancellation (path exhausted)', () => {
-    const path = [{ x: 1, y: 0 }, { x: 2, y: 0 }];
+    const path = [
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+    ];
     // Simulate cancelled at step 2 (route complete)
     const seg = getNextSegment(path, 2, 10, 3);
     expect(seg.moves).toEqual([]);
@@ -351,10 +363,9 @@ describe('autopilot completion', () => {
     mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE'));
 
     await completeAutopilotRoute('player-1');
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining("SET status = 'completed'"),
-      ['player-1'],
-    );
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining("SET status = 'completed'"), [
+      'player-1',
+    ]);
   });
 
   it('full lifecycle: start → step → complete', async () => {
@@ -389,7 +400,11 @@ describe('autopilot completion', () => {
     }
 
     expect(step).toBe(3);
-    expect(positions).toEqual([{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }]);
+    expect(positions).toEqual([
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 3, y: 0 },
+    ]);
 
     // 4. Complete
     mockQuery.mockResolvedValueOnce(mockQueryResult([], 'UPDATE'));
@@ -449,9 +464,10 @@ describe('autopilot tick rate', () => {
   it('speed 0 falls back to normal interval', () => {
     const speed = 0;
     const useHyperjump = true;
-    const tickMs = useHyperjump && speed > 0
-      ? Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / speed))
-      : STEP_INTERVAL_MS;
+    const tickMs =
+      useHyperjump && speed > 0
+        ? Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / speed))
+        : STEP_INTERVAL_MS;
     expect(tickMs).toBe(STEP_INTERVAL_MS);
   });
 });
@@ -484,17 +500,26 @@ describe('autopilot edge cases', () => {
     expect(paused).toBe(true);
 
     // Simulate: player reconnects, route should be resumable
-    mockQuery.mockResolvedValueOnce(mockQueryResult([{
-        user_id: 'player-1',
-        target_x: 5, target_y: 3,
-        use_hyperjump: false,
-        path: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }],
-        current_step: 2,
-        total_steps: 3,
-        started_at: String(Date.now()),
-        last_step_at: String(Date.now()),
-        status: 'active', // would be 'paused' but after resume it's 'active' again
-    }]));
+    mockQuery.mockResolvedValueOnce(
+      mockQueryResult([
+        {
+          user_id: 'player-1',
+          target_x: 5,
+          target_y: 3,
+          use_hyperjump: false,
+          path: [
+            { x: 1, y: 0 },
+            { x: 2, y: 0 },
+            { x: 3, y: 0 },
+          ],
+          current_step: 2,
+          total_steps: 3,
+          started_at: String(Date.now()),
+          last_step_at: String(Date.now()),
+          status: 'active', // would be 'paused' but after resume it's 'active' again
+        },
+      ]),
+    );
 
     const route = await getActiveAutopilotRoute('player-1');
     expect(route).not.toBeNull();

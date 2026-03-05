@@ -129,43 +129,57 @@ describe('filterQuadrantGates', () => {
 
   it('includes all cross-quadrant gates', () => {
     const gates: JumpGateMapEntry[] = [
-      { gateId: 'cross1', fromX: 5000, fromY: 5000, toX: 15000, toY: 5000, gateType: 'bidirectional' },
+      {
+        gateId: 'cross1',
+        fromX: 5000,
+        fromY: 5000,
+        toX: 15000,
+        toY: 5000,
+        gateType: 'bidirectional',
+      },
       { gateId: 'cross2', fromX: 0, fromY: 0, toX: 10000, toY: 10000, gateType: 'wormhole' },
     ];
     const result = filterQuadrantGates(gates, QUADRANT_SIZE);
-    expect(result.map(g => g.gateId)).toContain('cross1');
-    expect(result.map(g => g.gateId)).toContain('cross2');
+    expect(result.map((g) => g.gateId)).toContain('cross1');
+    expect(result.map((g) => g.gateId)).toContain('cross2');
   });
 
   it('limits intra-quadrant gates to top 3 longest', () => {
     const gates: JumpGateMapEntry[] = [
-      { gateId: 'intra1', fromX: 0, fromY: 0, toX: 100, toY: 0, gateType: 'bidirectional' },     // dist=100
-      { gateId: 'intra2', fromX: 0, fromY: 0, toX: 200, toY: 0, gateType: 'bidirectional' },     // dist=200
-      { gateId: 'intra3', fromX: 0, fromY: 0, toX: 300, toY: 0, gateType: 'bidirectional' },     // dist=300
-      { gateId: 'intra4', fromX: 0, fromY: 0, toX: 400, toY: 0, gateType: 'bidirectional' },     // dist=400
-      { gateId: 'intra5', fromX: 0, fromY: 0, toX: 500, toY: 0, gateType: 'bidirectional' },     // dist=500
+      { gateId: 'intra1', fromX: 0, fromY: 0, toX: 100, toY: 0, gateType: 'bidirectional' }, // dist=100
+      { gateId: 'intra2', fromX: 0, fromY: 0, toX: 200, toY: 0, gateType: 'bidirectional' }, // dist=200
+      { gateId: 'intra3', fromX: 0, fromY: 0, toX: 300, toY: 0, gateType: 'bidirectional' }, // dist=300
+      { gateId: 'intra4', fromX: 0, fromY: 0, toX: 400, toY: 0, gateType: 'bidirectional' }, // dist=400
+      { gateId: 'intra5', fromX: 0, fromY: 0, toX: 500, toY: 0, gateType: 'bidirectional' }, // dist=500
     ];
     const result = filterQuadrantGates(gates, QUADRANT_SIZE);
     expect(result).toHaveLength(3);
-    const ids = result.map(g => g.gateId);
-    expect(ids).toContain('intra5');  // 500
-    expect(ids).toContain('intra4');  // 400
-    expect(ids).toContain('intra3');  // 300
+    const ids = result.map((g) => g.gateId);
+    expect(ids).toContain('intra5'); // 500
+    expect(ids).toContain('intra4'); // 400
+    expect(ids).toContain('intra3'); // 300
     expect(ids).not.toContain('intra1');
     expect(ids).not.toContain('intra2');
   });
 
   it('combines cross-quadrant and top intra-quadrant', () => {
     const gates: JumpGateMapEntry[] = [
-      { gateId: 'cross', fromX: 5000, fromY: 5000, toX: 15000, toY: 5000, gateType: 'bidirectional' },
+      {
+        gateId: 'cross',
+        fromX: 5000,
+        fromY: 5000,
+        toX: 15000,
+        toY: 5000,
+        gateType: 'bidirectional',
+      },
       { gateId: 'intra1', fromX: 0, fromY: 0, toX: 100, toY: 0, gateType: 'bidirectional' },
       { gateId: 'intra2', fromX: 0, fromY: 0, toX: 200, toY: 0, gateType: 'bidirectional' },
     ];
     const result = filterQuadrantGates(gates, QUADRANT_SIZE);
     expect(result).toHaveLength(3);
-    expect(result.map(g => g.gateId)).toContain('cross');
-    expect(result.map(g => g.gateId)).toContain('intra1');
-    expect(result.map(g => g.gateId)).toContain('intra2');
+    expect(result.map((g) => g.gateId)).toContain('cross');
+    expect(result.map((g) => g.gateId)).toContain('intra1');
+    expect(result.map((g) => g.gateId)).toContain('intra2');
   });
 
   it('returns empty for no gates', () => {
@@ -220,7 +234,7 @@ describe('drawJumpGateLines', () => {
     drawJumpGateLines(ctx, gates, 0, 0, 5, 5, 400, 300, 80, 64);
     // Should have called setLineDash with [4, 4] at least once
     const dashCalls = spy.mock.calls.filter(
-      (call) => Array.isArray(call[0]) && call[0].length === 2 && call[0][0] === 4
+      (call) => Array.isArray(call[0]) && call[0].length === 2 && call[0][0] === 4,
     );
     expect(dashCalls.length).toBeGreaterThan(0);
   });
@@ -233,7 +247,7 @@ describe('drawJumpGateLines', () => {
     drawJumpGateLines(ctx, gates, 0, 0, 5, 5, 400, 300, 80, 64);
     // For bidirectional: setLineDash([]) — solid
     const solidCalls = spy.mock.calls.filter(
-      (call) => Array.isArray(call[0]) && call[0].length === 0
+      (call) => Array.isArray(call[0]) && call[0].length === 0,
     );
     expect(solidCalls.length).toBeGreaterThan(0);
   });
@@ -280,7 +294,14 @@ describe('drawQuadrantJumpGateLines', () => {
   it('draws cross-quadrant gate', () => {
     const spy = vi.spyOn(ctx, 'stroke');
     const gates: JumpGateMapEntry[] = [
-      { gateId: 'cross', fromX: 5000, fromY: 5000, toX: 15000, toY: 5000, gateType: 'bidirectional' },
+      {
+        gateId: 'cross',
+        fromX: 5000,
+        fromY: 5000,
+        toX: 15000,
+        toY: 5000,
+        gateType: 'bidirectional',
+      },
     ];
     drawQuadrantJumpGateLines(ctx, gates, 10000, 0, 0, 5, 5, 400, 300, 32, 32);
     expect(spy).toHaveBeenCalled();
@@ -293,8 +314,10 @@ describe('drawQuadrantJumpGateLines', () => {
     for (let i = 1; i <= 5; i++) {
       gates.push({
         gateId: `intra${i}`,
-        fromX: 0, fromY: 0,
-        toX: i * 100, toY: 0,
+        fromX: 0,
+        fromY: 0,
+        toX: i * 100,
+        toY: 0,
         gateType: 'bidirectional',
       });
     }

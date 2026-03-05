@@ -28,11 +28,7 @@ export function calculateCurrentAP(ap: APState, now: number = Date.now()): APSta
  * Regenerates AP first (lazy evaluation), then attempts to spend.
  * Returns new AP state if successful, null if insufficient AP.
  */
-export function spendAP(
-  ap: APState,
-  cost: number,
-  now: number = Date.now()
-): APState | null {
+export function spendAP(ap: APState, cost: number, now: number = Date.now()): APState | null {
   const updated = calculateCurrentAP(ap, now);
   if (updated.current < cost) return null;
   return { ...updated, current: Math.floor(updated.current - cost) };

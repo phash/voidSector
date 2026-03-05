@@ -25,12 +25,7 @@ import {
   deactivateKontorOrder,
 } from '../../db/kontorQueries.js';
 import type { KontorOrder } from '../../db/kontorQueries.js';
-import {
-  getPlayerCredits,
-  deductCredits,
-  addCredits,
-  deductCargo,
-} from '../../db/queries.js';
+import { getPlayerCredits, deductCredits, addCredits, deductCargo } from '../../db/queries.js';
 import {
   placeKontorOrder,
   cancelKontorOrder,

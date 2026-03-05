@@ -14,7 +14,9 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
   const ship = useStore((s) => s.ship);
   const alerts = useStore((s) => s.alerts);
   const autopilot = useStore((s) => (s as unknown as Record<string, unknown>).autopilot);
-  const distressCalls = useStore((s) => (s as unknown as Record<string, unknown>).distressCalls) as unknown[] | undefined;
+  const distressCalls = useStore((s) => (s as unknown as Record<string, unknown>).distressCalls) as
+    | unknown[]
+    | undefined;
 
   switch (monitorId) {
     case 'NAV-COM': {
@@ -40,9 +42,7 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
 
     case 'MINING': {
       const rigColor: LedConfig['color'] = mining?.active ? 'green' : 'gray';
-      return [
-        { label: 'RIG', color: rigColor },
-      ];
+      return [{ label: 'RIG', color: rigColor }];
     }
 
     case 'CARGO': {
@@ -54,9 +54,7 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
         if (pct >= 1) capColor = 'red';
         else if (pct > 0.7) capColor = 'yellow';
       }
-      return [
-        { label: 'CAP', color: capColor },
-      ];
+      return [{ label: 'CAP', color: capColor }];
     }
 
     case 'COMMS': {
@@ -74,15 +72,11 @@ export function useMonitorLeds(monitorId: string): LedConfig[] {
 
     case 'QUESTS': {
       const hasAlert = !!alerts['QUESTS'];
-      return [
-        { label: 'QST', color: hasAlert ? 'yellow' : 'gray', blink: hasAlert },
-      ];
+      return [{ label: 'QST', color: hasAlert ? 'yellow' : 'gray', blink: hasAlert }];
     }
 
     default:
-      return [
-        { label: 'SYS', color: 'green' },
-      ];
+      return [{ label: 'SYS', color: 'green' }];
   }
 }
 
@@ -90,12 +84,16 @@ export function LedDot({ led }: { led: LedConfig }) {
   const colors = { green: '#00FF88', yellow: '#FFB000', red: '#FF3333', gray: '#444' };
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.6rem' }}>
-      <div style={{
-        width: 6, height: 6, borderRadius: '50%',
-        backgroundColor: colors[led.color],
-        boxShadow: led.color !== 'gray' ? `0 0 4px ${colors[led.color]}` : undefined,
-        animation: led.blink ? 'bezel-alert-pulse 1.5s infinite' : undefined,
-      }} />
+      <div
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          backgroundColor: colors[led.color],
+          boxShadow: led.color !== 'gray' ? `0 0 4px ${colors[led.color]}` : undefined,
+          animation: led.blink ? 'bezel-alert-pulse 1.5s infinite' : undefined,
+        }}
+      />
       <span style={{ opacity: 0.6 }}>{led.label}</span>
     </div>
   );

@@ -43,32 +43,38 @@ export function HelpOverlay() {
           animation: 'crt-expand 200ms ease-out',
         }}
       >
-        <div style={{
-          color: 'var(--color-primary)',
-          fontSize: '0.75rem',
-          letterSpacing: '0.15em',
-          marginBottom: '8px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
+        <div
+          style={{
+            color: 'var(--color-primary)',
+            fontSize: '0.75rem',
+            letterSpacing: '0.15em',
+            marginBottom: '8px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <span>◈ {activeTip.title}</span>
           <span style={{ fontSize: '0.65rem', color: 'var(--color-dim)' }}>HILFE</span>
         </div>
-        <div style={{
-          color: '#CCCCCC',
-          fontSize: '0.8rem',
-          lineHeight: 1.6,
-        }}>
+        <div
+          style={{
+            color: '#CCCCCC',
+            fontSize: '0.8rem',
+            lineHeight: 1.6,
+          }}
+        >
           {activeTip.body}
         </div>
-        <div style={{
-          marginTop: '12px',
-          textAlign: 'right',
-          fontSize: '0.65rem',
-          color: 'var(--color-dim)',
-          letterSpacing: '0.1em',
-        }}>
+        <div
+          style={{
+            marginTop: '12px',
+            textAlign: 'right',
+            fontSize: '0.65rem',
+            color: 'var(--color-dim)',
+            letterSpacing: '0.1em',
+          }}
+        >
           [ESC / KLICK zum Schliessen]
         </div>
       </div>

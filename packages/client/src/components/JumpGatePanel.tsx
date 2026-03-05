@@ -29,13 +29,17 @@ export function JumpGatePanel({ gate }: Props) {
   const needsCode = gate.requiresCode && !gate.hasCode;
 
   return (
-    <div style={{
-      marginTop: 12,
-      padding: 8,
-      border: '1px solid rgba(0, 191, 255, 0.4)',
-      background: 'rgba(0, 191, 255, 0.05)',
-    }}>
-      <div style={{ color: '#00BFFF', fontSize: '0.8rem', letterSpacing: '0.15em', marginBottom: 6 }}>
+    <div
+      style={{
+        marginTop: 12,
+        padding: 8,
+        border: '1px solid rgba(0, 191, 255, 0.4)',
+        background: 'rgba(0, 191, 255, 0.05)',
+      }}
+    >
+      <div
+        style={{ color: '#00BFFF', fontSize: '0.8rem', letterSpacing: '0.15em', marginBottom: 6 }}
+      >
         JUMPGATE — {gate.gateType.toUpperCase()}
       </div>
 
@@ -47,7 +51,9 @@ export function JumpGatePanel({ gate }: Props) {
 
       {needsCode && (
         <div style={{ marginBottom: 6 }}>
-          <div style={{ fontSize: '0.7rem', color: '#FF3333', marginBottom: 2 }}>LOCKED — ACCESS CODE REQUIRED</div>
+          <div style={{ fontSize: '0.7rem', color: '#FF3333', marginBottom: 2 }}>
+            LOCKED — ACCESS CODE REQUIRED
+          </div>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -67,9 +73,7 @@ export function JumpGatePanel({ gate }: Props) {
       )}
 
       {gate.requiresCode && gate.hasCode && (
-        <div style={{ fontSize: '0.7rem', color: '#00FF88', marginBottom: 4 }}>
-          CODE: VORHANDEN
-        </div>
+        <div style={{ fontSize: '0.7rem', color: '#00FF88', marginBottom: 4 }}>CODE: VORHANDEN</div>
       )}
 
       {showMinigame ? (

@@ -52,7 +52,7 @@ describe('RadarRenderer navTarget line', () => {
     drawRadar(ctx, state);
     // setLineDash should have been called with dashed pattern
     const dashCalls = spy.mock.calls.filter(
-      (call) => Array.isArray(call[0]) && call[0].length === 2 && call[0][0] === 6
+      (call) => Array.isArray(call[0]) && call[0].length === 2 && call[0][0] === 6,
     );
     expect(dashCalls.length).toBeGreaterThan(0);
   });
@@ -65,7 +65,7 @@ describe('RadarRenderer navTarget line', () => {
     // The player position (0,0) IS in view, but target (999,999) is not.
     // Since we draw if either endpoint is visible, we should still get a dash call
     const dashCalls = spy.mock.calls.filter(
-      (call) => Array.isArray(call[0]) && call[0].length === 2 && call[0][0] === 6
+      (call) => Array.isArray(call[0]) && call[0].length === 2 && call[0][0] === 6,
     );
     expect(dashCalls.length).toBeGreaterThan(0);
   });
@@ -88,7 +88,7 @@ describe('RadarRenderer navTarget line', () => {
     drawRadar(ctx, state);
     // During animation, nav line should not be drawn
     const dashCalls = spy.mock.calls.filter(
-      (call) => Array.isArray(call[0]) && call[0].length === 2 && call[0][0] === 6
+      (call) => Array.isArray(call[0]) && call[0].length === 2 && call[0][0] === 6,
     );
     expect(dashCalls.length).toBe(0);
   });

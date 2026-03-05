@@ -44,9 +44,10 @@ function FirstContactDialog() {
 
   if (!firstContactEvent) return null;
 
-  const isValid = name.trim().length >= QUADRANT_NAME_MIN_LENGTH
-    && name.trim().length <= QUADRANT_NAME_MAX_LENGTH
-    && /^[a-zA-Z0-9 ]+$/.test(name.trim());
+  const isValid =
+    name.trim().length >= QUADRANT_NAME_MIN_LENGTH &&
+    name.trim().length <= QUADRANT_NAME_MAX_LENGTH &&
+    /^[a-zA-Z0-9 ]+$/.test(name.trim());
 
   const handleConfirm = () => {
     if (!isValid) return;
@@ -61,47 +62,56 @@ function FirstContactDialog() {
   };
 
   return (
-    <div style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.85)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 100,
-    }}>
-      <div style={{
-        border: '2px solid var(--color-primary)',
-        background: '#0a0a0a',
-        padding: '16px 24px',
-        maxWidth: 400,
-        width: '90%',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '0.8rem',
-        color: 'var(--color-primary)',
-      }}>
-        <div style={{
-          fontSize: '1rem',
-          letterSpacing: '0.2em',
-          marginBottom: 12,
-          textAlign: 'center',
-        }}>
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.85)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 100,
+      }}
+    >
+      <div
+        style={{
+          border: '2px solid var(--color-primary)',
+          background: '#0a0a0a',
+          padding: '16px 24px',
+          maxWidth: 400,
+          width: '90%',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.8rem',
+          color: 'var(--color-primary)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '1rem',
+            letterSpacing: '0.2em',
+            marginBottom: 12,
+            textAlign: 'center',
+          }}
+        >
           FIRST CONTACT
         </div>
 
         <div style={{ marginBottom: 8, color: 'var(--color-dim)' }}>
-          You have discovered a new quadrant at ({firstContactEvent.quadrant.qx}, {firstContactEvent.quadrant.qy}).
+          You have discovered a new quadrant at ({firstContactEvent.quadrant.qx},{' '}
+          {firstContactEvent.quadrant.qy}).
         </div>
 
         <div style={{ marginBottom: 12, color: 'var(--color-dim)' }}>
-          Auto-name: <span style={{ color: 'var(--color-primary)' }}>{firstContactEvent.autoName}</span>
+          Auto-name:{' '}
+          <span style={{ color: 'var(--color-primary)' }}>{firstContactEvent.autoName}</span>
         </div>
 
         <div style={{ marginBottom: 4, fontSize: '0.7rem', color: 'var(--color-dim)' }}>
-          NAME THIS QUADRANT ({QUADRANT_NAME_MIN_LENGTH}-{QUADRANT_NAME_MAX_LENGTH} chars, alphanumeric + spaces)
+          NAME THIS QUADRANT ({QUADRANT_NAME_MIN_LENGTH}-{QUADRANT_NAME_MAX_LENGTH} chars,
+          alphanumeric + spaces)
         </div>
 
         <input
@@ -123,8 +133,12 @@ function FirstContactDialog() {
           }}
         />
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.7rem', color: countdown <= 10 ? '#FF3333' : 'var(--color-dim)' }}>
+        <div
+          style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <span
+            style={{ fontSize: '0.7rem', color: countdown <= 10 ? '#FF3333' : 'var(--color-dim)' }}
+          >
             {countdown}s
           </span>
 
@@ -186,21 +200,24 @@ export function QuadMapScreen() {
     useStore.getState().setCurrentQuadrant(currentQuadrant);
   }, [currentQuadrant.qx, currentQuadrant.qy]);
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D) => {
-    const state = useStore.getState();
-    const themeColors = COLOR_PROFILES[state.colorProfile];
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D) => {
+      const state = useStore.getState();
+      const themeColors = COLOR_PROFILES[state.colorProfile];
 
-    drawQuadrantMap(ctx, {
-      knownQuadrants: state.knownQuadrants,
-      currentQuadrant: sectorToQuadrantCoords(state.position.x, state.position.y),
-      selectedQuadrant,
-      themeColor: themeColors.primary,
-      dimColor: themeColors.dim,
-      zoomLevel,
-      panOffset,
-      animTime: performance.now(),
-    });
-  }, [zoomLevel, panOffset, selectedQuadrant]);
+      drawQuadrantMap(ctx, {
+        knownQuadrants: state.knownQuadrants,
+        currentQuadrant: sectorToQuadrantCoords(state.position.x, state.position.y),
+        selectedQuadrant,
+        themeColor: themeColors.primary,
+        dimColor: themeColors.dim,
+        zoomLevel,
+        panOffset,
+        animTime: performance.now(),
+      });
+    },
+    [zoomLevel, panOffset, selectedQuadrant],
+  );
 
   const canvasRef = useCanvas(draw);
 
@@ -259,13 +276,11 @@ export function QuadMapScreen() {
         const rect = canvas.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
-        const result = quadrantAtPoint(
-          rect.width,
-          rect.height,
-          clickX,
-          clickY,
-          { currentQuadrant, panOffset, zoomLevel }
-        );
+        const result = quadrantAtPoint(rect.width, rect.height, clickX, clickY, {
+          currentQuadrant,
+          panOffset,
+          zoomLevel,
+        });
         if (result) {
           setSelectedQuadrant(result);
         }
@@ -295,35 +310,40 @@ export function QuadMapScreen() {
     : null;
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      fontFamily: 'var(--font-mono)',
-      position: 'relative',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        fontFamily: 'var(--font-mono)',
+        position: 'relative',
+      }}
+    >
       {/* Canvas area */}
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-        <canvas
-          ref={canvasRef}
-          style={{ width: '100%', height: '100%', display: 'block' }}
-        />
+        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
         <FirstContactDialog />
       </div>
 
       {/* Info panel */}
-      <div style={{
-        padding: '4px 8px',
-        borderTop: '1px solid var(--color-dim)',
-        fontSize: '0.7rem',
-        color: 'var(--color-dim)',
-        flexShrink: 0,
-      }}>
+      <div
+        style={{
+          padding: '4px 8px',
+          borderTop: '1px solid var(--color-dim)',
+          fontSize: '0.7rem',
+          color: 'var(--color-dim)',
+          flexShrink: 0,
+        }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>
-            QUADRANTS: <span style={{ color: 'var(--color-primary)' }}>{knownQuadrants.length}</span> KNOWN
+            QUADRANTS:{' '}
+            <span style={{ color: 'var(--color-primary)' }}>{knownQuadrants.length}</span> KNOWN
             {' | '}
-            CURRENT: <span style={{ color: 'var(--color-primary)' }}>({currentQuadrant.qx}, {currentQuadrant.qy})</span>
+            CURRENT:{' '}
+            <span style={{ color: 'var(--color-primary)' }}>
+              ({currentQuadrant.qx}, {currentQuadrant.qy})
+            </span>
           </span>
           <div style={{ display: 'flex', gap: 4 }}>
             <button
@@ -360,15 +380,22 @@ export function QuadMapScreen() {
         </div>
 
         {selectedQuadrant && (
-          <div style={{ marginTop: 4, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 4 }}>
+          <div
+            style={{ marginTop: 4, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 4 }}
+          >
             <span>
               SELECTED: ({selectedQuadrant.qx}, {selectedQuadrant.qy})
-              {selectedInfo
-                ? <span> | DISCOVERED: <span style={{ color: 'var(--color-primary)' }}>
+              {selectedInfo ? (
+                <span>
+                  {' '}
+                  | DISCOVERED:{' '}
+                  <span style={{ color: 'var(--color-primary)' }}>
                     {new Date(selectedInfo.learnedAt).toLocaleDateString()}
-                  </span></span>
-                : <span style={{ color: '#FF3333' }}> | UNKNOWN</span>
-              }
+                  </span>
+                </span>
+              ) : (
+                <span style={{ color: '#FF3333' }}> | UNKNOWN</span>
+              )}
             </span>
           </div>
         )}

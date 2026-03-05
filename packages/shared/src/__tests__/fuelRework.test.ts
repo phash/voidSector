@@ -97,8 +97,8 @@ describe('Fuel Rework (#94)', () => {
     it('should use all hull multipliers correctly', () => {
       const distance = 10;
       const hullTypes: HullType[] = ['scout', 'freighter', 'cruiser', 'explorer', 'battleship'];
-      const costs = hullTypes.map(h =>
-        calcHyperjumpFuelV2(HYPERJUMP_FUEL_PER_SECTOR, distance, HULL_FUEL_MULTIPLIER[h], 0)
+      const costs = hullTypes.map((h) =>
+        calcHyperjumpFuelV2(HYPERJUMP_FUEL_PER_SECTOR, distance, HULL_FUEL_MULTIPLIER[h], 0),
       );
       // scout (0.8) < explorer (0.9) < cruiser (1.0) < freighter (1.2) < battleship (1.5)
       expect(costs[0]).toBeLessThan(costs[2]); // scout < cruiser

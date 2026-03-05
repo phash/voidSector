@@ -21,9 +21,13 @@ describe('CommsScreen', () => {
     mockStoreState({
       chatMessages: [
         {
-          id: '1', senderId: 's1', senderName: 'PhashX',
-          channel: 'quadrant' as const, content: 'Hello sector!',
-          sentAt: Date.now(), delayed: false,
+          id: '1',
+          senderId: 's1',
+          senderName: 'PhashX',
+          channel: 'quadrant' as const,
+          content: 'Hello sector!',
+          sentAt: Date.now(),
+          delayed: false,
         },
       ],
       chatChannel: 'quadrant' as const,
@@ -84,9 +88,13 @@ describe('CommsScreen', () => {
 
   it('does not display duplicate messages when same id is added twice', () => {
     const msg = {
-      id: 'dup-1', senderId: 's1', senderName: 'PhashX',
-      channel: 'quadrant' as const, content: 'Duplicate test',
-      sentAt: Date.now(), delayed: false,
+      id: 'dup-1',
+      senderId: 's1',
+      senderName: 'PhashX',
+      channel: 'quadrant' as const,
+      content: 'Duplicate test',
+      sentAt: Date.now(),
+      delayed: false,
     };
     mockStoreState({
       chatMessages: [msg],
@@ -106,14 +114,22 @@ describe('CommsScreen', () => {
     mockStoreState({
       chatMessages: [
         {
-          id: '1', senderId: 's1', senderName: 'PhashX',
-          channel: 'quadrant' as const, content: 'Quadrant message',
-          sentAt: Date.now(), delayed: false,
+          id: '1',
+          senderId: 's1',
+          senderName: 'PhashX',
+          channel: 'quadrant' as const,
+          content: 'Quadrant message',
+          sentAt: Date.now(),
+          delayed: false,
         },
         {
-          id: '2', senderId: 's2', senderName: 'AnotherUser',
-          channel: 'direct' as const, content: 'Direct message',
-          sentAt: Date.now(), delayed: false,
+          id: '2',
+          senderId: 's2',
+          senderName: 'AnotherUser',
+          channel: 'direct' as const,
+          content: 'Direct message',
+          sentAt: Date.now(),
+          delayed: false,
         },
       ],
       chatChannel: 'direct' as const,
@@ -150,14 +166,22 @@ describe('CommsScreen', () => {
     mockStoreState({
       chatMessages: [
         {
-          id: '1', senderId: 's1', senderName: 'Player1',
-          channel: 'sector' as const, content: 'Sector hello',
-          sentAt: Date.now(), delayed: false,
+          id: '1',
+          senderId: 's1',
+          senderName: 'Player1',
+          channel: 'sector' as const,
+          content: 'Sector hello',
+          sentAt: Date.now(),
+          delayed: false,
         },
         {
-          id: '2', senderId: 's2', senderName: 'Player2',
-          channel: 'quadrant' as const, content: 'Quadrant hello',
-          sentAt: Date.now(), delayed: false,
+          id: '2',
+          senderId: 's2',
+          senderName: 'Player2',
+          channel: 'quadrant' as const,
+          content: 'Quadrant hello',
+          sentAt: Date.now(),
+          delayed: false,
         },
       ],
       chatChannel: 'sector' as const,
@@ -172,14 +196,22 @@ describe('CommsScreen', () => {
     mockStoreState({
       chatMessages: [
         {
-          id: '1', senderId: 's1', senderName: 'Player1',
-          channel: 'quadrant' as const, content: 'Quadrant hello',
-          sentAt: Date.now(), delayed: false,
+          id: '1',
+          senderId: 's1',
+          senderName: 'Player1',
+          channel: 'quadrant' as const,
+          content: 'Quadrant hello',
+          sentAt: Date.now(),
+          delayed: false,
         },
         {
-          id: '2', senderId: 's2', senderName: 'Player2',
-          channel: 'sector' as const, content: 'Sector hello',
-          sentAt: Date.now(), delayed: false,
+          id: '2',
+          senderId: 's2',
+          senderName: 'Player2',
+          channel: 'sector' as const,
+          content: 'Sector hello',
+          sentAt: Date.now(),
+          delayed: false,
         },
       ],
       chatChannel: 'quadrant' as const,

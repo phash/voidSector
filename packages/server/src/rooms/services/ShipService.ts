@@ -52,7 +52,7 @@ export class ShipService {
   async handleGetShips(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
     const ships = await getPlayerShips(auth.userId);
-    const shipsWithStats = ships.map(s => ({
+    const shipsWithStats = ships.map((s) => ({
       ...s,
       stats: calculateShipStats(s.hullType, s.modules),
     }));
@@ -63,8 +63,14 @@ export class ShipService {
     const auth = client.auth as AuthPayload;
     // Must be at home base
     const homeBase = await getPlayerHomeBase(auth.userId);
-    if (this.ctx._px(client.sessionId) !== homeBase.x || this.ctx._py(client.sessionId) !== homeBase.y) {
-      client.send('error', { code: 'NOT_AT_BASE', message: 'Must be at home base to switch ships' });
+    if (
+      this.ctx._px(client.sessionId) !== homeBase.x ||
+      this.ctx._py(client.sessionId) !== homeBase.y
+    ) {
+      client.send('error', {
+        code: 'NOT_AT_BASE',
+        message: 'Must be at home base to switch ships',
+      });
       return;
     }
     const success = await switchActiveShip(auth.userId, data.shipId);
@@ -80,18 +86,31 @@ export class ShipService {
       this.ctx.clientHullTypes.set(client.sessionId, newShip.hullType);
       const fuelState = await getFuelState(auth.userId);
       client.send('shipData', {
-        id: newShip.id, ownerId: auth.userId, hullType: newShip.hullType,
-        name: newShip.name, modules: newShip.modules, stats: newStats,
-        fuel: fuelState ?? newStats.fuelMax, active: true,
+        id: newShip.id,
+        ownerId: auth.userId,
+        hullType: newShip.hullType,
+        name: newShip.name,
+        modules: newShip.modules,
+        stats: newStats,
+        fuel: fuelState ?? newStats.fuelMax,
+        active: true,
       });
     }
   }
 
-  async handleInstallModule(client: Client, data: { moduleId: string; slotIndex: number }): Promise<void> {
+  async handleInstallModule(
+    client: Client,
+    data: { moduleId: string; slotIndex: number },
+  ): Promise<void> {
     const auth = client.auth as AuthPayload;
     const ship = await getActiveShip(auth.userId);
     if (!ship) return;
-    const validation = validateModuleInstall(ship.hullType, ship.modules, data.moduleId, data.slotIndex);
+    const validation = validateModuleInstall(
+      ship.hullType,
+      ship.modules,
+      data.moduleId,
+      data.slotIndex,
+    );
     if (!validation.valid) {
       client.send('error', { code: 'INSTALL_FAIL', message: validation.error! });
       return;
@@ -103,7 +122,10 @@ export class ShipService {
       return;
     }
     // Install
-    const newModules: ShipModule[] = [...ship.modules, { moduleId: data.moduleId, slotIndex: data.slotIndex }];
+    const newModules: ShipModule[] = [
+      ...ship.modules,
+      { moduleId: data.moduleId, slotIndex: data.slotIndex },
+    ];
     await updateShipModules(ship.id, newModules);
     // Recalculate and send
     const newStats = calculateShipStats(ship.hullType, newModules);
@@ -115,20 +137,24 @@ export class ShipService {
     const auth = client.auth as AuthPayload;
     const ship = await getActiveShip(auth.userId);
     if (!ship) return;
-    const mod = ship.modules.find(m => m.slotIndex === data.slotIndex);
+    const mod = ship.modules.find((m) => m.slotIndex === data.slotIndex);
     if (!mod) {
       client.send('error', { code: 'EMPTY_SLOT', message: 'No module in that slot' });
       return;
     }
     // Remove from ship
-    const newModules = ship.modules.filter(m => m.slotIndex !== data.slotIndex);
+    const newModules = ship.modules.filter((m) => m.slotIndex !== data.slotIndex);
     await updateShipModules(ship.id, newModules);
     // Add back to inventory
     await addModuleToInventory(auth.userId, mod.moduleId);
     // Recalculate
     const newStats = calculateShipStats(ship.hullType, newModules);
     this.ctx.clientShips.set(client.sessionId, newStats);
-    client.send('moduleRemoved', { modules: newModules, stats: newStats, returnedModule: mod.moduleId });
+    client.send('moduleRemoved', {
+      modules: newModules,
+      stats: newStats,
+      returnedModule: mod.moduleId,
+    });
   }
 
   async handleBuyModule(client: Client, data: { moduleId: string }): Promise<void> {
@@ -148,9 +174,14 @@ export class ShipService {
     // Must be at station or home base
     const homeBase = await getPlayerHomeBase(auth.userId);
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const isHomeBase = this.ctx._px(client.sessionId) === homeBase.x && this.ctx._py(client.sessionId) === homeBase.y;
+    const isHomeBase =
+      this.ctx._px(client.sessionId) === homeBase.x &&
+      this.ctx._py(client.sessionId) === homeBase.y;
     if (!isStation && !isHomeBase) {
-      client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
+      client.send('error', {
+        code: 'WRONG_LOCATION',
+        message: 'Must be at a station or home base',
+      });
       return;
     }
     // Check credits
@@ -161,7 +192,12 @@ export class ShipService {
     }
     // Check resource costs from cargo
     const cargo = await getPlayerCargo(auth.userId);
-    const cargoMap: Record<string, number> = { ore: cargo.ore, gas: cargo.gas, crystal: cargo.crystal, artefact: cargo.artefact };
+    const cargoMap: Record<string, number> = {
+      ore: cargo.ore,
+      gas: cargo.gas,
+      crystal: cargo.crystal,
+      artefact: cargo.artefact,
+    };
     for (const [res, amount] of Object.entries(moduleDef.cost)) {
       if (res === 'credits') continue;
       const have = cargoMap[res] ?? 0;
@@ -187,7 +223,10 @@ export class ShipService {
     client.send('moduleInventory', { modules: inventory });
   }
 
-  async handleBuyHull(client: Client, data: { hullType: string; name?: string; shipColor?: string }): Promise<void> {
+  async handleBuyHull(
+    client: Client,
+    data: { hullType: string; name?: string; shipColor?: string },
+  ): Promise<void> {
     if (rejectGuest(client, 'Schiffskauf')) return;
     const auth = client.auth as AuthPayload;
     const hullDef = HULLS[data.hullType as HullType];
@@ -198,9 +237,14 @@ export class ShipService {
     // Must be at station or home base
     const homeBase = await getPlayerHomeBase(auth.userId);
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const isHomeBase = this.ctx._px(client.sessionId) === homeBase.x && this.ctx._py(client.sessionId) === homeBase.y;
+    const isHomeBase =
+      this.ctx._px(client.sessionId) === homeBase.x &&
+      this.ctx._py(client.sessionId) === homeBase.y;
     if (!isStation && !isHomeBase) {
-      client.send('error', { code: 'WRONG_LOCATION', message: 'Must be at a station or home base' });
+      client.send('error', {
+        code: 'WRONG_LOCATION',
+        message: 'Must be at a station or home base',
+      });
       return;
     }
     // If at an NPC station (not home base), check shipyard availability
@@ -210,7 +254,10 @@ export class ShipService {
       const station = await getOrInitStation(sx, sy);
       const stationLevelInfo = getStationLevel(station.xp);
       if (!hasShipyard(stationLevelInfo.level)) {
-        client.send('error', { code: 'NO_SHIPYARD', message: `Station needs level ${STATION_SHIPYARD_LEVEL_THRESHOLD}+ for shipyard` });
+        client.send('error', {
+          code: 'NO_SHIPYARD',
+          message: `Station needs level ${STATION_SHIPYARD_LEVEL_THRESHOLD}+ for shipyard`,
+        });
         return;
       }
     }
@@ -232,7 +279,12 @@ export class ShipService {
       await deductCredits(auth.userId, price);
     }
     // Create new ship (becomes active, old one deactivated)
-    const newShip = await createShip(auth.userId, data.hullType as HullType, data.name?.slice(0, 20) || hullDef.name, hullDef.baseFuel);
+    const newShip = await createShip(
+      auth.userId,
+      data.hullType as HullType,
+      data.name?.slice(0, 20) || hullDef.name,
+      hullDef.baseFuel,
+    );
     const newStats = calculateShipStats(newShip.hullType, newShip.modules);
     this.ctx.clientShips.set(client.sessionId, newStats);
     this.ctx.clientHullTypes.set(client.sessionId, newShip.hullType);
@@ -241,9 +293,15 @@ export class ShipService {
     // Persist cosmetic ship color
     const shipColor = data.shipColor?.slice(0, 7) || undefined;
     client.send('shipData', {
-      id: newShip.id, ownerId: auth.userId, hullType: newShip.hullType,
-      name: newShip.name, modules: newShip.modules, stats: newStats,
-      fuel: hullDef.baseFuel, active: true, shipColor,
+      id: newShip.id,
+      ownerId: auth.userId,
+      hullType: newShip.hullType,
+      name: newShip.name,
+      modules: newShip.modules,
+      stats: newStats,
+      fuel: hullDef.baseFuel,
+      active: true,
+      shipColor,
     });
     const remainingCredits = await getPlayerCredits(auth.userId);
     client.send('creditsUpdate', { credits: remainingCredits });
@@ -292,7 +350,11 @@ export class ShipService {
 
     // Must be at home base
     const homeBase = await getPlayerHomeBase(auth.userId);
-    if (!homeBase || homeBase.x !== this.ctx._px(client.sessionId) || homeBase.y !== this.ctx._py(client.sessionId)) {
+    if (
+      !homeBase ||
+      homeBase.x !== this.ctx._px(client.sessionId) ||
+      homeBase.y !== this.ctx._py(client.sessionId)
+    ) {
       client.send('researchResult', { success: false, error: 'Must be at home base' });
       return;
     }
@@ -385,7 +447,10 @@ export class ShipService {
       unlockedModules: research.unlockedModules,
       activeResearch: null,
     });
-    client.send('logEntry', `FORSCHUNG ABGESCHLOSSEN: ${MODULES[active.moduleId]?.name ?? active.moduleId}`);
+    client.send(
+      'logEntry',
+      `FORSCHUNG ABGESCHLOSSEN: ${MODULES[active.moduleId]?.name ?? active.moduleId}`,
+    );
   }
 
   async handleActivateBlueprint(client: Client, data: { moduleId: string }): Promise<void> {
@@ -401,7 +466,7 @@ export class ShipService {
     // Remove from blueprints array
     await query(
       `UPDATE player_research SET blueprints = array_remove(blueprints, $2::text) WHERE user_id = $1`,
-      [auth.userId, data.moduleId]
+      [auth.userId, data.moduleId],
     );
 
     const updated = await getPlayerResearch(auth.userId);
@@ -411,7 +476,9 @@ export class ShipService {
       unlockedModules: updated.unlockedModules,
       blueprints: updated.blueprints,
     });
-    client.send('logEntry', `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`);
+    client.send(
+      'logEntry',
+      `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`,
+    );
   }
-
 }

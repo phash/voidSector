@@ -1,5 +1,12 @@
 import type { Client } from 'colyseus';
-import type { SectorData, ShipStats, HullType, CombatV2State, NpcFactionId, ChatMessage } from '@void-sector/shared';
+import type {
+  SectorData,
+  ShipStats,
+  HullType,
+  CombatV2State,
+  NpcFactionId,
+  ChatMessage,
+} from '@void-sector/shared';
 import type { FactionBonuses } from '../../engine/factionBonuses.js';
 import type { AuthPayload } from '../../auth.js';
 import type { SectorRoomState } from '../schema/SectorState.js';
@@ -43,9 +50,29 @@ export interface ServiceContext {
   roomId: string;
 
   // Cross-service callbacks (methods that stay in SectorRoom for now)
-  checkFirstContact: (client: Client, auth: AuthPayload, targetX: number, targetY: number) => Promise<void>;
-  checkQuestProgress: (client: Client, playerId: string, action: string, context: Record<string, unknown>) => Promise<void>;
-  checkAndEmitDistressCalls: (client: Client, userId: string, playerX: number, playerY: number) => Promise<void>;
-  applyReputationChange: (playerId: string, factionId: NpcFactionId, delta: number, client: Client) => Promise<void>;
+  checkFirstContact: (
+    client: Client,
+    auth: AuthPayload,
+    targetX: number,
+    targetY: number,
+  ) => Promise<void>;
+  checkQuestProgress: (
+    client: Client,
+    playerId: string,
+    action: string,
+    context: Record<string, unknown>,
+  ) => Promise<void>;
+  checkAndEmitDistressCalls: (
+    client: Client,
+    userId: string,
+    playerX: number,
+    playerY: number,
+  ) => Promise<void>;
+  applyReputationChange: (
+    playerId: string,
+    factionId: NpcFactionId,
+    delta: number,
+    client: Client,
+  ) => Promise<void>;
   applyXpGain: (playerId: string, xp: number, client: Client) => Promise<void>;
 }

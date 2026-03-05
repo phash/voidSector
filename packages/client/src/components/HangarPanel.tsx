@@ -81,14 +81,16 @@ export function HangarPanel() {
   };
 
   return (
-    <div style={{
-      padding: '4px 6px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.6rem',
-      lineHeight: 1.5,
-      overflow: 'auto',
-      height: '100%',
-    }}>
+    <div
+      style={{
+        padding: '4px 6px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.6rem',
+        lineHeight: 1.5,
+        overflow: 'auto',
+        height: '100%',
+      }}
+    >
       {/* A) Ship List */}
       <div style={sectionHeader}>
         HANGAR {shipList.length > 0 ? `\u2014 ${shipList.length} SCHIFFE` : ''}
@@ -100,18 +102,23 @@ export function HangarPanel() {
           const hull = HULLS[s.hullType as HullType];
           const isActive = ship?.id === s.id;
           return (
-            <div key={s.id} style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '2px 0',
-              borderBottom: '1px solid rgba(255,176,0,0.1)',
-            }}>
+            <div
+              key={s.id}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '2px 0',
+                borderBottom: '1px solid rgba(255,176,0,0.1)',
+              }}
+            >
               <span>
-                <span style={{
-                  color: isActive ? 'var(--color-primary)' : 'var(--color-dim)',
-                  marginRight: 4,
-                }}>
+                <span
+                  style={{
+                    color: isActive ? 'var(--color-primary)' : 'var(--color-dim)',
+                    marginRight: 4,
+                  }}
+                >
                   {isActive ? '\u25BA' : ' '}
                 </span>
                 <span style={{ color: 'var(--color-primary)' }}>{s.name}</span>
@@ -134,8 +141,12 @@ export function HangarPanel() {
                           autoFocus
                           placeholder="Name..."
                         />
-                        <button style={btnStyle} onClick={() => handleRename(s.id)}>OK</button>
-                        <button style={btnStyle} onClick={() => setRenamingShipId(null)}>X</button>
+                        <button style={btnStyle} onClick={() => handleRename(s.id)}>
+                          OK
+                        </button>
+                        <button style={btnStyle} onClick={() => setRenamingShipId(null)}>
+                          X
+                        </button>
                       </span>
                     ) : (
                       <button
@@ -167,19 +178,22 @@ export function HangarPanel() {
 
       {/* B) Buy New Hull */}
       <div style={sectionHeader}>NEUES SCHIFF</div>
-      {(Object.entries(HULLS) as [HullType, typeof HULLS[HullType]][]).map(([hullType, hull]) => {
+      {(Object.entries(HULLS) as [HullType, (typeof HULLS)[HullType]][]).map(([hullType, hull]) => {
         if (hull.unlockCost === 0) return null; // Skip starter hull
         const canAfford = credits >= hull.unlockCost;
         const levelLocked = playerLevel < hull.unlockLevel;
         const locked = !canAfford || levelLocked;
 
         return (
-          <div key={hullType} style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '1px 0',
-          }}>
+          <div
+            key={hullType}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '1px 0',
+            }}
+          >
             <span>
               <span style={{ color: 'var(--color-primary)' }}>{hull.name}</span>
               <span style={{ color: 'var(--color-dim)', marginLeft: 4, fontSize: '0.55rem' }}>
@@ -197,8 +211,12 @@ export function HangarPanel() {
                   autoFocus
                   placeholder="Schiffname..."
                 />
-                <button style={btnStyle} onClick={() => handleBuyHull(hullType)}>OK</button>
-                <button style={btnStyle} onClick={() => setBuyingHull(null)}>X</button>
+                <button style={btnStyle} onClick={() => handleBuyHull(hullType)}>
+                  OK
+                </button>
+                <button style={btnStyle} onClick={() => setBuyingHull(null)}>
+                  X
+                </button>
               </span>
             ) : (
               <button

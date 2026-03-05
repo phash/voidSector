@@ -1,11 +1,41 @@
-import type { APState, MiningState, ResourceType, MineableResourceType, SectorResources, StructureType, CargoState, StorageInventory, BattleAction, BattleOutcome, BattleResult, PirateEncounter } from '@void-sector/shared';
+import type {
+  APState,
+  MiningState,
+  ResourceType,
+  MineableResourceType,
+  SectorResources,
+  StructureType,
+  CargoState,
+  StorageInventory,
+  BattleAction,
+  BattleOutcome,
+  BattleResult,
+  PirateEncounter,
+} from '@void-sector/shared';
 import {
-  AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, STRUCTURE_COSTS, STRUCTURE_AP_COSTS,
-  NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, STORAGE_TIERS,
-  SLATE_AP_COST_SECTOR, SLATE_AP_COST_AREA, SLATE_AREA_RADIUS, SLATE_NPC_PRICE_PER_SECTOR,
-  BATTLE_AP_COST_FLEE, BATTLE_FLEE_BASE_CHANCE, BATTLE_CARGO_LOSS_MIN, BATTLE_CARGO_LOSS_MAX,
-  BATTLE_NEGOTIATE_COST_PER_LEVEL, PIRATE_BASE_HP, PIRATE_HP_PER_LEVEL,
-  PIRATE_BASE_DAMAGE, PIRATE_DAMAGE_PER_LEVEL, MAX_ACTIVE_QUESTS, XP_LEVELS,
+  AP_COSTS_LOCAL_SCAN,
+  AP_COSTS_BY_SCANNER,
+  STRUCTURE_COSTS,
+  STRUCTURE_AP_COSTS,
+  NPC_PRICES,
+  NPC_BUY_SPREAD,
+  NPC_SELL_SPREAD,
+  STORAGE_TIERS,
+  SLATE_AP_COST_SECTOR,
+  SLATE_AP_COST_AREA,
+  SLATE_AREA_RADIUS,
+  SLATE_NPC_PRICE_PER_SECTOR,
+  BATTLE_AP_COST_FLEE,
+  BATTLE_FLEE_BASE_CHANCE,
+  BATTLE_CARGO_LOSS_MIN,
+  BATTLE_CARGO_LOSS_MAX,
+  BATTLE_NEGOTIATE_COST_PER_LEVEL,
+  PIRATE_BASE_HP,
+  PIRATE_HP_PER_LEVEL,
+  PIRATE_BASE_DAMAGE,
+  PIRATE_DAMAGE_PER_LEVEL,
+  MAX_ACTIVE_QUESTS,
+  XP_LEVELS,
 } from '@void-sector/shared';
 import { spendAP } from './ap.js';
 import { startMining, createMiningState } from './mining.js';
@@ -54,7 +84,7 @@ export function validateScan(ap: APState, apCost: number): ScanValidation {
 export function validateLocalScan(
   ap: APState,
   cost: number = AP_COSTS_LOCAL_SCAN,
-  scannerLevel: number = 1
+  scannerLevel: number = 1,
 ): { valid: boolean; error?: string; newAP?: APState; hiddenSignatures: boolean } {
   const newAP = spendAP(ap, cost);
   if (!newAP) {
@@ -66,12 +96,17 @@ export function validateLocalScan(
 
 export function validateAreaScan(
   ap: APState,
-  scannerLevel: number = 1
+  scannerLevel: number = 1,
 ): { valid: boolean; error?: string; newAP?: APState; radius: number; cost: number } {
   const config = AP_COSTS_BY_SCANNER[scannerLevel] ?? AP_COSTS_BY_SCANNER[1];
   const newAP = spendAP(ap, config.areaScan);
   if (!newAP) {
-    return { valid: false, error: 'Insufficient AP', radius: config.areaScanRadius, cost: config.areaScan };
+    return {
+      valid: false,
+      error: 'Insufficient AP',
+      radius: config.areaScanRadius,
+      cost: config.areaScan,
+    };
   }
   return { valid: true, newAP, radius: config.areaScanRadius, cost: config.areaScan };
 }
@@ -113,7 +148,10 @@ export interface JettisonValidation {
   error?: string;
 }
 
-export function validateJettison(resource: ResourceType, currentAmount: number): JettisonValidation {
+export function validateJettison(
+  resource: ResourceType,
+  currentAmount: number,
+): JettisonValidation {
   if (!['ore', 'gas', 'crystal', 'artefact'].includes(resource)) {
     return { valid: false, error: 'Invalid resource type' };
   }
@@ -133,7 +171,7 @@ export interface BuildValidation {
 export function validateBuild(
   ap: APState,
   cargo: CargoState,
-  structureType: StructureType
+  structureType: StructureType,
 ): BuildValidation {
   const costs = STRUCTURE_COSTS[structureType];
   const apCost = STRUCTURE_AP_COSTS[structureType];
@@ -141,7 +179,11 @@ export function validateBuild(
   for (const [resource, required] of Object.entries(costs)) {
     const have = cargo[resource as keyof CargoState] ?? 0;
     if (have < required) {
-      return { valid: false, error: `Insufficient ${resource}: need ${required}, have ${have}`, costs };
+      return {
+        valid: false,
+        error: `Insufficient ${resource}: need ${required}, have ${have}`,
+        costs,
+      };
     }
   }
 
@@ -167,7 +209,8 @@ export function validateTransfer(
   storageTier: number,
 ): TransferValidation {
   if (amount <= 0) return { valid: false, error: 'Amount must be positive' };
-  if (!['ore', 'gas', 'crystal', 'artefact'].includes(resource)) return { valid: false, error: 'Invalid resource' };
+  if (!['ore', 'gas', 'crystal', 'artefact'].includes(resource))
+    return { valid: false, error: 'Invalid resource' };
 
   const tierConfig = STORAGE_TIERS[storageTier];
   if (!tierConfig) return { valid: false, error: 'Invalid storage tier' };
@@ -179,7 +222,8 @@ export function validateTransfer(
       return { valid: false, error: `Storage full (${storageTotal}/${tierConfig.capacity})` };
     }
   } else {
-    if (storage[resource] < amount) return { valid: false, error: `Not enough ${resource} in storage` };
+    if (storage[resource] < amount)
+      return { valid: false, error: `Not enough ${resource} in storage` };
   }
 
   return { valid: true };
@@ -200,15 +244,22 @@ export function validateNpcTrade(
   storageTier: number,
 ): NpcTradeValidation {
   if (amount <= 0) return { valid: false, error: 'Amount must be positive', totalPrice: 0 };
-  if (resource === 'artefact') return { valid: false, error: 'Artefakte können nicht an NPCs gehandelt werden', totalPrice: 0 };
-  if (!['ore', 'gas', 'crystal'].includes(resource)) return { valid: false, error: 'Invalid resource', totalPrice: 0 };
+  if (resource === 'artefact')
+    return {
+      valid: false,
+      error: 'Artefakte können nicht an NPCs gehandelt werden',
+      totalPrice: 0,
+    };
+  if (!['ore', 'gas', 'crystal'].includes(resource))
+    return { valid: false, error: 'Invalid resource', totalPrice: 0 };
 
   const basePrice = NPC_PRICES[resource as MineableResourceType];
   const tierConfig = STORAGE_TIERS[storageTier];
 
   if (action === 'buy') {
     const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);
-    if (credits < totalPrice) return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
+    if (credits < totalPrice)
+      return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
     const storageTotal = storage.ore + storage.gas + storage.crystal + storage.artefact;
     if (storageTotal + amount > tierConfig.capacity) {
       return { valid: false, error: 'Storage full', totalPrice };
@@ -216,7 +267,8 @@ export function validateNpcTrade(
     return { valid: true, totalPrice };
   } else {
     const totalPrice = Math.floor(basePrice * NPC_SELL_SPREAD * amount);
-    if (storage[resource as MineableResourceType] < amount) return { valid: false, error: `Not enough ${resource} in storage`, totalPrice };
+    if (storage[resource as MineableResourceType] < amount)
+      return { valid: false, error: `Not enough ${resource} in storage`, totalPrice };
     return { valid: true, totalPrice };
   }
 }
@@ -231,21 +283,29 @@ export function validateNpcCargoTrade(
   cargoCap: number,
 ): NpcTradeValidation {
   if (amount <= 0) return { valid: false, error: 'Amount must be positive', totalPrice: 0 };
-  if (resource === 'artefact') return { valid: false, error: 'Artefakte können nicht an NPCs gehandelt werden', totalPrice: 0 };
-  if (!['ore', 'gas', 'crystal'].includes(resource)) return { valid: false, error: 'Invalid resource', totalPrice: 0 };
+  if (resource === 'artefact')
+    return {
+      valid: false,
+      error: 'Artefakte können nicht an NPCs gehandelt werden',
+      totalPrice: 0,
+    };
+  if (!['ore', 'gas', 'crystal'].includes(resource))
+    return { valid: false, error: 'Invalid resource', totalPrice: 0 };
 
   const basePrice = NPC_PRICES[resource as MineableResourceType];
 
   if (action === 'buy') {
     const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);
-    if (credits < totalPrice) return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
+    if (credits < totalPrice)
+      return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
     if (cargoTotal + amount > cargoCap) {
       return { valid: false, error: 'Cargo full', totalPrice };
     }
     return { valid: true, totalPrice };
   } else {
     const totalPrice = Math.floor(basePrice * NPC_SELL_SPREAD * amount);
-    if (cargo[resource] < amount) return { valid: false, error: `Not enough ${resource} in cargo`, totalPrice };
+    if (cargo[resource] < amount)
+      return { valid: false, error: `Not enough ${resource} in cargo`, totalPrice };
     return { valid: true, totalPrice };
   }
 }
@@ -267,9 +327,8 @@ interface CreateSlateResult {
 }
 
 export function validateCreateSlate(state: CreateSlateState, slateType: string): CreateSlateResult {
-  const apCost = slateType === 'sector'
-    ? SLATE_AP_COST_SECTOR
-    : SLATE_AP_COST_AREA + (state.scannerLevel - 1);
+  const apCost =
+    slateType === 'sector' ? SLATE_AP_COST_SECTOR : SLATE_AP_COST_AREA + (state.scannerLevel - 1);
 
   if (state.ap < apCost) {
     return { valid: false, error: `Not enough AP (need ${apCost}, have ${state.ap})` };
@@ -279,9 +338,10 @@ export function validateCreateSlate(state: CreateSlateState, slateType: string):
     return { valid: false, error: 'Cargo full — no space for slate' };
   }
 
-  const radius = slateType === 'area'
-    ? (SLATE_AREA_RADIUS[state.scannerLevel] ?? SLATE_AREA_RADIUS[1])
-    : undefined;
+  const radius =
+    slateType === 'area'
+      ? (SLATE_AREA_RADIUS[state.scannerLevel] ?? SLATE_AREA_RADIUS[1])
+      : undefined;
 
   return { valid: true, apCost, radius };
 }
@@ -371,7 +431,7 @@ export function validateBattleAction(
     const newAP = spendAP(ap, BATTLE_AP_COST_FLEE);
     if (!newAP) return { valid: false, error: 'Not enough AP to flee (need 2)' };
 
-    const fleeChance = BATTLE_FLEE_BASE_CHANCE + (shipAttack * 0.02) - (encounter.pirateLevel * 0.05);
+    const fleeChance = BATTLE_FLEE_BASE_CHANCE + shipAttack * 0.02 - encounter.pirateLevel * 0.05;
     const roll = ((battleSeed >>> 0) % 100) / 100;
     if (roll < fleeChance) {
       return { valid: true, newAP, result: { outcome: 'escaped' } };
@@ -386,7 +446,8 @@ export function validateBattleAction(
   }
 
   if (action === 'negotiate') {
-    if (!encounter.canNegotiate) return { valid: false, error: 'Pirates won\'t negotiate (need Friendly rep)' };
+    if (!encounter.canNegotiate)
+      return { valid: false, error: "Pirates won't negotiate (need Friendly rep)" };
     if (credits < encounter.negotiateCost) {
       return { valid: false, error: `Not enough credits (need ${encounter.negotiateCost})` };
     }
@@ -410,9 +471,9 @@ function resolveFight(
 
   if (playerPower >= piratePower) {
     const lootCredits = encounter.pirateLevel * 10 + ((seed >>> 4) % 50);
-    const lootOre = ((seed >>> 6) % 3);
-    const lootCrystal = ((seed >>> 10) % 2);
-    const lootArtefact = ((seed >>> 14) % 100) < 3 ? 1 : 0;  // 3% chance
+    const lootOre = (seed >>> 6) % 3;
+    const lootCrystal = (seed >>> 10) % 2;
+    const lootArtefact = (seed >>> 14) % 100 < 3 ? 1 : 0; // 3% chance
     return {
       outcome: 'victory',
       lootCredits,
@@ -422,7 +483,9 @@ function resolveFight(
       xpGained: encounter.pirateLevel * 5,
     };
   } else {
-    const lossRatio = BATTLE_CARGO_LOSS_MIN + ((seed >>> 12) % 100) / 100 * (BATTLE_CARGO_LOSS_MAX - BATTLE_CARGO_LOSS_MIN);
+    const lossRatio =
+      BATTLE_CARGO_LOSS_MIN +
+      (((seed >>> 12) % 100) / 100) * (BATTLE_CARGO_LOSS_MAX - BATTLE_CARGO_LOSS_MIN);
     return {
       outcome: 'defeat',
       cargoLost: {

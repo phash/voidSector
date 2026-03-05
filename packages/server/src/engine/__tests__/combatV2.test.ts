@@ -1,24 +1,42 @@
 import { describe, it, expect } from 'vitest';
-import {
-  initCombatV2,
-  resolveRound,
-  attemptFlee,
-} from '../combatV2.js';
+import { initCombatV2, resolveRound, attemptFlee } from '../combatV2.js';
 import type { PirateEncounter, ShipStats } from '@void-sector/shared';
 
 const baseShip: ShipStats = {
-  fuelMax: 100, cargoCap: 10, jumpRange: 3, apCostJump: 1,
-  fuelPerJump: 1, hp: 100, commRange: 100, scannerLevel: 1, damageMod: 1.0,
-  shieldHp: 0, shieldRegen: 0, weaponAttack: 0, weaponType: 'none',
-  weaponPiercing: 0, pointDefense: 0, ecmReduction: 0, engineSpeed: 2,
-  artefactChanceBonus: 0, safeSlotBonus: 0,
-  hyperdriveRange: 0, hyperdriveSpeed: 0, hyperdriveRegen: 0, hyperdriveFuelEfficiency: 0,
+  fuelMax: 100,
+  cargoCap: 10,
+  jumpRange: 3,
+  apCostJump: 1,
+  fuelPerJump: 1,
+  hp: 100,
+  commRange: 100,
+  scannerLevel: 1,
+  damageMod: 1.0,
+  shieldHp: 0,
+  shieldRegen: 0,
+  weaponAttack: 0,
+  weaponType: 'none',
+  weaponPiercing: 0,
+  pointDefense: 0,
+  ecmReduction: 0,
+  engineSpeed: 2,
+  artefactChanceBonus: 0,
+  safeSlotBonus: 0,
+  hyperdriveRange: 0,
+  hyperdriveSpeed: 0,
+  hyperdriveRegen: 0,
+  hyperdriveFuelEfficiency: 0,
   miningBonus: 0,
 };
 
 const baseEncounter: PirateEncounter = {
-  pirateLevel: 3, pirateHp: 50, pirateDamage: 14,
-  sectorX: 10, sectorY: 20, canNegotiate: false, negotiateCost: 30,
+  pirateLevel: 3,
+  pirateHp: 50,
+  pirateDamage: 14,
+  sectorX: 10,
+  sectorY: 20,
+  canNegotiate: false,
+  negotiateCost: 30,
 };
 
 describe('initCombatV2', () => {
@@ -58,8 +76,22 @@ describe('resolveRound', () => {
   it('assault tactic increases player damage', () => {
     const state = initCombatV2(baseEncounter, { ...baseShip, weaponAttack: 16 });
     const seed = 42;
-    const assault = resolveRound(state, { ...baseShip, weaponAttack: 16 }, 'assault', 'none', 1.0, seed);
-    const balanced = resolveRound(state, { ...baseShip, weaponAttack: 16 }, 'balanced', 'none', 1.0, seed);
+    const assault = resolveRound(
+      state,
+      { ...baseShip, weaponAttack: 16 },
+      'assault',
+      'none',
+      1.0,
+      seed,
+    );
+    const balanced = resolveRound(
+      state,
+      { ...baseShip, weaponAttack: 16 },
+      'balanced',
+      'none',
+      1.0,
+      seed,
+    );
     expect(assault.round.playerAttack).toBeGreaterThan(balanced.round.playerAttack);
   });
 
@@ -79,7 +111,12 @@ describe('resolveRound', () => {
   });
 
   it('piercing bypasses damageMod', () => {
-    const ship = { ...baseShip, weaponAttack: 12, weaponPiercing: 0.30, weaponType: 'railgun' as const };
+    const ship = {
+      ...baseShip,
+      weaponAttack: 12,
+      weaponPiercing: 0.3,
+      weaponType: 'railgun' as const,
+    };
     const state = initCombatV2(baseEncounter, ship);
     const result = resolveRound(state, ship, 'balanced', 'none', 1.0, 42);
     expect(result.round.playerAttack).toBeGreaterThan(0);
@@ -128,7 +165,7 @@ describe('resolveRound', () => {
   });
 
   it('point defense reduces incoming damage', () => {
-    const ship = { ...baseShip, pointDefense: 0.60 };
+    const ship = { ...baseShip, pointDefense: 0.6 };
     const state = initCombatV2(baseEncounter, ship);
     const withPD = resolveRound(state, ship, 'balanced', 'none', 1.0, 42);
     const withoutPD = resolveRound(state, baseShip, 'balanced', 'none', 1.0, 42);

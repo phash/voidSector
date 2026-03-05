@@ -36,10 +36,7 @@ function combatRoll(seed: number, offset: number): number {
   return COMBAT_V2_ROLL_MIN + r * (COMBAT_V2_ROLL_MAX - COMBAT_V2_ROLL_MIN);
 }
 
-export function initCombatV2(
-  encounter: PirateEncounter,
-  ship: ShipStats,
-): CombatV2State {
+export function initCombatV2(encounter: PirateEncounter, ship: ShipStats): CombatV2State {
   return {
     encounter,
     currentRound: 0,
@@ -76,10 +73,7 @@ export function resolveRound(
   if (specialAction === 'evade' && state.specialActionsUsed.evade) effectiveSpecial = 'none';
 
   // Shield regeneration at round start
-  let currentShield = Math.min(
-    state.playerMaxShield,
-    state.playerShield + state.playerShieldRegen,
-  );
+  let currentShield = Math.min(state.playerMaxShield, state.playerShield + state.playerShieldRegen);
   let playerHp = state.playerHp;
   let enemyHp = state.enemyHp;
   let enemyShield = state.enemyShield;
@@ -97,7 +91,7 @@ export function resolveRound(
 
   // AIM bonus
   if (effectiveSpecial === 'aim') {
-    rawPlayerAtk *= (1 + AIM_ACCURACY_BONUS);
+    rawPlayerAtk *= 1 + AIM_ACCURACY_BONUS;
     specialEffects.push('ZIELEN aktiv \u2014 +50% Trefferchance');
   }
 
@@ -244,7 +238,8 @@ export function attemptFlee(
   ship: ShipStats,
   seed: number,
 ): { escaped: boolean; state: CombatV2State } {
-  const fleeChance = BATTLE_FLEE_BASE_CHANCE + (ship.weaponAttack * 0.002) - (state.encounter.pirateLevel * 0.05);
+  const fleeChance =
+    BATTLE_FLEE_BASE_CHANCE + ship.weaponAttack * 0.002 - state.encounter.pirateLevel * 0.05;
   const roll = seededRng(seed, state.currentRound + 500);
 
   if (roll < fleeChance) {
@@ -271,7 +266,7 @@ export function combatV2ToResult(
   if (state.status === 'victory') {
     const level = state.encounter.pirateLevel;
     const lootCredits = level * 10 + Math.floor(seededRng(seed, 900) * 50);
-    const lootArtefact = seededRng(seed, 903) < 0.03 ? 1 : 0;  // 3% chance
+    const lootArtefact = seededRng(seed, 903) < 0.03 ? 1 : 0; // 3% chance
     return {
       outcome: 'victory',
       lootCredits,

@@ -25,12 +25,15 @@ export function MiningScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
-      <div style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '12px' }}>
+      <div
+        style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '12px' }}
+      >
         MINING OPERATIONS
       </div>
 
       <div style={{ fontSize: '0.85rem', marginBottom: '12px' }}>
-        SECTOR ({innerCoord(position.x)}, {innerCoord(position.y)}) — {currentSector?.type?.toUpperCase() || 'UNKNOWN'}
+        SECTOR ({innerCoord(position.x)}, {innerCoord(position.y)}) —{' '}
+        {currentSector?.type?.toUpperCase() || 'UNKNOWN'}
       </div>
 
       {!hasResources && !mining?.active && (
@@ -45,12 +48,14 @@ export function MiningScreen() {
         <ResourceBar label="CRYSTAL" value={resources.crystal} max={maxYield} />
       </div>
 
-      <div style={{
-        fontSize: '0.9rem',
-        marginBottom: '16px',
-        padding: '8px',
-        border: '1px solid var(--color-dim)',
-      }}>
+      <div
+        style={{
+          fontSize: '0.9rem',
+          marginBottom: '16px',
+          padding: '8px',
+          border: '1px solid var(--color-dim)',
+        }}
+      >
         {mining?.active ? (
           <>
             <div>STATUS: MINING {mining.resource?.toUpperCase()}</div>

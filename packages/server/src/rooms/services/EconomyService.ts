@@ -22,7 +22,11 @@ import {
   getStationLevel,
   calculatePrice,
 } from '../../engine/npcStationEngine.js';
-import { getStationInventoryItem, upsertInventoryItem, getStationInventory } from '../../db/npcStationQueries.js';
+import {
+  getStationInventoryItem,
+  upsertInventoryItem,
+  getStationInventory,
+} from '../../db/npcStationQueries.js';
 import {
   getOrCreateFactoryState,
   setActiveRecipe,
@@ -37,10 +41,7 @@ import {
   getKontorOrders,
 } from '../../engine/kontorEngine.js';
 import { query } from '../../db/client.js';
-import {
-  getFuelState,
-  saveFuelState,
-} from './RedisAPStore.js';
+import { getFuelState, saveFuelState } from './RedisAPStore.js';
 import {
   getPlayerCargo,
   addToCargo,
@@ -90,7 +91,7 @@ export class EconomyService {
     const station = await getOrInitStation(sx, sy);
     const inventory = await getStationInventory(sx, sy);
     const level = getStationLevel(station.xp);
-    const items = inventory.map(item => {
+    const items = inventory.map((item) => {
       const currentStock = calculateCurrentStock(item);
       const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
       const basePrice = NPC_PRICES[item.itemType as MineableResourceType] || 0;
@@ -102,7 +103,7 @@ export class EconomyService {
         sellPrice: Math.floor(calculatePrice(basePrice, stockRatio) * NPC_SELL_SPREAD),
       };
     });
-    const nextLevel = NPC_STATION_LEVELS.find(l => l.xpThreshold > station.xp);
+    const nextLevel = NPC_STATION_LEVELS.find((l) => l.xpThreshold > station.xp);
     client.send('npcStationUpdate', {
       level: level.level,
       name: level.name,
@@ -120,7 +121,10 @@ export class EconomyService {
       return;
     }
     if (data.resource === 'artefact') {
-      client.send('npcTradeResult', { success: false, error: 'Artefakte können nicht an NPCs gehandelt werden' });
+      client.send('npcTradeResult', {
+        success: false,
+        error: 'Artefakte können nicht an NPCs gehandelt werden',
+      });
       return;
     }
     if (!isPositiveInt(data.amount) || !VALID_MINE_RESOURCES.includes(data.resource)) {
@@ -134,8 +138,9 @@ export class EconomyService {
     if (!player) return;
 
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const isHomeBase = this.ctx._px(client.sessionId) === player.homeBase.x &&
-                       this.ctx._py(client.sessionId) === player.homeBase.y;
+    const isHomeBase =
+      this.ctx._px(client.sessionId) === player.homeBase.x &&
+      this.ctx._py(client.sessionId) === player.homeBase.y;
     if (!isStation && !isHomeBase) {
       client.send('npcTradeResult', { success: false, error: 'Must be at a station or home base' });
       return;
@@ -157,18 +162,27 @@ export class EconomyService {
       if (action === 'sell') {
         // Check cargo has enough
         if (cargo[resource as MineableResourceType] < amount) {
-          client.send('npcTradeResult', { success: false, error: `Not enough ${resource} in cargo` });
+          client.send('npcTradeResult', {
+            success: false,
+            error: `Not enough ${resource} in cargo`,
+          });
           return;
         }
         // Check station can accept
         const sellCheck = await canSellToStation(sx, sy, resource, amount);
         if (!sellCheck.ok) {
-          client.send('npcTradeResult', { success: false, error: 'Station cannot accept more of this resource' });
+          client.send('npcTradeResult', {
+            success: false,
+            error: 'Station cannot accept more of this resource',
+          });
           return;
         }
         // Execute trade
         const deducted = await deductCargo(auth.userId, resource, amount);
-        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Cargo changed' }); return; }
+        if (!deducted) {
+          client.send('npcTradeResult', { success: false, error: 'Cargo changed' });
+          return;
+        }
         // Update station stock
         const invItem = await getStationInventoryItem(sx, sy, resource);
         if (invItem) {
@@ -189,7 +203,10 @@ export class EconomyService {
         // Buy: check station has stock
         const buyCheck = await canBuyFromStation(sx, sy, resource, amount);
         if (!buyCheck.ok) {
-          client.send('npcTradeResult', { success: false, error: 'Station does not have enough stock' });
+          client.send('npcTradeResult', {
+            success: false,
+            error: 'Station does not have enough stock',
+          });
           return;
         }
         // Apply faction bonus
@@ -197,7 +214,10 @@ export class EconomyService {
         totalPrice = Math.ceil(totalPrice * bonuses.tradePriceMultiplier);
         // Check credits
         if (currentCredits < totalPrice) {
-          client.send('npcTradeResult', { success: false, error: `Need ${totalPrice} credits (have ${currentCredits})` });
+          client.send('npcTradeResult', {
+            success: false,
+            error: `Need ${totalPrice} credits (have ${currentCredits})`,
+          });
           return;
         }
         // Check cargo space
@@ -207,7 +227,10 @@ export class EconomyService {
         }
         // Execute trade
         const deducted = await deductCredits(auth.userId, totalPrice);
-        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
+        if (!deducted) {
+          client.send('npcTradeResult', { success: false, error: 'Credits changed' });
+          return;
+        }
         await addToCargo(auth.userId, resource, amount);
         // Update station stock
         const invItem = await getStationInventoryItem(sx, sy, resource);
@@ -232,7 +255,14 @@ export class EconomyService {
       const storageTier = storageStruct?.tier ?? 1;
       const storage = await getStorageInventory(auth.userId);
 
-      const result = validateNpcTrade(action, resource, amount, currentCredits, storage, storageTier);
+      const result = validateNpcTrade(
+        action,
+        resource,
+        amount,
+        currentCredits,
+        storage,
+        storageTier,
+      );
       if (!result.valid) {
         client.send('npcTradeResult', { success: false, error: result.error });
         return;
@@ -246,16 +276,27 @@ export class EconomyService {
         await updateStorageResource(auth.userId, resource, -amount);
         const newCredits = await addCredits(auth.userId, result.totalPrice);
         const updatedStorage = await getStorageInventory(auth.userId);
-        client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
+        client.send('npcTradeResult', {
+          success: true,
+          credits: newCredits,
+          storage: updatedStorage,
+        });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('storageUpdate', updatedStorage);
       } else {
         const deducted = await deductCredits(auth.userId, result.totalPrice);
-        if (!deducted) { client.send('npcTradeResult', { success: false, error: 'Credits changed' }); return; }
+        if (!deducted) {
+          client.send('npcTradeResult', { success: false, error: 'Credits changed' });
+          return;
+        }
         await updateStorageResource(auth.userId, resource, amount);
         const newCredits = await getPlayerCredits(auth.userId);
         const updatedStorage = await getStorageInventory(auth.userId);
-        client.send('npcTradeResult', { success: true, credits: newCredits, storage: updatedStorage });
+        client.send('npcTradeResult', {
+          success: true,
+          credits: newCredits,
+          storage: updatedStorage,
+        });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('storageUpdate', updatedStorage);
       }
@@ -270,7 +311,7 @@ export class EconomyService {
 
     const struct = await query<{ id: string; type: string; tier: number; owner_id: string }>(
       'SELECT id, type, tier, owner_id FROM structures WHERE id = $1',
-      [structureId]
+      [structureId],
     );
     const row = struct.rows[0];
     if (!row || row.owner_id !== auth.userId) {
@@ -278,7 +319,12 @@ export class EconomyService {
       return;
     }
 
-    const tierMap = row.type === 'storage' ? STORAGE_TIERS : row.type === 'trading_post' ? TRADING_POST_TIERS : null;
+    const tierMap =
+      row.type === 'storage'
+        ? STORAGE_TIERS
+        : row.type === 'trading_post'
+          ? TRADING_POST_TIERS
+          : null;
     if (!tierMap) {
       client.send('upgradeResult', { success: false, error: 'Not upgradeable' });
       return;
@@ -313,7 +359,11 @@ export class EconomyService {
 
   async handlePlaceOrder(client: Client, data: PlaceOrderMessage): Promise<void> {
     if (rejectGuest(client, 'Markthandel')) return;
-    if (!isPositiveInt(data.amount) || !isPositiveInt(data.pricePerUnit) || data.pricePerUnit > 999999) {
+    if (
+      !isPositiveInt(data.amount) ||
+      !isPositiveInt(data.pricePerUnit) ||
+      data.pricePerUnit > 999999
+    ) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid amount or price' });
       return;
     }
@@ -333,7 +383,10 @@ export class EconomyService {
     if (type === 'sell') {
       const storage = await getStorageInventory(auth.userId);
       if (storage[resource as keyof typeof storage] < amount) {
-        client.send('error', { code: 'INSUFFICIENT', message: `Not enough ${resource} in storage` });
+        client.send('error', {
+          code: 'INSUFFICIENT',
+          message: `Not enough ${resource} in storage`,
+        });
         return;
       }
       await updateStorageResource(auth.userId, resource, -amount);
@@ -353,7 +406,10 @@ export class EconomyService {
   // ── Transfer ──
 
   async handleTransfer(client: Client, data: TransferMessage): Promise<void> {
-    if (!this.ctx.checkRate(client.sessionId, 'transfer', 500)) { client.send('transferResult', { success: false, error: 'Too fast' }); return; }
+    if (!this.ctx.checkRate(client.sessionId, 'transfer', 500)) {
+      client.send('transferResult', { success: false, error: 'Too fast' });
+      return;
+    }
     if (!isPositiveInt(data.amount) || !VALID_TRANSFER_RESOURCES.includes(data.resource)) {
       client.send('transferResult', { success: false, error: 'Invalid transfer parameters' });
       return;
@@ -362,8 +418,14 @@ export class EconomyService {
     const { resource, amount, direction } = data;
 
     const player = await findPlayerByUsername(auth.username);
-    if (!player) { client.send('error', { code: 'NO_PLAYER', message: 'Player not found' }); return; }
-    if (this.ctx._px(client.sessionId) !== player.homeBase.x || this.ctx._py(client.sessionId) !== player.homeBase.y) {
+    if (!player) {
+      client.send('error', { code: 'NO_PLAYER', message: 'Player not found' });
+      return;
+    }
+    if (
+      this.ctx._px(client.sessionId) !== player.homeBase.x ||
+      this.ctx._py(client.sessionId) !== player.homeBase.y
+    ) {
       client.send('transferResult', { success: false, error: 'Must be at home base' });
       return;
     }
@@ -374,7 +436,14 @@ export class EconomyService {
 
     const currentCargo = await getPlayerCargo(auth.userId);
     const storage = await getStorageInventory(auth.userId);
-    const result = validateTransfer(direction, resource, amount, currentCargo, storage, storageTier);
+    const result = validateTransfer(
+      direction,
+      resource,
+      amount,
+      currentCargo,
+      storage,
+      storageTier,
+    );
     if (!result.valid) {
       client.send('transferResult', { success: false, error: result.error });
       return;
@@ -382,7 +451,10 @@ export class EconomyService {
 
     if (direction === 'toStorage') {
       const deducted = await deductCargo(auth.userId, resource, amount);
-      if (!deducted) { client.send('transferResult', { success: false, error: 'Cargo changed' }); return; }
+      if (!deducted) {
+        client.send('transferResult', { success: false, error: 'Cargo changed' });
+        return;
+      }
       await updateStorageResource(auth.userId, resource, amount);
     } else {
       await updateStorageResource(auth.userId, resource, -amount);
@@ -408,15 +480,20 @@ export class EconomyService {
     // Must be at a station or own base
     const isStation = this.ctx._pst(client.sessionId) === 'station';
     const hasBaseHere = await playerHasBaseAtSector(
-      auth.userId, this.ctx._px(client.sessionId), this.ctx._py(client.sessionId)
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
     );
     if (!isStation && !hasBaseHere) {
-      client.send('refuelResult', { success: false, error: 'Must be at a station or your base to refuel' });
+      client.send('refuelResult', {
+        success: false,
+        error: 'Must be at a station or your base to refuel',
+      });
       return;
     }
 
     const ship = this.ctx.getShipForClient(client.sessionId);
-    const currentFuel = await getFuelState(auth.userId) ?? 0;
+    const currentFuel = (await getFuelState(auth.userId)) ?? 0;
     const tankSpace = ship.fuelMax - currentFuel;
 
     if (tankSpace <= 0) {
@@ -511,7 +588,11 @@ export class EconomyService {
 
     await getOrCreateFactoryState(factoryStruct.id, auth.userId);
     const research = await getPlayerResearch(auth.userId);
-    const result = await setActiveRecipe(factoryStruct.id, data.recipeId, research?.blueprints ?? []);
+    const result = await setActiveRecipe(
+      factoryStruct.id,
+      data.recipeId,
+      research?.blueprints ?? [],
+    );
 
     if (!result.success) {
       client.send('factoryUpdate', { error: result.error });
@@ -555,7 +636,10 @@ export class EconomyService {
     client.send('storageUpdate', updatedStorage);
   }
 
-  async handleFactoryTransfer(client: Client, data: { itemType: string; amount: number }): Promise<void> {
+  async handleFactoryTransfer(
+    client: Client,
+    data: { itemType: string; amount: number },
+  ): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'factoryTransfer', 500)) return;
     if (rejectGuest(client, 'factory')) return;
     const auth = client.auth as AuthPayload;
@@ -571,7 +655,11 @@ export class EconomyService {
       return;
     }
 
-    const result = await transferOutputToCargo(factoryStruct.id, data.itemType as ProcessedItemType, data.amount);
+    const result = await transferOutputToCargo(
+      factoryStruct.id,
+      data.itemType as ProcessedItemType,
+      data.amount,
+    );
     if (!result.success) {
       client.send('factoryUpdate', { error: result.error });
       return;
@@ -612,7 +700,7 @@ export class EconomyService {
       this.ctx._py(client.sessionId),
       data.itemType,
       data.amount,
-      data.pricePerUnit
+      data.pricePerUnit,
     );
 
     if (!result.success) {
@@ -620,7 +708,10 @@ export class EconomyService {
       return;
     }
 
-    const orders = await getKontorOrders(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+    const orders = await getKontorOrders(
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
     client.send('kontorUpdate', { orders, placed: result.order });
   }
 
@@ -641,11 +732,17 @@ export class EconomyService {
       return;
     }
 
-    const orders = await getKontorOrders(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+    const orders = await getKontorOrders(
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
     client.send('kontorUpdate', { orders, refunded: result.refunded });
   }
 
-  async handleKontorSellTo(client: Client, data: { orderId: string; amount: number }): Promise<void> {
+  async handleKontorSellTo(
+    client: Client,
+    data: { orderId: string; amount: number },
+  ): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'kontorSellTo', 500)) return;
     if (rejectGuest(client, 'kontor')) return;
     const auth = client.auth as AuthPayload;
@@ -666,7 +763,10 @@ export class EconomyService {
       return;
     }
 
-    const orders = await getKontorOrders(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+    const orders = await getKontorOrders(
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
     const cargo = await getPlayerCargo(auth.userId);
     client.send('kontorUpdate', { orders, earned: result.earned });
     client.send('cargoUpdate', cargo);
@@ -674,7 +774,10 @@ export class EconomyService {
 
   async handleKontorGetOrders(client: Client): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'kontorGetOrders', 500)) return;
-    const orders = await getKontorOrders(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+    const orders = await getKontorOrders(
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
     client.send('kontorUpdate', { orders });
   }
 }

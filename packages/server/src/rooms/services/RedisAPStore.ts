@@ -35,18 +35,14 @@ export async function saveAPState(playerId: string, ap: APState): Promise<void> 
 }
 
 export async function getPlayerPosition(
-  playerId: string
+  playerId: string,
 ): Promise<{ x: number; y: number } | null> {
   const data = await redis.hgetall(`player:pos:${playerId}`);
   if (!data.x) return null;
   return { x: Number(data.x), y: Number(data.y) };
 }
 
-export async function savePlayerPosition(
-  playerId: string,
-  x: number,
-  y: number
-): Promise<void> {
+export async function savePlayerPosition(playerId: string, x: number, y: number): Promise<void> {
   await redis.hset(`player:pos:${playerId}`, { x: String(x), y: String(y) });
 }
 

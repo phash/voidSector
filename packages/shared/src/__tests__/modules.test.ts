@@ -2,26 +2,35 @@ import { describe, it, expect } from 'vitest';
 import { MODULES } from '../constants';
 import type { ModuleDefinition, ModuleTier } from '../types';
 
-const TIER_4_5_MODULES = Object.entries(MODULES).filter(
-  ([, m]) => m.tier === 4 || m.tier === 5
-);
+const TIER_4_5_MODULES = Object.entries(MODULES).filter(([, m]) => m.tier === 4 || m.tier === 5);
 
 const DRIVE_CHAIN = ['drive_mk1', 'drive_mk2', 'drive_mk3', 'drive_mk4', 'drive_mk5'];
 const SCANNER_CHAIN = ['scanner_mk1', 'scanner_mk2', 'scanner_mk3', 'scanner_mk4', 'scanner_mk5'];
 const ARMOR_CHAIN = ['armor_mk1', 'armor_mk2', 'armor_mk3', 'armor_mk4', 'armor_mk5'];
 const CARGO_CHAIN = ['cargo_mk1', 'cargo_mk2', 'cargo_mk3', 'cargo_mk4', 'cargo_mk5'];
-const MINING_CHAIN = ['mining_laser_mk1', 'mining_laser_mk2', 'mining_laser_mk3', 'mining_laser_mk4', 'mining_laser_mk5'];
+const MINING_CHAIN = [
+  'mining_laser_mk1',
+  'mining_laser_mk2',
+  'mining_laser_mk3',
+  'mining_laser_mk4',
+  'mining_laser_mk5',
+];
 
 const ALL_CHAINS = [DRIVE_CHAIN, SCANNER_CHAIN, ARMOR_CHAIN, CARGO_CHAIN, MINING_CHAIN];
 
 describe('Tier 4-5 module definitions', () => {
   it('all tier 4-5 modules exist in MODULES', () => {
     const expected = [
-      'drive_mk4', 'drive_mk5',
-      'scanner_mk4', 'scanner_mk5',
-      'armor_mk4', 'armor_mk5',
-      'cargo_mk4', 'cargo_mk5',
-      'mining_laser_mk4', 'mining_laser_mk5',
+      'drive_mk4',
+      'drive_mk5',
+      'scanner_mk4',
+      'scanner_mk5',
+      'armor_mk4',
+      'armor_mk5',
+      'cargo_mk4',
+      'cargo_mk5',
+      'mining_laser_mk4',
+      'mining_laser_mk5',
     ];
     for (const id of expected) {
       expect(MODULES[id], `${id} should exist`).toBeDefined();
@@ -47,7 +56,7 @@ describe('Tier 4-5 module definitions', () => {
     for (const [id, mod] of TIER_4_5_MODULES) {
       expect(
         mod.secondaryEffects.length,
-        `${id} should have at least one secondary effect`
+        `${id} should have at least one secondary effect`,
       ).toBeGreaterThanOrEqual(1);
     }
   });
@@ -57,7 +66,7 @@ describe('Tier 4-5 module definitions', () => {
       const statKey = mod.primaryEffect.stat;
       expect(
         mod.effects[statKey as keyof typeof mod.effects],
-        `${id} effects should contain ${statKey}`
+        `${id} effects should contain ${statKey}`,
       ).toBeDefined();
     }
   });
@@ -66,10 +75,7 @@ describe('Tier 4-5 module definitions', () => {
 describe('Artefact costs for tier 4-5', () => {
   it('all tier 4-5 modules require artefacts in purchaseCost', () => {
     for (const [id, mod] of TIER_4_5_MODULES) {
-      expect(
-        mod.cost.artefact,
-        `${id} should require artefacts to purchase`
-      ).toBeGreaterThan(0);
+      expect(mod.cost.artefact, `${id} should require artefacts to purchase`).toBeGreaterThan(0);
     }
   });
 
@@ -78,7 +84,7 @@ describe('Artefact costs for tier 4-5', () => {
       expect(mod.researchCost, `${id} should have researchCost`).toBeDefined();
       expect(
         mod.researchCost!.artefact,
-        `${id} researchCost should include artefacts`
+        `${id} researchCost should include artefacts`,
       ).toBeGreaterThan(0);
     }
   });
@@ -89,11 +95,11 @@ describe('Artefact costs for tier 4-5', () => {
       const mk5 = MODULES[chain[4]];
       expect(
         mk5.cost.artefact!,
-        `${chain[4]} purchase artefact cost should exceed ${chain[3]}`
+        `${chain[4]} purchase artefact cost should exceed ${chain[3]}`,
       ).toBeGreaterThan(mk4.cost.artefact!);
       expect(
         mk5.researchCost!.artefact!,
-        `${chain[4]} research artefact cost should exceed ${chain[3]}`
+        `${chain[4]} research artefact cost should exceed ${chain[3]}`,
       ).toBeGreaterThan(mk4.researchCost!.artefact!);
     }
   });
@@ -104,7 +110,7 @@ describe('Artefact costs for tier 4-5', () => {
       const mk5 = MODULES[chain[4]];
       expect(
         mk5.cost.credits,
-        `${chain[4]} purchase credits should exceed ${chain[3]}`
+        `${chain[4]} purchase credits should exceed ${chain[3]}`,
       ).toBeGreaterThan(mk4.cost.credits);
     }
   });
@@ -114,20 +120,18 @@ describe('Prerequisite chains', () => {
   it('mk4 requires mk3 as prerequisite', () => {
     for (const chain of ALL_CHAINS) {
       const mk4 = MODULES[chain[3]];
-      expect(
-        mk4.prerequisite,
-        `${chain[3]} should require ${chain[2]} as prerequisite`
-      ).toBe(chain[2]);
+      expect(mk4.prerequisite, `${chain[3]} should require ${chain[2]} as prerequisite`).toBe(
+        chain[2],
+      );
     }
   });
 
   it('mk5 requires mk4 as prerequisite', () => {
     for (const chain of ALL_CHAINS) {
       const mk5 = MODULES[chain[4]];
-      expect(
-        mk5.prerequisite,
-        `${chain[4]} should require ${chain[3]} as prerequisite`
-      ).toBe(chain[3]);
+      expect(mk5.prerequisite, `${chain[4]} should require ${chain[3]} as prerequisite`).toBe(
+        chain[3],
+      );
     }
   });
 
@@ -140,10 +144,9 @@ describe('Prerequisite chains', () => {
       // mk2..mk5 chain back
       for (let i = 1; i < chain.length; i++) {
         const mod = MODULES[chain[i]];
-        expect(
-          mod.prerequisite,
-          `${chain[i]} should have prerequisite ${chain[i - 1]}`
-        ).toBe(chain[i - 1]);
+        expect(mod.prerequisite, `${chain[i]} should have prerequisite ${chain[i - 1]}`).toBe(
+          chain[i - 1],
+        );
       }
     }
   });
@@ -153,7 +156,7 @@ describe('Prerequisite chains', () => {
       if (mod.prerequisite) {
         expect(
           MODULES[mod.prerequisite],
-          `${id} prerequisite '${mod.prerequisite}' does not exist`
+          `${id} prerequisite '${mod.prerequisite}' does not exist`,
         ).toBeDefined();
       }
     }
@@ -230,9 +233,9 @@ describe('Scanner mk4/mk5 specifics', () => {
   });
 
   it('scanner_mk4 has miningBonus secondary effect', () => {
-    expect(
-      MODULES['scanner_mk4'].secondaryEffects.some(e => e.stat === 'miningBonus')
-    ).toBe(true);
+    expect(MODULES['scanner_mk4'].secondaryEffects.some((e) => e.stat === 'miningBonus')).toBe(
+      true,
+    );
   });
 });
 
@@ -269,7 +272,9 @@ describe('Cargo mk4/mk5 specifics', () => {
   it('cargo mk4 and mk5 have fuel tank bonus', () => {
     expect(MODULES['cargo_mk4'].effects.fuelMax).toBeGreaterThan(0);
     expect(MODULES['cargo_mk5'].effects.fuelMax).toBeGreaterThan(0);
-    expect(MODULES['cargo_mk5'].effects.fuelMax!).toBeGreaterThan(MODULES['cargo_mk4'].effects.fuelMax!);
+    expect(MODULES['cargo_mk5'].effects.fuelMax!).toBeGreaterThan(
+      MODULES['cargo_mk4'].effects.fuelMax!,
+    );
   });
 });
 
@@ -286,10 +291,7 @@ describe('ModuleTier type coverage', () => {
 
   it('each tier 4-5 module has a researchDurationMin', () => {
     for (const [id, mod] of TIER_4_5_MODULES) {
-      expect(
-        mod.researchDurationMin,
-        `${id} should have researchDurationMin`
-      ).toBeGreaterThan(0);
+      expect(mod.researchDurationMin, `${id} should have researchDurationMin`).toBeGreaterThan(0);
     }
   });
 });

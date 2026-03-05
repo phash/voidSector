@@ -1,7 +1,11 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import type { CompleteScanEventMessage, ResourceType, SectorEnvironment } from '@void-sector/shared';
+import type {
+  CompleteScanEventMessage,
+  ResourceType,
+  SectorEnvironment,
+} from '@void-sector/shared';
 
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
@@ -9,10 +13,7 @@ import { checkScanEvent } from '../../engine/scanEvents.js';
 import { generateSector } from '../../engine/worldgen.js';
 import { initCombatV2 } from '../../engine/combatV2.js';
 import { createPirateEncounter } from '../../engine/commands.js';
-import {
-  getAPState,
-  saveAPState,
-} from './RedisAPStore.js';
+import { getAPState, saveAPState } from './RedisAPStore.js';
 import {
   getSector,
   saveSector,
@@ -30,17 +31,16 @@ import {
   addBlueprint,
 } from '../../db/queries.js';
 import type { SectorData } from '@void-sector/shared';
-import {
-  AP_COSTS_LOCAL_SCAN,
-  FEATURE_COMBAT_V2,
-  MODULES,
-} from '@void-sector/shared';
+import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
 
 export class ScanService {
   constructor(private ctx: ServiceContext) {}
 
   async handleLocalScan(client: Client): Promise<void> {
-    if (!this.ctx.checkRate(client.sessionId, 'localScan', 1000)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
+    if (!this.ctx.checkRate(client.sessionId, 'localScan', 1000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
@@ -54,7 +54,10 @@ export class ScanService {
 
     await saveAPState(auth.userId, result.newAP!);
 
-    const sectorData = await getSector(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+    const sectorData = await getSector(
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
     const resources = sectorData?.resources ?? { ore: 0, gas: 0, crystal: 0 };
 
     client.send('localScanResult', {
@@ -64,12 +67,19 @@ export class ScanService {
     client.send('apUpdate', result.newAP!);
 
     // Phase 4: Check for scan events (pass environment for pirate frequency scaling)
-    const env = (this.ctx._pst(client.sessionId) === 'nebula' ? 'nebula' : 'empty') as SectorEnvironment;
-    await this.checkAndEmitScanEvents(client, [{ x: this.ctx._px(client.sessionId), y: this.ctx._py(client.sessionId), environment: env }]);
+    const env = (
+      this.ctx._pst(client.sessionId) === 'nebula' ? 'nebula' : 'empty'
+    ) as SectorEnvironment;
+    await this.checkAndEmitScanEvents(client, [
+      { x: this.ctx._px(client.sessionId), y: this.ctx._py(client.sessionId), environment: env },
+    ]);
   }
 
   async handleAreaScan(client: Client): Promise<void> {
-    if (!this.ctx.checkRate(client.sessionId, 'areaScan', 1000)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
+    if (!this.ctx.checkRate(client.sessionId, 'areaScan', 1000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
@@ -92,13 +102,16 @@ export class ScanService {
     // Nebula interference: area scan is blocked inside nebula sectors
     const currentSectorData = await getSector(sectorX, sectorY);
     if (currentSectorData?.type === 'nebula') {
-      client.send('error', { code: 'SCAN_FAIL', message: 'Nebula interference: only local scan available in nebula sectors' });
+      client.send('error', {
+        code: 'SCAN_FAIL',
+        message: 'Nebula interference: only local scan available in nebula sectors',
+      });
       return;
     }
 
     // Batch load existing sectors
     const existingSectors = await getSectorsInRange(sectorX, sectorY, radius);
-    const existingMap = new Map(existingSectors.map(s => [`${s.x}:${s.y}`, s]));
+    const existingMap = new Map(existingSectors.map((s) => [`${s.x}:${s.y}`, s]));
 
     const sectors: SectorData[] = [];
     const newSectors: SectorData[] = [];
@@ -124,10 +137,14 @@ export class ScanService {
     await addDiscoveriesBatch(auth.userId, allCoords);
 
     // Phase 4: Check for scan events in scanned sectors (skip pirate ambush — remote scan can't trigger physical encounters)
-    await this.checkAndEmitScanEvents(client, sectors.map(s => ({ x: s.x, y: s.y, environment: s.environment })), false);
+    await this.checkAndEmitScanEvents(
+      client,
+      sectors.map((s) => ({ x: s.x, y: s.y, environment: s.environment })),
+      false,
+    );
 
     // Nebula fog: hide contents of nebula sectors when scanned from outside
-    const foggedSectors = sectors.map(s => {
+    const foggedSectors = sectors.map((s) => {
       if (s.environment === 'nebula') {
         return {
           ...s,
@@ -144,11 +161,18 @@ export class ScanService {
 
     // Phase 4: Check quest progress for scan quests
     for (const s of sectors) {
-      await this.ctx.checkQuestProgress(client, auth.userId, 'scan', { sectorX: s.x, sectorY: s.y });
+      await this.ctx.checkQuestProgress(client, auth.userId, 'scan', {
+        sectorX: s.x,
+        sectorY: s.y,
+      });
     }
   }
 
-  async checkAndEmitScanEvents(client: Client, scannedSectors: { x: number; y: number; environment?: SectorEnvironment }[], includeImmediateEvents = true): Promise<void> {
+  async checkAndEmitScanEvents(
+    client: Client,
+    scannedSectors: { x: number; y: number; environment?: SectorEnvironment }[],
+    includeImmediateEvents = true,
+  ): Promise<void> {
     const auth = client.auth as AuthPayload;
     for (const sector of scannedSectors) {
       const eventResult = checkScanEvent(sector.x, sector.y, sector.environment ?? 'empty');
@@ -170,8 +194,11 @@ export class ScanService {
         client.send('logEntry', `WARNUNG: Piraten-Hinterhalt bei (${sector.x}, ${sector.y})!`);
       } else {
         const eventId = await insertScanEvent(
-          auth.userId, sector.x, sector.y,
-          eventResult.eventType, eventResult.data ?? {},
+          auth.userId,
+          sector.x,
+          sector.y,
+          eventResult.eventType,
+          eventResult.data ?? {},
         );
         if (eventId) {
           client.send('scanEventDiscovered', {
@@ -190,7 +217,10 @@ export class ScanService {
             anomaly_reading: 'Anomalie',
             artifact_find: 'Artefakt-Signal',
           };
-          client.send('logEntry', `${eventNames[eventResult.eventType] ?? 'Event'} entdeckt bei (${sector.x}, ${sector.y})`);
+          client.send(
+            'logEntry',
+            `${eventNames[eventResult.eventType] ?? 'Event'} entdeckt bei (${sector.x}, ${sector.y})`,
+          );
         }
       }
     }
@@ -199,7 +229,7 @@ export class ScanService {
   async handleCompleteScanEvent(client: Client, data: CompleteScanEventMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
     const events = await getPlayerScanEvents(auth.userId, 'discovered');
-    const event = events.find(e => e.id === data.eventId);
+    const event = events.find((e) => e.id === data.eventId);
 
     if (!event) {
       client.send('logEntry', 'Event nicht gefunden.');
@@ -219,10 +249,18 @@ export class ScanService {
       await this.ctx.applyXpGain(auth.userId, eventData.rewardXp, client);
     }
     if (eventData.rewardRep) {
-      const repFaction = event.event_type === 'anomaly_reading' ? 'scientists'
-        : event.event_type === 'artifact_find' ? 'ancients'
-        : 'traders';
-      await this.ctx.applyReputationChange(auth.userId, repFaction as import('@void-sector/shared').NpcFactionId, eventData.rewardRep, client);
+      const repFaction =
+        event.event_type === 'anomaly_reading'
+          ? 'scientists'
+          : event.event_type === 'artifact_find'
+            ? 'ancients'
+            : 'traders';
+      await this.ctx.applyReputationChange(
+        auth.userId,
+        repFaction as import('@void-sector/shared').NpcFactionId,
+        eventData.rewardRep,
+        client,
+      );
     }
     if (eventData.rewardArtefact && eventData.rewardArtefact > 0) {
       await addToCargo(auth.userId, 'artefact' as ResourceType, eventData.rewardArtefact);
@@ -236,7 +274,10 @@ export class ScanService {
       const moduleId = (event.data as Record<string, unknown>)?.moduleId as string;
       if (moduleId) {
         await addBlueprint(auth.userId, moduleId);
-        client.send('blueprintFound', { moduleId, moduleName: MODULES[moduleId]?.name ?? moduleId });
+        client.send('blueprintFound', {
+          moduleId,
+          moduleName: MODULES[moduleId]?.name ?? moduleId,
+        });
         client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
       }
     }

@@ -1,8 +1,12 @@
 import { hashCoords } from './worldgen.js';
 import {
-  WORLD_SEED, JUMPGATE_SALT, JUMPGATE_CHANCE,
-  JUMPGATE_MIN_RANGE, JUMPGATE_MAX_RANGE,
-  JUMPGATE_CODE_CHANCE, JUMPGATE_MINIGAME_CHANCE,
+  WORLD_SEED,
+  JUMPGATE_SALT,
+  JUMPGATE_CHANCE,
+  JUMPGATE_MIN_RANGE,
+  JUMPGATE_MAX_RANGE,
+  JUMPGATE_CODE_CHANCE,
+  JUMPGATE_MINIGAME_CHANCE,
   JUMPGATE_CODE_LENGTH,
 } from '@void-sector/shared';
 import type { JumpGateType } from '@void-sector/shared';
@@ -12,9 +16,16 @@ export function checkJumpGate(sectorX: number, sectorY: number): boolean {
   return ((hash >>> 0) % 10000) / 10000 < JUMPGATE_CHANCE;
 }
 
-export function generateGateTarget(sectorX: number, sectorY: number): {
-  targetX: number; targetY: number; gateType: JumpGateType;
-  requiresCode: boolean; requiresMinigame: boolean; accessCode: string | null;
+export function generateGateTarget(
+  sectorX: number,
+  sectorY: number,
+): {
+  targetX: number;
+  targetY: number;
+  gateType: JumpGateType;
+  requiresCode: boolean;
+  requiresMinigame: boolean;
+  accessCode: string | null;
 } {
   const hash = hashCoords(sectorX, sectorY, WORLD_SEED + JUMPGATE_SALT + 1);
   const hash2 = hashCoords(sectorX, sectorY, WORLD_SEED + JUMPGATE_SALT + 2);
@@ -22,15 +33,17 @@ export function generateGateTarget(sectorX: number, sectorY: number): {
 
   // Distance: weighted toward shorter ranges (quadratic distribution)
   const distNorm = ((hash >>> 0) % 10000) / 10000;
-  const distance = Math.floor(JUMPGATE_MIN_RANGE + (distNorm ** 2) * (JUMPGATE_MAX_RANGE - JUMPGATE_MIN_RANGE));
+  const distance = Math.floor(
+    JUMPGATE_MIN_RANGE + distNorm ** 2 * (JUMPGATE_MAX_RANGE - JUMPGATE_MIN_RANGE),
+  );
 
   // Angle for target direction
-  const angle = ((hash2 >>> 0) % 3600) / 3600 * 2 * Math.PI;
+  const angle = (((hash2 >>> 0) % 3600) / 3600) * 2 * Math.PI;
   const targetX = sectorX + Math.round(Math.cos(angle) * distance);
   const targetY = sectorY + Math.round(Math.sin(angle) * distance);
 
   // Gate type: 60% bidirectional, 40% wormhole
-  const gateType: JumpGateType = ((hash3 >>> 0) % 100) < 60 ? 'bidirectional' : 'wormhole';
+  const gateType: JumpGateType = (hash3 >>> 0) % 100 < 60 ? 'bidirectional' : 'wormhole';
 
   // Code/minigame requirements
   const requiresCode = ((hash3 >>> 8) % 100) / 100 < JUMPGATE_CODE_CHANCE;

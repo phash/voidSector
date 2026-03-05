@@ -86,7 +86,7 @@ function createMockRes(): Response & { _status: number; _json: unknown } {
 // Extract a route handler from the router's internal stack
 function getRouteHandler(
   method: string,
-  path: string
+  path: string,
 ): ((req: Request, res: Response) => Promise<void>) | undefined {
   const layer = (adminRouter as any).stack.find((l: any) => {
     if (!l.route) return false;
@@ -193,7 +193,15 @@ describe('adminRoutes', () => {
   describe('GET /players', () => {
     it('returns list of players', async () => {
       const players = [
-        { id: 'p1', username: 'alice', positionX: 0, positionY: 0, xp: 100, level: 2, factionId: null },
+        {
+          id: 'p1',
+          username: 'alice',
+          positionX: 0,
+          positionY: 0,
+          xp: 100,
+          level: 2,
+          factionId: null,
+        },
       ];
       mockGetAllPlayers.mockResolvedValueOnce(players);
 
@@ -211,7 +219,15 @@ describe('adminRoutes', () => {
 
   describe('GET /players/:id', () => {
     it('returns player when found', async () => {
-      const player = { id: 'p1', username: 'alice', positionX: 0, positionY: 0, xp: 100, level: 2, factionId: null };
+      const player = {
+        id: 'p1',
+        username: 'alice',
+        positionX: 0,
+        positionY: 0,
+        xp: 100,
+        level: 2,
+        factionId: null,
+      };
       mockGetPlayerById.mockResolvedValueOnce(player);
 
       const handler = getRouteHandler('get', '/players/:id')!;
@@ -286,7 +302,7 @@ describe('adminRoutes', () => {
           title: 'YAML Quest',
           description: 'From YAML',
           scope: 'universal',
-        })
+        }),
       );
     });
 
@@ -321,11 +337,23 @@ describe('adminRoutes', () => {
     it('returns quests without filter', async () => {
       const quests = [
         {
-          id: 'q1', title: 'Quest 1', description: 'Desc', scope: 'universal',
-          questType: 'fetch', npcName: null, npcFaction: null, objectives: [],
-          rewards: {}, flavor: {}, sectorX: null, sectorY: null,
-          targetPlayers: [], maxAcceptances: 0, expiresDays: 7,
-          status: 'active', createdAt: '2026-01-01',
+          id: 'q1',
+          title: 'Quest 1',
+          description: 'Desc',
+          scope: 'universal',
+          questType: 'fetch',
+          npcName: null,
+          npcFaction: null,
+          objectives: [],
+          rewards: {},
+          flavor: {},
+          sectorX: null,
+          sectorY: null,
+          targetPlayers: [],
+          maxAcceptances: 0,
+          expiresDays: 7,
+          status: 'active',
+          createdAt: '2026-01-01',
         },
       ];
       mockGetAdminQuests.mockResolvedValueOnce(quests);
@@ -354,11 +382,24 @@ describe('adminRoutes', () => {
   describe('GET /quests/:id', () => {
     it('returns quest with assignment count', async () => {
       const quest = {
-        id: 'q1', title: 'Quest 1', description: 'Desc', scope: 'universal',
-        questType: 'fetch', npcName: null, npcFaction: null, objectives: [],
-        rewards: {}, flavor: {}, sectorX: null, sectorY: null,
-        targetPlayers: [], maxAcceptances: 0, expiresDays: 7,
-        status: 'active', createdAt: '2026-01-01', assignmentCount: 3,
+        id: 'q1',
+        title: 'Quest 1',
+        description: 'Desc',
+        scope: 'universal',
+        questType: 'fetch',
+        npcName: null,
+        npcFaction: null,
+        objectives: [],
+        rewards: {},
+        flavor: {},
+        sectorX: null,
+        sectorY: null,
+        targetPlayers: [],
+        maxAcceptances: 0,
+        expiresDays: 7,
+        status: 'active',
+        createdAt: '2026-01-01',
+        assignmentCount: 3,
       };
       mockGetAdminQuestById.mockResolvedValueOnce(quest);
 
@@ -387,11 +428,23 @@ describe('adminRoutes', () => {
   describe('PATCH /quests/:id', () => {
     it('updates quest status', async () => {
       const quest = {
-        id: 'q1', title: 'Quest 1', description: 'Desc', scope: 'universal',
-        questType: 'fetch', npcName: null, npcFaction: null, objectives: [],
-        rewards: {}, flavor: {}, sectorX: null, sectorY: null,
-        targetPlayers: [], maxAcceptances: 0, expiresDays: 7,
-        status: 'paused', createdAt: '2026-01-01',
+        id: 'q1',
+        title: 'Quest 1',
+        description: 'Desc',
+        scope: 'universal',
+        questType: 'fetch',
+        npcName: null,
+        npcFaction: null,
+        objectives: [],
+        rewards: {},
+        flavor: {},
+        sectorX: null,
+        sectorY: null,
+        targetPlayers: [],
+        maxAcceptances: 0,
+        expiresDays: 7,
+        status: 'paused',
+        createdAt: '2026-01-01',
       };
       mockUpdateAdminQuestStatus.mockResolvedValueOnce(quest);
 
@@ -493,11 +546,18 @@ describe('adminRoutes', () => {
 
   describe('GET /messages', () => {
     it('returns messages with default limit', async () => {
-      const messages = [{
-        id: 'msg-1', senderName: 'SYSTEM', content: 'Hello',
-        scope: 'universal', targetPlayers: [], channel: 'direct',
-        allowReply: false, createdAt: '2026-01-01',
-      }];
+      const messages = [
+        {
+          id: 'msg-1',
+          senderName: 'SYSTEM',
+          content: 'Hello',
+          scope: 'universal',
+          targetPlayers: [],
+          channel: 'direct',
+          allowReply: false,
+          createdAt: '2026-01-01',
+        },
+      ];
       mockGetAdminMessages.mockResolvedValueOnce(messages);
 
       const handler = getRouteHandler('get', '/messages')!;
@@ -524,7 +584,13 @@ describe('adminRoutes', () => {
   describe('GET /messages/:id/replies', () => {
     it('returns replies for a message', async () => {
       const replies = [
-        { id: 'r1', messageId: 'msg-1', playerId: 'p1', content: 'Thanks!', createdAt: '2026-01-01' },
+        {
+          id: 'r1',
+          messageId: 'msg-1',
+          playerId: 'p1',
+          content: 'Thanks!',
+          createdAt: '2026-01-01',
+        },
       ];
       mockGetAdminReplies.mockResolvedValueOnce(replies);
 

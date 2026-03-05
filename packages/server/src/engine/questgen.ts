@@ -1,6 +1,11 @@
 import { hashCoords } from './worldgen.js';
 import { WORLD_SEED } from '@void-sector/shared';
-import type { NpcFactionId, ReputationTier, AvailableQuest, QuestObjective } from '@void-sector/shared';
+import type {
+  NpcFactionId,
+  ReputationTier,
+  AvailableQuest,
+  QuestObjective,
+} from '@void-sector/shared';
 import { QUEST_TEMPLATES } from './questTemplates.js';
 import type { QuestTemplate } from './questTemplates.js';
 import { generateStationNpcs, getStationFaction } from './npcgen.js';
@@ -9,7 +14,11 @@ const QUEST_SEED_SALT = 9999;
 
 function getReputationTierValue(tier: ReputationTier): number {
   const map: Record<ReputationTier, number> = {
-    hostile: 0, unfriendly: 1, neutral: 2, friendly: 3, honored: 4,
+    hostile: 0,
+    unfriendly: 1,
+    neutral: 2,
+    friendly: 3,
+    honored: 4,
   };
   return map[tier];
 }
@@ -63,24 +72,38 @@ function fillQuestTemplate(
     const resIdx = unsignedSeed % template.resourceOptions.length;
     const resource = template.resourceOptions[resIdx];
     const [minAmt, maxAmt] = template.amountRange;
-    const amount = minAmt + (unsignedSeed >>> 8) % (maxAmt - minAmt + 1);
-    description = description.replace('{resource}', resource.toUpperCase()).replace('{amount}', String(amount));
+    const amount = minAmt + ((unsignedSeed >>> 8) % (maxAmt - minAmt + 1));
+    description = description
+      .replace('{resource}', resource.toUpperCase())
+      .replace('{amount}', String(amount));
     objectives.push({
-      type: 'fetch', description: `${amount} ${resource}`,
-      resource, amount, progress: 0, fulfilled: false,
+      type: 'fetch',
+      description: `${amount} ${resource}`,
+      resource,
+      amount,
+      progress: 0,
+      fulfilled: false,
     });
   }
 
-  if ((template.type === 'delivery' || template.type === 'scan' || template.type === 'bounty') && template.distanceRange) {
+  if (
+    (template.type === 'delivery' || template.type === 'scan' || template.type === 'bounty') &&
+    template.distanceRange
+  ) {
     const [minDist, maxDist] = template.distanceRange;
-    const dist = minDist + (unsignedSeed >>> 12) % (maxDist - minDist + 1);
+    const dist = minDist + ((unsignedSeed >>> 12) % (maxDist - minDist + 1));
     const angle = ((unsignedSeed >>> 4) % 360) * (Math.PI / 180);
     const targetX = stationX + Math.round(dist * Math.cos(angle));
     const targetY = stationY + Math.round(dist * Math.sin(angle));
-    description = description.replace('{targetX}', String(targetX)).replace('{targetY}', String(targetY));
+    description = description
+      .replace('{targetX}', String(targetX))
+      .replace('{targetY}', String(targetY));
     objectives.push({
-      type: template.type, description: `Ziel: (${targetX}, ${targetY})`,
-      targetX, targetY, fulfilled: false,
+      type: template.type,
+      description: `Ziel: (${targetX}, ${targetY})`,
+      targetX,
+      targetY,
+      fulfilled: false,
     });
   }
 

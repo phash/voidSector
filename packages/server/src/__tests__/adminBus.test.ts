@@ -276,8 +276,10 @@ describe('adminBus', () => {
       const myY = 20;
       const received: AdminQuestEvent[] = [];
       adminBus.on('adminQuestCreated', (event: AdminQuestEvent) => {
-        if (event.scope === 'universal' ||
-            (event.scope === 'sector' && event.sectorX === myX && event.sectorY === myY)) {
+        if (
+          event.scope === 'universal' ||
+          (event.scope === 'sector' && event.sectorX === myX && event.sectorY === myY)
+        ) {
           received.push(event);
         }
       });

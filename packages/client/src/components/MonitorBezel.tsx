@@ -80,9 +80,7 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
             className={`crt-content${switching ? ' crt-switch-flicker' : ''}`}
             style={{ filter: `brightness(${brightness})` }}
           >
-            <CrtErrorBoundary monitorId={monitorId}>
-              {children}
-            </CrtErrorBoundary>
+            <CrtErrorBoundary monitorId={monitorId}>{children}</CrtErrorBoundary>
           </div>
           {!monitorOn && (
             <div className="crt-monitor-off">
@@ -145,8 +143,15 @@ export function MonitorBezel({ children, monitorId }: MonitorBezelProps) {
             [{autoFollow ? 'AUTO' : 'MANUAL'}]
           </button>
         )}
-        <button className="vs-btn" onClick={() => setShowLegend(true)}
-          style={{ fontSize: '0.7rem', padding: '4px 8px', marginLeft: monitorId === 'NAV-COM' ? undefined : 'auto' }}>
+        <button
+          className="vs-btn"
+          onClick={() => setShowLegend(true)}
+          style={{
+            fontSize: '0.7rem',
+            padding: '4px 8px',
+            marginLeft: monitorId === 'NAV-COM' ? undefined : 'auto',
+          }}
+        >
           [?]
         </button>
       </div>

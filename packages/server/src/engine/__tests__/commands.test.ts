@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { validateJump, validateScan, validateMine, validateJettison, validateLocalScan, validateAreaScan } from '../commands.js';
+import {
+  validateJump,
+  validateScan,
+  validateMine,
+  validateJettison,
+  validateLocalScan,
+  validateAreaScan,
+} from '../commands.js';
 import { createMiningState } from '../mining.js';
 import { createAPState } from '../ap.js';
 import { AP_COSTS } from '@void-sector/shared';

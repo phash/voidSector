@@ -1,11 +1,31 @@
 const STATION_PREFIXES = [
-  'Arcturus', 'Nexus', 'Vega', 'Helios', 'Omega', 'Proxima',
-  'Zenith', 'Pulsar', 'Nova', 'Cygnus', 'Orion', 'Lyra',
-  'Sirius', 'Kepler', 'Draco', 'Altair',
+  'Arcturus',
+  'Nexus',
+  'Vega',
+  'Helios',
+  'Omega',
+  'Proxima',
+  'Zenith',
+  'Pulsar',
+  'Nova',
+  'Cygnus',
+  'Orion',
+  'Lyra',
+  'Sirius',
+  'Kepler',
+  'Draco',
+  'Altair',
 ];
 
 const STATION_SUFFIXES = [
-  'Station', 'Outpost', 'Hub', 'Dock', 'Terminal', 'Port', 'Relay', 'Depot',
+  'Station',
+  'Outpost',
+  'Hub',
+  'Dock',
+  'Terminal',
+  'Port',
+  'Relay',
+  'Depot',
 ];
 
 function hashStationCoords(x: number, y: number): number {

@@ -17,7 +17,14 @@ const CATEGORY_LABELS: Record<ModuleCategory, string> = {
 };
 
 const CATEGORY_ORDER: ModuleCategory[] = [
-  'drive', 'cargo', 'scanner', 'armor', 'weapon', 'shield', 'defense', 'special',
+  'drive',
+  'cargo',
+  'scanner',
+  'armor',
+  'weapon',
+  'shield',
+  'defense',
+  'special',
 ];
 
 function groupModulesByCategory(): Record<string, ModuleDefinition[]> {
@@ -50,9 +57,9 @@ function formatCountdown(ms: number): string {
 }
 
 export function TechTreePanel() {
-  const research = useStore(s => s.research);
-  const selectedModuleId = useStore(s => s.selectedTechModule);
-  const setSelectedTechModule = useStore(s => s.setSelectedTechModule);
+  const research = useStore((s) => s.research);
+  const selectedModuleId = useStore((s) => s.selectedTechModule);
+  const setSelectedTechModule = useStore((s) => s.setSelectedTechModule);
 
   const [now, setNow] = useState(Date.now());
 
@@ -73,22 +80,26 @@ export function TechTreePanel() {
   const isComplete = activeResearch ? remaining <= 0 : false;
 
   return (
-    <div style={{
-      padding: '4px 6px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.6rem',
-      lineHeight: 1.5,
-      overflow: 'auto',
-      height: '100%',
-      color: 'var(--color-primary)',
-    }}>
-      <div style={{
-        letterSpacing: '0.15em',
-        fontSize: '0.65rem',
-        marginBottom: 6,
-        borderBottom: '1px solid var(--color-dim)',
-        paddingBottom: 2,
-      }}>
+    <div
+      style={{
+        padding: '4px 6px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.6rem',
+        lineHeight: 1.5,
+        overflow: 'auto',
+        height: '100%',
+        color: 'var(--color-primary)',
+      }}
+    >
+      <div
+        style={{
+          letterSpacing: '0.15em',
+          fontSize: '0.65rem',
+          marginBottom: 6,
+          borderBottom: '1px solid var(--color-dim)',
+          paddingBottom: 2,
+        }}
+      >
         TECH-BAUM / FORSCHUNG
       </div>
 
@@ -121,23 +132,25 @@ export function TechTreePanel() {
       )}
 
       {/* Module groups by category — compact clickable list */}
-      {CATEGORY_ORDER.map(cat => {
+      {CATEGORY_ORDER.map((cat) => {
         const mods = grouped[cat];
         if (!mods || mods.length === 0) return null;
         return (
           <div key={cat}>
-            <div style={{
-              borderBottom: '1px solid var(--color-dim)',
-              paddingBottom: 2,
-              marginBottom: 4,
-              marginTop: 8,
-              fontSize: '0.6rem',
-              letterSpacing: '0.15em',
-              opacity: 0.7,
-            }}>
+            <div
+              style={{
+                borderBottom: '1px solid var(--color-dim)',
+                paddingBottom: 2,
+                marginBottom: 4,
+                marginTop: 8,
+                fontSize: '0.6rem',
+                letterSpacing: '0.15em',
+                opacity: 0.7,
+              }}
+            >
               {CATEGORY_LABELS[cat]}
             </div>
-            {mods.map(mod => {
+            {mods.map((mod) => {
               const status = getModuleStatus(mod, research);
               const isSelected = selectedModuleId === mod.id;
 
@@ -152,20 +165,26 @@ export function TechTreePanel() {
                     padding: '2px 4px',
                     cursor: 'pointer',
                     opacity: status === 'locked' ? 0.5 : 1,
-                    borderLeft: isSelected ? '2px solid var(--color-primary)' : '2px solid transparent',
+                    borderLeft: isSelected
+                      ? '2px solid var(--color-primary)'
+                      : '2px solid transparent',
                     background: isSelected ? 'rgba(255,176,0,0.05)' : 'transparent',
                   }}
                 >
                   <span>
                     <span style={{ color: 'var(--color-primary)' }}>{mod.name}</span>
-                    <span style={{ color: 'var(--color-dim)', marginLeft: 4, fontSize: '0.5rem' }}>T{mod.tier}</span>
+                    <span style={{ color: 'var(--color-dim)', marginLeft: 4, fontSize: '0.5rem' }}>
+                      T{mod.tier}
+                    </span>
                   </span>
                   <span style={{ flexShrink: 0, marginLeft: 4, fontSize: '0.5rem' }}>
                     {status === 'free' && <span style={{ color: '#00FF88' }}>FREI</span>}
                     {status === 'unlocked' && <span style={{ color: '#00FF88' }}>&#x2713;</span>}
                     {status === 'blueprint' && <span style={{ color: '#00BFFF' }}>BP</span>}
                     {status === 'researching' && <span style={{ color: '#FFB000' }}>&#x21BB;</span>}
-                    {status === 'locked' && <span style={{ color: 'var(--color-dim)' }}>&#x1F512;</span>}
+                    {status === 'locked' && (
+                      <span style={{ color: 'var(--color-dim)' }}>&#x1F512;</span>
+                    )}
                   </span>
                 </div>
               );

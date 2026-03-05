@@ -64,10 +64,18 @@ vi.mock('../components/HUD', () => ({
 const storage: Record<string, string> = {};
 const localStorageMock = {
   getItem: vi.fn((key: string) => storage[key] ?? null),
-  setItem: vi.fn((key: string, val: string) => { storage[key] = val; }),
-  removeItem: vi.fn((key: string) => { delete storage[key]; }),
-  clear: vi.fn(() => { Object.keys(storage).forEach((k) => delete storage[k]); }),
-  get length() { return Object.keys(storage).length; },
+  setItem: vi.fn((key: string, val: string) => {
+    storage[key] = val;
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete storage[key];
+  }),
+  clear: vi.fn(() => {
+    Object.keys(storage).forEach((k) => delete storage[k]);
+  }),
+  get length() {
+    return Object.keys(storage).length;
+  },
   key: vi.fn((i: number) => Object.keys(storage)[i] ?? null),
 };
 Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true });
@@ -218,12 +226,12 @@ describe('CockpitLayout', () => {
   it('renders correct detail panel for each program', () => {
     const programToDetail: Record<string, string> = {
       'NAV-COM': 'detail-panel',
-      'TECH': 'tech-detail-panel',
+      TECH: 'tech-detail-panel',
       'BASE-LINK': 'base-detail-panel',
-      'CARGO': 'cargo-detail-panel',
-      'TRADE': 'trade-detail-panel',
-      'MINING': 'mining-detail-panel',
-      'QUESTS': 'quest-detail-panel',
+      CARGO: 'cargo-detail-panel',
+      TRADE: 'trade-detail-panel',
+      MINING: 'mining-detail-panel',
+      QUESTS: 'quest-detail-panel',
     };
 
     for (const [program, testId] of Object.entries(programToDetail)) {

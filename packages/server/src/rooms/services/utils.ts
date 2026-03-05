@@ -15,7 +15,10 @@ export function isGuest(client: Client): boolean {
 
 export function rejectGuest(client: Client, action: string): boolean {
   if (!isGuest(client)) return false;
-  client.send('error', { code: 'GUEST_RESTRICTED', message: `${action} ist für Gäste nicht verfügbar` });
+  client.send('error', {
+    code: 'GUEST_RESTRICTED',
+    message: `${action} ist für Gäste nicht verfügbar`,
+  });
   return true;
 }
 

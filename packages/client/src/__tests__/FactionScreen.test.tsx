@@ -55,15 +55,17 @@ describe('FactionScreen', () => {
 
   it('shows pending invites', () => {
     mockStoreState({
-      factionInvites: [{
-        id: 'inv1',
-        factionId: 'f1',
-        factionName: 'Cool Faction',
-        factionTag: 'COOL',
-        inviterName: 'Leader1',
-        status: 'pending' as const,
-        createdAt: Date.now(),
-      }],
+      factionInvites: [
+        {
+          id: 'inv1',
+          factionId: 'f1',
+          factionName: 'Cool Faction',
+          factionTag: 'COOL',
+          inviterName: 'Leader1',
+          status: 'pending' as const,
+          createdAt: Date.now(),
+        },
+      ],
       playerId: 'p1',
     } as any);
     render(<FactionScreen />);

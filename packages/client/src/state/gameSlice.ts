@@ -1,5 +1,45 @@
 import type { StateCreator } from 'zustand';
-import type { APState, SectorData, Coords, FuelState, MiningState, CargoState, ChatMessage, ChatChannel, StorageInventory, TradeOrder, DataSlate, Faction, FactionMember, FactionInvite, Quest, PlayerReputation, PlayerUpgrade, PirateEncounter, BattleResult, ScanEvent, JumpGateInfo, JumpGateMapEntry, RescueSurvivor, DistressCall, FactionUpgradeState, TradeRoute, Bookmark, AutopilotState, ShipRecord, ShipStats, ShipModule, HullType, CombatV2State, StationDefense, StationCombatEvent, ResearchState, FirstContactEvent, HyperdriveState, AutoRefuelConfig } from '@void-sector/shared';
+import type {
+  APState,
+  SectorData,
+  Coords,
+  FuelState,
+  MiningState,
+  CargoState,
+  ChatMessage,
+  ChatChannel,
+  StorageInventory,
+  TradeOrder,
+  DataSlate,
+  Faction,
+  FactionMember,
+  FactionInvite,
+  Quest,
+  PlayerReputation,
+  PlayerUpgrade,
+  PirateEncounter,
+  BattleResult,
+  ScanEvent,
+  JumpGateInfo,
+  JumpGateMapEntry,
+  RescueSurvivor,
+  DistressCall,
+  FactionUpgradeState,
+  TradeRoute,
+  Bookmark,
+  AutopilotState,
+  ShipRecord,
+  ShipStats,
+  ShipModule,
+  HullType,
+  CombatV2State,
+  StationDefense,
+  StationCombatEvent,
+  ResearchState,
+  FirstContactEvent,
+  HyperdriveState,
+  AutoRefuelConfig,
+} from '@void-sector/shared';
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -28,22 +68,34 @@ export interface AutopilotStatusInfo {
 }
 
 function safeGetItem(key: string): string | null {
-  try { return localStorage.getItem(key); } catch { return null; }
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
 function safeSetItem(key: string, value: string): void {
-  try { localStorage.setItem(key, value); } catch { /* quota exceeded or private mode */ }
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* quota exceeded or private mode */
+  }
 }
 
 function safeRemoveItem(key: string): void {
-  try { localStorage.removeItem(key); } catch { /* noop */ }
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* noop */
+  }
 }
 
 export interface PlayerStats {
   sectorsScanned: number;
-  quadrantsVisited: string[];    // "qx:qy" keys
+  quadrantsVisited: string[]; // "qx:qy" keys
   quadrantsFirstDiscovered: number;
-  stationsVisited: string[];     // "x:y" keys
+  stationsVisited: string[]; // "x:y" keys
   playersEncountered: number;
 }
 
@@ -210,7 +262,12 @@ export interface GameSlice {
 
   // Factory
   factoryState: {
-    activeRecipe: { id: string; outputItem: string; outputAmount: number; cycleSeconds: number } | null;
+    activeRecipe: {
+      id: string;
+      outputItem: string;
+      outputAmount: number;
+      cycleSeconds: number;
+    } | null;
     progress: number;
     completedCycles: number;
     output: Record<string, number>;
@@ -219,9 +276,13 @@ export interface GameSlice {
 
   // Kontor
   kontorOrders: Array<{
-    id: string; ownerId: string; itemType: string;
-    amountWanted: number; amountFilled: number;
-    pricePerUnit: number; active: boolean;
+    id: string;
+    ownerId: string;
+    itemType: string;
+    amountWanted: number;
+    amountFilled: number;
+    pricePerUnit: number;
+    active: boolean;
   }>;
 
   // Nav target (for autopilot UI)
@@ -283,7 +344,9 @@ export interface GameSlice {
   setReputations: (reps: PlayerReputation[]) => void;
   setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
   setActiveBattle: (encounter: PirateEncounter | null) => void;
-  setLastBattleResult: (result: { encounter: PirateEncounter; result: BattleResult } | null) => void;
+  setLastBattleResult: (
+    result: { encounter: PirateEncounter; result: BattleResult } | null,
+  ) => void;
   setActiveCombatV2: (activeCombatV2: CombatV2State | null) => void;
   setStationDefenses: (stationDefenses: StationDefense[]) => void;
   setStationCombatEvent: (stationCombatEvent: StationCombatEvent | null) => void;
@@ -467,36 +530,41 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   addChatMessage: (msg) =>
     set((s) => {
       // Deduplicate by message ID
-      if (s.chatMessages.some(m => m.id === msg.id)) return s;
+      if (s.chatMessages.some((m) => m.id === msg.id)) return s;
       return { chatMessages: [...s.chatMessages.slice(-199), msg] };
     }),
-  setChatChannel: (chatChannel) => set((s) => {
-    const next = { ...s.channelAlerts };
-    delete next[chatChannel];
-    return { chatChannel, channelAlerts: next };
-  }),
+  setChatChannel: (chatChannel) =>
+    set((s) => {
+      const next = { ...s.channelAlerts };
+      delete next[chatChannel];
+      return { chatChannel, channelAlerts: next };
+    }),
   addRecentContact: (id, name) =>
     set((s) => {
       const MAX_CONTACTS = 20;
-      const filtered = s.recentContacts.filter(c => c.id !== id);
+      const filtered = s.recentContacts.filter((c) => c.id !== id);
       return { recentContacts: [{ id, name }, ...filtered].slice(0, MAX_CONTACTS) };
     }),
-  setChannelAlert: (channel, active) => set((s) => ({
-    channelAlerts: { ...s.channelAlerts, [channel]: active },
-  })),
-  clearChannelAlert: (channel) => set((s) => {
-    const next = { ...s.channelAlerts };
-    delete next[channel];
-    return { channelAlerts: next };
-  }),
-  setAlert: (monitorId, active) => set((s) => ({
-    alerts: { ...s.alerts, [monitorId]: active },
-  })),
-  clearAlert: (monitorId) => set((s) => {
-    const next = { ...s.alerts };
-    delete next[monitorId];
-    return { alerts: next };
-  }),
+  setChannelAlert: (channel, active) =>
+    set((s) => ({
+      channelAlerts: { ...s.channelAlerts, [channel]: active },
+    })),
+  clearChannelAlert: (channel) =>
+    set((s) => {
+      const next = { ...s.channelAlerts };
+      delete next[channel];
+      return { channelAlerts: next };
+    }),
+  setAlert: (monitorId, active) =>
+    set((s) => ({
+      alerts: { ...s.alerts, [monitorId]: active },
+    })),
+  clearAlert: (monitorId) =>
+    set((s) => {
+      const next = { ...s.alerts };
+      delete next[monitorId];
+      return { alerts: next };
+    }),
   setSelectedSector: (selectedSector) => set({ selectedSector }),
   setBaseStructures: (baseStructures) => set({ baseStructures }),
   setCredits: (credits) => set({ credits }),
@@ -521,7 +589,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setKnownJumpGates: (knownJumpGates) => set({ knownJumpGates }),
   setRescuedSurvivors: (rescuedSurvivors) => set({ rescuedSurvivors }),
   addDistressCall: (call) => set((s) => ({ distressCalls: [...s.distressCalls, call] })),
-  removeDistressCall: (id) => set((s) => ({ distressCalls: s.distressCalls.filter(d => d.id !== id) })),
+  removeDistressCall: (id) =>
+    set((s) => ({ distressCalls: s.distressCalls.filter((d) => d.id !== id) })),
   setFactionUpgrades: (factionUpgrades) => set({ factionUpgrades }),
   setTradeRoutes: (tradeRoutes) => set({ tradeRoutes }),
   setBookmarks: (bookmarks) => set({ bookmarks }),

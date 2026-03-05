@@ -1,7 +1,17 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import type { GetStationNpcsMessage, AcceptQuestMessage, AbandonQuestMessage, Quest, QuestObjective, PlayerReputation, PlayerUpgrade, ReputationTier, NpcFactionId } from '@void-sector/shared';
+import type {
+  GetStationNpcsMessage,
+  AcceptQuestMessage,
+  AbandonQuestMessage,
+  Quest,
+  QuestObjective,
+  PlayerReputation,
+  PlayerUpgrade,
+  ReputationTier,
+  NpcFactionId,
+} from '@void-sector/shared';
 import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES } from '@void-sector/shared';
 import { generateStationNpcs, getStationFaction } from '../../engine/npcgen.js';
 import { generateStationQuests } from '../../engine/questgen.js';
@@ -33,7 +43,7 @@ export class QuestService {
     const npcs = generateStationNpcs(data.sectorX, data.sectorY);
     const reps = await getPlayerReputations(auth.userId);
     const faction = getStationFaction(data.sectorX, data.sectorY);
-    const factionRep = reps.find(r => r.faction_id === faction)?.reputation ?? 0;
+    const factionRep = reps.find((r) => r.faction_id === faction)?.reputation ?? 0;
     const tier = getReputationTier(factionRep) as ReputationTier;
     const dayOfYear = Math.floor(Date.now() / 86400000);
     const quests = generateStationQuests(data.sectorX, data.sectorY, dayOfYear, tier);
@@ -52,11 +62,11 @@ export class QuestService {
     // Regenerate quest from template to validate it exists
     const reps = await getPlayerReputations(auth.userId);
     const faction = getStationFaction(data.stationX, data.stationY);
-    const factionRep = reps.find(r => r.faction_id === faction)?.reputation ?? 0;
+    const factionRep = reps.find((r) => r.faction_id === faction)?.reputation ?? 0;
     const tier = getReputationTier(factionRep) as ReputationTier;
     const dayOfYear = Math.floor(Date.now() / 86400000);
     const available = generateStationQuests(data.stationX, data.stationY, dayOfYear, tier);
-    const questTemplate = available.find(q => q.templateId === data.templateId);
+    const questTemplate = available.find((q) => q.templateId === data.templateId);
 
     if (!questTemplate) {
       this.ctx.send(client, 'acceptQuestResult', { success: false, error: 'Quest not available' });
@@ -65,8 +75,13 @@ export class QuestService {
 
     const expiresAt = new Date(Date.now() + QUEST_EXPIRY_DAYS * 86400000);
     const questId = await insertQuest(
-      auth.userId, data.templateId, data.stationX, data.stationY,
-      questTemplate.objectives, questTemplate.rewards, expiresAt,
+      auth.userId,
+      data.templateId,
+      data.stationX,
+      data.stationY,
+      questTemplate.objectives,
+      questTemplate.rewards,
+      expiresAt,
     );
 
     const quest: Quest = {
@@ -92,7 +107,10 @@ export class QuestService {
   async handleAbandonQuest(client: Client, data: AbandonQuestMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
     const updated = await updateQuestStatus(data.questId, 'abandoned');
-    this.ctx.send(client, 'abandonQuestResult', { success: updated, error: updated ? undefined : 'Quest not found' });
+    this.ctx.send(client, 'abandonQuestResult', {
+      success: updated,
+      error: updated ? undefined : 'Quest not found',
+    });
     if (updated) {
       await this.sendActiveQuests(client, auth.userId);
     }
@@ -110,7 +128,7 @@ export class QuestService {
 
   async sendActiveQuests(client: Client, playerId: string): Promise<void> {
     const rows = await getActiveQuests(playerId);
-    const quests: Quest[] = rows.map(r => ({
+    const quests: Quest[] = rows.map((r) => ({
       id: r.id,
       templateId: r.template_id,
       npcName: '',
@@ -132,12 +150,18 @@ export class QuestService {
     const reps = await getPlayerReputations(playerId);
     const upgrades = await getPlayerUpgrades(playerId);
 
-    const reputations: PlayerReputation[] = ['traders', 'scientists', 'pirates', 'ancients'].map(fid => {
-      const rep = reps.find(r => r.faction_id === fid)?.reputation ?? 0;
-      return { factionId: fid as NpcFactionId, reputation: rep, tier: getReputationTier(rep) as ReputationTier };
-    });
+    const reputations: PlayerReputation[] = ['traders', 'scientists', 'pirates', 'ancients'].map(
+      (fid) => {
+        const rep = reps.find((r) => r.faction_id === fid)?.reputation ?? 0;
+        return {
+          factionId: fid as NpcFactionId,
+          reputation: rep,
+          tier: getReputationTier(rep) as ReputationTier,
+        };
+      },
+    );
 
-    const playerUpgrades: PlayerUpgrade[] = upgrades.map(u => ({
+    const playerUpgrades: PlayerUpgrade[] = upgrades.map((u) => ({
       upgradeId: u.upgrade_id as any,
       active: u.active,
       unlockedAt: new Date(u.unlocked_at).getTime(),
@@ -146,7 +170,12 @@ export class QuestService {
     this.ctx.send(client, 'reputationUpdate', { reputations, upgrades: playerUpgrades });
   }
 
-  async applyReputationChange(playerId: string, factionId: NpcFactionId, delta: number, client: Client): Promise<void> {
+  async applyReputationChange(
+    playerId: string,
+    factionId: NpcFactionId,
+    delta: number,
+    client: Client,
+  ): Promise<void> {
     const newRep = await setPlayerReputation(playerId, factionId, delta);
     const tier = getReputationTier(newRep);
 
@@ -170,7 +199,12 @@ export class QuestService {
     }
   }
 
-  async checkQuestProgress(client: Client, playerId: string, action: string, context: Record<string, any>): Promise<void> {
+  async checkQuestProgress(
+    client: Client,
+    playerId: string,
+    action: string,
+    context: Record<string, any>,
+  ): Promise<void> {
     const rows = await getActiveQuests(playerId);
     const cargo = await getPlayerCargo(playerId);
     for (const row of rows) {
@@ -180,24 +214,44 @@ export class QuestService {
       for (const obj of objectives) {
         if (obj.fulfilled) continue;
 
-        if (obj.type === 'scan' && action === 'scan' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
+        if (
+          obj.type === 'scan' &&
+          action === 'scan' &&
+          obj.targetX === context.sectorX &&
+          obj.targetY === context.sectorY
+        ) {
           obj.fulfilled = true;
           updated = true;
         }
 
-        if (obj.type === 'fetch' && action === 'arrive' && context.sectorX === row.station_x && context.sectorY === row.station_y) {
+        if (
+          obj.type === 'fetch' &&
+          action === 'arrive' &&
+          context.sectorX === row.station_x &&
+          context.sectorY === row.station_y
+        ) {
           if (obj.resource && obj.amount && ((cargo as any)[obj.resource] ?? 0) >= obj.amount) {
             obj.fulfilled = true;
             updated = true;
           }
         }
 
-        if (obj.type === 'delivery' && action === 'arrive' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
+        if (
+          obj.type === 'delivery' &&
+          action === 'arrive' &&
+          obj.targetX === context.sectorX &&
+          obj.targetY === context.sectorY
+        ) {
           obj.fulfilled = true;
           updated = true;
         }
 
-        if (obj.type === 'bounty' && action === 'battle_won' && obj.targetX === context.sectorX && obj.targetY === context.sectorY) {
+        if (
+          obj.type === 'bounty' &&
+          action === 'battle_won' &&
+          obj.targetX === context.sectorX &&
+          obj.targetY === context.sectorY
+        ) {
           obj.fulfilled = true;
           updated = true;
         }
@@ -207,7 +261,7 @@ export class QuestService {
         await updateQuestObjectives(row.id, objectives);
         this.ctx.send(client, 'questProgress', { questId: row.id, objectives });
 
-        if (objectives.every(o => o.fulfilled)) {
+        if (objectives.every((o) => o.fulfilled)) {
           await updateQuestStatus(row.id, 'completed');
           const rewards = row.rewards;
 
@@ -221,11 +275,21 @@ export class QuestService {
             const factionId = row.template_id.split('_')[0] as string;
             const validFactions = ['traders', 'scientists', 'pirates', 'ancients'];
             if (validFactions.includes(factionId)) {
-              await this.applyReputationChange(playerId, factionId as NpcFactionId, rewards.reputation, client);
+              await this.applyReputationChange(
+                playerId,
+                factionId as NpcFactionId,
+                rewards.reputation,
+                client,
+              );
             }
           }
           if (rewards.reputationPenalty && rewards.rivalFactionId) {
-            await this.applyReputationChange(playerId, rewards.rivalFactionId as NpcFactionId, -rewards.reputationPenalty, client);
+            await this.applyReputationChange(
+              playerId,
+              rewards.rivalFactionId as NpcFactionId,
+              -rewards.reputationPenalty,
+              client,
+            );
           }
 
           // Deduct fetch resources from cargo
@@ -236,7 +300,11 @@ export class QuestService {
           }
           this.ctx.send(client, 'cargoUpdate', await getPlayerCargo(playerId));
 
-          this.ctx.send(client, 'logEntry', `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`);
+          this.ctx.send(
+            client,
+            'logEntry',
+            `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`,
+          );
           await this.sendActiveQuests(client, playerId);
         }
       }

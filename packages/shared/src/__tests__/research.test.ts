@@ -153,7 +153,9 @@ describe('Module data validation', () => {
 
   it('all modules have secondaryEffects array', () => {
     for (const [id, mod] of Object.entries(MODULES)) {
-      expect(Array.isArray(mod.secondaryEffects), `${id} missing secondaryEffects array`).toBe(true);
+      expect(Array.isArray(mod.secondaryEffects), `${id} missing secondaryEffects array`).toBe(
+        true,
+      );
     }
   });
 

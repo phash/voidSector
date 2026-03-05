@@ -17,7 +17,7 @@ describe('generateSpawnPosition', () => {
 
   it('generates different positions on multiple calls', () => {
     const positions = Array.from({ length: 5 }, () => generateSpawnPosition());
-    const unique = new Set(positions.map(p => `${p.x}:${p.y}`));
+    const unique = new Set(positions.map((p) => `${p.x}:${p.y}`));
     expect(unique.size).toBeGreaterThan(1);
   });
 

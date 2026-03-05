@@ -1,6 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import type { ResourceType, MineableResourceType, CargoState, StorageInventory, ModuleDefinition } from '../types.js';
-import { RESOURCE_TYPES, ARTEFACT_DROP_CHANCES, NPC_PRICES, SECTOR_RESOURCE_YIELDS, MODULES, PRODUCTION_RECIPES } from '../constants.js';
+import type {
+  ResourceType,
+  MineableResourceType,
+  CargoState,
+  StorageInventory,
+  ModuleDefinition,
+} from '../types.js';
+import {
+  RESOURCE_TYPES,
+  ARTEFACT_DROP_CHANCES,
+  NPC_PRICES,
+  SECTOR_RESOURCE_YIELDS,
+  MODULES,
+  PRODUCTION_RECIPES,
+} from '../constants.js';
 
 describe('Artefact resource type', () => {
   it('ResourceType includes artefact', () => {
@@ -67,7 +80,7 @@ describe('Artefact resource type', () => {
 
   it('some module researchCosts require artefacts (artefact is a research resource)', () => {
     const modulesWithArtefactResearch = Object.values(MODULES).filter(
-      (m: ModuleDefinition) => m.researchCost?.artefact && m.researchCost.artefact > 0
+      (m: ModuleDefinition) => m.researchCost?.artefact && m.researchCost.artefact > 0,
     );
     expect(modulesWithArtefactResearch.length).toBeGreaterThan(0);
   });

@@ -159,7 +159,9 @@ describe('FirstContactEvent structure', () => {
 describe('nameQuadrant 60-second naming window', () => {
   it('succeeds within 60-second window', async () => {
     const recentQuadrant = makeQuadrant({
-      qx: 1, qy: 2, discoveredBy: 'player-1',
+      qx: 1,
+      qy: 2,
+      discoveredBy: 'player-1',
       discoveredAt: new Date(Date.now() - 30_000).toISOString(), // 30s ago
     });
     mockGetQuadrant.mockResolvedValueOnce(recentQuadrant);
@@ -172,7 +174,9 @@ describe('nameQuadrant 60-second naming window', () => {
 
   it('fails after 60-second window expires', async () => {
     const oldQuadrant = makeQuadrant({
-      qx: 1, qy: 2, discoveredBy: 'player-1',
+      qx: 1,
+      qy: 2,
+      discoveredBy: 'player-1',
       discoveredAt: new Date(Date.now() - 61_000).toISOString(), // 61s ago
     });
     mockGetQuadrant.mockResolvedValueOnce(oldQuadrant);
@@ -184,7 +188,9 @@ describe('nameQuadrant 60-second naming window', () => {
 
   it('fails at exactly 60 seconds + 1ms', async () => {
     const borderlineQuadrant = makeQuadrant({
-      qx: 1, qy: 2, discoveredBy: 'player-1',
+      qx: 1,
+      qy: 2,
+      discoveredBy: 'player-1',
       discoveredAt: new Date(Date.now() - QUADRANT_NAMING_WINDOW_MS - 1).toISOString(),
     });
     mockGetQuadrant.mockResolvedValueOnce(borderlineQuadrant);
@@ -196,7 +202,9 @@ describe('nameQuadrant 60-second naming window', () => {
 
   it('succeeds at exactly 59 seconds', async () => {
     const justInTimeQuadrant = makeQuadrant({
-      qx: 1, qy: 2, discoveredBy: 'player-1',
+      qx: 1,
+      qy: 2,
+      discoveredBy: 'player-1',
       discoveredAt: new Date(Date.now() - 59_000).toISOString(), // 59s ago
     });
     mockGetQuadrant.mockResolvedValueOnce(justInTimeQuadrant);
@@ -220,7 +228,9 @@ describe('nameQuadrant 60-second naming window', () => {
 
   it('still checks discoverer before checking window', async () => {
     const recentQuadrant = makeQuadrant({
-      qx: 1, qy: 2, discoveredBy: 'player-1',
+      qx: 1,
+      qy: 2,
+      discoveredBy: 'player-1',
       discoveredAt: new Date(Date.now() - 10_000).toISOString(), // 10s ago
     });
     mockGetQuadrant.mockResolvedValueOnce(recentQuadrant);

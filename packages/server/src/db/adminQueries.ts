@@ -24,7 +24,7 @@ export async function getAllPlayers(): Promise<AdminPlayer[]> {
   }>(
     `SELECT id, username, position_x, position_y, xp, level, faction_id
      FROM players
-     ORDER BY username ASC`
+     ORDER BY username ASC`,
   );
   return result.rows.map((row) => ({
     id: row.id,
@@ -50,7 +50,7 @@ export async function getPlayerById(id: string): Promise<AdminPlayer | null> {
     `SELECT id, username, position_x, position_y, xp, level, faction_id
      FROM players
      WHERE id = $1`,
-    [id]
+    [id],
   );
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
@@ -78,7 +78,7 @@ export async function getPlayerByUsername(username: string): Promise<AdminPlayer
     `SELECT id, username, position_x, position_y, xp, level, faction_id
      FROM players
      WHERE username = $1`,
-    [username]
+    [username],
   );
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
@@ -159,7 +159,7 @@ export async function createAdminQuest(input: AdminQuestInput): Promise<string> 
       input.targetPlayers ?? [],
       input.maxAcceptances ?? 0,
       input.expiresDays ?? 7,
-    ]
+    ],
   );
   return result.rows[0].id;
 }
@@ -217,7 +217,7 @@ export async function getAdminQuestById(id: string): Promise<AdminQuestWithCount
             (SELECT COUNT(*) FROM admin_quest_assignments WHERE quest_id = q.id) AS assignment_count
      FROM admin_quests q
      WHERE q.id = $1`,
-    [id]
+    [id],
   );
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
@@ -269,7 +269,7 @@ function mapQuestRow(row: {
 
 export async function updateAdminQuestStatus(
   id: string,
-  status: string
+  status: string,
 ): Promise<AdminQuest | null> {
   const result = await query<{
     id: string;
@@ -292,7 +292,7 @@ export async function updateAdminQuestStatus(
   }>(
     `UPDATE admin_quests SET status = $2 WHERE id = $1
      RETURNING *`,
-    [id, status]
+    [id, status],
   );
   if (result.rows.length === 0) return null;
   return mapQuestRow(result.rows[0]);
@@ -315,7 +315,7 @@ export async function createQuestAssignment(questId: string, playerId: string): 
     `INSERT INTO admin_quest_assignments (quest_id, player_id)
      VALUES ($1, $2)
      RETURNING id`,
-    [questId, playerId]
+    [questId, playerId],
   );
   return result.rows[0].id;
 }
@@ -334,14 +334,14 @@ export async function getPlayerAdminQuests(playerId: string): Promise<QuestAssig
      FROM admin_quest_assignments
      WHERE player_id = $1
      ORDER BY created_at DESC`,
-    [playerId]
+    [playerId],
   );
   return result.rows.map(mapAssignmentRow);
 }
 
 export async function updateQuestAssignment(
   assignmentId: string,
-  status: string
+  status: string,
 ): Promise<QuestAssignment | null> {
   const extras =
     status === 'accepted'
@@ -362,7 +362,7 @@ export async function updateQuestAssignment(
      SET status = $1${extras}
      WHERE id = $2
      RETURNING id, quest_id, player_id, status, accepted_at, completed_at, created_at`,
-    [status, assignmentId]
+    [status, assignmentId],
   );
   if (result.rows.length === 0) return null;
   return mapAssignmentRow(result.rows[0]);
@@ -422,7 +422,7 @@ export async function createAdminMessage(input: AdminMessageInput): Promise<stri
       input.targetPlayers ?? [],
       input.channel ?? 'direct',
       input.allowReply ?? false,
-    ]
+    ],
   );
   return result.rows[0].id;
 }
@@ -442,7 +442,7 @@ export async function getAdminMessages(limit = 50): Promise<AdminMessage[]> {
      FROM admin_messages
      ORDER BY created_at DESC
      LIMIT $1`,
-    [limit]
+    [limit],
   );
   return result.rows.map((row) => ({
     id: row.id,
@@ -469,13 +469,13 @@ export interface AdminReply {
 export async function createAdminReply(
   messageId: string,
   playerId: string,
-  content: string
+  content: string,
 ): Promise<string> {
   const result = await query<{ id: string }>(
     `INSERT INTO admin_message_replies (message_id, player_id, content)
      VALUES ($1, $2, $3)
      RETURNING id`,
-    [messageId, playerId, content]
+    [messageId, playerId, content],
   );
   return result.rows[0].id;
 }
@@ -492,7 +492,7 @@ export async function getAdminReplies(messageId: string): Promise<AdminReply[]> 
      FROM admin_message_replies
      WHERE message_id = $1
      ORDER BY created_at ASC`,
-    [messageId]
+    [messageId],
   );
   return result.rows.map((row) => ({
     id: row.id,
@@ -514,13 +514,13 @@ export interface AdminEvent {
 
 export async function logAdminEvent(
   action: string,
-  details: Record<string, unknown> = {}
+  details: Record<string, unknown> = {},
 ): Promise<number> {
   const result = await query<{ id: number }>(
     `INSERT INTO admin_events (action, details)
      VALUES ($1, $2)
      RETURNING id`,
-    [action, JSON.stringify(details)]
+    [action, JSON.stringify(details)],
   );
   return result.rows[0].id;
 }
@@ -536,7 +536,7 @@ export async function getAdminEvents(limit = 100): Promise<AdminEvent[]> {
      FROM admin_events
      ORDER BY created_at DESC
      LIMIT $1`,
-    [limit]
+    [limit],
   );
   return result.rows.map((row) => ({
     id: row.id,

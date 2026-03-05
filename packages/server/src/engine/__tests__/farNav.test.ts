@@ -54,23 +54,33 @@ describe('Hyperjump Navigation', () => {
       const dy = toY - fromY;
       const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
       const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
-      for (let i = 0; i < Math.abs(dx); i++) { cx += stepX; steps.push({ x: cx, y: cy }); }
-      for (let i = 0; i < Math.abs(dy); i++) { cy += stepY; steps.push({ x: cx, y: cy }); }
+      for (let i = 0; i < Math.abs(dx); i++) {
+        cx += stepX;
+        steps.push({ x: cx, y: cy });
+      }
+      for (let i = 0; i < Math.abs(dy); i++) {
+        cy += stepY;
+        steps.push({ x: cx, y: cy });
+      }
       return steps;
     }
 
     it('generates Manhattan path X-first then Y', () => {
       const steps = generateRoute(0, 0, 3, 2);
       expect(steps).toEqual([
-        { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 },
-        { x: 3, y: 1 }, { x: 3, y: 2 },
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+        { x: 3, y: 0 },
+        { x: 3, y: 1 },
+        { x: 3, y: 2 },
       ]);
     });
 
     it('handles negative directions', () => {
       const steps = generateRoute(0, 0, -2, 1);
       expect(steps).toEqual([
-        { x: -1, y: 0 }, { x: -2, y: 0 },
+        { x: -1, y: 0 },
+        { x: -2, y: 0 },
         { x: -2, y: 1 },
       ]);
     });
@@ -78,14 +88,18 @@ describe('Hyperjump Navigation', () => {
     it('handles same-axis movement (Y only)', () => {
       const steps = generateRoute(5, 5, 5, 8);
       expect(steps).toEqual([
-        { x: 5, y: 6 }, { x: 5, y: 7 }, { x: 5, y: 8 },
+        { x: 5, y: 6 },
+        { x: 5, y: 7 },
+        { x: 5, y: 8 },
       ]);
     });
 
     it('handles same-axis movement (X only)', () => {
       const steps = generateRoute(2, 3, 5, 3);
       expect(steps).toEqual([
-        { x: 3, y: 3 }, { x: 4, y: 3 }, { x: 5, y: 3 },
+        { x: 3, y: 3 },
+        { x: 4, y: 3 },
+        { x: 5, y: 3 },
       ]);
     });
 

@@ -24,17 +24,32 @@ describe('getPlayerKnownJumpGates', () => {
     const result = await getPlayerKnownJumpGates('player-1');
     expect(result).toEqual([]);
     expect(mockQuery).toHaveBeenCalledOnce();
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining('player_known_jumpgates'),
-      ['player-1'],
-    );
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('player_known_jumpgates'), [
+      'player-1',
+    ]);
   });
 
   it('returns mapped JumpGateMapEntry array', async () => {
-    mockQuery.mockResolvedValueOnce(mockQueryResult([
-        { gate_id: 'gate_10_20', from_x: 10, from_y: 20, to_x: 100, to_y: 200, gate_type: 'bidirectional' },
-        { gate_id: 'gate_30_40', from_x: 30, from_y: 40, to_x: 300, to_y: 400, gate_type: 'wormhole' },
-    ]));
+    mockQuery.mockResolvedValueOnce(
+      mockQueryResult([
+        {
+          gate_id: 'gate_10_20',
+          from_x: 10,
+          from_y: 20,
+          to_x: 100,
+          to_y: 200,
+          gate_type: 'bidirectional',
+        },
+        {
+          gate_id: 'gate_30_40',
+          from_x: 30,
+          from_y: 40,
+          to_x: 300,
+          to_y: 400,
+          gate_type: 'wormhole',
+        },
+      ]),
+    );
 
     const result = await getPlayerKnownJumpGates('player-1');
 
@@ -60,10 +75,7 @@ describe('getPlayerKnownJumpGates', () => {
   it('passes correct playerId to query', async () => {
     mockQuery.mockResolvedValueOnce(mockQueryResult());
     await getPlayerKnownJumpGates('uuid-abc-123');
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.any(String),
-      ['uuid-abc-123'],
-    );
+    expect(mockQuery).toHaveBeenCalledWith(expect.any(String), ['uuid-abc-123']);
   });
 });
 
@@ -77,10 +89,15 @@ describe('addPlayerKnownJumpGate', () => {
     await addPlayerKnownJumpGate('player-1', 'gate_10_20', 10, 20, 100, 200, 'bidirectional');
 
     expect(mockQuery).toHaveBeenCalledOnce();
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining('player_known_jumpgates'),
-      ['player-1', 'gate_10_20', 10, 20, 100, 200, 'bidirectional'],
-    );
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('player_known_jumpgates'), [
+      'player-1',
+      'gate_10_20',
+      10,
+      20,
+      100,
+      200,
+      'bidirectional',
+    ]);
   });
 
   it('uses ON CONFLICT DO NOTHING for idempotent inserts', async () => {
@@ -98,10 +115,15 @@ describe('addPlayerKnownJumpGate', () => {
 
     await addPlayerKnownJumpGate('player-1', 'gate_50_60', 50, 60, 500, 600, 'wormhole');
 
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.any(String),
-      ['player-1', 'gate_50_60', 50, 60, 500, 600, 'wormhole'],
-    );
+    expect(mockQuery).toHaveBeenCalledWith(expect.any(String), [
+      'player-1',
+      'gate_50_60',
+      50,
+      60,
+      500,
+      600,
+      'wormhole',
+    ]);
   });
 
   it('handles negative coordinates', async () => {
@@ -109,10 +131,15 @@ describe('addPlayerKnownJumpGate', () => {
 
     await addPlayerKnownJumpGate('player-1', 'gate_-10_-20', -10, -20, -100, -200, 'bidirectional');
 
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.any(String),
-      ['player-1', 'gate_-10_-20', -10, -20, -100, -200, 'bidirectional'],
-    );
+    expect(mockQuery).toHaveBeenCalledWith(expect.any(String), [
+      'player-1',
+      'gate_-10_-20',
+      -10,
+      -20,
+      -100,
+      -200,
+      'bidirectional',
+    ]);
   });
 });
 

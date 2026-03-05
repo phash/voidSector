@@ -36,10 +36,28 @@ describe('adminQueries', () => {
 
   describe('getAllPlayers', () => {
     it('returns all players mapped to camelCase', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
-          { id: 'p1', username: 'alice', position_x: 5, position_y: 10, xp: 100, level: 3, faction_id: 'f1' },
-          { id: 'p2', username: 'bob', position_x: -2, position_y: 0, xp: 50, level: 1, faction_id: null },
-      ]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'p1',
+            username: 'alice',
+            position_x: 5,
+            position_y: 10,
+            xp: 100,
+            level: 3,
+            faction_id: 'f1',
+          },
+          {
+            id: 'p2',
+            username: 'bob',
+            position_x: -2,
+            position_y: 0,
+            xp: 50,
+            level: 1,
+            faction_id: null,
+          },
+        ]),
+      );
 
       const players = await getAllPlayers();
       expect(players).toHaveLength(2);
@@ -53,9 +71,7 @@ describe('adminQueries', () => {
         factionId: 'f1',
       });
       expect(players[1].factionId).toBeNull();
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT'),
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('SELECT'));
     });
 
     it('returns empty array when no players', async () => {
@@ -67,18 +83,25 @@ describe('adminQueries', () => {
 
   describe('getPlayerById', () => {
     it('returns player when found', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
-        { id: 'p1', username: 'alice', position_x: 0, position_y: 0, xp: 0, level: 1, faction_id: null },
-      ]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'p1',
+            username: 'alice',
+            position_x: 0,
+            position_y: 0,
+            xp: 0,
+            level: 1,
+            faction_id: null,
+          },
+        ]),
+      );
 
       const player = await getPlayerById('p1');
       expect(player).not.toBeNull();
       expect(player!.id).toBe('p1');
       expect(player!.username).toBe('alice');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE id = $1'),
-        ['p1']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), ['p1']);
     });
 
     it('returns null when not found', async () => {
@@ -90,18 +113,27 @@ describe('adminQueries', () => {
 
   describe('getPlayerByUsername', () => {
     it('returns player when found by username', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
-        { id: 'p2', username: 'bob', position_x: 1, position_y: 2, xp: 10, level: 2, faction_id: 'f1' },
-      ]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'p2',
+            username: 'bob',
+            position_x: 1,
+            position_y: 2,
+            xp: 10,
+            level: 2,
+            faction_id: 'f1',
+          },
+        ]),
+      );
 
       const player = await getPlayerByUsername('bob');
       expect(player).not.toBeNull();
       expect(player!.username).toBe('bob');
       expect(player!.factionId).toBe('f1');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE username = $1'),
-        ['bob']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE username = $1'), [
+        'bob',
+      ]);
     });
 
     it('returns null when username not found', async () => {
@@ -121,7 +153,7 @@ describe('adminQueries', () => {
       expect(id).toBe('quest-1');
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO admin_quests'),
-        expect.arrayContaining(['Test Quest', 'A test'])
+        expect.arrayContaining(['Test Quest', 'A test']),
       );
     });
 
@@ -191,7 +223,7 @@ describe('adminQueries', () => {
       expect(quests[0].createdAt).toBe('2026-01-01T00:00:00Z');
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('ORDER BY created_at DESC'),
-        []
+        [],
       );
     });
 
@@ -199,44 +231,44 @@ describe('adminQueries', () => {
       mockQuery.mockResolvedValueOnce(mockQueryResult());
 
       await getAdminQuests('expired');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE status = $1'),
-        ['expired']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE status = $1'), [
+        'expired',
+      ]);
     });
   });
 
   describe('getAdminQuestById', () => {
     it('returns quest with assignment count', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([{
-          id: 'q1',
-          title: 'Quest 1',
-          description: 'Desc',
-          scope: 'universal',
-          quest_type: 'fetch',
-          npc_name: null,
-          npc_faction: null,
-          objectives: [],
-          rewards: {},
-          flavor: {},
-          sector_x: null,
-          sector_y: null,
-          target_players: [],
-          max_acceptances: 0,
-          expires_days: 7,
-          status: 'active',
-          created_at: '2026-01-01T00:00:00Z',
-          assignment_count: '5',
-      }]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'q1',
+            title: 'Quest 1',
+            description: 'Desc',
+            scope: 'universal',
+            quest_type: 'fetch',
+            npc_name: null,
+            npc_faction: null,
+            objectives: [],
+            rewards: {},
+            flavor: {},
+            sector_x: null,
+            sector_y: null,
+            target_players: [],
+            max_acceptances: 0,
+            expires_days: 7,
+            status: 'active',
+            created_at: '2026-01-01T00:00:00Z',
+            assignment_count: '5',
+          },
+        ]),
+      );
 
       const quest = await getAdminQuestById('q1');
       expect(quest).not.toBeNull();
       expect(quest!.assignmentCount).toBe(5);
       expect(quest!.title).toBe('Quest 1');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('assignment_count'),
-        ['q1']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('assignment_count'), ['q1']);
     });
 
     it('returns null when quest not found', async () => {
@@ -256,27 +288,44 @@ describe('adminQueries', () => {
       expect(id).toBe('assign-1');
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO admin_quest_assignments'),
-        ['q1', 'p1']
+        ['q1', 'p1'],
       );
     });
   });
 
   describe('getPlayerAdminQuests', () => {
     it('returns player assignments in descending order', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
-          { id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'offered', accepted_at: null, completed_at: null, created_at: '2026-01-02' },
-          { id: 'a2', quest_id: 'q2', player_id: 'p1', status: 'accepted', accepted_at: '2026-01-01', completed_at: null, created_at: '2026-01-01' },
-      ]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'a1',
+            quest_id: 'q1',
+            player_id: 'p1',
+            status: 'offered',
+            accepted_at: null,
+            completed_at: null,
+            created_at: '2026-01-02',
+          },
+          {
+            id: 'a2',
+            quest_id: 'q2',
+            player_id: 'p1',
+            status: 'accepted',
+            accepted_at: '2026-01-01',
+            completed_at: null,
+            created_at: '2026-01-01',
+          },
+        ]),
+      );
 
       const assignments = await getPlayerAdminQuests('p1');
       expect(assignments).toHaveLength(2);
       expect(assignments[0].questId).toBe('q1');
       expect(assignments[0].status).toBe('offered');
       expect(assignments[1].acceptedAt).toBe('2026-01-01');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE player_id = $1'),
-        ['p1']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE player_id = $1'), [
+        'p1',
+      ]);
     });
 
     it('returns empty array for player with no quests', async () => {
@@ -288,43 +337,73 @@ describe('adminQueries', () => {
 
   describe('updateQuestAssignment', () => {
     it('updates status to accepted with accepted_at timestamp', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
-        { id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'accepted', accepted_at: '2026-01-01', completed_at: null, created_at: '2026-01-01' },
-      ]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'a1',
+            quest_id: 'q1',
+            player_id: 'p1',
+            status: 'accepted',
+            accepted_at: '2026-01-01',
+            completed_at: null,
+            created_at: '2026-01-01',
+          },
+        ]),
+      );
 
       const assignment = await updateQuestAssignment('a1', 'accepted');
       expect(assignment).not.toBeNull();
       expect(assignment!.status).toBe('accepted');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('accepted_at = NOW()'),
-        ['accepted', 'a1']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('accepted_at = NOW()'), [
+        'accepted',
+        'a1',
+      ]);
     });
 
     it('updates status to completed with completed_at timestamp', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
-        { id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'completed', accepted_at: '2026-01-01', completed_at: '2026-01-02', created_at: '2026-01-01' },
-      ]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'a1',
+            quest_id: 'q1',
+            player_id: 'p1',
+            status: 'completed',
+            accepted_at: '2026-01-01',
+            completed_at: '2026-01-02',
+            created_at: '2026-01-01',
+          },
+        ]),
+      );
 
       const assignment = await updateQuestAssignment('a1', 'completed');
       expect(assignment).not.toBeNull();
       expect(assignment!.status).toBe('completed');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('completed_at = NOW()'),
-        ['completed', 'a1']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('completed_at = NOW()'), [
+        'completed',
+        'a1',
+      ]);
     });
 
     it('updates status to failed with completed_at timestamp', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
-        { id: 'a1', quest_id: 'q1', player_id: 'p1', status: 'failed', accepted_at: '2026-01-01', completed_at: '2026-01-02', created_at: '2026-01-01' },
-      ]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'a1',
+            quest_id: 'q1',
+            player_id: 'p1',
+            status: 'failed',
+            accepted_at: '2026-01-01',
+            completed_at: '2026-01-02',
+            created_at: '2026-01-01',
+          },
+        ]),
+      );
 
       await updateQuestAssignment('a1', 'failed');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('completed_at = NOW()'),
-        ['failed', 'a1']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('completed_at = NOW()'), [
+        'failed',
+        'a1',
+      ]);
     });
 
     it('returns null when assignment not found', async () => {
@@ -344,7 +423,7 @@ describe('adminQueries', () => {
       expect(id).toBe('msg-1');
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO admin_messages'),
-        expect.arrayContaining(['Hello world'])
+        expect.arrayContaining(['Hello world']),
       );
     });
 
@@ -385,35 +464,33 @@ describe('adminQueries', () => {
 
   describe('getAdminMessages', () => {
     it('returns messages with default limit', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([{
-          id: 'msg-1',
-          sender_name: 'SYSTEM',
-          content: 'Hello',
-          scope: 'universal',
-          target_players: [],
-          channel: 'direct',
-          allow_reply: false,
-          created_at: '2026-01-01T00:00:00Z',
-      }]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'msg-1',
+            sender_name: 'SYSTEM',
+            content: 'Hello',
+            scope: 'universal',
+            target_players: [],
+            channel: 'direct',
+            allow_reply: false,
+            created_at: '2026-01-01T00:00:00Z',
+          },
+        ]),
+      );
 
       const messages = await getAdminMessages();
       expect(messages).toHaveLength(1);
       expect(messages[0].senderName).toBe('SYSTEM');
       expect(messages[0].allowReply).toBe(false);
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT $1'),
-        [50]
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('LIMIT $1'), [50]);
     });
 
     it('respects custom limit', async () => {
       mockQuery.mockResolvedValueOnce(mockQueryResult());
 
       await getAdminMessages(10);
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT $1'),
-        [10]
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('LIMIT $1'), [10]);
     });
   });
 
@@ -427,27 +504,40 @@ describe('adminQueries', () => {
       expect(id).toBe('reply-1');
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO admin_message_replies'),
-        ['msg-1', 'p1', 'Thanks!']
+        ['msg-1', 'p1', 'Thanks!'],
       );
     });
   });
 
   describe('getAdminReplies', () => {
     it('returns replies for a message in ascending order', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
-          { id: 'r1', message_id: 'msg-1', player_id: 'p1', content: 'Reply 1', created_at: '2026-01-01' },
-          { id: 'r2', message_id: 'msg-1', player_id: 'p2', content: 'Reply 2', created_at: '2026-01-02' },
-      ]));
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
+          {
+            id: 'r1',
+            message_id: 'msg-1',
+            player_id: 'p1',
+            content: 'Reply 1',
+            created_at: '2026-01-01',
+          },
+          {
+            id: 'r2',
+            message_id: 'msg-1',
+            player_id: 'p2',
+            content: 'Reply 2',
+            created_at: '2026-01-02',
+          },
+        ]),
+      );
 
       const replies = await getAdminReplies('msg-1');
       expect(replies).toHaveLength(2);
       expect(replies[0].messageId).toBe('msg-1');
       expect(replies[0].content).toBe('Reply 1');
       expect(replies[1].playerId).toBe('p2');
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE message_id = $1'),
-        ['msg-1']
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE message_id = $1'), [
+        'msg-1',
+      ]);
     });
 
     it('returns empty array when no replies', async () => {
@@ -465,10 +555,10 @@ describe('adminQueries', () => {
 
       const id = await logAdminEvent('quest_created', { questId: 'q1' });
       expect(id).toBe(42);
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO admin_events'),
-        ['quest_created', JSON.stringify({ questId: 'q1' })]
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO admin_events'), [
+        'quest_created',
+        JSON.stringify({ questId: 'q1' }),
+      ]);
     });
 
     it('uses empty object for details when omitted', async () => {
@@ -483,28 +573,24 @@ describe('adminQueries', () => {
 
   describe('getAdminEvents', () => {
     it('returns events with default limit', async () => {
-      mockQuery.mockResolvedValueOnce(mockQueryResult([
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([
           { id: 1, action: 'quest_created', details: { questId: 'q1' }, created_at: '2026-01-01' },
-      ]));
+        ]),
+      );
 
       const events = await getAdminEvents();
       expect(events).toHaveLength(1);
       expect(events[0].action).toBe('quest_created');
       expect(events[0].details).toEqual({ questId: 'q1' });
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT $1'),
-        [100]
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('LIMIT $1'), [100]);
     });
 
     it('respects custom limit', async () => {
       mockQuery.mockResolvedValueOnce(mockQueryResult());
 
       await getAdminEvents(25);
-      expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT $1'),
-        [25]
-      );
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('LIMIT $1'), [25]);
     });
   });
 

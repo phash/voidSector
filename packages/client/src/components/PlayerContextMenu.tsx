@@ -2,8 +2,8 @@ import { useStore } from '../state/store';
 import type { ChatChannel } from '@void-sector/shared';
 
 export function PlayerContextMenu() {
-  const menu = useStore(s => s.contextMenu);
-  const close = useStore(s => s.closeContextMenu);
+  const menu = useStore((s) => s.contextMenu);
+  const close = useStore((s) => s.closeContextMenu);
 
   if (!menu) return null;
 
@@ -37,13 +37,15 @@ export function PlayerContextMenu() {
           fontSize: '0.7rem',
         }}
       >
-        <div style={{
-          padding: '2px 8px',
-          color: 'var(--color-primary)',
-          borderBottom: '1px solid var(--color-dim)',
-          marginBottom: 4,
-          fontWeight: 'bold',
-        }}>
+        <div
+          style={{
+            padding: '2px 8px',
+            color: 'var(--color-primary)',
+            borderBottom: '1px solid var(--color-dim)',
+            marginBottom: 4,
+            fontWeight: 'bold',
+          }}
+        >
           {menu.playerName}
         </div>
         <div
@@ -54,7 +56,12 @@ export function PlayerContextMenu() {
           NACHRICHT SENDEN
         </div>
         <div
-          style={{ padding: '4px 8px', color: 'var(--color-dim)', cursor: 'not-allowed', opacity: 0.5 }}
+          style={{
+            padding: '4px 8px',
+            color: 'var(--color-dim)',
+            cursor: 'not-allowed',
+            opacity: 0.5,
+          }}
         >
           VISITENKARTE (bald)
         </div>

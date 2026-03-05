@@ -41,20 +41,24 @@ function SettingsView() {
   const setColorProfile = useStore((s) => s.setColorProfile);
 
   return (
-    <div style={{
-      padding: '8px 12px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.65rem',
-      lineHeight: 1.5,
-      overflow: 'auto',
-    }}>
-      <div style={{
-        letterSpacing: '0.15em',
-        fontSize: '0.7rem',
-        marginBottom: 8,
-        borderBottom: '1px solid var(--color-dim)',
-        paddingBottom: 2,
-      }}>
+    <div
+      style={{
+        padding: '8px 12px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.65rem',
+        lineHeight: 1.5,
+        overflow: 'auto',
+      }}
+    >
+      <div
+        style={{
+          letterSpacing: '0.15em',
+          fontSize: '0.7rem',
+          marginBottom: 8,
+          borderBottom: '1px solid var(--color-dim)',
+          paddingBottom: 2,
+        }}
+      >
         SYSTEM-EINSTELLUNGEN
       </div>
 
@@ -64,19 +68,32 @@ function SettingsView() {
           value={colorProfile}
           onChange={(e) => setColorProfile(e.target.value as ColorProfileName)}
           style={{
-            display: 'block', marginTop: 4, width: '100%',
-            background: '#050505', border: '1px solid var(--color-primary)',
-            color: 'var(--color-primary)', fontFamily: 'var(--font-mono)',
-            padding: '4px 8px', fontSize: '0.7rem',
+            display: 'block',
+            marginTop: 4,
+            width: '100%',
+            background: '#050505',
+            border: '1px solid var(--color-primary)',
+            color: 'var(--color-primary)',
+            fontFamily: 'var(--font-mono)',
+            padding: '4px 8px',
+            fontSize: '0.7rem',
           }}
         >
           {Object.keys(COLOR_PROFILES).map((name) => (
-            <option key={name} value={name}>{name.toUpperCase()}</option>
+            <option key={name} value={name}>
+              {name.toUpperCase()}
+            </option>
           ))}
         </select>
       </div>
 
-      <div style={{ borderTop: '1px solid var(--color-dim)', paddingTop: 4, color: 'var(--color-dim)' }}>
+      <div
+        style={{
+          borderTop: '1px solid var(--color-dim)',
+          paddingTop: 4,
+          color: 'var(--color-dim)',
+        }}
+      >
         SYSTEMS: <span style={{ color: '#00FF88' }}>ONLINE</span>
       </div>
     </div>
@@ -106,7 +123,9 @@ function TechScreen() {
         <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
           <TechTreePanel />
         </div>
-        <div style={{ width: 320, minHeight: 0, overflow: 'auto', borderLeft: '2px solid #2a2a2a' }}>
+        <div
+          style={{ width: 320, minHeight: 0, overflow: 'auto', borderLeft: '2px solid #2a2a2a' }}
+        >
           <TechDetailPanel />
         </div>
       </div>
@@ -123,7 +142,9 @@ function BaseSplitScreen() {
         <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
           <BaseOverview />
         </div>
-        <div style={{ width: 320, minHeight: 0, overflow: 'auto', borderLeft: '2px solid #2a2a2a' }}>
+        <div
+          style={{ width: 320, minHeight: 0, overflow: 'auto', borderLeft: '2px solid #2a2a2a' }}
+        >
           <BaseDetailPanel />
         </div>
       </div>
@@ -137,15 +158,17 @@ function NavComScreen() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {q && (
-        <div style={{
-          padding: '2px 6px',
-          fontSize: '0.65rem',
-          color: 'var(--color-dim)',
-          borderBottom: '1px solid var(--color-dim)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}>
+        <div
+          style={{
+            padding: '2px 6px',
+            fontSize: '0.65rem',
+            color: 'var(--color-dim)',
+            borderBottom: '1px solid var(--color-dim)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           [{q.qx}][{q.qy}]{q.name ? ` ${q.name}` : ''}
         </div>
       )}
@@ -164,21 +187,36 @@ function NavComScreen() {
 
 function renderScreen(monitorId: string) {
   switch (monitorId) {
-    case MONITORS.NAV_COM: return <NavComScreen />;
-    case MONITORS.LOG: return <EventLog />;
-    case MONITORS.SHIP_SYS: return <ShipSysScreen />;
-    case MONITORS.MINING: return <MiningScreen />;
-    case MONITORS.CARGO: return <CargoScreen />;
-    case MONITORS.COMMS: return <CommsScreen />;
-    case MONITORS.BASE_LINK: return <BaseSplitScreen />;
-    case MONITORS.TRADE: return <TradeScreen />;
-    case MONITORS.FACTION: return <FactionScreen />;
-    case MONITORS.QUESTS: return <QuestsScreen />;
-    case MONITORS.TECH: return <TechScreen />;
-    case MONITORS.QUAD_MAP: return <QuadMapScreen />;
-    case 'MODULES': return <ModulePanel />;
-    case 'HANGAR': return <HangarPanel />;
-    default: return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
+    case MONITORS.NAV_COM:
+      return <NavComScreen />;
+    case MONITORS.LOG:
+      return <EventLog />;
+    case MONITORS.SHIP_SYS:
+      return <ShipSysScreen />;
+    case MONITORS.MINING:
+      return <MiningScreen />;
+    case MONITORS.CARGO:
+      return <CargoScreen />;
+    case MONITORS.COMMS:
+      return <CommsScreen />;
+    case MONITORS.BASE_LINK:
+      return <BaseSplitScreen />;
+    case MONITORS.TRADE:
+      return <TradeScreen />;
+    case MONITORS.FACTION:
+      return <FactionScreen />;
+    case MONITORS.QUESTS:
+      return <QuestsScreen />;
+    case MONITORS.TECH:
+      return <TechScreen />;
+    case MONITORS.QUAD_MAP:
+      return <QuadMapScreen />;
+    case 'MODULES':
+      return <ModulePanel />;
+    case 'HANGAR':
+      return <HangarPanel />;
+    default:
+      return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
 }
 
@@ -187,15 +225,17 @@ function CockpitNavCom() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {q && (
-        <div style={{
-          padding: '2px 6px',
-          fontSize: '0.65rem',
-          color: 'var(--color-dim)',
-          borderBottom: '1px solid var(--color-dim)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}>
+        <div
+          style={{
+            padding: '2px 6px',
+            fontSize: '0.65rem',
+            color: 'var(--color-dim)',
+            borderBottom: '1px solid var(--color-dim)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           [{q.qx}][{q.qy}]{q.name ? ` ${q.name}` : ''}
         </div>
       )}
@@ -212,10 +252,14 @@ function CockpitNavCom() {
 /** Simplified renderScreen for cockpit layout — no embedded controls/details */
 function renderCockpitScreen(monitorId: string) {
   switch (monitorId) {
-    case MONITORS.NAV_COM: return <CockpitNavCom />;
-    case MONITORS.TECH: return <TechTreePanel />;
-    case MONITORS.BASE_LINK: return <BaseOverview />;
-    default: return renderScreen(monitorId);
+    case MONITORS.NAV_COM:
+      return <CockpitNavCom />;
+    case MONITORS.TECH:
+      return <TechTreePanel />;
+    case MONITORS.BASE_LINK:
+      return <BaseOverview />;
+    default:
+      return renderScreen(monitorId);
   }
 }
 
@@ -242,9 +286,7 @@ export function GameScreen() {
       <CockpitLayout renderScreen={renderCockpitScreen} />
 
       {/* Mobile content (< 1024px): full-screen active monitor */}
-      <div className="mobile-content">
-        {renderScreen(activeMonitor)}
-      </div>
+      <div className="mobile-content">{renderScreen(activeMonitor)}</div>
 
       {/* Mobile tabs (< 1024px) — context-aware via useMobileTabs() */}
       <div className="mobile-tabs" data-testid="mobile-tabs">

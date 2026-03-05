@@ -34,8 +34,8 @@ export function NavTargetPanel() {
 
   const targetX = parseInt(inputX, 10);
   const targetY = parseInt(inputY, 10);
-  const hasValidTarget = !isNaN(targetX) && !isNaN(targetY) &&
-    !(targetX === position.x && targetY === position.y);
+  const hasValidTarget =
+    !isNaN(targetX) && !isNaN(targetY) && !(targetX === position.x && targetY === position.y);
 
   const distance = hasValidTarget
     ? Math.abs(targetX - position.x) + Math.abs(targetY - position.y)
@@ -44,14 +44,14 @@ export function NavTargetPanel() {
   // Simple cost preview (client-side estimate)
   const estimatedAP = distance; // 1 AP per sector for normal mode
   const estimatedFuel = useHyperjump ? Math.ceil(distance * 0.5) : 0;
-  const estimatedTimeSec = useHyperjump
-    ? Math.ceil(distance / 3) * 2
-    : distance * 3;
+  const estimatedTimeSec = useHyperjump ? Math.ceil(distance / 3) * 2 : distance * 3;
 
-  const isTargetDiscovered = hasValidTarget &&
-    discoveries[`${targetX}:${targetY}`] !== undefined;
+  const isTargetDiscovered = hasValidTarget && discoveries[`${targetX}:${targetY}`] !== undefined;
 
-  const canEngage = hasValidTarget && isTargetDiscovered && !autopilot?.active &&
+  const canEngage =
+    hasValidTarget &&
+    isTargetDiscovered &&
+    !autopilot?.active &&
     (ap?.current ?? 0) >= 1 &&
     (!useHyperjump || (fuel?.current ?? 0) >= 1);
 
@@ -94,7 +94,14 @@ export function NavTargetPanel() {
       {/* Active autopilot display */}
       {isActive && autopilotStatus && (
         <div style={activeBlockStyle}>
-          <div style={{ color: '#FFB000', letterSpacing: '0.15em', marginBottom: 6, fontSize: '0.85rem' }}>
+          <div
+            style={{
+              color: '#FFB000',
+              letterSpacing: '0.15em',
+              marginBottom: 6,
+              fontSize: '0.85rem',
+            }}
+          >
             AUTOPILOT AKTIV
           </div>
           <div style={{ fontSize: '0.8rem', marginBottom: 4 }}>
@@ -122,7 +129,14 @@ export function NavTargetPanel() {
       {/* Paused autopilot display */}
       {isPaused && !isActive && (
         <div style={{ ...activeBlockStyle, borderColor: '#FF6644' }}>
-          <div style={{ color: '#FF6644', letterSpacing: '0.15em', marginBottom: 6, fontSize: '0.85rem' }}>
+          <div
+            style={{
+              color: '#FF6644',
+              letterSpacing: '0.15em',
+              marginBottom: 6,
+              fontSize: '0.85rem',
+            }}
+          >
             AUTOPILOT PAUSIERT
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-dim)', marginBottom: 4 }}>
@@ -191,7 +205,8 @@ export function NavTargetPanel() {
                 <option value="">-- Lesezeichen --</option>
                 {bookmarks.map((bm) => (
                   <option key={bm.slot} value={`${bm.sectorX},${bm.sectorY}`}>
-                    {bm.label || `(${innerCoord(bm.sectorX)}, ${innerCoord(bm.sectorY)})`} [Slot {bm.slot}]
+                    {bm.label || `(${innerCoord(bm.sectorX)}, ${innerCoord(bm.sectorY)})`} [Slot{' '}
+                    {bm.slot}]
                   </option>
                 ))}
               </select>
@@ -220,11 +235,11 @@ export function NavTargetPanel() {
           {hasValidTarget && (
             <div style={costPreviewStyle}>
               <div style={{ marginBottom: 2 }}>Distanz: {distance} Sektoren</div>
-              <div>AP: ~{estimatedAP} | Fuel: ~{estimatedFuel} | Zeit: ~{estimatedTimeSec}s</div>
+              <div>
+                AP: ~{estimatedAP} | Fuel: ~{estimatedFuel} | Zeit: ~{estimatedTimeSec}s
+              </div>
               {!isTargetDiscovered && (
-                <div style={{ color: '#FF3333', marginTop: 4 }}>
-                  Ziel nicht entdeckt!
-                </div>
+                <div style={{ color: '#FF3333', marginTop: 4 }}>Ziel nicht entdeckt!</div>
               )}
             </div>
           )}
@@ -251,7 +266,7 @@ export function NavTargetPanel() {
 
 const panelStyle: React.CSSProperties = {
   padding: '8px 10px',
-  fontFamily: '\'Share Tech Mono\', \'Courier New\', monospace',
+  fontFamily: "'Share Tech Mono', 'Courier New', monospace",
   fontSize: '0.8rem',
   color: '#FFB000',
   background: 'rgba(0, 0, 0, 0.3)',
@@ -284,7 +299,7 @@ const inputStyle: React.CSSProperties = {
   background: '#0a0a0a',
   border: '1px solid #FFB00044',
   color: '#FFB000',
-  fontFamily: '\'Share Tech Mono\', \'Courier New\', monospace',
+  fontFamily: "'Share Tech Mono', 'Courier New', monospace",
   fontSize: '0.8rem',
   padding: '2px 4px',
   textAlign: 'center',
@@ -294,7 +309,7 @@ const selectStyle: React.CSSProperties = {
   background: '#0a0a0a',
   border: '1px solid #FFB00044',
   color: '#FFB000',
-  fontFamily: '\'Share Tech Mono\', \'Courier New\', monospace',
+  fontFamily: "'Share Tech Mono', 'Courier New', monospace",
   fontSize: '0.75rem',
   padding: '2px 4px',
   maxWidth: '100%',

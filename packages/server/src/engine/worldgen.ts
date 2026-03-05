@@ -1,6 +1,33 @@
-import { WORLD_SEED, SECTOR_RESOURCE_YIELDS, ANCIENT_STATION_CHANCE, NEBULA_ZONE_GRID, NEBULA_ZONE_CHANCE, NEBULA_ZONE_MIN_RADIUS, NEBULA_ZONE_MAX_RADIUS, NEBULA_SAFE_ORIGIN, BLACK_HOLE_SPAWN_CHANCE, BLACK_HOLE_MIN_DISTANCE, BLACK_HOLE_CLUSTER_GRID, BLACK_HOLE_CLUSTER_CHANCE, BLACK_HOLE_CLUSTER_MIN_RADIUS, BLACK_HOLE_CLUSTER_MAX_RADIUS, ENVIRONMENT_WEIGHTS, CONTENT_WEIGHTS, NEBULA_CONTENT_ENABLED } from '@void-sector/shared';
+import {
+  WORLD_SEED,
+  SECTOR_RESOURCE_YIELDS,
+  ANCIENT_STATION_CHANCE,
+  NEBULA_ZONE_GRID,
+  NEBULA_ZONE_CHANCE,
+  NEBULA_ZONE_MIN_RADIUS,
+  NEBULA_ZONE_MAX_RADIUS,
+  NEBULA_SAFE_ORIGIN,
+  BLACK_HOLE_SPAWN_CHANCE,
+  BLACK_HOLE_MIN_DISTANCE,
+  BLACK_HOLE_CLUSTER_GRID,
+  BLACK_HOLE_CLUSTER_CHANCE,
+  BLACK_HOLE_CLUSTER_MIN_RADIUS,
+  BLACK_HOLE_CLUSTER_MAX_RADIUS,
+  ENVIRONMENT_WEIGHTS,
+  CONTENT_WEIGHTS,
+  NEBULA_CONTENT_ENABLED,
+} from '@void-sector/shared';
 import { legacySectorType } from '@void-sector/shared';
-import type { SectorData, SectorType, SectorResources, MineableResourceType, SectorEnvironment, SectorContent, QuadrantConfig, BlackHoleCluster } from '@void-sector/shared';
+import type {
+  SectorData,
+  SectorType,
+  SectorResources,
+  MineableResourceType,
+  SectorEnvironment,
+  SectorContent,
+  QuadrantConfig,
+  BlackHoleCluster,
+} from '@void-sector/shared';
 
 /**
  * Simple deterministic hash for coordinates.
@@ -63,7 +90,9 @@ export function isInNebulaZone(x: number, y: number): boolean {
 
       if (roll < NEBULA_ZONE_CHANCE) {
         const radiusFraction = hashSecondary(centerSeed);
-        const radius = NEBULA_ZONE_MIN_RADIUS + radiusFraction * (NEBULA_ZONE_MAX_RADIUS - NEBULA_ZONE_MIN_RADIUS);
+        const radius =
+          NEBULA_ZONE_MIN_RADIUS +
+          radiusFraction * (NEBULA_ZONE_MAX_RADIUS - NEBULA_ZONE_MIN_RADIUS);
         const dx = x - cx;
         const dy = y - cy;
         if (dx * dx + dy * dy < radius * radius) return true;
@@ -100,7 +129,8 @@ export function isInBlackHoleCluster(x: number, y: number): BlackHoleCluster | n
 
       if (roll < BLACK_HOLE_CLUSTER_CHANCE) {
         const radiusFraction = hashSecondary(centerSeed);
-        const radius = BLACK_HOLE_CLUSTER_MIN_RADIUS +
+        const radius =
+          BLACK_HOLE_CLUSTER_MIN_RADIUS +
           radiusFraction * (BLACK_HOLE_CLUSTER_MAX_RADIUS - BLACK_HOLE_CLUSTER_MIN_RADIUS);
         const dx = x - cx;
         const dy = y - cy;
@@ -181,18 +211,14 @@ function generateResources(type: SectorType, seed: number): SectorResources {
     const res = types[i];
     if (base[res] === 0) continue;
     // Use seed bits to vary ±30%
-    const variation = ((seed >>> (i * 8)) & 0xFF) / 255; // 0..1
+    const variation = ((seed >>> (i * 8)) & 0xff) / 255; // 0..1
     const factor = 0.7 + variation * 0.6; // 0.7..1.3
     resources[res] = Math.round(base[res] * factor);
   }
   return resources;
 }
 
-export function generateSector(
-  x: number,
-  y: number,
-  discoveredBy: string | null
-): SectorData {
+export function generateSector(x: number, y: number, discoveredBy: string | null): SectorData {
   const seed = hashCoords(x, y, WORLD_SEED);
 
   // Stage 1: Roll environment
@@ -201,7 +227,9 @@ export function generateSector(
   // Black holes are impassable with no content or resources
   if (environment === 'black_hole') {
     return {
-      x, y, seed,
+      x,
+      y,
+      seed,
       environment,
       contents: [],
       type: 'empty',
@@ -229,7 +257,9 @@ export function generateSector(
   }
 
   return {
-    x, y, seed,
+    x,
+    y,
+    seed,
     environment,
     contents,
     type,
@@ -244,7 +274,10 @@ export function generateSector(
  * Apply quadrant-level resource scaling to sector resources.
  * Pure function — does not modify the input.
  */
-export function applyQuadrantFactors(resources: SectorResources, config: QuadrantConfig): SectorResources {
+export function applyQuadrantFactors(
+  resources: SectorResources,
+  config: QuadrantConfig,
+): SectorResources {
   return {
     ore: Math.round(resources.ore * config.resourceFactor),
     gas: Math.round(resources.gas * config.resourceFactor),

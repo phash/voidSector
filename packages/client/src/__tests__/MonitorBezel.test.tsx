@@ -16,7 +16,7 @@ describe('MonitorBezel', () => {
     render(
       <MonitorBezel monitorId="TEST">
         <div data-testid="child">Hello</div>
-      </MonitorBezel>
+      </MonitorBezel>,
     );
     expect(screen.getByTestId('child')).toBeInTheDocument();
     expect(screen.getByTestId('child')).toHaveTextContent('Hello');
@@ -26,7 +26,7 @@ describe('MonitorBezel', () => {
     render(
       <MonitorBezel monitorId="NAV-COM">
         <div>content</div>
-      </MonitorBezel>
+      </MonitorBezel>,
     );
     expect(screen.getByText('NAV-COM')).toBeInTheDocument();
   });
@@ -35,7 +35,7 @@ describe('MonitorBezel', () => {
     render(
       <MonitorBezel monitorId="TEST">
         <div>content</div>
-      </MonitorBezel>
+      </MonitorBezel>,
     );
     expect(screen.getByText('PAN')).toBeInTheDocument();
     expect(screen.getByText('ZOOM')).toBeInTheDocument();
@@ -46,7 +46,7 @@ describe('MonitorBezel', () => {
     render(
       <MonitorBezel monitorId="TEST">
         <div>content</div>
-      </MonitorBezel>
+      </MonitorBezel>,
     );
     expect(screen.getByText('[?]')).toBeInTheDocument();
   });
@@ -55,7 +55,7 @@ describe('MonitorBezel', () => {
     render(
       <MonitorBezel monitorId="TEST">
         <div>content</div>
-      </MonitorBezel>
+      </MonitorBezel>,
     );
     await userEvent.click(screen.getByText('[?]'));
     expect(screen.getByText('RADAR LEGEND')).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('MonitorBezel', () => {
     render(
       <MonitorBezel monitorId="SHIP-SYS">
         <div>content</div>
-      </MonitorBezel>
+      </MonitorBezel>,
     );
     expect(screen.getByText('PWR')).toBeInTheDocument();
     expect(screen.getByText('FUEL')).toBeInTheDocument();

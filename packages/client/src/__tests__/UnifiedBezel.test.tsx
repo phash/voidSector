@@ -44,7 +44,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="COMMS">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const bezel = screen.getByTestId('unified-bezel-COMMS');
       expect(bezel.className).toContain('unified-bezel-sidebar');
@@ -54,7 +54,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="main" monitorId="NAV-COM">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const bezel = screen.getByTestId('unified-bezel-NAV-COM');
       expect(bezel.className).toContain('unified-bezel-main');
@@ -64,7 +64,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div data-testid="child">Test content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.getByTestId('child')).toHaveTextContent('Test content');
     });
@@ -73,9 +73,11 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="SHIP-SYS">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
-      expect(screen.getByText('SHIP-SYS', { selector: '.unified-bezel-program-label' })).toBeDefined();
+      expect(
+        screen.getByText('SHIP-SYS', { selector: '.unified-bezel-program-label' }),
+      ).toBeDefined();
     });
   });
 
@@ -86,7 +88,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.queryByTestId('unified-bezel-off-screen')).toBeNull();
     });
@@ -96,7 +98,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.getByTestId('unified-bezel-off-screen')).toBeDefined();
       expect(screen.getByText('DISPLAY OFF')).toBeDefined();
@@ -107,12 +109,14 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const powerBtn = screen.getByRole('button', { name: 'Monitor power' });
       fireEvent.click(powerBtn);
       // After shutdown animation
-      act(() => { vi.advanceTimersByTime(500); });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
       const state = useStore.getState();
       expect(state.monitorPower['LOG']).toBe(false);
       vi.useRealTimers();
@@ -123,7 +127,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const powerBtn = screen.getByRole('button', { name: 'Monitor power' });
       fireEvent.click(powerBtn);
@@ -135,7 +139,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const led = screen.getByTestId('unified-bezel-power-led');
       // jsdom normalises hex to rgb
@@ -147,7 +151,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const led = screen.getByTestId('unified-bezel-power-led');
       expect(led.style.backgroundColor).toBe('rgb(255, 176, 0)');
@@ -167,7 +171,7 @@ describe('UnifiedBezel', () => {
           onModeChange={vi.fn()}
         >
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.getByTestId('unified-bezel-mode-label')).toHaveTextContent('DIRECT');
     });
@@ -183,7 +187,7 @@ describe('UnifiedBezel', () => {
           onModeChange={onModeChange}
         >
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       fireEvent.click(screen.getByRole('button', { name: 'Next mode' }));
       expect(onModeChange).toHaveBeenCalledWith('faction');
@@ -200,7 +204,7 @@ describe('UnifiedBezel', () => {
           onModeChange={onModeChange}
         >
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       fireEvent.click(screen.getByRole('button', { name: 'Previous mode' }));
       expect(onModeChange).toHaveBeenCalledWith('quadrant');
@@ -217,7 +221,7 @@ describe('UnifiedBezel', () => {
           onModeChange={onModeChange}
         >
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       fireEvent.click(screen.getByRole('button', { name: 'Next mode' }));
       expect(onModeChange).toHaveBeenCalledWith('direct');
@@ -225,14 +229,9 @@ describe('UnifiedBezel', () => {
 
     it('does not show < > buttons for single mode', () => {
       render(
-        <UnifiedBezel
-          variant="sidebar"
-          monitorId="LOG"
-          modes={['default']}
-          currentMode="default"
-        >
+        <UnifiedBezel variant="sidebar" monitorId="LOG" modes={['default']} currentMode="default">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.queryByRole('button', { name: 'Next mode' })).toBeNull();
       expect(screen.queryByRole('button', { name: 'Previous mode' })).toBeNull();
@@ -246,7 +245,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.getByTestId('unified-bezel-chrome-top')).toBeDefined();
       expect(screen.getByTestId('unified-bezel-chrome-bottom')).toBeDefined();
@@ -257,7 +256,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.queryByTestId('unified-bezel-chrome-top')).toBeNull();
       expect(screen.queryByTestId('unified-bezel-chrome-bottom')).toBeNull();
@@ -268,7 +267,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const restoreBtn = screen.getByRole('button', { name: 'Toggle chrome' });
       expect(restoreBtn).toBeDefined();
@@ -279,7 +278,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG">
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       // Chrome is visible, button shows [_]
       const toggleBtn = screen.getByTitle('Hide chrome bars');
@@ -296,7 +295,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="COMMS" alert={true}>
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const bezel = screen.getByTestId('unified-bezel-COMMS');
       expect(bezel.className).toContain('unified-bezel-alert');
@@ -306,7 +305,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="COMMS" alert={false}>
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const bezel = screen.getByTestId('unified-bezel-COMMS');
       expect(bezel.className).not.toContain('unified-bezel-alert');
@@ -320,7 +319,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="main" monitorId="NAV-COM" showZoomSlider>
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.getByTestId('unified-bezel-zoom')).toBeDefined();
       expect(screen.getByRole('slider', { name: 'Zoom level' })).toBeDefined();
@@ -330,7 +329,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="sidebar" monitorId="LOG" showZoomSlider>
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.queryByTestId('unified-bezel-zoom')).toBeNull();
     });
@@ -339,7 +338,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="main" monitorId="NAV-COM" showNavControls>
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.getByTestId('unified-bezel-pan-arrows')).toBeDefined();
       expect(screen.getByRole('button', { name: 'Pan up' })).toBeDefined();
@@ -352,7 +351,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="main" monitorId="NAV-COM" showNavControls>
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       expect(screen.getByRole('button', { name: 'Toggle auto-follow' })).toBeDefined();
     });
@@ -361,7 +360,7 @@ describe('UnifiedBezel', () => {
       render(
         <UnifiedBezel variant="main" monitorId="NAV-COM" showZoomSlider>
           <div>content</div>
-        </UnifiedBezel>
+        </UnifiedBezel>,
       );
       const slider = screen.getByRole('slider', { name: 'Zoom level' });
       fireEvent.change(slider, { target: { value: '3' } });

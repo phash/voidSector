@@ -28,7 +28,17 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 5, y: 5 },
-      currentSector: { x: 5, y: 5, type: 'empty', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: [] },
+      currentSector: {
+        x: 5,
+        y: 5,
+        type: 'empty',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: [],
+      },
     });
     render(<TradeScreen />);
     expect(screen.getByText(/KEIN HANDEL/)).toBeTruthy();
@@ -61,7 +71,17 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
-      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      currentSector: {
+        x: 10,
+        y: 10,
+        type: 'station',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['station' as const],
+      },
       credits: 200,
       cargo: { ore: 3, gas: 1, crystal: 0, slates: 0, artefact: 0 },
       npcStationData: null,
@@ -76,7 +96,17 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
-      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      currentSector: {
+        x: 10,
+        y: 10,
+        type: 'station',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['station' as const],
+      },
       credits: 200,
       cargo: { ore: 3, gas: 1, crystal: 0, slates: 0, artefact: 0 },
       npcStationData: {
@@ -126,7 +156,17 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [{ id: 'tp1', type: 'trading_post', tier: 3, sector_x: 0, sector_y: 0 }],
       position: { x: 10, y: 10 },
-      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      currentSector: {
+        x: 10,
+        y: 10,
+        type: 'station',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['station' as const],
+      },
       credits: 500,
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
     });
@@ -139,11 +179,29 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
-      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      currentSector: {
+        x: 10,
+        y: 10,
+        type: 'station',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['station' as const],
+      },
       credits: 200,
       cargo: { ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       kontorOrders: [
-        { id: 'ko1', ownerId: 'other-player', itemType: 'ore', amountWanted: 500, amountFilled: 210, pricePerUnit: 2, active: true },
+        {
+          id: 'ko1',
+          ownerId: 'other-player',
+          itemType: 'ore',
+          amountWanted: 500,
+          amountFilled: 210,
+          pricePerUnit: 2,
+          active: true,
+        },
       ],
     });
     render(<TradeScreen />);
@@ -154,7 +212,17 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
-      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      currentSector: {
+        x: 10,
+        y: 10,
+        type: 'station',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['station' as const],
+      },
       credits: 200,
       cargo: { ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       kontorOrders: [],
@@ -167,12 +235,38 @@ describe('TradeScreen', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
-      currentSector: { x: 10, y: 10, type: 'station', seed: 42, discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty' as const, contents: ['station' as const] },
+      currentSector: {
+        x: 10,
+        y: 10,
+        type: 'station',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['station' as const],
+      },
       credits: 200,
       cargo: { ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       kontorOrders: [
-        { id: 'ko1', ownerId: 'test-id', itemType: 'ore', amountWanted: 500, amountFilled: 0, pricePerUnit: 2, active: true },
-        { id: 'ko2', ownerId: 'other-player', itemType: 'gas', amountWanted: 200, amountFilled: 0, pricePerUnit: 5, active: true },
+        {
+          id: 'ko1',
+          ownerId: 'test-id',
+          itemType: 'ore',
+          amountWanted: 500,
+          amountFilled: 0,
+          pricePerUnit: 2,
+          active: true,
+        },
+        {
+          id: 'ko2',
+          ownerId: 'other-player',
+          itemType: 'gas',
+          amountWanted: 200,
+          amountFilled: 0,
+          pricePerUnit: 5,
+          active: true,
+        },
       ],
     });
     render(<TradeScreen />);

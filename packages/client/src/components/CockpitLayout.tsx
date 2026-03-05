@@ -26,14 +26,22 @@ interface CockpitLayoutProps {
 
 function getDetailForProgram(programId: string): ReactNode {
   switch (programId) {
-    case 'NAV-COM': return <DetailPanel />;
-    case 'TECH': return <TechDetailPanel />;
-    case 'BASE-LINK': return <BaseDetailPanel />;
-    case 'CARGO': return <CargoDetailPanel />;
-    case 'TRADE': return <TradeDetailPanel />;
-    case 'MINING': return <MiningDetailPanel />;
-    case 'QUESTS': return <QuestDetailPanel />;
-    default: return <TestPattern />;
+    case 'NAV-COM':
+      return <DetailPanel />;
+    case 'TECH':
+      return <TechDetailPanel />;
+    case 'BASE-LINK':
+      return <BaseDetailPanel />;
+    case 'CARGO':
+      return <CargoDetailPanel />;
+    case 'TRADE':
+      return <TradeDetailPanel />;
+    case 'MINING':
+      return <MiningDetailPanel />;
+    case 'QUESTS':
+      return <QuestDetailPanel />;
+    default:
+      return <TestPattern />;
   }
 }
 
@@ -52,10 +60,18 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   const handleMainDpad = (dir: 'up' | 'down' | 'left' | 'right') => {
     const step = 2;
     switch (dir) {
-      case 'up': setPanOffset({ x: panOffset.x, y: panOffset.y - step }); break;
-      case 'down': setPanOffset({ x: panOffset.x, y: panOffset.y + step }); break;
-      case 'left': setPanOffset({ x: panOffset.x - step, y: panOffset.y }); break;
-      case 'right': setPanOffset({ x: panOffset.x + step, y: panOffset.y }); break;
+      case 'up':
+        setPanOffset({ x: panOffset.x, y: panOffset.y - step });
+        break;
+      case 'down':
+        setPanOffset({ x: panOffset.x, y: panOffset.y + step });
+        break;
+      case 'left':
+        setPanOffset({ x: panOffset.x - step, y: panOffset.y });
+        break;
+      case 'right':
+        setPanOffset({ x: panOffset.x + step, y: panOffset.y });
+        break;
     }
   };
 

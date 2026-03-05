@@ -5,7 +5,7 @@ export function euclideanDistance(x1: number, y1: number, x2: number, y2: number
 export function canCommunicate(
   playerA: { x: number; y: number; commRange: number },
   playerB: { x: number; y: number; commRange: number },
-  relays: Array<{ x: number; y: number; range: number }>
+  relays: Array<{ x: number; y: number; range: number }>,
 ): boolean {
   const directDist = euclideanDistance(playerA.x, playerA.y, playerB.x, playerB.y);
   if (directDist <= playerA.commRange + playerB.commRange) {

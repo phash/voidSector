@@ -93,7 +93,12 @@ describe('BaseScreen', () => {
         { id: 'f1', type: 'factory', tier: 1, sector_x: 0, sector_y: 0 },
       ],
       factoryState: {
-        activeRecipe: { id: 'alloy_plate_basic', outputItem: 'alloy_plate', outputAmount: 1, cycleSeconds: 180 },
+        activeRecipe: {
+          id: 'alloy_plate_basic',
+          outputItem: 'alloy_plate',
+          outputAmount: 1,
+          cycleSeconds: 180,
+        },
         progress: 0.6,
         completedCycles: 3,
         output: { alloy_plate: 3, fuel_cell: 0 },
@@ -128,9 +133,7 @@ describe('BaseScreen', () => {
 
   it('does not show factory section when no factory built', () => {
     mockStoreState({
-      baseStructures: [
-        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
-      ],
+      baseStructures: [{ id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 }],
       credits: 0,
     });
     render(<BaseScreen />);
@@ -144,7 +147,15 @@ describe('BaseScreen', () => {
         { id: 'k1', type: 'kontor', tier: 1, sector_x: 0, sector_y: 0 },
       ],
       kontorOrders: [
-        { id: 'o1', ownerId: 'test-id', itemType: 'ore', amountWanted: 500, amountFilled: 210, pricePerUnit: 2, active: true },
+        {
+          id: 'o1',
+          ownerId: 'test-id',
+          itemType: 'ore',
+          amountWanted: 500,
+          amountFilled: 210,
+          pricePerUnit: 2,
+          active: true,
+        },
       ],
       credits: 100,
     });
@@ -158,9 +169,7 @@ describe('BaseScreen', () => {
 
   it('does not show kontor section when no kontor built', () => {
     mockStoreState({
-      baseStructures: [
-        { id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 },
-      ],
+      baseStructures: [{ id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 }],
       credits: 0,
     });
     render(<BaseScreen />);

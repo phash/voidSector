@@ -18,7 +18,9 @@ const DEFAULT_BONUSES: FactionBonuses = {
   tradePriceMultiplier: 1.0,
 };
 
-export function calculateBonuses(upgrades: Array<{ tier: number; choice: FactionUpgradeChoice }>): FactionBonuses {
+export function calculateBonuses(
+  upgrades: Array<{ tier: number; choice: FactionUpgradeChoice }>,
+): FactionBonuses {
   const bonuses = { ...DEFAULT_BONUSES };
 
   for (const u of upgrades) {

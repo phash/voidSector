@@ -62,16 +62,24 @@ describe('resolveStationCombat', () => {
 
   it('shield absorbs pirate damage', () => {
     const withShield = resolveStationCombat({
-      stationHp: 500, stationMaxHp: 500,
-      stationShieldHp: 150, stationShieldRegen: 10,
-      turretDamage: 15, ionCannonDamage: 0,
-      pirateLevel: 5, seed: 42,
+      stationHp: 500,
+      stationMaxHp: 500,
+      stationShieldHp: 150,
+      stationShieldRegen: 10,
+      turretDamage: 15,
+      ionCannonDamage: 0,
+      pirateLevel: 5,
+      seed: 42,
     });
     const withoutShield = resolveStationCombat({
-      stationHp: 500, stationMaxHp: 500,
-      stationShieldHp: 0, stationShieldRegen: 0,
-      turretDamage: 15, ionCannonDamage: 0,
-      pirateLevel: 5, seed: 42,
+      stationHp: 500,
+      stationMaxHp: 500,
+      stationShieldHp: 0,
+      stationShieldRegen: 0,
+      turretDamage: 15,
+      ionCannonDamage: 0,
+      pirateLevel: 5,
+      seed: 42,
     });
     expect(withShield.hpLost).toBeLessThanOrEqual(withoutShield.hpLost);
   });

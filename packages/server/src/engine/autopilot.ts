@@ -1,5 +1,11 @@
 import type { Coords, ShipStats } from '@void-sector/shared';
-import { HYPERJUMP_FUEL_PER_SECTOR, HULL_FUEL_MULTIPLIER, HYPERJUMP_BASE_AP, HYPERJUMP_AP_PER_SPEED, HYPERJUMP_MIN_AP } from '@void-sector/shared';
+import {
+  HYPERJUMP_FUEL_PER_SECTOR,
+  HULL_FUEL_MULTIPLIER,
+  HYPERJUMP_BASE_AP,
+  HYPERJUMP_AP_PER_SPEED,
+  HYPERJUMP_MIN_AP,
+} from '@void-sector/shared';
 
 /**
  * Autopilot Engine — pure functions for path calculation, cost estimation,
@@ -102,8 +108,10 @@ function bfsDetour(
 
   const queue: BfsNode[] = [start];
   const dirs = [
-    { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
-    { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+    { dx: 1, dy: 0 },
+    { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: 0, dy: -1 },
   ];
 
   while (queue.length > 0) {
@@ -115,7 +123,8 @@ function bfsDetour(
       const key = `${nx},${ny}`;
 
       if (visited.has(key)) continue;
-      if (Math.abs(nx - current.x) > MAX_BFS_RANGE || Math.abs(ny - current.y) > MAX_BFS_RANGE) continue;
+      if (Math.abs(nx - current.x) > MAX_BFS_RANGE || Math.abs(ny - current.y) > MAX_BFS_RANGE)
+        continue;
       if (isBlackHole(nx, ny)) {
         visited.add(key);
         continue;
@@ -189,7 +198,8 @@ export function calculateAutopilotCosts(
   // Fuel: total fuel cost based on hull multiplier and efficiency
   const hullType = getHullTypeFromStats(shipStats);
   const hullMul = hullType ? HULL_FUEL_MULTIPLIER[hullType] : 1.0;
-  const rawFuel = HYPERJUMP_FUEL_PER_SECTOR * totalSteps * hullMul * (1 - shipStats.hyperdriveFuelEfficiency);
+  const rawFuel =
+    HYPERJUMP_FUEL_PER_SECTOR * totalSteps * hullMul * (1 - shipStats.hyperdriveFuelEfficiency);
   const totalFuel = Math.max(1, Math.ceil(rawFuel));
 
   // AP: one AP charge per batch
@@ -211,7 +221,8 @@ function getHullTypeFromStats(stats: ShipStats): keyof typeof HULL_FUEL_MULTIPLI
   // Best-effort match by checking fuelMax ranges
   // This is a heuristic; in practice the server knows the hull type
   for (const [hull, mul] of Object.entries(HULL_FUEL_MULTIPLIER)) {
-    if (mul === 1.0 && stats.fuelMax >= 140 && stats.fuelMax <= 160) return hull as keyof typeof HULL_FUEL_MULTIPLIER;
+    if (mul === 1.0 && stats.fuelMax >= 140 && stats.fuelMax <= 160)
+      return hull as keyof typeof HULL_FUEL_MULTIPLIER;
   }
   return null;
 }

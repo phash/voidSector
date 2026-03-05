@@ -124,9 +124,12 @@ export function UnifiedBezel({
   }, [modes, currentMode, onModeChange]);
 
   // Pan arrow handlers (main variant only)
-  const handlePan = useCallback((dx: number, dy: number) => {
-    setPanOffset({ x: panOffset.x + dx, y: panOffset.y + dy });
-  }, [panOffset, setPanOffset]);
+  const handlePan = useCallback(
+    (dx: number, dy: number) => {
+      setPanOffset({ x: panOffset.x + dx, y: panOffset.y + dy });
+    },
+    [panOffset, setPanOffset],
+  );
 
   const isMain = variant === 'main';
   const hasModes = modes && modes.length > 1;
@@ -168,22 +171,30 @@ export function UnifiedBezel({
               className="unified-bezel-pan-btn"
               onClick={() => handlePan(0, -2)}
               aria-label="Pan up"
-            >^</button>
+            >
+              ^
+            </button>
             <button
               className="unified-bezel-pan-btn"
               onClick={() => handlePan(-2, 0)}
               aria-label="Pan left"
-            >&lt;</button>
+            >
+              &lt;
+            </button>
             <button
               className="unified-bezel-pan-btn"
               onClick={() => handlePan(2, 0)}
               aria-label="Pan right"
-            >&gt;</button>
+            >
+              &gt;
+            </button>
             <button
               className="unified-bezel-pan-btn"
               onClick={() => handlePan(0, 2)}
               aria-label="Pan down"
-            >v</button>
+            >
+              v
+            </button>
           </div>
         )}
 
@@ -198,9 +209,7 @@ export function UnifiedBezel({
             className={`crt-content${switching ? ' crt-switch-flicker' : ''}`}
             style={{ filter: `brightness(${brightness})` }}
           >
-            <CrtErrorBoundary monitorId={monitorId}>
-              {children}
-            </CrtErrorBoundary>
+            <CrtErrorBoundary monitorId={monitorId}>{children}</CrtErrorBoundary>
           </div>
           {/* Power-off overlay */}
           {(!powerOn || shutdownActive) && (
@@ -225,18 +234,19 @@ export function UnifiedBezel({
                   className="unified-bezel-mode-btn"
                   onClick={handleModePrev}
                   aria-label="Previous mode"
-                >&lt;</button>
-                <span
-                  className="unified-bezel-mode-label"
-                  data-testid="unified-bezel-mode-label"
                 >
+                  &lt;
+                </button>
+                <span className="unified-bezel-mode-label" data-testid="unified-bezel-mode-label">
                   {currentMode?.toUpperCase()}
                 </span>
                 <button
                   className="unified-bezel-mode-btn"
                   onClick={handleModeNext}
                   aria-label="Next mode"
-                >&gt;</button>
+                >
+                  &gt;
+                </button>
               </>
             ) : (
               <span className="unified-bezel-mode-label unified-bezel-mode-single">

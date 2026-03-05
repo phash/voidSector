@@ -173,11 +173,7 @@ describe('Autopilot Engine', () => {
 
     it('returns partial path when completely blocked', () => {
       // Surround the destination with black holes
-      const blackHoles = new Set([
-        '4,0', '4,1', '4,-1',
-        '6,0', '6,1', '6,-1',
-        '5,2', '5,-2',
-      ]);
+      const blackHoles = new Set(['4,0', '4,1', '4,-1', '6,0', '6,1', '6,-1', '5,2', '5,-2']);
       // Also block the destination itself
       blackHoles.add('5,0');
 
@@ -216,8 +212,11 @@ describe('Autopilot Engine', () => {
 
     it('calculates normal mode costs (no fuel, AP per step)', () => {
       const path: Coords[] = [
-        { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 },
-        { x: 3, y: 1 }, { x: 3, y: 2 },
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+        { x: 3, y: 0 },
+        { x: 3, y: 1 },
+        { x: 3, y: 2 },
       ];
       const stats = mockShipStats({ apCostJump: 1 });
       const costs = calculateAutopilotCosts(path, stats, false);
@@ -228,7 +227,10 @@ describe('Autopilot Engine', () => {
     });
 
     it('higher apCostJump increases normal mode AP cost', () => {
-      const path: Coords[] = [{ x: 1, y: 0 }, { x: 2, y: 0 }];
+      const path: Coords[] = [
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+      ];
       const stats = mockShipStats({ apCostJump: 2 });
       const costs = calculateAutopilotCosts(path, stats, false);
 
@@ -276,8 +278,11 @@ describe('Autopilot Engine', () => {
 
   describe('getNextSegment', () => {
     const path: Coords[] = [
-      { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 },
-      { x: 4, y: 0 }, { x: 5, y: 0 },
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 3, y: 0 },
+      { x: 4, y: 0 },
+      { x: 5, y: 0 },
     ];
 
     it('returns empty moves when at end of path', () => {
@@ -301,7 +306,9 @@ describe('Autopilot Engine', () => {
     it('returns batch of moves in hyperjump mode', () => {
       const segment = getNextSegment(path, 0, 10, 3);
       expect(segment.moves).toEqual([
-        { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 },
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+        { x: 3, y: 0 },
       ]);
       expect(segment.isHyperjump).toBe(true);
     });
@@ -327,7 +334,8 @@ describe('Autopilot Engine', () => {
     it('advances from correct step position', () => {
       const segment = getNextSegment(path, 2, 10, 2);
       expect(segment.moves).toEqual([
-        { x: 3, y: 0 }, { x: 4, y: 0 },
+        { x: 3, y: 0 },
+        { x: 4, y: 0 },
       ]);
     });
   });
@@ -424,7 +432,10 @@ describe('Autopilot Engine', () => {
     });
 
     it('cancel is idempotent: requesting moves after path exhaustion returns nothing', () => {
-      const path: Coords[] = [{ x: 1, y: 0 }, { x: 2, y: 0 }];
+      const path: Coords[] = [
+        { x: 1, y: 0 },
+        { x: 2, y: 0 },
+      ];
 
       // Complete the path
       const seg1 = getNextSegment(path, 0, 10, 5);

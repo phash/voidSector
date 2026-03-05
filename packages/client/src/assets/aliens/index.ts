@@ -19,9 +19,4 @@ export function getAlienArtwork(key: string): string | undefined {
   return alienArtwork[key] ?? alienArtwork[key.toLowerCase()];
 }
 
-export {
-  alienScoutUrl,
-  alienCruiserUrl,
-  alienStationUrl,
-  alienArtifactUrl,
-};
+export { alienScoutUrl, alienCruiserUrl, alienStationUrl, alienArtifactUrl };

@@ -23,12 +23,14 @@ export function CargoDetailPanel() {
 
   if (!selectedCargoItem) {
     return (
-      <div style={{
-        ...panelStyle,
-        color: 'var(--color-dim)',
-        textAlign: 'center',
-        marginTop: 24,
-      }}>
+      <div
+        style={{
+          ...panelStyle,
+          color: 'var(--color-dim)',
+          textAlign: 'center',
+          marginTop: 24,
+        }}
+      >
         AUSWAHL TREFFEN
       </div>
     );
@@ -39,12 +41,14 @@ export function CargoDetailPanel() {
 
   return (
     <div style={panelStyle}>
-      <div style={{
-        fontSize: '0.75rem',
-        fontWeight: 'bold',
-        marginBottom: 4,
-        letterSpacing: '0.1em',
-      }}>
+      <div
+        style={{
+          fontSize: '0.75rem',
+          fontWeight: 'bold',
+          marginBottom: 4,
+          letterSpacing: '0.1em',
+        }}
+      >
         {label}
       </div>
 

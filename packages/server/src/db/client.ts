@@ -15,7 +15,7 @@ const pool = new pg.Pool({
 
 export async function query<T extends pg.QueryResultRow>(
   text: string,
-  params?: unknown[]
+  params?: unknown[],
 ): Promise<pg.QueryResult<T>> {
   return pool.query<T>(text, params);
 }

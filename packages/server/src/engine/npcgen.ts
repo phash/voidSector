@@ -1,17 +1,49 @@
 import { hashCoords } from './worldgen.js';
-import { WORLD_SEED, NPC_FACTION_WEIGHTS, STATION_SHIPYARD_LEVEL_THRESHOLD } from '@void-sector/shared';
+import {
+  WORLD_SEED,
+  NPC_FACTION_WEIGHTS,
+  STATION_SHIPYARD_LEVEL_THRESHOLD,
+} from '@void-sector/shared';
 import type { NpcFactionId, StationNpc } from '@void-sector/shared';
 
 const NPC_SEED_SALT = 7777;
 const FACTION_SEED_SALT = 3333;
 
 const FIRST_NAMES = [
-  'Zar', 'Kira', 'Vex', 'Mira', 'Dax', 'Syla', 'Orn', 'Thex',
-  'Luma', 'Kael', 'Nyx', 'Rho', 'Astra', 'Cyn', 'Jex', 'Tal',
+  'Zar',
+  'Kira',
+  'Vex',
+  'Mira',
+  'Dax',
+  'Syla',
+  'Orn',
+  'Thex',
+  'Luma',
+  'Kael',
+  'Nyx',
+  'Rho',
+  'Astra',
+  'Cyn',
+  'Jex',
+  'Tal',
 ];
 const LAST_NAMES = [
-  'Voss', 'Kren', 'Thane', 'Mox', 'Drex', 'Solen', 'Gar', 'Plex',
-  'Nori', 'Wren', 'Kova', 'Strex', 'Lorn', 'Mace', 'Quill', 'Rune',
+  'Voss',
+  'Kren',
+  'Thane',
+  'Mox',
+  'Drex',
+  'Solen',
+  'Gar',
+  'Plex',
+  'Nori',
+  'Wren',
+  'Kova',
+  'Strex',
+  'Lorn',
+  'Mace',
+  'Quill',
+  'Rune',
 ];
 
 export function getStationFaction(x: number, y: number): NpcFactionId {

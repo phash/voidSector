@@ -15,7 +15,10 @@ export function generateSpawnPosition(): { x: number; y: number } {
   return { x: SPAWN_MIN_DISTANCE, y: 0 };
 }
 
-export async function assignToCluster(x: number, y: number): Promise<{ clusterId: string; x: number; y: number }> {
+export async function assignToCluster(
+  x: number,
+  y: number,
+): Promise<{ clusterId: string; x: number; y: number }> {
   const existing = await findNearbyCluster(x, y);
   if (existing) {
     await incrementClusterCount(existing.id);

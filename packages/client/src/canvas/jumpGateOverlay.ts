@@ -5,12 +5,12 @@ import type { JumpGateMapEntry } from '@void-sector/shared';
  * Each connected group of gates gets a unique color from this palette.
  */
 export const JUMPGATE_CHAIN_COLORS = [
-  '#00BFFF',  // deep sky blue
-  '#33FF33',  // green
-  '#FF6644',  // red-orange
-  '#FFDD22',  // yellow
-  '#FF44FF',  // magenta
-  '#44AAFF',  // light blue
+  '#00BFFF', // deep sky blue
+  '#33FF33', // green
+  '#FF6644', // red-orange
+  '#FFDD22', // yellow
+  '#FF44FF', // magenta
+  '#44AAFF', // light blue
 ];
 
 // --- Union-Find for chain grouping ---
@@ -200,7 +200,7 @@ export function filterQuadrantGates(
 
   // Sort intra-quadrant by distance descending, take top 3
   intraQuadrant.sort((a, b) => b.distance - a.distance);
-  const topIntra = intraQuadrant.slice(0, 3).map(e => e.gate);
+  const topIntra = intraQuadrant.slice(0, 3).map((e) => e.gate);
 
   return [...crossQuadrant, ...topIntra];
 }

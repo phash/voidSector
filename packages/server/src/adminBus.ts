@@ -4,7 +4,7 @@ export interface AdminBroadcastEvent {
   senderName: string;
   content: string;
   scope: 'universal' | 'individual';
-  targetPlayers: string[];  // player IDs for individual scope
+  targetPlayers: string[]; // player IDs for individual scope
   channel: string;
   allowReply: boolean;
   messageId: string;

@@ -48,7 +48,10 @@ describe('research flow integration', () => {
   it('all research modules have valid prerequisites', () => {
     for (const [id, mod] of Object.entries(MODULES)) {
       if (mod.prerequisite) {
-        expect(MODULES[mod.prerequisite], `${id} has invalid prerequisite ${mod.prerequisite}`).toBeDefined();
+        expect(
+          MODULES[mod.prerequisite],
+          `${id} has invalid prerequisite ${mod.prerequisite}`,
+        ).toBeDefined();
       }
     }
   });

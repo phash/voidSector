@@ -9,19 +9,25 @@ interface BezelKnobProps {
 
 export function BezelKnob({ label, value, min, max, step = 0.01, onChange }: BezelKnobProps) {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '4px',
-      userSelect: 'none',
-    }}>
-      <span style={{
-        fontSize: '0.55rem',
-        color: 'var(--color-dim)',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-      }}>{label}</span>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '4px',
+        userSelect: 'none',
+      }}
+    >
+      <span
+        style={{
+          fontSize: '0.55rem',
+          color: 'var(--color-dim)',
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </span>
       <input
         type="range"
         min={min}
@@ -39,11 +45,15 @@ export function BezelKnob({ label, value, min, max, step = 0.01, onChange }: Bez
           background: 'transparent',
         }}
       />
-      <span style={{
-        fontSize: '0.55rem',
-        color: 'var(--color-primary)',
-        letterSpacing: '0.05em',
-      }}>{typeof value === 'number' ? value.toFixed(step < 1 ? 1 : 0) : value}</span>
+      <span
+        style={{
+          fontSize: '0.55rem',
+          color: 'var(--color-primary)',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {typeof value === 'number' ? value.toFixed(step < 1 ? 1 : 0) : value}
+      </span>
     </div>
   );
 }

@@ -13,8 +13,8 @@ export function TestPattern() {
     function draw() {
       const ctx = canvas!.getContext('2d');
       if (!ctx) return;
-      const w = canvas!.width = canvas!.offsetWidth;
-      const h = canvas!.height = canvas!.offsetHeight;
+      const w = (canvas!.width = canvas!.offsetWidth);
+      const h = (canvas!.height = canvas!.offsetHeight);
       if (w === 0 || h === 0) return;
 
       // Color bars (top 60%)

@@ -42,7 +42,7 @@ describe('QuadrantMapRenderer', () => {
         canvasHeight,
         QUAD_FRAME_LEFT + (canvasWidth - QUAD_FRAME_LEFT - QUAD_FRAME_PAD) / 2,
         QUAD_FRAME_PAD + (canvasHeight - QUAD_FRAME_PAD - QUAD_FRAME_BOTTOM) / 2,
-        { currentQuadrant: { qx: 5, qy: 3 }, panOffset: { x: 0, y: 0 }, zoomLevel: 1 }
+        { currentQuadrant: { qx: 5, qy: 3 }, panOffset: { x: 0, y: 0 }, zoomLevel: 1 },
       );
       expect(result).toEqual({ qx: 5, qy: 3 });
     });
@@ -53,7 +53,7 @@ describe('QuadrantMapRenderer', () => {
         canvasHeight,
         QUAD_FRAME_LEFT + (canvasWidth - QUAD_FRAME_LEFT - QUAD_FRAME_PAD) / 2,
         QUAD_FRAME_PAD + (canvasHeight - QUAD_FRAME_PAD - QUAD_FRAME_BOTTOM) / 2,
-        { currentQuadrant: { qx: 0, qy: 0 }, panOffset: { x: 2, y: 3 }, zoomLevel: 1 }
+        { currentQuadrant: { qx: 0, qy: 0 }, panOffset: { x: 2, y: 3 }, zoomLevel: 1 },
       );
       expect(result).toEqual({ qx: 2, qy: 3 });
     });
@@ -64,7 +64,7 @@ describe('QuadrantMapRenderer', () => {
         canvasHeight,
         QUAD_FRAME_LEFT + (canvasWidth - QUAD_FRAME_LEFT - QUAD_FRAME_PAD) / 2,
         QUAD_FRAME_PAD + (canvasHeight - QUAD_FRAME_PAD - QUAD_FRAME_BOTTOM) / 2,
-        { currentQuadrant: null, panOffset: { x: 0, y: 0 }, zoomLevel: 1 }
+        { currentQuadrant: null, panOffset: { x: 0, y: 0 }, zoomLevel: 1 },
       );
       expect(result).toEqual({ qx: 0, qy: 0 });
     });
@@ -75,13 +75,11 @@ describe('QuadrantMapRenderer', () => {
       const gridCenterY = QUAD_FRAME_PAD + (canvasHeight - QUAD_FRAME_PAD - QUAD_FRAME_BOTTOM) / 2;
 
       // Click one cell to the right
-      const result = quadrantAtPoint(
-        canvasWidth,
-        canvasHeight,
-        gridCenterX + cellW,
-        gridCenterY,
-        { currentQuadrant: { qx: 0, qy: 0 }, panOffset: { x: 0, y: 0 }, zoomLevel: 1 }
-      );
+      const result = quadrantAtPoint(canvasWidth, canvasHeight, gridCenterX + cellW, gridCenterY, {
+        currentQuadrant: { qx: 0, qy: 0 },
+        panOffset: { x: 0, y: 0 },
+        zoomLevel: 1,
+      });
       expect(result).toEqual({ qx: 1, qy: 0 });
     });
 
@@ -92,16 +90,16 @@ describe('QuadrantMapRenderer', () => {
       const gridCenterY = QUAD_FRAME_PAD + (canvasHeight - QUAD_FRAME_PAD - QUAD_FRAME_BOTTOM) / 2;
 
       // Same pixel offset, different zoom = different quadrant
-      const result0 = quadrantAtPoint(
-        canvasWidth, canvasHeight,
-        gridCenterX + 50, gridCenterY,
-        { currentQuadrant: { qx: 0, qy: 0 }, panOffset: { x: 0, y: 0 }, zoomLevel: 0 }
-      );
-      const result3 = quadrantAtPoint(
-        canvasWidth, canvasHeight,
-        gridCenterX + 50, gridCenterY,
-        { currentQuadrant: { qx: 0, qy: 0 }, panOffset: { x: 0, y: 0 }, zoomLevel: 3 }
-      );
+      const result0 = quadrantAtPoint(canvasWidth, canvasHeight, gridCenterX + 50, gridCenterY, {
+        currentQuadrant: { qx: 0, qy: 0 },
+        panOffset: { x: 0, y: 0 },
+        zoomLevel: 0,
+      });
+      const result3 = quadrantAtPoint(canvasWidth, canvasHeight, gridCenterX + 50, gridCenterY, {
+        currentQuadrant: { qx: 0, qy: 0 },
+        panOffset: { x: 0, y: 0 },
+        zoomLevel: 3,
+      });
       // At zoom 0 (8px cells), 50px = ~6 cells. At zoom 3 (48px cells), 50px = ~1 cell
       expect(result0!.qx).toBeGreaterThan(result3!.qx);
     });

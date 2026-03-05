@@ -63,11 +63,16 @@ export function deriveEnvironment(type: SectorType): SectorEnvironment {
 /** Derive contents from legacy SectorType */
 export function deriveContents(type: SectorType): SectorContent[] {
   switch (type) {
-    case 'asteroid_field': return ['asteroid_field'];
-    case 'station': return ['station'];
-    case 'anomaly': return ['anomaly'];
-    case 'pirate': return ['pirate_zone', 'asteroid_field'];
-    default: return [];
+    case 'asteroid_field':
+      return ['asteroid_field'];
+    case 'station':
+      return ['station'];
+    case 'anomaly':
+      return ['anomaly'];
+    case 'pirate':
+      return ['pirate_zone', 'asteroid_field'];
+    default:
+      return [];
   }
 }
 
@@ -97,15 +102,15 @@ export interface AutoRefuelConfig {
 export interface APState {
   current: number;
   max: number;
-  lastTick: number;  // timestamp ms
+  lastTick: number; // timestamp ms
   regenPerSecond: number;
 }
 
 export interface HyperdriveState {
-  charge: number;        // current range charge
-  maxCharge: number;     // = hyperdriveRange from ship stats
+  charge: number; // current range charge
+  maxCharge: number; // = hyperdriveRange from ship stats
   regenPerSecond: number; // = hyperdriveRegen
-  lastTick: number;      // timestamp ms
+  lastTick: number; // timestamp ms
 }
 
 export interface PlayerPosition {
@@ -185,7 +190,18 @@ export interface LocalScanResultMessage {
 }
 
 // Structures
-export type StructureType = 'comm_relay' | 'mining_station' | 'base' | 'storage' | 'trading_post' | 'defense_turret' | 'station_shield' | 'ion_cannon' | 'factory' | 'research_lab' | 'kontor';
+export type StructureType =
+  | 'comm_relay'
+  | 'mining_station'
+  | 'base'
+  | 'storage'
+  | 'trading_post'
+  | 'defense_turret'
+  | 'station_shield'
+  | 'ion_cannon'
+  | 'factory'
+  | 'research_lab'
+  | 'kontor';
 
 export interface Structure {
   id: string;
@@ -422,7 +438,16 @@ export interface CreateFactionResultMessage {
 }
 
 export interface FactionActionMessage {
-  action: 'join' | 'joinCode' | 'leave' | 'invite' | 'kick' | 'promote' | 'demote' | 'setJoinMode' | 'disband';
+  action:
+    | 'join'
+    | 'joinCode'
+    | 'leave'
+    | 'invite'
+    | 'kick'
+    | 'promote'
+    | 'demote'
+    | 'setJoinMode'
+    | 'disband';
   targetPlayerId?: string;
   targetPlayerName?: string;
   code?: string;
@@ -614,7 +639,12 @@ export interface StationCombatEvent {
   hpLost: number;
 }
 
-export type ScanEventType = 'pirate_ambush' | 'distress_signal' | 'anomaly_reading' | 'artifact_find' | 'blueprint_find';
+export type ScanEventType =
+  | 'pirate_ambush'
+  | 'distress_signal'
+  | 'anomaly_reading'
+  | 'artifact_find'
+  | 'blueprint_find';
 export type ScanEventStatus = 'discovered' | 'completed';
 
 export interface ScanEvent {
@@ -636,37 +666,93 @@ export interface PlayerUpgrade {
 }
 
 // Messages: Client -> Server
-export interface AcceptQuestMessage { templateId: string; stationX: number; stationY: number; }
-export interface AbandonQuestMessage { questId: string; }
-export interface CompleteQuestMessage { questId: string; }
-export interface BattleActionMessage { action: BattleAction; sectorX: number; sectorY: number; }
-export interface CompleteScanEventMessage { eventId: string; }
-export interface GetStationNpcsMessage { sectorX: number; sectorY: number; }
-export interface GetAvailableQuestsMessage { sectorX: number; sectorY: number; }
+export interface AcceptQuestMessage {
+  templateId: string;
+  stationX: number;
+  stationY: number;
+}
+export interface AbandonQuestMessage {
+  questId: string;
+}
+export interface CompleteQuestMessage {
+  questId: string;
+}
+export interface BattleActionMessage {
+  action: BattleAction;
+  sectorX: number;
+  sectorY: number;
+}
+export interface CompleteScanEventMessage {
+  eventId: string;
+}
+export interface GetStationNpcsMessage {
+  sectorX: number;
+  sectorY: number;
+}
+export interface GetAvailableQuestsMessage {
+  sectorX: number;
+  sectorY: number;
+}
 
 // Messages: Server -> Client
-export interface StationNpcsResultMessage { npcs: StationNpc[]; quests: AvailableQuest[]; }
-export interface AcceptQuestResultMessage { success: boolean; error?: string; quest?: Quest; }
-export interface AbandonQuestResultMessage { success: boolean; error?: string; }
-export interface CompleteQuestResultMessage { success: boolean; error?: string; rewards?: QuestRewards; }
-export interface BattleResultMessage { success: boolean; error?: string; encounter?: PirateEncounter; result?: BattleResult; }
-export interface ScanEventDiscoveredMessage { event: ScanEvent; }
-export interface QuestProgressMessage { questId: string; objectives: QuestObjective[]; }
-export interface ReputationUpdateMessage { reputations: PlayerReputation[]; upgrades: PlayerUpgrade[]; }
-export interface ActiveQuestsMessage { quests: Quest[]; }
+export interface StationNpcsResultMessage {
+  npcs: StationNpc[];
+  quests: AvailableQuest[];
+}
+export interface AcceptQuestResultMessage {
+  success: boolean;
+  error?: string;
+  quest?: Quest;
+}
+export interface AbandonQuestResultMessage {
+  success: boolean;
+  error?: string;
+}
+export interface CompleteQuestResultMessage {
+  success: boolean;
+  error?: string;
+  rewards?: QuestRewards;
+}
+export interface BattleResultMessage {
+  success: boolean;
+  error?: string;
+  encounter?: PirateEncounter;
+  result?: BattleResult;
+}
+export interface ScanEventDiscoveredMessage {
+  event: ScanEvent;
+}
+export interface QuestProgressMessage {
+  questId: string;
+  objectives: QuestObjective[];
+}
+export interface ReputationUpdateMessage {
+  reputations: PlayerReputation[];
+  upgrades: PlayerUpgrade[];
+}
+export interface ActiveQuestsMessage {
+  quests: Quest[];
+}
 
 // --- Phase 5: Deep Systems ---
 
 // Fuel
-export interface RefuelMessage { amount: number; }
-export interface RefuelResultMessage { success: boolean; error?: string; fuel?: FuelState; credits?: number; }
+export interface RefuelMessage {
+  amount: number;
+}
+export interface RefuelResultMessage {
+  success: boolean;
+  error?: string;
+  fuel?: FuelState;
+  credits?: number;
+}
 
 // Faction Upgrades (player faction upgrade tree)
 export type FactionUpgradeChoice = 'A' | 'B';
 export interface FactionUpgradeTier {
   tier: number;
-  optionA: { name: string; effect: string; };
-  optionB: { name: string; effect: string; };
+  optionA: { name: string; effect: string };
+  optionB: { name: string; effect: string };
   cost: number;
 }
 export interface FactionUpgradeState {
@@ -674,8 +760,15 @@ export interface FactionUpgradeState {
   choice: FactionUpgradeChoice;
   chosenAt: number;
 }
-export interface FactionUpgradeMessage { tier: number; choice: FactionUpgradeChoice; }
-export interface FactionUpgradeResultMessage { success: boolean; error?: string; upgrades?: FactionUpgradeState[]; }
+export interface FactionUpgradeMessage {
+  tier: number;
+  choice: FactionUpgradeChoice;
+}
+export interface FactionUpgradeResultMessage {
+  success: boolean;
+  error?: string;
+  upgrades?: FactionUpgradeState[];
+}
 
 // JumpGates
 export type JumpGateType = 'bidirectional' | 'wormhole';
@@ -696,7 +789,10 @@ export interface JumpGateInfo {
   requiresMinigame: boolean;
   hasCode: boolean;
 }
-export interface UseJumpGateMessage { gateId: string; accessCode?: string; }
+export interface UseJumpGateMessage {
+  gateId: string;
+  accessCode?: string;
+}
 export interface UseJumpGateResultMessage {
   success: boolean;
   error?: string;
@@ -705,7 +801,10 @@ export interface UseJumpGateResultMessage {
   targetY?: number;
   fuel?: FuelState;
 }
-export interface FrequencyMatchResultMessage { gateId: string; matched: boolean; }
+export interface FrequencyMatchResultMessage {
+  gateId: string;
+  matched: boolean;
+}
 
 // Rescue Missions
 export interface RescueSurvivor {
@@ -725,14 +824,20 @@ export interface DistressCall {
   targetX: number;
   targetY: number;
 }
-export interface RescueMessage { sectorX: number; sectorY: number; }
+export interface RescueMessage {
+  sectorX: number;
+  sectorY: number;
+}
 export interface RescueResultMessage {
   success: boolean;
   error?: string;
   survivorsRescued?: number;
   safeSlotsFree?: number;
 }
-export interface DeliverSurvivorsMessage { stationX: number; stationY: number; }
+export interface DeliverSurvivorsMessage {
+  stationX: number;
+  stationY: number;
+}
 export interface DeliverSurvivorsResultMessage {
   success: boolean;
   error?: string;
@@ -771,8 +876,13 @@ export interface ConfigureRouteResultMessage {
   error?: string;
   route?: TradeRoute;
 }
-export interface ToggleRouteMessage { routeId: string; active: boolean; }
-export interface DeleteRouteMessage { routeId: string; }
+export interface ToggleRouteMessage {
+  routeId: string;
+  active: boolean;
+}
+export interface DeleteRouteMessage {
+  routeId: string;
+}
 
 // Custom Data Slates (extends existing SlateType)
 export interface CustomSlateData {
@@ -796,8 +906,15 @@ export interface Bookmark {
   label: string;
 }
 
-export interface SetBookmarkMessage { slot: number; sectorX: number; sectorY: number; label: string; }
-export interface ClearBookmarkMessage { slot: number; }
+export interface SetBookmarkMessage {
+  slot: number;
+  sectorX: number;
+  sectorY: number;
+  label: string;
+}
+export interface ClearBookmarkMessage {
+  slot: number;
+}
 
 // --- Hyperjump / Autopilot ---
 export interface AutopilotState {
@@ -807,16 +924,35 @@ export interface AutopilotState {
   active: boolean;
 }
 
-export interface HyperJumpMessage { targetX: number; targetY: number; }
-export interface AutopilotUpdateMessage { x: number; y: number; remaining: number; }
-export interface AutopilotCompleteMessage { x: number; y: number; }
+export interface HyperJumpMessage {
+  targetX: number;
+  targetY: number;
+}
+export interface AutopilotUpdateMessage {
+  x: number;
+  y: number;
+  remaining: number;
+}
+export interface AutopilotCompleteMessage {
+  x: number;
+  y: number;
+}
 
 export type JumpType = 'normal' | 'hyperjump';
 
 // --- Phase 7: Ship Designer ---
 export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
 export type HullSize = 'small' | 'medium' | 'large';
-export type ModuleCategory = 'drive' | 'cargo' | 'scanner' | 'armor' | 'special' | 'weapon' | 'shield' | 'defense' | 'mining';
+export type ModuleCategory =
+  | 'drive'
+  | 'cargo'
+  | 'scanner'
+  | 'armor'
+  | 'special'
+  | 'weapon'
+  | 'shield'
+  | 'defense'
+  | 'mining';
 export type ModuleTier = 1 | 2 | 3 | 4 | 5;
 
 export interface HullDefinition {
@@ -850,7 +986,13 @@ export interface ModuleDefinition {
   secondaryEffects: Array<{ stat: string; delta: number; label: string }>;
   effects: Partial<ShipStats>;
   cost: { credits: number; ore?: number; gas?: number; crystal?: number; artefact?: number };
-  researchCost?: { credits: number; ore?: number; gas?: number; crystal?: number; artefact?: number };
+  researchCost?: {
+    credits: number;
+    ore?: number;
+    gas?: number;
+    crystal?: number;
+    artefact?: number;
+  };
   researchDurationMin?: number;
   prerequisite?: string;
   factionRequirement?: { factionId: string; minTier: string };
@@ -961,7 +1103,12 @@ export interface NpcStationInventoryItem {
 
 // --- Factory & Production ---
 
-export type ProcessedItemType = 'fuel_cell' | 'circuit_board' | 'alloy_plate' | 'void_shard' | 'bio_extract';
+export type ProcessedItemType =
+  | 'fuel_cell'
+  | 'circuit_board'
+  | 'alloy_plate'
+  | 'void_shard'
+  | 'bio_extract';
 
 export interface ProductionRecipe {
   id: string;
@@ -986,11 +1133,11 @@ export interface FactoryState {
 
 export interface QuadrantConfig {
   seed: number;
-  resourceFactor: number;   // 0.5 – 1.5
-  stationDensity: number;   // 0.5 – 1.5
-  pirateDensity: number;    // 0.5 – 1.5
-  nebulaThreshold: number;  // 0.5 – 1.5
-  emptyRatio: number;       // 0.5 – 1.5
+  resourceFactor: number; // 0.5 – 1.5
+  stationDensity: number; // 0.5 – 1.5
+  pirateDensity: number; // 0.5 – 1.5
+  nebulaThreshold: number; // 0.5 – 1.5
+  emptyRatio: number; // 0.5 – 1.5
 }
 
 export interface QuadrantData {

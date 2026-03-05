@@ -9,7 +9,13 @@ import { generateSector } from '../../engine/worldgen.js';
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { validateJump } from '../../engine/commands.js';
 import { checkJumpGate, generateGateTarget } from '../../engine/jumpgates.js';
-import { calculateAutopilotPath, calculateAutopilotCosts, getNextSegment, STEP_INTERVAL_MS, STEP_INTERVAL_MIN_MS } from '../../engine/autopilot.js';
+import {
+  calculateAutopilotPath,
+  calculateAutopilotCosts,
+  getNextSegment,
+  STEP_INTERVAL_MS,
+  STEP_INTERVAL_MIN_MS,
+} from '../../engine/autopilot.js';
 import { hashCoords, isInBlackHoleCluster } from '../../engine/worldgen.js';
 import { getReputationTier } from '../../engine/commands.js';
 import { getStationFaction } from '../../engine/npcgen.js';
@@ -79,10 +85,18 @@ import {
 export class NavigationService {
   constructor(private ctx: ServiceContext) {}
 
-  async handleMoveSector(client: Client, data: { sectorX: number; sectorY: number }): Promise<void> {
+  async handleMoveSector(
+    client: Client,
+    data: { sectorX: number; sectorY: number },
+  ): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'moveSector', 200)) return;
     const { sectorX, sectorY } = data;
-    if (!isInt(sectorX) || !isInt(sectorY) || Math.abs(sectorX) > MAX_COORD || Math.abs(sectorY) > MAX_COORD) {
+    if (
+      !isInt(sectorX) ||
+      !isInt(sectorY) ||
+      Math.abs(sectorX) > MAX_COORD ||
+      Math.abs(sectorY) > MAX_COORD
+    ) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
       return;
     }
@@ -97,7 +111,10 @@ export class NavigationService {
 
     // Update player position
     const player = this.ctx.state.players.get(client.sessionId);
-    if (player) { player.x = sectorX; player.y = sectorY; }
+    if (player) {
+      player.x = sectorX;
+      player.y = sectorY;
+    }
     this.ctx.playerSectorData.set(client.sessionId, sectorData);
     await savePlayerPosition(auth.userId, sectorX, sectorY);
     await addDiscovery(auth.userId, sectorX, sectorY);
@@ -120,10 +137,24 @@ export class NavigationService {
   }
 
   async handleJump(client: Client, data: JumpMessage): Promise<void> {
-    if (!this.ctx.checkRate(client.sessionId, 'jump', 300)) { client.send('jumpResult', { success: false, error: 'Too fast' }); return; }
-    if (!isInt(data.targetX) || !isInt(data.targetY) ||
-        Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
-      logger.warn({ username: (client.auth as AuthPayload)?.username, targetX: data.targetX, targetY: data.targetY }, 'handleJump invalid coords');
+    if (!this.ctx.checkRate(client.sessionId, 'jump', 300)) {
+      client.send('jumpResult', { success: false, error: 'Too fast' });
+      return;
+    }
+    if (
+      !isInt(data.targetX) ||
+      !isInt(data.targetY) ||
+      Math.abs(data.targetX) > MAX_COORD ||
+      Math.abs(data.targetY) > MAX_COORD
+    ) {
+      logger.warn(
+        {
+          username: (client.auth as AuthPayload)?.username,
+          targetX: data.targetX,
+          targetY: data.targetY,
+        },
+        'handleJump invalid coords',
+      );
       client.send('jumpResult', { success: false, error: 'Invalid coordinates' });
       return;
     }
@@ -193,7 +224,10 @@ export class NavigationService {
     }
 
     // Phase 4: Check quest progress for arrive/fetch/delivery
-    await this.ctx.checkQuestProgress(client, auth.userId, 'arrive', { sectorX: targetX, sectorY: targetY });
+    await this.ctx.checkQuestProgress(client, auth.userId, 'arrive', {
+      sectorX: targetX,
+      sectorY: targetY,
+    });
 
     // Phase 5: Check for JumpGate at target sector
     let gateInfo = null;
@@ -216,9 +250,12 @@ export class NavigationService {
 
       // Record discovered jumpgate for map display
       await addPlayerKnownJumpGate(
-        auth.userId, gate.id,
-        targetX, targetY,
-        gate.targetX, gate.targetY,
+        auth.userId,
+        gate.id,
+        targetX,
+        targetY,
+        gate.targetX,
+        gate.targetY,
         gate.gateType,
       );
     }
@@ -231,7 +268,10 @@ export class NavigationService {
     if (!crossQuadrant) {
       // Intra-quadrant: update player position in-place (no room change)
       const player = this.ctx.state.players.get(client.sessionId);
-      if (player) { player.x = targetX; player.y = targetY; }
+      if (player) {
+        player.x = targetX;
+        player.y = targetY;
+      }
       this.ctx.playerSectorData.set(client.sessionId, targetSector);
       await savePlayerPosition(auth.userId, targetX, targetY);
     }
@@ -254,11 +294,24 @@ export class NavigationService {
 
   async handleHyperJump(client: Client, data: HyperJumpMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
-    logger.info({ username: auth.username, targetX: data.targetX, targetY: data.targetY }, 'Hyperjump attempt');
-    if (!this.ctx.checkRate(client.sessionId, 'hyperJump', 1000)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
-    if (!isInt(data.targetX) || !isInt(data.targetY) ||
-        Math.abs(data.targetX) > MAX_COORD || Math.abs(data.targetY) > MAX_COORD) {
-      logger.warn({ username: auth.username, targetX: data.targetX, targetY: data.targetY }, 'handleHyperJump invalid coords');
+    logger.info(
+      { username: auth.username, targetX: data.targetX, targetY: data.targetY },
+      'Hyperjump attempt',
+    );
+    if (!this.ctx.checkRate(client.sessionId, 'hyperJump', 1000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
+    if (
+      !isInt(data.targetX) ||
+      !isInt(data.targetY) ||
+      Math.abs(data.targetX) > MAX_COORD ||
+      Math.abs(data.targetY) > MAX_COORD
+    ) {
+      logger.warn(
+        { username: auth.username, targetX: data.targetX, targetY: data.targetY },
+        'handleHyperJump invalid coords',
+      );
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
       return;
     }
@@ -274,7 +327,10 @@ export class NavigationService {
     // Validate target is discovered
     const discovered = await isRouteDiscovered(auth.userId, targetX, targetY);
     if (!discovered) {
-      logger.info({ username: auth.username, targetX, targetY, userId: auth.userId }, 'Hyperjump target not discovered');
+      logger.info(
+        { username: auth.username, targetX, targetY, userId: auth.userId },
+        'Hyperjump target not discovered',
+      );
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Target sector not discovered' });
       return;
     }
@@ -285,12 +341,18 @@ export class NavigationService {
     const currentY = this.ctx.state.players.get(client.sessionId)?.y ?? 0;
     const currentSectorData = await getSector(currentX, currentY);
     if (currentSectorData?.environment === 'nebula') {
-      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: hyperjump blocked inside nebula' });
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: 'Nebula interference: hyperjump blocked inside nebula',
+      });
       return;
     }
     const targetSectorData = await getSector(targetX, targetY);
     if (targetSectorData?.environment === 'nebula') {
-      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump into nebula' });
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: 'Nebula interference: cannot hyperjump into nebula',
+      });
       return;
     }
 
@@ -311,29 +373,44 @@ export class NavigationService {
     const dy = targetY - pos.y;
     const distance = Math.abs(dx) + Math.abs(dy);
     if (distance <= 1) {
-      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Use normal jump for adjacent sectors' });
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: 'Use normal jump for adjacent sectors',
+      });
       return;
     }
 
     // Nebula zones block hyperjump in both directions
     const sourceSector = await getSector(pos.x, pos.y);
     if (sourceSector?.environment === 'nebula') {
-      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump from nebula sector' });
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: 'Nebula interference: cannot hyperjump from nebula sector',
+      });
       return;
     }
     const targetSectorNebula = await getSector(targetX, targetY);
     if (targetSectorNebula?.environment === 'nebula') {
-      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Nebula interference: cannot hyperjump into nebula sector' });
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: 'Nebula interference: cannot hyperjump into nebula sector',
+      });
       return;
     }
 
     // Black holes block hyperjump in both directions
     if (sourceSector?.environment === 'black_hole') {
-      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Schwarzes Loch — Hyperjump nicht möglich' });
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: 'Schwarzes Loch — Hyperjump nicht möglich',
+      });
       return;
     }
     if (targetSectorNebula?.environment === 'black_hole') {
-      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Schwarzes Loch am Ziel — Hyperjump nicht möglich' });
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: 'Schwarzes Loch am Ziel — Hyperjump nicht möglich',
+      });
       return;
     }
 
@@ -373,27 +450,39 @@ export class NavigationService {
       // Fuel cost: V2 formula with hull multiplier and drive efficiency
       const hullMult = HULL_FUEL_MULTIPLIER[hullType] ?? 1.0;
       const fuelCost = calcHyperjumpFuelV2(
-        HYPERJUMP_FUEL_PER_SECTOR, distance, hullMult, ship.hyperdriveFuelEfficiency,
+        HYPERJUMP_FUEL_PER_SECTOR,
+        distance,
+        hullMult,
+        ship.hyperdriveFuelEfficiency,
       );
 
       // Apply pirate zone fuel penalty
-      const isPirate = sourceSector?.contents?.includes('pirate_zone') ||
+      const isPirate =
+        sourceSector?.contents?.includes('pirate_zone') ||
         targetSectorNebula?.contents?.includes('pirate_zone');
-      const finalFuelCost = isPirate ? Math.ceil(fuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY) : fuelCost;
+      const finalFuelCost = isPirate
+        ? Math.ceil(fuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY)
+        : fuelCost;
 
       // Validate AP
       const apCost = calcHyperjumpAP(ship.engineSpeed);
       const ap = await getAPState(auth.userId);
       const updated = calculateCurrentAP(ap);
       if (updated.current < apCost) {
-        client.send('error', { code: 'HYPERJUMP_FAIL', message: `Not enough AP (need ${apCost}, have ${updated.current})` });
+        client.send('error', {
+          code: 'HYPERJUMP_FAIL',
+          message: `Not enough AP (need ${apCost}, have ${updated.current})`,
+        });
         return;
       }
 
       // Validate fuel
       const currentFuel = await getFuelState(auth.userId);
       if (currentFuel === null || currentFuel < finalFuelCost) {
-        client.send('error', { code: 'HYPERJUMP_FAIL', message: `Not enough fuel (need ${finalFuelCost}, have ${currentFuel ?? 0})` });
+        client.send('error', {
+          code: 'HYPERJUMP_FAIL',
+          message: `Not enough fuel (need ${finalFuelCost}, have ${currentFuel ?? 0})`,
+        });
         return;
       }
 
@@ -425,16 +514,23 @@ export class NavigationService {
 
       // Build step list (Manhattan path: X first, then Y)
       // Use hyperdriveSpeed for autopilot tick rate
-      const autopilotMs = ship.hyperdriveSpeed > 0
-        ? Math.max(20, Math.floor(AUTOPILOT_STEP_MS / ship.hyperdriveSpeed))
-        : AUTOPILOT_STEP_MS;
+      const autopilotMs =
+        ship.hyperdriveSpeed > 0
+          ? Math.max(20, Math.floor(AUTOPILOT_STEP_MS / ship.hyperdriveSpeed))
+          : AUTOPILOT_STEP_MS;
       const steps: { x: number; y: number }[] = [];
       let cx = pos.x;
       let cy = pos.y;
       const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
       const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
-      for (let i = 0; i < Math.abs(dx); i++) { cx += stepX; steps.push({ x: cx, y: cy }); }
-      for (let i = 0; i < Math.abs(dy); i++) { cy += stepY; steps.push({ x: cx, y: cy }); }
+      for (let i = 0; i < Math.abs(dx); i++) {
+        cx += stepX;
+        steps.push({ x: cx, y: cy });
+      }
+      for (let i = 0; i < Math.abs(dy); i++) {
+        cy += stepY;
+        steps.push({ x: cx, y: cy });
+      }
 
       // Start autopilot
       let stepIndex = 0;
@@ -448,7 +544,10 @@ export class NavigationService {
             await savePlayerPosition(auth.userId, targetX, targetY);
             await addDiscovery(auth.userId, targetX, targetY);
             const hjPlayer = this.ctx.state.players.get(client.sessionId);
-            if (hjPlayer) { hjPlayer.x = targetX; hjPlayer.y = targetY; }
+            if (hjPlayer) {
+              hjPlayer.x = targetX;
+              hjPlayer.y = targetY;
+            }
             let targetSector = await getSector(targetX, targetY);
             if (!targetSector) {
               targetSector = generateSector(targetX, targetY, auth.userId);
@@ -468,9 +567,16 @@ export class NavigationService {
           await savePlayerPosition(auth.userId, step.x, step.y);
           await addDiscovery(auth.userId, step.x, step.y);
           const hjStepPlayer = this.ctx.state.players.get(client.sessionId);
-          if (hjStepPlayer) { hjStepPlayer.x = step.x; hjStepPlayer.y = step.y; }
+          if (hjStepPlayer) {
+            hjStepPlayer.x = step.x;
+            hjStepPlayer.y = step.y;
+          }
           stepIndex++;
-          client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
+          client.send('autopilotUpdate', {
+            x: step.x,
+            y: step.y,
+            remaining: steps.length - stepIndex,
+          });
         } catch (err) {
           logger.error({ err }, 'Hyperjump autopilot step error');
           clearInterval(timer);
@@ -488,22 +594,31 @@ export class NavigationService {
       const baseFuelCost = calcHyperjumpFuel(ship.fuelPerJump, distance);
 
       // Apply pirate zone fuel penalty if source or target is pirate zone
-      const isPirate = sourceSector?.contents?.includes('pirate_zone') ||
+      const isPirate =
+        sourceSector?.contents?.includes('pirate_zone') ||
         targetSectorNebula?.contents?.includes('pirate_zone');
-      const fuelCost = isPirate ? Math.ceil(baseFuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY) : baseFuelCost;
+      const fuelCost = isPirate
+        ? Math.ceil(baseFuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY)
+        : baseFuelCost;
 
       // Validate AP
       const ap = await getAPState(auth.userId);
       const updated = calculateCurrentAP(ap);
       if (updated.current < apCost) {
-        client.send('error', { code: 'HYPERJUMP_FAIL', message: `Not enough AP (need ${apCost}, have ${updated.current})` });
+        client.send('error', {
+          code: 'HYPERJUMP_FAIL',
+          message: `Not enough AP (need ${apCost}, have ${updated.current})`,
+        });
         return;
       }
 
       // Validate fuel
       const currentFuel = await getFuelState(auth.userId);
       if (currentFuel === null || currentFuel < fuelCost) {
-        client.send('error', { code: 'HYPERJUMP_FAIL', message: `Not enough fuel (need ${fuelCost}, have ${currentFuel ?? 0})` });
+        client.send('error', {
+          code: 'HYPERJUMP_FAIL',
+          message: `Not enough fuel (need ${fuelCost}, have ${currentFuel ?? 0})`,
+        });
         return;
       }
 
@@ -523,8 +638,14 @@ export class NavigationService {
       let cy = pos.y;
       const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
       const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
-      for (let i = 0; i < Math.abs(dx); i++) { cx += stepX; steps.push({ x: cx, y: cy }); }
-      for (let i = 0; i < Math.abs(dy); i++) { cy += stepY; steps.push({ x: cx, y: cy }); }
+      for (let i = 0; i < Math.abs(dx); i++) {
+        cx += stepX;
+        steps.push({ x: cx, y: cy });
+      }
+      for (let i = 0; i < Math.abs(dy); i++) {
+        cy += stepY;
+        steps.push({ x: cx, y: cy });
+      }
 
       // Start autopilot
       let stepIndex = 0;
@@ -539,7 +660,10 @@ export class NavigationService {
             await savePlayerPosition(auth.userId, targetX, targetY);
             await addDiscovery(auth.userId, targetX, targetY);
             const v1Player = this.ctx.state.players.get(client.sessionId);
-            if (v1Player) { v1Player.x = targetX; v1Player.y = targetY; }
+            if (v1Player) {
+              v1Player.x = targetX;
+              v1Player.y = targetY;
+            }
             // Load or generate target sector
             let targetSector = await getSector(targetX, targetY);
             if (!targetSector) {
@@ -557,9 +681,16 @@ export class NavigationService {
           await savePlayerPosition(auth.userId, step.x, step.y);
           await addDiscovery(auth.userId, step.x, step.y);
           const v1StepPlayer = this.ctx.state.players.get(client.sessionId);
-          if (v1StepPlayer) { v1StepPlayer.x = step.x; v1StepPlayer.y = step.y; }
+          if (v1StepPlayer) {
+            v1StepPlayer.x = step.x;
+            v1StepPlayer.y = step.y;
+          }
           stepIndex++;
-          client.send('autopilotUpdate', { x: step.x, y: step.y, remaining: steps.length - stepIndex });
+          client.send('autopilotUpdate', {
+            x: step.x,
+            y: step.y,
+            remaining: steps.length - stepIndex,
+          });
         } catch (err) {
           logger.error({ err }, 'Hyperjump V1 autopilot step error');
           clearInterval(timer);
@@ -603,8 +734,12 @@ export class NavigationService {
     const { targetX, targetY } = data;
     const useHyperjump = data.useHyperjump ?? false;
 
-    if (!isInt(targetX) || !isInt(targetY) ||
-        Math.abs(targetX) > MAX_COORD || Math.abs(targetY) > MAX_COORD) {
+    if (
+      !isInt(targetX) ||
+      !isInt(targetY) ||
+      Math.abs(targetX) > MAX_COORD ||
+      Math.abs(targetY) > MAX_COORD
+    ) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
       return;
     }
@@ -630,7 +765,10 @@ export class NavigationService {
     // Check mining state
     const mining = await getMiningState(auth.userId);
     if (mining?.active) {
-      client.send('error', { code: 'AUTOPILOT_FAIL', message: 'Cannot start autopilot while mining' });
+      client.send('error', {
+        code: 'AUTOPILOT_FAIL',
+        message: 'Cannot start autopilot while mining',
+      });
       return;
     }
 
@@ -753,9 +891,10 @@ export class NavigationService {
   ): void {
     let currentStep = startStep;
     const speed = ship.engineSpeed;
-    const tickMs = useHyperjump && speed > 0
-      ? Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / speed))
-      : STEP_INTERVAL_MS;
+    const tickMs =
+      useHyperjump && speed > 0
+        ? Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / speed))
+        : STEP_INTERVAL_MS;
 
     const timer = setInterval(async () => {
       try {
@@ -770,7 +909,10 @@ export class NavigationService {
 
           // Update player position in schema
           const player = this.ctx.state.players.get(client.sessionId);
-          if (player) { player.x = target.x; player.y = target.y; }
+          if (player) {
+            player.x = target.x;
+            player.y = target.y;
+          }
 
           // Load or generate target sector
           let targetSector = await getSector(target.x, target.y);
@@ -786,8 +928,10 @@ export class NavigationService {
           await this.ctx.checkFirstContact(client, auth, target.x, target.y);
 
           // Auto-refuel at station if FEATURE_HYPERDRIVE_V2 is enabled
-          if (FEATURE_HYPERDRIVE_V2 &&
-              (targetSector.contents?.includes('station') || targetSector.type === 'station')) {
+          if (
+            FEATURE_HYPERDRIVE_V2 &&
+            (targetSector.contents?.includes('station') || targetSector.type === 'station')
+          ) {
             await this.tryAutoRefuel(client, auth, ship);
           }
           return;
@@ -845,9 +989,15 @@ export class NavigationService {
         if (segment.isHyperjump) {
           const segHullType = this.ctx.clientHullTypes.get(client.sessionId) ?? 'scout';
           const hullMul = HULL_FUEL_MULTIPLIER[segHullType] ?? 1.0;
-          fuelCost = Math.max(1, Math.ceil(
-            HYPERJUMP_FUEL_PER_SECTOR * segment.moves.length * hullMul * (1 - ship.hyperdriveFuelEfficiency),
-          ));
+          fuelCost = Math.max(
+            1,
+            Math.ceil(
+              HYPERJUMP_FUEL_PER_SECTOR *
+                segment.moves.length *
+                hullMul *
+                (1 - ship.hyperdriveFuelEfficiency),
+            ),
+          );
 
           const currentFuel = await getFuelState(auth.userId);
           if (currentFuel === null || currentFuel < fuelCost) {
@@ -866,7 +1016,7 @@ export class NavigationService {
 
         // Deduct fuel
         if (fuelCost > 0) {
-          const currentFuel = await getFuelState(auth.userId) ?? 0;
+          const currentFuel = (await getFuelState(auth.userId)) ?? 0;
           const newFuel = Math.max(0, currentFuel - fuelCost);
           await saveFuelState(auth.userId, newFuel);
           client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
@@ -898,7 +1048,10 @@ export class NavigationService {
         }
         // Update player position in schema
         const apPlayer = this.ctx.state.players.get(client.sessionId);
-        if (apPlayer) { apPlayer.x = lastMove.x; apPlayer.y = lastMove.y; }
+        if (apPlayer) {
+          apPlayer.x = lastMove.x;
+          apPlayer.y = lastMove.y;
+        }
         currentStep += segment.moves.length;
 
         // Persist step progress to DB
@@ -935,7 +1088,7 @@ export class NavigationService {
    */
   async tryAutoRefuel(client: Client, auth: AuthPayload, ship: ShipStats): Promise<void> {
     try {
-      const currentFuel = await getFuelState(auth.userId) ?? 0;
+      const currentFuel = (await getFuelState(auth.userId)) ?? 0;
       const tankSpace = ship.fuelMax - currentFuel;
       if (tankSpace <= 0) return;
 
@@ -975,9 +1128,12 @@ export class NavigationService {
 
     // Only available when fuel is empty
     const ship = this.ctx.getShipForClient(client.sessionId);
-    const currentFuel = await getFuelState(auth.userId) ?? 0;
+    const currentFuel = (await getFuelState(auth.userId)) ?? 0;
     if (currentFuel > 0) {
-      client.send('emergencyWarpResult', { success: false, error: 'Emergency warp only available when fuel is empty' });
+      client.send('emergencyWarpResult', {
+        success: false,
+        error: 'Emergency warp only available when fuel is empty',
+      });
       return;
     }
 

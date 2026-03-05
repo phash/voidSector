@@ -16,10 +16,10 @@ export interface QuadrantMapState {
 
 // Cell sizes per zoom level
 export const QUAD_CELL_SIZES = [
-  { w: 8, h: 8 },    // zoom 0: overview (1 pixel per quadrant)
-  { w: 16, h: 16 },  // zoom 1
-  { w: 32, h: 32 },  // zoom 2
-  { w: 48, h: 48 },  // zoom 3: detail
+  { w: 8, h: 8 }, // zoom 0: overview (1 pixel per quadrant)
+  { w: 16, h: 16 }, // zoom 1
+  { w: 32, h: 32 }, // zoom 2
+  { w: 48, h: 48 }, // zoom 3: detail
 ];
 
 export const QUAD_FRAME_LEFT = 48;
@@ -79,12 +79,14 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
       const cellY = gridCenterY + dy * CELL_H;
       const key = `${qx}:${qy}`;
       const isKnown = knownSet.has(key);
-      const isCurrent = state.currentQuadrant !== null
-        && qx === state.currentQuadrant.qx
-        && qy === state.currentQuadrant.qy;
-      const isSelected = state.selectedQuadrant !== null
-        && qx === state.selectedQuadrant.qx
-        && qy === state.selectedQuadrant.qy;
+      const isCurrent =
+        state.currentQuadrant !== null &&
+        qx === state.currentQuadrant.qx &&
+        qy === state.currentQuadrant.qy;
+      const isSelected =
+        state.selectedQuadrant !== null &&
+        qx === state.selectedQuadrant.qx &&
+        qy === state.selectedQuadrant.qy;
 
       // Cell background
       if (isKnown) {
@@ -103,7 +105,9 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
       // Current quadrant pulsing border
       if (isCurrent) {
         const pulse = 0.6 + 0.4 * Math.sin(state.animTime / 400);
-        const alpha = Math.round(pulse * 255).toString(16).padStart(2, '0');
+        const alpha = Math.round(pulse * 255)
+          .toString(16)
+          .padStart(2, '0');
         ctx.strokeStyle = state.themeColor + alpha;
         ctx.lineWidth = 2 + pulse;
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
@@ -209,7 +213,11 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
   ctx.fillStyle = state.dimColor;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText(`QUADRANT MAP  [${state.knownQuadrants.length} KNOWN]  ZOOM:${state.zoomLevel}`, 4, 2);
+  ctx.fillText(
+    `QUADRANT MAP  [${state.knownQuadrants.length} KNOWN]  ZOOM:${state.zoomLevel}`,
+    4,
+    2,
+  );
 }
 
 /**
@@ -220,7 +228,7 @@ export function quadrantAtPoint(
   canvasHeight: number,
   clickX: number,
   clickY: number,
-  state: Pick<QuadrantMapState, 'currentQuadrant' | 'panOffset' | 'zoomLevel'>
+  state: Pick<QuadrantMapState, 'currentQuadrant' | 'panOffset' | 'zoomLevel'>,
 ): { qx: number; qy: number } | null {
   const cellEntry = QUAD_CELL_SIZES[state.zoomLevel] ?? QUAD_CELL_SIZES[1];
   const { w: CELL_W, h: CELL_H } = cellEntry;

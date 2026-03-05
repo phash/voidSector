@@ -1,14 +1,16 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import type { MineMessage, JettisonMessage, CargoState, MineableResourceType } from '@void-sector/shared';
+import type {
+  MineMessage,
+  JettisonMessage,
+  CargoState,
+  MineableResourceType,
+} from '@void-sector/shared';
 
 import { validateMine, validateJettison } from '../../engine/commands.js';
 import { stopMining } from '../../engine/mining.js';
-import {
-  getMiningState,
-  saveMiningState,
-} from './RedisAPStore.js';
+import { getMiningState, saveMiningState } from './RedisAPStore.js';
 import {
   getSector,
   getPlayerCargo,
@@ -24,7 +26,10 @@ export class MiningService {
   constructor(private ctx: ServiceContext) {}
 
   async handleMine(client: Client, data: MineMessage): Promise<void> {
-    if (!this.ctx.checkRate(client.sessionId, 'mine', 500)) { client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' }); return; }
+    if (!this.ctx.checkRate(client.sessionId, 'mine', 500)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
     if (!data.resource || !VALID_MINE_RESOURCES.includes(data.resource)) {
       client.send('error', { code: 'INVALID_INPUT', message: 'Invalid resource type' });
       return;
@@ -32,7 +37,10 @@ export class MiningService {
     const auth = client.auth as AuthPayload;
     const { resource } = data;
 
-    const sectorData = await getSector(this.ctx._px(client.sessionId), this.ctx._py(client.sessionId));
+    const sectorData = await getSector(
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
     if (!sectorData?.resources) {
       client.send('error', { code: 'NO_RESOURCES', message: 'No resources in this sector' });
       return;

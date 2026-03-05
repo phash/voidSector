@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  createMiningState,
-  calculateMinedAmount,
-  startMining,
-  stopMining,
-} from '../mining.js';
+import { createMiningState, calculateMinedAmount, startMining, stopMining } from '../mining.js';
 
 describe('mining engine', () => {
   it('createMiningState returns inactive state', () => {

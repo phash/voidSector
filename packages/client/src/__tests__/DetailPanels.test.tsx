@@ -43,9 +43,15 @@ describe('MiningDetailPanel', () => {
   it('shows KEINE RESSOURCEN when sector has no resources', () => {
     mockStoreState({
       currentSector: {
-        x: 0, y: 0, type: 'empty', seed: 42,
-        discoveredBy: null, discoveredAt: null,
-        metadata: {}, environment: 'empty' as const, contents: [],
+        x: 0,
+        y: 0,
+        type: 'empty',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: [],
       },
     });
     render(<MiningDetailPanel />);
@@ -55,9 +61,15 @@ describe('MiningDetailPanel', () => {
   it('shows resource info when sectorData has resources', () => {
     mockStoreState({
       currentSector: {
-        x: 5, y: 3, type: 'asteroid_field', seed: 99,
-        discoveredBy: null, discoveredAt: null,
-        metadata: {}, environment: 'empty' as const, contents: [],
+        x: 5,
+        y: 3,
+        type: 'asteroid_field',
+        seed: 99,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: [],
         resources: { ore: 150, gas: 0, crystal: 30 },
       },
     });
@@ -70,14 +82,25 @@ describe('MiningDetailPanel', () => {
   it('shows active mining status', () => {
     mockStoreState({
       currentSector: {
-        x: 5, y: 3, type: 'asteroid_field', seed: 99,
-        discoveredBy: null, discoveredAt: null,
-        metadata: {}, environment: 'empty' as const, contents: [],
+        x: 5,
+        y: 3,
+        type: 'asteroid_field',
+        seed: 99,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: [],
         resources: { ore: 100, gas: 0, crystal: 0 },
       },
       mining: {
-        active: true, resource: 'ore', rate: 2,
-        sectorX: 5, sectorY: 3, startedAt: Date.now(), sectorYield: 100,
+        active: true,
+        resource: 'ore',
+        rate: 2,
+        sectorX: 5,
+        sectorY: 3,
+        startedAt: Date.now(),
+        sectorYield: 100,
       },
     });
     render(<MiningDetailPanel />);
@@ -90,9 +113,15 @@ describe('TradeDetailPanel', () => {
   it('shows KEIN HANDEL when not at station', () => {
     mockStoreState({
       currentSector: {
-        x: 0, y: 0, type: 'empty', seed: 42,
-        discoveredBy: null, discoveredAt: null,
-        metadata: {}, environment: 'empty' as const, contents: [],
+        x: 0,
+        y: 0,
+        type: 'empty',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: [],
       },
       npcStationData: null,
     });
@@ -103,18 +132,22 @@ describe('TradeDetailPanel', () => {
   it('shows station trade info when at station', () => {
     mockStoreState({
       currentSector: {
-        x: 10, y: 10, type: 'station', seed: 42,
-        discoveredBy: null, discoveredAt: null,
-        metadata: {}, environment: 'empty' as const, contents: [],
+        x: 10,
+        y: 10,
+        type: 'station',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: [],
       },
       npcStationData: {
         level: 2,
         name: 'OMEGA STATION',
         xp: 100,
         nextLevelXp: 500,
-        inventory: [
-          { itemType: 'ore', stock: 50, maxStock: 200, buyPrice: 5, sellPrice: 3 },
-        ],
+        inventory: [{ itemType: 'ore', stock: 50, maxStock: 200, buyPrice: 5, sellPrice: 3 }],
       },
       cargo: { ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 },
     });
@@ -146,29 +179,31 @@ describe('QuestDetailPanel', () => {
   it('shows quest details when selectedQuest matches', () => {
     mockStoreState({
       selectedQuest: 'q1',
-      activeQuests: [{
-        id: 'q1',
-        templateId: 't1',
-        npcName: 'Zara',
-        npcFactionId: 'traders' as any,
-        title: 'ERZE LIEFERN',
-        description: 'Liefere 50 Erz zur Station.',
-        stationX: 10,
-        stationY: 10,
-        objectives: [
-          {
-            type: 'delivery' as any,
-            description: 'Erz liefern',
-            amount: 50,
-            progress: 20,
-            fulfilled: false,
-          },
-        ],
-        rewards: { credits: 100, xp: 50, reputation: 10 },
-        status: 'active' as any,
-        acceptedAt: Date.now(),
-        expiresAt: Date.now() + 86400000,
-      }],
+      activeQuests: [
+        {
+          id: 'q1',
+          templateId: 't1',
+          npcName: 'Zara',
+          npcFactionId: 'traders' as any,
+          title: 'ERZE LIEFERN',
+          description: 'Liefere 50 Erz zur Station.',
+          stationX: 10,
+          stationY: 10,
+          objectives: [
+            {
+              type: 'delivery' as any,
+              description: 'Erz liefern',
+              amount: 50,
+              progress: 20,
+              fulfilled: false,
+            },
+          ],
+          rewards: { credits: 100, xp: 50, reputation: 10 },
+          status: 'active' as any,
+          acceptedAt: Date.now(),
+          expiresAt: Date.now() + 86400000,
+        },
+      ],
     });
     render(<QuestDetailPanel />);
     expect(screen.getByText('ERZE LIEFERN')).toBeInTheDocument();

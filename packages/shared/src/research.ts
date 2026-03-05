@@ -29,14 +29,20 @@ export function canStartResearch(
 
   // Check prerequisite
   if (mod.prerequisite && !isModuleUnlocked(mod.prerequisite, research)) {
-    return { valid: false, error: `Prerequisite not met: ${MODULES[mod.prerequisite]?.name ?? mod.prerequisite}` };
+    return {
+      valid: false,
+      error: `Prerequisite not met: ${MODULES[mod.prerequisite]?.name ?? mod.prerequisite}`,
+    };
   }
 
   // Check faction requirement
   if (mod.factionRequirement) {
     const playerTier = factionTiers?.[mod.factionRequirement.factionId];
     if (!playerTier || !meetsMinTier(playerTier, mod.factionRequirement.minTier)) {
-      return { valid: false, error: `Faction requirement: ${mod.factionRequirement.factionId} ${mod.factionRequirement.minTier}` };
+      return {
+        valid: false,
+        error: `Faction requirement: ${mod.factionRequirement.factionId} ${mod.factionRequirement.minTier}`,
+      };
     }
   }
 
@@ -46,7 +52,8 @@ export function canStartResearch(
   if ((cost.ore ?? 0) > resources.ore) return { valid: false, error: 'Not enough ore' };
   if ((cost.gas ?? 0) > resources.gas) return { valid: false, error: 'Not enough gas' };
   if ((cost.crystal ?? 0) > resources.crystal) return { valid: false, error: 'Not enough crystal' };
-  if ((cost.artefact ?? 0) > resources.artefact) return { valid: false, error: 'Not enough artefacts' };
+  if ((cost.artefact ?? 0) > resources.artefact)
+    return { valid: false, error: 'Not enough artefacts' };
 
   return { valid: true };
 }

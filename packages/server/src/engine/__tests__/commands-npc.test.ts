@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
-  createPirateEncounter, validateBattleAction, validateAcceptQuest,
-  calculateLevel, getReputationTier,
+  createPirateEncounter,
+  validateBattleAction,
+  validateAcceptQuest,
+  calculateLevel,
+  getReputationTier,
 } from '../commands.js';
 import type { APState, CargoState } from '@void-sector/shared';
 

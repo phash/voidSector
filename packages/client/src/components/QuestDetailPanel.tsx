@@ -15,12 +15,14 @@ export function QuestDetailPanel() {
 
   if (!selectedQuest) {
     return (
-      <div style={{
-        ...panelStyle,
-        color: 'var(--color-dim)',
-        textAlign: 'center',
-        marginTop: 24,
-      }}>
+      <div
+        style={{
+          ...panelStyle,
+          color: 'var(--color-dim)',
+          textAlign: 'center',
+          marginTop: 24,
+        }}
+      >
         AUSWAHL TREFFEN
       </div>
     );
@@ -29,12 +31,14 @@ export function QuestDetailPanel() {
   const quest = activeQuests.find((q) => q.id === selectedQuest);
   if (!quest) {
     return (
-      <div style={{
-        ...panelStyle,
-        color: 'var(--color-dim)',
-        textAlign: 'center',
-        marginTop: 24,
-      }}>
+      <div
+        style={{
+          ...panelStyle,
+          color: 'var(--color-dim)',
+          textAlign: 'center',
+          marginTop: 24,
+        }}
+      >
         AUFTRAG NICHT GEFUNDEN
       </div>
     );
@@ -42,60 +46,66 @@ export function QuestDetailPanel() {
 
   return (
     <div style={panelStyle}>
-      <div style={{
-        fontSize: '0.75rem',
-        fontWeight: 'bold',
-        marginBottom: 4,
-        letterSpacing: '0.1em',
-      }}>
+      <div
+        style={{
+          fontSize: '0.75rem',
+          fontWeight: 'bold',
+          marginBottom: 4,
+          letterSpacing: '0.1em',
+        }}
+      >
         {quest.title}
       </div>
 
-      <div style={{ color: 'var(--color-dim)', marginBottom: 8 }}>
-        {quest.description}
-      </div>
+      <div style={{ color: 'var(--color-dim)', marginBottom: 8 }}>{quest.description}</div>
 
       {/* Objectives */}
-      <div style={{
-        fontSize: '0.6rem',
-        letterSpacing: '0.1em',
-        color: 'var(--color-dim)',
-        marginBottom: 4,
-      }}>
+      <div
+        style={{
+          fontSize: '0.6rem',
+          letterSpacing: '0.1em',
+          color: 'var(--color-dim)',
+          marginBottom: 4,
+        }}
+      >
         ZIELE
       </div>
 
       {quest.objectives.map((obj, i) => (
-        <div key={i} style={{
-          marginBottom: 4,
-          color: obj.fulfilled ? '#00FF88' : 'var(--color-primary)',
-        }}>
+        <div
+          key={i}
+          style={{
+            marginBottom: 4,
+            color: obj.fulfilled ? '#00FF88' : 'var(--color-primary)',
+          }}
+        >
           <span>{obj.fulfilled ? '[x]' : '[ ]'} </span>
           <span>{obj.description}</span>
           {obj.amount != null && obj.progress != null && (
             <span style={{ color: 'var(--color-dim)' }}>
-              {' '}({obj.progress}/{obj.amount})
+              {' '}
+              ({obj.progress}/{obj.amount})
             </span>
           )}
         </div>
       ))}
 
       {/* Rewards */}
-      <div style={{
-        marginTop: 8,
-        fontSize: '0.6rem',
-        letterSpacing: '0.1em',
-        color: 'var(--color-dim)',
-        marginBottom: 4,
-      }}>
+      <div
+        style={{
+          marginTop: 8,
+          fontSize: '0.6rem',
+          letterSpacing: '0.1em',
+          color: 'var(--color-dim)',
+          marginBottom: 4,
+        }}
+      >
         BELOHNUNG
       </div>
 
       <div>{quest.rewards.credits} CR</div>
       <div>{quest.rewards.xp} XP</div>
-      {quest.rewards.reputation > 0 && (
-        <div>+{quest.rewards.reputation} RUF</div>
-      )}
+      {quest.rewards.reputation > 0 && <div>+{quest.rewards.reputation} RUF</div>}
 
       <button
         className="vs-btn"

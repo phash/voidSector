@@ -1,6 +1,13 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { AP_COSTS, AP_COSTS_LOCAL_SCAN, AP_COSTS_BY_SCANNER, EMERGENCY_WARP_FREE_RADIUS, EMERGENCY_WARP_CREDIT_PER_SECTOR, innerCoord } from '@void-sector/shared';
+import {
+  AP_COSTS,
+  AP_COSTS_LOCAL_SCAN,
+  AP_COSTS_BY_SCANNER,
+  EMERGENCY_WARP_FREE_RADIUS,
+  EMERGENCY_WARP_CREDIT_PER_SECTOR,
+  innerCoord,
+} from '@void-sector/shared';
 
 export function NavControls() {
   const position = useStore((s) => s.position);
@@ -15,11 +22,14 @@ export function NavControls() {
   if (autopilot?.active) {
     return (
       <div style={{ padding: '8px 12px', textAlign: 'center' }}>
-        <div style={{ color: '#FFB000', fontSize: '0.9rem', letterSpacing: '0.15em', marginBottom: 8 }}>
+        <div
+          style={{ color: '#FFB000', fontSize: '0.9rem', letterSpacing: '0.15em', marginBottom: 8 }}
+        >
           AUTOPILOT AKTIV
         </div>
         <div style={{ fontSize: '0.8rem', marginBottom: 8 }}>
-          Ziel: ({innerCoord(autopilot.targetX)}, {innerCoord(autopilot.targetY)}) | Verbleibend: {autopilot.remaining}
+          Ziel: ({innerCoord(autopilot.targetX)}, {innerCoord(autopilot.targetY)}) | Verbleibend:{' '}
+          {autopilot.remaining}
         </div>
         <button className="vs-btn" onClick={() => network.sendCancelAutopilot()}>
           [ABBRECHEN]
@@ -41,7 +51,9 @@ export function NavControls() {
   const canAreaScan = ap && ap.current >= (AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3);
 
   const insufficientStyle = { borderColor: 'var(--color-danger)', opacity: 0.5 };
-  const miningDisabledStyle = isMining ? { opacity: 0.3, cursor: 'not-allowed' as const } : undefined;
+  const miningDisabledStyle = isMining
+    ? { opacity: 0.3, cursor: 'not-allowed' as const }
+    : undefined;
 
   return (
     <div style={{ padding: '8px 12px' }}>
@@ -54,7 +66,7 @@ export function NavControls() {
             title="Jump: 1 AP, 0 Fuel"
             onClick={() => jump(0, -1)}
             disabled={jumpPending || isMining || scanPending || !canJump}
-            style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+            style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
           >
             ↑
           </button>
@@ -64,7 +76,7 @@ export function NavControls() {
               title="Jump: 1 AP, 0 Fuel"
               onClick={() => jump(-1, 0)}
               disabled={jumpPending || isMining || scanPending || !canJump}
-              style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+              style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               ←
             </button>
@@ -73,7 +85,7 @@ export function NavControls() {
               title="Jump: 1 AP, 0 Fuel"
               onClick={() => jump(0, 1)}
               disabled={jumpPending || isMining || scanPending || !canJump}
-              style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+              style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               ↓
             </button>
@@ -82,7 +94,7 @@ export function NavControls() {
               title="Jump: 1 AP, 0 Fuel"
               onClick={() => jump(1, 0)}
               disabled={jumpPending || isMining || scanPending || !canJump}
-              style={isMining ? miningDisabledStyle : (!canJump ? insufficientStyle : undefined)}
+              style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               →
             </button>
@@ -95,7 +107,13 @@ export function NavControls() {
             title={`Local Scan: ${AP_COSTS_LOCAL_SCAN} AP`}
             onClick={() => network.sendLocalScan()}
             disabled={jumpPending || isMining || scanPending}
-            style={isMining || scanPending ? miningDisabledStyle : (!canLocalScan ? insufficientStyle : undefined)}
+            style={
+              isMining || scanPending
+                ? miningDisabledStyle
+                : !canLocalScan
+                  ? insufficientStyle
+                  : undefined
+            }
           >
             [LOCAL SCAN]
           </button>
@@ -104,22 +122,32 @@ export function NavControls() {
             title={`Area Scan: ${AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3} AP`}
             onClick={() => network.sendAreaScan()}
             disabled={jumpPending || isMining || scanPending}
-            style={isMining || scanPending ? miningDisabledStyle : (!canAreaScan ? insufficientStyle : undefined)}
+            style={
+              isMining || scanPending
+                ? miningDisabledStyle
+                : !canAreaScan
+                  ? insufficientStyle
+                  : undefined
+            }
           >
             [AREA SCAN]
           </button>
         </div>
       </div>
       {hyperdrive && hyperdrive.maxCharge > 0 && (
-        <div style={{
-          marginTop: 8,
-          padding: '4px 8px',
-          border: '1px solid #00CCFF33',
-          fontSize: '0.75rem',
-          letterSpacing: '0.1em',
-          color: '#00CCFF',
-        }}>
-          <span>HYPERDRIVE: {Math.floor(hyperdrive.charge)}/{hyperdrive.maxCharge} RNG</span>
+        <div
+          style={{
+            marginTop: 8,
+            padding: '4px 8px',
+            border: '1px solid #00CCFF33',
+            fontSize: '0.75rem',
+            letterSpacing: '0.1em',
+            color: '#00CCFF',
+          }}
+        >
+          <span>
+            HYPERDRIVE: {Math.floor(hyperdrive.charge)}/{hyperdrive.maxCharge} RNG
+          </span>
           {hyperdrive.charge < hyperdrive.maxCharge && (
             <span style={{ color: 'var(--color-dim)', marginLeft: 8 }}>
               +{hyperdrive.regenPerSecond}/s
@@ -131,29 +159,42 @@ export function NavControls() {
         </div>
       )}
       {isMining && (
-        <div style={{
-          marginTop: 8,
-          textAlign: 'center',
-          color: '#FF3333',
-          fontSize: '0.75rem',
-          letterSpacing: '0.15em',
-        }}>
+        <div
+          style={{
+            marginTop: 8,
+            textAlign: 'center',
+            color: '#FF3333',
+            fontSize: '0.75rem',
+            letterSpacing: '0.15em',
+          }}
+        >
           ⚠ MINING ACTIVE — NAV LOCKED
         </div>
       )}
       {fuel && fuel.current <= 0 && !isMining && (
-        <div style={{
-          marginTop: 8,
-          padding: '8px',
-          border: '1px solid #FF3333',
-          textAlign: 'center',
-          animation: 'bezel-alert-pulse 2s infinite',
-        }}>
-          <div style={{ color: '#FF3333', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '0.15em', marginBottom: 4 }}>
+        <div
+          style={{
+            marginTop: 8,
+            padding: '8px',
+            border: '1px solid #FF3333',
+            textAlign: 'center',
+            animation: 'bezel-alert-pulse 2s infinite',
+          }}
+        >
+          <div
+            style={{
+              color: '#FF3333',
+              fontSize: '0.8rem',
+              fontWeight: 'bold',
+              letterSpacing: '0.15em',
+              marginBottom: 4,
+            }}
+          >
             NOTWARP VERFÜGBAR
           </div>
           <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginBottom: 6 }}>
-            Teleport zur Home Base — {(() => {
+            Teleport zur Home Base —{' '}
+            {(() => {
               const dist = Math.abs(position.x) + Math.abs(position.y);
               if (dist <= EMERGENCY_WARP_FREE_RADIUS) return 'GRATIS';
               const cost = (dist - EMERGENCY_WARP_FREE_RADIUS) * EMERGENCY_WARP_CREDIT_PER_SECTOR;

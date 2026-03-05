@@ -12,64 +12,56 @@ describe('euclideanDistance', () => {
 
 describe('canCommunicate', () => {
   it('returns true within combined comm range', () => {
-    expect(canCommunicate(
-      { x: 0, y: 0, commRange: 50 },
-      { x: 30, y: 40, commRange: 50 },
-      []
-    )).toBe(true);
+    expect(canCommunicate({ x: 0, y: 0, commRange: 50 }, { x: 30, y: 40, commRange: 50 }, [])).toBe(
+      true,
+    );
   });
 
   it('returns false out of range and no relays', () => {
-    expect(canCommunicate(
-      { x: 0, y: 0, commRange: 50 },
-      { x: 300, y: 400, commRange: 50 },
-      []
-    )).toBe(false);
+    expect(
+      canCommunicate({ x: 0, y: 0, commRange: 50 }, { x: 300, y: 400, commRange: 50 }, []),
+    ).toBe(false);
   });
 
   it('returns true when relay chain connects', () => {
-    expect(canCommunicate(
-      { x: 0, y: 0, commRange: 50 },
-      { x: 1000, y: 0, commRange: 50 },
-      [
+    expect(
+      canCommunicate({ x: 0, y: 0, commRange: 50 }, { x: 1000, y: 0, commRange: 50 }, [
         { x: 200, y: 0, range: 500 },
         { x: 700, y: 0, range: 500 },
-      ]
-    )).toBe(true);
+      ]),
+    ).toBe(true);
   });
 
   it('returns false with relay gap', () => {
-    expect(canCommunicate(
-      { x: 0, y: 0, commRange: 50 },
-      { x: 5000, y: 0, commRange: 50 },
-      [
+    expect(
+      canCommunicate({ x: 0, y: 0, commRange: 50 }, { x: 5000, y: 0, commRange: 50 }, [
         { x: 100, y: 0, range: 200 },
         { x: 4900, y: 0, range: 200 },
-      ]
-    )).toBe(false);
+      ]),
+    ).toBe(false);
   });
 
   it('handles empty relay list', () => {
-    expect(canCommunicate(
-      { x: 0, y: 0, commRange: 100 },
-      { x: 50, y: 0, commRange: 100 },
-      []
-    )).toBe(true);
+    expect(
+      canCommunicate({ x: 0, y: 0, commRange: 100 }, { x: 50, y: 0, commRange: 100 }, []),
+    ).toBe(true);
   });
 
   it('single relay with large range bridges both players', () => {
-    expect(canCommunicate(
-      { x: 0, y: 0, commRange: 50 },
-      { x: 2000, y: 0, commRange: 50 },
-      [{ x: 1000, y: 0, range: 1100 }]
-    )).toBe(true);
+    expect(
+      canCommunicate({ x: 0, y: 0, commRange: 50 }, { x: 2000, y: 0, commRange: 50 }, [
+        { x: 1000, y: 0, range: 1100 },
+      ]),
+    ).toBe(true);
   });
 
   it('relay with tiny range cannot help distant players', () => {
-    expect(canCommunicate(
-      { x: 0, y: 0, commRange: 50 },
-      { x: 2000, y: 0, commRange: 50 },
-      [{ x: 5000, y: 0, range: 10 }] // relay is too far AND has tiny range
-    )).toBe(false);
+    expect(
+      canCommunicate(
+        { x: 0, y: 0, commRange: 50 },
+        { x: 2000, y: 0, commRange: 50 },
+        [{ x: 5000, y: 0, range: 10 }], // relay is too far AND has tiny range
+      ),
+    ).toBe(false);
   });
 });

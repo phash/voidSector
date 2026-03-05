@@ -4,7 +4,12 @@ import type { ShipModule } from '@void-sector/shared';
 
 function BarDisplay({ current, max, width = 8 }: { current: number; max: number; width?: number }) {
   const filled = max > 0 ? Math.round((current / max) * width) : 0;
-  return <span>{'\u2588'.repeat(filled)}{'\u2591'.repeat(width - filled)}</span>;
+  return (
+    <span>
+      {'\u2588'.repeat(filled)}
+      {'\u2591'.repeat(width - filled)}
+    </span>
+  );
 }
 
 const labelStyle: React.CSSProperties = {
@@ -18,13 +23,15 @@ export function CombatStatusPanel() {
 
   if (!ship) {
     return (
-      <div style={{
-        padding: '4px 6px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '0.6rem',
-        color: 'var(--color-dim)',
-        opacity: 0.5,
-      }}>
+      <div
+        style={{
+          padding: '4px 6px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.6rem',
+          color: 'var(--color-dim)',
+          opacity: 0.5,
+        }}
+      >
         NO COMBAT DATA
       </div>
     );
@@ -40,27 +47,28 @@ export function CombatStatusPanel() {
   const shieldDef = shieldMod ? MODULES[shieldMod.moduleId] : null;
   const defenseDef = defenseMod ? MODULES[defenseMod.moduleId] : null;
 
-  const damageModColor = stats.damageMod > 0
-    ? '#00FF88'
-    : stats.damageMod < 0
-      ? '#FF3333'
-      : 'var(--color-dim)';
+  const damageModColor =
+    stats.damageMod > 0 ? '#00FF88' : stats.damageMod < 0 ? '#FF3333' : 'var(--color-dim)';
 
   return (
-    <div style={{
-      padding: '4px 6px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.6rem',
-      lineHeight: 1.6,
-    }}>
+    <div
+      style={{
+        padding: '4px 6px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.6rem',
+        lineHeight: 1.6,
+      }}
+    >
       {/* Header */}
-      <div style={{
-        color: 'var(--color-primary)',
-        letterSpacing: '0.15em',
-        marginBottom: 4,
-        borderBottom: '1px solid var(--color-dim)',
-        paddingBottom: 2,
-      }}>
+      <div
+        style={{
+          color: 'var(--color-primary)',
+          letterSpacing: '0.15em',
+          marginBottom: 4,
+          borderBottom: '1px solid var(--color-dim)',
+          paddingBottom: 2,
+        }}
+      >
         COMBAT SYSTEMS
       </div>
 
@@ -82,8 +90,8 @@ export function CombatStatusPanel() {
         <span style={labelStyle}>SHD</span>
         {shieldDef ? (
           <span style={{ color: '#00CCFF' }}>
-            <BarDisplay current={stats.shieldHp} max={stats.shieldHp} />
-            {' '}{stats.shieldHp} +{stats.shieldRegen}/rnd
+            <BarDisplay current={stats.shieldHp} max={stats.shieldHp} /> {stats.shieldHp} +
+            {stats.shieldRegen}/rnd
           </span>
         ) : (
           <span style={{ color: 'var(--color-dim)', opacity: 0.4 }}>---</span>
@@ -105,7 +113,12 @@ export function CombatStatusPanel() {
       {/* ECM */}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <span style={labelStyle}>ECM</span>
-        <span style={{ color: stats.ecmReduction > 0 ? 'var(--color-primary)' : 'var(--color-dim)', opacity: stats.ecmReduction > 0 ? 1 : 0.4 }}>
+        <span
+          style={{
+            color: stats.ecmReduction > 0 ? 'var(--color-primary)' : 'var(--color-dim)',
+            opacity: stats.ecmReduction > 0 ? 1 : 0.4,
+          }}
+        >
           {stats.ecmReduction > 0 ? `${Math.round(stats.ecmReduction * 100)}%` : '---'}
         </span>
       </div>
@@ -115,7 +128,8 @@ export function CombatStatusPanel() {
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <span style={labelStyle}>DMG</span>
           <span style={{ color: damageModColor }}>
-            {stats.damageMod > 0 ? '+' : ''}{Math.round(stats.damageMod * 100)}%
+            {stats.damageMod > 0 ? '+' : ''}
+            {Math.round(stats.damageMod * 100)}%
           </span>
         </div>
       )}

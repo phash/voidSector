@@ -15,16 +15,19 @@ export function MiningDetailPanel() {
   const mining = useStore((s) => s.mining);
 
   const resources = currentSector?.resources;
-  const hasResources = resources && (resources.ore > 0 || resources.gas > 0 || resources.crystal > 0);
+  const hasResources =
+    resources && (resources.ore > 0 || resources.gas > 0 || resources.crystal > 0);
 
   if (!hasResources) {
     return (
-      <div style={{
-        ...panelStyle,
-        color: 'var(--color-dim)',
-        textAlign: 'center',
-        marginTop: 24,
-      }}>
+      <div
+        style={{
+          ...panelStyle,
+          color: 'var(--color-dim)',
+          textAlign: 'center',
+          marginTop: 24,
+        }}
+      >
         KEINE RESSOURCEN
       </div>
     );
@@ -33,12 +36,14 @@ export function MiningDetailPanel() {
   return (
     <div style={panelStyle}>
       <SectorArtwork sectorType={currentSector?.type ?? 'empty'} />
-      <div style={{
-        fontSize: '0.75rem',
-        fontWeight: 'bold',
-        marginBottom: 8,
-        letterSpacing: '0.1em',
-      }}>
+      <div
+        style={{
+          fontSize: '0.75rem',
+          fontWeight: 'bold',
+          marginBottom: 8,
+          letterSpacing: '0.1em',
+        }}
+      >
         SEKTOR-RESSOURCEN
       </div>
 
@@ -62,12 +67,14 @@ export function MiningDetailPanel() {
       )}
 
       {mining?.active && (
-        <div style={{
-          marginTop: 12,
-          padding: '6px 8px',
-          border: '1px solid var(--color-primary)',
-          fontSize: '0.65rem',
-        }}>
+        <div
+          style={{
+            marginTop: 12,
+            padding: '6px 8px',
+            border: '1px solid var(--color-primary)',
+            fontSize: '0.65rem',
+          }}
+        >
           <div>ABBAU AKTIV: {mining.resource?.toUpperCase()}</div>
           <div style={{ color: 'var(--color-dim)' }}>RATE: {mining.rate}u/s</div>
         </div>
