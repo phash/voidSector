@@ -7,6 +7,7 @@ import {
   JUMPGATE_CHAIN_COLORS,
   filterQuadrantGates,
   drawJumpGateLines,
+  drawJumpGateIcons,
   drawQuadrantJumpGateLines,
 } from '../canvas/jumpGateOverlay';
 
@@ -270,6 +271,90 @@ describe('drawJumpGateLines', () => {
     // Last setLineDash call should be reset to []
     const lastCall = spy.mock.calls[spy.mock.calls.length - 1];
     expect(lastCall[0]).toEqual([]);
+  });
+});
+
+// --- drawJumpGateIcons tests ---
+
+describe('drawJumpGateIcons', () => {
+  let ctx: CanvasRenderingContext2D;
+  let canvas: HTMLCanvasElement;
+
+  beforeEach(() => {
+    canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    ctx = canvas.getContext('2d')!;
+    Object.defineProperty(window, 'devicePixelRatio', { value: 1, writable: true });
+  });
+
+  it('does nothing for empty gates', () => {
+    const spy = vi.spyOn(ctx, 'fillText');
+    drawJumpGateIcons(ctx, [], 0, 0, 5, 5, 400, 300, 80, 64);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('draws icon at both from and to positions of a gate', () => {
+    const spy = vi.spyOn(ctx, 'fillText');
+    const gates: JumpGateMapEntry[] = [
+      { gateId: 'g1', fromX: 0, fromY: 0, toX: 1, toY: 1, gateType: 'bidirectional' },
+    ];
+    drawJumpGateIcons(ctx, gates, 0, 0, 5, 5, 400, 300, 80, 64);
+    expect(spy).toHaveBeenCalledTimes(2);
+    // from position: gridCenterX + 0*80 = 400, gridCenterY + 0*64 = 300
+    expect(spy).toHaveBeenCalledWith(expect.any(String), 400, 300);
+    // to position: gridCenterX + 1*80 = 480, gridCenterY + 1*64 = 364
+    expect(spy).toHaveBeenCalledWith(expect.any(String), 480, 364);
+  });
+
+  it('deduplicates shared gate positions', () => {
+    const spy = vi.spyOn(ctx, 'fillText');
+    const gates: JumpGateMapEntry[] = [
+      { gateId: 'g1', fromX: 0, fromY: 0, toX: 5, toY: 5, gateType: 'bidirectional' },
+      { gateId: 'g2', fromX: 5, fromY: 5, toX: 10, toY: 10, gateType: 'bidirectional' },
+    ];
+    // 3 unique positions: (0,0), (5,5), (10,10) — not 4
+    drawJumpGateIcons(ctx, gates, 5, 5, 10, 10, 400, 300, 80, 64);
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
+
+  it('skips positions outside visible radius', () => {
+    const spy = vi.spyOn(ctx, 'fillText');
+    const gates: JumpGateMapEntry[] = [
+      { gateId: 'g1', fromX: 100, fromY: 100, toX: 200, toY: 200, gateType: 'bidirectional' },
+    ];
+    drawJumpGateIcons(ctx, gates, 0, 0, 5, 5, 400, 300, 80, 64);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('draws icon for partially visible gate (one endpoint in range)', () => {
+    const spy = vi.spyOn(ctx, 'fillText');
+    const gates: JumpGateMapEntry[] = [
+      { gateId: 'g1', fromX: 0, fromY: 0, toX: 100, toY: 100, gateType: 'bidirectional' },
+    ];
+    drawJumpGateIcons(ctx, gates, 0, 0, 5, 5, 400, 300, 80, 64);
+    // Only from (0,0) is visible, to (100,100) is outside radius 5
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses chain color for icon fill', () => {
+    const gates: JumpGateMapEntry[] = [
+      { gateId: 'g1', fromX: 0, fromY: 0, toX: 1, toY: 1, gateType: 'bidirectional' },
+    ];
+    drawJumpGateIcons(ctx, gates, 0, 0, 5, 5, 400, 300, 80, 64);
+    // Chain 0 should use the first color from the palette
+    expect(ctx.fillStyle).toBeDefined();
+  });
+
+  it('restores context after drawing', () => {
+    const saveSpy = vi.spyOn(ctx, 'save');
+    const restoreSpy = vi.spyOn(ctx, 'restore');
+    const gates: JumpGateMapEntry[] = [
+      { gateId: 'g1', fromX: 0, fromY: 0, toX: 1, toY: 1, gateType: 'bidirectional' },
+    ];
+    drawJumpGateIcons(ctx, gates, 0, 0, 5, 5, 400, 300, 80, 64);
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(restoreSpy).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -18,7 +18,7 @@ import type {
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
 import { drawLongJumpCRTEffect } from './JumpAnimation';
-import { drawJumpGateLines } from './jumpGateOverlay';
+import { drawJumpGateLines, drawJumpGateIcons } from './jumpGateOverlay';
 
 const BOOKMARK_COLORS: Record<number, string> = {
   0: '#33FF33', // HOME — green
@@ -558,6 +558,18 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   // --- JumpGate connection lines ---
   if (state.knownJumpGates && state.knownJumpGates.length > 0 && !animActive) {
     drawJumpGateLines(
+      ctx,
+      state.knownJumpGates,
+      viewX,
+      viewY,
+      radiusX,
+      radiusY,
+      gridCenterX,
+      gridCenterY,
+      CELL_W,
+      CELL_H,
+    );
+    drawJumpGateIcons(
       ctx,
       state.knownJumpGates,
       viewX,

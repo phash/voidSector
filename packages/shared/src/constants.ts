@@ -1296,6 +1296,7 @@ export const SYMBOLS = {
   player: '\u25C6',
   iron: '\u26CF',
   homeBase: '\u2302',
+  jumpgate: '\u25CE', // ◎
 } as const;
 
 // Environment-specific radar colors
@@ -1476,6 +1477,9 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 
 // Multi-content sectors
 export const SECTOR_MAX_FEATURES = 3;
+
+// Home base safe zone — no pirate spawns within this Manhattan distance
+export const HOME_BASE_SAFE_RADIUS = 5;
 
 // Emergency Warp (Notruf)
 /** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
