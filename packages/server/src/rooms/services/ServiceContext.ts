@@ -1,0 +1,39 @@
+import type { Client } from 'colyseus';
+import type { SectorData, ShipStats, HullType, CombatV2State } from '@void-sector/shared';
+import type { FactionBonuses } from '../../engine/factionBonuses.js';
+import type { AuthPayload } from '../../auth.js';
+import type { SectorRoomState } from '../schema/SectorState.js';
+
+export interface ServiceContext {
+  // Room state access
+  state: SectorRoomState;
+  quadrantX: number;
+  quadrantY: number;
+
+  // Per-player caches (Maps stored on room)
+  clientShips: Map<string, ShipStats>;
+  clientHullTypes: Map<string, HullType>;
+  combatV2States: Map<string, CombatV2State>;
+  autopilotTimers: Map<string, ReturnType<typeof setInterval>>;
+  playerSectorData: Map<string, SectorData>;
+
+  // Helper methods
+  checkRate: (sessionId: string, action: string, intervalMs: number) => boolean;
+  getShipForClient: (sessionId: string) => ShipStats;
+  getPlayerBonuses: (playerId: string) => Promise<FactionBonuses>;
+
+  // Communication
+  send: (client: Client, type: string, data: unknown) => void;
+  broadcast: (type: string, data: unknown, options?: { except?: Client }) => void;
+
+  // Dispose callbacks
+  disposeCallbacks: Array<() => void>;
+
+  // Room ID for logging
+  roomId: string;
+
+  // Cross-service callbacks (methods that stay in SectorRoom for now)
+  checkFirstContact: (client: Client, auth: AuthPayload, targetX: number, targetY: number) => Promise<void>;
+  checkQuestProgress: (client: Client, playerId: string, action: string, context: Record<string, unknown>) => Promise<void>;
+  checkAndEmitDistressCalls: (client: Client, userId: string, playerX: number, playerY: number) => Promise<void>;
+}
