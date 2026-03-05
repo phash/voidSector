@@ -4,6 +4,7 @@ import { useStore } from '../state/store';
 export function HelpOverlay() {
   const activeTip = useStore((s) => s.activeTip);
   const dismissTip = useStore((s) => s.dismissTip);
+  const openCompendium = useStore((s) => s.openCompendium);
 
   useEffect(() => {
     if (!activeTip) return;
@@ -66,6 +67,28 @@ export function HelpOverlay() {
         >
           {activeTip.body}
         </div>
+        {activeTip.articleId && (
+          <div style={{ marginTop: '10px' }}>
+            <button
+              onClick={() => {
+                openCompendium(activeTip.articleId);
+              }}
+              data-testid="compendium-link"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-primary)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.7rem',
+                letterSpacing: '0.1em',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              MEHR IM KOMPENDIUM ▸
+            </button>
+          </div>
+        )}
         <div
           style={{
             marginTop: '12px',

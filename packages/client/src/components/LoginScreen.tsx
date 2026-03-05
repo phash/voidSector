@@ -14,6 +14,7 @@ export function LoginScreen() {
 
   const setAuth = useStore((s) => s.setAuth);
   const setScreen = useStore((s) => s.setScreen);
+  const openCompendium = useStore((s) => s.openCompendium);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -126,6 +127,17 @@ export function LoginScreen() {
         <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginTop: '6px' }}>
           Kein Account nötig — 24h Testzugang
         </div>
+      </div>
+      <div style={{ marginTop: '16px' }}>
+        <button
+          type="button"
+          className="vs-btn"
+          onClick={() => openCompendium()}
+          data-testid="login-kompendium-btn"
+          style={{ opacity: 0.6, border: 'none', letterSpacing: '0.15em' }}
+        >
+          ◈ KOMPENDIUM
+        </button>
       </div>
     </div>
   );

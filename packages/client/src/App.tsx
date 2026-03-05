@@ -2,6 +2,7 @@ import { MonitorBezel } from './components/MonitorBezel';
 import { LoginScreen } from './components/LoginScreen';
 import { GameScreen } from './components/GameScreen';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { CompendiumOverlay } from './components/CompendiumOverlay';
 import { useStore } from './state/store';
 import './styles/global.css';
 
@@ -10,9 +11,12 @@ export function App() {
 
   if (screen === 'login') {
     return (
-      <MonitorBezel monitorId="VOID-SEC">
-        <LoginScreen />
-      </MonitorBezel>
+      <>
+        <MonitorBezel monitorId="VOID-SEC">
+          <LoginScreen />
+        </MonitorBezel>
+        <CompendiumOverlay />
+      </>
     );
   }
 

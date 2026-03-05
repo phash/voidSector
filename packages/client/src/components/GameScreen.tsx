@@ -17,6 +17,7 @@ import { BattleResultDialog } from './BattleResultDialog';
 import { ModulePanel } from './ModulePanel';
 import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
+import { CompendiumOverlay } from './CompendiumOverlay';
 import { StationCombatOverlay } from './StationCombatOverlay';
 import { TechTreePanel } from './TechTreePanel';
 import { TechDetailPanel } from './TechDetailPanel';
@@ -320,6 +321,7 @@ export function GameScreen() {
       <StationCombatOverlay />
       <BattleResultDialog />
       <BlueprintDialog />
+      <CompendiumOverlay />
       <HelpOverlay />
     </div>
   );
