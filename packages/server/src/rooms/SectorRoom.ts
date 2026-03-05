@@ -553,6 +553,24 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('deliverSurvivors', (client, data) =>
       this.world.handleDeliverSurvivors(client, data),
     );
+    this.onMessage('upgradeJumpgate', async (client, data: { gateId: string; upgradeType: string }) => {
+      await this.world.handleUpgradeJumpgate(client, data);
+    });
+    this.onMessage('dismantleJumpgate', async (client, data: { gateId: string }) => {
+      await this.world.handleDismantleJumpgate(client, data);
+    });
+    this.onMessage('setJumpgateToll', async (client, data: { gateId: string; toll: number }) => {
+      await this.world.handleSetJumpgateToll(client, data);
+    });
+    this.onMessage('linkJumpgate', async (client, data: { slateId: string }) => {
+      await this.world.handleLinkJumpgate(client, data);
+    });
+    this.onMessage('unlinkJumpgate', async (client, data: { gateId: string; linkedGateId: string }) => {
+      await this.world.handleUnlinkJumpgate(client, data);
+    });
+    this.onMessage('usePlayerGate', async (client, data: { gateId: string; destinationGateId: string }) => {
+      await this.navigation.handleUsePlayerGate(client, data);
+    });
 
     // ── Trade Routes ────────────────────────────────────────────────
     this.onMessage('configureRoute', (client, data) =>
@@ -827,6 +845,12 @@ export class SectorRoom extends Room<SectorRoomState> {
           await this.navigation.tryAutoRefuel(client, auth, stats);
         }
       }
+
+      // Detect jumpgate in sector (also works for D-pad arrivals via cross-quadrant join)
+      await this.navigation.detectAndSendJumpGate(client, auth, sectorX, sectorY);
+
+      // Detect player-built jumpgate in sector
+      await this.navigation.detectAndSendPlayerGate(client, sectorX, sectorY);
 
       // Send initial hyperdrive state when V2 is enabled
       if (FEATURE_HYPERDRIVE_V2 && stats.hyperdriveRange > 0) {

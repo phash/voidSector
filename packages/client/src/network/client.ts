@@ -40,6 +40,8 @@ import type {
   FirstContactEvent,
   HyperdriveState,
   AutoRefuelConfig,
+  PlayerJumpGate,
+  JumpGateDestination,
 } from '@void-sector/shared';
 import type { ClientShipData } from '../state/gameSlice';
 
@@ -220,6 +222,8 @@ class GameNetwork {
       const store = useStore.getState();
       store.setCurrentSector(sector);
       store.addDiscoveries([sector]);
+      // Clear player gate info — server will re-send if new sector has a gate
+      store.setPlayerGateInfo(null);
       // Sector type help tips
       if (sector.type === 'nebula') store.showTip('first_nebula');
       else if (sector.type === 'station') store.showTip('first_station');
@@ -260,6 +264,10 @@ class GameNetwork {
           store.startJumpAnimation(dx, dy);
           const newSector = data.newSector;
           const needsRoomChange = data.crossQuadrant === true;
+          // Update position immediately to prevent stale coordinates on rapid clicks
+          if (!needsRoomChange) {
+            store.setPosition({ x: newSector.x, y: newSector.y });
+          }
           setTimeout(async () => {
             useStore.getState().addDiscoveries([newSector]);
             useStore
@@ -269,8 +277,7 @@ class GameNetwork {
               // Cross-quadrant: need to leave and join new quadrant room
               await this.joinSector(newSector.x, newSector.y);
             } else {
-              // Same quadrant: server already moved us, just update local state
-              useStore.getState().setPosition({ x: newSector.x, y: newSector.y });
+              // Same quadrant: server already moved us, update remaining state
               useStore.getState().setCurrentSector(newSector);
               useStore.getState().resetPan();
             }
@@ -852,6 +859,92 @@ class GameNetwork {
         store.addLogEntry('FREQUENZ-MATCH ERFOLGREICH — Gate aktiviert');
       } else {
         store.addLogEntry('FREQUENZ-MATCH FEHLGESCHLAGEN');
+      }
+    });
+
+    // Player-built jumpgate info (sent when entering a sector with a player gate)
+    room.onMessage(
+      'playerGateInfo',
+      (data: { gate: PlayerJumpGate; destinations: JumpGateDestination[] }) => {
+        useStore.getState().setPlayerGateInfo(data);
+      },
+    );
+
+    // Player gate travel result
+    room.onMessage(
+      'playerGateResult',
+      (data: {
+        success: boolean;
+        error?: string;
+        newSector?: SectorData;
+        targetX?: number;
+        targetY?: number;
+        credits?: number;
+        hops?: number;
+        tollPaid?: number;
+        crossQuadrant?: boolean;
+      }) => {
+        const store = useStore.getState();
+        if (data.success && data.newSector) {
+          const dx = data.newSector.x - store.position.x;
+          const dy = data.newSector.y - store.position.y;
+          store.startJumpAnimation(dx, dy);
+          const newSector = data.newSector;
+          const needsRoomChange = data.crossQuadrant === true;
+          if (!needsRoomChange) {
+            store.setPosition({ x: newSector.x, y: newSector.y });
+          }
+          if (data.credits !== undefined) store.setCredits(data.credits);
+          setTimeout(async () => {
+            useStore.getState().addDiscoveries([newSector]);
+            useStore
+              .getState()
+              .addLogEntry(
+                `GATE-SPRUNG nach (${newSector.x}, ${newSector.y}) — ${data.hops ?? 1} Hop(s), ${data.tollPaid ?? 0} CR Maut`,
+              );
+            if (needsRoomChange) {
+              await this.joinSector(newSector.x, newSector.y);
+            } else {
+              useStore.getState().setCurrentSector(newSector);
+              useStore.getState().resetPan();
+            }
+            useStore.getState().clearJumpAnimation();
+          }, 800);
+        } else {
+          store.addLogEntry(`GATE-SPRUNG FEHLER: ${data.error}`);
+        }
+      },
+    );
+
+    // Jumpgate upgraded / toll changed
+    room.onMessage(
+      'jumpgateUpdated',
+      (data: { success: boolean; gateId?: string; field?: string; newLevel?: number; tollCredits?: number }) => {
+        if (data.success) {
+          useStore.getState().addLogEntry('Jumpgate aktualisiert');
+        }
+      },
+    );
+
+    // Jumpgate dismantled
+    room.onMessage('jumpgateDismantled', (data: { success: boolean; refund?: Record<string, number> }) => {
+      if (data.success) {
+        useStore.getState().setPlayerGateInfo(null);
+        useStore.getState().addLogEntry('Jumpgate abgebaut');
+      }
+    });
+
+    // Jumpgate link result (link created via gate slate)
+    room.onMessage('jumpgateLinkResult', (data: { success: boolean }) => {
+      if (data.success) {
+        useStore.getState().addLogEntry('Gate verknüpft');
+      }
+    });
+
+    // Jumpgate unlink result
+    room.onMessage('jumpgateUnlinkResult', (data: { success: boolean }) => {
+      if (data.success) {
+        useStore.getState().addLogEntry('Verbindung getrennt');
       }
     });
 
@@ -1443,7 +1536,7 @@ class GameNetwork {
   }
 
   // Data Slates
-  sendCreateSlate(slateType: 'sector' | 'area') {
+  sendCreateSlate(slateType: 'sector' | 'area' | 'jumpgate') {
     this.sectorRoom?.send('createSlate', { slateType });
   }
 
@@ -1694,6 +1787,32 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('createCustomSlate', data);
+  }
+
+  // --- Player Gates ---
+
+  sendUpgradeJumpgate(gateId: string, upgradeType: string) {
+    this.sectorRoom?.send('upgradeJumpgate', { gateId, upgradeType });
+  }
+
+  sendDismantleJumpgate(gateId: string) {
+    this.sectorRoom?.send('dismantleJumpgate', { gateId });
+  }
+
+  sendSetJumpgateToll(gateId: string, toll: number) {
+    this.sectorRoom?.send('setJumpgateToll', { gateId, toll });
+  }
+
+  sendLinkJumpgate(slateId: string) {
+    this.sectorRoom?.send('linkJumpgate', { slateId });
+  }
+
+  sendUnlinkJumpgate(gateId: string, linkedGateId: string) {
+    this.sectorRoom?.send('unlinkJumpgate', { gateId, linkedGateId });
+  }
+
+  sendUsePlayerGate(gateId: string, destinationGateId: string) {
+    this.sectorRoom?.send('usePlayerGate', { gateId, destinationGateId });
   }
 
   // --- Ship designer ---

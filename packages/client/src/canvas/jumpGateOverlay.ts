@@ -1,4 +1,5 @@
 import type { JumpGateMapEntry } from '@void-sector/shared';
+import { SYMBOLS } from '@void-sector/shared';
 
 /**
  * Color palette for jumpgate chains.
@@ -164,6 +165,69 @@ export function drawJumpGateLines(
 
   ctx.setLineDash([]);
   ctx.globalAlpha = 1.0;
+  ctx.restore();
+}
+
+/**
+ * Draws jumpgate icon symbols (◎) at each gate sector position on the radar.
+ * Uses chain colors for consistent coloring with connection lines.
+ */
+export function drawJumpGateIcons(
+  ctx: CanvasRenderingContext2D,
+  gates: JumpGateMapEntry[],
+  viewX: number,
+  viewY: number,
+  radiusX: number,
+  radiusY: number,
+  gridCenterX: number,
+  gridCenterY: number,
+  cellW: number,
+  cellH: number,
+): void {
+  if (gates.length === 0) return;
+
+  const chainMap = buildChainMap(gates);
+
+  // Collect unique gate positions with their chain color
+  const positionMap = new Map<string, string>();
+  for (const gate of gates) {
+    const ci = chainMap.get(gate.gateId) ?? 0;
+    const color = chainColor(ci);
+
+    const fromKey = `${gate.fromX}:${gate.fromY}`;
+    if (!positionMap.has(fromKey)) {
+      positionMap.set(fromKey, color);
+    }
+
+    const toKey = `${gate.toX}:${gate.toY}`;
+    if (!positionMap.has(toKey)) {
+      positionMap.set(toKey, color);
+    }
+  }
+
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${Math.max(cellW, cellH) * 0.8}px monospace`;
+
+  for (const [key, color] of positionMap) {
+    const [xStr, yStr] = key.split(':');
+    const x = Number(xStr);
+    const y = Number(yStr);
+
+    const dx = x - viewX;
+    const dy = y - viewY;
+
+    if (Math.abs(dx) > radiusX || Math.abs(dy) > radiusY) continue;
+
+    const px = gridCenterX + dx * cellW;
+    const py = gridCenterY + dy * cellH;
+
+    ctx.fillStyle = color;
+    ctx.fillText(SYMBOLS.jumpgate, px, py);
+  }
+
   ctx.restore();
 }
 

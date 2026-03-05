@@ -88,6 +88,7 @@ export const STRUCTURE_COSTS: Record<StructureType, Record<MineableResourceType,
   factory: { ore: 40, gas: 20, crystal: 15 },
   research_lab: { ore: 30, gas: 25, crystal: 30 },
   kontor: { ore: 20, gas: 10, crystal: 10 },
+  jumpgate: { ore: 0, gas: 0, crystal: 20 },
 };
 
 export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
@@ -102,6 +103,7 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
   factory: 20,
   research_lab: 25,
   kontor: 15,
+  jumpgate: 10,
 };
 
 export const RELAY_RANGES: Record<StructureType, number> = {
@@ -116,7 +118,31 @@ export const RELAY_RANGES: Record<StructureType, number> = {
   factory: 0,
   research_lab: 0,
   kontor: 0,
+  jumpgate: 0,
 };
+
+// Player Jumpgate costs
+export const JUMPGATE_BUILD_COST = { credits: 500, crystal: 20, artefact: 5 };
+export const JUMPGATE_UPGRADE_COSTS: Record<string, Record<string, number>> = {
+  connection_2: { credits: 300, ore: 15, artefact: 3 },
+  connection_3: { credits: 800, ore: 30, artefact: 8 },
+  distance_2: { credits: 300, crystal: 15, artefact: 3 },
+  distance_3: { credits: 800, crystal: 30, artefact: 8 },
+};
+
+export const JUMPGATE_DISTANCE_LIMITS: Record<number, number> = {
+  1: 250,
+  2: 500,
+  3: 2500,
+};
+
+export const JUMPGATE_CONNECTION_LIMITS: Record<number, number> = {
+  1: 1,
+  2: 2,
+  3: 3,
+};
+
+export const JUMPGATE_MAX_CHAIN_HOPS = 10;
 
 // NPC Trade Prices (base prices per unit in credits)
 export const NPC_PRICES: Record<MineableResourceType, number> = {
@@ -1296,6 +1322,7 @@ export const SYMBOLS = {
   player: '\u25C6',
   iron: '\u26CF',
   homeBase: '\u2302',
+  jumpgate: '\u25CE', // ◎
 } as const;
 
 // Environment-specific radar colors
@@ -1476,6 +1503,9 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 
 // Multi-content sectors
 export const SECTOR_MAX_FEATURES = 3;
+
+// Home base safe zone — no pirate spawns within this Manhattan distance
+export const HOME_BASE_SAFE_RADIUS = 5;
 
 // Emergency Warp (Notruf)
 /** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */

@@ -39,6 +39,8 @@ import type {
   FirstContactEvent,
   HyperdriveState,
   AutoRefuelConfig,
+  PlayerJumpGate,
+  JumpGateDestination,
 } from '@void-sector/shared';
 
 /**
@@ -301,6 +303,9 @@ export interface GameSlice {
   // Player stats (logbuch)
   playerStats: PlayerStats;
 
+  // Player Gates
+  playerGateInfo: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null;
+
   // Quadrant system
   knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
   currentQuadrant: { qx: number; qy: number; name?: string | null } | null;
@@ -371,6 +376,7 @@ export interface GameSlice {
   setNpcStationData: (data: GameSlice['npcStationData']) => void;
   setFactoryState: (data: GameSlice['factoryState']) => void;
   setKontorOrders: (orders: GameSlice['kontorOrders']) => void;
+  setPlayerGateInfo: (info: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null) => void;
   setKnownQuadrants: (quadrants: Array<{ qx: number; qy: number; learnedAt: string }>) => void;
   setCurrentQuadrant: (q: { qx: number; qy: number; name?: string | null } | null) => void;
   setFirstContactEvent: (event: FirstContactEvent | null) => void;
@@ -455,6 +461,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   selectedQuest: null,
   directChatRecipient: null,
   playerStats: loadPlayerStats(),
+  playerGateInfo: null,
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
@@ -605,6 +612,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setNpcStationData: (npcStationData) => set({ npcStationData }),
   setFactoryState: (factoryState) => set({ factoryState }),
   setKontorOrders: (kontorOrders) => set({ kontorOrders }),
+  setPlayerGateInfo: (playerGateInfo) => set({ playerGateInfo }),
   setKnownQuadrants: (knownQuadrants) => set({ knownQuadrants }),
   setCurrentQuadrant: (currentQuadrant) => set({ currentQuadrant }),
   setFirstContactEvent: (firstContactEvent) => set({ firstContactEvent }),

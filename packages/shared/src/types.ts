@@ -201,7 +201,8 @@ export type StructureType =
   | 'ion_cannon'
   | 'factory'
   | 'research_lab'
-  | 'kontor';
+  | 'kontor'
+  | 'jumpgate';
 
 export interface Structure {
   id: string;
@@ -329,7 +330,7 @@ export interface AcceptOrderMessage {
 }
 
 // --- Data Slates ---
-export type SlateType = 'sector' | 'area' | 'custom';
+export type SlateType = 'sector' | 'area' | 'custom' | 'jumpgate';
 
 export interface SectorSlateData {
   x: number;
@@ -1163,4 +1164,32 @@ export interface JumpGateMapEntry {
   toX: number;
   toY: number;
   gateType: string; // 'bidirectional' | 'wormhole'
+}
+
+// --- Player Jump Gates ---
+export interface PlayerJumpGate {
+  id: string;
+  sectorX: number;
+  sectorY: number;
+  ownerId: string;
+  ownerName?: string;
+  levelConnection: number;
+  levelDistance: number;
+  tollCredits: number;
+  linkedGates: PlayerJumpGateLink[];
+}
+
+export interface PlayerJumpGateLink {
+  gateId: string;
+  sectorX: number;
+  sectorY: number;
+  ownerName?: string;
+}
+
+export interface JumpGateDestination {
+  gateId: string;
+  sectorX: number;
+  sectorY: number;
+  totalCost: number;
+  hops: number;
 }

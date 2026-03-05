@@ -19,7 +19,7 @@ import type {
 } from '@void-sector/shared';
 
 import { logger } from '../../utils/logger.js';
-import { calculateCurrentAP } from '../../engine/ap.js';
+import { calculateCurrentAP, spendAP } from '../../engine/ap.js';
 import { validateBuild, validateCreateSlate, validateNpcBuyback } from '../../engine/commands.js';
 import {
   checkDistressCall,
@@ -40,6 +40,11 @@ import {
 } from '../../engine/quadrantEngine.js';
 import {
   JUMPGATE_FUEL_COST,
+  JUMPGATE_BUILD_COST,
+  JUMPGATE_UPGRADE_COSTS,
+  JUMPGATE_DISTANCE_LIMITS,
+  JUMPGATE_CONNECTION_LIMITS,
+  STRUCTURE_AP_COSTS,
   RESCUE_AP_COST,
   RESCUE_EXPIRY_MINUTES,
   NPC_PRICES,
@@ -99,6 +104,17 @@ import {
   updateTradeRouteLastCycle,
   getActiveTradeRoutes,
   getPlayerKnownJumpGates,
+  getPlayerJumpGate,
+  getPlayerJumpGateById,
+  insertPlayerJumpGate,
+  upgradeJumpGate,
+  updateJumpGateToll,
+  deleteJumpGate,
+  getJumpGateLinks,
+  insertJumpGateLink,
+  removeJumpGateLink,
+  countJumpGateLinks,
+  addToCargo,
 } from '../../db/queries.js';
 import {
   getPlayerKnownQuadrants,
@@ -121,6 +137,7 @@ const VALID_STRUCTURE_TYPES = [
   'factory',
   'research_lab',
   'kontor',
+  'jumpgate',
 ];
 
 export class WorldService {
@@ -234,6 +251,13 @@ export class WorldService {
       return;
     }
     const auth = client.auth as AuthPayload;
+
+    // Jumpgate goes into the jumpgates table, not structures — handle separately
+    if (data.type === 'jumpgate') {
+      await this.handleBuildJumpgate(client, auth);
+      return;
+    }
+
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
     const cargo = await getPlayerCargo(auth.userId);
@@ -290,6 +314,216 @@ export class WorldService {
     });
   }
 
+  // ── Jumpgate Build ─────────────────────────────────────────────────
+
+  private async handleBuildJumpgate(client: Client, auth: AuthPayload): Promise<void> {
+    const sx = this.ctx._px(client.sessionId);
+    const sy = this.ctx._py(client.sessionId);
+
+    // Check no existing player gate at this sector
+    const existingGate = await getPlayerJumpGate(sx, sy);
+    if (existingGate) {
+      client.send('buildResult', { success: false, error: 'Jumpgate already exists here' });
+      return;
+    }
+
+    // Check for world gate
+    const worldGate = await getJumpGate(sx, sy);
+    if (worldGate) {
+      client.send('buildResult', { success: false, error: 'World gate already exists here' });
+      return;
+    }
+
+    // Check credits
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < JUMPGATE_BUILD_COST.credits) {
+      client.send('buildResult', { success: false, error: `Need ${JUMPGATE_BUILD_COST.credits} credits` });
+      return;
+    }
+
+    // Check artefacts
+    const cargoState = await getPlayerCargo(auth.userId);
+    if ((cargoState.artefact ?? 0) < JUMPGATE_BUILD_COST.artefact) {
+      client.send('buildResult', { success: false, error: `Need ${JUMPGATE_BUILD_COST.artefact} artefacts` });
+      return;
+    }
+
+    // Check crystal (from STRUCTURE_COSTS)
+    if ((cargoState.crystal ?? 0) < JUMPGATE_BUILD_COST.crystal) {
+      client.send('buildResult', { success: false, error: `Need ${JUMPGATE_BUILD_COST.crystal} crystal` });
+      return;
+    }
+
+    // Deduct AP
+    const ap = await getAPState(auth.userId);
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    const newAP = spendAP(currentAP, STRUCTURE_AP_COSTS.jumpgate);
+    if (!newAP) {
+      client.send('buildResult', { success: false, error: 'Not enough AP' });
+      return;
+    }
+    await saveAPState(auth.userId, newAP);
+
+    // Deduct all resources
+    await deductCredits(auth.userId, JUMPGATE_BUILD_COST.credits);
+    await deductCargo(auth.userId, 'artefact', JUMPGATE_BUILD_COST.artefact);
+    await deductCargo(auth.userId, 'crystal', JUMPGATE_BUILD_COST.crystal);
+
+    // Insert into jumpgates table
+    const gateId = `pgate_${sx}_${sy}`;
+    await insertPlayerJumpGate({ id: gateId, sectorX: sx, sectorY: sy, ownerId: auth.userId });
+
+    client.send('buildResult', { success: true, structure: { id: gateId, type: 'jumpgate', sectorX: sx, sectorY: sy } });
+    client.send('apUpdate', newAP);
+    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    client.send('logEntry', `Jumpgate errichtet bei (${sx}, ${sy})`);
+  }
+
+  // ── Jumpgate Upgrade / Dismantle / Toll ───────────────────────────
+
+  async handleUpgradeJumpgate(client: Client, data: { gateId: string; upgradeType: string }): Promise<void> {
+    if (rejectGuest(client, 'Upgraden')) return;
+    const auth = client.auth as AuthPayload;
+
+    const gate = await getPlayerJumpGateById(data.gateId);
+    if (!gate || gate.ownerId !== auth.userId) {
+      client.send('error', { code: 'UPGRADE_FAIL', message: 'Not your gate' });
+      return;
+    }
+
+    const costs = JUMPGATE_UPGRADE_COSTS[data.upgradeType];
+    if (!costs) {
+      client.send('error', { code: 'UPGRADE_FAIL', message: 'Invalid upgrade type' });
+      return;
+    }
+
+    // Determine which field and new level
+    let field: 'level_connection' | 'level_distance';
+    let currentLevel: number;
+    if (data.upgradeType.startsWith('connection_')) {
+      field = 'level_connection';
+      currentLevel = gate.levelConnection;
+    } else {
+      field = 'level_distance';
+      currentLevel = gate.levelDistance;
+    }
+
+    const targetLevel = parseInt(data.upgradeType.split('_')[1], 10);
+    if (currentLevel >= targetLevel) {
+      client.send('error', { code: 'UPGRADE_FAIL', message: 'Already at this level or higher' });
+      return;
+    }
+    if (targetLevel !== currentLevel + 1) {
+      client.send('error', { code: 'UPGRADE_FAIL', message: 'Must upgrade sequentially' });
+      return;
+    }
+
+    // Check resources
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < (costs.credits ?? 0)) {
+      client.send('error', { code: 'UPGRADE_FAIL', message: 'Not enough credits' });
+      return;
+    }
+    const cargo = await getPlayerCargo(auth.userId);
+    for (const [resource, amount] of Object.entries(costs)) {
+      if (resource === 'credits' || !amount) continue;
+      if ((cargo[resource as keyof typeof cargo] ?? 0) < amount) {
+        client.send('error', { code: 'UPGRADE_FAIL', message: `Not enough ${resource}` });
+        return;
+      }
+    }
+
+    // Deduct
+    await deductCredits(auth.userId, costs.credits ?? 0);
+    for (const [resource, amount] of Object.entries(costs)) {
+      if (resource === 'credits' || !amount) continue;
+      await deductCargo(auth.userId, resource, amount);
+    }
+
+    await upgradeJumpGate(data.gateId, field, targetLevel);
+
+    client.send('jumpgateUpdated', { success: true, gateId: data.gateId, field, newLevel: targetLevel });
+    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    client.send('logEntry', `Jumpgate ${field === 'level_connection' ? 'Verbindung' : 'Distanz'} auf Level ${targetLevel} aufgerüstet`);
+  }
+
+  async handleDismantleJumpgate(client: Client, data: { gateId: string }): Promise<void> {
+    if (rejectGuest(client, 'Abbauen')) return;
+    const auth = client.auth as AuthPayload;
+
+    const gate = await getPlayerJumpGateById(data.gateId);
+    if (!gate || gate.ownerId !== auth.userId) {
+      client.send('error', { code: 'DISMANTLE_FAIL', message: 'Not your gate' });
+      return;
+    }
+
+    // Calculate 50% refund of total invested resources
+    let totalCredits = JUMPGATE_BUILD_COST.credits;
+    let totalOre = 0;
+    let totalCrystal = JUMPGATE_BUILD_COST.crystal;
+    let totalArtefact = JUMPGATE_BUILD_COST.artefact;
+
+    for (let lvl = 2; lvl <= gate.levelConnection; lvl++) {
+      const upgCosts = JUMPGATE_UPGRADE_COSTS[`connection_${lvl}`];
+      if (upgCosts) {
+        totalCredits += upgCosts.credits ?? 0;
+        totalOre += upgCosts.ore ?? 0;
+        totalArtefact += upgCosts.artefact ?? 0;
+      }
+    }
+    for (let lvl = 2; lvl <= gate.levelDistance; lvl++) {
+      const upgCosts = JUMPGATE_UPGRADE_COSTS[`distance_${lvl}`];
+      if (upgCosts) {
+        totalCredits += upgCosts.credits ?? 0;
+        totalCrystal += upgCosts.crystal ?? 0;
+        totalArtefact += upgCosts.artefact ?? 0;
+      }
+    }
+
+    const refund = {
+      credits: Math.floor(totalCredits / 2),
+      ore: Math.floor(totalOre / 2),
+      crystal: Math.floor(totalCrystal / 2),
+      artefact: Math.floor(totalArtefact / 2),
+    };
+
+    // Delete gate (links cascade)
+    await deleteJumpGate(data.gateId);
+
+    // Return resources
+    await addCredits(auth.userId, refund.credits);
+    if (refund.ore > 0) await addToCargo(auth.userId, 'ore', refund.ore);
+    if (refund.crystal > 0) await addToCargo(auth.userId, 'crystal', refund.crystal);
+    if (refund.artefact > 0) await addToCargo(auth.userId, 'artefact', refund.artefact);
+
+    client.send('jumpgateDismantled', { success: true, refund });
+    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    client.send('logEntry', `Jumpgate abgebaut. Rückerstattung: ${refund.credits} CR`);
+  }
+
+  async handleSetJumpgateToll(client: Client, data: { gateId: string; toll: number }): Promise<void> {
+    if (rejectGuest(client, 'Maut setzen')) return;
+    const auth = client.auth as AuthPayload;
+
+    if (typeof data.toll !== 'number' || data.toll < 0 || !Number.isInteger(data.toll)) {
+      client.send('error', { code: 'TOLL_FAIL', message: 'Invalid toll amount' });
+      return;
+    }
+
+    const gate = await getPlayerJumpGateById(data.gateId);
+    if (!gate || gate.ownerId !== auth.userId) {
+      client.send('error', { code: 'TOLL_FAIL', message: 'Not your gate' });
+      return;
+    }
+
+    await updateJumpGateToll(data.gateId, data.toll);
+    client.send('jumpgateUpdated', { success: true, gateId: data.gateId, tollCredits: data.toll });
+    client.send('logEntry', `Maut auf ${data.toll} CR gesetzt`);
+  }
+
   // ── Slate Handlers ──────────────────────────────────────────────────
 
   private mapSlateRow(row: any) {
@@ -308,7 +542,7 @@ export class WorldService {
   async handleCreateSlate(client: Client, data: CreateSlateMessage): Promise<void> {
     if (rejectGuest(client, 'Data Slates erstellen')) return;
     const auth = client.auth as AuthPayload;
-    if (!['sector', 'area'].includes(data.slateType)) {
+    if (!['sector', 'area', 'jumpgate'].includes(data.slateType)) {
       client.send('createSlateResult', { success: false, error: 'Invalid slate type' });
       return;
     }
@@ -338,7 +572,21 @@ export class WorldService {
     const sectorX = this.ctx._px(client.sessionId);
     const sectorY = this.ctx._py(client.sessionId);
 
-    if (data.slateType === 'sector') {
+    if (data.slateType === 'jumpgate') {
+      const gate = await getPlayerJumpGate(sectorX, sectorY);
+      if (!gate || gate.ownerId !== auth.userId) {
+        client.send('createSlateResult', { success: false, error: 'You must be at your own jumpgate' });
+        return;
+      }
+      sectorData = [
+        {
+          gateId: gate.id,
+          sectorX,
+          sectorY,
+          ownerName: auth.username,
+        },
+      ];
+    } else if (data.slateType === 'sector') {
       const sector = await getSector(sectorX, sectorY);
       const resources = sector?.resources ?? { ore: 0, gas: 0, crystal: 0 };
       sectorData = [
@@ -422,6 +670,114 @@ export class WorldService {
     client.send('activateSlateResult', { success: true, sectorsAdded: sectors.length });
     const cargo = await getPlayerCargo(auth.userId);
     client.send('cargoUpdate', cargo);
+  }
+
+  async handleLinkJumpgate(client: Client, data: { slateId: string }): Promise<void> {
+    if (rejectGuest(client, 'Verknüpfen')) return;
+    const auth = client.auth as AuthPayload;
+
+    // Get player's gate at current sector
+    const sx = this.ctx._px(client.sessionId);
+    const sy = this.ctx._py(client.sessionId);
+    const myGate = await getPlayerJumpGate(sx, sy);
+    if (!myGate || myGate.ownerId !== auth.userId) {
+      client.send('error', { code: 'LINK_FAIL', message: 'You must be at your own jumpgate' });
+      return;
+    }
+
+    // Get slate from cargo
+    const slate = await getSlateById(data.slateId);
+    if (!slate || slate.owner_id !== auth.userId || slate.slate_type !== 'jumpgate') {
+      client.send('error', { code: 'LINK_FAIL', message: 'Jumpgate slate not found in cargo' });
+      return;
+    }
+    if (slate.status !== 'available') {
+      client.send('error', { code: 'LINK_FAIL', message: 'Slate is listed on market' });
+      return;
+    }
+
+    // Extract target gate info from the slate's metadata
+    const slateMeta = (slate.sector_data as any[])[0];
+    const targetGateId = slateMeta.gateId;
+
+    // Look up the target gate by ID
+    const targetGate = await getPlayerJumpGateById(targetGateId);
+    if (!targetGate || !targetGate.ownerId) {
+      client.send('error', { code: 'LINK_FAIL', message: 'Target gate no longer exists' });
+      return;
+    }
+
+    // Prevent self-linking
+    if (myGate.id === targetGateId) {
+      client.send('error', { code: 'LINK_FAIL', message: 'Cannot link a gate to itself' });
+      return;
+    }
+
+    // Check distance (Manhattan distance)
+    const dist = Math.abs(myGate.sectorX - targetGate.sectorX) + Math.abs(myGate.sectorY - targetGate.sectorY);
+    const maxDist = JUMPGATE_DISTANCE_LIMITS[myGate.levelDistance] + JUMPGATE_DISTANCE_LIMITS[targetGate.levelDistance];
+    if (dist > maxDist) {
+      client.send('error', { code: 'LINK_FAIL', message: `Distance ${dist} exceeds max range ${maxDist}` });
+      return;
+    }
+
+    // Check connection slots on both gates
+    const myLinks = await countJumpGateLinks(myGate.id);
+    if (myLinks >= JUMPGATE_CONNECTION_LIMITS[myGate.levelConnection]) {
+      client.send('error', { code: 'LINK_FAIL', message: 'No free connection slots on your gate' });
+      return;
+    }
+    const targetLinks = await countJumpGateLinks(targetGateId);
+    if (targetLinks >= JUMPGATE_CONNECTION_LIMITS[targetGate.levelConnection]) {
+      client.send('error', { code: 'LINK_FAIL', message: 'Target gate has no free connection slots' });
+      return;
+    }
+
+    // Create bidirectional link, consume the slate
+    await insertJumpGateLink(myGate.id, targetGateId);
+    await removeSlateFromCargo(auth.userId);
+    await deleteSlate(data.slateId);
+
+    client.send('jumpgateLinkResult', { success: true });
+    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('logEntry', `Gate bei (${targetGate.sectorX}, ${targetGate.sectorY}) verknüpft`);
+  }
+
+  async handleUnlinkJumpgate(client: Client, data: { gateId: string; linkedGateId: string }): Promise<void> {
+    if (rejectGuest(client, 'Trennen')) return;
+    const auth = client.auth as AuthPayload;
+
+    // Verify ownership of the gate being unlinked from
+    const gate = await getPlayerJumpGateById(data.gateId);
+    if (!gate || gate.ownerId !== auth.userId) {
+      client.send('error', { code: 'UNLINK_FAIL', message: 'Not your gate' });
+      return;
+    }
+
+    // Look up the linked gate to get its info for the returned slate
+    const linkedGate = await getPlayerJumpGateById(data.linkedGateId);
+    if (!linkedGate) {
+      client.send('error', { code: 'UNLINK_FAIL', message: 'Linked gate not found' });
+      return;
+    }
+
+    await removeJumpGateLink(data.gateId, data.linkedGateId);
+
+    // Return a jumpgate data slate to the player
+    const slateData = [
+      {
+        gateId: linkedGate.id,
+        sectorX: linkedGate.sectorX,
+        sectorY: linkedGate.sectorY,
+        ownerName: linkedGate.ownerName ?? 'Unknown',
+      },
+    ];
+    await createDataSlate(auth.userId, 'jumpgate', slateData);
+    await addSlateToCargo(auth.userId);
+
+    client.send('jumpgateUnlinkResult', { success: true });
+    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('logEntry', 'Verbindung getrennt. Gate-Slate zurückerhalten.');
   }
 
   async handleNpcBuyback(client: Client, data: NpcBuybackMessage): Promise<void> {

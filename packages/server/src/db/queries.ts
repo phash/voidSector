@@ -1398,6 +1398,161 @@ export async function addPlayerKnownJumpGate(
   );
 }
 
+// --- Player JumpGates ---
+
+export async function insertPlayerJumpGate(gate: {
+  id: string;
+  sectorX: number;
+  sectorY: number;
+  ownerId: string;
+  tollCredits?: number;
+}): Promise<void> {
+  await query(
+    `INSERT INTO jumpgates (id, sector_x, sector_y, target_x, target_y, gate_type, owner_id, toll_credits, built_at)
+     VALUES ($1, $2, $3, $2, $3, 'bidirectional', $4, $5, NOW())
+     ON CONFLICT (sector_x, sector_y) DO NOTHING`,
+    [gate.id, gate.sectorX, gate.sectorY, gate.ownerId, gate.tollCredits ?? 0],
+  );
+}
+
+export async function getPlayerJumpGate(sectorX: number, sectorY: number): Promise<any | null> {
+  const { rows } = await query(
+    `SELECT g.id, g.sector_x as "sectorX", g.sector_y as "sectorY",
+            g.owner_id as "ownerId", g.level_connection as "levelConnection",
+            g.level_distance as "levelDistance", g.toll_credits as "tollCredits",
+            p.username as "ownerName"
+     FROM jumpgates g
+     LEFT JOIN players p ON p.id::text = g.owner_id::text
+     WHERE g.sector_x = $1 AND g.sector_y = $2 AND g.owner_id IS NOT NULL`,
+    [sectorX, sectorY],
+  );
+  return rows[0] ?? null;
+}
+
+export async function getPlayerJumpGateById(gateId: string): Promise<any | null> {
+  const { rows } = await query(
+    `SELECT g.id, g.sector_x as "sectorX", g.sector_y as "sectorY",
+            g.owner_id as "ownerId", g.level_connection as "levelConnection",
+            g.level_distance as "levelDistance", g.toll_credits as "tollCredits",
+            p.username as "ownerName"
+     FROM jumpgates g
+     LEFT JOIN players p ON p.id::text = g.owner_id::text
+     WHERE g.id = $1 AND g.owner_id IS NOT NULL`,
+    [gateId],
+  );
+  return rows[0] ?? null;
+}
+
+export async function getJumpGateLinks(gateId: string): Promise<Array<{
+  gateId: string; sectorX: number; sectorY: number; ownerName?: string;
+}>> {
+  const { rows } = await query(
+    `SELECT g.id as "gateId", g.sector_x as "sectorX", g.sector_y as "sectorY",
+            p.username as "ownerName"
+     FROM jumpgate_links jl
+     JOIN jumpgates g ON g.id = jl.linked_gate_id
+     LEFT JOIN players p ON p.id::text = g.owner_id::text
+     WHERE jl.gate_id = $1`,
+    [gateId],
+  );
+  return rows;
+}
+
+export async function insertJumpGateLink(gateId: string, linkedGateId: string): Promise<void> {
+  await query(
+    `INSERT INTO jumpgate_links (gate_id, linked_gate_id) VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [gateId, linkedGateId],
+  );
+  // Bidirectional
+  await query(
+    `INSERT INTO jumpgate_links (gate_id, linked_gate_id) VALUES ($1, $2)
+     ON CONFLICT DO NOTHING`,
+    [linkedGateId, gateId],
+  );
+}
+
+export async function removeJumpGateLink(gateId: string, linkedGateId: string): Promise<void> {
+  await query(
+    `DELETE FROM jumpgate_links WHERE
+     (gate_id = $1 AND linked_gate_id = $2) OR (gate_id = $2 AND linked_gate_id = $1)`,
+    [gateId, linkedGateId],
+  );
+}
+
+export async function countJumpGateLinks(gateId: string): Promise<number> {
+  const { rows } = await query(
+    `SELECT COUNT(*)::int as count FROM jumpgate_links WHERE gate_id = $1`,
+    [gateId],
+  );
+  return rows[0]?.count ?? 0;
+}
+
+export async function upgradeJumpGate(
+  gateId: string,
+  field: 'level_connection' | 'level_distance',
+  newLevel: number,
+): Promise<void> {
+  await query(`UPDATE jumpgates SET ${field} = $2 WHERE id = $1`, [gateId, newLevel]);
+}
+
+export async function updateJumpGateToll(gateId: string, toll: number): Promise<void> {
+  await query(`UPDATE jumpgates SET toll_credits = $1 WHERE id = $2`, [toll, gateId]);
+}
+
+export async function deleteJumpGate(gateId: string): Promise<void> {
+  // Links cascade-delete due to ON DELETE CASCADE
+  await query(`DELETE FROM jumpgates WHERE id = $1`, [gateId]);
+}
+
+export async function getAllPlayerGateLinks(): Promise<Array<{
+  gateId: string; fromX: number; fromY: number; toX: number; toY: number;
+}>> {
+  const { rows } = await query(
+    `SELECT jl.gate_id as "gateId",
+            g1.sector_x as "fromX", g1.sector_y as "fromY",
+            g2.sector_x as "toX", g2.sector_y as "toY"
+     FROM jumpgate_links jl
+     JOIN jumpgates g1 ON g1.id = jl.gate_id
+     JOIN jumpgates g2 ON g2.id = jl.linked_gate_id
+     WHERE g1.owner_id IS NOT NULL`,
+    [],
+  );
+  return rows;
+}
+
+export async function getPlayerGateTollConfig(gateId: string): Promise<{ ownerId: string; tollCredits: number } | null> {
+  const { rows } = await query(
+    `SELECT owner_id as "ownerId", toll_credits as "tollCredits" FROM jumpgates WHERE id = $1`,
+    [gateId],
+  );
+  return rows[0] ?? null;
+}
+
+export async function getAllPlayerGates(): Promise<Array<{
+  id: string; sectorX: number; sectorY: number; tollCredits: number; ownerId: string;
+}>> {
+  const { rows } = await query(
+    `SELECT id, sector_x as "sectorX", sector_y as "sectorY",
+            toll_credits as "tollCredits", owner_id as "ownerId"
+     FROM jumpgates
+     WHERE owner_id IS NOT NULL`,
+    [],
+  );
+  return rows;
+}
+
+export async function getAllJumpGateLinks(): Promise<Array<{
+  gateId: string; linkedGateId: string;
+}>> {
+  const { rows } = await query(
+    `SELECT gate_id as "gateId", linked_gate_id as "linkedGateId"
+     FROM jumpgate_links`,
+    [],
+  );
+  return rows;
+}
+
 // --- Phase 5: Rescued Survivors ---
 
 export async function getPlayerSurvivors(
