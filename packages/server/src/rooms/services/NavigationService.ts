@@ -86,7 +86,6 @@ import {
   WORLD_SEED,
   BLACK_HOLE_SPAWN_CHANCE,
   BLACK_HOLE_MIN_DISTANCE,
-  JUMPGATE_FUEL_COST,
 } from '@void-sector/shared';
 
 export class NavigationService {
@@ -1372,13 +1371,6 @@ export class NavigationService {
       return;
     }
 
-    // Check fuel first (before credits to avoid refund complexity)
-    const currentFuel = await getFuelState(auth.userId);
-    if (currentFuel === null || currentFuel < JUMPGATE_FUEL_COST) {
-      client.send('error', { code: 'GATE_FAIL', message: 'Not enough fuel' });
-      return;
-    }
-
     // Check credits
     const credits = await getPlayerCredits(auth.userId);
     if (credits < destination.totalCost) {
@@ -1389,15 +1381,10 @@ export class NavigationService {
       return;
     }
 
-    // Deduct fuel
-    await saveFuelState(auth.userId, currentFuel - JUMPGATE_FUEL_COST);
-
     // Deduct total cost from traveler and distribute tolls
     if (destination.totalCost > 0) {
       const deducted = await deductCredits(auth.userId, destination.totalCost);
       if (!deducted) {
-        // Refund fuel
-        await saveFuelState(auth.userId, currentFuel);
         client.send('error', { code: 'GATE_FAIL', message: 'Insufficient credits' });
         return;
       }
@@ -1444,7 +1431,6 @@ export class NavigationService {
       await savePlayerPosition(auth.userId, targetX, targetY);
     }
 
-    const ship = this.ctx.getShipForClient(client.sessionId);
     const remainingCredits = await getPlayerCredits(auth.userId);
 
     client.send('playerGateResult', {
@@ -1453,10 +1439,6 @@ export class NavigationService {
       targetX,
       targetY,
       credits: remainingCredits,
-      fuel: {
-        current: currentFuel - JUMPGATE_FUEL_COST,
-        max: ship.fuelMax,
-      },
       hops: destination.hops,
       tollPaid: destination.totalCost,
       crossQuadrant,
