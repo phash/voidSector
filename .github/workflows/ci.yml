@@ -47,6 +47,19 @@ jobs:
       - name: Build shared package
         run: npm run build -w packages/shared
 
+      - name: Debug shared dist
+        run: |
+          echo "=== dist contents ==="
+          ls -la packages/shared/dist/
+          echo "=== index.d.ts ==="
+          cat packages/shared/dist/index.d.ts
+          echo "=== types.d.ts first 20 lines ==="
+          head -20 packages/shared/dist/types.d.ts || echo "types.d.ts NOT FOUND"
+          echo "=== node_modules symlink ==="
+          ls -la node_modules/@void-sector/shared
+          echo "=== tsc version ==="
+          npx tsc --version
+
       - name: TypeScript check (shared)
         run: npx tsc --noEmit -p packages/shared/tsconfig.json
 
