@@ -149,7 +149,7 @@ describe('validateAreaScan', () => {
     const ap = createAPState(now);
     const result = validateAreaScan(ap, 1);
     expect(result.valid).toBe(true);
-    expect(result.radius).toBe(2);
+    expect(result.radius).toBe(3);
     expect(result.cost).toBe(3);
   });
 
@@ -158,8 +158,8 @@ describe('validateAreaScan', () => {
     const ap = createAPState(now);
     const result = validateAreaScan(ap, 3);
     expect(result.valid).toBe(true);
-    expect(result.radius).toBe(5);
-    expect(result.cost).toBe(8);
+    expect(result.radius).toBe(9);
+    expect(result.cost).toBe(10);
   });
 
   it('fails with insufficient AP', () => {

@@ -6,7 +6,7 @@ describe('Faction Bonus Application', () => {
   it('should increase mining rate with tier 1A', () => {
     const bonuses = calculateBonuses([{ tier: 1, choice: 'A' }]);
     const boostedRate = MINING_RATE_PER_SECOND * bonuses.miningRateMultiplier;
-    expect(boostedRate).toBeCloseTo(0.115);
+    expect(boostedRate).toBeCloseTo(1.15);
   });
 
   it('should add cargo capacity with tier 1B', () => {

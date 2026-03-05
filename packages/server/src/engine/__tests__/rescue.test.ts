@@ -3,14 +3,14 @@ import { checkDistressCall, calculateRescueReward, canRescue } from '../rescue.j
 import { RESCUE_REWARDS, SHIP_CLASSES } from '@void-sector/shared';
 
 describe('Rescue System', () => {
-  it('should check distress call chance (~8%)', () => {
+  it('should check distress call chance (~0.5%)', () => {
     let calls = 0;
     for (let i = 0; i < 10000; i++) {
       if (checkDistressCall(i, i * 3)) calls++;
     }
     const ratio = calls / 10000;
-    expect(ratio).toBeGreaterThan(0.05);
-    expect(ratio).toBeLessThan(0.12);
+    expect(ratio).toBeGreaterThan(0.002);
+    expect(ratio).toBeLessThan(0.01);
   });
 
   it('should calculate rewards by source type', () => {

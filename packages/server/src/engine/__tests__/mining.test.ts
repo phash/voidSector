@@ -29,7 +29,7 @@ describe('mining engine', () => {
     const now = Date.now();
     const state = startMining('ore', 0, 0, 20, now - 10_000);
     const mined = calculateMinedAmount(state, 50, now);
-    expect(mined).toBe(1); // 10s * 0.1 = 1
+    expect(mined).toBe(10); // 10s * 1.0 = 10
   });
 
   it('calculateMinedAmount caps at sectorYield', () => {
@@ -55,7 +55,7 @@ describe('mining engine', () => {
     const now = Date.now();
     const state = startMining('ore', 0, 0, 20, now - 10_000);
     const result = stopMining(state, 50, now);
-    expect(result.mined).toBe(1);
+    expect(result.mined).toBe(10);
     expect(result.resource).toBe('ore');
     expect(result.newState.active).toBe(false);
   });
