@@ -32,6 +32,7 @@ services:
       DATABASE_URL: postgres://voidsector:voidsector_dev@postgres:5432/voidsector
       REDIS_URL: redis://redis:6379
       JWT_SECRET: voidsector-dev-secret
+      ADMIN_TOKEN: voidsector-admin-dev
       PORT: "2567"
     depends_on:
       postgres:
@@ -52,7 +53,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate --url http://client:3201
+    command: tunnel --url http://client:3201
     depends_on:
       - client
       - server

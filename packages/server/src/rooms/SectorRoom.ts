@@ -722,6 +722,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
       this.state.players.set(client.sessionId, player);
       this.state.playerCount = this.state.players.size;
+      const allPlayers = Array.from(this.state.players.entries()).map(([sid, p]) => ({ sid, username: p.username, x: p.x, y: p.y }));
+      logger.info({ username: auth.username, sectorX, sectorY, playerCount: this.state.playerCount, roomId: this.roomId, allPlayers }, 'Player joined room');
 
       // Load or generate sector for this player
       let sectorData = await getSector(sectorX, sectorY);
