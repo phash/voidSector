@@ -2,17 +2,16 @@ import { SPAWN_MIN_DISTANCE, SPAWN_DISTANCE_VARIANCE } from '@void-sector/shared
 import { findNearbyCluster, createCluster, incrementClusterCount } from '../db/queries.js';
 
 export function generateSpawnPosition(): { x: number; y: number } {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const angle = Math.random() * 2 * Math.PI;
-    const distance = SPAWN_MIN_DISTANCE + Math.random() * SPAWN_DISTANCE_VARIANCE;
-    const x = Math.round(Math.cos(angle) * distance);
-    const y = Math.round(Math.sin(angle) * distance);
-    if (Math.hypot(x, y) >= SPAWN_MIN_DISTANCE) {
-      return { x, y };
-    }
-  }
-  // Fallback: deterministic safe position
-  return { x: SPAWN_MIN_DISTANCE, y: 0 };
+  // Spawn near origin (quadrant 0:0) — the edge of the known universe.
+  // Humans believe this is the center of everything. They are wrong.
+  const SPAWN_Q_MAX = 5;
+  const QUADRANT_SIZE = 10_000;
+  const qx = Math.floor(Math.random() * (SPAWN_Q_MAX + 1));
+  const qy = Math.floor(Math.random() * (SPAWN_Q_MAX + 1));
+  // Keep a small buffer from absolute 0 so the first sector isn't the literal corner
+  const sx = 100 + Math.floor(Math.random() * (QUADRANT_SIZE - 100));
+  const sy = 100 + Math.floor(Math.random() * (QUADRANT_SIZE - 100));
+  return { x: qx * QUADRANT_SIZE + sx, y: qy * QUADRANT_SIZE + sy };
 }
 
 export async function assignToCluster(
