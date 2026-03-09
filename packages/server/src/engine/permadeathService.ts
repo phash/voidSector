@@ -10,6 +10,7 @@
 import { query } from '../db/db.js';
 import { getAcepXpSummary } from './acepXpService.js';
 import { calculateTraits, dominantTrait } from './traitCalculator.js';
+import { addToInventory } from './inventoryService.js';
 
 export interface WreckData {
   id: string;
@@ -213,11 +214,8 @@ export async function salvageWreckModule(
     wreckId,
   ]);
 
-  // Add module to player's module_inventory JSONB array
-  await query(
-    `UPDATE players SET module_inventory = module_inventory || $1::jsonb WHERE id = $2`,
-    [JSON.stringify(module), playerId],
-  );
+  // Add salvaged module to unified inventory
+  await addToInventory(playerId, 'module', module, 1);
 
   return module;
 }

@@ -3,11 +3,24 @@ import {
   upsertInventory,
   deductInventory,
   getInventory,
+  getInventoryItem as dbGetInventoryItem,
   transferInventoryItem,
   getCargoCapForPlayer,
 } from '../db/queries.js';
 
 export { transferInventoryItem };
+
+/**
+ * Returns the quantity of a specific item in the player's unified inventory.
+ * Returns 0 if the item does not exist.
+ */
+export async function getInventoryItem(
+  playerId: string,
+  itemType: ItemType,
+  itemId: string,
+): Promise<number> {
+  return dbGetInventoryItem(playerId, itemType, itemId);
+}
 
 export async function addToInventory(
   playerId: string,

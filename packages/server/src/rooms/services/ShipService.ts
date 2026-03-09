@@ -21,6 +21,11 @@ import { query } from '../../db/client.js';
 import { getFuelState, saveFuelState } from './RedisAPStore.js';
 import { getAcepXpSummary, getAcepEffects } from '../../engine/acepXpService.js';
 import {
+  addToInventory,
+  removeFromInventory,
+  getInventoryItem,
+} from '../../engine/inventoryService.js';
+import {
   getActiveShip,
   getPlayerHomeBase,
   getPlayerShips,
@@ -29,9 +34,7 @@ import {
   updateShipModules,
   renameShip,
   renameBase,
-  getModuleInventory,
-  addModuleToInventory,
-  removeModuleFromInventory,
+  getInventory,
   getPlayerLevel,
   getPlayerResearch,
   addUnlockedModule,
@@ -124,11 +127,12 @@ export class ShipService {
       return;
     }
     // Remove from inventory
-    const removed = await removeModuleFromInventory(auth.userId, data.moduleId);
-    if (!removed) {
+    const qty = await getInventoryItem(auth.userId, 'module', data.moduleId);
+    if (qty < 1) {
       client.send('error', { code: 'NO_MODULE', message: 'Module not in inventory' });
       return;
     }
+    await removeFromInventory(auth.userId, 'module', data.moduleId, 1);
     // Install
     const newModules: ShipModule[] = [
       ...ship.modules,
@@ -154,7 +158,7 @@ export class ShipService {
     const newModules = ship.modules.filter((m) => m.slotIndex !== data.slotIndex);
     await updateShipModules(ship.id, newModules);
     // Add back to inventory
-    await addModuleToInventory(auth.userId, mod.moduleId);
+    await addToInventory(auth.userId, 'module', mod.moduleId, 1);
     // Recalculate
     const newStats = calculateShipStats(ship.hullType, newModules);
     this.ctx.clientShips.set(client.sessionId, newStats);
@@ -221,14 +225,12 @@ export class ShipService {
       if (res === 'credits' || !amount) continue;
       await deductCargo(auth.userId, res, amount as number);
     }
-    // Add to module inventory
-    await addModuleToInventory(auth.userId, data.moduleId);
+    // Add to unified inventory
+    await addToInventory(auth.userId, 'module', data.moduleId, 1);
     // Send updates
     const remainingCredits = await getPlayerCredits(auth.userId);
     client.send('creditsUpdate', { credits: remainingCredits });
     client.send('buyModuleResult', { success: true, moduleId: data.moduleId });
-    const inventory = await getModuleInventory(auth.userId);
-    client.send('moduleInventory', { modules: inventory });
   }
 
   async handleBuyHull(
@@ -331,8 +333,12 @@ export class ShipService {
 
   async handleGetModuleInventory(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const inventory = await getModuleInventory(auth.userId);
-    client.send('moduleInventory', { modules: inventory });
+    const items = await getInventory(auth.userId);
+    // Return module IDs as a flat string[] for backward-compatibility with the client
+    const modules = items
+      .filter((i) => i.itemType === 'module')
+      .flatMap((i) => Array(i.quantity).fill(i.itemId) as string[]);
+    client.send('moduleInventory', { modules });
   }
 
   // ── Research Handlers ───────────────────────────────────────────────
