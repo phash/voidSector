@@ -104,6 +104,7 @@ import type {
   ChatMessage,
   QuadrantControlState,
   NpcFleetState,
+  InventoryItem,
 } from '@void-sector/shared';
 import type { ServiceContext } from './services/ServiceContext.js';
 import { NavigationService } from './services/NavigationService.js';
@@ -821,12 +822,34 @@ export class SectorRoom extends Room<SectorRoomState> {
         client.send('error', { code: 'TRADE_FAILED', message: 'Failed to start trade' });
       });
     });
+    this.onMessage('tradeOffer', (client, data: { tradeId: string; items: InventoryItem[]; credits: number }) => {
+      const auth = client.auth as AuthPayload;
+      directTradeService.updateOffer(data.tradeId, auth.userId, data.items, data.credits)
+        .then(() => {
+          client.send('tradeOfferUpdated', { tradeId: data.tradeId });
+        })
+        .catch((err) => {
+          client.send('error', { code: 'TRADE_ERROR', message: err.message });
+        });
+    });
     this.onMessage('tradeConfirm', (client, data: { tradeId: string }) => {
       const auth = client.auth as AuthPayload;
-      directTradeService.confirm(data.tradeId, auth.userId).then(async (bothConfirmed) => {
+      directTradeService.getSession(data.tradeId).then(async (session) => {
+        const bothConfirmed = await directTradeService.confirm(data.tradeId, auth.userId);
         if (bothConfirmed) {
           await directTradeService.executeTrade(data.tradeId);
           client.send('tradeComplete', { tradeId: data.tradeId });
+          // Notify the other player too
+          const otherPlayerId = session?.fromPlayerId === auth.userId
+            ? session?.toPlayerId
+            : session?.fromPlayerId;
+          if (otherPlayerId) {
+            this.clients.forEach((c) => {
+              if ((c.auth as AuthPayload)?.userId === otherPlayerId) {
+                c.send('tradeComplete', { tradeId: data.tradeId });
+              }
+            });
+          }
         }
       }).catch((err) => {
         logger.error({ err }, 'tradeConfirm error');
