@@ -3221,3 +3221,33 @@ export async function getCargoCapForPlayer(playerId: string): Promise<number> {
   const stats = calculateShipStats(row.hull_type as HullType, row.modules ?? []);
   return stats.cargoCap;
 }
+
+export async function ensureKernweltStation(): Promise<void> {
+  // Ensure sector (0,0) exists and is of type 'station'
+  await query(
+    `INSERT INTO sectors (x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents, max_ore, max_gas, max_crystal)
+     VALUES (0, 0, 'station', 0, NULL, NOW(), '{}', 'empty', ARRAY['station'], 0, 0, 0)
+     ON CONFLICT (x, y) DO UPDATE SET type = 'station'`,
+  );
+  // Ensure npc_station_data entry exists for (0,0)
+  await query(
+    `INSERT INTO npc_station_data (station_x, station_y, level, xp, visit_count, trade_volume, last_xp_decay)
+     VALUES (0, 0, 1, 0, 0, 0, NOW())
+     ON CONFLICT (station_x, station_y) DO NOTHING`,
+  );
+}
+
+export async function ensureZentrumQuadrant(): Promise<void> {
+  // Ensure quadrant (0,0) exists with name 'Zentrum'
+  await query(
+    `INSERT INTO quadrants (qx, qy, seed, name, discovered_by, discovered_at, config)
+     VALUES (0, 0, 0, 'Zentrum', NULL, NOW(), '{}')
+     ON CONFLICT (qx, qy) DO UPDATE SET name = 'Zentrum'`,
+  );
+  // Ensure quadrant_control entry exists for (0,0) as human home quadrant
+  await query(
+    `INSERT INTO quadrant_control (qx, qy, controlling_faction, faction_shares, attack_value, defense_value, friction_score, station_tier)
+     VALUES (0, 0, 'human', '{"human": 100}', 0, 100, 0, 1)
+     ON CONFLICT (qx, qy) DO NOTHING`,
+  );
+}

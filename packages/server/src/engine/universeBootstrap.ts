@@ -3,7 +3,7 @@ import Redis from 'ioredis';
 import dotenv from 'dotenv';
 import { UniverseTickEngine } from './universeTickEngine.js';
 import { StrategicTickService } from './strategicTickService.js';
-import { getAllHumanityReps } from '../db/queries.js';
+import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
 
 dotenv.config();
@@ -16,6 +16,10 @@ const STRATEGIC_TICK_INTERVAL = 12;
  * Call once from app.config.ts beforeListen.
  */
 export async function startUniverseEngine(): Promise<void> {
+  await ensureKernweltStation();
+  await ensureZentrumQuadrant();
+  logger.info('Kernwelt seeded: Zuhause@(0,0), Zentrum quadrant');
+
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   const strategicTick = new StrategicTickService(redis);
   await strategicTick.init();

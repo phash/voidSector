@@ -28,6 +28,8 @@ vi.mock('../engine/universeTickEngine.js', () => ({
 
 vi.mock('../db/queries.js', () => ({
   getAllHumanityReps: vi.fn().mockResolvedValue({ kthari: -40, archivists: 60 }),
+  ensureKernweltStation: vi.fn().mockResolvedValue(undefined),
+  ensureZentrumQuadrant: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('ioredis', () => ({
