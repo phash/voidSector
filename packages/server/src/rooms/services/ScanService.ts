@@ -38,6 +38,7 @@ import {
   insertAncientRuinScan,
   getActiveShip,
   recordAlienEncounter,
+  addTypedArtefact,
 } from '../../db/queries.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
@@ -348,6 +349,10 @@ export class ScanService {
     }
     if (eventData.rewardArtefact && eventData.rewardArtefact > 0) {
       await addToCargo(auth.userId, 'artefact' as ResourceType, eventData.rewardArtefact);
+      const scanEventData = event.data as Record<string, unknown>;
+      if (scanEventData.rewardArtefactType) {
+        await addTypedArtefact(auth.userId, scanEventData.rewardArtefactType as string, eventData.rewardArtefact);
+      }
       const updatedCargo = await getPlayerCargo(auth.userId);
       client.send('cargoUpdate', updatedCargo);
       client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
