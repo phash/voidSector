@@ -5,6 +5,7 @@
  */
 
 import { query } from '../db/db.js';
+import { calculateTraits } from './traitCalculator.js';
 
 export type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer';
 
@@ -65,6 +66,11 @@ export async function addAcepXp(shipId: string, path: AcepPath, amount: number):
 
   const col = COL[path];
   await query(`UPDATE ships SET ${col} = ${col} + $1 WHERE id = $2`, [effective, shipId]);
+
+  // Recalculate and persist traits after XP change
+  const updated = await getAcepXpSummary(shipId);
+  const traits = calculateTraits(updated);
+  await query(`UPDATE ships SET acep_traits = $1 WHERE id = $2`, [JSON.stringify(traits), shipId]);
 }
 
 /**

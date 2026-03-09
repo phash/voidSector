@@ -9,7 +9,9 @@ import type {
 } from '@void-sector/shared';
 
 import { calculateCurrentAP, spendAP } from '../../engine/ap.js';
-import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
+import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
+import { calculateTraits } from '../../engine/traitCalculator.js';
+import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { validateBattleAction, createPirateEncounter } from '../../engine/commands.js';
 import { getPirateLevel } from '../../engine/npcgen.js';
 import {
@@ -35,6 +37,7 @@ import {
   installStationDefense,
   getStructureHp,
   updateStructureHp,
+  getActiveShip,
 } from '../../db/queries.js';
 import {
   FEATURE_COMBAT_V2,
@@ -158,8 +161,11 @@ export class CombatService {
         sectorX: data.sectorX,
         sectorY: data.sectorY,
       });
-      // ACEP: KAMPF-XP for combat victory
+      // ACEP: KAMPF-XP + personality comment
       addAcepXpForPlayer(auth.userId, 'kampf', 3).catch(() => {});
+      this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
+    } else if (result.outcome === 'defeat') {
+      this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});
     }
   }
 
@@ -217,9 +223,12 @@ export class CombatService {
         await this.ctx.applyReputationChange(auth.userId, 'pirates', finalResult.repChange, client);
       }
 
-      // ACEP: KAMPF-XP for combat v2 victory
+      // ACEP: KAMPF-XP + personality comment for combat v2
       if (result.state.status === 'victory') {
         addAcepXpForPlayer(auth.userId, 'kampf', 3).catch(() => {});
+        this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
+      } else if (result.state.status === 'defeat') {
+        this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});
       }
 
       await insertBattleLogV2(
@@ -407,5 +416,21 @@ export class CombatService {
     const updatedCargo = await getPlayerCargo(auth.userId);
     client.send('cargoUpdate', updatedCargo);
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+  }
+
+  /** Emit a personality comment to the client's event log (fire-and-forget). */
+  private async _emitPersonalityComment(
+    client: Client,
+    playerId: string,
+    context: Parameters<typeof getPersonalityComment>[1],
+  ): Promise<void> {
+    const ship = await getActiveShip(playerId);
+    if (!ship) return;
+    const xp = await getAcepXpSummary(ship.id);
+    const traits = calculateTraits(xp);
+    const comment = getPersonalityComment(traits, context);
+    if (comment) {
+      client.send('logEntry', comment);
+    }
   }
 }

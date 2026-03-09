@@ -8,7 +8,9 @@ import type {
 } from '@void-sector/shared';
 
 import { calculateCurrentAP } from '../../engine/ap.js';
-import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
+import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
+import { calculateTraits } from '../../engine/traitCalculator.js';
+import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
 import { checkScanEvent } from '../../engine/scanEvents.js';
 import { generateSector } from '../../engine/worldgen.js';
@@ -34,6 +36,7 @@ import {
   getFactionMembersByPlayerIds,
   hasScannedRuin,
   insertAncientRuinScan,
+  getActiveShip,
 } from '../../db/queries.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { WORLD_SEED } from '@void-sector/shared';
@@ -87,8 +90,9 @@ export class ScanService {
       sectorY: this.ctx._py(client.sessionId),
     });
 
-    // ACEP: INTEL-XP for scanning
+    // ACEP: INTEL-XP + personality comment for scanning
     addAcepXpForPlayer(auth.userId, 'intel', 1).catch(() => {});
+    this._emitPersonalityComment(client, auth.userId, 'scan').catch(() => {});
 
     // Ancient ruin scan: reveal lore fragment + artefact chance
     if (sectorData?.contents?.includes('ruin')) {
@@ -115,8 +119,9 @@ export class ScanService {
           sectorY: py,
         });
         client.send('logEntry', `ANCIENT RUIN — ${ruinResult.fragmentText.split('\n')[0]}`);
-        // ACEP: EXPLORER-XP for discovering an ancient ruin
+        // ACEP: EXPLORER-XP + personality comment for ruin discovery
         addAcepXpForPlayer(auth.userId, 'explorer', 10).catch(() => {});
+        this._emitPersonalityComment(client, auth.userId, 'scan_ruin').catch(() => {});
       }
     }
   }
@@ -348,5 +353,21 @@ export class ScanService {
     }
 
     client.send('logEntry', `Event abgeschlossen! +${eventData.rewardCredits ?? 0} CR`);
+  }
+
+  /** Emit a personality comment to the client's event log (fire-and-forget). */
+  private async _emitPersonalityComment(
+    client: Client,
+    playerId: string,
+    context: Parameters<typeof getPersonalityComment>[1],
+  ): Promise<void> {
+    const ship = await getActiveShip(playerId);
+    if (!ship) return;
+    const xp = await getAcepXpSummary(ship.id);
+    const traits = calculateTraits(xp);
+    const comment = getPersonalityComment(traits, context);
+    if (comment) {
+      client.send('logEntry', comment);
+    }
   }
 }
