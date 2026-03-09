@@ -2111,8 +2111,8 @@ class GameNetwork {
     this.sectorRoom?.send('contributeToQuest', { amount });
   }
 
-  resolveAlienEncounter(factionId: string, accepted: boolean, repOnAccept: number, repOnDecline: number) {
-    this.sectorRoom?.send('resolveAlienEncounter', { factionId, accepted, repOnAccept, repOnDecline });
+  resolveAlienEncounter(factionId: string, eventType: string, accepted: boolean) {
+    this.sectorRoom?.send('resolveAlienEncounter', { factionId, eventType, accepted });
   }
 }
 

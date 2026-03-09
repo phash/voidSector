@@ -2660,7 +2660,8 @@ export async function upsertStoryProgress(
   );
 }
 
-// ── Humanity Reputation ───────────────────────────────────────────────────────
+// ── Humanity Reputation ── DEFERRED: server-wide rep tracking, not yet wired in ─────────
+// TODO: call contributeHumanityRep from resolveAlienEncounter and storyChoice handlers
 
 export async function contributeHumanityRep(alienFactionId: string, delta: number): Promise<void> {
   await query(

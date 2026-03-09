@@ -115,7 +115,7 @@ import type { AlienInteractMessage } from './services/AlienInteractionService.js
 import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
-import { rollForEncounter } from '../engine/alienEncounterGen.js';
+import { rollForEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounterGen.js';
 import { logger } from '../utils/logger.js';
 import { getAcepXpSummary } from '../engine/acepXpService.js';
 
@@ -749,15 +749,23 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('contributeToQuest', async (client, data: { amount: number }) => {
       const auth = client.auth as { userId: string } | null;
       if (!auth?.userId) return;
-      await this.communityQuests.contribute(auth.userId, data.amount ?? 1).catch(() => {});
+      const amount = Math.max(1, Math.min(data.amount ?? 1, 100));  // cap at 100 per contribution
+      await this.communityQuests.contribute(auth.userId, amount).catch(() => {});
       const quest = await this.communityQuests.getActive().catch(() => null);
       client.send('activeCommunityQuest', { quest });
     });
 
-    this.onMessage('resolveAlienEncounter', async (client, data: { factionId: string; accepted: boolean; repOnAccept: number; repOnDecline: number }) => {
+    this.onMessage('resolveAlienEncounter', async (client, data: { factionId: string; eventType: string; accepted: boolean }) => {
       const auth = client.auth as { userId: string } | null;
       if (!auth?.userId) return;
-      const delta = data.accepted ? data.repOnAccept : data.repOnDecline;
+
+      // Look up encounter from server-side table — never trust client-supplied rep values
+      const entry = ALIEN_ENCOUNTER_TABLE.find(
+        (e) => e.factionId === data.factionId && e.eventType === data.eventType,
+      );
+      if (!entry) return; // Unknown encounter — ignore
+
+      const delta = data.accepted ? entry.repOnAccept : entry.repOnDecline;
       if (delta !== 0) {
         await addAlienReputation(auth.userId, data.factionId, delta).catch(() => {});
       }
@@ -770,6 +778,11 @@ export class SectorRoom extends Room<SectorRoomState> {
         .processTradeRoutes()
         .catch((err) => logger.error({ err }, 'Trade routes tick error'));
     }, 60000);
+
+    // ── Community Quest Rotation — every hour ────────────────────────
+    this.clock.setInterval(async () => {
+      await this.communityQuests.checkAndAdvanceRotation().catch(() => {});
+    }, 60 * 60 * 1000);
 
     // ── Admin Bus ───────────────────────────────────────────────────
     const onBroadcast = (event: AdminBroadcastEvent) => {
@@ -1133,6 +1146,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.playerSectorData.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
+
+    const leaveAuth = client.auth as { userId?: string } | null;
+    if (leaveAuth?.userId) {
+      this.encounterSteps.delete(leaveAuth.userId);
+    }
   }
 
   async onDispose() {

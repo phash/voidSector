@@ -32,15 +32,11 @@ export function AlienEncounterToast() {
   const color = FACTION_COLORS[encounter.factionId] ?? 'var(--color-primary)';
 
   const handleAccept = () => {
-    network.resolveAlienEncounter(
-      encounter.factionId, true, encounter.repOnAccept, encounter.repOnDecline,
-    );
+    network.resolveAlienEncounter(encounter.factionId, encounter.eventType, true);
   };
 
   const handleDecline = () => {
-    network.resolveAlienEncounter(
-      encounter.factionId, false, encounter.repOnAccept, encounter.repOnDecline,
-    );
+    network.resolveAlienEncounter(encounter.factionId, encounter.eventType, false);
   };
 
   return (

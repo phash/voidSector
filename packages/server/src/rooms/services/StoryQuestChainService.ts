@@ -45,6 +45,8 @@ export class StoryQuestChainService {
 
   async completeChapter(playerId: string, chapterId: number, branchChoice: string | null): Promise<void> {
     const row = await getStoryProgress(playerId);
+    // Idempotency: ignore if already completed
+    if (row.completed_chapters.includes(chapterId)) return;
     const completedChapters = [...row.completed_chapters, chapterId];
     const branchChoices = { ...row.branch_choices };
     if (branchChoice) branchChoices[String(chapterId)] = branchChoice;
