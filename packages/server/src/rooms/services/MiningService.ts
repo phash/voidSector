@@ -89,8 +89,8 @@ export class MiningService {
 
     if (result.mined > 0 && result.resource) {
       await addToCargo(auth.userId, result.resource, result.mined);
-      // ACEP: AUSBAU-XP for mining
-      addAcepXpForPlayer(auth.userId, 'ausbau', 1).catch(() => {});
+      // ACEP: AUSBAU-XP for mining/resource collection (spec: bulk resources +2)
+      addAcepXpForPlayer(auth.userId, 'ausbau', 2).catch(() => {});
     }
 
     await saveMiningState(auth.userId, result.newState);

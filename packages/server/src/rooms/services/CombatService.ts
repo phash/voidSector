@@ -163,8 +163,8 @@ export class CombatService {
         sectorX: data.sectorX,
         sectorY: data.sectorY,
       });
-      // ACEP: KAMPF-XP + personality comment
-      addAcepXpForPlayer(auth.userId, 'kampf', 3).catch(() => {});
+      // ACEP: KAMPF-XP for combat victory (spec: pirat +5, general +10)
+      addAcepXpForPlayer(auth.userId, 'kampf', 5).catch(() => {});
       this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
     } else if (result.outcome === 'defeat') {
       this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});
@@ -227,9 +227,9 @@ export class CombatService {
         await this.ctx.applyReputationChange(auth.userId, 'pirates', finalResult.repChange, client);
       }
 
-      // ACEP: KAMPF-XP + personality comment for combat v2
+      // ACEP: KAMPF-XP + personality comment for combat v2 (spec: pirat +5)
       if (result.state.status === 'victory') {
-        addAcepXpForPlayer(auth.userId, 'kampf', 3).catch(() => {});
+        addAcepXpForPlayer(auth.userId, 'kampf', 5).catch(() => {});
         this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
       } else if (result.state.status === 'defeat') {
         this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});

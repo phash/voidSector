@@ -313,8 +313,8 @@ export class WorldService {
       sectorX: this.ctx._px(client.sessionId),
       sectorY: this.ctx._py(client.sessionId),
     });
-    // ACEP: AUSBAU-XP for building a structure
-    addAcepXpForPlayer(auth.userId, 'ausbau', 5).catch(() => {});
+    // ACEP: AUSBAU-XP for building a structure (spec: station +20, base +15 — using +10 flat here)
+    addAcepXpForPlayer(auth.userId, 'ausbau', 10).catch(() => {});
   }
 
   // ── Jumpgate Build ─────────────────────────────────────────────────
@@ -1348,6 +1348,8 @@ export class WorldService {
           message: `[${quadrant.name}] charted by ${auth.username}`,
           type: 'quadrant_discovery',
         });
+        // ACEP: INTEL-XP for first quadrant discovery (spec: +20)
+        addAcepXpForPlayer(auth.userId, 'intel', 20).catch(() => {});
       } else {
         // Quadrant exists but player may not know it yet
         await addPlayerKnownQuadrant(auth.userId, qx, qy);

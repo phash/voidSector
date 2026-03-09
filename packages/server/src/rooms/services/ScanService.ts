@@ -104,8 +104,8 @@ export class ScanService {
       sectorY: this.ctx._py(client.sessionId),
     });
 
-    // ACEP: INTEL-XP + personality comment for scanning
-    addAcepXpForPlayer(auth.userId, 'intel', 1).catch(() => {});
+    // ACEP: INTEL-XP + personality comment for scanning (spec: +3 per scan)
+    addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
     this._emitPersonalityComment(client, auth.userId, 'scan').catch(() => {});
 
     // Ancient ruin scan: reveal lore fragment + artefact chance
@@ -133,8 +133,8 @@ export class ScanService {
           sectorY: py,
         });
         client.send('logEntry', `ANCIENT RUIN — ${ruinResult.fragmentText.split('\n')[0]}`);
-        // ACEP: EXPLORER-XP + personality comment for ruin discovery
-        addAcepXpForPlayer(auth.userId, 'explorer', 10).catch(() => {});
+        // ACEP: EXPLORER-XP for ancient ruin scan (spec: +15)
+        addAcepXpForPlayer(auth.userId, 'explorer', 15).catch(() => {});
         this._emitPersonalityComment(client, auth.userId, 'scan_ruin').catch(() => {});
       }
     }
@@ -246,9 +246,9 @@ export class ScanService {
       });
     }
 
-    // ACEP: INTEL-XP for area scan (discovering new sectors)
+    // ACEP: INTEL-XP for area scan (discovering new sectors) (spec: +3)
     if (newSectors.length > 0) {
-      addAcepXpForPlayer(auth.userId, 'intel', 2).catch(() => {});
+      addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
     }
   }
 
@@ -377,8 +377,8 @@ export class ScanService {
     // Remove event from client state
     client.send('scanEventCompleted', { eventId: data.eventId });
 
-    // ACEP: INTEL-XP for completing a scan event
-    addAcepXpForPlayer(auth.userId, 'intel', 1).catch(() => {});
+    // ACEP: INTEL-XP for completing a scan event / anomaly analysis (spec: ~+8, throttled to +3)
+    addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
   }
 
   /** Salvage a module from a ship wreck. */
