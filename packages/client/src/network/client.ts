@@ -527,6 +527,9 @@ class GameNetwork {
       if (data.typedArtefacts) {
         useStore.getState().setTypedArtefacts(data.typedArtefacts);
       }
+      if (data.labTier !== undefined) {
+        useStore.getState().setLabTier(data.labTier);
+      }
     });
 
     room.onMessage('researchResult', (data) => {

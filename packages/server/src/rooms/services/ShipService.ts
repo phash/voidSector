@@ -351,6 +351,7 @@ export class ShipService {
     const active2 = await getActiveResearch(auth.userId, 2);
     const wissen = await getWissen(auth.userId);
     const typedArtefacts = await getTypedArtefacts(auth.userId);
+    const labTier = await getResearchLabTier(auth.userId);
 
     client.send('researchState', {
       unlockedModules: research.unlockedModules,
@@ -360,6 +361,7 @@ export class ShipService {
       wissen,
       wissenRate: 0,
       typedArtefacts,
+      labTier,
     });
   }
 

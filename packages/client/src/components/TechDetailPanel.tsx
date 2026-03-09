@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULES, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
+import {
+  MODULES,
+  isModuleFreelyAvailable,
+  canStartResearch,
+  MAX_ARTEFACTS_PER_RESEARCH,
+  ARTEFACT_WISSEN_BONUS,
+} from '@void-sector/shared';
 
 function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;
@@ -23,6 +29,13 @@ function costLine(cost: {
   if (cost.crystal) parts.push(`${cost.crystal} KRI`);
   if (cost.artefact) parts.push(`${cost.artefact} ART`);
   return parts.join(' | ');
+}
+
+function wissenCostLine(wissen: number, artefactsUsed: number): string {
+  const bonus = Math.min(artefactsUsed, MAX_ARTEFACTS_PER_RESEARCH) * ARTEFACT_WISSEN_BONUS;
+  const actual = Math.max(0, wissen - bonus);
+  if (bonus > 0) return `${actual} WISSEN (−${bonus} via ART)`;
+  return `${wissen} WISSEN`;
 }
 
 function formatCountdown(ms: number): string {
@@ -53,20 +66,19 @@ const btnDangerStyle: React.CSSProperties = {
 export function TechDetailPanel() {
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const research = useStore((s) => s.research);
-  const credits = useStore((s) => s.credits);
-  const cargo = useStore((s) => s.cargo);
-  const storage = useStore((s) => s.storage);
-  const position = useStore((s) => s.position);
-  const homeBase = useStore((s) => s.homeBase);
+  const typedArtefacts = useStore((s) => s.typedArtefacts);
+  const labTier = useStore((s) => s.labTier);
 
   const [now, setNow] = useState(Date.now());
+  const [selectedSlot, setSelectedSlot] = useState<1 | 2>(1);
+  const [extraArtefacts, setExtraArtefacts] = useState(0);
 
   // Countdown timer for active research
   useEffect(() => {
-    if (!research.activeResearch) return;
+    if (!research.activeResearch && !research.activeResearch2) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [research.activeResearch]);
+  }, [research.activeResearch, research.activeResearch2]);
 
   if (!selectedModuleId) {
     return (
@@ -88,22 +100,19 @@ export function TechDetailPanel() {
   const mod = MODULES[selectedModuleId];
   if (!mod) return null;
 
-  const isAtHome = position.x === homeBase.x && position.y === homeBase.y;
-  const resources = {
-    credits,
-    ore: cargo.ore + storage.ore,
-    gas: cargo.gas + storage.gas,
-    crystal: cargo.crystal + storage.crystal,
-    artefact: cargo.artefact + storage.artefact,
-  };
-
-  const isResearching = research.activeResearch?.moduleId === mod.id;
-  const remaining = isResearching ? research.activeResearch!.completesAt - now : 0;
-  const isComplete = isResearching && remaining <= 0;
   const isFree = isModuleFreelyAvailable(mod.id);
   const isUnlocked = research.unlockedModules.includes(mod.id);
   const hasBP = research.blueprints.includes(mod.id);
-  const researchCheck = canStartResearch(mod.id, research, resources);
+
+  const isResearching1 = research.activeResearch?.moduleId === mod.id;
+  const isResearching2 = research.activeResearch2?.moduleId === mod.id;
+  const isResearching = isResearching1 || isResearching2;
+  const activeSlot = isResearching1 ? 1 : isResearching2 ? 2 : null;
+  const activeResearchEntry = isResearching1 ? research.activeResearch! : research.activeResearch2!;
+  const remaining = isResearching ? activeResearchEntry.completesAt - now : 0;
+  const isComplete = isResearching && remaining <= 0;
+
+  const researchCheck = canStartResearch(mod.id, research, typedArtefacts, labTier, selectedSlot);
 
   const prerequisiteMod = mod.prerequisite ? MODULES[mod.prerequisite] : null;
 
@@ -172,17 +181,19 @@ export function TechDetailPanel() {
       {/* Research cost */}
       {mod.researchCost && (
         <div style={{ marginBottom: 6 }}>
-          <div
-            style={{
-              color: 'var(--color-dim)',
-              fontSize: '0.55rem',
-              letterSpacing: '0.1em',
-              marginBottom: 2,
-            }}
-          >
+          <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em', marginBottom: 2 }}>
             FORSCHUNGSKOSTEN
           </div>
-          <div>{costLine(mod.researchCost)}</div>
+          <div>{wissenCostLine(mod.researchCost.wissen, extraArtefacts)}</div>
+          {mod.researchCost.artefacts && (
+            <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', marginTop: 2 }}>
+              {Object.entries(mod.researchCost.artefacts).map(([type, count]) => (
+                <span key={type} style={{ marginRight: 8, color: (typedArtefacts[type] ?? 0) >= (count ?? 0) ? '#00FF88' : '#FF3333' }}>
+                  {count}× {type.toUpperCase()}-ART
+                </span>
+              ))}
+            </div>
+          )}
           {mod.researchDurationMin && (
             <div style={{ color: 'var(--color-dim)' }}>
               DAUER: {formatDuration(mod.researchDurationMin)}
@@ -218,12 +229,14 @@ export function TechDetailPanel() {
             </button>
           </div>
         )}
+
+        {/* Active research progress */}
         {isResearching && (
           <div>
             {isComplete ? (
               <>
                 <div style={{ color: '#00FF88', marginBottom: 4 }}>FORSCHUNG ABGESCHLOSSEN</div>
-                <button style={btnStyle} onClick={() => network.sendClaimResearch()}>
+                <button style={btnStyle} onClick={() => network.sendClaimResearch(activeSlot ?? 1)}>
                   [ABSCHLIESSEN]
                 </button>
               </>
@@ -232,29 +245,68 @@ export function TechDetailPanel() {
                 <div style={{ color: '#FFB000', marginBottom: 4 }}>
                   FORSCHUNG LÄUFT... {formatCountdown(remaining)}
                 </div>
-                <button style={btnDangerStyle} onClick={() => network.sendCancelResearch()}>
+                <button style={btnDangerStyle} onClick={() => network.sendCancelResearch(activeSlot ?? 1)}>
                   [ABBRECHEN]
                 </button>
               </>
             )}
           </div>
         )}
-        {!isFree && !isUnlocked && !isResearching && mod.researchCost && (
-          <div>
-            {!isAtHome && (
-              <div style={{ color: 'var(--color-dim)', marginBottom: 4 }}>
-                FORSCHUNG NUR AN HEIMATBASIS
-              </div>
-            )}
-            {isAtHome && researchCheck.valid && !research.activeResearch && (
-              <button style={btnStyle} onClick={() => network.sendStartResearch(mod.id)}>
-                [FORSCHUNG STARTEN]
-              </button>
-            )}
-            {isAtHome && !researchCheck.valid && (
-              <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>{researchCheck.error}</div>
-            )}
+
+        {/* Lab requirement warning */}
+        {labTier === 0 && mod.researchCost && !isUnlocked && !isFree && (
+          <div style={{ color: '#FF3333', fontSize: '0.55rem', marginBottom: 4 }}>
+            FORSCHUNG NUR MIT LABOR (Lab I+)
           </div>
+        )}
+
+        {/* Optional artefact counter */}
+        {mod.researchCost && !isUnlocked && !isFree && !isResearching && (
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em', marginBottom: 2 }}>
+              ARTEFAKT-BONI (optional)
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <button style={btnStyle} onClick={() => setExtraArtefacts(Math.max(0, extraArtefacts - 1))}>[-]</button>
+              <span style={{ color: 'var(--color-primary)' }}>{extraArtefacts}</span>
+              <button style={btnStyle} onClick={() => setExtraArtefacts(Math.min(MAX_ARTEFACTS_PER_RESEARCH, extraArtefacts + 1))}>[ +]</button>
+              <span style={{ color: 'var(--color-dim)', fontSize: '0.55rem', marginLeft: 4 }}>
+                −{Math.min(extraArtefacts, MAX_ARTEFACTS_PER_RESEARCH) * ARTEFACT_WISSEN_BONUS} WISSEN
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Slot selector (only for lab tier >= 3) */}
+        {labTier >= 3 && mod.researchCost && !isUnlocked && !isFree && !isResearching && (
+          <div style={{ marginBottom: 6, display: 'flex', gap: 6 }}>
+            <button
+              style={{ ...btnStyle, ...(selectedSlot === 1 ? { borderColor: '#FFB000', color: '#FFB000' } : {}) }}
+              onClick={() => setSelectedSlot(1)}
+            >
+              [SLOT 1]
+            </button>
+            <button
+              style={{ ...btnStyle, ...(selectedSlot === 2 ? { borderColor: '#FF8800', color: '#FF8800' } : {}) }}
+              onClick={() => setSelectedSlot(2)}
+            >
+              [SLOT 2]
+            </button>
+          </div>
+        )}
+
+        {/* Start research button */}
+        {!isFree && !isUnlocked && !isResearching && mod.researchCost && researchCheck.valid && (
+          <button style={btnStyle} onClick={() => {
+            const artefactsToUse: Record<string, number> = {};
+            if (extraArtefacts > 0) artefactsToUse[mod.category] = extraArtefacts;
+            network.sendStartResearch(mod.id, selectedSlot, artefactsToUse);
+          }}>
+            [FORSCHUNG STARTEN]
+          </button>
+        )}
+        {!isFree && !isUnlocked && !isResearching && mod.researchCost && !researchCheck.valid && (
+          <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>{researchCheck.error}</div>
         )}
       </div>
     </div>

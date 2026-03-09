@@ -60,6 +60,7 @@ import {
   getAllHumanityReps,
   getAllQuadrantControls,
   getActiveNpcFleets,
+  getResearchLabTier,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -1064,6 +1065,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const activeResearch2 = await getActiveResearch(auth.userId, 2);
       const wissen = await getWissen(auth.userId);
       const typedArtefacts = await getTypedArtefacts(auth.userId);
+      const labTier = await getResearchLabTier(auth.userId);
       client.send('researchState', {
         unlockedModules: researchData.unlockedModules,
         blueprints: researchData.blueprints,
@@ -1072,6 +1074,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         wissen,
         wissenRate: 0,
         typedArtefacts,
+        labTier,
       });
 
       // Record NPC station visit for XP and per-station reputation

@@ -304,6 +304,7 @@ export interface GameSlice {
   // Research / Tech tree
   research: ResearchState;
   typedArtefacts: Record<string, number>;
+  labTier: number;
   pendingBlueprint: string | null;
 
   // NPC Station
@@ -479,6 +480,7 @@ export interface GameSlice {
   setHomeBase: (coords: { x: number; y: number }) => void;
   setResearch: (research: ResearchState) => void;
   setTypedArtefacts: (artefacts: Record<string, number>) => void;
+  setLabTier: (tier: number) => void;
   setPendingBlueprint: (moduleId: string | null) => void;
   setNpcStationData: (data: GameSlice['npcStationData']) => void;
   setFactoryState: (data: GameSlice['factoryState']) => void;
@@ -595,6 +597,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     wissenRate: 0,
   },
   typedArtefacts: {} as Record<string, number>,
+  labTier: 0,
   pendingBlueprint: null,
   npcStationData: null,
   factoryState: null,
@@ -770,6 +773,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setHomeBase: (homeBase) => set({ homeBase }),
   setResearch: (research) => set({ research }),
   setTypedArtefacts: (artefacts) => set({ typedArtefacts: artefacts }),
+  setLabTier: (tier) => set({ labTier: tier }),
   setPendingBlueprint: (pendingBlueprint) => set({ pendingBlueprint }),
   setNpcStationData: (npcStationData) => set({ npcStationData }),
   setFactoryState: (factoryState) => set({ factoryState }),
