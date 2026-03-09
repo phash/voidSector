@@ -286,6 +286,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('jump', async (client, data: JumpMessage) => {
       try {
         await this.navigation.handleJump(client, data);
+        // #144: trigger pirate encounters on sector entry (same as moveSector)
+        const sectorData = this.playerSectorData.get(client.sessionId);
+        if (sectorData) {
+          await this.scanning.checkAndEmitScanEvents(
+            client,
+            [{ x: data.targetX, y: data.targetY, environment: sectorData.environment }],
+            true,
+          );
+        }
       } catch (err) {
         logger.error({ err }, 'Jump unhandled error');
         client.send('jumpResult', { success: false, error: 'Server error' });
