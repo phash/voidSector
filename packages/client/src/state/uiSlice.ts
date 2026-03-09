@@ -37,6 +37,8 @@ export interface UISlice {
   jumpPending: boolean;
   brightness: number;
   colorProfile: ColorProfileName;
+  /** True when admin deep-zoom mode is enabled (toggled via ADMIN button or localStorage key vs_admin_mode=1) */
+  isAdmin: boolean;
   zoomLevel: number;
   panOffset: { x: number; y: number };
   jumpAnimation: JumpAnimationState | null;
@@ -54,6 +56,7 @@ export interface UISlice {
 
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
+  setIsAdmin: (val: boolean) => void;
   setJumpPending: (pending: boolean) => void;
   setBrightness: (val: number) => void;
   setColorProfile: (profile: ColorProfileName) => void;
@@ -89,6 +92,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   jumpPending: false,
   brightness: parseFloat(safeGetItem('vs-brightness') || '1'),
   colorProfile: (safeGetItem('vs-color-profile') as ColorProfileName) || 'Amber Classic',
+  isAdmin: safeGetItem('vs_admin_mode') === '1',
   zoomLevel: 2,
   panOffset: { x: 0, y: 0 },
   jumpAnimation: null,
@@ -108,6 +112,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   setTheme: (theme) => {
     safeSetItem('vs_theme', theme);
     set({ theme });
+  },
+  setIsAdmin: (val) => {
+    safeSetItem('vs_admin_mode', val ? '1' : '0');
+    set({ isAdmin: val });
   },
   setJumpPending: (jumpPending) => set({ jumpPending }),
   setBrightness: (val) => {

@@ -4,14 +4,16 @@ import {
   QUAD_FRAME_LEFT,
   QUAD_FRAME_BOTTOM,
   QUAD_FRAME_PAD,
+  QUAD_ZOOM_MAX_NORMAL,
+  QUAD_ZOOM_MAX_ADMIN,
   quadrantAtPoint,
   sectorToQuadrantCoords,
 } from '../canvas/QuadrantMapRenderer';
 
 describe('QuadrantMapRenderer', () => {
   describe('QUAD_CELL_SIZES', () => {
-    it('exports 4 zoom levels', () => {
-      expect(QUAD_CELL_SIZES).toHaveLength(4);
+    it('exports 6 zoom levels (4 normal + 2 admin deep-zoom)', () => {
+      expect(QUAD_CELL_SIZES).toHaveLength(6);
     });
 
     it('zoom 0 has smallest cells', () => {
@@ -19,9 +21,27 @@ describe('QuadrantMapRenderer', () => {
       expect(QUAD_CELL_SIZES[0].h).toBe(8);
     });
 
-    it('zoom 3 has largest cells', () => {
+    it('zoom 3 is the last normal zoom level (48px)', () => {
       expect(QUAD_CELL_SIZES[3].w).toBe(48);
       expect(QUAD_CELL_SIZES[3].h).toBe(48);
+    });
+
+    it('zoom 4 is admin 250× deep-zoom (128px)', () => {
+      expect(QUAD_CELL_SIZES[4].w).toBe(128);
+      expect(QUAD_CELL_SIZES[4].h).toBe(128);
+    });
+
+    it('zoom 5 is admin 1000× deep-zoom (512px)', () => {
+      expect(QUAD_CELL_SIZES[5].w).toBe(512);
+      expect(QUAD_CELL_SIZES[5].h).toBe(512);
+    });
+
+    it('QUAD_ZOOM_MAX_NORMAL is 3', () => {
+      expect(QUAD_ZOOM_MAX_NORMAL).toBe(3);
+    });
+
+    it('QUAD_ZOOM_MAX_ADMIN is 5', () => {
+      expect(QUAD_ZOOM_MAX_ADMIN).toBe(5);
     });
 
     it('cell sizes increase with zoom level', () => {

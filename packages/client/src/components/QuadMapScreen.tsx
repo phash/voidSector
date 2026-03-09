@@ -5,6 +5,8 @@ import {
   quadrantAtPoint,
   sectorToQuadrantCoords,
   QUAD_CELL_SIZES,
+  QUAD_ZOOM_MAX_NORMAL,
+  QUAD_ZOOM_MAX_ADMIN,
 } from '../canvas/QuadrantMapRenderer';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
@@ -193,13 +195,21 @@ function playerColor(playerId: string): string {
 
 // --- QuadMapScreen ---
 
+// Admin-only zoom level definitions
+const ADMIN_EXTRA_ZOOMS: Array<{ index: number; label: string }> = [
+  { index: 4, label: '250×' },
+  { index: 5, label: '1000×' },
+];
+
 export function QuadMapScreen() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [selectedQuadrant, setSelectedQuadrant] = useState<{ qx: number; qy: number } | null>(null);
   const knownQuadrants = useStore((s) => s.knownQuadrants);
   const position = useStore((s) => s.position);
+  const isAdmin = useStore((s) => s.isAdmin);
   const currentQuadrant = sectorToQuadrantCoords(position.x, position.y);
+  const zoomMax = isAdmin ? QUAD_ZOOM_MAX_ADMIN : QUAD_ZOOM_MAX_NORMAL;
 
   // Request known quadrants + territory data on mount
   useEffect(() => {
@@ -249,13 +259,13 @@ export function QuadMapScreen() {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       setZoomLevel((prev) => {
-        const next = e.deltaY < 0 ? Math.min(3, prev + 1) : Math.max(0, prev - 1);
+        const next = e.deltaY < 0 ? Math.min(zoomMax, prev + 1) : Math.max(0, prev - 1);
         return next;
       });
     };
     canvas.addEventListener('wheel', handleWheel, { passive: false });
     return () => canvas.removeEventListener('wheel', handleWheel);
-  }, []);
+  }, [zoomMax]);
 
   // Click to select quadrant + drag pan
   useEffect(() => {
@@ -371,7 +381,7 @@ export function QuadMapScreen() {
               ({currentQuadrant.qx}, {currentQuadrant.qy})
             </span>
           </span>
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button
               onClick={() => setZoomLevel((prev) => Math.max(0, prev - 1))}
               style={zoomBtnStyle}
@@ -380,12 +390,28 @@ export function QuadMapScreen() {
               -
             </button>
             <button
-              onClick={() => setZoomLevel((prev) => Math.min(3, prev + 1))}
+              onClick={() => setZoomLevel((prev) => Math.min(zoomMax, prev + 1))}
               style={zoomBtnStyle}
-              disabled={zoomLevel === 3}
+              disabled={zoomLevel === zoomMax}
             >
               +
             </button>
+            {isAdmin &&
+              ADMIN_EXTRA_ZOOMS.map(({ index, label }) => (
+                <button
+                  key={index}
+                  onClick={() => setZoomLevel(index)}
+                  style={{
+                    ...zoomBtnStyle,
+                    borderColor:
+                      zoomLevel === index ? 'var(--color-primary)' : 'rgba(255,100,0,0.5)',
+                    color: zoomLevel === index ? 'var(--color-primary)' : 'rgba(255,150,0,0.8)',
+                  }}
+                  title={`Admin zoom ${label}`}
+                >
+                  {label}
+                </button>
+              ))}
             <button
               onClick={() => {
                 setPanOffset({ x: 0, y: 0 });

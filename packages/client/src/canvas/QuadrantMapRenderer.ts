@@ -57,7 +57,14 @@ export const QUAD_CELL_SIZES = [
   { w: 16, h: 16 }, // zoom 1
   { w: 32, h: 32 }, // zoom 2
   { w: 48, h: 48 }, // zoom 3: detail
+  { w: 128, h: 128 }, // zoom 4: admin 250× (single-quadrant focus)
+  { w: 512, h: 512 }, // zoom 5: admin 1000× (single-quadrant fills canvas)
 ];
+
+/** Maximum zoom index for regular (non-admin) users */
+export const QUAD_ZOOM_MAX_NORMAL = 3;
+/** Maximum zoom index for admin users */
+export const QUAD_ZOOM_MAX_ADMIN = 5;
 
 export const QUAD_FRAME_LEFT = 48;
 export const QUAD_FRAME_BOTTOM = 24;
@@ -309,12 +316,14 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
   ctx.stroke();
 
   // Header label
+  const ZOOM_LABELS = ['5×', '10×', '25×', '50×', '250×', '1000×'];
+  const zoomLabel = ZOOM_LABELS[state.zoomLevel] ?? `${state.zoomLevel}`;
   ctx.font = `10px 'Share Tech Mono', 'Courier New', monospace`;
   ctx.fillStyle = state.dimColor;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText(
-    `QUADRANT MAP  [${state.knownQuadrants.length} KNOWN]  ZOOM:${state.zoomLevel}`,
+    `QUADRANT MAP  [${state.knownQuadrants.length} KNOWN]  ZOOM:${zoomLabel}`,
     4,
     2,
   );
