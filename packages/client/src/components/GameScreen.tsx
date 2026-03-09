@@ -30,6 +30,7 @@ import { NewsScreen } from './NewsScreen';
 import { MehrOverlay } from './MehrOverlay';
 import { StationTerminalOverlay } from './StationTerminalOverlay';
 import { useStore } from '../state/store';
+import { network } from '../network/client';
 import { useMobileTabs } from '../hooks/useMobileTabs';
 import { MONITORS } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
@@ -132,6 +133,8 @@ function SettingsView() {
         </select>
       </div>
 
+      <TerritoryPanel />
+
       <div
         style={{
           borderTop: '1px solid var(--color-dim)',
@@ -140,6 +143,62 @@ function SettingsView() {
         }}
       >
         SYSTEMS: <span style={{ color: '#00FF88' }}>ONLINE</span>
+      </div>
+    </div>
+  );
+}
+
+function TerritoryPanel() {
+  const q = useStore((s) => s.currentQuadrant);
+  if (!q) return null;
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div
+        style={{
+          fontSize: '0.6rem',
+          opacity: 0.6,
+          marginBottom: 4,
+          letterSpacing: '0.1em',
+          borderTop: '1px solid var(--color-dim)',
+          paddingTop: 6,
+        }}
+      >
+        TERRITORY CONTROL
+      </div>
+      <div style={{ fontSize: '0.62rem', color: 'var(--color-dim)', marginBottom: 4 }}>
+        QUADRANT [{q.qx}:{q.qy}]{q.name ? ` — ${q.name}` : ''}
+      </div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        <button
+          onClick={() => network.sendClaimTerritory()}
+          style={{
+            flex: 1,
+            background: 'transparent',
+            border: '1px solid var(--color-primary)',
+            color: 'var(--color-primary)',
+            fontFamily: 'monospace',
+            fontSize: '0.6rem',
+            padding: '3px 6px',
+            cursor: 'pointer',
+          }}
+        >
+          ⬡ CLAIM
+        </button>
+        <button
+          onClick={() => network.requestMyTerritories()}
+          style={{
+            flex: 1,
+            background: 'transparent',
+            border: '1px solid var(--color-dim)',
+            color: 'var(--color-dim)',
+            fontFamily: 'monospace',
+            fontSize: '0.6rem',
+            padding: '3px 6px',
+            cursor: 'pointer',
+          }}
+        >
+          LIST
+        </button>
       </div>
     </div>
   );
