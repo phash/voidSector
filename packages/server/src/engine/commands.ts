@@ -36,6 +36,8 @@ import {
   PIRATE_DAMAGE_PER_LEVEL,
   MAX_ACTIVE_QUESTS,
   XP_LEVELS,
+  RESEARCH_LAB_UPGRADE_COSTS,
+  RESEARCH_LAB_MAX_TIER,
 } from '@void-sector/shared';
 import { spendAP } from './ap.js';
 import { startMining, createMiningState } from './mining.js';
@@ -530,4 +532,40 @@ export function getReputationTier(reputation: number): string {
   if (reputation === 0) return 'neutral';
   if (reputation <= 50) return 'friendly';
   return 'honored';
+}
+
+// --- Research Lab Upgrade Validation ---
+
+export function validateLabUpgrade(
+  currentLabTier: number,
+  currentAP: number,
+  credits: number,
+  cargo: { ore: number; crystal: number },
+): {
+  valid: boolean;
+  error?: string;
+  targetTier?: number;
+  costs?: { credits: number; ore: number; crystal: number };
+} {
+  if (currentLabTier <= 0) return { valid: false, error: 'No research lab to upgrade' };
+  if (currentLabTier >= RESEARCH_LAB_MAX_TIER) return { valid: false, error: 'Lab already at max tier' };
+
+  const targetTier = currentLabTier + 1;
+  const costs = RESEARCH_LAB_UPGRADE_COSTS[targetTier];
+  if (!costs) return { valid: false, error: 'Unknown upgrade tier' };
+
+  if (currentAP < 20) {
+    return { valid: false, error: `Insufficient AP (need 20, have ${Math.floor(currentAP)})` };
+  }
+  if (credits < costs.credits) {
+    return { valid: false, error: `Insufficient credits (need ${costs.credits})` };
+  }
+  if (cargo.ore < costs.ore) {
+    return { valid: false, error: `Insufficient ore (need ${costs.ore})` };
+  }
+  if (cargo.crystal < costs.crystal) {
+    return { valid: false, error: `Insufficient crystal (need ${costs.crystal})` };
+  }
+
+  return { valid: true, targetTier, costs };
 }

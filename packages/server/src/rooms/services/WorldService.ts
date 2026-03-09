@@ -20,7 +20,7 @@ import type {
 
 import { logger } from '../../utils/logger.js';
 import { calculateCurrentAP, spendAP } from '../../engine/ap.js';
-import { validateBuild, validateCreateSlate, validateNpcBuyback } from '../../engine/commands.js';
+import { validateBuild, validateCreateSlate, validateNpcBuyback, validateLabUpgrade } from '../../engine/commands.js';
 import {
   checkDistressCall,
   generateDistressCallData,
@@ -115,6 +115,8 @@ import {
   removeJumpGateLink,
   countJumpGateLinks,
   addToCargo,
+  getResearchLabTier,
+  upgradeResearchLabTier,
 } from '../../db/queries.js';
 import {
   getPlayerKnownQuadrants,
@@ -315,6 +317,54 @@ export class WorldService {
     });
     // ACEP: AUSBAU-XP for building a structure (spec: station +20, base +15 — using +10 flat here)
     addAcepXpForPlayer(auth.userId, 'ausbau', 10).catch(() => {});
+  }
+
+  // ── Research Lab Upgrade ────────────────────────────────────────────
+
+  async handleUpgradeResearchLab(client: Client): Promise<void> {
+    if (rejectGuest(client, 'Labor-Upgrade')) return;
+    if (!this.ctx.checkRate(client.sessionId, 'upgradeResearchLab', 3000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
+
+    const auth = client.auth as AuthPayload;
+    const sx = this.ctx._px(client.sessionId);
+    const sy = this.ctx._py(client.sessionId);
+
+    const [labTier, ap, cargo, credits] = await Promise.all([
+      getResearchLabTier(auth.userId),
+      getAPState(auth.userId),
+      getPlayerCargo(auth.userId),
+      getPlayerCredits(auth.userId),
+    ]);
+
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    const result = validateLabUpgrade(labTier, currentAP.current, credits, cargo);
+
+    if (!result.valid) {
+      client.send('error', { code: 'LAB_UPGRADE_FAIL', message: result.error! });
+      return;
+    }
+
+    // Deduct costs
+    await deductCredits(auth.userId, result.costs!.credits);
+    await deductCargo(auth.userId, 'ore', result.costs!.ore);
+    await deductCargo(auth.userId, 'crystal', result.costs!.crystal);
+    const newAP = { ...currentAP, current: currentAP.current - 20 };
+    await saveAPState(auth.userId, newAP);
+
+    // Upgrade the lab at player's current position
+    const newTier = await upgradeResearchLabTier(auth.userId, sx, sy);
+    if (!newTier) {
+      client.send('error', { code: 'LAB_UPGRADE_FAIL', message: 'No research lab at your location' });
+      return;
+    }
+
+    client.send('labUpgradeResult', { success: true, newTier });
+    client.send('apUpdate', newAP);
+    const updatedCargo = await getPlayerCargo(auth.userId);
+    client.send('cargoUpdate', updatedCargo);
   }
 
   // ── Jumpgate Build ─────────────────────────────────────────────────

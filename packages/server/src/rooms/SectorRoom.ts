@@ -654,6 +654,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('build', async (client, data: BuildMessage) => {
       await this.world.handleBuild(client, data);
     });
+    this.onMessage('upgradeResearchLab', (client) => this.world.handleUpgradeResearchLab(client));
     this.onMessage('createSlate', async (client, data: CreateSlateMessage) => {
       await this.world.handleCreateSlate(client, data);
     });

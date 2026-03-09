@@ -1,7 +1,52 @@
 import { describe, it, expect } from 'vitest';
-import { validateBuild } from '../commands.js';
+import { validateBuild, validateLabUpgrade } from '../commands.js';
 import type { CargoState } from '@void-sector/shared';
 import { createAPState } from '../ap.js';
+
+const fullCargo = {
+  ore: 999, gas: 999, crystal: 999, artefact: 0, slates: 0,
+  artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0,
+  artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0, artefact_mining: 0,
+};
+
+describe('validateLabUpgrade', () => {
+  it('fails if no existing lab (tier 0)', () => {
+    const r = validateLabUpgrade(0, 20, 9999, fullCargo);
+    expect(r.valid).toBe(false);
+    expect(r.error).toMatch(/no.*lab/i);
+  });
+
+  it('fails if already at max tier (5)', () => {
+    const r = validateLabUpgrade(5, 20, 9999, fullCargo);
+    expect(r.valid).toBe(false);
+    expect(r.error).toMatch(/max/i);
+  });
+
+  it('fails if insufficient AP (< 20)', () => {
+    const r = validateLabUpgrade(1, 10, 9999, fullCargo);
+    expect(r.valid).toBe(false);
+    expect(r.error).toMatch(/AP/i);
+  });
+
+  it('fails if insufficient credits', () => {
+    const r = validateLabUpgrade(1, 20, 0, fullCargo);
+    expect(r.valid).toBe(false);
+    expect(r.error).toMatch(/credits/i);
+  });
+
+  it('fails if insufficient ore', () => {
+    const r = validateLabUpgrade(1, 20, 9999, { ...fullCargo, ore: 0 });
+    expect(r.valid).toBe(false);
+    expect(r.error).toMatch(/ore/i);
+  });
+
+  it('succeeds for valid upgrade from tier 1 to 2', () => {
+    const r = validateLabUpgrade(1, 20, 9999, fullCargo);
+    expect(r.valid).toBe(true);
+    expect(r.targetTier).toBe(2);
+    expect(r.costs).toBeDefined();
+  });
+});
 
 describe('validateBuild', () => {
   it('succeeds with sufficient cargo and AP for comm_relay', () => {
