@@ -23,6 +23,9 @@ export function checkBorderContact(
   };
 }
 
+// TODO: expansion style ('sphere' vs 'wave' vs 'jumpgate') is not yet used in
+// target selection — all factions use the same nearest-neighbor logic for now.
+// Implement per-style spatial patterns in Phase EW follow-up.
 export function getExpansionTarget(
   faction: string,
   allControls: QuadrantControlRow[],

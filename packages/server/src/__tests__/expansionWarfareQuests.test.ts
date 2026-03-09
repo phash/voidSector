@@ -28,7 +28,7 @@ describe('generateWarSupportQuest', () => {
     const quest = generateWarSupportQuest('logistics', { qx: 1, qy: 0 });
     expect(quest.type).toBe('war_support');
     expect(quest.subtype).toBe('logistics');
-    expect(quest.defense_bonus).toBeGreaterThan(0);
+    expect((quest as any).defense_bonus).toBeGreaterThan(0);
     expect(typeof quest.description).toBe('string');
   });
 
@@ -36,20 +36,20 @@ describe('generateWarSupportQuest', () => {
     const quest = generateWarSupportQuest('sabotage', { qx: 4, qy: -2 });
     expect(quest.type).toBe('war_support');
     expect(quest.subtype).toBe('sabotage');
-    expect(quest.enemy_defense_reduction).toBeGreaterThan(0);
+    expect((quest as any).enemy_defense_reduction).toBeGreaterThan(0);
   });
 
   it('scanning quest provides attack multiplier', () => {
     const quest = generateWarSupportQuest('scanning', { qx: 0, qy: 0 });
     expect(quest.subtype).toBe('scanning');
-    expect(quest.attack_multiplier).toBeGreaterThan(1.0);
+    expect((quest as any).attack_multiplier).toBeGreaterThan(1.0);
   });
 
   it('salvage quest provides tech bonus', () => {
     const quest = generateWarSupportQuest('salvage', { qx: 2, qy: 3 });
     expect(quest.subtype).toBe('salvage');
-    expect(quest.defense_bonus).toBeGreaterThan(0);
-    expect(quest.attack_multiplier).toBeGreaterThan(1.0);
+    expect((quest as any).defense_bonus).toBeGreaterThan(0);
+    expect((quest as any).attack_multiplier).toBeGreaterThan(1.0);
   });
 
   it('all quest types have expires_hours', () => {
