@@ -40,34 +40,43 @@ export function AlienEncounterToast() {
   };
 
   return (
-    <div style={{
-      position: 'fixed', bottom: 80, right: 16,
-      width: 280,
-      border: `1px solid ${color}`,
-      background: '#050505',
-      padding: '10px 14px',
-      fontFamily: 'var(--font-mono)',
-      fontSize: '0.7rem',
-      zIndex: 150,
-    }}>
-      <div style={{
-        color,
-        fontSize: '0.6rem',
-        letterSpacing: '0.2em',
-        marginBottom: 6,
-      }}>
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 80,
+        right: 16,
+        width: 280,
+        border: `1px solid ${color}`,
+        background: '#050505',
+        padding: '10px 14px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.7rem',
+        zIndex: 150,
+      }}
+    >
+      <div
+        style={{
+          color,
+          fontSize: '0.6rem',
+          letterSpacing: '0.2em',
+          marginBottom: 6,
+        }}
+      >
         {encounter.factionId.toUpperCase().replace(/_/g, ' ')} — KONTAKT
         {encounter.humanityTier && (
           <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>
-            {' '}MENSCHHEITS-REP: {encounter.humanityTier}
+            {' '}
+            MENSCHHEITS-REP: {encounter.humanityTier}
           </span>
         )}
       </div>
-      <div style={{
-        color: 'var(--color-dim)',
-        lineHeight: 1.5,
-        marginBottom: encounter.canRespond ? 10 : 0,
-      }}>
+      <div
+        style={{
+          color: 'var(--color-dim)',
+          lineHeight: 1.5,
+          marginBottom: encounter.canRespond ? 10 : 0,
+        }}
+      >
         {encounter.eventText}
       </div>
       {encounter.canRespond && (

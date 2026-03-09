@@ -1,6 +1,12 @@
 import { hashCoords } from './worldgen.js';
 import { generateDistressMessage } from './distressStories.js';
-import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULES, ARTEFACT_TYPES } from '@void-sector/shared';
+import {
+  WORLD_SEED,
+  SCAN_EVENT_CHANCE,
+  QUADRANT_SIZE,
+  MODULES,
+  ARTEFACT_TYPES,
+} from '@void-sector/shared';
 import type { ScanEventType, SectorEnvironment } from '@void-sector/shared';
 
 const SCAN_EVENT_SALT = 5555;
@@ -115,7 +121,8 @@ function generateEventData(
         rewardXp: 15 + ((seed >>> 6) % 35),
         rewardRep: 5,
         rewardArtefact: (seed >>> 14) % 100 < 8 ? 1 : 0,
-        rewardArtefactType: (seed >>> 14) % 100 < 8 ? getArtefactTypeForSeed(seed >>> 18) : undefined,
+        rewardArtefactType:
+          (seed >>> 14) % 100 < 8 ? getArtefactTypeForSeed(seed >>> 18) : undefined,
       };
     case 'artifact_find':
       return {

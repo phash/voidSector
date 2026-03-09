@@ -46,7 +46,10 @@ export function initializeTerritoryState(): TerritoryState {
   }
 
   // Seed alien territories
-  for (const [factionId, regions] of Object.entries(ALIEN_STARTING_REGIONS) as [CosmicFactionId, { qx: number; qy: number; radius: number }[]][]) {
+  for (const [factionId, regions] of Object.entries(ALIEN_STARTING_REGIONS) as [
+    CosmicFactionId,
+    { qx: number; qy: number; radius: number }[],
+  ][]) {
     if (factionId === 'humans') continue;
     for (const region of regions) {
       for (let dx = -region.radius; dx <= region.radius; dx++) {
@@ -133,7 +136,7 @@ export function runUniverseTick(
       const claimed = expandFaction(factionId, territory, rng);
       if (claimed.length > 0) {
         expansionHappened = true;
-        newTerritories.push(...claimed.map(k => `${factionId}:${k}`));
+        newTerritories.push(...claimed.map((k) => `${factionId}:${k}`));
       }
     }
   }

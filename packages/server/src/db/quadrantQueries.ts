@@ -38,7 +38,9 @@ export async function upsertQuadrant(data: QuadrantData): Promise<void> {
 
 export async function getPlayerKnownQuadrants(
   playerId: string,
-): Promise<Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>> {
+): Promise<
+  Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>
+> {
   const { rows } = await query<any>(
     `SELECT pkq.qx, pkq.qy, pkq.learned_at,
             q.name, p.username AS discovered_by_name

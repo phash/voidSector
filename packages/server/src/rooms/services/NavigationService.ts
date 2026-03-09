@@ -1283,11 +1283,7 @@ export class NavigationService {
    * Detect player-built jumpgate at sector and send info to client.
    * Called from handleMoveSector / onJoin alongside detectAndSendJumpGate.
    */
-  async detectAndSendPlayerGate(
-    client: Client,
-    sectorX: number,
-    sectorY: number,
-  ): Promise<void> {
+  async detectAndSendPlayerGate(client: Client, sectorX: number, sectorY: number): Promise<void> {
     const gate = await getPlayerJumpGate(sectorX, sectorY);
     if (!gate) return;
 
@@ -1323,12 +1319,12 @@ export class NavigationService {
     gatesMap: Map<string, { id: string; sectorX: number; sectorY: number; tollCredits: number }>;
     linksMap: Map<string, string[]>;
   }> {
-    const [allGates, allLinks] = await Promise.all([
-      getAllPlayerGates(),
-      getAllJumpGateLinks(),
-    ]);
+    const [allGates, allLinks] = await Promise.all([getAllPlayerGates(), getAllJumpGateLinks()]);
 
-    const gatesMap = new Map<string, { id: string; sectorX: number; sectorY: number; tollCredits: number }>();
+    const gatesMap = new Map<
+      string,
+      { id: string; sectorX: number; sectorY: number; tollCredits: number }
+    >();
     for (const g of allGates) {
       gatesMap.set(g.id, {
         id: g.id,

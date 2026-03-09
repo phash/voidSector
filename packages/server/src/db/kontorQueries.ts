@@ -5,7 +5,10 @@ export interface KontorOrder {
   ownerId: string;
   sectorX: number;
   sectorY: number;
+  /** Category of item: 'resource' | 'module' | 'blueprint' */
   itemType: string;
+  /** Specific item identifier, e.g. 'ore', 'drive_mk2' */
+  itemId: string;
   amountWanted: number;
   amountFilled: number;
   pricePerUnit: number;
@@ -21,6 +24,7 @@ interface KontorOrderRow {
   sector_x: number;
   sector_y: number;
   item_type: string;
+  item_id: string;
   amount_wanted: number;
   amount_filled: number;
   price_per_unit: number;
@@ -37,6 +41,7 @@ function rowToOrder(row: KontorOrderRow): KontorOrder {
     sectorX: row.sector_x,
     sectorY: row.sector_y,
     itemType: row.item_type,
+    itemId: row.item_id,
     amountWanted: row.amount_wanted,
     amountFilled: row.amount_filled,
     pricePerUnit: row.price_per_unit,
@@ -51,14 +56,15 @@ export async function createKontorOrder(
   order: Omit<KontorOrder, 'id' | 'amountFilled' | 'active' | 'createdAt'>,
 ): Promise<KontorOrder> {
   const { rows } = await query<KontorOrderRow>(
-    `INSERT INTO kontor_orders (owner_id, sector_x, sector_y, item_type, amount_wanted, price_per_unit, budget_reserved, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO kontor_orders (owner_id, sector_x, sector_y, item_type, item_id, amount_wanted, price_per_unit, budget_reserved, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
       order.ownerId,
       order.sectorX,
       order.sectorY,
       order.itemType,
+      order.itemId,
       order.amountWanted,
       order.pricePerUnit,
       order.budgetReserved,

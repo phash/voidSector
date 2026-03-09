@@ -1,9 +1,5 @@
 import { hashCoords } from './worldgen.js';
-import {
-  WORLD_SEED,
-  NPC_FACTION_WEIGHTS,
-  STATION_SHIPYARD_LEVEL_THRESHOLD,
-} from '@void-sector/shared';
+import { WORLD_SEED, NPC_FACTION_WEIGHTS } from '@void-sector/shared';
 import type { NpcFactionId, StationNpc } from '@void-sector/shared';
 
 const NPC_SEED_SALT = 7777;
@@ -82,12 +78,4 @@ export function generateStationNpcs(x: number, y: number): StationNpc[] {
 export function getPirateLevel(sectorX: number, sectorY: number): number {
   const distance = Math.sqrt(sectorX * sectorX + sectorY * sectorY);
   return Math.min(Math.floor(distance / 50) + 1, 10);
-}
-
-/**
- * Determine whether a station at the given level has a shipyard.
- * Only stations at STATION_SHIPYARD_LEVEL_THRESHOLD or above qualify.
- */
-export function hasShipyard(stationLevel: number): boolean {
-  return stationLevel >= STATION_SHIPYARD_LEVEL_THRESHOLD;
 }

@@ -24,7 +24,7 @@ function getAttackerWinChance(defenseRating: string): number {
   return defenseRating === 'HIGH' ? 0.25 : 0.5;
 }
 
-describe('territory — K\'thari detection', () => {
+describe("territory — K'thari detection", () => {
   it('returns false for origin quadrant (0,0)', () => {
     expect(isKthariTerritory(0, 0)).toBe(false);
   });
@@ -55,12 +55,12 @@ describe('territory — K\'thari detection', () => {
 });
 
 describe('territory — defense rating', () => {
-  it('assigns LOW rating to non-K\'thari quadrants', () => {
+  it("assigns LOW rating to non-K'thari quadrants", () => {
     expect(getDefenseRating(0, 0)).toBe('LOW');
     expect(getDefenseRating(100, 500)).toBe('LOW');
   });
 
-  it('assigns HIGH rating to K\'thari quadrants', () => {
+  it("assigns HIGH rating to K'thari quadrants", () => {
     expect(getDefenseRating(800, 0)).toBe('HIGH');
     expect(getDefenseRating(9000, 9000)).toBe('HIGH');
   });

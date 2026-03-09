@@ -45,6 +45,7 @@ import type {
   QuadrantControlState,
   NpcFleetState,
   WarTickerEvent,
+  InventoryItem,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -329,7 +330,17 @@ class GameNetwork {
     // Local scan result
     room.onMessage(
       'localScanResult',
-      (data: { resources: SectorResources; hiddenSignatures: boolean; wrecks?: Array<{ id: string; playerName: string; radarIconData: { tier: number; path: string }; lastLogEntry: string | null; hasSalvage: boolean }> }) => {
+      (data: {
+        resources: SectorResources;
+        hiddenSignatures: boolean;
+        wrecks?: Array<{
+          id: string;
+          playerName: string;
+          radarIconData: { tier: number; path: string };
+          lastLogEntry: string | null;
+          hasSalvage: boolean;
+        }>;
+      }) => {
         const store = useStore.getState();
         store.setScanPending(false);
         if (store.currentSector) {
@@ -347,7 +358,9 @@ class GameNetwork {
         if (data.wrecks && data.wrecks.length > 0) {
           for (const wreck of data.wrecks) {
             const salvageNote = wreck.hasSalvage ? ' [BERGBAR]' : '';
-            store.addLogEntry(`WRACK ENTDECKT: ${wreck.playerName} (T${wreck.radarIconData.tier}/${wreck.radarIconData.path})${salvageNote}`);
+            store.addLogEntry(
+              `WRACK ENTDECKT: ${wreck.playerName} (T${wreck.radarIconData.tier}/${wreck.radarIconData.path})${salvageNote}`,
+            );
           }
         }
         // Stats: count scan
@@ -396,8 +409,13 @@ class GameNetwork {
       if (store.jumpPending) store.setJumpPending(false);
       // Set inline error for action-specific panels
       const inlineCodes = [
-        'NO_RESOURCES', 'MINE_FAILED', 'NOT_MINING', 'RATE_LIMIT',
-        'BUILD_FAIL', 'INSUFFICIENT', 'INVALID_INPUT',
+        'NO_RESOURCES',
+        'MINE_FAILED',
+        'NOT_MINING',
+        'RATE_LIMIT',
+        'BUILD_FAIL',
+        'INSUFFICIENT',
+        'INVALID_INPUT',
       ];
       if (inlineCodes.some((c) => data.code.startsWith(c))) {
         store.setActionError(data);
@@ -643,26 +661,29 @@ class GameNetwork {
     });
 
     // Alien interaction result — show in log and update rep store
-    room.onMessage('alienInteractResult', (data: {
-      success: boolean;
-      factionId?: string;
-      action?: string;
-      message?: string;
-      error?: string;
-      repAfter?: number;
-      repTier?: string;
-      reputations?: Record<string, number>;
-    }) => {
-      const store = useStore.getState();
-      if (data.message) {
-        store.addLogEntry(data.message);
-      } else if (!data.success && data.error) {
-        store.addLogEntry(`[${data.factionId?.toUpperCase() ?? 'ALIEN'}] ${data.error}`);
-      }
-      if (data.reputations) {
-        useStore.setState({ alienReputations: data.reputations });
-      }
-    });
+    room.onMessage(
+      'alienInteractResult',
+      (data: {
+        success: boolean;
+        factionId?: string;
+        action?: string;
+        message?: string;
+        error?: string;
+        repAfter?: number;
+        repTier?: string;
+        reputations?: Record<string, number>;
+      }) => {
+        const store = useStore.getState();
+        if (data.message) {
+          store.addLogEntry(data.message);
+        } else if (!data.success && data.error) {
+          store.addLogEntry(`[${data.factionId?.toUpperCase() ?? 'ALIEN'}] ${data.error}`);
+        }
+        if (data.reputations) {
+          useStore.setState({ alienReputations: data.reputations });
+        }
+      },
+    );
 
     // Storage update
     room.onMessage('storageUpdate', (data: StorageInventory) => {
@@ -894,13 +915,21 @@ class GameNetwork {
     });
 
     // Permadeath: ship destroyed in combat → clear combat state, show notification
-    room.onMessage('permadeath', (data: { wreckId: string; newShipId: string; legacyXp: { ausbau: number; intel: number; kampf: number; explorer: number }; message: string }) => {
-      const store = useStore.getState();
-      store.addLogEntry(data.message);
-      store.setActiveCombatV2(null);
-      store.setActiveBattle(null);
-      // shipData for the new ship is sent by server before this message
-    });
+    room.onMessage(
+      'permadeath',
+      (data: {
+        wreckId: string;
+        newShipId: string;
+        legacyXp: { ausbau: number; intel: number; kampf: number; explorer: number };
+        message: string;
+      }) => {
+        const store = useStore.getState();
+        store.addLogEntry(data.message);
+        store.setActiveCombatV2(null);
+        store.setActiveBattle(null);
+        // shipData for the new ship is sent by server before this message
+      },
+    );
 
     // Eject Pod: cargo lost, combat ended
     room.onMessage('ejectPodResult', (data: { success: boolean }) => {
@@ -913,9 +942,12 @@ class GameNetwork {
       useStore.getState().setNewsItems(data.recentNews ?? []);
     });
 
-    room.onMessage('territoryResult', (data: { success: boolean; message: string; claim?: any; combat?: any }) => {
-      useStore.getState().addLogEntry(data.message);
-    });
+    room.onMessage(
+      'territoryResult',
+      (data: { success: boolean; message: string; claim?: any; combat?: any }) => {
+        useStore.getState().addLogEntry(data.message);
+      },
+    );
 
     room.onMessage('myTerritories', (data: { territories: any[] }) => {
       const store = useStore.getState();
@@ -924,13 +956,16 @@ class GameNetwork {
       } else {
         store.addLogEntry(`TERRITORIUM: ${data.territories.length} Ansprüche —`);
         for (const t of data.territories) {
-          store.addLogEntry(`  ⬡ [${t.quadrant_x}:${t.quadrant_y}] ${t.defense_rating} — ${t.victories} Siege`);
+          store.addLogEntry(
+            `  ⬡ [${t.quadrant_x}:${t.quadrant_y}] ${t.defense_rating} — ${t.victories} Siege`,
+          );
         }
       }
     });
 
     room.onMessage('allTerritories', (data: { claims: any[] }) => {
-      const map: Record<string, { playerName: string; playerId: string; defenseRating: string }> = {};
+      const map: Record<string, { playerName: string; playerId: string; defenseRating: string }> =
+        {};
       for (const c of data.claims) {
         map[`${c.quadrant_x}:${c.quadrant_y}`] = {
           playerName: c.player_name,
@@ -1062,7 +1097,13 @@ class GameNetwork {
     // Jumpgate upgraded / toll changed
     room.onMessage(
       'jumpgateUpdated',
-      (data: { success: boolean; gateId?: string; field?: string; newLevel?: number; tollCredits?: number }) => {
+      (data: {
+        success: boolean;
+        gateId?: string;
+        field?: string;
+        newLevel?: number;
+        tollCredits?: number;
+      }) => {
         if (data.success) {
           useStore.getState().addLogEntry('Jumpgate aktualisiert');
         }
@@ -1070,12 +1111,15 @@ class GameNetwork {
     );
 
     // Jumpgate dismantled
-    room.onMessage('jumpgateDismantled', (data: { success: boolean; refund?: Record<string, number> }) => {
-      if (data.success) {
-        useStore.getState().setPlayerGateInfo(null);
-        useStore.getState().addLogEntry('Jumpgate abgebaut');
-      }
-    });
+    room.onMessage(
+      'jumpgateDismantled',
+      (data: { success: boolean; refund?: Record<string, number> }) => {
+        if (data.success) {
+          useStore.getState().setPlayerGateInfo(null);
+          useStore.getState().addLogEntry('Jumpgate abgebaut');
+        }
+      },
+    );
 
     // Jumpgate link result (link created via gate slate)
     room.onMessage('jumpgateLinkResult', (data: { success: boolean }) => {
@@ -1446,7 +1490,15 @@ class GameNetwork {
 
     room.onMessage(
       'knownQuadrants',
-      (data: { quadrants: Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }> }) => {
+      (data: {
+        quadrants: Array<{
+          qx: number;
+          qy: number;
+          learnedAt: string;
+          name?: string;
+          discoveredByName?: string;
+        }>;
+      }) => {
         useStore.getState().setKnownQuadrants(data.quadrants);
       },
     );
@@ -1455,7 +1507,13 @@ class GameNetwork {
       'syncQuadrantsResult',
       (data: {
         success: boolean;
-        quadrants?: Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>;
+        quadrants?: Array<{
+          qx: number;
+          qy: number;
+          learnedAt: string;
+          name?: string;
+          discoveredByName?: string;
+        }>;
         synced?: number;
         error?: string;
       }) => {
@@ -1520,6 +1578,14 @@ class GameNetwork {
 
     room.onMessage('warTicker', (data: WarTickerEvent) => {
       useStore.getState().addWarTickerEvent(data);
+    });
+
+    room.onMessage('inventoryState', (data: { items: InventoryItem[] }) => {
+      useStore.getState().setInventory(data.items);
+    });
+
+    room.onMessage('inventoryUpdated', () => {
+      room.send('getInventory');
     });
 
     room.onLeave(async (code) => {
@@ -2023,10 +2089,6 @@ class GameNetwork {
     this.sectorRoom?.send('getShips');
   }
 
-  sendSwitchShip(shipId: string) {
-    this.sectorRoom?.send('switchShip', { shipId });
-  }
-
   sendInstallModule(shipId: string, moduleId: string, slotIndex: number) {
     this.sectorRoom?.send('installModule', { shipId, moduleId, slotIndex });
   }
@@ -2037,10 +2099,6 @@ class GameNetwork {
 
   sendBuyModule(moduleId: string) {
     this.sectorRoom?.send('buyModule', { moduleId });
-  }
-
-  sendBuyHull(hullType: string, name: string) {
-    this.sectorRoom?.send('buyHull', { hullType, name });
   }
 
   sendRenameShip(shipId: string, name: string) {
@@ -2157,6 +2215,16 @@ class GameNetwork {
 
   requestHumanityReps() {
     this.sectorRoom?.send('getHumanityReps');
+  }
+
+  // --- Unified Inventory ---
+
+  requestInventory() {
+    this.sectorRoom?.send('getInventory');
+  }
+
+  sendCraftModule(blueprintId: string) {
+    this.sectorRoom?.send('craftModule', { blueprintId });
   }
 }
 

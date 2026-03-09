@@ -11,7 +11,7 @@ function computeSalvageable(modules: string[], shipId: string): string[] {
     const hash = shipId
       .split('')
       .reduce((acc, ch, ci) => acc ^ (ch.charCodeAt(0) * (ci + 1) * 31), i * 97);
-    return (Math.abs(hash) % 100) < 25;
+    return Math.abs(hash) % 100 < 25;
   });
 }
 
@@ -62,9 +62,9 @@ describe('permadeathService — salvage logic', () => {
 describe('permadeathService — legacy XP', () => {
   it('returns 30% of each path rounded down', () => {
     const legacy = computeLegacyXp({ ausbau: 10, intel: 20, kampf: 33, explorer: 15 });
-    expect(legacy.ausbau).toBe(3);   // floor(10*0.3)
-    expect(legacy.intel).toBe(6);    // floor(20*0.3)
-    expect(legacy.kampf).toBe(9);    // floor(33*0.3)
+    expect(legacy.ausbau).toBe(3); // floor(10*0.3)
+    expect(legacy.intel).toBe(6); // floor(20*0.3)
+    expect(legacy.kampf).toBe(9); // floor(33*0.3)
     expect(legacy.explorer).toBe(4); // floor(15*0.3)
   });
 
@@ -75,7 +75,7 @@ describe('permadeathService — legacy XP', () => {
 
   it('caps correctly at max XP path (50)', () => {
     const legacy = computeLegacyXp({ ausbau: 50, intel: 50, kampf: 0, explorer: 0 });
-    expect(legacy.ausbau).toBe(15);  // floor(50*0.3)
+    expect(legacy.ausbau).toBe(15); // floor(50*0.3)
     expect(legacy.intel).toBe(15);
     expect(legacy.kampf).toBe(0);
     expect(legacy.explorer).toBe(0);

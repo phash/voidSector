@@ -42,7 +42,9 @@ describe('calculateTraits', () => {
 
   it('grants scarred for tunnel-vision fighter', () => {
     // kampf=15, intel+ausbau+explorer must be <= 15*0.4 = 6
-    expect(calculateTraits(xp({ kampf: 15, intel: 2, ausbau: 2, explorer: 2 }))).toContain('scarred');
+    expect(calculateTraits(xp({ kampf: 15, intel: 2, ausbau: 2, explorer: 2 }))).toContain(
+      'scarred',
+    );
     // kampf=10, others must be <= 4
     expect(calculateTraits(xp({ kampf: 10, intel: 5 }))).not.toContain('scarred');
   });

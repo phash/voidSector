@@ -62,8 +62,7 @@ export function generateGateTarget(
 
   // Code/minigame requirements (ancient always requires minigame)
   const requiresCode = isAncient ? false : ((hash3 >>> 8) % 100) / 100 < JUMPGATE_CODE_CHANCE;
-  const requiresMinigame =
-    isAncient || ((hash3 >>> 16) % 100) / 100 < JUMPGATE_MINIGAME_CHANCE;
+  const requiresMinigame = isAncient || ((hash3 >>> 16) % 100) / 100 < JUMPGATE_MINIGAME_CHANCE;
 
   const accessCode = requiresCode ? generateAccessCode(hash3) : null;
 

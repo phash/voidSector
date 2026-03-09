@@ -115,7 +115,16 @@ export function StationTerminalOverlay() {
         </div>
 
         {/* Content area */}
-        <div style={{ flex: 1, overflow: 'auto', '--color-primary': green, '--color-dim': dimGreen } as React.CSSProperties}>
+        <div
+          style={
+            {
+              flex: 1,
+              overflow: 'auto',
+              '--color-primary': green,
+              '--color-dim': dimGreen,
+            } as React.CSSProperties
+          }
+        >
           {program === 'hangar' && <HangarPanel />}
           {program === 'handel' && <TradeScreen />}
           {program === 'quests' && <QuestsScreen />}

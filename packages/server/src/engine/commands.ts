@@ -548,7 +548,8 @@ export function validateLabUpgrade(
   costs?: { credits: number; ore: number; crystal: number };
 } {
   if (currentLabTier <= 0) return { valid: false, error: 'No research lab to upgrade' };
-  if (currentLabTier >= RESEARCH_LAB_MAX_TIER) return { valid: false, error: 'Lab already at max tier' };
+  if (currentLabTier >= RESEARCH_LAB_MAX_TIER)
+    return { valid: false, error: 'Lab already at max tier' };
 
   const targetTier = currentLabTier + 1;
   const costs = RESEARCH_LAB_UPGRADE_COSTS[targetTier];

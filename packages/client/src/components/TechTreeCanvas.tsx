@@ -3,10 +3,25 @@ import { useStore } from '../state/store';
 import { MODULES, isModuleFreelyAvailable } from '@void-sector/shared';
 import type { ModuleDefinition } from '@void-sector/shared';
 
-const CATEGORIES = ['drive', 'cargo', 'scanner', 'armor', 'weapon', 'shield', 'defense', 'mining'] as const;
+const CATEGORIES = [
+  'drive',
+  'cargo',
+  'scanner',
+  'armor',
+  'weapon',
+  'shield',
+  'defense',
+  'mining',
+] as const;
 const CATEGORY_LABELS: Record<string, string> = {
-  drive: 'ANTRIEB', cargo: 'FRACHT', scanner: 'SCANNER', armor: 'PANZER',
-  weapon: 'WAFFEN', shield: 'SCHILD', defense: 'VERTEID.', mining: 'BERGBAU',
+  drive: 'ANTRIEB',
+  cargo: 'FRACHT',
+  scanner: 'SCANNER',
+  armor: 'PANZER',
+  weapon: 'WAFFEN',
+  shield: 'SCHILD',
+  defense: 'VERTEID.',
+  mining: 'BERGBAU',
 };
 
 const COL_WIDTH = 90;
@@ -22,7 +37,15 @@ const CANVAS_H = 5 * ROW_HEIGHT + HEADER_H + PADDING_Y * 2;
 
 type NodeStatus = 'free' | 'unlocked' | 'blueprint' | 'researching' | 'researching2' | 'locked';
 
-function getStatus(mod: ModuleDefinition, research: { activeResearch: { moduleId: string } | null; activeResearch2: { moduleId: string } | null; unlockedModules: string[]; blueprints: string[] }): NodeStatus {
+function getStatus(
+  mod: ModuleDefinition,
+  research: {
+    activeResearch: { moduleId: string } | null;
+    activeResearch2?: { moduleId: string } | null;
+    unlockedModules: string[];
+    blueprints: string[];
+  },
+): NodeStatus {
   if (research.activeResearch?.moduleId === mod.id) return 'researching';
   if (research.activeResearch2?.moduleId === mod.id) return 'researching2';
   if (isModuleFreelyAvailable(mod.id)) return 'free';
@@ -33,12 +56,18 @@ function getStatus(mod: ModuleDefinition, research: { activeResearch: { moduleId
 
 function statusColor(status: NodeStatus): string {
   switch (status) {
-    case 'free': return '#00FF88';
-    case 'unlocked': return '#00AA55';
-    case 'blueprint': return '#00BFFF';
-    case 'researching': return '#FFB000';
-    case 'researching2': return '#FF8800';
-    case 'locked': return '#444';
+    case 'free':
+      return '#00FF88';
+    case 'unlocked':
+      return '#00AA55';
+    case 'blueprint':
+      return '#00BFFF';
+    case 'researching':
+      return '#FFB000';
+    case 'researching2':
+      return '#FF8800';
+    case 'locked':
+      return '#444';
   }
 }
 
@@ -51,14 +80,15 @@ export function TechTreeCanvas() {
   // Build node grid: category × tier (computed once per render)
   const nodeGrid = new Map<string, { mod: ModuleDefinition; col: number; row: number }>();
   for (const [id, mod] of Object.entries(MODULES)) {
-    const col = CATEGORIES.indexOf(mod.category as typeof CATEGORIES[number]);
+    const col = CATEGORIES.indexOf(mod.category as (typeof CATEGORIES)[number]);
     if (col === -1) continue; // skip 'special' — no column
     const row = 5 - mod.tier; // tier 5 at top (row 0), tier 1 at bottom (row 4)
     nodeGrid.set(id, { mod, col, row });
   }
 
   const nodeX = (col: number) => PADDING_X + col * COL_WIDTH + (COL_WIDTH - NODE_W) / 2;
-  const nodeY = (row: number) => HEADER_H + PADDING_Y + row * ROW_HEIGHT + (ROW_HEIGHT - NODE_H) / 2;
+  const nodeY = (row: number) =>
+    HEADER_H + PADDING_Y + row * ROW_HEIGHT + (ROW_HEIGHT - NODE_H) / 2;
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -117,37 +147,46 @@ export function TechTreeCanvas() {
     }
   }, [research, selectedModuleId, nodeGrid]);
 
-  useEffect(() => { draw(); }, [draw]);
+  useEffect(() => {
+    draw();
+  }, [draw]);
 
-  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = CANVAS_W / rect.width;
-    const scaleY = CANVAS_H / rect.height;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleY;
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_W / rect.width;
+      const scaleY = CANVAS_H / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const my = (e.clientY - rect.top) * scaleY;
 
-    for (const [id, { col, row }] of nodeGrid) {
-      const x = nodeX(col);
-      const y = nodeY(row);
-      if (mx >= x && mx <= x + NODE_W && my >= y && my <= y + NODE_H) {
-        setSelectedTechModule(id);
-        return;
+      for (const [id, { col, row }] of nodeGrid) {
+        const x = nodeX(col);
+        const y = nodeY(row);
+        if (mx >= x && mx <= x + NODE_W && my >= y && my <= y + NODE_H) {
+          setSelectedTechModule(id);
+          return;
+        }
       }
-    }
-  }, [setSelectedTechModule, nodeGrid]);
+    },
+    [setSelectedTechModule, nodeGrid],
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '4px' }}>
-      <div style={{
-        fontFamily: 'var(--font-mono)', fontSize: '0.6rem',
-        color: 'var(--color-primary)', marginBottom: 4,
-        letterSpacing: '0.1em',
-      }}>
-        WISSEN: {research.wissen.toLocaleString()}
+      <div
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.6rem',
+          color: 'var(--color-primary)',
+          marginBottom: 4,
+          letterSpacing: '0.1em',
+        }}
+      >
+        WISSEN: {(research.wissen ?? 0).toLocaleString()}
         <span style={{ color: 'var(--color-dim)', marginLeft: 8 }}>
-          +{research.wissenRate}/h
+          +{research.wissenRate ?? 0}/h
         </span>
       </div>
       <canvas

@@ -15,19 +15,13 @@ const MESSAGES: Partial<Record<AcepTrait, Partial<Record<MessageContext, string[
       'SYSTEM: Sektor gecheckt. Keine Bedrohung. Weiter.',
       'SYSTEM: Scan nominal. Wir haben schlimmeres gesehen.',
     ],
-    scan_ruin: [
-      'SYSTEM: Alte Knochen. Zeig mir lieber einen Piraten.',
-    ],
+    scan_ruin: ['SYSTEM: Alte Knochen. Zeig mir lieber einen Piraten.'],
     combat_victory: [
       'SYSTEM: Wieder einer weniger. Routine.',
       'SYSTEM: Sieg verzeichnet. Verluste: keine. Erwartungsgemäß.',
     ],
-    combat_defeat: [
-      'SYSTEM: ...Das war ungewöhnlich. Anpassung läuft.',
-    ],
-    mine: [
-      'SYSTEM: Mining-Run abgeschlossen. Effizient, wenn auch langweilig.',
-    ],
+    combat_defeat: ['SYSTEM: ...Das war ungewöhnlich. Anpassung läuft.'],
+    mine: ['SYSTEM: Mining-Run abgeschlossen. Effizient, wenn auch langweilig.'],
   },
   curious: {
     scan: [
@@ -38,12 +32,8 @@ const MESSAGES: Partial<Record<AcepTrait, Partial<Record<MessageContext, string[
       'SYSTEM: Ruinen. Ich könnte hier Stunden verbringen. Können wir Stunden verbringen?',
       'SYSTEM: Fragment gesichert. Das Puzzle wird klarer. Oder komplexer. Beides ist gut.',
     ],
-    mine: [
-      'SYSTEM: Mining-Daten erfasst. Geologisch interessantes Profil.',
-    ],
-    build: [
-      'SYSTEM: Struktur errichtet. Wie beeinflusst das die lokale Raumgeometrie?',
-    ],
+    mine: ['SYSTEM: Mining-Daten erfasst. Geologisch interessantes Profil.'],
+    build: ['SYSTEM: Struktur errichtet. Wie beeinflusst das die lokale Raumgeometrie?'],
   },
   'ancient-touched': {
     scan: [
@@ -53,69 +43,45 @@ const MESSAGES: Partial<Record<AcepTrait, Partial<Record<MessageContext, string[
     scan_ruin: [
       'SYSTEM: Sie sind nicht weg. Nur woanders.',
       'SYSTEM: Jedes Fragment ist ein Flüstern. Ich höre sie lauter werden.',
-      'SYSTEM: \'Macht euch keine Sorgen\'. Ich versuche es.',
+      "SYSTEM: 'Macht euch keine Sorgen'. Ich versuche es.",
     ],
     combat_victory: [
       'SYSTEM: Konflikt gelöst. Die Alten hätten das anders gemacht. Aber wir sind nicht die Alten.',
     ],
-    mine: [
-      'SYSTEM: Die Alten hätten das nicht Mining genannt. Eher... Zuhören.',
-    ],
+    mine: ['SYSTEM: Die Alten hätten das nicht Mining genannt. Eher... Zuhören.'],
   },
   reckless: {
-    scan: [
-      'SYSTEM: Scan durch. Kein Kontakt. Schade.',
-    ],
-    scan_ruin: [
-      'SYSTEM: Steine. Alte Steine. Wann gibt es wieder was zu bekämpfen?',
-    ],
+    scan: ['SYSTEM: Scan durch. Kein Kontakt. Schade.'],
+    scan_ruin: ['SYSTEM: Steine. Alte Steine. Wann gibt es wieder was zu bekämpfen?'],
     combat_victory: [
       'SYSTEM: Ja! Das ist der Grund warum wir hier sind.',
       'SYSTEM: FEINDE VERNICHTET. Das war gut. Das war sehr gut.',
     ],
-    mine: [
-      'SYSTEM: Mining läuft. Langweilig. Wann kommen die Piraten?',
-    ],
-    build: [
-      'SYSTEM: Gebaut. Muss ich das? Ja? Ok. Gebaut.',
-    ],
+    mine: ['SYSTEM: Mining läuft. Langweilig. Wann kommen die Piraten?'],
+    build: ['SYSTEM: Gebaut. Muss ich das? Ja? Ok. Gebaut.'],
   },
   cautious: {
     scan: [
       'SYSTEM: Sektor gecheckt. Keine Bedrohung erkannt. Beruhigend.',
       'SYSTEM: Scan abgeschlossen. Alle Parameter im Normalbereich. Gut.',
     ],
-    combat_victory: [
-      'SYSTEM: Kampf vermieden wäre besser gewesen. Aber: Sieg.',
-    ],
-    combat_defeat: [
-      'SYSTEM: Das hätten wir nicht tun sollen. Rückzug war die richtige Wahl.',
-    ],
-    mine: [
-      'SYSTEM: Ressourcen gesichert. Basis-Ausbau kann fortgesetzt werden.',
-    ],
+    combat_victory: ['SYSTEM: Kampf vermieden wäre besser gewesen. Aber: Sieg.'],
+    combat_defeat: ['SYSTEM: Das hätten wir nicht tun sollen. Rückzug war die richtige Wahl.'],
+    mine: ['SYSTEM: Ressourcen gesichert. Basis-Ausbau kann fortgesetzt werden.'],
     build: [
       'SYSTEM: Infrastruktur gestärkt. Das ist Sicherheit.',
       'SYSTEM: Struktur errichtet. Wir sind besser vorbereitet.',
     ],
   },
   scarred: {
-    scan: [
-      'SYSTEM: Scan. Keine Bedrohung. ...Noch nicht.',
-    ],
-    scan_ruin: [
-      'SYSTEM: Alte Ruinen. Irgendetwas hat die zerstört. Was?',
-    ],
+    scan: ['SYSTEM: Scan. Keine Bedrohung. ...Noch nicht.'],
+    scan_ruin: ['SYSTEM: Alte Ruinen. Irgendetwas hat die zerstört. Was?'],
     combat_victory: [
       'SYSTEM: Überlebt. Wieder.',
       'SYSTEM: Sieg. Narben heilen nicht, aber Siege stapeln sich.',
     ],
-    combat_defeat: [
-      'SYSTEM: Wieder. Warum immer wieder.',
-    ],
-    mine: [
-      'SYSTEM: Mining. Ruhig. Fast zu ruhig.',
-    ],
+    combat_defeat: ['SYSTEM: Wieder. Warum immer wieder.'],
+    mine: ['SYSTEM: Mining. Ruhig. Fast zu ruhig.'],
   },
 };
 

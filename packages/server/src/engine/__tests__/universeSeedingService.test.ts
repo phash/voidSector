@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { findExoticPlanets, getExoticPlanetYields, sampleUniverseStats } from '../universeSeedingService.js';
+import {
+  findExoticPlanets,
+  getExoticPlanetYields,
+  sampleUniverseStats,
+} from '../universeSeedingService.js';
 import { WORLD_SEED } from '@void-sector/shared';
 
 describe('getExoticPlanetYields', () => {

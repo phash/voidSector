@@ -3,14 +3,14 @@ import type { AlienFactionId } from './alienReputationService.js';
 
 export interface StoryChapter {
   id: number;
-  minQDist: number;    // Chebyshev quadrant distance from 0:0
+  minQDist: number; // Chebyshev quadrant distance from 0:0
   title: string;
   flavorText: string;
   branches?: StoryBranch[];
 }
 
 export interface StoryBranch {
-  id: string;          // 'A' | 'B' | 'C'
+  id: string; // 'A' | 'B' | 'C'
   label: string;
   repEffects: Partial<Record<AlienFactionId, number>>;
   outcomeText: string;
@@ -19,7 +19,7 @@ export interface StoryBranch {
 export interface StoryProgress {
   currentChapter: number;
   completedChapters: number[];
-  branchChoices: Record<string, string>;   // { "2": "A", "4": "B" }
+  branchChoices: Record<string, string>; // { "2": "A", "4": "B" }
 }
 
 export const STORY_CHAPTERS: StoryChapter[] = [
@@ -51,7 +51,8 @@ export const STORY_CHAPTERS: StoryChapter[] = [
         id: 'A',
         label: 'Sternkarten-Daten teilen',
         repEffects: { archivists: 30 },
-        outcomeText: 'Die Archivare nehmen Ihre Daten. Sie notieren: "Randregion EX-7 kooperiert. Unerwartet."',
+        outcomeText:
+          'Die Archivare nehmen Ihre Daten. Sie notieren: "Randregion EX-7 kooperiert. Unerwartet."',
       },
       {
         id: 'B',
@@ -139,8 +140,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
         id: 'B',
         label: 'Ablehnen',
         repEffects: { tourist_guild: -10 },
-        outcomeText:
-          'Touristengilde Bewertung: ★★☆☆☆ — "Wenig kooperativ. Trotzdem exotisch."',
+        outcomeText: 'Touristengilde Bewertung: ★★☆☆☆ — "Wenig kooperativ. Trotzdem exotisch."',
       },
     ],
   },
@@ -171,7 +171,8 @@ export const STORY_CHAPTERS: StoryChapter[] = [
         id: 'C',
         label: 'ICH BIN MIR NICHT SICHER',
         repEffects: { archivists: 5 },
-        outcomeText: '"Die ehrlichste Antwort die wir von dieser Spezies erhalten haben." — Archivar',
+        outcomeText:
+          '"Die ehrlichste Antwort die wir von dieser Spezies erhalten haben." — Archivar',
       },
     ],
   },
@@ -182,13 +183,20 @@ export function quadrantDistance(qx: number, qy: number): number {
   return Math.max(Math.abs(qx), Math.abs(qy));
 }
 
-export function canUnlockChapter(chapterId: number, currentQDist: number, progress: StoryProgress): boolean {
+export function canUnlockChapter(
+  chapterId: number,
+  currentQDist: number,
+  progress: StoryProgress,
+): boolean {
   const chapter = STORY_CHAPTERS[chapterId];
   if (!chapter) return false;
   if (currentQDist < chapter.minQDist) return false;
   if (chapterId === 0) return !progress.completedChapters.includes(0);
   // Previous chapter must be completed
-  return progress.completedChapters.includes(chapterId - 1) && !progress.completedChapters.includes(chapterId);
+  return (
+    progress.completedChapters.includes(chapterId - 1) &&
+    !progress.completedChapters.includes(chapterId)
+  );
 }
 
 /** Returns the highest chapter id whose minQDist <= qDist, or null if none. */
@@ -200,7 +208,10 @@ export function getChapterForDistance(qDist: number): number | null {
   return result;
 }
 
-export function applyBranchEffects(chapterId: number, branchId: string): Partial<Record<AlienFactionId, number>> {
+export function applyBranchEffects(
+  chapterId: number,
+  branchId: string,
+): Partial<Record<AlienFactionId, number>> {
   const chapter = STORY_CHAPTERS[chapterId];
   if (!chapter?.branches) return {};
   const branch = chapter.branches.find((b) => b.id === branchId);

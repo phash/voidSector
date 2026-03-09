@@ -10,6 +10,7 @@
 import { query } from '../db/client.js';
 import { getAcepXpSummary } from './acepXpService.js';
 import { calculateTraits, dominantTrait } from './traitCalculator.js';
+import { addToInventory } from './inventoryService.js';
 
 export interface WreckData {
   id: string;
@@ -104,7 +105,11 @@ export async function destroyShipAndCreateLegacy(params: {
   sectorY: number;
   modules: string[];
   lastLogEntry?: string;
-}): Promise<{ newShipId: string; wreckId: string; legacyXp: { ausbau: number; intel: number; kampf: number; explorer: number } }> {
+}): Promise<{
+  newShipId: string;
+  wreckId: string;
+  legacyXp: { ausbau: number; intel: number; kampf: number; explorer: number };
+}> {
   // Read ACEP XP for legacy computation
   const acepXp = await getAcepXpSummary(params.shipId);
   const traits = calculateTraits(acepXp);
@@ -120,7 +125,7 @@ export async function destroyShipAndCreateLegacy(params: {
     const hash = params.shipId
       .split('')
       .reduce((acc, ch, ci) => acc ^ (ch.charCodeAt(0) * (ci + 1) * 31), i * 97);
-    return (Math.abs(hash) % 100) < 25;
+    return Math.abs(hash) % 100 < 25;
   });
 
   // Create wreck POI
@@ -213,11 +218,8 @@ export async function salvageWreckModule(
     wreckId,
   ]);
 
-  // Add module to player's module_inventory JSONB array
-  await query(
-    `UPDATE players SET module_inventory = module_inventory || $1::jsonb WHERE id = $2`,
-    [JSON.stringify(module), playerId],
-  );
+  // Add salvaged module to unified inventory
+  await addToInventory(playerId, 'module', module, 1);
 
   return module;
 }

@@ -28,7 +28,9 @@ describe('DRONE_STATS', () => {
   });
 
   it('industrial drone has longest operational duration', () => {
-    expect(DRONE_STATS.industrial.durationHours).toBeGreaterThan(DRONE_STATS.harvester.durationHours);
+    expect(DRONE_STATS.industrial.durationHours).toBeGreaterThan(
+      DRONE_STATS.harvester.durationHours,
+    );
   });
 });
 
@@ -99,7 +101,9 @@ describe('validateDroneRoute', () => {
   });
 
   it('valid single waypoint is ok', () => {
-    expect(validateDroneRoute([{ sectorX: 100, sectorY: 200, mineDurationMinutes: 30 }])).toBeNull();
+    expect(
+      validateDroneRoute([{ sectorX: 100, sectorY: 200, mineDurationMinutes: 30 }]),
+    ).toBeNull();
   });
 
   it('too many waypoints is invalid', () => {
@@ -116,7 +120,9 @@ describe('validateDroneRoute', () => {
   });
 
   it('mining duration > 120 minutes is invalid', () => {
-    expect(validateDroneRoute([{ sectorX: 0, sectorY: 0, mineDurationMinutes: 121 }])).not.toBeNull();
+    expect(
+      validateDroneRoute([{ sectorX: 0, sectorY: 0, mineDurationMinutes: 121 }]),
+    ).not.toBeNull();
   });
 });
 

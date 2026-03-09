@@ -101,7 +101,10 @@ export function TradeScreen() {
         <button
           className="vs-btn"
           style={{ fontSize: '0.7rem', marginBottom: 8 }}
-          onClick={() => { setActiveProgram(navReturnProgram); clearNavReturn(); }}
+          onClick={() => {
+            setActiveProgram(navReturnProgram);
+            clearNavReturn();
+          }}
         >
           [← ZURÜCK]
         </button>
@@ -194,7 +197,8 @@ export function TradeScreen() {
                         {item.stock}/{item.maxStock}
                       </span>
                       <span style={{ opacity: 0.5, marginLeft: 'auto', fontSize: '0.65rem' }}>
-                        AN BORD: <span style={{ color: 'var(--color-primary)' }}>{playerAmount}</span>
+                        AN BORD:{' '}
+                        <span style={{ color: 'var(--color-primary)' }}>{playerAmount}</span>
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginTop: 2, marginLeft: 56 }}>
@@ -236,8 +240,18 @@ export function TradeScreen() {
               >
                 NPC PREISE (KAUF / VERKAUF)
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', marginBottom: 8, fontSize: '0.65rem', opacity: 0.5 }}>
-                <span>STATION</span><span>BESTAND</span>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '4px 12px',
+                  marginBottom: 8,
+                  fontSize: '0.65rem',
+                  opacity: 0.5,
+                }}
+              >
+                <span>STATION</span>
+                <span>BESTAND</span>
               </div>
               {(['ore', 'gas', 'crystal'] as const).map((res) => {
                 const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
@@ -246,22 +260,39 @@ export function TradeScreen() {
                 return (
                   <div
                     key={res}
-                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignItems: 'center', marginBottom: 6 }}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 4,
+                      alignItems: 'center',
+                      marginBottom: 6,
+                    }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <span style={{ fontSize: '0.75rem' }}>{res.toUpperCase()}</span>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button style={{ ...btnStyle, fontSize: '0.6rem' }} onClick={() => network.sendNpcTrade(res, amount, 'buy')}>
+                        <button
+                          style={{ ...btnStyle, fontSize: '0.6rem' }}
+                          onClick={() => network.sendNpcTrade(res, amount, 'buy')}
+                        >
                           K ({buyPrice}CR)
                         </button>
-                        <button style={{ ...btnStyle, fontSize: '0.6rem' }} onClick={() => network.sendNpcTrade(res, amount, 'sell')}>
+                        <button
+                          style={{ ...btnStyle, fontSize: '0.6rem' }}
+                          onClick={() => network.sendNpcTrade(res, amount, 'sell')}
+                        >
                           V ({sellPrice}CR)
                         </button>
                       </div>
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', paddingLeft: 4 }}>
+                    <div
+                      style={{ fontSize: '0.85rem', color: 'var(--color-primary)', paddingLeft: 4 }}
+                    >
                       {playerAmount}
-                      <span style={{ opacity: 0.4, fontSize: '0.65rem' }}> {isStation ? 'Cargo' : 'Lager'}</span>
+                      <span style={{ opacity: 0.4, fontSize: '0.65rem' }}>
+                        {' '}
+                        {isStation ? 'Cargo' : 'Lager'}
+                      </span>
                     </div>
                   </div>
                 );

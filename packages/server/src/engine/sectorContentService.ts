@@ -37,12 +37,7 @@ function chebyshevDistance(x: number, y: number): number {
   return Math.max(Math.abs(x), Math.abs(y));
 }
 
-function getDistanceMultiplier(
-  x: number,
-  y: number,
-  nearValue: number,
-  farValue: number,
-): number {
+function getDistanceMultiplier(x: number, y: number, nearValue: number, farValue: number): number {
   const dist = chebyshevDistance(x, y);
   const t = Math.min(dist / DENSITY_DISTANCE_THRESHOLD, 1.0);
   return nearValue + (farValue - nearValue) * t;
@@ -149,7 +144,7 @@ export function generateSectorContents(
     DENSITY_PIRATE_NEAR,
     DENSITY_PIRATE_FAR,
   );
-  if (environmentType !== 'nebula' && rngPirate < 0.10 * pirateMult * contentVariance) {
+  if (environmentType !== 'nebula' && rngPirate < 0.1 * pirateMult * contentVariance) {
     contents.push({
       sectorX,
       sectorY,

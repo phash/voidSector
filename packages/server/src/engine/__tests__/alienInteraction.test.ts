@@ -20,7 +20,10 @@ const MYCELIAN_SYMBOLS = ['▣', '○', '△', '◈', '✦', '⬡', '⊕'];
 function generateSymbolPuzzle(seed: number): { shown: string[]; correct: string } {
   const idx = seed % MYCELIAN_SYMBOLS.length;
   const size = 3 + (seed % 3);
-  const pattern = Array.from({ length: size }, (_, i) => MYCELIAN_SYMBOLS[(idx + i) % MYCELIAN_SYMBOLS.length]);
+  const pattern = Array.from(
+    { length: size },
+    (_, i) => MYCELIAN_SYMBOLS[(idx + i) % MYCELIAN_SYMBOLS.length],
+  );
   const correct = MYCELIAN_SYMBOLS[(idx + size) % MYCELIAN_SYMBOLS.length];
   return { shown: pattern, correct };
 }
@@ -43,7 +46,7 @@ describe('alienInteraction — math puzzles (Axioms)', () => {
   it('generates a valid arithmetic sequence', () => {
     const { sequence, answer } = generateMathPuzzle(5);
     // Each element = base * index
-    const base = ((5 % 7) + 2);
+    const base = (5 % 7) + 2;
     expect(sequence[0]).toBe(base);
     expect(sequence[1]).toBe(base * 2);
     // Answer follows the pattern
@@ -97,7 +100,7 @@ describe('alienInteraction — symbol puzzles (Mycelians)', () => {
   });
 });
 
-describe('alienInteraction — K\'thari rank', () => {
+describe("alienInteraction — K'thari rank", () => {
   it('returns rank 0 for 0 victories', () => {
     expect(getKthariRank(0).rank).toBe(0);
     expect(getKthariRank(0).name).toBe('Eindringling');

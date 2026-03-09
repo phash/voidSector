@@ -2,7 +2,7 @@
 
 const ADVANTAGE_THRESHOLD = 1.2;
 const CRUSHING_THRESHOLD = 10.0;
-const LOSS_ON_WIN = 0.10;
+const LOSS_ON_WIN = 0.1;
 const LOSS_ON_STALEMATE = 0.05;
 
 export interface WarfareTickInput {
@@ -23,8 +23,7 @@ export interface WarfareResult {
 
 export function resolveStrategicTick(input: WarfareTickInput): WarfareResult {
   const effectiveAttack = Math.round(
-    (input.attack + (input.playerAttackBonus ?? 0)) *
-    (input.attackMultiplier ?? 1.0)
+    (input.attack + (input.playerAttackBonus ?? 0)) * (input.attackMultiplier ?? 1.0),
   );
   const effectiveDefense = input.defense + (input.playerDefenseBonus ?? 0);
 

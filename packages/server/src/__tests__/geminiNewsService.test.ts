@@ -5,8 +5,16 @@ import { generateFirstContactNews, FALLBACK_NEWS } from '../engine/geminiNewsSer
 describe('geminiNewsService', () => {
   it('FALLBACK_NEWS covers all 10 alien factions', () => {
     const factions = [
-      'archivists', 'consortium', 'kthari', 'mycelians', 'mirror_minds',
-      'tourist_guild', 'silent_swarm', 'helions', 'axioms', 'scrappers',
+      'archivists',
+      'consortium',
+      'kthari',
+      'mycelians',
+      'mirror_minds',
+      'tourist_guild',
+      'silent_swarm',
+      'helions',
+      'axioms',
+      'scrappers',
     ];
     for (const f of factions) {
       expect(FALLBACK_NEWS[f]).toBeDefined();

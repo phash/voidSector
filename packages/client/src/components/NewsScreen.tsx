@@ -110,7 +110,7 @@ function NewsItem({
           {item.summary}
         </div>
       )}
-      {(item.quadrant_x !== null && item.quadrant_y !== null) && (
+      {item.quadrant_x !== null && item.quadrant_y !== null && (
         <div
           style={{
             color: 'var(--color-dim)',
@@ -154,7 +154,7 @@ export function NewsScreen() {
     }
   }, [newsItems]);
 
-  const grouped: Record<string, typeof newsItems[0][]> = {};
+  const grouped: Record<string, (typeof newsItems)[0][]> = {};
   for (const item of newsItems) {
     const date = new Date(item.created_at).toLocaleDateString('de-DE', {
       day: '2-digit',
@@ -268,11 +268,7 @@ export function NewsScreen() {
                 ── {date} ──
               </div>
               {items.map((item) => (
-                <NewsItem
-                  key={item.id}
-                  item={item}
-                  highlight={item.id === newestId}
-                />
+                <NewsItem key={item.id} item={item} highlight={item.id === newestId} />
               ))}
             </div>
           ))

@@ -21,7 +21,8 @@ const QUEST_ROTATION: Array<{
     factionId: 'archivists',
     questType: 'community_scan',
     title: 'Das Große Kartenprojekt',
-    description: 'Alle Piloten: Scannt gemeinsam 100.000 Sektoren. Die Archivare teilen ihr Archiv.',
+    description:
+      'Alle Piloten: Scannt gemeinsam 100.000 Sektoren. Die Archivare teilen ihr Archiv.',
     targetCount: 100000,
     rewardType: 'archivist_star_charts',
   },

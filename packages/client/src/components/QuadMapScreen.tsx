@@ -327,11 +327,12 @@ export function QuadMapScreen() {
 
   // Find selected quadrant info
   const selectedInfo = selectedQuadrant
-    ? knownQuadrants.find((q) => q.qx === selectedQuadrant.qx && q.qy === selectedQuadrant.qy) ?? null
+    ? (knownQuadrants.find((q) => q.qx === selectedQuadrant.qx && q.qy === selectedQuadrant.qy) ??
+      null)
     : null;
   const territoryMap = useStore((s) => s.territoryMap);
   const selectedTerritory = selectedQuadrant
-    ? territoryMap[`${selectedQuadrant.qx}:${selectedQuadrant.qy}`] ?? null
+    ? (territoryMap[`${selectedQuadrant.qx}:${selectedQuadrant.qy}`] ?? null)
     : null;
 
   return (
@@ -416,20 +417,23 @@ export function QuadMapScreen() {
               {selectedInfo ? (
                 <>
                   <span>
-                    {' '}| LEARNED:{' '}
+                    {' '}
+                    | LEARNED:{' '}
                     <span style={{ color: 'var(--color-primary)' }}>
                       {new Date(selectedInfo.learnedAt).toLocaleDateString()}
                     </span>
                   </span>
                   {selectedInfo.discoveredByName && (
                     <span>
-                      {' '}| FIRST CONTACT:{' '}
+                      {' '}
+                      | FIRST CONTACT:{' '}
                       <span style={{ color: '#00FF88' }}>{selectedInfo.discoveredByName}</span>
                     </span>
                   )}
                   {selectedTerritory && (
                     <span>
-                      {' '}| TERRITORY:{' '}
+                      {' '}
+                      | TERRITORY:{' '}
                       <span style={{ color: playerColor(selectedTerritory.playerId) }}>
                         {selectedTerritory.playerName}
                       </span>

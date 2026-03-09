@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { findReachableGates } from '../jumpgateRouting.js';
 
 const makeGate = (id: string, x: number, y: number, toll: number) => ({
-  id, sectorX: x, sectorY: y, tollCredits: toll,
+  id,
+  sectorX: x,
+  sectorY: y,
+  tollCredits: toll,
 });
 
 describe('findReachableGates', () => {
@@ -11,7 +14,10 @@ describe('findReachableGates', () => {
       ['A', makeGate('A', 0, 0, 5)],
       ['B', makeGate('B', 10, 10, 10)],
     ]);
-    const links = new Map([['A', ['B']], ['B', ['A']]]);
+    const links = new Map([
+      ['A', ['B']],
+      ['B', ['A']],
+    ]);
     const result = findReachableGates('A', gates, links);
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ gateId: 'B', totalCost: 5, hops: 1 });
@@ -23,7 +29,11 @@ describe('findReachableGates', () => {
       ['B', makeGate('B', 10, 0, 10)],
       ['C', makeGate('C', 20, 0, 15)],
     ]);
-    const links = new Map([['A', ['B']], ['B', ['A', 'C']], ['C', ['B']]]);
+    const links = new Map([
+      ['A', ['B']],
+      ['B', ['A', 'C']],
+      ['C', ['B']],
+    ]);
     const result = findReachableGates('A', gates, links);
     expect(result).toHaveLength(2);
     const toC = result.find((r) => r.gateId === 'C');

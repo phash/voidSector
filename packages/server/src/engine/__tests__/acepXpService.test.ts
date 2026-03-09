@@ -39,7 +39,10 @@ describe('ACEP XP budget logic', () => {
   }
 
   const empty = (): Record<AcepPath, number> => ({
-    ausbau: 0, intel: 0, kampf: 0, explorer: 0,
+    ausbau: 0,
+    intel: 0,
+    kampf: 0,
+    explorer: 0,
   });
 
   it('gains full amount when budget is available', () => {

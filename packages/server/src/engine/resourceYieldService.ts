@@ -135,10 +135,7 @@ export function rollYieldAmount(min: number, max: number, rng: number): number {
 /**
  * Determines if exotic resource drops this roll.
  */
-export function rollExotic(
-  exotic: ResourceYield['exotic'],
-  rng: number,
-): number {
+export function rollExotic(exotic: ResourceYield['exotic'], rng: number): number {
   if (rng > exotic.chance) return 0;
   return rollYieldAmount(exotic.min, exotic.max, rng / exotic.chance);
 }

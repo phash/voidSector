@@ -11,6 +11,10 @@ vi.mock('../network/client', () => ({
     sendActivateSlate: vi.fn(),
     sendNpcBuyback: vi.fn(),
     sendCreateSlate: vi.fn(),
+    requestInventory: vi.fn(),
+    sendInstallModule: vi.fn(),
+    sendActivateBlueprint: vi.fn(),
+    sendCraftModule: vi.fn(),
   },
 }));
 
@@ -19,7 +23,24 @@ import { network } from '../network/client';
 describe('CargoScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStoreState({ cargo: { ore: 3, gas: 0, crystal: 1, slates: 0, artefact: 0, artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0, artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0, artefact_mining: 0 } });
+    mockStoreState({
+      cargo: {
+        ore: 3,
+        gas: 0,
+        crystal: 1,
+        slates: 0,
+        artefact: 0,
+        artefact_drive: 0,
+        artefact_cargo: 0,
+        artefact_scanner: 0,
+        artefact_armor: 0,
+        artefact_weapon: 0,
+        artefact_shield: 0,
+        artefact_defense: 0,
+        artefact_special: 0,
+        artefact_mining: 0,
+      },
+    });
   });
 
   it('shows cargo labels', () => {
@@ -72,7 +93,22 @@ describe('CargoScreen', () => {
 
   it('shows slate count when player has slates', () => {
     mockStoreState({
-      cargo: { ore: 1, gas: 0, crystal: 0, slates: 2, artefact: 0, artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0, artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0, artefact_mining: 0 },
+      cargo: {
+        ore: 1,
+        gas: 0,
+        crystal: 0,
+        slates: 2,
+        artefact: 0,
+        artefact_drive: 0,
+        artefact_cargo: 0,
+        artefact_scanner: 0,
+        artefact_armor: 0,
+        artefact_weapon: 0,
+        artefact_shield: 0,
+        artefact_defense: 0,
+        artefact_special: 0,
+        artefact_mining: 0,
+      },
       mySlates: [
         {
           id: 's1',
@@ -127,7 +163,22 @@ describe('CargoScreen', () => {
 
   it('shows create slate buttons', () => {
     mockStoreState({
-      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0, artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0, artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0, artefact_mining: 0 },
+      cargo: {
+        ore: 0,
+        gas: 0,
+        crystal: 0,
+        slates: 0,
+        artefact: 0,
+        artefact_drive: 0,
+        artefact_cargo: 0,
+        artefact_scanner: 0,
+        artefact_armor: 0,
+        artefact_weapon: 0,
+        artefact_shield: 0,
+        artefact_defense: 0,
+        artefact_special: 0,
+        artefact_mining: 0,
+      },
       mySlates: [],
       ship: {
         id: 'ship1',

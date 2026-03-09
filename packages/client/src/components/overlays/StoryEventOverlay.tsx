@@ -13,33 +13,51 @@ export function StoryEventOverlay() {
   };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.92)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 200,
-    }}>
-      <div style={{
-        border: '2px solid var(--color-primary)',
-        background: '#040404',
-        padding: '24px 32px',
-        maxWidth: 520,
-        width: '90%',
-        fontFamily: 'var(--font-mono)',
-        color: 'var(--color-primary)',
-      }}>
-        <div style={{ fontSize: '0.6rem', letterSpacing: '0.3em', color: 'var(--color-dim)', marginBottom: 8 }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.92)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 200,
+      }}
+    >
+      <div
+        style={{
+          border: '2px solid var(--color-primary)',
+          background: '#040404',
+          padding: '24px 32px',
+          maxWidth: 520,
+          width: '90%',
+          fontFamily: 'var(--font-mono)',
+          color: 'var(--color-primary)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: '0.6rem',
+            letterSpacing: '0.3em',
+            color: 'var(--color-dim)',
+            marginBottom: 8,
+          }}
+        >
           KAPITEL {storyEvent.chapterId}
         </div>
         <div style={{ fontSize: '1.1rem', letterSpacing: '0.2em', marginBottom: 16 }}>
           {storyEvent.title}
         </div>
-        <div style={{
-          fontSize: '0.8rem', lineHeight: 1.7,
-          color: 'var(--color-dim)', marginBottom: 20,
-          borderLeft: '2px solid var(--color-primary)',
-          paddingLeft: 12,
-        }}>
+        <div
+          style={{
+            fontSize: '0.8rem',
+            lineHeight: 1.7,
+            color: 'var(--color-dim)',
+            marginBottom: 20,
+            borderLeft: '2px solid var(--color-primary)',
+            paddingLeft: 12,
+          }}
+        >
           {storyEvent.flavorText}
         </div>
 

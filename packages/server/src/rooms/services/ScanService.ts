@@ -1,11 +1,7 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import type {
-  CompleteScanEventMessage,
-  ResourceType,
-  SectorEnvironment,
-} from '@void-sector/shared';
+import type { CompleteScanEventMessage, SectorEnvironment } from '@void-sector/shared';
 
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
@@ -28,10 +24,7 @@ import {
   completeScanEvent,
   getPlayerCredits,
   addCredits,
-  addToCargo,
-  getPlayerCargo,
   getPlayerReputation,
-  addBlueprint,
   getPlayerFaction,
   getFactionMembersByPlayerIds,
   hasScannedRuin,
@@ -40,6 +33,7 @@ import {
   recordAlienEncounter,
   addTypedArtefact,
 } from '../../db/queries.js';
+import { addToInventory, getInventoryItem, getCargoState } from '../../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
 import { WORLD_SEED } from '@void-sector/shared';
@@ -118,12 +112,16 @@ export class ScanService {
         const scanSeed = (Date.now() ^ auth.userId.charCodeAt(0)) >>> 0;
         const ruinResult = resolveAncientRuinScan(px, py, WORLD_SEED, scanSeed);
         await insertAncientRuinScan(
-          auth.userId, px, py,
-          ruinResult.fragmentIndex, ruinResult.ruinLevel, ruinResult.artefactFound,
+          auth.userId,
+          px,
+          py,
+          ruinResult.fragmentIndex,
+          ruinResult.ruinLevel,
+          ruinResult.artefactFound,
         );
         if (ruinResult.artefactFound) {
-          await addToCargo(auth.userId, 'artefact' as ResourceType, 1);
-          client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+          await addToInventory(auth.userId, 'resource', 'artefact', 1);
+          client.send('cargoUpdate', await getCargoState(auth.userId));
         }
         client.send('ancientRuinScan', {
           fragmentIndex: ruinResult.fragmentIndex,
@@ -232,7 +230,11 @@ export class ScanService {
         const memberIds = await getFactionMembersByPlayerIds(playerFaction.id);
         for (const memberId of memberIds) {
           if (memberId === auth.userId) continue;
-          this.ctx.sendToPlayer(memberId, 'scanResult', { sectors: foggedSectors, apRemaining: 0, sharedByScan: true });
+          this.ctx.sendToPlayer(memberId, 'scanResult', {
+            sectors: foggedSectors,
+            apRemaining: 0,
+            sharedByScan: true,
+          });
         }
       }
     } catch {
@@ -348,26 +350,38 @@ export class ScanService {
       );
     }
     if (eventData.rewardArtefact && eventData.rewardArtefact > 0) {
-      await addToCargo(auth.userId, 'artefact' as ResourceType, eventData.rewardArtefact);
+      await addToInventory(auth.userId, 'resource', 'artefact', eventData.rewardArtefact);
       const scanEventData = event.data as Record<string, unknown>;
       if (scanEventData.rewardArtefactType) {
-        await addTypedArtefact(auth.userId, scanEventData.rewardArtefactType as string, eventData.rewardArtefact);
+        await addTypedArtefact(
+          auth.userId,
+          scanEventData.rewardArtefactType as string,
+          eventData.rewardArtefact,
+        );
       }
-      const updatedCargo = await getPlayerCargo(auth.userId);
+      const updatedCargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', updatedCargo);
       client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
     }
 
-    // Handle blueprint find
+    // Handle blueprint find — stored in unified inventory (type='blueprint')
     if (event.event_type === 'blueprint_find') {
       const moduleId = (event.data as Record<string, unknown>)?.moduleId as string;
       if (moduleId) {
-        await addBlueprint(auth.userId, moduleId);
-        client.send('blueprintFound', {
-          moduleId,
-          moduleName: MODULES[moduleId]?.name ?? moduleId,
-        });
-        client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
+        const existing = await getInventoryItem(auth.userId, 'blueprint', moduleId);
+        if (existing === 0) {
+          await addToInventory(auth.userId, 'blueprint', moduleId, 1);
+          client.send('blueprintFound', {
+            moduleId,
+            moduleName: MODULES[moduleId]?.name ?? moduleId,
+          });
+          client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
+        } else {
+          client.send(
+            'logEntry',
+            `BLAUPAUSE BEREITS BEKANNT: ${MODULES[moduleId]?.name ?? moduleId}`,
+          );
+        }
       }
     }
 
@@ -395,7 +409,10 @@ export class ScanService {
     }
     const module = await salvageWreckModule(data.wreckId, auth.userId);
     if (!module) {
-      client.send('salvageResult', { success: false, message: 'Keine bergbaren Module in diesem Wrack' });
+      client.send('salvageResult', {
+        success: false,
+        message: 'Keine bergbaren Module in diesem Wrack',
+      });
       return;
     }
     const moduleName = MODULES[module]?.name ?? module;

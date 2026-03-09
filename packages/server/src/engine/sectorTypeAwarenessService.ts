@@ -6,36 +6,39 @@ export type NpcFactionId = 'traders' | 'scientists' | 'pirates' | 'ancients';
  * NPC faction preference weights per environment type.
  * Higher weight = more likely to spawn/be present in that environment.
  */
-export const NPC_FACTION_ENVIRONMENT_WEIGHTS: Record<NpcFactionId, Partial<Record<SectorEnvironment, number>>> = {
+export const NPC_FACTION_ENVIRONMENT_WEIGHTS: Record<
+  NpcFactionId,
+  Partial<Record<SectorEnvironment, number>>
+> = {
   traders: {
-    empty: 0.40,
-    planet: 0.30,
-    asteroid: 0.20,
-    nebula: 0.10,
+    empty: 0.4,
+    planet: 0.3,
+    asteroid: 0.2,
+    nebula: 0.1,
     star: 0,
     black_hole: 0,
   },
   scientists: {
     planet: 0.35,
-    nebula: 0.30,
-    asteroid: 0.20,
+    nebula: 0.3,
+    asteroid: 0.2,
     empty: 0.15,
     star: 0,
     black_hole: 0,
   },
   pirates: {
-    black_hole: 0.40,
-    star: 0.30,
-    empty: 0.20,
-    asteroid: 0.10,
+    black_hole: 0.4,
+    star: 0.3,
+    empty: 0.2,
+    asteroid: 0.1,
     nebula: 0,
     planet: 0,
   },
   ancients: {
-    nebula: 0.50,
+    nebula: 0.5,
     planet: 0.25,
     black_hole: 0.15,
-    asteroid: 0.10,
+    asteroid: 0.1,
     empty: 0,
     star: 0,
   },
@@ -74,7 +77,10 @@ export function getPreferredEnvironment(faction: NpcFactionId): SectorEnvironmen
  */
 export function getEligibleFactions(environment: SectorEnvironment): NpcFactionId[] {
   const eligible: NpcFactionId[] = [];
-  for (const [faction, weights] of Object.entries(NPC_FACTION_ENVIRONMENT_WEIGHTS) as [NpcFactionId, Partial<Record<SectorEnvironment, number>>][]) {
+  for (const [faction, weights] of Object.entries(NPC_FACTION_ENVIRONMENT_WEIGHTS) as [
+    NpcFactionId,
+    Partial<Record<SectorEnvironment, number>>,
+  ][]) {
     if ((weights[environment] ?? 0) > 0) {
       eligible.push(faction);
     }

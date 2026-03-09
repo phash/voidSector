@@ -43,10 +43,6 @@ import {
 import { query } from '../../db/client.js';
 import { getFuelState, saveFuelState } from './RedisAPStore.js';
 import {
-  getPlayerCargo,
-  addToCargo,
-  deductCargo,
-  getCargoTotal,
   getPlayerCredits,
   addCredits,
   deductCredits,
@@ -64,6 +60,12 @@ import {
   updatePlayerStationRep,
   getPlayerResearch,
 } from '../../db/queries.js';
+import {
+  addToInventory,
+  removeFromInventory,
+  getCargoState,
+  getResourceTotal,
+} from '../../engine/inventoryService.js';
 import { isPositiveInt, rejectGuest } from './utils.js';
 import {
   NPC_PRICES,
@@ -153,8 +155,8 @@ export class EconomyService {
 
     if (isStation) {
       // Station trade: use cargo with dynamic pricing from NPC station engine
-      const cargo = await getPlayerCargo(auth.userId);
-      const cargoTotal = await getCargoTotal(auth.userId);
+      const cargo = await getCargoState(auth.userId);
+      const cargoTotal = await getResourceTotal(auth.userId);
       const shipStats = this.ctx.getShipForClient(client.sessionId);
       const sx = this.ctx._px(client.sessionId);
       const sy = this.ctx._py(client.sessionId);
@@ -178,7 +180,9 @@ export class EconomyService {
           return;
         }
         // Execute trade
-        const deducted = await deductCargo(auth.userId, resource, amount);
+        const deducted = await removeFromInventory(auth.userId, 'resource', resource, amount)
+          .then(() => true)
+          .catch(() => false);
         if (!deducted) {
           client.send('npcTradeResult', { success: false, error: 'Cargo changed' });
           return;
@@ -193,7 +197,7 @@ export class EconomyService {
         const newCredits = await addCredits(auth.userId, sellCheck.price);
         await recordTrade(sx, sy, amount);
         updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
-        const updatedCargo = await getPlayerCargo(auth.userId);
+        const updatedCargo = await getCargoState(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
@@ -231,7 +235,7 @@ export class EconomyService {
           client.send('npcTradeResult', { success: false, error: 'Credits changed' });
           return;
         }
-        await addToCargo(auth.userId, resource, amount);
+        await addToInventory(auth.userId, 'resource', resource, amount);
         // Update station stock
         const invItem = await getStationInventoryItem(sx, sy, resource);
         if (invItem) {
@@ -242,7 +246,7 @@ export class EconomyService {
         const newCredits = await getPlayerCredits(auth.userId);
         await recordTrade(sx, sy, amount);
         updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
-        const updatedCargo = await getPlayerCargo(auth.userId);
+        const updatedCargo = await getCargoState(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
@@ -434,7 +438,7 @@ export class EconomyService {
     // Home base always provides basic tier 1 storage, even without a storage structure
     const storageTier = storageStruct?.tier ?? 1;
 
-    const currentCargo = await getPlayerCargo(auth.userId);
+    const currentCargo = await getCargoState(auth.userId);
     const storage = await getStorageInventory(auth.userId);
     const result = validateTransfer(
       direction,
@@ -450,18 +454,14 @@ export class EconomyService {
     }
 
     if (direction === 'toStorage') {
-      const deducted = await deductCargo(auth.userId, resource, amount);
-      if (!deducted) {
-        client.send('transferResult', { success: false, error: 'Cargo changed' });
-        return;
-      }
+      await removeFromInventory(auth.userId, 'resource', resource, amount);
       await updateStorageResource(auth.userId, resource, amount);
     } else {
       await updateStorageResource(auth.userId, resource, -amount);
-      await addToCargo(auth.userId, resource, amount);
+      await addToInventory(auth.userId, 'resource', resource, amount);
     }
 
-    const updatedCargo = await getPlayerCargo(auth.userId);
+    const updatedCargo = await getCargoState(auth.userId);
     const updatedStorage = await getStorageInventory(auth.userId);
     client.send('transferResult', { success: true, cargo: updatedCargo, storage: updatedStorage });
     client.send('cargoUpdate', updatedCargo);
@@ -666,11 +666,11 @@ export class EconomyService {
     }
 
     // Add to player cargo
-    await addToCargo(auth.userId, data.itemType as any, data.amount);
+    await addToInventory(auth.userId, 'resource', data.itemType, data.amount);
 
     // Send updates
     const status = await getFactoryStatus(factoryStruct.id);
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     client.send('factoryUpdate', status);
     client.send('cargoUpdate', cargo);
   }
@@ -679,7 +679,7 @@ export class EconomyService {
 
   async handleKontorPlaceOrder(
     client: Client,
-    data: { itemType: string; amount: number; pricePerUnit: number },
+    data: { itemType: string; itemId: string; amount: number; pricePerUnit: number },
   ): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'kontorPlaceOrder', 1000)) return;
     if (rejectGuest(client, 'kontor')) return;
@@ -687,6 +687,10 @@ export class EconomyService {
 
     if (!data?.itemType || typeof data.itemType !== 'string') {
       client.send('kontorUpdate', { error: 'Invalid item type' });
+      return;
+    }
+    if (!data?.itemId || typeof data.itemId !== 'string') {
+      client.send('kontorUpdate', { error: 'Invalid item ID' });
       return;
     }
     if (!isPositiveInt(data?.amount) || !isPositiveInt(data?.pricePerUnit)) {
@@ -698,7 +702,8 @@ export class EconomyService {
       auth.userId,
       this.ctx._px(client.sessionId),
       this.ctx._py(client.sessionId),
-      data.itemType,
+      data.itemType as import('@void-sector/shared').ItemType,
+      data.itemId,
       data.amount,
       data.pricePerUnit,
     );
@@ -767,7 +772,7 @@ export class EconomyService {
       this.ctx._px(client.sessionId),
       this.ctx._py(client.sessionId),
     );
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     client.send('kontorUpdate', { orders, earned: result.earned });
     client.send('cargoUpdate', cargo);
   }

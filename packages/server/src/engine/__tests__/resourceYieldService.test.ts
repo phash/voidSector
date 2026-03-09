@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { getResourceYield, getMeteorYield, rollYieldAmount, rollExotic } from '../resourceYieldService.js';
-import { validateFirstBasePlacement, getFirstBaseCost, getRecommendedBaseEnvironments } from '../firstBaseService.js';
+import {
+  getResourceYield,
+  getMeteorYield,
+  rollYieldAmount,
+  rollExotic,
+} from '../resourceYieldService.js';
+import {
+  validateFirstBasePlacement,
+  getFirstBaseCost,
+  getRecommendedBaseEnvironments,
+} from '../firstBaseService.js';
 
 describe('getResourceYield', () => {
   it('asteroid field has ore range 50-100', () => {

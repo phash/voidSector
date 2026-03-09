@@ -76,7 +76,12 @@ describe('expandFaction', () => {
     const territory = initializeTerritoryState();
     // Mark all neighbors of humans as claimed by archivists
     for (const [qx, qy] of HUMAN_STARTING_TERRITORY) {
-      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
         const nx = qx + dx;
         const ny = qy + dy;
         if (nx >= 0 && ny >= 0) {

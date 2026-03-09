@@ -181,14 +181,27 @@ export function TechDetailPanel() {
       {/* Research cost */}
       {mod.researchCost && (
         <div style={{ marginBottom: 6 }}>
-          <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em', marginBottom: 2 }}>
+          <div
+            style={{
+              color: 'var(--color-dim)',
+              fontSize: '0.55rem',
+              letterSpacing: '0.1em',
+              marginBottom: 2,
+            }}
+          >
             FORSCHUNGSKOSTEN
           </div>
           <div>{wissenCostLine(mod.researchCost.wissen, extraArtefacts)}</div>
           {mod.researchCost.artefacts && (
             <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', marginTop: 2 }}>
               {Object.entries(mod.researchCost.artefacts).map(([type, count]) => (
-                <span key={type} style={{ marginRight: 8, color: (typedArtefacts[type] ?? 0) >= (count ?? 0) ? '#00FF88' : '#FF3333' }}>
+                <span
+                  key={type}
+                  style={{
+                    marginRight: 8,
+                    color: (typedArtefacts[type] ?? 0) >= (count ?? 0) ? '#00FF88' : '#FF3333',
+                  }}
+                >
                   {count}× {type.toUpperCase()}-ART
                 </span>
               ))}
@@ -245,7 +258,10 @@ export function TechDetailPanel() {
                 <div style={{ color: '#FFB000', marginBottom: 4 }}>
                   FORSCHUNG LÄUFT... {formatCountdown(remaining)}
                 </div>
-                <button style={btnDangerStyle} onClick={() => network.sendCancelResearch(activeSlot ?? 1)}>
+                <button
+                  style={btnDangerStyle}
+                  onClick={() => network.sendCancelResearch(activeSlot ?? 1)}
+                >
                   [ABBRECHEN]
                 </button>
               </>
@@ -263,15 +279,35 @@ export function TechDetailPanel() {
         {/* Optional artefact counter */}
         {mod.researchCost && !isUnlocked && !isFree && !isResearching && (
           <div style={{ marginBottom: 6 }}>
-            <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em', marginBottom: 2 }}>
+            <div
+              style={{
+                color: 'var(--color-dim)',
+                fontSize: '0.55rem',
+                letterSpacing: '0.1em',
+                marginBottom: 2,
+              }}
+            >
               ARTEFAKT-BONI (optional)
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <button style={btnStyle} onClick={() => setExtraArtefacts(Math.max(0, extraArtefacts - 1))}>[-]</button>
+              <button
+                style={btnStyle}
+                onClick={() => setExtraArtefacts(Math.max(0, extraArtefacts - 1))}
+              >
+                [-]
+              </button>
               <span style={{ color: 'var(--color-primary)' }}>{extraArtefacts}</span>
-              <button style={btnStyle} onClick={() => setExtraArtefacts(Math.min(MAX_ARTEFACTS_PER_RESEARCH, extraArtefacts + 1))}>[ +]</button>
+              <button
+                style={btnStyle}
+                onClick={() =>
+                  setExtraArtefacts(Math.min(MAX_ARTEFACTS_PER_RESEARCH, extraArtefacts + 1))
+                }
+              >
+                [ +]
+              </button>
               <span style={{ color: 'var(--color-dim)', fontSize: '0.55rem', marginLeft: 4 }}>
-                −{Math.min(extraArtefacts, MAX_ARTEFACTS_PER_RESEARCH) * ARTEFACT_WISSEN_BONUS} WISSEN
+                −{Math.min(extraArtefacts, MAX_ARTEFACTS_PER_RESEARCH) * ARTEFACT_WISSEN_BONUS}{' '}
+                WISSEN
               </span>
             </div>
           </div>
@@ -281,13 +317,19 @@ export function TechDetailPanel() {
         {labTier >= 3 && mod.researchCost && !isUnlocked && !isFree && !isResearching && (
           <div style={{ marginBottom: 6, display: 'flex', gap: 6 }}>
             <button
-              style={{ ...btnStyle, ...(selectedSlot === 1 ? { borderColor: '#FFB000', color: '#FFB000' } : {}) }}
+              style={{
+                ...btnStyle,
+                ...(selectedSlot === 1 ? { borderColor: '#FFB000', color: '#FFB000' } : {}),
+              }}
               onClick={() => setSelectedSlot(1)}
             >
               [SLOT 1]
             </button>
             <button
-              style={{ ...btnStyle, ...(selectedSlot === 2 ? { borderColor: '#FF8800', color: '#FF8800' } : {}) }}
+              style={{
+                ...btnStyle,
+                ...(selectedSlot === 2 ? { borderColor: '#FF8800', color: '#FF8800' } : {}),
+              }}
               onClick={() => setSelectedSlot(2)}
             >
               [SLOT 2]
@@ -297,11 +339,14 @@ export function TechDetailPanel() {
 
         {/* Start research button */}
         {!isFree && !isUnlocked && !isResearching && mod.researchCost && researchCheck.valid && (
-          <button style={btnStyle} onClick={() => {
-            const artefactsToUse: Record<string, number> = {};
-            if (extraArtefacts > 0) artefactsToUse[mod.category] = extraArtefacts;
-            network.sendStartResearch(mod.id, selectedSlot, artefactsToUse);
-          }}>
+          <button
+            style={btnStyle}
+            onClick={() => {
+              const artefactsToUse: Record<string, number> = {};
+              if (extraArtefacts > 0) artefactsToUse[mod.category] = extraArtefacts;
+              network.sendStartResearch(mod.id, selectedSlot, artefactsToUse);
+            }}
+          >
             [FORSCHUNG STARTEN]
           </button>
         )}

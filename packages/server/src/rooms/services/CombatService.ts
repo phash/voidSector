@@ -24,12 +24,14 @@ import {
 import { rejectGuest } from './utils.js';
 import { getAPState, saveAPState } from './RedisAPStore.js';
 import {
+  getCargoState,
+  addToInventory,
+  removeFromInventory,
+} from '../../engine/inventoryService.js';
+import {
   getPlayerCredits,
   addCredits,
   deductCredits,
-  getPlayerCargo,
-  addToCargo,
-  deductCargo,
   getPlayerReputation,
   getPlayerUpgrades,
   insertBattleLog,
@@ -58,7 +60,7 @@ export class CombatService {
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
     const credits = await getPlayerCredits(auth.userId);
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
 
     const pirateLevel = getPirateLevel(data.sectorX, data.sectorY);
@@ -103,20 +105,20 @@ export class CombatService {
       client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
       if (result.lootResources) {
         for (const [res, amount] of Object.entries(result.lootResources)) {
-          if (amount && amount > 0) await addToCargo(auth.userId, res as ResourceType, amount);
+          if (amount && amount > 0) await addToInventory(auth.userId, 'resource', res, amount);
         }
-        client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+        client.send('cargoUpdate', await getCargoState(auth.userId));
       }
       if (result.lootArtefact && result.lootArtefact > 0) {
-        await addToCargo(auth.userId, 'artefact' as ResourceType, result.lootArtefact);
+        await addToInventory(auth.userId, 'resource', 'artefact', result.lootArtefact);
       }
     }
 
     if (result.outcome === 'defeat' && result.cargoLost) {
       for (const [res, amount] of Object.entries(result.cargoLost)) {
-        if (amount && amount > 0) await deductCargo(auth.userId, res, amount);
+        if (amount && amount > 0) await removeFromInventory(auth.userId, 'resource', res, amount);
       }
-      client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+      client.send('cargoUpdate', await getCargoState(auth.userId));
     }
 
     if (result.outcome === 'negotiated') {
@@ -216,11 +218,11 @@ export class CombatService {
         }
         if (finalResult.lootResources) {
           for (const [resource, amount] of Object.entries(finalResult.lootResources)) {
-            if (amount > 0) await addToCargo(auth.userId, resource as ResourceType, amount);
+            if (amount > 0) await addToInventory(auth.userId, 'resource', resource, amount);
           }
         }
         if (finalResult.lootArtefact && finalResult.lootArtefact > 0) {
-          await addToCargo(auth.userId, 'artefact' as ResourceType, finalResult.lootArtefact);
+          await addToInventory(auth.userId, 'resource', 'artefact', finalResult.lootArtefact);
         }
       }
       if (finalResult.repChange) {
@@ -338,7 +340,7 @@ export class CombatService {
       client.send('installDefenseResult', { success: false, error: 'Nicht genug Credits' });
       return;
     }
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     for (const [resource, amount] of Object.entries(def.cost)) {
       if (resource === 'credits') continue;
       if ((cargo[resource as keyof typeof cargo] ?? 0) < (amount ?? 0)) {
@@ -351,7 +353,7 @@ export class CombatService {
     await deductCredits(auth.userId, def.cost.credits);
     for (const [resource, amount] of Object.entries(def.cost)) {
       if (resource === 'credits' || !amount) continue;
-      await deductCargo(auth.userId, resource, amount);
+      await removeFromInventory(auth.userId, 'resource', resource, amount);
     }
 
     try {
@@ -361,7 +363,7 @@ export class CombatService {
         defenseType: data.defenseType,
         id: result.id,
       });
-      const updatedCargo = await getPlayerCargo(auth.userId);
+      const updatedCargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', updatedCargo);
       client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     } catch (err: any) {
@@ -405,7 +407,7 @@ export class CombatService {
       });
       return;
     }
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     if ((cargo.ore ?? 0) < costOre) {
       client.send('repairResult', {
         success: false,
@@ -415,11 +417,11 @@ export class CombatService {
     }
 
     await deductCredits(auth.userId, costCredits);
-    await deductCargo(auth.userId, 'ore', costOre);
+    await removeFromInventory(auth.userId, 'resource', 'ore', costOre);
     await updateStructureHp(auth.userId, data.sectorX, data.sectorY, hp.maxHp);
 
     client.send('repairResult', { success: true, newHp: hp.maxHp, maxHp: hp.maxHp });
-    const updatedCargo = await getPlayerCargo(auth.userId);
+    const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
   }
@@ -438,7 +440,10 @@ export class CombatService {
       return;
     }
     if (state.playerHp >= 15) {
-      client.send('error', { code: 'EJECT_FAIL', message: 'Rumpf noch zu stabil für Notausstieg (HP ≥ 15%)' });
+      client.send('error', {
+        code: 'EJECT_FAIL',
+        message: 'Rumpf noch zu stabil für Notausstieg (HP ≥ 15%)',
+      });
       return;
     }
 
@@ -448,8 +453,11 @@ export class CombatService {
     // Clear all cargo (pod jettison)
     await ejectPod(auth.userId);
 
-    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
-    client.send('logEntry', '⚠ NOTAUSSTIEG — Kapsel ausgestoßen. Gesamte Ladung verloren. Schiff überlebt.');
+    client.send('cargoUpdate', await getCargoState(auth.userId));
+    client.send(
+      'logEntry',
+      '⚠ NOTAUSSTIEG — Kapsel ausgestoßen. Gesamte Ladung verloren. Schiff überlebt.',
+    );
     client.send('ejectPodResult', { success: true });
   }
 
@@ -471,7 +479,7 @@ export class CombatService {
       quadrantY: this.ctx.quadrantY,
       sectorX,
       sectorY,
-      modules: ship.modules.map((m: any) => (typeof m === 'string' ? m : m.type ?? String(m))),
+      modules: ship.modules.map((m: any) => (typeof m === 'string' ? m : (m.type ?? String(m)))),
       lastLogEntry: `Zerstört im Kampf bei [${sectorX}:${sectorY}]`,
     });
 
@@ -501,7 +509,8 @@ export class CombatService {
       wreckId: result.wreckId,
       newShipId: result.newShipId,
       legacyXp: result.legacyXp,
-      message: '[ PERMADEATH ] Schiff zerstört — Erbschafts-Protokoll aktiviert. Neue Einheit übernimmt Kommando.',
+      message:
+        '[ PERMADEATH ] Schiff zerstört — Erbschafts-Protokoll aktiviert. Neue Einheit übernimmt Kommando.',
     });
     client.send('logEntry', '[ PERMADEATH ] Schiff vernichtet. Erbschafts-Protokoll aktiviert.');
   }

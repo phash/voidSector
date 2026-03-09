@@ -26,18 +26,18 @@ export interface AcepXpSummary {
  */
 export interface AcepEffects {
   // AUSBAU — construction & logistics
-  extraModuleSlots: number;      // 0–4 additional module slots
-  cargoMultiplier: number;       // 1.0 – 1.5 (cargo capacity multiplier)
-  miningBonus: number;           // additive fraction for mining rate: 0 – 0.3
+  extraModuleSlots: number; // 0–4 additional module slots
+  cargoMultiplier: number; // 1.0 – 1.5 (cargo capacity multiplier)
+  miningBonus: number; // additive fraction for mining rate: 0 – 0.3
   // INTEL — scanning & navigation
-  scanRadiusBonus: number;       // additional sectors added to scan radius: 0–3
-  stalenessMultiplier: number;   // how much longer discovered sectors stay fresh: 1.0–2.0
+  scanRadiusBonus: number; // additional sectors added to scan radius: 0–3
+  stalenessMultiplier: number; // how much longer discovered sectors stay fresh: 1.0–2.0
   // KAMPF — combat
-  combatDamageBonus: number;     // additive faction to combatMultiplier: 0 – 0.2
-  shieldRegenBonus: number;      // fraction: 0 – 0.3
+  combatDamageBonus: number; // additive faction to combatMultiplier: 0 – 0.2
+  shieldRegenBonus: number; // fraction: 0 – 0.3
   // EXPLORER — exploration
-  ancientDetection: boolean;     // reveals ancient ruin markers on radar
-  anomalyChanceBonus: number;    // extra probability for anomaly scan events: 0 – 0.1
+  ancientDetection: boolean; // reveals ancient ruin markers on radar
+  anomalyChanceBonus: number; // extra probability for anomaly scan events: 0 – 0.1
   helionDecoderEnabled: boolean; // helion decoder without module at 50 XP
 }
 
@@ -51,12 +51,12 @@ export function getAcepEffects(xp: AcepXpSummary): AcepEffects {
   return {
     // AUSBAU: slots at 10/25/40/50, cargo grows linearly
     extraModuleSlots: a >= 50 ? 4 : a >= 40 ? 3 : a >= 25 ? 2 : a >= 10 ? 1 : 0,
-    cargoMultiplier: 1.0 + a * 0.01,          // +1% per XP, max +50% at cap
-    miningBonus: a * 0.006,                    // up to +30% mining rate at cap
+    cargoMultiplier: 1.0 + a * 0.01, // +1% per XP, max +50% at cap
+    miningBonus: a * 0.006, // up to +30% mining rate at cap
 
     // INTEL: +1 radius at 20 XP, +2 at 40 XP, +3 at 50 XP; staleness doubles at cap
     scanRadiusBonus: i >= 50 ? 3 : i >= 40 ? 2 : i >= 20 ? 1 : 0,
-    stalenessMultiplier: 1.0 + i * 0.02,      // up to 2.0× at cap
+    stalenessMultiplier: 1.0 + i * 0.02, // up to 2.0× at cap
 
     // KAMPF: damage up to +20%, shield regen up to +30%
     combatDamageBonus: k * 0.004,
@@ -64,7 +64,7 @@ export function getAcepEffects(xp: AcepXpSummary): AcepEffects {
 
     // EXPLORER: ancient detection at 25 XP, helion decoder at 50 XP
     ancientDetection: e >= 25,
-    anomalyChanceBonus: e * 0.002,            // up to +0.1 at cap
+    anomalyChanceBonus: e * 0.002, // up to +0.1 at cap
     helionDecoderEnabled: e >= 50,
   };
 }

@@ -93,10 +93,10 @@ export function canStartResearch(
 
   // Wissen check
   const rc = mod.researchCost;
-  if (research.wissen < rc.wissen) {
+  if ((research.wissen ?? 0) < rc.wissen) {
     return {
       valid: false,
-      error: `Not enough Wissen (need ${rc.wissen}, have ${research.wissen})`,
+      error: `Not enough Wissen (need ${rc.wissen}, have ${research.wissen ?? 0})`,
     };
   }
 

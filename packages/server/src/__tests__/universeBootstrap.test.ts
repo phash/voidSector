@@ -11,10 +11,12 @@ const MockStrategicTickService = vi.fn().mockImplementation(() => ({
 
 let capturedOnTick: ((result: { tickCount: number }) => void) | null = null;
 const mockEngineStart = vi.fn();
-const MockUniverseTickEngine = vi.fn().mockImplementation((cb: (result: { tickCount: number }) => void) => {
-  capturedOnTick = cb;
-  return { start: mockEngineStart, stop: vi.fn() };
-});
+const MockUniverseTickEngine = vi
+  .fn()
+  .mockImplementation((cb: (result: { tickCount: number }) => void) => {
+    capturedOnTick = cb;
+    return { start: mockEngineStart, stop: vi.fn() };
+  });
 
 vi.mock('../engine/strategicTickService.js', () => ({
   StrategicTickService: MockStrategicTickService,
@@ -72,8 +74,12 @@ describe('startUniverseEngine', () => {
 
   it('initializes StrategicTickService before starting engine', async () => {
     const order: string[] = [];
-    mockStratInit.mockImplementation(async () => { order.push('init'); });
-    mockEngineStart.mockImplementation(() => { order.push('start'); });
+    mockStratInit.mockImplementation(async () => {
+      order.push('init');
+    });
+    mockEngineStart.mockImplementation(() => {
+      order.push('start');
+    });
 
     const { startUniverseEngine } = await import('../engine/universeBootstrap.js');
     await startUniverseEngine();
@@ -89,7 +95,7 @@ describe('startUniverseEngine', () => {
       capturedOnTick!({ tickCount: i });
     }
     // Allow async ops to settle
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(mockStratTick).not.toHaveBeenCalled();
   });
@@ -99,7 +105,7 @@ describe('startUniverseEngine', () => {
     await startUniverseEngine();
 
     capturedOnTick!({ tickCount: 12 });
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(getAllHumanityReps).toHaveBeenCalledOnce();
     expect(mockStratTick).toHaveBeenCalledOnce();
@@ -116,7 +122,7 @@ describe('startUniverseEngine', () => {
     for (const count of [12, 24, 36]) {
       capturedOnTick!({ tickCount: count });
     }
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(mockStratTick).toHaveBeenCalledTimes(3);
   });
@@ -126,7 +132,7 @@ describe('startUniverseEngine', () => {
     await startUniverseEngine();
 
     capturedOnTick!({ tickCount: 13 });
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(mockStratTick).not.toHaveBeenCalled();
   });

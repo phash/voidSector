@@ -76,10 +76,19 @@ function AcepPanel() {
           <div key={key} style={{ marginBottom: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem' }}>
               <span style={{ color }}>{label}</span>
-              <span style={{ color: 'var(--color-dim)' }}>{val}/{max}</span>
+              <span style={{ color: 'var(--color-dim)' }}>
+                {val}/{max}
+              </span>
             </div>
             <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', marginTop: 1 }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: color, transition: 'width 0.3s' }} />
+              <div
+                style={{
+                  height: '100%',
+                  width: `${pct}%`,
+                  background: color,
+                  transition: 'width 0.3s',
+                }}
+              />
             </div>
           </div>
         );

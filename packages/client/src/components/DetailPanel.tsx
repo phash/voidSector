@@ -31,7 +31,12 @@ const CAPABILITY_LABELS: Record<string, string> = {
   scan: 'SCAN',
 };
 
-function getSectorCapabilities(sector: any, jumpGateInfo: any, playerGateInfo: any, isPlayerHere: boolean): string[] {
+function getSectorCapabilities(
+  sector: any,
+  jumpGateInfo: any,
+  playerGateInfo: any,
+  isPlayerHere: boolean,
+): string[] {
   const caps: string[] = [];
   const contents: string[] = (sector as any).contents ?? [];
   const type: string = sector?.type ?? '';
@@ -39,7 +44,12 @@ function getSectorCapabilities(sector: any, jumpGateInfo: any, playerGateInfo: a
   if (type === 'station' || contents.includes('station')) {
     caps.push('trade', 'quest');
   }
-  if (type === 'asteroid_field' || contents.includes('asteroid_field') || type === 'nebula' || contents.includes('nebula')) {
+  if (
+    type === 'asteroid_field' ||
+    contents.includes('asteroid_field') ||
+    type === 'nebula' ||
+    contents.includes('nebula')
+  ) {
     caps.push('mine');
   }
   if (jumpGateInfo || playerGateInfo || contents.includes('jumpgate')) {
@@ -263,7 +273,14 @@ export function DetailPanel() {
           <>
             <button
               className="vs-btn"
-              style={{ fontSize: '0.75rem', marginTop: 8, borderColor: '#00FF88', color: '#00FF88', display: 'block', width: '100%' }}
+              style={{
+                fontSize: '0.75rem',
+                marginTop: 8,
+                borderColor: '#00FF88',
+                color: '#00FF88',
+                display: 'block',
+                width: '100%',
+              }}
               onClick={openStationTerminal}
             >
               [ANDOCKEN]
@@ -314,29 +331,30 @@ export function DetailPanel() {
       </div>
 
       {/* Capability chips (#148) */}
-      {sector && (() => {
-        const caps = getSectorCapabilities(sector, jumpGateInfo, playerGateInfo, isPlayerHere);
-        if (caps.length === 0) return null;
-        return (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-            {caps.map((cap) => (
-              <span
-                key={cap}
-                style={{
-                  fontSize: '0.6rem',
-                  letterSpacing: '0.1em',
-                  padding: '1px 5px',
-                  border: '1px solid var(--color-dim)',
-                  color: 'var(--color-dim)',
-                  opacity: 0.8,
-                }}
-              >
-                {CAPABILITY_LABELS[cap]}
-              </span>
-            ))}
-          </div>
-        );
-      })()}
+      {sector &&
+        (() => {
+          const caps = getSectorCapabilities(sector, jumpGateInfo, playerGateInfo, isPlayerHere);
+          if (caps.length === 0) return null;
+          return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+              {caps.map((cap) => (
+                <span
+                  key={cap}
+                  style={{
+                    fontSize: '0.6rem',
+                    letterSpacing: '0.1em',
+                    padding: '1px 5px',
+                    border: '1px solid var(--color-dim)',
+                    color: 'var(--color-dim)',
+                    opacity: 0.8,
+                  }}
+                >
+                  {CAPABILITY_LABELS[cap]}
+                </span>
+              ))}
+            </div>
+          );
+        })()}
 
       {sector ? (
         <>

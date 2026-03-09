@@ -43,7 +43,6 @@ export const COMPENDIUM_CATEGORIES: {
 // ---------------------------------------------------------------------------
 
 export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
-
   // ==========================================================================
   // GRUNDLAGEN
   // ==========================================================================
@@ -117,7 +116,8 @@ Der erste Spieler in einem neuen Quadranten erhält Namensrechte. Entdeckungen w
     title: 'QUADRANTEN-SYSTEM',
     category: 'grundlagen',
     icon: '⬡',
-    summary: 'Quadranten sind die größten navigierbaren Einheiten — mit eigenem Namen, Entdeckungslog und Territory-System.',
+    summary:
+      'Quadranten sind die größten navigierbaren Einheiten — mit eigenem Namen, Entdeckungslog und Territory-System.',
     body: `Quadranten gruppieren je 10.000 × 10.000 Sektoren zu einer benennbaren Region.
 
 **Quadranten-Wechsel:**
@@ -147,7 +147,8 @@ Im SHIP-SYS-Programm kannst du den aktuellen Quadranten beanspruchen (CLAIM). Ko
     title: 'SEKTORTYPEN',
     category: 'grundlagen',
     icon: '◇',
-    summary: 'Jeder Sektor hat einen Umgebungstyp und mögliche Inhalte, die Ressourcen und Ereignisse bestimmen.',
+    summary:
+      'Jeder Sektor hat einen Umgebungstyp und mögliche Inhalte, die Ressourcen und Ereignisse bestimmen.',
     body: `Sektoren werden deterministisch aus dem World-Seed generiert. Typ und Umgebung bestimmen Ressourcenvorkommen und Ereignis-Häufigkeit.
 
 **Umgebungstypen:**
@@ -188,7 +189,8 @@ Im SHIP-SYS-Programm kannst du den aktuellen Quadranten beanspruchen (CLAIM). Ko
     title: 'AKTIONSPUNKTE (AP)',
     category: 'grundlagen',
     icon: '⚡',
-    summary: 'AP ist die Handlungswährung — jede aktive Aktion kostet AP, Regeneration läuft automatisch.',
+    summary:
+      'AP ist die Handlungswährung — jede aktive Aktion kostet AP, Regeneration läuft automatisch.',
     body: `**AP-Pool:**
 - Maximum: 100 AP
 - Regeneration: 0,5 AP/Sekunde (1 AP alle 2 Sekunden)
@@ -230,7 +232,8 @@ AP wird in Sektion 5 (Navigation) als Balken angezeigt. Gelb = genug, Orange = n
     title: 'ACEP-SYSTEM (ÜBERBLICK)',
     category: 'grundlagen',
     icon: '◆',
-    summary: 'Adaptive Craft Evolution Protocol — dein Schiff spezialisiert sich durch Aktionen automatisch auf einen von 4 Pfaden.',
+    summary:
+      'Adaptive Craft Evolution Protocol — dein Schiff spezialisiert sich durch Aktionen automatisch auf einen von 4 Pfaden.',
     body: `ACEP ist das Spezialisierungssystem von voidSector. Jede Aktion im Spiel gibt XP auf einem der 4 Pfade.
 
 **Die 4 Pfade:**
@@ -368,7 +371,8 @@ Mining aktiviert einen Navigations-Lock — du kannst dich nicht bewegen währen
     title: 'HYPERJUMP',
     category: 'navigation',
     icon: '⚡',
-    summary: 'Hyperjump ermöglicht weite Sprünge zu bereits entdeckten Sektoren — kostet Treibstoff und Hyperdrive-Ladung.',
+    summary:
+      'Hyperjump ermöglicht weite Sprünge zu bereits entdeckten Sektoren — kostet Treibstoff und Hyperdrive-Ladung.',
     body: `Hyperjumps transportieren dein Schiff über große Distanzen — als automatischer Autopilot-Flug.
 
 **Voraussetzungen:**
@@ -402,7 +406,8 @@ Der Hyperjump zeigt Schritt-für-Schritt-Fortschritt. Jeder Zwischensektor wird 
     title: 'AUTOPILOT',
     category: 'navigation',
     icon: '◐',
-    summary: 'Persistenter Autopilot — speichert Routen über Sessions und navigiert automatisch zu Zielen.',
+    summary:
+      'Persistenter Autopilot — speichert Routen über Sessions und navigiert automatisch zu Zielen.',
     body: `Der Autopilot übernimmt die Navigation zu einem gespeicherten Ziel, Schritt für Schritt.
 
 **Autopilot starten:**
@@ -465,7 +470,8 @@ Die vertikale Leiste rechts im NAV-COM zeigt alle Bookmarks als Buttons. Aktives
     title: 'JUMPGATE-SYSTEM',
     category: 'navigation',
     icon: '⬡',
-    summary: 'Natürliche Jumpgates ermöglichen Soforttransport über beliebige Distanzen — seltener Fund, hoher Wert.',
+    summary:
+      'Natürliche Jumpgates ermöglichen Soforttransport über beliebige Distanzen — seltener Fund, hoher Wert.',
     body: `Jumpgates sind natürlich vorkommende Raumzeitanomalien, die zwei weit entfernte Sektoren verbinden.
 
 **Typen:**
@@ -639,7 +645,8 @@ Mining erhöht AUSBAU-XP. Hohe AUSBAU-XP schaltet Baumeister-Traits frei.`,
     title: 'ARTEFAKTE',
     category: 'ressourcen',
     icon: '✦',
-    summary: 'Artefakte sind seltene Rohstoffe für hochwertige Forschung — Drop aus Anomalien, Kampf und Ruinen.',
+    summary:
+      'Artefakte sind seltene Rohstoffe für hochwertige Forschung — Drop aus Anomalien, Kampf und Ruinen.',
     body: `Artefakte sind die wertvollste Ressource — selten aber für Spitzenforschung unerlässlich.
 
 **Artefakt-Quellen:**
@@ -714,7 +721,8 @@ Im Kampf (bei gescheiterter Flucht): 25–50% des Cargos verloren (nicht Safe-Sl
     title: 'DATA SLATES',
     category: 'ressourcen',
     icon: '◇',
-    summary: 'Portable Datenpakete mit Sektor-Koordinaten, Notizen oder Jumpgate-Codes — handhabbar und handelbar.',
+    summary:
+      'Portable Datenpakete mit Sektor-Koordinaten, Notizen oder Jumpgate-Codes — handhabbar und handelbar.',
     body: `Data Slates sind digitale Datenpakete die Informationen über Sektoren, Bereiche oder Jumpgates enthalten.
 
 **Slate-Typen:**
@@ -749,7 +757,8 @@ Verlinkung mit Spieler-Jumpgates ermöglicht Routing-Ketten (bis 10 Hops). Gate-
     title: 'TREIBSTOFFSYSTEM',
     category: 'ressourcen',
     icon: '⚡',
-    summary: 'Treibstoff wird nur für Hyperjumps verbraucht — tanken an Stationen oder aus eigener Produktion.',
+    summary:
+      'Treibstoff wird nur für Hyperjumps verbraucht — tanken an Stationen oder aus eigener Produktion.',
     body: `Normale Sprünge (1 Sektor) verbrauchen keinen Treibstoff. Nur Hyperjumps kosten Treibstoff.
 
 **Tank-Kapazität nach Schiff:**
@@ -831,7 +840,8 @@ Siege erhöhen KAMPF-XP. Hohe KAMPF-XP schaltet Veteran- und Schachtauen-Traits 
     title: 'PIRATEN & SCAN-EVENTS',
     category: 'kampf',
     icon: '⚠',
-    summary: 'Piratenbegegnungen entstehen durch Scan-Events — häufiger in Nebeln und weit von der Ursprungsregion.',
+    summary:
+      'Piratenbegegnungen entstehen durch Scan-Events — häufiger in Nebeln und weit von der Ursprungsregion.',
     body: `Piraten tauchen als Scan-Events auf — ausgelöst beim Lokalscan oder Bereichsscan.
 
 **Piratenlevel-Berechnung:**
@@ -871,7 +881,8 @@ Sofort-Ereignis beim Lokalscan. Kampf beginnt direkt — kein Abwarten.`,
     title: 'STATION DEFENSE',
     category: 'kampf',
     icon: '⬡',
-    summary: 'Verteidige deine Basis mit Geschützen, Schilden und Ionenkanone gegen angreifende Piraten.',
+    summary:
+      'Verteidige deine Basis mit Geschützen, Schilden und Ionenkanone gegen angreifende Piraten.',
     body: `Deine Heimatbasis kann durch Piraten angegriffen werden. Baue Verteidigungsstrukturen um Angriffe abzuwehren.
 
 **Verteidigungs-Strukturen:**
@@ -977,7 +988,8 @@ Schild + Panzerung + Punktabwehr = maximale Überlebensfähigkeit. Schilde regen
     title: 'PERMADEATH & LEGACY-SYSTEM',
     category: 'kampf',
     icon: '✦',
-    summary: 'Schiff zerstört? Das Legacy-Protokoll vererbt ACEP-XP auf ein neues Schiff und hinterlässt ein Wrack-POI.',
+    summary:
+      'Schiff zerstört? Das Legacy-Protokoll vererbt ACEP-XP auf ein neues Schiff und hinterlässt ein Wrack-POI.',
     body: `Wenn die Schiffs-HP auf 0 fallen, wird das Permadeath-Protokoll aktiviert.
 
 **Was passiert bei Permadeath:**
@@ -1015,7 +1027,8 @@ Im Radar-Canvas sieht man Wracks anderer Spieler als besonderes Icon (abhängig 
     title: 'NPC-HANDEL',
     category: 'handel',
     icon: '◆',
-    summary: 'Kaufe und verkaufe Ressourcen an NPC-Stationen — Preise variieren mit Reputation und Stationsauslastung.',
+    summary:
+      'Kaufe und verkaufe Ressourcen an NPC-Stationen — Preise variieren mit Reputation und Stationsauslastung.',
     body: `Das TRADE-Programm ermöglicht Handel mit NPC-Stationen und dem Spielermarkt.
 
 **Preisstruktur:**
@@ -1046,7 +1059,8 @@ An Stationen mit Spieler-Handelsposten können Spieler gegenseitig Angebote und 
     title: 'NPC-STATIONEN & LEVEL',
     category: 'handel',
     icon: '⬡',
-    summary: 'Stationen haben 5 Level — höheres Level = mehr Bestand, bessere Quests, höhere Preise.',
+    summary:
+      'Stationen haben 5 Level — höheres Level = mehr Bestand, bessere Quests, höhere Preise.',
     body: `Jede NPC-Station hat ein Level (1–5) das Bestand, Quests und Preisrahmen bestimmt.
 
 **Stations-Level:**
@@ -1079,7 +1093,8 @@ Das Stations-Terminal (Sektion beim Betreten) zeigt: Level, Fraktion, Bestand, v
     title: 'KONTOR (KAUFAUFTRAG)',
     category: 'handel',
     icon: '◈',
-    summary: 'Das Kontor erlaubt automatische Kaufaufträge — NPC kauft Ressourcen auf Vorrat wenn verfügbar.',
+    summary:
+      'Das Kontor erlaubt automatische Kaufaufträge — NPC kauft Ressourcen auf Vorrat wenn verfügbar.',
     body: `Das Kontor ist eine gebäudespezifische Handelsfunktion deiner Basis. Platziere Kaufaufträge — der NPC erfüllt sie automatisch wenn Ressourcen verfügbar.
 
 **Kontor-Gebäude:**
@@ -1106,7 +1121,8 @@ Kontor eignet sich zum günstigen Einkauf seltener Ressourcen (z.B. Kristall wen
     title: 'HANDELSROUTEN',
     category: 'handel',
     icon: '◎',
-    summary: 'Automatisierte Handelsrouten transportieren Ressourcen zwischen Stationen — max. 3 aktive Routen.',
+    summary:
+      'Automatisierte Handelsrouten transportieren Ressourcen zwischen Stationen — max. 3 aktive Routen.',
     body: `Handelsrouten automatisieren den Gütertransport zwischen zwei Stationen auf Wunsch-Intervall.
 
 **Route erstellen:**
@@ -1138,7 +1154,8 @@ Routen zwischen High-Level-Stationen (Tier 4–5) mit großem Preisdelta sind am
     title: 'FACTORY & PRODUKTION',
     category: 'handel',
     icon: '⚙',
-    summary: 'Die Fabrik produziert veredelte Güter aus Rohstoffen — 5 Rezepte, manche erfordern Forschung.',
+    summary:
+      'Die Fabrik produziert veredelte Güter aus Rohstoffen — 5 Rezepte, manche erfordern Forschung.',
     body: `Die Fabrik (Gebäude an deiner Basis) produziert automatisch nach eingestelltem Rezept.
 
 **Fabrik-Gebäude:**
@@ -1174,7 +1191,8 @@ Routen zwischen High-Level-Stationen (Tier 4–5) mit großem Preisdelta sind am
     title: 'TERRITORIALANSPRÜCHE',
     category: 'handel',
     icon: '⬡',
-    summary: 'Beanspruche Quadranten für dich — verteidige sie gegen andere Spieler, gewinne KAMPF-XP.',
+    summary:
+      'Beanspruche Quadranten für dich — verteidige sie gegen andere Spieler, gewinne KAMPF-XP.',
     body: `Das Territory-System erlaubt Spielern, Quadranten als ihr Gebiet zu beanspruchen.
 
 **Territory beanspruchen:**
@@ -1214,7 +1232,8 @@ Territory-Ereignisse erscheinen im NEWS-Programm und im LOG.`,
     title: 'RAUMSCHIFFE',
     category: 'technik',
     icon: '◈',
-    summary: '5 Rumpf-Typen mit unterschiedlichen Spezialisierungen — Scout als Start, Explorer und Battleship als Endgame.',
+    summary:
+      '5 Rumpf-Typen mit unterschiedlichen Spezialisierungen — Scout als Start, Explorer und Battleship als Endgame.',
     body: `Jeder Rumpf-Typ hat eigene Basiswerte und ein Modul-Slot-Limit.
 
 **Rumpf-Übersicht:**
@@ -1250,7 +1269,8 @@ Im HANGAR → Name eingeben.
     title: 'SCHIFFSMODULE',
     category: 'technik',
     icon: '⚙',
-    summary: 'Module verbessern Schiffs-Stats — Antrieb, Cargo, Scanner, Panzerung, Waffen und mehr.',
+    summary:
+      'Module verbessern Schiffs-Stats — Antrieb, Cargo, Scanner, Panzerung, Waffen und mehr.',
     body: `Module werden in Schiffs-Slots eingesetzt und erhöhen Stats. Installation über SHIP-SYS → MODULE.
 
 **Modul-Kategorien:**
@@ -1284,7 +1304,8 @@ SHIP-SYS → MODULE → Inventar zeigt alle installierbaren Module. Module werde
     title: 'TECH TREE & FORSCHUNG',
     category: 'technik',
     icon: '◇',
-    summary: 'Der Tech-Tree schaltet neue Module frei — Forschung kostet Credits und Ressourcen, läuft über Zeit.',
+    summary:
+      'Der Tech-Tree schaltet neue Module frei — Forschung kostet Credits und Ressourcen, läuft über Zeit.',
     body: `Das TECH-Programm zeigt den Tech-Tree und ermöglicht es, neue Module zu erforschen.
 
 **Tech-Tree-Struktur:**
@@ -1318,7 +1339,8 @@ Scan-Events können Modul-Blaupausen droppen. Blaupausen aktivieren ein Modul im
     title: 'STRUKTUREN & BASISBAU',
     category: 'technik',
     icon: '⬡',
-    summary: '12 Strukturtypen — Basis, Storage, Handelsposten, Fabrik, Forschungslabor, Verteidigung, Jumpgate.',
+    summary:
+      '12 Strukturtypen — Basis, Storage, Handelsposten, Fabrik, Forschungslabor, Verteidigung, Jumpgate.',
     body: `Strukturen werden im Weltall gebaut und dauerhaft im Sektor platziert. Die meisten erfordern eine aktive Heimatbasis.
 
 **Alle Strukturtypen:**
@@ -1355,7 +1377,8 @@ BASE-LINK-Programm → Struktur wählen → Ressourcen + AP prüfen → Bauen. S
     title: 'STORAGE & HANDELSPOSTEN',
     category: 'technik',
     icon: '◆',
-    summary: 'Storage lagert Ressourcen. Der Handelsposten ermöglicht NPC-Handel, Spielermarkt und Routen.',
+    summary:
+      'Storage lagert Ressourcen. Der Handelsposten ermöglicht NPC-Handel, Spielermarkt und Routen.',
     body: `Zwei Kernstrukturen für deine wirtschaftliche Infrastruktur.
 
 **Storage (Lager):**
@@ -1397,7 +1420,8 @@ Ein Tier-3-Handelsposten mit Tier-3-Storage macht deine Basis zum eigenständige
     title: 'NPC-FRAKTIONEN & REPUTATION',
     category: 'sozial',
     icon: '◉',
-    summary: '4 NPC-Fraktionen mit Reputationssystem (-100 bis +100) — höhere Reputation = bessere Preise und Upgrades.',
+    summary:
+      '4 NPC-Fraktionen mit Reputationssystem (-100 bis +100) — höhere Reputation = bessere Preise und Upgrades.',
     body: `Jede NPC-Station gehört einer von 4 Fraktionen. Deine Reputation bei jeder Fraktion beeinflusst Preise und verfügbare Upgrades.
 
 **Die 4 NPC-Fraktionen:**
@@ -1433,7 +1457,8 @@ Kosten 500–5.000 CR. Permanente Boni auf deinen Charakter.`,
     title: 'SPIELER-FRAKTIONEN',
     category: 'sozial',
     icon: '◉',
-    summary: 'Gründe oder trete einer Spieler-Fraktion bei — für gemeinsamen Chat, Scan-Sharing und Koordination.',
+    summary:
+      'Gründe oder trete einer Spieler-Fraktion bei — für gemeinsamen Chat, Scan-Sharing und Koordination.',
     body: `Spieler-Fraktionen ermöglichen organisierte Gruppen mit eigenem Chat-Kanal und Scan-Sharing.
 
 **Fraktion erstellen:**
@@ -1506,7 +1531,8 @@ Quests rotieren täglich pro Station. Häufige Station-Besuche = immer neue Ques
     title: 'KOMMUNIKATION & COMMS',
     category: 'sozial',
     icon: '◎',
-    summary: 'Vier Chat-Kanäle: Direkt, Fraktion, Sektor, Quadrant — Reichweite abhängig von Strukturen.',
+    summary:
+      'Vier Chat-Kanäle: Direkt, Fraktion, Sektor, Quadrant — Reichweite abhängig von Strukturen.',
     body: `Das COMMS-Programm verwaltet alle Kommunikationskanäle.
 
 **Chat-Kanäle:**
@@ -1540,7 +1566,8 @@ Communication ist primär sozial — kein direkter ACEP-XP.`,
     title: 'RETTUNGSMISSIONEN',
     category: 'sozial',
     icon: '◉',
-    summary: 'Notsignale führen zu Überlebenden — rette sie für Credits, Reputation und EXPLORER-ACEP-XP.',
+    summary:
+      'Notsignale führen zu Überlebenden — rette sie für Credits, Reputation und EXPLORER-ACEP-XP.',
     body: `Rettungsmissionen entstehen aus Scan-Events (Notsignal-Typ) und erfordern aktive Navigation zum Hilferuf.
 
 **Ablauf:**
@@ -1571,7 +1598,8 @@ Jedes Notsignal hat eine prozedural generierte Geschichte. Lese die Hintergrundi
     title: 'SCANNEN & SCAN-EVENTS',
     category: 'sozial',
     icon: '◈',
-    summary: 'Lokalscan und Bereichsscan enthüllen Sektoren und triggern Events — INTEL-ACEP für jeden Scan.',
+    summary:
+      'Lokalscan und Bereichsscan enthüllen Sektoren und triggern Events — INTEL-ACEP für jeden Scan.',
     body: `Scannen ist der Kern des INTEL-ACEP-Pfades. Zwei Scan-Modi für unterschiedliche Reichweiten.
 
 **Lokalscan:**
@@ -1615,7 +1643,8 @@ Sektoren mit Ancient-Ruinen geben beim Lokalscan Lore-Fragmente und möglicherwe
     title: 'ACEP SPEZIALISIERUNGSPFADE',
     category: 'fortgeschritten',
     icon: '◆',
-    summary: 'Detaillierter Blick auf alle 4 ACEP-Pfade — XP-Quellen, Schwellwerte und strategische Bedeutung.',
+    summary:
+      'Detaillierter Blick auf alle 4 ACEP-Pfade — XP-Quellen, Schwellwerte und strategische Bedeutung.',
     body: `Jeder ACEP-Pfad spezialisiert dein Schiff in eine andere Richtung.
 
 **AUSBAU (Bau & Bergbau):**
@@ -1668,7 +1697,8 @@ Summe aller Pfade ≤ 100. Maximaler Wert pro Pfad: 50.`,
     title: 'TRAITS & PERSÖNLICHKEIT',
     category: 'fortgeschritten',
     icon: '◇',
-    summary: 'Traits werden durch ACEP-XP-Verteilung freigeschaltet und beeinflussen Schiffs-Persönlichkeit und Kommentare.',
+    summary:
+      'Traits werden durch ACEP-XP-Verteilung freigeschaltet und beeinflussen Schiffs-Persönlichkeit und Kommentare.',
     body: `Traits entstehen automatisch aus der Verteilung des ACEP-Budgets auf die 4 Pfade.
 
 **Verfügbare Traits:**
@@ -1703,7 +1733,8 @@ SHIP-SYS → EINSTELLUNGEN → ACEP-Panel zeigt aktive Traits unter den XP-Balke
     title: 'RADAR-ICON-EVOLUTION',
     category: 'fortgeschritten',
     icon: '◎',
-    summary: 'Das Radar-Icon deines Schiffes entwickelt sich visuell mit steigendem ACEP-XP-Gesamtbudget.',
+    summary:
+      'Das Radar-Icon deines Schiffes entwickelt sich visuell mit steigendem ACEP-XP-Gesamtbudget.',
     body: `Das Radar-Canvas visualisiert alle Schiffe als Pixel-Icons. Dein Icon entwickelt sich mit dem ACEP-Gesamtbudget.
 
 **Evolution-Stufen:**
@@ -1736,7 +1767,8 @@ Im Radar siehst du andere Spieler als ihre entsprechenden Icons. Erfahrene Spiel
     title: 'WELTGENERIERUNG & SEEDS',
     category: 'fortgeschritten',
     icon: '◈',
-    summary: 'Das Universum ist vollständig deterministisch aus einem Master-Seed generiert — reproduzierbar und konsistent.',
+    summary:
+      'Das Universum ist vollständig deterministisch aus einem Master-Seed generiert — reproduzierbar und konsistent.',
     body: `voidSector generiert sein gesamtes Universum aus einem einzigen WORLD_SEED (77). Jede Koordinate produziert denselben Sektor bei jedem Server-Neustart.
 
 **Seed-Funktionsweise:**
@@ -1772,7 +1804,8 @@ Du kannst berechnen wo Jumpgates, Stationen und Ressourcen sind — ohne sie zu 
     title: 'ADMIN-KONSOLE',
     category: 'fortgeschritten',
     icon: '▣',
-    summary: 'Server-Administratoren können über die Admin-Konsole Broadcasts senden, Quests verwalten und Wirtschaft überwachen.',
+    summary:
+      'Server-Administratoren können über die Admin-Konsole Broadcasts senden, Quests verwalten und Wirtschaft überwachen.',
     body: `Die Admin-Konsole ist nur für autorisierte Server-Administratoren zugänglich.
 
 **Zugang:**
@@ -1800,7 +1833,6 @@ Als regulärer Spieler hast du keinen Zugang zur Admin-Konsole. Die hier beschri
     seeAlso: ['quests', 'npc-stationen'],
     tags: ['admin', 'konsole', 'broadcast', 'verwaltung', 'server'],
   },
-
 ];
 
 // ---------------------------------------------------------------------------

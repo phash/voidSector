@@ -31,9 +31,8 @@ import {
   setPlayerLevel,
   addCredits,
   getPlayerCredits,
-  getPlayerCargo,
-  deductCargo,
 } from '../../db/queries.js';
+import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
 
 export class QuestService {
   constructor(private ctx: ServiceContext) {}
@@ -207,7 +206,7 @@ export class QuestService {
     context: Record<string, any>,
   ): Promise<void> {
     const rows = await getActiveQuests(playerId);
-    const cargo = await getPlayerCargo(playerId);
+    const cargo = await getCargoState(playerId);
     for (const row of rows) {
       const objectives = row.objectives as QuestObjective[];
       let updated = false;
@@ -296,10 +295,10 @@ export class QuestService {
           // Deduct fetch resources from cargo
           for (const obj of objectives) {
             if (obj.type === 'fetch' && obj.resource && obj.amount) {
-              await deductCargo(playerId, obj.resource, obj.amount);
+              await removeFromInventory(playerId, 'resource', obj.resource, obj.amount);
             }
           }
-          this.ctx.send(client, 'cargoUpdate', await getPlayerCargo(playerId));
+          this.ctx.send(client, 'cargoUpdate', await getCargoState(playerId));
 
           this.ctx.send(
             client,
@@ -346,12 +345,29 @@ export function generateWarSupportQuest(
 
   switch (subtype) {
     case 'logistics':
-      return { ...base, defense_bonus: 200, description: 'Deliver munitions and fuel to the front station' };
+      return {
+        ...base,
+        defense_bonus: 200,
+        description: 'Deliver munitions and fuel to the front station',
+      };
     case 'sabotage':
-      return { ...base, enemy_defense_reduction: 150, description: 'Hack enemy comm relays to lower their shields' };
+      return {
+        ...base,
+        enemy_defense_reduction: 150,
+        description: 'Hack enemy comm relays to lower their shields',
+      };
     case 'scanning':
-      return { ...base, attack_multiplier: 1.3, description: 'Deep-space scan to reveal enemy fleet positions' };
+      return {
+        ...base,
+        attack_multiplier: 1.3,
+        description: 'Deep-space scan to reveal enemy fleet positions',
+      };
     case 'salvage':
-      return { ...base, defense_bonus: 100, attack_multiplier: 1.1, description: 'Collect debris from the battle for tech bonuses' };
+      return {
+        ...base,
+        defense_bonus: 100,
+        attack_multiplier: 1.1,
+        description: 'Collect debris from the battle for tech bonuses',
+      };
   }
 }

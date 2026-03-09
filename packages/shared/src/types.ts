@@ -1,7 +1,14 @@
 export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly' | 'pirate';
 
 export type SectorEnvironment = 'empty' | 'nebula' | 'star' | 'planet' | 'asteroid' | 'black_hole';
-export type PlanetSubtype = 'terrestrial' | 'water' | 'ice' | 'lava' | 'exotic_a' | 'exotic_b' | 'exotic_c';
+export type PlanetSubtype =
+  | 'terrestrial'
+  | 'water'
+  | 'ice'
+  | 'lava'
+  | 'exotic_a'
+  | 'exotic_b'
+  | 'exotic_c';
 export type SectorContent =
   | 'asteroid_field'
   | 'station'
@@ -17,6 +24,14 @@ export type SectorContent =
 export type MineableResourceType = 'ore' | 'gas' | 'crystal';
 export type ResourceType = MineableResourceType | 'artefact';
 
+export type ItemType = 'resource' | 'module' | 'blueprint';
+
+export interface InventoryItem {
+  itemType: ItemType;
+  itemId: string;
+  quantity: number;
+}
+
 export type ArtefactType =
   | 'drive'
   | 'cargo'
@@ -29,14 +44,27 @@ export type ArtefactType =
   | 'mining';
 
 export const ARTEFACT_TYPES: ArtefactType[] = [
-  'drive', 'cargo', 'scanner', 'armor', 'weapon',
-  'shield', 'defense', 'special', 'mining',
+  'drive',
+  'cargo',
+  'scanner',
+  'armor',
+  'weapon',
+  'shield',
+  'defense',
+  'special',
+  'mining',
 ];
 
 /** Maps module category name to its matching ArtefactType (1:1) */
 export const ARTEFACT_TYPE_FOR_CATEGORY: Record<ArtefactType, ArtefactType> = {
-  drive: 'drive', cargo: 'cargo', scanner: 'scanner', armor: 'armor',
-  weapon: 'weapon', shield: 'shield', defense: 'defense', special: 'special',
+  drive: 'drive',
+  cargo: 'cargo',
+  scanner: 'scanner',
+  armor: 'armor',
+  weapon: 'weapon',
+  shield: 'shield',
+  defense: 'defense',
+  special: 'special',
   mining: 'mining',
 };
 
@@ -202,16 +230,16 @@ export interface CargoState {
   alloy_plate?: number;
   void_shard?: number;
   bio_extract?: number;
-  // Typed artefacts:
-  artefact_drive: number;
-  artefact_cargo: number;
-  artefact_scanner: number;
-  artefact_armor: number;
-  artefact_weapon: number;
-  artefact_shield: number;
-  artefact_defense: number;
-  artefact_special: number;
-  artefact_mining: number;
+  // Typed artefacts (optional — 0 when absent):
+  artefact_drive?: number;
+  artefact_cargo?: number;
+  artefact_scanner?: number;
+  artefact_armor?: number;
+  artefact_weapon?: number;
+  artefact_shield?: number;
+  artefact_defense?: number;
+  artefact_special?: number;
+  artefact_mining?: number;
 }
 
 export interface MineMessage {
@@ -1091,13 +1119,13 @@ export interface ResearchState {
     startedAt: number;
     completesAt: number;
   } | null;
-  activeResearch2: {
+  activeResearch2?: {
     moduleId: string;
     startedAt: number;
     completesAt: number;
   } | null;
-  wissen: number;
-  wissenRate: number; // Wissen/hour (for display)
+  wissen?: number;
+  wissenRate?: number; // Wissen/hour (for display)
 }
 
 // --- Admin Messages ---

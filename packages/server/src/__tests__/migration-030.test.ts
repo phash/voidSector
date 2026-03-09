@@ -3,10 +3,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 describe('migration 030 — player jumpgates', () => {
-  const sql = readFileSync(
-    join(__dirname, '../db/migrations/030_player_jumpgates.sql'),
-    'utf-8',
-  );
+  const sql = readFileSync(join(__dirname, '../db/migrations/030_player_jumpgates.sql'), 'utf-8');
 
   it('adds owner_id column', () => {
     expect(sql).toContain('owner_id');

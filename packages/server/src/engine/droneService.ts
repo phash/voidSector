@@ -112,7 +112,7 @@ export function estimateDroneYield(
  */
 export function getMaxCycles(droneType: DroneType): number {
   const stats = DRONE_STATS[droneType];
-  return Math.floor(stats.durationHours * 60 / stats.miningDurationMinutes);
+  return Math.floor((stats.durationHours * 60) / stats.miningDurationMinutes);
 }
 
 /**

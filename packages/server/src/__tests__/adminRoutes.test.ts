@@ -257,7 +257,9 @@ describe('adminRoutes', () => {
         factionId: null,
         credits: 500,
         cargo: { ore: 10 },
-        ships: [{ id: 's1', hullType: 'scout', name: 'AEGIS', active: true, modules: [], fuel: 100 }],
+        ships: [
+          { id: 's1', hullType: 'scout', name: 'AEGIS', active: true, modules: [], fuel: 100 },
+        ],
       };
       mockGetPlayerFullProfile.mockResolvedValueOnce(player);
       mockGetPlayerPosition.mockResolvedValueOnce({ x: 42, y: 99 });
@@ -287,7 +289,15 @@ describe('adminRoutes', () => {
 
   describe('PATCH /players/:id/position', () => {
     it('sets player position in Redis and emits event', async () => {
-      mockGetPlayerById.mockResolvedValueOnce({ id: 'p1', username: 'alice', positionX: 0, positionY: 0, xp: 0, level: 1, factionId: null });
+      mockGetPlayerById.mockResolvedValueOnce({
+        id: 'p1',
+        username: 'alice',
+        positionX: 0,
+        positionY: 0,
+        xp: 0,
+        level: 1,
+        factionId: null,
+      });
       mockSavePlayerPosition.mockResolvedValueOnce(undefined);
 
       const handler = getRouteHandler('patch', '/players/:id/position')!;
@@ -297,7 +307,11 @@ describe('adminRoutes', () => {
 
       expect(res._json).toEqual({ ok: true });
       expect(mockSavePlayerPosition).toHaveBeenCalledWith('p1', 100, 200);
-      expect(mockLogAdminEvent).toHaveBeenCalledWith('set_player_position', { playerId: 'p1', x: 100, y: 200 });
+      expect(mockLogAdminEvent).toHaveBeenCalledWith('set_player_position', {
+        playerId: 'p1',
+        x: 100,
+        y: 200,
+      });
     });
 
     it('returns 400 for invalid coordinates', async () => {
@@ -347,11 +361,22 @@ describe('adminRoutes', () => {
 
   describe('PATCH /players/:id/cargo', () => {
     it('sets cargo item for player', async () => {
-      mockGetPlayerById.mockResolvedValueOnce({ id: 'p1', username: 'alice', positionX: 0, positionY: 0, xp: 0, level: 1, factionId: null });
+      mockGetPlayerById.mockResolvedValueOnce({
+        id: 'p1',
+        username: 'alice',
+        positionX: 0,
+        positionY: 0,
+        xp: 0,
+        level: 1,
+        factionId: null,
+      });
       mockAdminSetCargoItem.mockResolvedValueOnce(undefined);
 
       const handler = getRouteHandler('patch', '/players/:id/cargo')!;
-      const req = createMockReq({ params: { id: 'p1' } as any, body: { resource: 'ore', amount: 50 } });
+      const req = createMockReq({
+        params: { id: 'p1' } as any,
+        body: { resource: 'ore', amount: 50 },
+      });
       const res = createMockRes();
       await handler(req, res);
 
@@ -372,7 +397,10 @@ describe('adminRoutes', () => {
       mockGetPlayerById.mockResolvedValueOnce(null);
 
       const handler = getRouteHandler('patch', '/players/:id/cargo')!;
-      const req = createMockReq({ params: { id: 'nope' } as any, body: { resource: 'ore', amount: 10 } });
+      const req = createMockReq({
+        params: { id: 'nope' } as any,
+        body: { resource: 'ore', amount: 10 },
+      });
       const res = createMockRes();
       await handler(req, res);
 

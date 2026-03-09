@@ -58,7 +58,7 @@ describe('alienReputationService', () => {
       expect(getRepChangeForAction('quest_failed', 'archivists')).toBeLessThan(0);
     });
 
-    it('K\'thari gives extra rep for combat_win', () => {
+    it("K'thari gives extra rep for combat_win", () => {
       const kthari = getRepChangeForAction('combat_win', 'kthari');
       const archivists = getRepChangeForAction('combat_win', 'archivists');
       expect(kthari).toBeGreaterThan(archivists);
@@ -110,9 +110,16 @@ describe('alienReputationService', () => {
   describe('first contact constants', () => {
     it('all 10 alien factions have first contact distances', () => {
       const factionIds: AlienFactionId[] = [
-        'archivists', 'consortium', 'kthari', 'mycelians',
-        'mirror_minds', 'tourist_guild', 'silent_swarm',
-        'helions', 'axioms', 'scrappers',
+        'archivists',
+        'consortium',
+        'kthari',
+        'mycelians',
+        'mirror_minds',
+        'tourist_guild',
+        'silent_swarm',
+        'helions',
+        'axioms',
+        'scrappers',
       ];
       for (const id of factionIds) {
         expect(ALIEN_FIRST_CONTACT_DISTANCE[id]).toBeGreaterThan(0);
@@ -164,7 +171,7 @@ describe('alienQuestTemplates', () => {
 
   describe('getAvailableAlienQuests', () => {
     it('no quests at origin', () => {
-      const quests = getAvailableAlienQuests(0, 0, {});
+      const quests = getAvailableAlienQuests(0, 0, {} as Record<AlienFactionId, number>);
       expect(quests).toHaveLength(0);
     });
 

@@ -112,7 +112,13 @@ export function sampleUniverseStats(
         }
       }
 
-      const contents = generateSectorContents(x, y, env.environmentType, env.contentVariance, worldSeed);
+      const contents = generateSectorContents(
+        x,
+        y,
+        env.environmentType,
+        env.contentVariance,
+        worldSeed,
+      );
       for (const c of contents) {
         stats.contentCounts[c.contentType] = (stats.contentCounts[c.contentType] ?? 0) + 1;
       }
@@ -142,7 +148,13 @@ export function generateQuadrantData(
       const absY = baseY + sy;
       const env = generateSectorEnvironment(absX, absY, worldSeed);
       environments.push(env);
-      const cs = generateSectorContents(absX, absY, env.environmentType, env.contentVariance, worldSeed);
+      const cs = generateSectorContents(
+        absX,
+        absY,
+        env.environmentType,
+        env.contentVariance,
+        worldSeed,
+      );
       contents.push(...cs);
     }
   }

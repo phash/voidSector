@@ -29,7 +29,7 @@ describe('alienEncounterGen', () => {
 
   it('rollForEncounter can return an encounter with forced roll', async () => {
     // Force roll by mocking Math.random
-    const spy = vi.spyOn(Math, 'random').mockReturnValue(0);  // 0 < any positive chance
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0); // 0 < any positive chance
     const result = await rollForEncounter('player1', 1000, 1000, 500, 500, 20); // qDist=500, 20 steps
     spy.mockRestore();
     // Should return some event (tourist_guild has 8% chance, always hits with random=0)

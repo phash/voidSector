@@ -97,7 +97,7 @@ void-sector/
 ### Server
 
 - **SectorRoom**: One Colyseus room per sector coordinate. Auto-created on first player entry, auto-disposed when empty.
-- **World Generation**: Deterministic seed-based (`hashCoords(x, y, worldSeed)`). Sectors are generated on first visit and persisted to PostgreSQL.
+- **World Generation**: Deterministic seed-based (`hashCoords(x, y, worldSeed)`). Sectors are generated on first visit and persisted to PostgreSQL. World origin is **(0,0)** — coordinate space extends into positive x/y. New players spawn within radius 5 of (0,0).
 - **AP System**: Lazy evaluation — no server tick loop. AP regeneration is calculated on each action based on elapsed time.
 - **Auth**: bcrypt password hashing + JWT tokens.
 
@@ -156,7 +156,7 @@ void-sector/
 - [x] Communication system with 5 channels (direct, faction, local, sector, quadrant)
 - [x] Factions (create/join/invite, ranks, faction chat, upgrade tree)
 - [x] Procedural quest system (fetch/delivery/scan/bounty, daily rotation)
-- [x] Cluster spawn system (10M+ sectors from origin)
+- [x] Cluster spawn system — new players spawn within radius 5 of world origin (0,0)
 - [x] Quadrant system (10K sectors/axis, first-contact naming)
 - [x] Alien Quest System: 9-chapter story chain, 4 community quests, 10 alien factions
 - [x] Menschheits-Reputation: server-wide aggregate rep per faction, encounter chance modifier (0.5×–1.5×), tier-aware dialogs, ALIEN REP tab
