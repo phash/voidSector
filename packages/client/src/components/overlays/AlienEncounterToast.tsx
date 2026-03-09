@@ -57,6 +57,11 @@ export function AlienEncounterToast() {
         marginBottom: 6,
       }}>
         {encounter.factionId.toUpperCase().replace(/_/g, ' ')} — KONTAKT
+        {encounter.humanityTier && (
+          <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>
+            {' '}MENSCHHEITS-REP: {encounter.humanityTier}
+          </span>
+        )}
       </div>
       <div style={{
         color: 'var(--color-dim)',
