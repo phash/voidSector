@@ -598,6 +598,28 @@ class GameNetwork {
       useStore.setState({ alienCredits: data.alienCredits });
     });
 
+    // Alien interaction result — show in log and update rep store
+    room.onMessage('alienInteractResult', (data: {
+      success: boolean;
+      factionId?: string;
+      action?: string;
+      message?: string;
+      error?: string;
+      repAfter?: number;
+      repTier?: string;
+      reputations?: Record<string, number>;
+    }) => {
+      const store = useStore.getState();
+      if (data.message) {
+        store.addLogEntry(data.message);
+      } else if (!data.success && data.error) {
+        store.addLogEntry(`[${data.factionId?.toUpperCase() ?? 'ALIEN'}] ${data.error}`);
+      }
+      if (data.reputations) {
+        useStore.setState({ alienReputations: data.reputations });
+      }
+    });
+
     // Storage update
     room.onMessage('storageUpdate', (data: StorageInventory) => {
       useStore.getState().setStorage(data);
@@ -1701,6 +1723,14 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('completeScanEvent', { eventId });
+  }
+
+  sendAlienInteract(factionId: string, action: string, payload?: Record<string, unknown>) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('alienInteract', { factionId, action, payload });
   }
 
   requestReputation() {

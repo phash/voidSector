@@ -2309,3 +2309,170 @@ export async function getPlayerLoreFragments(
   );
   return rows;
 }
+
+// ── Alien Reputation (issues #190-#199) ──────────────────────────────────────
+
+/** Get a player's reputation with one alien faction. Returns 0 if no entry. */
+export async function getAlienReputation(
+  playerId: string,
+  factionId: string,
+): Promise<number> {
+  const { rows } = await query<{ reputation: number }>(
+    'SELECT reputation FROM alien_reputation WHERE player_id = $1 AND alien_faction_id = $2',
+    [playerId, factionId],
+  );
+  return rows[0]?.reputation ?? 0;
+}
+
+/** Get reputation values for all alien factions for a player. */
+export async function getAllAlienReputations(
+  playerId: string,
+): Promise<Record<string, number>> {
+  const { rows } = await query<{ alien_faction_id: string; reputation: number }>(
+    'SELECT alien_faction_id, reputation FROM alien_reputation WHERE player_id = $1',
+    [playerId],
+  );
+  const result: Record<string, number> = {};
+  for (const row of rows) {
+    result[row.alien_faction_id] = row.reputation;
+  }
+  return result;
+}
+
+/**
+ * Add (or subtract) reputation with an alien faction.
+ * Clamped to [-100, +100]. Creates row if not exists.
+ */
+export async function addAlienReputation(
+  playerId: string,
+  factionId: string,
+  delta: number,
+): Promise<number> {
+  const { rows } = await query<{ reputation: number }>(
+    `INSERT INTO alien_reputation (player_id, alien_faction_id, reputation, encounter_count, last_interaction)
+     VALUES ($1, $2, GREATEST(-100, LEAST(100, $3)), 1, $4)
+     ON CONFLICT (player_id, alien_faction_id)
+     DO UPDATE SET
+       reputation = GREATEST(-100, LEAST(100, alien_reputation.reputation + $3)),
+       encounter_count = alien_reputation.encounter_count + 1,
+       last_interaction = $4
+     RETURNING reputation`,
+    [playerId, factionId, delta, Date.now()],
+  );
+  return rows[0]?.reputation ?? 0;
+}
+
+/** Set first_contact_at timestamp (called on first contact only). */
+export async function setAlienFirstContact(
+  playerId: string,
+  factionId: string,
+): Promise<void> {
+  await query(
+    `INSERT INTO alien_reputation (player_id, alien_faction_id, reputation, encounter_count, first_contact_at, last_interaction)
+     VALUES ($1, $2, 0, 1, $3, $3)
+     ON CONFLICT (player_id, alien_faction_id)
+     DO UPDATE SET
+       first_contact_at = COALESCE(alien_reputation.first_contact_at, $3),
+       last_interaction = $3`,
+    [playerId, factionId, Date.now()],
+  );
+}
+
+/** Record an alien encounter event. */
+export async function recordAlienEncounter(params: {
+  playerId: string;
+  factionId: string;
+  encounterType: string;
+  sectorX: number;
+  sectorY: number;
+  quadrantX: number;
+  quadrantY: number;
+  encounterData?: Record<string, unknown>;
+  repBefore: number;
+  repAfter: number;
+}): Promise<void> {
+  await query(
+    `INSERT INTO alien_encounters
+       (player_id, alien_faction_id, encounter_type, sector_x, sector_y, quadrant_x, quadrant_y,
+        encounter_data, reputation_before, reputation_after, occurred_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    [
+      params.playerId,
+      params.factionId,
+      params.encounterType,
+      params.sectorX,
+      params.sectorY,
+      params.quadrantX,
+      params.quadrantY,
+      JSON.stringify(params.encounterData ?? {}),
+      params.repBefore,
+      params.repAfter,
+      Date.now(),
+    ],
+  );
+}
+
+/** Get number of times a player has salvaged wrecks (for Scrapper access check). */
+export async function getPlayerSalvageCount(playerId: string): Promise<number> {
+  const { rows } = await query<{ count: string }>(
+    `SELECT COUNT(*) as count FROM alien_encounters
+     WHERE player_id = $1 AND encounter_type = 'salvage'`,
+    [playerId],
+  );
+  return parseInt(rows[0]?.count ?? '0', 10);
+}
+
+/** Get number of discoveries the player has made (for Archivist scan currency). */
+export async function getPlayerDiscoveryCount(playerId: string): Promise<number> {
+  const { rows } = await query<{ count: string }>(
+    `SELECT COUNT(*) as count FROM discoveries WHERE player_id = $1`,
+    [playerId],
+  );
+  return parseInt(rows[0]?.count ?? '0', 10);
+}
+
+/** Get number of combat victories the player has logged (for K'thari rank). */
+export async function getPlayerCombatVictoryCount(playerId: string): Promise<number> {
+  const { rows } = await query<{ count: string }>(
+    `SELECT COUNT(*) as count FROM battle_log
+     WHERE player_id = $1 AND outcome = 'victory'`,
+    [playerId],
+  );
+  return parseInt(rows[0]?.count ?? '0', 10);
+}
+
+/** Get player stats for Mirror Minds stat-mirror interaction. */
+export async function getMirrorMindStats(playerId: string): Promise<{
+  battles: number;
+  victories: number;
+  questsCompleted: number;
+  questsFailed: number;
+  sectorsScanned: number;
+}> {
+  const [battleRows, questRows, discRows] = await Promise.all([
+    query<{ total: string; victories: string }>(
+      `SELECT COUNT(*) as total,
+              COUNT(*) FILTER (WHERE outcome = 'victory') as victories
+       FROM battle_log WHERE player_id = $1`,
+      [playerId],
+    ),
+    query<{ completed: string; failed: string }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'completed') as completed,
+         COUNT(*) FILTER (WHERE status = 'failed') as failed
+       FROM quests WHERE player_id = $1`,
+      [playerId],
+    ),
+    query<{ count: string }>(
+      'SELECT COUNT(*) as count FROM discoveries WHERE player_id = $1',
+      [playerId],
+    ),
+  ]);
+  return {
+    battles: parseInt(battleRows.rows[0]?.total ?? '0', 10),
+    victories: parseInt(battleRows.rows[0]?.victories ?? '0', 10),
+    questsCompleted: parseInt(questRows.rows[0]?.completed ?? '0', 10),
+    questsFailed: parseInt(questRows.rows[0]?.failed ?? '0', 10),
+    sectorsScanned: parseInt(discRows.rows[0]?.count ?? '0', 10),
+  };
+}

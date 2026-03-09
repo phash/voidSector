@@ -37,6 +37,7 @@ import {
   hasScannedRuin,
   insertAncientRuinScan,
   getActiveShip,
+  recordAlienEncounter,
 } from '../../db/queries.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
@@ -383,6 +384,19 @@ export class ScanService {
     const moduleName = MODULES[module]?.name ?? module;
     client.send('salvageResult', { success: true, module, moduleName });
     client.send('logEntry', `WRACK GEPLÜNDERT: Modul "${moduleName}" geborgen.`);
+    // Record as salvage encounter for Scrapper access tracking
+    recordAlienEncounter({
+      playerId: auth.userId,
+      factionId: 'scrappers',
+      encounterType: 'salvage',
+      sectorX: this.ctx._px(client.sessionId),
+      sectorY: this.ctx._py(client.sessionId),
+      quadrantX: this.ctx.quadrantX,
+      quadrantY: this.ctx.quadrantY,
+      encounterData: { wreckId: data.wreckId, module },
+      repBefore: 0,
+      repAfter: 0,
+    }).catch(() => {});
   }
 
   /** Emit a personality comment to the client's event log (fire-and-forget). */

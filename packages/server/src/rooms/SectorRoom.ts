@@ -105,6 +105,8 @@ import { QuestService } from './services/QuestService.js';
 import { ChatService } from './services/ChatService.js';
 import { ShipService } from './services/ShipService.js';
 import { WorldService } from './services/WorldService.js';
+import { AlienInteractionService } from './services/AlienInteractionService.js';
+import type { AlienInteractMessage } from './services/AlienInteractionService.js';
 import { logger } from '../utils/logger.js';
 import { getAcepXpSummary } from '../engine/acepXpService.js';
 
@@ -141,6 +143,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private chat!: ChatService;
   private ships!: ShipService;
   private world!: WorldService;
+  private alienInteraction!: AlienInteractionService;
 
   /** Get a player's current sector X coordinate */
   private _px(sid: string): number {
@@ -256,6 +259,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.chat = new ChatService(this.serviceCtx);
     this.ships = new ShipService(this.serviceCtx);
     this.world = new WorldService(this.serviceCtx);
+    this.alienInteraction = new AlienInteractionService(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
@@ -467,6 +471,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('getReputation', async (client) => {
       await this.quests.handleGetReputation(client);
+    });
+
+    // ── Alien Interactions ──────────────────────────────────────────
+    this.onMessage('alienInteract', async (client, data: AlienInteractMessage) => {
+      await this.alienInteraction.handleAlienInteract(client, data);
     });
 
     // ── Chat ────────────────────────────────────────────────────────
