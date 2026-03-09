@@ -27,11 +27,7 @@ import {
   getHyperdriveState,
   setHyperdriveState,
 } from './services/RedisAPStore.js';
-import {
-  getCargoState,
-  addToInventory,
-  getResourceTotal,
-} from '../engine/inventoryService.js';
+import { getCargoState, addToInventory, getResourceTotal } from '../engine/inventoryService.js';
 import {
   getSector,
   saveSector,
@@ -50,6 +46,8 @@ import {
   getFactionUpgrades,
   getPlayerResearch,
   getActiveResearch,
+  getWissen,
+  getTypedArtefacts,
   getActiveAutopilotRoute,
   pauseAutopilotRoute,
   updatePlayerStationRep,
@@ -61,6 +59,7 @@ import {
   getAllQuadrantControls,
   getActiveNpcFleets,
   getInventory,
+  getResearchLabTier,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -125,7 +124,11 @@ import type { AlienInteractMessage } from './services/AlienInteractionService.js
 import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
-import { rollForEncounter, isInteractiveEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounterGen.js';
+import {
+  rollForEncounter,
+  isInteractiveEncounter,
+  ALIEN_ENCOUNTER_TABLE,
+} from '../engine/alienEncounterGen.js';
 import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
 import { getDirectTradeService } from '../engine/directTradeService.js';
@@ -168,7 +171,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private territory!: TerritoryService;
   private storyChain!: StoryQuestChainService;
   private communityQuests!: CommunityQuestService;
-  private encounterSteps = new Map<string, number>();  // playerId -> steps since last encounter
+  private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
 
   /** Get a player's current sector X coordinate */
   private _px(sid: string): number {
@@ -202,7 +205,9 @@ export class SectorRoom extends Room<SectorRoomState> {
   private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
     const faction = await getPlayerFaction(playerId);
     const upgrades = faction ? await getFactionUpgrades(faction.id) : [];
-    const bonuses = calculateBonuses(upgrades.map((u) => ({ tier: u.tier, choice: u.choice as 'A' | 'B' })));
+    const bonuses = calculateBonuses(
+      upgrades.map((u) => ({ tier: u.tier, choice: u.choice as 'A' | 'B' })),
+    );
 
     // Blend in ACEP effects on top of faction bonuses
     const { rows } = await query<{ id: string }>(
@@ -212,10 +217,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     if (rows.length > 0) {
       const acepXp = await getAcepXpSummary(rows[0].id);
       const fx = getAcepEffects(acepXp);
-      bonuses.miningRateMultiplier *= (1 + fx.miningBonus);
+      bonuses.miningRateMultiplier *= 1 + fx.miningBonus;
       bonuses.cargoCapBonus += Math.floor(acepXp.ausbau / 10); // +1 cargo slot per 10 AUSBAU XP
       bonuses.scanRadiusBonus += fx.scanRadiusBonus;
-      bonuses.combatMultiplier *= (1 + fx.combatDamageBonus);
+      bonuses.combatMultiplier *= 1 + fx.combatDamageBonus;
       bonuses.extraModuleSlots = fx.extraModuleSlots;
       bonuses.ancientDetection = fx.ancientDetection;
       bonuses.helionDecoderEnabled = fx.helionDecoderEnabled;
@@ -335,7 +340,11 @@ export class SectorRoom extends Room<SectorRoomState> {
         const moveSectorAuth = client.auth as { userId: string; username?: string } | null;
         if (moveSectorAuth?.userId) {
           const storyTrigger = await this.storyChain
-            .checkTrigger(moveSectorAuth.userId, this.serviceCtx.quadrantX, this.serviceCtx.quadrantY)
+            .checkTrigger(
+              moveSectorAuth.userId,
+              this.serviceCtx.quadrantX,
+              this.serviceCtx.quadrantY,
+            )
             .catch(() => null);
           if (storyTrigger) client.send('storyEvent', storyTrigger);
 
@@ -496,7 +505,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     );
     this.onMessage(
       'kontorPlaceOrder',
-      async (client, data: { itemType: string; itemId: string; amount: number; pricePerUnit: number }) => {
+      async (
+        client,
+        data: { itemType: string; itemId: string; amount: number; pricePerUnit: number },
+      ) => {
         await this.economy.handleKontorPlaceOrder(client, data);
       },
     );
@@ -553,9 +565,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('claimTerritory', async (client) => {
       await this.territory.handleClaimTerritory(client);
     });
-    this.onMessage('getTerritory', async (client, data: { quadrantX?: number; quadrantY?: number }) => {
-      await this.territory.handleGetTerritory(client, data);
-    });
+    this.onMessage(
+      'getTerritory',
+      async (client, data: { quadrantX?: number; quadrantY?: number }) => {
+        await this.territory.handleGetTerritory(client, data);
+      },
+    );
     this.onMessage('listMyTerritories', async (client) => {
       await this.territory.handleListMyTerritories(client);
     });
@@ -611,8 +626,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('inventoryState', { items });
     });
     this.onMessage('startResearch', (client, data) => this.ships.handleStartResearch(client, data));
-    this.onMessage('cancelResearch', (client) => this.ships.handleCancelResearch(client));
-    this.onMessage('claimResearch', (client) => this.ships.handleClaimResearch(client));
+    this.onMessage('cancelResearch', (client, data) =>
+      this.ships.handleCancelResearch(client, data),
+    );
+    this.onMessage('claimResearch', (client, data) => this.ships.handleClaimResearch(client, data));
     this.onMessage('activateBlueprint', (client, data) =>
       this.ships.handleActivateBlueprint(client, data),
     );
@@ -656,6 +673,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('build', async (client, data: BuildMessage) => {
       await this.world.handleBuild(client, data);
     });
+    this.onMessage('upgradeResearchLab', (client) => this.world.handleUpgradeResearchLab(client));
     this.onMessage('createSlate', async (client, data: CreateSlateMessage) => {
       await this.world.handleCreateSlate(client, data);
     });
@@ -681,9 +699,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('deliverSurvivors', (client, data) =>
       this.world.handleDeliverSurvivors(client, data),
     );
-    this.onMessage('upgradeJumpgate', async (client, data: { gateId: string; upgradeType: string }) => {
-      await this.world.handleUpgradeJumpgate(client, data);
-    });
+    this.onMessage(
+      'upgradeJumpgate',
+      async (client, data: { gateId: string; upgradeType: string }) => {
+        await this.world.handleUpgradeJumpgate(client, data);
+      },
+    );
     this.onMessage('dismantleJumpgate', async (client, data: { gateId: string }) => {
       await this.world.handleDismantleJumpgate(client, data);
     });
@@ -693,12 +714,18 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('linkJumpgate', async (client, data: { slateId: string }) => {
       await this.world.handleLinkJumpgate(client, data);
     });
-    this.onMessage('unlinkJumpgate', async (client, data: { gateId: string; linkedGateId: string }) => {
-      await this.world.handleUnlinkJumpgate(client, data);
-    });
-    this.onMessage('usePlayerGate', async (client, data: { gateId: string; destinationGateId: string }) => {
-      await this.navigation.handleUsePlayerGate(client, data);
-    });
+    this.onMessage(
+      'unlinkJumpgate',
+      async (client, data: { gateId: string; linkedGateId: string }) => {
+        await this.world.handleUnlinkJumpgate(client, data);
+      },
+    );
+    this.onMessage(
+      'usePlayerGate',
+      async (client, data: { gateId: string; destinationGateId: string }) => {
+        await this.navigation.handleUsePlayerGate(client, data);
+      },
+    );
 
     // ── Trade Routes ────────────────────────────────────────────────
     this.onMessage('configureRoute', (client, data) =>
@@ -736,23 +763,28 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     // ── Story / Community Quests / Alien Encounters ─────────────────
-    this.onMessage('storyChoice', async (client, data: { chapterId: number; branchChoice: string | null }) => {
-      const auth = client.auth as { userId: string } | null;
-      if (!auth?.userId) return;
-      const chapterCompleted = await this.storyChain.completeChapter(auth.userId, data.chapterId, data.branchChoice ?? null).catch(() => false);
-      // Story Branch Effekte auch auf Menschheits-Rep anwenden (÷3 skaliert)
-      // Only runs when completeChapter actually executed (not a duplicate submission)
-      if (chapterCompleted && data.branchChoice) {
-        const branchEffects = applyBranchEffects(data.chapterId, data.branchChoice);
-        for (const [factionId, delta] of Object.entries(branchEffects)) {
-          const humanityDelta = Math.round((delta as number) / 3);
-          if (humanityDelta !== 0) {
-            await contributeHumanityRep(factionId, humanityDelta).catch(() => {});
+    this.onMessage(
+      'storyChoice',
+      async (client, data: { chapterId: number; branchChoice: string | null }) => {
+        const auth = client.auth as { userId: string } | null;
+        if (!auth?.userId) return;
+        const chapterCompleted = await this.storyChain
+          .completeChapter(auth.userId, data.chapterId, data.branchChoice ?? null)
+          .catch(() => false);
+        // Story Branch Effekte auch auf Menschheits-Rep anwenden (÷3 skaliert)
+        // Only runs when completeChapter actually executed (not a duplicate submission)
+        if (chapterCompleted && data.branchChoice) {
+          const branchEffects = applyBranchEffects(data.chapterId, data.branchChoice);
+          for (const [factionId, delta] of Object.entries(branchEffects)) {
+            const humanityDelta = Math.round((delta as number) / 3);
+            if (humanityDelta !== 0) {
+              await contributeHumanityRep(factionId, humanityDelta).catch(() => {});
+            }
           }
         }
-      }
-      client.send('storyChoiceResult', { success: true, chapterId: data.chapterId });
-    });
+        client.send('storyChoiceResult', { success: true, chapterId: data.chapterId });
+      },
+    );
 
     this.onMessage('getStoryProgress', async (client) => {
       const auth = client.auth as { userId: string } | null;
@@ -769,32 +801,35 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('contributeToQuest', async (client, data: { amount: number }) => {
       const auth = client.auth as { userId: string } | null;
       if (!auth?.userId) return;
-      const amount = Math.max(1, Math.min(data.amount ?? 1, 100));  // cap at 100 per contribution
+      const amount = Math.max(1, Math.min(data.amount ?? 1, 100)); // cap at 100 per contribution
       await this.communityQuests.contribute(auth.userId, amount).catch(() => {});
       const quest = await this.communityQuests.getActive().catch(() => null);
       client.send('activeCommunityQuest', { quest });
     });
 
-    this.onMessage('resolveAlienEncounter', async (client, data: { factionId: string; eventType: string; accepted: boolean }) => {
-      const auth = client.auth as { userId: string } | null;
-      if (!auth?.userId) return;
+    this.onMessage(
+      'resolveAlienEncounter',
+      async (client, data: { factionId: string; eventType: string; accepted: boolean }) => {
+        const auth = client.auth as { userId: string } | null;
+        if (!auth?.userId) return;
 
-      // Look up encounter from server-side table — never trust client-supplied rep values
-      const entry = ALIEN_ENCOUNTER_TABLE.find(
-        (e) => e.factionId === data.factionId && e.eventType === data.eventType,
-      );
-      if (!entry) return; // Unknown encounter — ignore
+        // Look up encounter from server-side table — never trust client-supplied rep values
+        const entry = ALIEN_ENCOUNTER_TABLE.find(
+          (e) => e.factionId === data.factionId && e.eventType === data.eventType,
+        );
+        if (!entry) return; // Unknown encounter — ignore
 
-      const delta = data.accepted ? entry.repOnAccept : entry.repOnDecline;
-      if (delta !== 0) {
-        await addAlienReputation(auth.userId, data.factionId, delta).catch(() => {});
-      }
-      if (isInteractiveEncounter(data.factionId)) {
-        const humanityDelta = data.accepted ? 3 : -2;
-        await contributeHumanityRep(data.factionId, humanityDelta).catch(() => {});
-      }
-      client.send('alienEncounterResolved', { factionId: data.factionId, repDelta: delta });
-    });
+        const delta = data.accepted ? entry.repOnAccept : entry.repOnDecline;
+        if (delta !== 0) {
+          await addAlienReputation(auth.userId, data.factionId, delta).catch(() => {});
+        }
+        if (isInteractiveEncounter(data.factionId)) {
+          const humanityDelta = data.accepted ? 3 : -2;
+          await contributeHumanityRep(data.factionId, humanityDelta).catch(() => {});
+        }
+        client.send('alienEncounterResolved', { factionId: data.factionId, repDelta: delta });
+      },
+    );
 
     this.onMessage('getHumanityReps', async (client) => {
       const rawReps = await getAllHumanityReps();
@@ -808,59 +843,74 @@ export class SectorRoom extends Room<SectorRoomState> {
     // ── Direct Trade ─────────────────────────────────────────────────
     this.onMessage('tradeRequest', (client, data: { targetPlayerId: string }) => {
       const auth = client.auth as AuthPayload;
-      getDirectTradeService().initiateTrade(auth.userId, data.targetPlayerId).then((tradeId) => {
-        client.send('tradeStarted', { tradeId });
-        // Notify target if in same room
-        this.clients.forEach((c) => {
-          if ((c.auth as AuthPayload)?.userId === data.targetPlayerId) {
-            c.send('tradeInvite', { tradeId, fromPlayerId: auth.userId });
-          }
-        });
-      }).catch((err) => {
-        logger.error({ err }, 'tradeRequest error');
-        client.send('error', { code: 'TRADE_FAILED', message: 'Failed to start trade' });
-      });
-    });
-    this.onMessage('tradeOffer', (client, data: { tradeId: string; items: InventoryItem[]; credits: number }) => {
-      const auth = client.auth as AuthPayload;
-      getDirectTradeService().updateOffer(data.tradeId, auth.userId, data.items, data.credits)
-        .then(() => {
-          client.send('tradeOfferUpdated', { tradeId: data.tradeId });
+      getDirectTradeService()
+        .initiateTrade(auth.userId, data.targetPlayerId)
+        .then((tradeId) => {
+          client.send('tradeStarted', { tradeId });
+          // Notify target if in same room
+          this.clients.forEach((c) => {
+            if ((c.auth as AuthPayload)?.userId === data.targetPlayerId) {
+              c.send('tradeInvite', { tradeId, fromPlayerId: auth.userId });
+            }
+          });
         })
         .catch((err) => {
-          client.send('error', { code: 'TRADE_ERROR', message: err.message });
+          logger.error({ err }, 'tradeRequest error');
+          client.send('error', { code: 'TRADE_FAILED', message: 'Failed to start trade' });
         });
     });
+    this.onMessage(
+      'tradeOffer',
+      (client, data: { tradeId: string; items: InventoryItem[]; credits: number }) => {
+        const auth = client.auth as AuthPayload;
+        getDirectTradeService()
+          .updateOffer(data.tradeId, auth.userId, data.items, data.credits)
+          .then(() => {
+            client.send('tradeOfferUpdated', { tradeId: data.tradeId });
+          })
+          .catch((err) => {
+            client.send('error', { code: 'TRADE_ERROR', message: err.message });
+          });
+      },
+    );
     this.onMessage('tradeConfirm', (client, data: { tradeId: string }) => {
       const auth = client.auth as AuthPayload;
-      getDirectTradeService().getSession(data.tradeId).then(async (session) => {
-        const bothConfirmed = await getDirectTradeService().confirm(data.tradeId, auth.userId);
-        if (bothConfirmed) {
-          await getDirectTradeService().executeTrade(data.tradeId);
-          client.send('tradeComplete', { tradeId: data.tradeId });
-          // Notify the other player too
-          const otherPlayerId = session?.fromPlayerId === auth.userId
-            ? session?.toPlayerId
-            : session?.fromPlayerId;
-          if (otherPlayerId) {
-            this.clients.forEach((c) => {
-              if ((c.auth as AuthPayload)?.userId === otherPlayerId) {
-                c.send('tradeComplete', { tradeId: data.tradeId });
-              }
-            });
+      getDirectTradeService()
+        .getSession(data.tradeId)
+        .then(async (session) => {
+          const bothConfirmed = await getDirectTradeService().confirm(data.tradeId, auth.userId);
+          if (bothConfirmed) {
+            await getDirectTradeService().executeTrade(data.tradeId);
+            client.send('tradeComplete', { tradeId: data.tradeId });
+            // Notify the other player too
+            const otherPlayerId =
+              session?.fromPlayerId === auth.userId ? session?.toPlayerId : session?.fromPlayerId;
+            if (otherPlayerId) {
+              this.clients.forEach((c) => {
+                if ((c.auth as AuthPayload)?.userId === otherPlayerId) {
+                  c.send('tradeComplete', { tradeId: data.tradeId });
+                }
+              });
+            }
           }
-        }
-      }).catch((err) => {
-        logger.error({ err }, 'tradeConfirm error');
-        client.send('error', { code: 'TRADE_CONFIRM_FAILED', message: 'Failed to confirm trade' });
-      });
+        })
+        .catch((err) => {
+          logger.error({ err }, 'tradeConfirm error');
+          client.send('error', {
+            code: 'TRADE_CONFIRM_FAILED',
+            message: 'Failed to confirm trade',
+          });
+        });
     });
     this.onMessage('tradeCancel', (client, data: { tradeId: string }) => {
-      getDirectTradeService().cancelTrade(data.tradeId).then(() => {
-        client.send('tradeCancelled', { tradeId: data.tradeId });
-      }).catch((err) => {
-        logger.error({ err }, 'tradeCancel error');
-      });
+      getDirectTradeService()
+        .cancelTrade(data.tradeId)
+        .then(() => {
+          client.send('tradeCancelled', { tradeId: data.tradeId });
+        })
+        .catch((err) => {
+          logger.error({ err }, 'tradeCancel error');
+        });
     });
 
     // ── Trade Route Processing Interval ─────────────────────────────
@@ -871,9 +921,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     }, 60000);
 
     // ── Community Quest Rotation — every hour ────────────────────────
-    this.clock.setInterval(async () => {
-      await this.communityQuests.checkAndAdvanceRotation().catch(() => {});
-    }, 60 * 60 * 1000);
+    this.clock.setInterval(
+      async () => {
+        await this.communityQuests.checkAndAdvanceRotation().catch(() => {});
+      },
+      60 * 60 * 1000,
+    );
 
     // ── Admin Bus ───────────────────────────────────────────────────
     const onBroadcast = (event: AdminBroadcastEvent) => {
@@ -983,8 +1036,23 @@ export class SectorRoom extends Room<SectorRoomState> {
 
       this.state.players.set(client.sessionId, player);
       this.state.playerCount = this.state.players.size;
-      const allPlayers = Array.from(this.state.players.entries()).map(([sid, p]) => ({ sid, username: p.username, x: p.x, y: p.y }));
-      logger.info({ username: auth.username, sectorX, sectorY, playerCount: this.state.playerCount, roomId: this.roomId, allPlayers }, 'Player joined room');
+      const allPlayers = Array.from(this.state.players.entries()).map(([sid, p]) => ({
+        sid,
+        username: p.username,
+        x: p.x,
+        y: p.y,
+      }));
+      logger.info(
+        {
+          username: auth.username,
+          sectorX,
+          sectorY,
+          playerCount: this.state.playerCount,
+          roomId: this.roomId,
+          allPlayers,
+        },
+        'Player joined room',
+      );
 
       // Load or generate sector for this player
       let sectorData = await getSector(sectorX, sectorY);
@@ -1121,11 +1189,20 @@ export class SectorRoom extends Room<SectorRoomState> {
 
       // Send research state
       const researchData = await getPlayerResearch(auth.userId);
-      const activeResearch = await getActiveResearch(auth.userId);
+      const activeResearch = await getActiveResearch(auth.userId, 1);
+      const activeResearch2 = await getActiveResearch(auth.userId, 2);
+      const wissen = await getWissen(auth.userId);
+      const typedArtefacts = await getTypedArtefacts(auth.userId);
+      const labTier = await getResearchLabTier(auth.userId);
       client.send('researchState', {
         unlockedModules: researchData.unlockedModules,
         blueprints: researchData.blueprints,
-        activeResearch: activeResearch,
+        activeResearch,
+        activeResearch2,
+        wissen,
+        wissenRate: 0,
+        typedArtefacts,
+        labTier,
       });
 
       // Record NPC station visit for XP and per-station reputation
@@ -1190,7 +1267,7 @@ export class SectorRoom extends Room<SectorRoomState> {
           getAllQuadrantControls(),
           getActiveNpcFleets(),
         ]);
-        const controls: QuadrantControlState[] = controlRows.map(r => {
+        const controls: QuadrantControlState[] = controlRows.map((r) => {
           let friction_state: QuadrantControlState['friction_state'] = 'peaceful_halt';
           if (r.friction_score > 80) friction_state = 'total_war';
           else if (r.friction_score > 50) friction_state = 'escalation';
@@ -1207,7 +1284,7 @@ export class SectorRoom extends Room<SectorRoomState> {
             station_tier: r.station_tier,
           };
         });
-        const fleets: NpcFleetState[] = fleetRows.map(r => ({
+        const fleets: NpcFleetState[] = fleetRows.map((r) => ({
           id: r.id,
           faction: r.faction,
           fleet_type: r.fleet_type as NpcFleetState['fleet_type'],

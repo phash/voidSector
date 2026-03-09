@@ -304,6 +304,8 @@ export interface GameSlice {
 
   // Research / Tech tree
   research: ResearchState;
+  typedArtefacts: Record<string, number>;
+  labTier: number;
   pendingBlueprint: string | null;
 
   // NPC Station
@@ -481,6 +483,8 @@ export interface GameSlice {
   setBaseName: (name: string) => void;
   setHomeBase: (coords: { x: number; y: number }) => void;
   setResearch: (research: ResearchState) => void;
+  setTypedArtefacts: (artefacts: Record<string, number>) => void;
+  setLabTier: (tier: number) => void;
   setPendingBlueprint: (moduleId: string | null) => void;
   setNpcStationData: (data: GameSlice['npcStationData']) => void;
   setFactoryState: (data: GameSlice['factoryState']) => void;
@@ -531,7 +535,22 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   log: [],
   actionError: null,
   mining: null,
-  cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
+  cargo: {
+    ore: 0,
+    gas: 0,
+    crystal: 0,
+    slates: 0,
+    artefact: 0,
+    artefact_drive: 0,
+    artefact_cargo: 0,
+    artefact_scanner: 0,
+    artefact_armor: 0,
+    artefact_weapon: 0,
+    artefact_shield: 0,
+    artefact_defense: 0,
+    artefact_special: 0,
+    artefact_mining: 0,
+  },
   activeMonitor: 'NAV-COM',
   chatMessages: [],
   chatChannel: 'quadrant' as ChatChannel,
@@ -574,7 +593,16 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   moduleInventory: [],
   baseName: '',
   homeBase: { x: 0, y: 0 },
-  research: { unlockedModules: [], blueprints: [], activeResearch: null },
+  research: {
+    unlockedModules: [],
+    blueprints: [],
+    activeResearch: null,
+    activeResearch2: null,
+    wissen: 0,
+    wissenRate: 0,
+  },
+  typedArtefacts: {} as Record<string, number>,
+  labTier: 0,
   pendingBlueprint: null,
   npcStationData: null,
   factoryState: null,
@@ -750,6 +778,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setBaseName: (baseName) => set({ baseName }),
   setHomeBase: (homeBase) => set({ homeBase }),
   setResearch: (research) => set({ research }),
+  setTypedArtefacts: (artefacts) => set({ typedArtefacts: artefacts }),
+  setLabTier: (tier) => set({ labTier: tier }),
   setPendingBlueprint: (pendingBlueprint) => set({ pendingBlueprint }),
   setNpcStationData: (npcStationData) => set({ npcStationData }),
   setFactoryState: (factoryState) => set({ factoryState }),

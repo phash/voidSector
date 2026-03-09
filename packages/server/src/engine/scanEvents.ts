@@ -1,6 +1,6 @@
 import { hashCoords } from './worldgen.js';
 import { generateDistressMessage } from './distressStories.js';
-import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULES } from '@void-sector/shared';
+import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULES, ARTEFACT_TYPES } from '@void-sector/shared';
 import type { ScanEventType, SectorEnvironment } from '@void-sector/shared';
 
 const SCAN_EVENT_SALT = 5555;
@@ -81,6 +81,15 @@ export function checkScanEvent(
   return { hasEvent: false };
 }
 
+/**
+ * Returns a deterministic ArtefactType for a given numeric seed.
+ * Used to assign a type to found artefacts.
+ */
+export function getArtefactTypeForSeed(seed: number): string {
+  const idx = Math.abs(seed) % ARTEFACT_TYPES.length;
+  return ARTEFACT_TYPES[idx];
+}
+
 function generateEventData(
   eventType: ScanEventType,
   sectorX: number,
@@ -106,12 +115,14 @@ function generateEventData(
         rewardXp: 15 + ((seed >>> 6) % 35),
         rewardRep: 5,
         rewardArtefact: (seed >>> 14) % 100 < 8 ? 1 : 0,
+        rewardArtefactType: (seed >>> 14) % 100 < 8 ? getArtefactTypeForSeed(seed >>> 18) : undefined,
       };
     case 'artifact_find':
       return {
         rewardCredits: 50 + ((seed >>> 8) % 150),
         rewardRep: 10,
         rewardArtefact: (seed >>> 16) % 100 < 50 ? 1 : 0,
+        rewardArtefactType: getArtefactTypeForSeed(seed >>> 20),
       };
     case 'blueprint_find': {
       const researchModules = Object.values(MODULES).filter((m) => m.researchCost);

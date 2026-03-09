@@ -82,10 +82,11 @@ describe('Artefact costs for tier 4-5', () => {
   it('all tier 4-5 modules require artefacts in researchCost', () => {
     for (const [id, mod] of TIER_4_5_MODULES) {
       expect(mod.researchCost, `${id} should have researchCost`).toBeDefined();
-      expect(
-        mod.researchCost!.artefact,
-        `${id} researchCost should include artefacts`,
-      ).toBeGreaterThan(0);
+      const totalArtefacts = Object.values(mod.researchCost!.artefacts ?? {}).reduce(
+        (s, v) => s + v,
+        0,
+      );
+      expect(totalArtefacts, `${id} researchCost should include artefacts`).toBeGreaterThan(0);
     }
   });
 
@@ -97,10 +98,18 @@ describe('Artefact costs for tier 4-5', () => {
         mk5.cost.artefact!,
         `${chain[4]} purchase artefact cost should exceed ${chain[3]}`,
       ).toBeGreaterThan(mk4.cost.artefact!);
+      const mk4Research = Object.values(mk4.researchCost!.artefacts ?? {}).reduce(
+        (s, v) => s + v,
+        0,
+      );
+      const mk5Research = Object.values(mk5.researchCost!.artefacts ?? {}).reduce(
+        (s, v) => s + v,
+        0,
+      );
       expect(
-        mk5.researchCost!.artefact!,
+        mk5Research,
         `${chain[4]} research artefact cost should exceed ${chain[3]}`,
-      ).toBeGreaterThan(mk4.researchCost!.artefact!);
+      ).toBeGreaterThan(mk4Research);
     }
   });
 

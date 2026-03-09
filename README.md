@@ -15,7 +15,7 @@ Explore, mine, build, communicate: Players move sector by sector through an infi
 | Game Server | [Colyseus](https://colyseus.io/) | Room abstraction, state sync, clustering-ready |
 | Frontend | React 18 + Canvas | Terminal UI, radar rendering with CRT effects |
 | State | Zustand | Client-side state management (game + UI slices) |
-| Testing | Vitest + RTL | 1646 tests (957 server, 498 client, 191 shared) |
+| Testing | Vitest + RTL | 1787 tests (1083 server, 513 client, 191 shared) |
 | Database | PostgreSQL 16 | Persistent storage (players, sectors, discoveries) |
 | Cache | Redis 7 | AP state, player positions, sessions |
 | Shared Types | TypeScript Package | Shared interfaces between client and server |
@@ -97,7 +97,7 @@ void-sector/
 ### Server
 
 - **SectorRoom**: One Colyseus room per sector coordinate. Auto-created on first player entry, auto-disposed when empty.
-- **World Generation**: Deterministic seed-based (`hashCoords(x, y, worldSeed)`). Sectors are generated on first visit and persisted to PostgreSQL.
+- **World Generation**: Deterministic seed-based (`hashCoords(x, y, worldSeed)`). Sectors are generated on first visit and persisted to PostgreSQL. World origin is **(0,0)** — coordinate space extends into positive x/y. New players spawn within radius 5 of (0,0).
 - **AP System**: Lazy evaluation — no server tick loop. AP regeneration is calculated on each action based on elapsed time.
 - **Auth**: bcrypt password hashing + JWT tokens.
 
@@ -133,6 +133,10 @@ void-sector/
 - [x] Credits currency, NPC trading, player marketplace
 - [x] Factory & production (5 recipes, cycle times, research gating)
 - [x] Kontor (buy orders, budget reservation)
+- [x] Unified Item System: single `inventory` table for resources, modules, blueprints
+- [x] Factory Werkstatt: craft modules from blueprints or research unlocks
+- [x] Kontor extended: buy/sell orders for modules and blueprints
+- [x] Direct player trade: `/trade @player`, same-sector, 60s session, atomic item + credit swap
 
 ### Combat
 - [x] 5-round tactical combat (laser/railgun/missile/EMP weapons, shield system)
@@ -142,15 +146,17 @@ void-sector/
 
 ### Tech & Ships
 - [x] Tech tree & research system (artefact costs, prerequisites)
-- [x] 5 ship hull types with distinct stats
+- [x] 5 ship hull types with distinct stats (one ship per player, no buying/switching — ACEP)
 - [x] Hyperdrive v2 (charge-based, lazy regen, fuel efficiency)
 - [x] Persistent autopilot with black hole avoidance
+- [x] Module inventory: buy → inventory → install; uninstall → inventory → sell/craft
+- [x] Blueprints: reusable craft recipes found via aliens/ruins, tradeable, stored in inventory
 
 ### Social
 - [x] Communication system with 5 channels (direct, faction, local, sector, quadrant)
 - [x] Factions (create/join/invite, ranks, faction chat, upgrade tree)
 - [x] Procedural quest system (fetch/delivery/scan/bounty, daily rotation)
-- [x] Cluster spawn system (10M+ sectors from origin)
+- [x] Cluster spawn system — new players spawn within radius 5 of world origin (0,0)
 - [x] Quadrant system (10K sectors/axis, first-contact naming)
 - [x] Alien Quest System: 9-chapter story chain, 4 community quests, 10 alien factions
 - [x] Menschheits-Reputation: server-wide aggregate rep per faction, encounter chance modifier (0.5×–1.5×), tier-aware dialogs, ALIEN REP tab
@@ -182,7 +188,7 @@ void-sector/
 - [x] 4 color profiles (Amber Classic, Green Phosphor, Ice Blue, High Contrast)
 - [x] JumpGates (bidirectional + wormholes + frequency minigame)
 - [x] Admin console (quests, broadcasts, economy monitoring)
-- [x] 1646 automated tests
+- [x] 1787 automated tests
 
 ## License
 

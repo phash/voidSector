@@ -13,6 +13,7 @@ import { calculateFriction, repValueToTier } from './frictionEngine.js';
 import { findAllBorderPairs, getExpansionTarget } from './expansionEngine.js';
 import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
+import { processWissenTick } from './wissenTickHandler.js';
 
 // rep store: maps faction_id → numeric reputation (-100..+100)
 export type RepStore = Map<string, number>;
@@ -65,6 +66,9 @@ export class StrategicTickService {
 
     // 2. Alien expansion into unclaimed space
     await this.processAlienExpansion(allControls, repStore);
+
+    // 3. Wissen generation for research labs
+    await processWissenTick(60_000); // strategic tick interval ~60s
   }
 
   private async processWarfareTick(

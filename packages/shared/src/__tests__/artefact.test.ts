@@ -80,7 +80,9 @@ describe('Artefact resource type', () => {
 
   it('some module researchCosts require artefacts (artefact is a research resource)', () => {
     const modulesWithArtefactResearch = Object.values(MODULES).filter(
-      (m: ModuleDefinition) => m.researchCost?.artefact && m.researchCost.artefact > 0,
+      (m: ModuleDefinition) =>
+        m.researchCost?.artefacts &&
+        Object.values(m.researchCost.artefacts).reduce((s, v) => s + v, 0) > 0,
     );
     expect(modulesWithArtefactResearch.length).toBeGreaterThan(0);
   });

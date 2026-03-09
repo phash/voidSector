@@ -26,9 +26,10 @@ export function MiningScreen() {
   const [miningProgress, setMiningProgress] = useState(0);
 
   useEffect(() => {
-    if (!mining?.active) { setMiningProgress(0); return; }
+    if (!mining?.active || mining.startedAt === null) { setMiningProgress(0); return; }
+    const startedAt = mining.startedAt;
     const tick = () => {
-      const elapsed = (Date.now() - mining.startedAt) / 1000;
+      const elapsed = (Date.now() - startedAt) / 1000;
       setMiningProgress(Math.min(1, (elapsed * mining.rate) / mining.sectorYield));
     };
     tick();

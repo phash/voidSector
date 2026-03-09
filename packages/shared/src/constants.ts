@@ -106,6 +106,73 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
   jumpgate: 10,
 };
 
+// ── Research Lab / Wissen ─────────────────────────────────────────────
+
+/** Base Wissen generation per hour by research lab tier (1–5) */
+export const RESEARCH_LAB_WISSEN_RATE: Record<number, number> = {
+  1: 5,   // Grundlabor
+  2: 12,  // Forschungslabor
+  3: 25,  // Analysestation
+  4: 45,  // Forschungsturm
+  5: 80,  // Observatorium
+};
+
+export const RESEARCH_LAB_NAMES: Record<number, string> = {
+  1: 'GRUNDLABOR',
+  2: 'FORSCHUNGSLABOR',
+  3: 'ANALYSESTATION',
+  4: 'FORSCHUNGSTURM',
+  5: 'OBSERVATORIUM',
+};
+
+/** Maximum research lab tier */
+export const RESEARCH_LAB_MAX_TIER = 5;
+
+/** Lab tier required to research modules of each module tier */
+export const RESEARCH_LAB_TIER_FOR_MODULE_TIER: Record<number, number> = {
+  1: 1, 2: 2, 3: 3, 4: 4, 5: 5,
+};
+
+/** Wissen multipliers by sector type/environment present in the station's sector */
+export const WISSEN_SECTOR_MULTIPLIERS: Record<string, number> = {
+  asteroid_field: 1.2,
+  nebula: 1.5,
+  anomaly: 2.0,
+  black_hole_adjacent: 2.5,
+  ancient_jumpgate: 5.0,
+};
+
+/** Base Wissen cost to research a module, by module tier */
+export const WISSEN_COST_BY_TIER: Record<number, number> = {
+  1: 100,
+  2: 300,
+  3: 800,
+  4: 2000,
+  5: 5000,
+};
+
+/** Required artefacts (matching module category) per module tier */
+export const ARTEFACT_REQUIRED_BY_TIER: Record<number, number> = {
+  1: 0, 2: 0, 3: 1, 4: 2, 5: 3,
+};
+
+/** Wissen cost reduction per matching artefact used */
+export const ARTEFACT_WISSEN_BONUS = 500;
+
+/** Research time reduction per matching artefact used (fraction, e.g. 0.1 = 10%) */
+export const ARTEFACT_TIME_BONUS_PER = 0.1;
+
+/** Maximum artefacts that can be used per research */
+export const MAX_ARTEFACTS_PER_RESEARCH = 3;
+
+/** Credits + material cost to upgrade research lab to the given tier */
+export const RESEARCH_LAB_UPGRADE_COSTS: Record<number, { credits: number; ore: number; crystal: number }> = {
+  2: { credits: 500,  ore: 30,  crystal: 20  },
+  3: { credits: 1200, ore: 60,  crystal: 40  },
+  4: { credits: 2500, ore: 100, crystal: 80  },
+  5: { credits: 5000, ore: 150, crystal: 120 },
+};
+
 export const RELAY_RANGES: Record<StructureType, number> = {
   comm_relay: 500,
   mining_station: 500,
@@ -579,7 +646,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveFuelEfficiency: 0.1,
     },
     cost: { credits: 300, ore: 20, crystal: 5 },
-    researchCost: { credits: 200, ore: 15 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'drive_mk1',
   },
@@ -604,7 +671,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveFuelEfficiency: 0.2,
     },
     cost: { credits: 800, ore: 40, crystal: 15 },
-    researchCost: { credits: 500, ore: 30, crystal: 10, artefact: 2 },
+    researchCost: { wissen: 800, artefacts: { drive: 1 } },
     researchDurationMin: 12,
     prerequisite: 'drive_mk2',
   },
@@ -631,7 +698,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'safeSlotBonus', delta: 1, label: 'Safe-Slot +1' }],
     effects: { cargoCap: 12, safeSlotBonus: 1 },
     cost: { credits: 250, ore: 15 },
-    researchCost: { credits: 150, ore: 10 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'cargo_mk1',
   },
@@ -648,7 +715,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { cargoCap: 25, safeSlotBonus: 2, fuelMax: 20 },
     cost: { credits: 600, ore: 30, gas: 10 },
-    researchCost: { credits: 400, ore: 25, artefact: 1 },
+    researchCost: { wissen: 800, artefacts: { cargo: 1 } },
     researchDurationMin: 10,
     prerequisite: 'cargo_mk2',
   },
@@ -675,7 +742,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'commRange', delta: 50, label: 'Komm-Reichweite +50' }],
     effects: { scannerLevel: 1, commRange: 50 },
     cost: { credits: 350, crystal: 15 },
-    researchCost: { credits: 200, crystal: 10 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'scanner_mk1',
   },
@@ -692,7 +759,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { scannerLevel: 2, commRange: 100, artefactChanceBonus: 0.03 },
     cost: { credits: 900, crystal: 30, gas: 10 },
-    researchCost: { credits: 600, crystal: 20, artefact: 3 },
+    researchCost: { wissen: 800, artefacts: { scanner: 1 } },
     researchDurationMin: 15,
     prerequisite: 'scanner_mk2',
   },
@@ -719,7 +786,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'damageMod', delta: -0.1, label: 'Schadensreduktion -10%' }],
     effects: { hp: 50, damageMod: -0.1 },
     cost: { credits: 300, ore: 30, crystal: 10 },
-    researchCost: { credits: 200, ore: 20 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'armor_mk1',
   },
@@ -733,7 +800,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'damageMod', delta: -0.25, label: 'Schadensreduktion -25%' }],
     effects: { hp: 100, damageMod: -0.25 },
     cost: { credits: 800, ore: 50, crystal: 25 },
-    researchCost: { credits: 500, ore: 40, artefact: 2 },
+    researchCost: { wissen: 800, artefacts: { armor: 1 } },
     researchDurationMin: 12,
     prerequisite: 'armor_mk2',
   },
@@ -749,7 +816,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { weaponAttack: 8, weaponType: 'laser' as any },
     cost: { credits: 150, crystal: 10 },
-    researchCost: { credits: 200, crystal: 10 },
+    researchCost: { wissen: 100 },
     researchDurationMin: 5,
   },
   laser_mk2: {
@@ -762,7 +829,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { weaponAttack: 16, weaponType: 'laser' as any },
     cost: { credits: 450, crystal: 25, gas: 10 },
-    researchCost: { credits: 600, crystal: 25, gas: 10 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 10,
     prerequisite: 'laser_mk1',
   },
@@ -776,7 +843,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { weaponAttack: 28, weaponType: 'laser' as any },
     cost: { credits: 1200, crystal: 50, gas: 20 },
-    researchCost: { credits: 1500, crystal: 50, gas: 20 },
+    researchCost: { wissen: 800, artefacts: { weapon: 1 } },
     researchDurationMin: 18,
     prerequisite: 'laser_mk2',
   },
@@ -790,7 +857,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'weaponPiercing', delta: 0.3, label: 'Panzerbrechend 30%' }],
     effects: { weaponAttack: 12, weaponPiercing: 0.3, weaponType: 'railgun' as any },
     cost: { credits: 300, ore: 30, crystal: 15 },
-    researchCost: { credits: 400, ore: 30, crystal: 15 },
+    researchCost: { wissen: 100 },
     researchDurationMin: 8,
     prerequisite: 'laser_mk1',
   },
@@ -804,7 +871,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'weaponPiercing', delta: 0.5, label: 'Panzerbrechend 50%' }],
     effects: { weaponAttack: 22, weaponPiercing: 0.5, weaponType: 'railgun' as any },
     cost: { credits: 900, ore: 60, crystal: 30 },
-    researchCost: { credits: 1000, ore: 60, crystal: 30, artefact: 1 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 15,
     prerequisite: 'railgun_mk1',
   },
@@ -818,7 +885,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { weaponAttack: 18, weaponType: 'missile' as any },
     cost: { credits: 250, ore: 20, crystal: 5 },
-    researchCost: { credits: 300, ore: 20, crystal: 5 },
+    researchCost: { wissen: 100 },
     researchDurationMin: 7,
   },
   missile_mk2: {
@@ -831,7 +898,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { weaponAttack: 30, weaponType: 'missile' as any },
     cost: { credits: 750, ore: 40, crystal: 15 },
-    researchCost: { credits: 900, ore: 40, crystal: 15 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 12,
     prerequisite: 'missile_mk1',
   },
@@ -845,7 +912,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { weaponAttack: 0, weaponType: 'emp' as any },
     cost: { credits: 500, crystal: 20, gas: 20 },
-    researchCost: { credits: 600, crystal: 20, gas: 20, artefact: 2 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 12,
     prerequisite: 'laser_mk2',
   },
@@ -861,7 +928,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'shieldRegen', delta: 3, label: 'Schild-Regen +3' }],
     effects: { shieldHp: 30, shieldRegen: 3 },
     cost: { credits: 200, crystal: 15 },
-    researchCost: { credits: 300, crystal: 15 },
+    researchCost: { wissen: 100 },
     researchDurationMin: 7,
     prerequisite: 'armor_mk1',
   },
@@ -875,7 +942,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'shieldRegen', delta: 6, label: 'Schild-Regen +6' }],
     effects: { shieldHp: 60, shieldRegen: 6 },
     cost: { credits: 600, crystal: 35, gas: 10 },
-    researchCost: { credits: 700, crystal: 35, gas: 10, artefact: 2 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 15,
     prerequisite: 'shield_mk1',
   },
@@ -889,7 +956,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'shieldRegen', delta: 12, label: 'Schild-Regen +12' }],
     effects: { shieldHp: 100, shieldRegen: 12 },
     cost: { credits: 1500, crystal: 70, gas: 25 },
-    researchCost: { credits: 1500, crystal: 70, gas: 25 },
+    researchCost: { wissen: 800, artefacts: { shield: 1 } },
     researchDurationMin: 20,
     prerequisite: 'shield_mk2',
   },
@@ -905,7 +972,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { pointDefense: 0.6 },
     cost: { credits: 350, ore: 20, crystal: 10 },
-    researchCost: { credits: 400, ore: 20, crystal: 10 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 8,
     prerequisite: 'armor_mk2',
   },
@@ -919,7 +986,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { ecmReduction: 0.15 },
     cost: { credits: 400, crystal: 25, gas: 15 },
-    researchCost: { credits: 500, crystal: 25, gas: 15 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 10,
     prerequisite: 'scanner_mk2',
   },
@@ -946,7 +1013,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveFuelEfficiency: 0.35,
     },
     cost: { credits: 2000, artefact: 5 },
-    researchCost: { credits: 2000, artefact: 10 },
+    researchCost: { wissen: 800, artefacts: { special: 1 } },
     researchDurationMin: 30,
     prerequisite: 'drive_mk3',
     factionRequirement: { factionId: 'ancients', minTier: 'honored' },
@@ -964,7 +1031,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { scannerLevel: 3, commRange: 200, artefactChanceBonus: 0.05 },
     cost: { credits: 1500, crystal: 50 },
-    researchCost: { credits: 1500, crystal: 50, artefact: 8 },
+    researchCost: { wissen: 800, artefacts: { scanner: 1 } },
     researchDurationMin: 25,
     prerequisite: 'scanner_mk3',
   },
@@ -978,7 +1045,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'damageMod', delta: -0.35, label: 'Schadensreduktion -35%' }],
     effects: { hp: 150, damageMod: -0.35 },
     cost: { credits: 1800, ore: 50, crystal: 50 },
-    researchCost: { credits: 1800, ore: 50, crystal: 50, artefact: 15 },
+    researchCost: { wissen: 800, artefacts: { armor: 1 } },
     researchDurationMin: 30,
     prerequisite: 'armor_mk3',
   },
@@ -1005,7 +1072,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'artefactChanceBonus', delta: 0.01, label: 'Artefakt-Chance +1%' }],
     effects: { miningBonus: 0.3, artefactChanceBonus: 0.01 },
     cost: { credits: 300, ore: 20, crystal: 5 },
-    researchCost: { credits: 200, ore: 15 },
+    researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'mining_laser_mk1',
   },
@@ -1019,7 +1086,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [{ stat: 'artefactChanceBonus', delta: 0.02, label: 'Artefakt-Chance +2%' }],
     effects: { miningBonus: 0.5, artefactChanceBonus: 0.02 },
     cost: { credits: 700, ore: 35, crystal: 15 },
-    researchCost: { credits: 450, ore: 25, crystal: 10 },
+    researchCost: { wissen: 800, artefacts: { mining: 1 } },
     researchDurationMin: 10,
     prerequisite: 'mining_laser_mk2',
   },
@@ -1036,7 +1103,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { miningBonus: 0.75, artefactChanceBonus: 0.04, cargoCap: 3 },
     cost: { credits: 1500, ore: 60, crystal: 30, artefact: 2 },
-    researchCost: { credits: 1000, ore: 40, crystal: 20, artefact: 2 },
+    researchCost: { wissen: 2000, artefacts: { mining: 2 } },
     researchDurationMin: 20,
     prerequisite: 'mining_laser_mk3',
   },
@@ -1053,7 +1120,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { miningBonus: 1.0, artefactChanceBonus: 0.08, cargoCap: 5 },
     cost: { credits: 4000, ore: 100, crystal: 60, artefact: 6 },
-    researchCost: { credits: 2500, ore: 80, crystal: 50, artefact: 6 },
+    researchCost: { wissen: 5000, artefacts: { mining: 3 } },
     researchDurationMin: 35,
     prerequisite: 'mining_laser_mk4',
   },
@@ -1081,7 +1148,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveFuelEfficiency: 0.3,
     },
     cost: { credits: 2000, ore: 60, crystal: 30, artefact: 3 },
-    researchCost: { credits: 1200, ore: 50, crystal: 20, artefact: 3 },
+    researchCost: { wissen: 2000, artefacts: { drive: 2 } },
     researchDurationMin: 20,
     prerequisite: 'drive_mk3',
   },
@@ -1107,7 +1174,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveFuelEfficiency: 0.5,
     },
     cost: { credits: 5000, ore: 120, crystal: 60, artefact: 8 },
-    researchCost: { credits: 3000, ore: 100, crystal: 50, artefact: 8 },
+    researchCost: { wissen: 5000, artefacts: { drive: 3 } },
     researchDurationMin: 40,
     prerequisite: 'drive_mk4',
   },
@@ -1127,7 +1194,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { scannerLevel: 3, commRange: 150, artefactChanceBonus: 0.05, miningBonus: 0.1 },
     cost: { credits: 2000, crystal: 50, gas: 20, artefact: 2 },
-    researchCost: { credits: 1200, crystal: 40, gas: 15, artefact: 2 },
+    researchCost: { wissen: 2000, artefacts: { scanner: 2 } },
     researchDurationMin: 22,
     prerequisite: 'scanner_mk3',
   },
@@ -1145,7 +1212,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { scannerLevel: 4, commRange: 250, artefactChanceBonus: 0.08, miningBonus: 0.15 },
     cost: { credits: 5000, crystal: 100, gas: 40, artefact: 6 },
-    researchCost: { credits: 3000, crystal: 80, gas: 30, artefact: 6 },
+    researchCost: { wissen: 5000, artefacts: { scanner: 3 } },
     researchDurationMin: 35,
     prerequisite: 'scanner_mk4',
   },
@@ -1164,7 +1231,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { hp: 150, damageMod: -0.3, shieldHp: 15 },
     cost: { credits: 1800, ore: 80, crystal: 40, artefact: 2 },
-    researchCost: { credits: 1200, ore: 60, crystal: 30, artefact: 2 },
+    researchCost: { wissen: 2000, artefacts: { armor: 2 } },
     researchDurationMin: 20,
     prerequisite: 'armor_mk3',
   },
@@ -1181,7 +1248,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { hp: 250, damageMod: -0.4, shieldHp: 30 },
     cost: { credits: 4500, ore: 150, crystal: 80, artefact: 6 },
-    researchCost: { credits: 3000, ore: 120, crystal: 60, artefact: 6 },
+    researchCost: { wissen: 5000, artefacts: { armor: 3 } },
     researchDurationMin: 35,
     prerequisite: 'armor_mk4',
   },
@@ -1200,7 +1267,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { cargoCap: 40, safeSlotBonus: 3, fuelMax: 40 },
     cost: { credits: 1500, ore: 50, gas: 20, artefact: 2 },
-    researchCost: { credits: 1000, ore: 40, gas: 15, artefact: 2 },
+    researchCost: { wissen: 2000, artefacts: { cargo: 2 } },
     researchDurationMin: 18,
     prerequisite: 'cargo_mk3',
   },
@@ -1217,7 +1284,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     ],
     effects: { cargoCap: 60, safeSlotBonus: 5, fuelMax: 80 },
     cost: { credits: 4000, ore: 100, gas: 40, artefact: 5 },
-    researchCost: { credits: 2500, ore: 80, gas: 30, artefact: 5 },
+    researchCost: { wissen: 5000, artefacts: { cargo: 3 } },
     researchDurationMin: 30,
     prerequisite: 'cargo_mk4',
   },

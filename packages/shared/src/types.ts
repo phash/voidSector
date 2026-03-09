@@ -1,7 +1,14 @@
 export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly' | 'pirate';
 
 export type SectorEnvironment = 'empty' | 'nebula' | 'star' | 'planet' | 'asteroid' | 'black_hole';
-export type PlanetSubtype = 'terrestrial' | 'water' | 'ice' | 'lava' | 'exotic_a' | 'exotic_b' | 'exotic_c';
+export type PlanetSubtype =
+  | 'terrestrial'
+  | 'water'
+  | 'ice'
+  | 'lava'
+  | 'exotic_a'
+  | 'exotic_b'
+  | 'exotic_c';
 export type SectorContent =
   | 'asteroid_field'
   | 'station'
@@ -24,6 +31,42 @@ export interface InventoryItem {
   itemId: string;
   quantity: number;
 }
+
+export type ArtefactType =
+  | 'drive'
+  | 'cargo'
+  | 'scanner'
+  | 'armor'
+  | 'weapon'
+  | 'shield'
+  | 'defense'
+  | 'special'
+  | 'mining';
+
+export const ARTEFACT_TYPES: ArtefactType[] = [
+  'drive',
+  'cargo',
+  'scanner',
+  'armor',
+  'weapon',
+  'shield',
+  'defense',
+  'special',
+  'mining',
+];
+
+/** Maps module category name to its matching ArtefactType (1:1) */
+export const ARTEFACT_TYPE_FOR_CATEGORY: Record<ArtefactType, ArtefactType> = {
+  drive: 'drive',
+  cargo: 'cargo',
+  scanner: 'scanner',
+  armor: 'armor',
+  weapon: 'weapon',
+  shield: 'shield',
+  defense: 'defense',
+  special: 'special',
+  mining: 'mining',
+};
 
 export interface SectorResources {
   ore: number;
@@ -181,12 +224,22 @@ export interface CargoState {
   gas: number;
   crystal: number;
   slates: number;
-  artefact: number;
+  artefact: number; // legacy generic — kept for existing items
   fuel_cell?: number;
   circuit_board?: number;
   alloy_plate?: number;
   void_shard?: number;
   bio_extract?: number;
+  // Typed artefacts (optional — 0 when absent):
+  artefact_drive?: number;
+  artefact_cargo?: number;
+  artefact_scanner?: number;
+  artefact_armor?: number;
+  artefact_weapon?: number;
+  artefact_shield?: number;
+  artefact_defense?: number;
+  artefact_special?: number;
+  artefact_mining?: number;
 }
 
 export interface MineMessage {
@@ -967,16 +1020,7 @@ export type JumpType = 'normal' | 'hyperjump';
 // --- Phase 7: Ship Designer ---
 export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
 export type HullSize = 'small' | 'medium' | 'large';
-export type ModuleCategory =
-  | 'drive'
-  | 'cargo'
-  | 'scanner'
-  | 'armor'
-  | 'special'
-  | 'weapon'
-  | 'shield'
-  | 'defense'
-  | 'mining';
+export type ModuleCategory = ArtefactType;
 export type ModuleTier = 1 | 2 | 3 | 4 | 5;
 
 export interface HullDefinition {
@@ -1000,6 +1044,12 @@ export interface HullDefinition {
   unlockCost: number;
 }
 
+export interface ResearchCost {
+  wissen: number;
+  /** Required artefacts by category — e.g. { drive: 1 } for a T3 drive module */
+  artefacts?: Partial<Record<ArtefactType, number>>;
+}
+
 export interface ModuleDefinition {
   id: string;
   category: ModuleCategory;
@@ -1010,13 +1060,7 @@ export interface ModuleDefinition {
   secondaryEffects: Array<{ stat: string; delta: number; label: string }>;
   effects: Partial<ShipStats>;
   cost: { credits: number; ore?: number; gas?: number; crystal?: number; artefact?: number };
-  researchCost?: {
-    credits: number;
-    ore?: number;
-    gas?: number;
-    crystal?: number;
-    artefact?: number;
-  };
+  researchCost?: ResearchCost;
   researchDurationMin?: number;
   prerequisite?: string;
   factionRequirement?: { factionId: string; minTier: string };
@@ -1075,6 +1119,13 @@ export interface ResearchState {
     startedAt: number;
     completesAt: number;
   } | null;
+  activeResearch2?: {
+    moduleId: string;
+    startedAt: number;
+    completesAt: number;
+  } | null;
+  wissen?: number;
+  wissenRate?: number; // Wissen/hour (for display)
 }
 
 // --- Admin Messages ---

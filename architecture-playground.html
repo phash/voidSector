@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>voidSector — Architektur-Übersicht</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #07070f; color: #e2e8f0;
+  font-family: system-ui, -apple-system, sans-serif; font-size: 13px;
+  height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+}
+.header {
+  padding: 9px 16px; border-bottom: 1px solid #1a1a2e;
+  display: flex; align-items: center; gap: 14px; background: #0b0b18; flex-shrink: 0;
+}
+.header h1 { font-size: 14px; font-weight: 700; color: #60a5fa; letter-spacing: 0.12em; text-transform: uppercase; }
+.header-sub { color: #334155; font-size: 11px; }
+.header-hint { margin-left: auto; color: #334155; font-size: 11px; font-style: italic; }
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 222px; min-width: 222px; background: #0b0b18;
+  border-right: 1px solid #1a1a2e; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 2px; }
+.s-section { padding: 10px 12px; border-bottom: 1px solid #1a1a2e; }
+.s-section h3 {
+  font-size: 9px; font-weight: 700; color: #334155;
+  text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px;
+}
+.preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.preset-btn {
+  background: #10101e; border: 1px solid #1e2a3a; color: #64748b;
+  padding: 5px 6px; border-radius: 4px; cursor: pointer;
+  font-size: 11px; text-align: center; transition: all 0.12s;
+}
+.preset-btn:hover { border-color: #3b82f6; color: #cbd5e1; }
+.preset-btn.active { background: #0f2744; border-color: #3b82f6; color: #93c5fd; }
+.toggle-list { display: flex; flex-direction: column; gap: 4px; }
+.toggle-row {
+  display: flex; align-items: center; gap: 7px;
+  cursor: pointer; padding: 3px; border-radius: 3px; transition: background 0.1s;
+}
+.toggle-row:hover { background: #10101e; }
+.toggle-row input[type=checkbox] { width: 13px; height: 13px; accent-color: #3b82f6; cursor: pointer; flex-shrink: 0; }
+.toggle-row .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.toggle-row .dash { width: 22px; height: 2px; flex-shrink: 0; border-radius: 1px; }
+.toggle-row span { color: #94a3b8; font-size: 11px; }
+.comments-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.comments-inner { flex: 1; overflow-y: auto; min-height: 60px; }
+.comments-inner::-webkit-scrollbar { width: 3px; }
+.comments-inner::-webkit-scrollbar-thumb { background: #1e2a3a; }
+.comment-item {
+  background: #0e0e1e; border-bottom: 1px solid #1a1a2e;
+  padding: 8px 30px 8px 10px; position: relative;
+}
+.comment-item:hover { background: #12121e; }
+.ci-name { font-size: 11px; font-weight: 600; color: #93c5fd; margin-bottom: 3px; }
+.ci-text { font-size: 11px; color: #64748b; line-height: 1.4; }
+.ci-del {
+  position: absolute; top: 6px; right: 8px; background: none; border: none;
+  color: #334155; cursor: pointer; font-size: 15px; line-height: 1; padding: 2px;
+}
+.ci-del:hover { color: #ef4444; }
+.no-comments { color: #334155; font-size: 11px; font-style: italic; padding: 10px 12px; }
+
+/* CANVAS */
+.canvas-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.svg-wrap { flex: 1; position: relative; overflow: hidden; background: #07070f; }
+#diagram { width: 100%; height: 100%; display: block; cursor: grab; user-select: none; }
+#diagram:active { cursor: grabbing; }
+.zoom-btns { position: absolute; bottom: 14px; right: 14px; display: flex; flex-direction: column; gap: 4px; }
+.z-btn {
+  width: 27px; height: 27px; background: #0f0f1e; border: 1px solid #1e2a3a;
+  color: #64748b; border-radius: 4px; cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+}
+.z-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
+.z-btn.reset { font-size: 11px; }
+.legend {
+  position: absolute; bottom: 14px; left: 14px;
+  background: rgba(11,11,24,0.93); border: 1px solid #1a1a2e;
+  border-radius: 5px; padding: 8px 10px;
+}
+.legend-title { font-size: 9px; color: #334155; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.legend-row { display: flex; align-items: center; gap: 7px; color: #64748b; font-size: 10px; margin-bottom: 4px; }
+.legend-row:last-child { margin-bottom: 0; }
+.l-line { width: 22px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+
+/* PROMPT */
+.prompt-area {
+  background: #0b0b18; border-top: 1px solid #1a1a2e;
+  padding: 10px 14px; display: flex; align-items: flex-start;
+  gap: 10px; flex-shrink: 0; min-height: 72px; max-height: 110px;
+}
+.prompt-text {
+  flex: 1; background: none; border: none; color: #64748b;
+  font-family: 'Courier New', monospace; font-size: 11.5px; line-height: 1.55;
+  resize: none; outline: none; height: 52px; overflow-y: auto;
+}
+.copy-btn {
+  background: #0f2744; border: 1px solid #3b82f6; color: #93c5fd;
+  padding: 6px 14px; border-radius: 4px; cursor: pointer;
+  font-size: 12px; white-space: nowrap; transition: all 0.12s; flex-shrink: 0; align-self: flex-start;
+}
+.copy-btn:hover { background: #1d4ed8; color: #fff; }
+.copy-btn.copied { background: #052e16; border-color: #22c55e; color: #86efac; }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.78);
+  display: none; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal-overlay.open { display: flex; }
+.modal { background: #0d0d1e; border: 1px solid #252540; border-radius: 8px; padding: 20px; width: 380px; max-width: 92vw; }
+.modal-title { font-size: 14px; font-weight: 700; color: #e2e8f0; margin-bottom: 3px; }
+.modal-file { font-size: 11px; color: #334155; font-family: monospace; margin-bottom: 13px; }
+.modal textarea {
+  width: 100%; background: #12121e; border: 1px solid #1e2a3a;
+  color: #e2e8f0; border-radius: 4px; padding: 9px; font-size: 12px;
+  font-family: system-ui; resize: vertical; min-height: 90px; outline: none;
+}
+.modal textarea:focus { border-color: #3b82f6; }
+.modal-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+.btn-cancel {
+  background: none; border: 1px solid #1e2a3a; color: #64748b;
+  padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.btn-cancel:hover { border-color: #334155; color: #94a3b8; }
+.btn-save {
+  background: #0f2744; border: 1px solid #3b82f6; color: #93c5fd;
+  padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.btn-save:hover { background: #1d4ed8; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>voidSector</h1>
+  <span class="header-sub">Architektur-Übersicht</span>
+  <span class="header-hint">Klick auf eine Komponente → Kommentar · Prompt unten kopieren</span>
+</div>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="s-section">
+      <h3>Ansicht</h3>
+      <div class="preset-grid" id="preset-grid"></div>
+    </div>
+    <div class="s-section">
+      <h3>Layer</h3>
+      <div class="toggle-list" id="layer-list"></div>
+    </div>
+    <div class="s-section">
+      <h3>Verbindungen</h3>
+      <div class="toggle-list" id="conn-list"></div>
+    </div>
+    <div class="s-section comments-wrap">
+      <h3>Kommentare (<span id="comment-count">0</span>)</h3>
+      <div class="comments-inner" id="comments-inner"></div>
+    </div>
+  </aside>
+
+  <div class="canvas-area">
+    <div class="svg-wrap">
+      <svg id="diagram" viewBox="0 0 770 700" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="zoom-btns">
+        <button class="z-btn" id="z-in">+</button>
+        <button class="z-btn" id="z-out">−</button>
+        <button class="z-btn reset" id="z-reset">⌂</button>
+      </div>
+      <div class="legend">
+        <div class="legend-title">Verbindungstypen</div>
+        <div class="legend-row"><div class="l-line" style="background:#3b82f6"></div>Datenfluss</div>
+        <div class="legend-row"><div class="l-line" style="background:repeating-linear-gradient(90deg,#10b981 0,#10b981 5px,transparent 5px,transparent 9px)"></div>Service-Aufruf</div>
+        <div class="legend-row"><div class="l-line" style="background:repeating-linear-gradient(90deg,#8b5cf6 0,#8b5cf6 3px,transparent 3px,transparent 7px)"></div>Import</div>
+        <div class="legend-row"><div class="l-line" style="background:repeating-linear-gradient(90deg,#f97316 0,#f97316 8px,transparent 8px,transparent 12px)"></div>State-Update</div>
+      </div>
+    </div>
+    <div class="prompt-area">
+      <textarea class="prompt-text" id="prompt-out" readonly placeholder="Kommentiere Komponenten — hier erscheint ein kopierbarer Prompt…"></textarea>
+      <button class="copy-btn" id="copy-btn">Kopieren</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-file" id="modal-file"></div>
+    <textarea id="modal-input" placeholder="Was möchtest du zu dieser Komponente fragen oder anmerken?"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modal-cancel">Abbrechen</button>
+      <button class="btn-save" id="modal-save">Speichern (Ctrl+Enter)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// =====================================================================
+// DATA DEFINITIONS
+// =====================================================================
+
+const LAYERS = [
+  { id: 'client',       label: 'Client — UI',          color: '#3b82f6' },
+  { id: 'client-state', label: 'Client — State/Net',   color: '#60a5fa' },
+  { id: 'shared',       label: 'Shared',                color: '#a78bfa' },
+  { id: 'server',       label: 'Server — Room',         color: '#fbbf24' },
+  { id: 'services',     label: 'Domain Services',       color: '#34d399' },
+  { id: 'data',         label: 'Daten-Schicht',          color: '#f472b6' },
+  { id: 'external',     label: 'Extern / Framework',    color: '#6b7280' },
+];
+
+const CONN_TYPES = [
+  { id: 'data-flow',    label: 'Datenfluss',        color: '#3b82f6', dash: '' },
+  { id: 'service-call', label: 'Service-Aufruf',    color: '#10b981', dash: '6 3' },
+  { id: 'import',       label: 'Import',             color: '#8b5cf6', dash: '3 5' },
+  { id: 'state-update', label: 'State-Update',      color: '#f97316', dash: '8 3' },
+];
+
+const NW = 118, NH = 42; // node width / height
+
+const NODES = [
+  // CLIENT UI  (band y 30–100)
+  { id: 'cockpit',    label: 'CockpitLayout',   sub: 'client/components/',                cx: 95,  cy: 62,  layer: 'client' },
+  { id: 'radar',      label: 'RadarRenderer',   sub: 'client/canvas/',                    cx: 235, cy: 62,  layer: 'client' },
+  { id: 'monitors',   label: 'GameMonitors',    sub: 'components/monitors/',              cx: 378, cy: 62,  layer: 'client' },
+  { id: 'help',       label: 'HelpOverlay',     sub: 'client/components/',                cx: 518, cy: 62,  layer: 'client' },
+  { id: 'battle',     label: 'CombatV2Dialog',  sub: 'client/components/',                cx: 655, cy: 62,  layer: 'client' },
+  // CLIENT STATE (band y 115–185)
+  { id: 'network',    label: 'GameNetwork',     sub: 'client/network/GameNetwork.ts',     cx: 95,  cy: 152, layer: 'client-state' },
+  { id: 'gameslice',  label: 'gameSlice',       sub: 'client/store/gameSlice.ts',         cx: 300, cy: 152, layer: 'client-state' },
+  { id: 'uislice',    label: 'uiSlice',         sub: 'client/store/uiSlice.ts',           cx: 490, cy: 152, layer: 'client-state' },
+  { id: 'helpslice',  label: 'helpSlice',       sub: 'client/store/helpSlice.ts',         cx: 660, cy: 152, layer: 'client-state' },
+  // SHARED (band y 205–275)
+  { id: 'types',      label: 'types.ts',        sub: 'shared/src/types.ts',               cx: 240, cy: 244, layer: 'shared' },
+  { id: 'constants',  label: 'constants.ts',    sub: 'shared/src/constants.ts',           cx: 495, cy: 244, layer: 'shared' },
+  // SERVER ROOM (band y 298–384)
+  { id: 'sectorroom', label: 'SectorRoom',      sub: 'server/rooms/SectorRoom.ts',        cx: 148, cy: 345, layer: 'server' },
+  { id: 'svcctx',     label: 'ServiceContext',  sub: 'server/services/ServiceContext.ts', cx: 380, cy: 345, layer: 'server' },
+  { id: 'colyseus',   label: 'Colyseus',        sub: 'framework · extends Room<>',        cx: 610, cy: 345, layer: 'external' },
+  // DOMAIN SERVICES ROW 1 (band y 405–575)
+  { id: 'nav',        label: 'NavigationSvc',   sub: 'server/services/',                  cx: 50,  cy: 455, layer: 'services' },
+  { id: 'scan',       label: 'ScanSvc',         sub: 'server/services/',                  cx: 188, cy: 455, layer: 'services' },
+  { id: 'combat',     label: 'CombatSvc',       sub: 'server/services/',                  cx: 326, cy: 455, layer: 'services' },
+  { id: 'mining',     label: 'MiningSvc',       sub: 'server/services/',                  cx: 464, cy: 455, layer: 'services' },
+  { id: 'economy',    label: 'EconomySvc',      sub: 'server/services/',                  cx: 602, cy: 455, layer: 'services' },
+  // DOMAIN SERVICES ROW 2
+  { id: 'faction',    label: 'FactionSvc',      sub: 'server/services/',                  cx: 50,  cy: 530, layer: 'services' },
+  { id: 'quest',      label: 'QuestSvc',        sub: 'server/services/',                  cx: 188, cy: 530, layer: 'services' },
+  { id: 'chat',       label: 'ChatSvc',         sub: 'server/services/',                  cx: 326, cy: 530, layer: 'services' },
+  { id: 'ship',       label: 'ShipSvc',         sub: 'server/services/',                  cx: 464, cy: 530, layer: 'services' },
+  { id: 'world',      label: 'WorldSvc',        sub: 'server/services/',                  cx: 602, cy: 530, layer: 'services' },
+  // DATA (band y 598–668)
+  { id: 'queries',    label: 'queries.ts',      sub: 'server/db/queries.ts',              cx: 108, cy: 638, layer: 'data' },
+  { id: 'migrations', label: 'migrations/',     sub: 'server/db/ (001–027)',              cx: 282, cy: 638, layer: 'data' },
+  { id: 'postgres',   label: 'PostgreSQL',      sub: ':5432 · 28 Tabellen',               cx: 466, cy: 638, layer: 'external' },
+  { id: 'redis',      label: 'Redis',           sub: 'AP-State Cache · :6379',            cx: 648, cy: 638, layer: 'external' },
+];
+
+const CONNECTIONS = [
+  // UI → State
+  { from: 'cockpit',    to: 'gameslice',  type: 'state-update', label: 'useStore' },
+  { from: 'cockpit',    to: 'uislice',    type: 'state-update' },
+  { from: 'monitors',   to: 'gameslice',  type: 'state-update', label: 'useStore' },
+  { from: 'radar',      to: 'gameslice',  type: 'state-update' },
+  { from: 'help',       to: 'helpslice',  type: 'state-update' },
+  { from: 'battle',     to: 'gameslice',  type: 'state-update' },
+  // UI → Network
+  { from: 'cockpit',    to: 'network',    type: 'data-flow',    label: 'sendMessage' },
+  // Network → State
+  { from: 'network',    to: 'gameslice',  type: 'data-flow',    label: 'setState' },
+  // Client → Shared
+  { from: 'gameslice',  to: 'types',      type: 'import',       label: 'types' },
+  { from: 'network',    to: 'types',      type: 'import' },
+  // WebSocket
+  { from: 'network',    to: 'sectorroom', type: 'data-flow',    label: 'WebSocket' },
+  // Server → Shared
+  { from: 'sectorroom', to: 'types',      type: 'import',       label: 'types' },
+  { from: 'sectorroom', to: 'constants',  type: 'import',       label: 'constants' },
+  // SectorRoom → DI
+  { from: 'sectorroom', to: 'svcctx',     type: 'service-call', label: 'DI inject' },
+  { from: 'sectorroom', to: 'colyseus',   type: 'import',       label: 'extends Room' },
+  // ServiceContext → 10 Domain Services
+  { from: 'svcctx', to: 'nav',     type: 'service-call' },
+  { from: 'svcctx', to: 'scan',    type: 'service-call' },
+  { from: 'svcctx', to: 'combat',  type: 'service-call' },
+  { from: 'svcctx', to: 'mining',  type: 'service-call' },
+  { from: 'svcctx', to: 'economy', type: 'service-call' },
+  { from: 'svcctx', to: 'faction', type: 'service-call' },
+  { from: 'svcctx', to: 'quest',   type: 'service-call' },
+  { from: 'svcctx', to: 'chat',    type: 'service-call' },
+  { from: 'svcctx', to: 'ship',    type: 'service-call' },
+  { from: 'svcctx', to: 'world',   type: 'service-call' },
+  // Services → DB
+  { from: 'nav',     to: 'queries', type: 'data-flow', label: 'SQL' },
+  { from: 'scan',    to: 'queries', type: 'data-flow' },
+  { from: 'combat',  to: 'queries', type: 'data-flow' },
+  { from: 'mining',  to: 'queries', type: 'data-flow' },
+  { from: 'economy', to: 'queries', type: 'data-flow' },
+  { from: 'faction', to: 'queries', type: 'data-flow' },
+  { from: 'quest',   to: 'queries', type: 'data-flow' },
+  { from: 'ship',    to: 'queries', type: 'data-flow' },
+  { from: 'world',   to: 'redis',   type: 'data-flow',   label: 'AP State' },
+  // queries → DB
+  { from: 'queries',    to: 'postgres', type: 'data-flow', label: 'SQL' },
+  { from: 'queries',    to: 'redis',    type: 'data-flow', label: 'AP cache' },
+  { from: 'migrations', to: 'postgres', type: 'data-flow', label: 'DDL' },
+];
+
+// =====================================================================
+// STATE
+// =====================================================================
+
+const state = {
+  layers:    Object.fromEntries(LAYERS.map(l     => [l.id, true])),
+  connTypes: Object.fromEntries(CONN_TYPES.map(c => [c.id, true])),
+  comments: [],
+  scale: 1, panX: 0, panY: 0,
+};
+let pendingNode = null;
+
+// =====================================================================
+// PRESETS
+// =====================================================================
+
+const PRESETS = {
+  full: {
+    layers:    { client: true,  'client-state': true,  shared: true,  server: true,  services: true,  data: true,  external: true  },
+    connTypes: { 'data-flow': true, 'service-call': true, import: true, 'state-update': true },
+  },
+  frontend: {
+    layers:    { client: true,  'client-state': true,  shared: true,  server: false, services: false, data: false, external: false },
+    connTypes: { 'data-flow': true, 'service-call': false, import: true, 'state-update': true },
+  },
+  backend: {
+    layers:    { client: false, 'client-state': false, shared: true,  server: true,  services: true,  data: true,  external: true  },
+    connTypes: { 'data-flow': true, 'service-call': true, import: true, 'state-update': false },
+  },
+  dataflow: {
+    layers:    { client: true,  'client-state': true,  shared: true,  server: true,  services: true,  data: true,  external: true  },
+    connTypes: { 'data-flow': true, 'service-call': false, import: false, 'state-update': false },
+  },
+  services: {
+    layers:    { client: false, 'client-state': false, shared: false, server: true,  services: true,  data: true,  external: false },
+    connTypes: { 'data-flow': true, 'service-call': true, import: false, 'state-update': false },
+  },
+};
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  state.layers    = { ...p.layers };
+  state.connTypes = { ...p.connTypes };
+  syncCheckboxes();
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.preset === name);
+  });
+  render();
+}
+
+function syncCheckboxes() {
+  LAYERS.forEach(l => {
+    const el = document.getElementById('layer-' + l.id);
+    if (el) el.checked = state.layers[l.id];
+  });
+  CONN_TYPES.forEach(c => {
+    const el = document.getElementById('conn-' + c.id);
+    if (el) el.checked = state.connTypes[c.id];
+  });
+}
+
+// =====================================================================
+// SVG RENDERING
+// =====================================================================
+
+const NS = 'http://www.w3.org/2000/svg';
+
+const LAYER_FILL = {
+  'client':       '#0a1d3a', 'client-state': '#091528',
+  'shared':       '#160d3d', 'server':       '#281800',
+  'services':     '#061b0e', 'data':         '#1f0912',
+  'external':     '#111121',
+};
+const LAYER_BAND = {
+  'client':       [30,  100], 'client-state': [115, 185],
+  'shared':       [205, 276], 'server':       [298, 385],
+  'services':     [406, 574], 'data':         [596, 668],
+};
+const LAYER_COLOR = Object.fromEntries(LAYERS.map(l => [l.id, l.color]));
+
+function mkEl(tag, attrs) {
+  const el = document.createElementNS(NS, tag);
+  if (attrs) { for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v)); }
+  return el;
+}
+
+function render() {
+  const svg = document.getElementById('diagram');
+  svg.textContent = ''; // safe clear
+
+  // — defs —
+  const defs = mkEl('defs');
+
+  const pat = mkEl('pattern', { id: 'grid', width: 40, height: 40, patternUnits: 'userSpaceOnUse' });
+  pat.appendChild(mkEl('path', { d: 'M 40 0 L 0 0 0 40', fill: 'none', stroke: '#0f0f1e', 'stroke-width': '0.5' }));
+  defs.appendChild(pat);
+
+  CONN_TYPES.forEach(ct => {
+    const m = mkEl('marker', { id: 'arrow-' + ct.id, markerWidth: 8, markerHeight: 6, refX: 7, refY: 3, orient: 'auto' });
+    m.appendChild(mkEl('polygon', { points: '0 0,8 3,0 6', fill: ct.color }));
+    defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+
+  svg.appendChild(mkEl('rect', { width: '100%', height: '100%', fill: 'url(#grid)' }));
+
+  const g = mkEl('g', { id: 'g-main', transform: `translate(${state.panX},${state.panY}) scale(${state.scale})` });
+  svg.appendChild(g);
+
+  const visible  = new Set(LAYERS.filter(l => state.layers[l.id]).map(l => l.id));
+  const visNodes = NODES.filter(n => visible.has(n.layer));
+  const visIds   = new Set(visNodes.map(n => n.id));
+  const nodeMap  = Object.fromEntries(NODES.map(n => [n.id, n]));
+
+  // layer bands + labels
+  LAYERS.forEach(ld => {
+    if (!state.layers[ld.id] || !LAYER_BAND[ld.id]) return;
+    const [y1, y2] = LAYER_BAND[ld.id];
+    g.appendChild(mkEl('rect', { x: 0, y: y1, width: 770, height: y2 - y1, fill: LAYER_FILL[ld.id] || '#111121', opacity: 0.45 }));
+    const lt = mkEl('text', { x: 758, y: y1 + (y2 - y1) / 2 + 4, 'text-anchor': 'end', fill: LAYER_COLOR[ld.id] || '#6b7280', 'font-size': 9, opacity: 0.5, 'letter-spacing': 1 });
+    lt.textContent = ld.label.toUpperCase();
+    g.appendChild(lt);
+  });
+
+  // connections (drawn behind nodes)
+  CONNECTIONS.forEach(conn => {
+    if (!state.connTypes[conn.type]) return;
+    if (!visIds.has(conn.from) || !visIds.has(conn.to)) return;
+    const ct = CONN_TYPES.find(c => c.id === conn.type);
+    drawConn(g, nodeMap[conn.from], nodeMap[conn.to], ct, conn.label);
+  });
+
+  // nodes
+  visNodes.forEach(n => drawNode(g, n));
+}
+
+function drawConn(g, from, to, ct, label) {
+  const sameRow = Math.abs(from.cy - to.cy) < 25;
+  let sx, sy, ex, ey, d;
+
+  if (sameRow) {
+    const dir = to.cx > from.cx ? 1 : -1;
+    sx = from.cx + dir * NW / 2; sy = from.cy;
+    ex = to.cx   - dir * NW / 2; ey = to.cy;
+    const mx = (sx + ex) / 2;
+    d = `M ${sx} ${sy} C ${mx - dir*28} ${sy - 22}, ${mx + dir*28} ${ey - 22}, ${ex} ${ey}`;
+  } else {
+    sx = from.cx; sy = from.cy + NH / 2;
+    ex = to.cx;   ey = to.cy   - NH / 2;
+    const dy = (ey - sy) * 0.45;
+    d = `M ${sx} ${sy} C ${sx} ${sy + dy}, ${ex} ${ey - dy}, ${ex} ${ey}`;
+  }
+
+  const path = mkEl('path', {
+    d, fill: 'none', stroke: ct.color,
+    'stroke-width': 1.3, 'stroke-opacity': 0.5,
+    'marker-end': `url(#arrow-${ct.id})`,
+  });
+  if (ct.dash) path.setAttribute('stroke-dasharray', ct.dash);
+  g.appendChild(path);
+
+  if (label) {
+    const mx = (sx + ex) / 2, my = (sy + ey) / 2 - 5;
+    g.appendChild(mkEl('rect', { x: mx - 21, y: my - 9, width: 42, height: 13, rx: 2, fill: '#07070f', opacity: 0.85 }));
+    const t = mkEl('text', { x: mx, y: my + 1, 'text-anchor': 'middle', fill: ct.color, 'font-size': 8, opacity: 0.9 });
+    t.textContent = label;
+    g.appendChild(t);
+  }
+}
+
+function drawNode(g, node) {
+  const commented = state.comments.some(c => c.target === node.id);
+  const lc = LAYER_COLOR[node.layer] || '#6b7280';
+  const lf = LAYER_FILL[node.layer]  || '#111121';
+  const x  = node.cx - NW / 2;
+  const y  = node.cy - NH / 2;
+
+  const grp = mkEl('g', { cursor: 'pointer' });
+
+  if (commented) {
+    grp.appendChild(mkEl('rect', { x: x - 3, y: y - 3, width: NW + 6, height: NH + 6, rx: 8, fill: 'none', stroke: '#fbbf24', 'stroke-width': 2, opacity: 0.85 }));
+  }
+
+  const rect = mkEl('rect', { x, y, width: NW, height: NH, rx: 5, fill: lf, stroke: lc, 'stroke-width': commented ? 2 : 1 });
+  grp.appendChild(rect);
+
+  const t1 = mkEl('text', { x: node.cx, y: node.cy - 4, 'text-anchor': 'middle', fill: '#e2e8f0', 'font-size': 11, 'font-weight': 700, 'font-family': 'system-ui, sans-serif' });
+  t1.textContent = node.label;
+  grp.appendChild(t1);
+
+  const shortSub = node.sub.length > 29 ? node.sub.slice(0, 28) + '…' : node.sub;
+  const t2 = mkEl('text', { x: node.cx, y: node.cy + 12, 'text-anchor': 'middle', fill: '#334155', 'font-size': 8, 'font-family': 'monospace' });
+  t2.textContent = shortSub;
+  grp.appendChild(t2);
+
+  if (commented) {
+    grp.appendChild(mkEl('circle', { cx: x + NW - 6, cy: y + 6, r: 4.5, fill: '#fbbf24' }));
+  }
+
+  const titleEl = mkEl('title');
+  titleEl.textContent = node.label + '\n' + node.sub + (commented ? '\n● Kommentar vorhanden' : '');
+  grp.appendChild(titleEl);
+
+  grp.addEventListener('click', () => openModal(node));
+  grp.addEventListener('mouseenter', () => {
+    rect.setAttribute('fill', brighten(lf, 18));
+    rect.setAttribute('stroke-width', '2');
+  });
+  grp.addEventListener('mouseleave', () => {
+    rect.setAttribute('fill', lf);
+    rect.setAttribute('stroke-width', commented ? '2' : '1');
+  });
+
+  g.appendChild(grp);
+}
+
+function brighten(hex, amt) {
+  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amt);
+  const gv = Math.min(255, parseInt(hex.slice(3, 5), 16) + amt);
+  const b  = Math.min(255, parseInt(hex.slice(5, 7), 16) + amt);
+  return `rgb(${r},${gv},${b})`;
+}
+
+// =====================================================================
+// ZOOM / PAN
+// =====================================================================
+
+let drag = null;
+
+document.getElementById('z-in').addEventListener('click',    () => doZoom(1.2));
+document.getElementById('z-out').addEventListener('click',   () => doZoom(0.8));
+document.getElementById('z-reset').addEventListener('click', () => { state.scale = 1; state.panX = 0; state.panY = 0; render(); });
+
+function doZoom(f) { state.scale = Math.max(0.25, Math.min(4, state.scale * f)); render(); }
+
+const svg = document.getElementById('diagram');
+svg.addEventListener('mousedown', e => {
+  if (e.target.closest('[cursor="pointer"]')) return;
+  drag = { sx: e.clientX, sy: e.clientY, px: state.panX, py: state.panY };
+});
+document.addEventListener('mousemove', e => {
+  if (!drag) return;
+  state.panX = drag.px + e.clientX - drag.sx;
+  state.panY = drag.py + e.clientY - drag.sy;
+  const gm = document.getElementById('g-main');
+  if (gm) gm.setAttribute('transform', `translate(${state.panX},${state.panY}) scale(${state.scale})`);
+});
+document.addEventListener('mouseup', () => { drag = null; });
+svg.addEventListener('wheel', e => { e.preventDefault(); doZoom(e.deltaY < 0 ? 1.1 : 0.9); }, { passive: false });
+
+// =====================================================================
+// MODAL
+// =====================================================================
+
+function openModal(node) {
+  pendingNode = node;
+  document.getElementById('modal-title').textContent = node.label;
+  document.getElementById('modal-file').textContent  = node.sub;
+  const existing = state.comments.find(c => c.target === node.id);
+  document.getElementById('modal-input').value = existing ? existing.text : '';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('modal-input').focus(), 40);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  pendingNode = null;
+}
+
+function saveComment() {
+  const text = document.getElementById('modal-input').value.trim();
+  if (!text) { closeModal(); return; }
+  const idx = state.comments.findIndex(c => c.target === pendingNode.id);
+  if (idx >= 0) {
+    state.comments[idx].text = text;
+  } else {
+    state.comments.push({ id: Date.now(), target: pendingNode.id, label: pendingNode.label, file: pendingNode.sub, text });
+  }
+  closeModal(); render(); renderComments(); updatePrompt();
+}
+
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-save').addEventListener('click', saveComment);
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter' && e.ctrlKey && document.getElementById('modal-overlay').classList.contains('open')) saveComment();
+});
+
+// =====================================================================
+// COMMENTS SIDEBAR  — uses DOM API only (no innerHTML with user content)
+// =====================================================================
+
+function deleteComment(id) {
+  state.comments = state.comments.filter(c => c.id !== id);
+  render(); renderComments(); updatePrompt();
+}
+
+function renderComments() {
+  document.getElementById('comment-count').textContent = String(state.comments.length);
+  const box = document.getElementById('comments-inner');
+  box.textContent = ''; // clear safely
+
+  if (!state.comments.length) {
+    const p = document.createElement('p');
+    p.className = 'no-comments';
+    p.textContent = 'Klicke eine Komponente an…';
+    box.appendChild(p);
+    return;
+  }
+
+  state.comments.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'comment-item';
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'ci-del';
+    delBtn.textContent = '×';
+    delBtn.setAttribute('aria-label', 'Kommentar löschen');
+    delBtn.addEventListener('click', () => deleteComment(c.id));
+    item.appendChild(delBtn);
+
+    const name = document.createElement('div');
+    name.className = 'ci-name';
+    name.textContent = c.label;
+    item.appendChild(name);
+
+    const txt = document.createElement('div');
+    txt.className = 'ci-text';
+    txt.textContent = c.text.length > 90 ? c.text.slice(0, 88) + '…' : c.text;
+    item.appendChild(txt);
+
+    box.appendChild(item);
+  });
+}
+
+// =====================================================================
+// PROMPT
+// =====================================================================
+
+function updatePrompt() {
+  const out = document.getElementById('prompt-out');
+  if (!state.comments.length) { out.value = ''; return; }
+  const visNames = LAYERS.filter(l => state.layers[l.id]).map(l => l.label);
+  const allVis   = visNames.length === LAYERS.length;
+  let txt = 'Dies ist die voidSector Codebase-Architektur';
+  if (!allVis) txt += ` (sichtbare Layer: ${visNames.join(', ')})`;
+  txt += '.\n\nFeedback zu einzelnen Komponenten:\n\n';
+  state.comments.forEach(c => { txt += `**${c.label}** (${c.file}):\n${c.text}\n\n`; });
+  out.value = txt.trimEnd();
+}
+
+// =====================================================================
+// COPY
+// =====================================================================
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  const v = document.getElementById('prompt-out').value;
+  if (!v) return;
+  navigator.clipboard.writeText(v).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Kopiert!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Kopieren'; btn.classList.remove('copied'); }, 1600);
+  });
+});
+
+// =====================================================================
+// CONTROLS INIT
+// =====================================================================
+
+(function initControls() {
+  const presetDefs = [
+    { id: 'full',      label: 'Gesamt'    },
+    { id: 'frontend',  label: 'Frontend'  },
+    { id: 'backend',   label: 'Backend'   },
+    { id: 'dataflow',  label: 'Datenfluss'},
+    { id: 'services',  label: 'Services'  },
+  ];
+  const pg = document.getElementById('preset-grid');
+  presetDefs.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (i === 0 ? ' active' : '');
+    btn.dataset.preset = p.id;
+    btn.textContent = p.label;
+    btn.addEventListener('click', () => applyPreset(p.id));
+    pg.appendChild(btn);
+  });
+
+  const ll = document.getElementById('layer-list');
+  LAYERS.forEach(ld => {
+    const row = document.createElement('div');
+    row.className = 'toggle-row';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.id = 'layer-' + ld.id; cb.checked = true;
+    cb.addEventListener('change', e => {
+      state.layers[ld.id] = e.target.checked;
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      render();
+    });
+
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = ld.color;
+
+    const lbl = document.createElement('label');
+    lbl.htmlFor = 'layer-' + ld.id;
+    lbl.textContent = ld.label;
+
+    row.appendChild(cb); row.appendChild(dot); row.appendChild(lbl);
+    ll.appendChild(row);
+  });
+
+  const cl = document.getElementById('conn-list');
+  CONN_TYPES.forEach(ct => {
+    const row = document.createElement('div');
+    row.className = 'toggle-row';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.id = 'conn-' + ct.id; cb.checked = true;
+    cb.addEventListener('change', e => {
+      state.connTypes[ct.id] = e.target.checked;
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      render();
+    });
+
+    const dash = document.createElement('div');
+    dash.className = 'dash';
+    if (ct.dash) {
+      dash.style.background = `repeating-linear-gradient(90deg,${ct.color} 0,${ct.color} 5px,transparent 5px,transparent 9px)`;
+    } else {
+      dash.style.background = ct.color;
+    }
+
+    const lbl = document.createElement('label');
+    lbl.htmlFor = 'conn-' + ct.id;
+    lbl.textContent = ct.label;
+
+    row.appendChild(cb); row.appendChild(dash); row.appendChild(lbl);
+    cl.appendChild(row);
+  });
+})();
+
+// =====================================================================
+// BOOT
+// =====================================================================
+render();
+renderComments();
+</script>
+</body>
+</html>

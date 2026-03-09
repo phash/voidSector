@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { generateSpawnPosition } from '../spawn.js';
-import { SPAWN_MIN_DISTANCE } from '@void-sector/shared';
 
 describe('generateSpawnPosition', () => {
-  it('returns position at least SPAWN_MIN_DISTANCE from origin', () => {
+  it('returns position within radius 5 of origin', () => {
     const pos = generateSpawnPosition();
-    const dist = Math.sqrt(pos.x ** 2 + pos.y ** 2);
-    expect(dist).toBeGreaterThanOrEqual(SPAWN_MIN_DISTANCE);
+    expect(pos.x).toBeGreaterThanOrEqual(1);
+    expect(pos.x).toBeLessThanOrEqual(5);
+    expect(pos.y).toBeGreaterThanOrEqual(1);
+    expect(pos.y).toBeLessThanOrEqual(5);
   });
 
   it('returns integer coordinates', () => {
@@ -16,16 +17,18 @@ describe('generateSpawnPosition', () => {
   });
 
   it('generates different positions on multiple calls', () => {
-    const positions = Array.from({ length: 5 }, () => generateSpawnPosition());
+    const positions = Array.from({ length: 20 }, () => generateSpawnPosition());
     const unique = new Set(positions.map((p) => `${p.x}:${p.y}`));
     expect(unique.size).toBeGreaterThan(1);
   });
 
-  it('always produces positions >= SPAWN_MIN_DISTANCE even with edge-case math', () => {
+  it('always produces positions within bounds even on repeated calls', () => {
     for (let i = 0; i < 100; i++) {
       const pos = generateSpawnPosition();
-      const dist = Math.sqrt(pos.x ** 2 + pos.y ** 2);
-      expect(dist).toBeGreaterThanOrEqual(SPAWN_MIN_DISTANCE * 0.99);
+      expect(pos.x).toBeGreaterThanOrEqual(1);
+      expect(pos.x).toBeLessThanOrEqual(5);
+      expect(pos.y).toBeGreaterThanOrEqual(1);
+      expect(pos.y).toBeLessThanOrEqual(5);
     }
   });
 });

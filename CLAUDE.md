@@ -19,9 +19,9 @@ npm run docker:up           # PostgreSQL + Redis
 npm test                    # All tests (run per-package, see below)
 
 # Tests — always run from package directory
-cd packages/server && npx vitest run    # ~912 tests
-cd packages/client && npx vitest run    # ~498 tests
-cd packages/shared && npx vitest run    # ~191 tests
+cd packages/server && npx vitest run    # ~973 tests
+cd packages/client && npx vitest run    # ~499 tests
+cd packages/shared && npx vitest run    # ~205 tests
 
 # After changing shared/: REQUIRED
 cd packages/shared && npm run build
@@ -52,9 +52,9 @@ cd packages/shared && npm run build
 
 ## DB Migrations
 
-`packages/server/src/db/migrations/` — **001–042**, auto-run on startup.
+`packages/server/src/db/migrations/` — **001–044**, auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` (idempotent).
-Next: **043** (Phase 2 Sektor-Rebuild).
+Next: **045**.
 
 ---
 
@@ -74,7 +74,8 @@ Next: **043** (Phase 2 Sektor-Rebuild).
 ## Key Patterns
 
 - **AP**: lazy evaluation, no tick loop — `calculateCurrentAP(state, Date.now())` on each action
-- **World gen**: deterministic `hashCoords(x, y, seed)` — sectors generated on demand, saved to DB
+- **World gen**: deterministic `hashCoords(x, y, seed)` — sectors generated on demand, saved to DB. Origin is **(0,0)** — world extends into positive x/y.
+- **Spawn**: new players spawn within **radius 5 of (0,0)** — coords x∈[1,5], y∈[1,5] (`engine/spawn.ts`)
 - **Rooms**: per-quadrant. Intra-quadrant: `moveSector` message. Cross-quadrant: full leave/join
 - **Errors**: server sends `{ code, message }` → client logs + sets `actionError` for `InlineError`
 - **Tests**: Vitest everywhere. Client: jsdom + RTL + jest-canvas-mock (jest-shim.ts)
@@ -92,9 +93,12 @@ Next: **043** (Phase 2 Sektor-Rebuild).
 - 6-section cockpit layout, bookmarks, staleness rendering, nav-grid overhaul
 - All Quality Sprints (S0–S4), Phase 2, Phase LU, Phase D, Phase AQ (#170–175)
 - **Humanity Rep System** ✅: server-wide aggregate alien rep, encounter chance modifier, ALIEN REP tab, AlienEncounterToast tier display
+- **Phase EW** ✅ (#206): frictionEngine, expansionEngine, warfareEngine, StrategicTickService, universeBootstrap
+- **ACEP** ✅ (partial): XP engine, 4 paths, traits, personality, permadeath, radar icon — UI panel still open
+- **Forschung & Wissen** ✅: Wissen-Ressource, typisierte Artefakte (9 Typen), Lab-Stufen 1–5, TechTreeCanvas, Migration 044
 
 ### Upcoming (in order)
-1. ACEP: Adaptive Craft Evolution Protocol — ship XP/personality/permadeath
-2. Phase EW: Galactic Expansion & Warfare (diplomacy, territory, fleet combat)
+1. ACEP UI panel (HANGAR/ACEP-Tab mit XP-Balken, Trait-Übersicht)
+2. Wreck-POIs auf dem Radar
 
 Full roadmap: `docs/plans/2026-03-09-master-roadmap.md`

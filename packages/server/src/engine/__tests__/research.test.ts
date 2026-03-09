@@ -7,9 +7,16 @@ const emptyResearch: ResearchState = {
   unlockedModules: [],
   blueprints: [],
   activeResearch: null,
+  activeResearch2: null,
+  wissen: 0,
+  wissenRate: 0,
 };
 
-const fullRes = { credits: 99999, ore: 9999, gas: 9999, crystal: 9999, artefact: 99 };
+// Plenty of every artefact category
+const fullArtefacts: Partial<Record<string, number>> = {
+  drive: 99, cargo: 99, scanner: 99, armor: 99,
+  weapon: 99, shield: 99, defense: 99, special: 99, mining: 99,
+};
 
 describe('research flow integration', () => {
   it('new player can only buy tier 1 modules', () => {
@@ -29,19 +36,23 @@ describe('research flow integration', () => {
   });
 
   it('cannot research drive_mk3 without drive_mk2', () => {
-    const result = canStartResearch('drive_mk3', emptyResearch, fullRes);
+    // drive_mk3: T3, needs labTier 3, 1 drive artefact, 800 wissen, prereq drive_mk2
+    const rs: ResearchState = { ...emptyResearch, wissen: 99999 };
+    const result = canStartResearch('drive_mk3', rs, fullArtefacts, 3);
     expect(result.valid).toBe(false);
   });
 
   it('can research drive_mk3 after drive_mk2', () => {
-    const after: ResearchState = { ...emptyResearch, unlockedModules: ['drive_mk2'] };
-    const result = canStartResearch('drive_mk3', after, fullRes);
+    // drive_mk3: T3, needs labTier 3, 1 drive artefact, 800 wissen
+    const after: ResearchState = { ...emptyResearch, unlockedModules: ['drive_mk2'], wissen: 99999 };
+    const result = canStartResearch('drive_mk3', after, fullArtefacts, 3);
     expect(result.valid).toBe(true);
   });
 
   it('void_drive requires ancient honored', () => {
-    const after: ResearchState = { ...emptyResearch, unlockedModules: ['drive_mk3'] };
-    const result = canStartResearch('void_drive', after, fullRes, { ancients: 'friendly' });
+    // void_drive: T3, needs labTier 3, special artefacts, 800 wissen, prereq drive_mk3, ancients: honored
+    const after: ResearchState = { ...emptyResearch, unlockedModules: ['drive_mk3'], wissen: 99999 };
+    const result = canStartResearch('void_drive', after, fullArtefacts, 3, 1, { ancients: 'friendly' });
     expect(result.valid).toBe(false);
   });
 

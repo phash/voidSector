@@ -2058,20 +2058,19 @@ export async function addBlueprint(userId: string, moduleId: string): Promise<vo
   );
 }
 
-export async function getActiveResearch(userId: string): Promise<{
-  moduleId: string;
-  startedAt: number;
-  completesAt: number;
-} | null> {
-  const { rows } = await query(
-    'SELECT module_id, started_at, completes_at FROM active_research WHERE user_id = $1',
-    [userId],
+export async function getActiveResearch(
+  userId: string,
+  slot = 1,
+): Promise<{ moduleId: string; startedAt: number; completesAt: number } | null> {
+  const { rows } = await query<{ module_id: string; started_at: string; completes_at: string }>(
+    'SELECT module_id, started_at, completes_at FROM active_research WHERE user_id = $1 AND slot = $2',
+    [userId, slot],
   );
-  if (rows.length === 0) return null;
+  if (!rows[0]) return null;
   return {
     moduleId: rows[0].module_id,
-    startedAt: Number(rows[0].started_at),
-    completesAt: Number(rows[0].completes_at),
+    startedAt: new Date(rows[0].started_at).getTime(),
+    completesAt: new Date(rows[0].completes_at).getTime(),
   };
 }
 
@@ -2080,18 +2079,177 @@ export async function startActiveResearch(
   moduleId: string,
   startedAt: number,
   completesAt: number,
+  slot = 1,
 ): Promise<void> {
   await query(
-    `INSERT INTO active_research (user_id, module_id, started_at, completes_at)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (user_id) DO UPDATE
-     SET module_id = $2, started_at = $3, completes_at = $4`,
-    [userId, moduleId, startedAt, completesAt],
+    `INSERT INTO active_research (user_id, module_id, started_at, completes_at, slot)
+     VALUES ($1, $2, to_timestamp($3 / 1000.0), to_timestamp($4 / 1000.0), $5)
+     ON CONFLICT (user_id, slot) DO UPDATE
+     SET module_id = $2, started_at = to_timestamp($3 / 1000.0), completes_at = to_timestamp($4 / 1000.0)`,
+    [userId, moduleId, startedAt, completesAt, slot],
   );
 }
 
-export async function deleteActiveResearch(userId: string): Promise<void> {
-  await query('DELETE FROM active_research WHERE user_id = $1', [userId]);
+export async function deleteActiveResearch(userId: string, slot = 1): Promise<void> {
+  await query('DELETE FROM active_research WHERE user_id = $1 AND slot = $2', [userId, slot]);
+}
+
+// ── Wissen ──────────────────────────────────────────────────────────────
+
+export async function getWissen(userId: string): Promise<number> {
+  const { rows } = await query<{ wissen: number }>(
+    'SELECT COALESCE(wissen, 0) AS wissen FROM player_research WHERE user_id = $1',
+    [userId],
+  );
+  return rows[0]?.wissen ?? 0;
+}
+
+export async function addWissen(userId: string, amount: number): Promise<void> {
+  await query(
+    `INSERT INTO player_research (user_id, wissen)
+     VALUES ($1, $2)
+     ON CONFLICT (user_id) DO UPDATE
+     SET wissen = player_research.wissen + $2`,
+    [userId, amount],
+  );
+}
+
+export async function deductWissen(userId: string, amount: number): Promise<boolean> {
+  const { rows } = await query<{ wissen: number }>(
+    `UPDATE player_research
+     SET wissen = wissen - $2
+     WHERE user_id = $1 AND wissen >= $2
+     RETURNING wissen`,
+    [userId, amount],
+  );
+  return rows.length > 0;
+}
+
+// ── Typed Artefacts ──────────────────────────────────────────────────────
+
+const TYPED_ARTEFACT_KEYS = [
+  'artefact_drive',
+  'artefact_cargo',
+  'artefact_scanner',
+  'artefact_armor',
+  'artefact_weapon',
+  'artefact_shield',
+  'artefact_defense',
+  'artefact_special',
+  'artefact_mining',
+] as const;
+
+type TypedArtefactKey = (typeof TYPED_ARTEFACT_KEYS)[number];
+
+/** Validates that a resource key is a typed artefact key */
+function isTypedArtefactKey(key: string): key is TypedArtefactKey {
+  return (TYPED_ARTEFACT_KEYS as readonly string[]).includes(key);
+}
+
+/**
+ * Returns typed artefact quantities for a player.
+ * Keys are bare category names: { drive: N, cargo: N, ... }
+ */
+export async function getTypedArtefacts(
+  userId: string,
+): Promise<Partial<Record<string, number>>> {
+  const { rows } = await query<{ resource: string; quantity: number }>(
+    `SELECT resource, quantity FROM cargo
+     WHERE player_id = $1 AND resource LIKE 'artefact_%'`,
+    [userId],
+  );
+  const result: Partial<Record<string, number>> = {};
+  for (const row of rows) {
+    const category = row.resource.replace('artefact_', '');
+    result[category] = row.quantity;
+  }
+  return result;
+}
+
+/**
+ * Adds typed artefacts to a player's cargo.
+ * @param type - bare category name (e.g. 'drive', 'scanner')
+ */
+export async function addTypedArtefact(
+  userId: string,
+  type: string,
+  amount = 1,
+): Promise<void> {
+  const key = `artefact_${type}`;
+  if (!isTypedArtefactKey(key)) throw new Error(`Invalid artefact type: ${type}`);
+  await query(
+    `INSERT INTO cargo (player_id, resource, quantity)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (player_id, resource)
+     DO UPDATE SET quantity = cargo.quantity + $3`,
+    [userId, key, amount],
+  );
+}
+
+/**
+ * Deducts typed artefacts from a player's cargo.
+ * @param artefacts - Record of bare category names to amounts: { drive: 1, scanner: 2 }
+ * @returns true if all deductions succeeded, false if any quantity was insufficient
+ */
+export async function deductTypedArtefacts(
+  userId: string,
+  artefacts: Partial<Record<string, number>>,
+): Promise<boolean> {
+  const entries = Object.entries(artefacts).filter(([, v]) => v && v > 0);
+  if (entries.length === 0) return true;
+
+  // Validate all keys first
+  for (const [type] of entries) {
+    if (!isTypedArtefactKey(`artefact_${type}`)) return false;
+  }
+
+  // Deduct each one using the key-value pattern
+  for (const [type, amount] of entries) {
+    const key = `artefact_${type}`;
+    const { rowCount } = await query(
+      `UPDATE cargo SET quantity = quantity - $3
+       WHERE player_id = $1 AND resource = $2 AND quantity >= $3`,
+      [userId, key, amount!],
+    );
+    if ((rowCount ?? 0) === 0) return false;
+  }
+  return true;
+}
+
+// ── Research Lab ─────────────────────────────────────────────────────────
+
+/**
+ * Returns the maximum research lab tier owned by a player (0 if no lab exists).
+ */
+export async function getResearchLabTier(userId: string): Promise<number> {
+  const { rows } = await query<{ tier: number }>(
+    `SELECT COALESCE(MAX(tier), 0) AS tier
+     FROM structures
+     WHERE owner_id = $1 AND type = 'research_lab'`,
+    [userId],
+  );
+  return rows[0]?.tier ?? 0;
+}
+
+/**
+ * Upgrades a research_lab structure at the given location by 1 tier (max 5).
+ * Returns the new tier, or null if no lab was found at that location or already max.
+ */
+export async function upgradeResearchLabTier(
+  userId: string,
+  sectorX: number,
+  sectorY: number,
+): Promise<number | null> {
+  const { rows } = await query<{ tier: number }>(
+    `UPDATE structures
+     SET tier = tier + 1
+     WHERE owner_id = $1 AND type = 'research_lab'
+       AND sector_x = $2 AND sector_y = $3
+       AND tier < 5
+     RETURNING tier`,
+    [userId, sectorX, sectorY],
+  );
+  return rows[0]?.tier ?? null;
 }
 
 // --- Autopilot Routes ---

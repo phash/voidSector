@@ -3,7 +3,7 @@
 -- Player drone inventory
 CREATE TABLE IF NOT EXISTS player_drones (
   id SERIAL PRIMARY KEY,
-  player_id VARCHAR(255) NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   drone_type VARCHAR(20) NOT NULL DEFAULT 'scout', -- scout | harvester | industrial
   status VARCHAR(20) NOT NULL DEFAULT 'idle', -- idle | mining | returning | damaged
   current_sector_x INTEGER,
@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_player_drones_status ON player_drones(status);
 CREATE TABLE IF NOT EXISTS drone_routes (
   id SERIAL PRIMARY KEY,
   base_id INTEGER NOT NULL,
-  player_id VARCHAR(255) NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   route_name VARCHAR(100),
   waypoints JSONB NOT NULL DEFAULT '[]', -- [{sector_x, sector_y, mine_duration_minutes}]
   total_duration_minutes INTEGER NOT NULL DEFAULT 0,
