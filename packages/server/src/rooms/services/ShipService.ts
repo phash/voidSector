@@ -17,7 +17,6 @@ import {
 import { getReputationTier } from '../../engine/commands.js';
 import { hasShipyard } from '../../engine/npcgen.js';
 import { getOrInitStation, getStationLevel } from '../../engine/npcStationEngine.js';
-import { query } from '../../db/client.js';
 import { getFuelState, saveFuelState } from './RedisAPStore.js';
 import { getAcepXpSummary, getAcepEffects } from '../../engine/acepXpService.js';
 import {
@@ -469,19 +468,16 @@ export class ShipService {
 
   async handleActivateBlueprint(client: Client, data: { moduleId: string }): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const research = await getPlayerResearch(auth.userId);
-    if (!research.blueprints.includes(data.moduleId)) {
+    // Check blueprint in unified inventory (type='blueprint')
+    const bpQty = await getInventoryItem(auth.userId, 'blueprint', data.moduleId);
+    if (bpQty < 1) {
       client.send('researchResult', { success: false, error: 'Blueprint not found' });
       return;
     }
 
-    // Move from blueprints to unlocked
+    // Consume blueprint from inventory and add to unlocked research
+    await removeFromInventory(auth.userId, 'blueprint', data.moduleId, 1);
     await addUnlockedModule(auth.userId, data.moduleId);
-    // Remove from blueprints array
-    await query(
-      `UPDATE player_research SET blueprints = array_remove(blueprints, $2::text) WHERE user_id = $1`,
-      [auth.userId, data.moduleId],
-    );
 
     const updated = await getPlayerResearch(auth.userId);
     client.send('researchResult', {

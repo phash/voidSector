@@ -28,7 +28,6 @@ import {
   getPlayerCredits,
   addCredits,
   getPlayerReputation,
-  addBlueprint,
   getPlayerFaction,
   getFactionMembersByPlayerIds,
   hasScannedRuin,
@@ -36,7 +35,7 @@ import {
   getActiveShip,
   recordAlienEncounter,
 } from '../../db/queries.js';
-import { addToInventory, getCargoState } from '../../engine/inventoryService.js';
+import { addToInventory, getInventoryItem, getCargoState } from '../../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
 import { WORLD_SEED } from '@void-sector/shared';
@@ -351,16 +350,21 @@ export class ScanService {
       client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
     }
 
-    // Handle blueprint find
+    // Handle blueprint find — stored in unified inventory (type='blueprint')
     if (event.event_type === 'blueprint_find') {
       const moduleId = (event.data as Record<string, unknown>)?.moduleId as string;
       if (moduleId) {
-        await addBlueprint(auth.userId, moduleId);
-        client.send('blueprintFound', {
-          moduleId,
-          moduleName: MODULES[moduleId]?.name ?? moduleId,
-        });
-        client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
+        const existing = await getInventoryItem(auth.userId, 'blueprint', moduleId);
+        if (existing === 0) {
+          await addToInventory(auth.userId, 'blueprint', moduleId, 1);
+          client.send('blueprintFound', {
+            moduleId,
+            moduleName: MODULES[moduleId]?.name ?? moduleId,
+          });
+          client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
+        } else {
+          client.send('logEntry', `BLAUPAUSE BEREITS BEKANNT: ${MODULES[moduleId]?.name ?? moduleId}`);
+        }
       }
     }
 
