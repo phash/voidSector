@@ -1478,6 +1478,10 @@ class GameNetwork {
       useStore.getState().setAlienEncounterEvent(null);
     });
 
+    room.onMessage('humanityReps', (data) => {
+      useStore.getState().setHumanityReps(data);
+    });
+
     room.onMessage('activeCommunityQuest', (data: { quest: CommunityQuestPayload | null }) => {
       useStore.getState().setActiveCommunityQuest(data.quest);
     });
@@ -2113,6 +2117,10 @@ class GameNetwork {
 
   resolveAlienEncounter(factionId: string, eventType: string, accepted: boolean) {
     this.sectorRoom?.send('resolveAlienEncounter', { factionId, eventType, accepted });
+  }
+
+  requestHumanityReps() {
+    this.sectorRoom?.send('getHumanityReps');
   }
 }
 

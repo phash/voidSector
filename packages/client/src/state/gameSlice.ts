@@ -95,6 +95,7 @@ export interface AlienEncounterEventPayload {
   declineLabel?: string;
   repOnAccept: number;
   repOnDecline: number;
+  humanityTier?: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH';
 }
 
 export interface StoryProgressPayload {
@@ -241,6 +242,7 @@ export interface GameSlice {
   credits: number;
   alienCredits: number;
   alienReputations: Record<string, number>;
+  humanityReps: Record<string, { repValue: number; tier: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH' }>;
 
   // Storage
   storage: StorageInventory;
@@ -494,6 +496,7 @@ export interface GameSlice {
   setAlienEncounterEvent: (e: AlienEncounterEventPayload | null) => void;
   setStoryProgress: (p: StoryProgressPayload | null) => void;
   setActiveCommunityQuest: (q: CommunityQuestPayload | null) => void;
+  setHumanityReps: (reps: Record<string, { repValue: number; tier: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH' }>) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -524,6 +527,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   credits: 0,
   alienCredits: 0,
   alienReputations: {},
+  humanityReps: {},
   storage: { ore: 0, gas: 0, crystal: 0, artefact: 0 },
   tradeOrders: [],
   myOrders: [],
@@ -775,4 +779,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setAlienEncounterEvent: (e) => set({ alienEncounterEvent: e }),
   setStoryProgress: (p) => set({ storyProgress: p }),
   setActiveCommunityQuest: (q) => set({ activeCommunityQuest: q }),
+  setHumanityReps: (reps) => set({ humanityReps: reps }),
 });
