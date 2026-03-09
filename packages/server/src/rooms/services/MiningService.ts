@@ -12,13 +12,13 @@ import { validateMine, validateJettison } from '../../engine/commands.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { stopMining } from '../../engine/mining.js';
 import { getMiningState, saveMiningState } from './RedisAPStore.js';
+import { getSector } from '../../db/queries.js';
 import {
-  getSector,
-  getPlayerCargo,
-  addToCargo,
-  jettisonCargo,
-  getCargoTotal,
-} from '../../db/queries.js';
+  addToInventory,
+  removeFromInventory,
+  getResourceTotal,
+  getCargoState,
+} from '../../engine/inventoryService.js';
 import { rejectGuest } from './utils.js';
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
@@ -48,7 +48,7 @@ export class MiningService {
     }
 
     const current = await getMiningState(auth.userId);
-    const cargoTotal = await getCargoTotal(auth.userId);
+    const cargoTotal = await getResourceTotal(auth.userId);
     const ship = this.ctx.getShipForClient(client.sessionId);
 
     const result = validateMine(
@@ -82,20 +82,20 @@ export class MiningService {
       return;
     }
 
-    const cargoTotal = await getCargoTotal(auth.userId);
+    const cargoTotal = await getResourceTotal(auth.userId);
     const ship = this.ctx.getShipForClient(client.sessionId);
     const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
     const result = stopMining(mining, cargoSpace);
 
     if (result.mined > 0 && result.resource) {
-      await addToCargo(auth.userId, result.resource, result.mined);
+      await addToInventory(auth.userId, 'resource', result.resource, result.mined);
       // ACEP: AUSBAU-XP for mining/resource collection (spec: bulk resources +2)
       addAcepXpForPlayer(auth.userId, 'ausbau', 2).catch(() => {});
     }
 
     await saveMiningState(auth.userId, result.newState);
 
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     client.send('miningUpdate', result.newState);
     client.send('cargoUpdate', cargo);
   }
@@ -105,7 +105,7 @@ export class MiningService {
     const auth = client.auth as AuthPayload;
     const { resource } = data;
 
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     const currentAmount = cargo[resource as keyof CargoState] ?? 0;
 
     const result = validateJettison(resource, currentAmount);
@@ -114,9 +114,9 @@ export class MiningService {
       return;
     }
 
-    const jettisoned = await jettisonCargo(auth.userId, resource);
-    const updatedCargo = await getPlayerCargo(auth.userId);
+    await removeFromInventory(auth.userId, 'resource', resource, currentAmount);
+    const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
-    client.send('logEntry', `FRACHT ABGEWORFEN: ${jettisoned} ${resource.toUpperCase()}`);
+    client.send('logEntry', `FRACHT ABGEWORFEN: ${currentAmount} ${resource.toUpperCase()}`);
   }
 }
