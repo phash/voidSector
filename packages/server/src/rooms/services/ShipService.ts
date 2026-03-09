@@ -392,10 +392,7 @@ export class ShipService {
       wissenRate: 0,
     };
 
-    // Strip artefact_ prefix for canStartResearch
-    const artefactResources = Object.fromEntries(
-      Object.entries(typedArtefacts).map(([k, v]) => [k.replace('artefact_', ''), v]),
-    );
+    const artefactResources = typedArtefacts;
 
     const validation = canStartResearch(
       data.moduleId,

@@ -610,8 +610,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       await this.ships.handleGetModuleInventory(client);
     });
     this.onMessage('startResearch', (client, data) => this.ships.handleStartResearch(client, data));
-    this.onMessage('cancelResearch', (client) => this.ships.handleCancelResearch(client));
-    this.onMessage('claimResearch', (client) => this.ships.handleClaimResearch(client));
+    this.onMessage('cancelResearch', (client, data) => this.ships.handleCancelResearch(client, data));
+    this.onMessage('claimResearch', (client, data) => this.ships.handleClaimResearch(client, data));
     this.onMessage('activateBlueprint', (client, data) =>
       this.ships.handleActivateBlueprint(client, data),
     );
