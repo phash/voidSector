@@ -53,6 +53,7 @@ import {
   updatePlayerStationRep,
   getRecentNews,
   getQuadrantDiscoveriesSince,
+  addAlienReputation,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -758,7 +759,6 @@ export class SectorRoom extends Room<SectorRoomState> {
       if (!auth?.userId) return;
       const delta = data.accepted ? data.repOnAccept : data.repOnDecline;
       if (delta !== 0) {
-        const { addAlienReputation } = await import('../db/queries.js');
         await addAlienReputation(auth.userId, data.factionId, delta).catch(() => {});
       }
       client.send('alienEncounterResolved', { factionId: data.factionId, repDelta: delta });
