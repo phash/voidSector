@@ -47,6 +47,7 @@ import {
   getPlayerReputations,
   getWissen,
   deductWissen,
+  addWissen,
   getTypedArtefacts,
   deductTypedArtefacts,
   getResearchLabTier,
@@ -425,40 +426,46 @@ export class ShipService {
       return;
     }
 
-    // Build full artefact deduction map (required + optional extras)
-    const allArtefactsToDeduct: Partial<Record<string, number>> = {};
-    if (rc.artefacts) {
-      for (const [type, count] of Object.entries(rc.artefacts)) {
-        allArtefactsToDeduct[type] = (allArtefactsToDeduct[type] ?? 0) + (count ?? 0);
+    try {
+      // Build full artefact deduction map (required + optional extras)
+      const allArtefactsToDeduct: Partial<Record<string, number>> = {};
+      if (rc.artefacts) {
+        for (const [type, count] of Object.entries(rc.artefacts)) {
+          allArtefactsToDeduct[type] = (allArtefactsToDeduct[type] ?? 0) + (count ?? 0);
+        }
       }
-    }
-    for (const [type, count] of Object.entries(artefactsUsed)) {
-      const req = allArtefactsToDeduct[type] ?? 0;
-      const extra = Math.max(0, (count ?? 0) - req);
-      if (extra > 0) allArtefactsToDeduct[type] = (allArtefactsToDeduct[type] ?? 0) + extra;
-    }
-    if (Object.keys(allArtefactsToDeduct).length > 0) {
-      await deductTypedArtefacts(auth.userId, allArtefactsToDeduct);
-    }
+      for (const [type, count] of Object.entries(artefactsUsed)) {
+        const req = allArtefactsToDeduct[type] ?? 0;
+        const extra = Math.max(0, (count ?? 0) - req);
+        if (extra > 0) allArtefactsToDeduct[type] = (allArtefactsToDeduct[type] ?? 0) + extra;
+      }
+      if (Object.keys(allArtefactsToDeduct).length > 0) {
+        await deductTypedArtefacts(auth.userId, allArtefactsToDeduct);
+      }
 
-    // Duration: base, reduced by matching artefact type × 10% each (max 50%)
-    const matchingArtefactType = mod.category as string;
-    const matchingUsed = artefactsUsed[matchingArtefactType] ?? 0;
-    const timeReduction = Math.min(matchingUsed * ARTEFACT_TIME_BONUS_PER, 0.5);
-    const durationMin = mod.researchDurationMin ?? 30;
-    const durationMs = Math.round(durationMin * 60_000 * (1 - timeReduction));
+      // Duration: base, reduced by matching artefact type × 10% each (max 50%)
+      const matchingArtefactType = mod.category as string;
+      const matchingUsed = artefactsUsed[matchingArtefactType] ?? 0;
+      const timeReduction = Math.min(matchingUsed * ARTEFACT_TIME_BONUS_PER, 0.5);
+      const durationMin = mod.researchDurationMin ?? 30;
+      const durationMs = Math.round(durationMin * 60_000 * (1 - timeReduction));
 
-    const now = Date.now();
-    await startActiveResearch(auth.userId, data.moduleId, now, now + durationMs, slot);
+      const now = Date.now();
+      await startActiveResearch(auth.userId, data.moduleId, now, now + durationMs, slot);
 
-    const newWissen = await getWissen(auth.userId);
-    const activeEntry = { moduleId: data.moduleId, startedAt: now, completesAt: now + durationMs };
-    client.send('researchResult', {
-      success: true,
-      activeResearch: slot === 1 ? activeEntry : active1,
-      activeResearch2: slot === 2 ? activeEntry : active2,
-      wissen: newWissen,
-    });
+      const newWissen = await getWissen(auth.userId);
+      const activeEntry = { moduleId: data.moduleId, startedAt: now, completesAt: now + durationMs };
+      client.send('researchResult', {
+        success: true,
+        activeResearch: slot === 1 ? activeEntry : active1,
+        activeResearch2: slot === 2 ? activeEntry : active2,
+        wissen: newWissen,
+      });
+    } catch (err) {
+      // Rollback: refund Wissen since research did not start
+      await addWissen(auth.userId, wissenCost).catch(() => {/* best-effort refund */});
+      client.send('error', { code: 'RESEARCH_FAIL', message: 'Research start failed, Wissen refunded' });
+    }
   }
 
   async handleCancelResearch(client: Client, data?: { slot?: 1 | 2 }): Promise<void> {

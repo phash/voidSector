@@ -48,6 +48,8 @@ import {
   getFactionUpgrades,
   getPlayerResearch,
   getActiveResearch,
+  getWissen,
+  getTypedArtefacts,
   getActiveAutopilotRoute,
   pauseAutopilotRoute,
   updatePlayerStationRep,
@@ -1058,11 +1060,18 @@ export class SectorRoom extends Room<SectorRoomState> {
 
       // Send research state
       const researchData = await getPlayerResearch(auth.userId);
-      const activeResearch = await getActiveResearch(auth.userId);
+      const activeResearch = await getActiveResearch(auth.userId, 1);
+      const activeResearch2 = await getActiveResearch(auth.userId, 2);
+      const wissen = await getWissen(auth.userId);
+      const typedArtefacts = await getTypedArtefacts(auth.userId);
       client.send('researchState', {
         unlockedModules: researchData.unlockedModules,
         blueprints: researchData.blueprints,
-        activeResearch: activeResearch,
+        activeResearch,
+        activeResearch2,
+        wissen,
+        wissenRate: 0,
+        typedArtefacts,
       });
 
       // Record NPC station visit for XP and per-station reputation
