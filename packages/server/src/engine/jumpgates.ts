@@ -8,6 +8,10 @@ import {
   JUMPGATE_CODE_CHANCE,
   JUMPGATE_MINIGAME_CHANCE,
   JUMPGATE_CODE_LENGTH,
+  ANCIENT_JUMPGATE_SPAWN_RATE,
+  ANCIENT_JUMPGATE_SALT,
+  ANCIENT_JUMPGATE_MIN_RANGE,
+  ANCIENT_JUMPGATE_MAX_RANGE,
 } from '@void-sector/shared';
 import type { JumpGateType } from '@void-sector/shared';
 
@@ -16,9 +20,15 @@ export function checkJumpGate(sectorX: number, sectorY: number): boolean {
   return ((hash >>> 0) % 10000) / 10000 < JUMPGATE_CHANCE;
 }
 
+export function checkAncientJumpGate(sectorX: number, sectorY: number): boolean {
+  const hash = hashCoords(sectorX, sectorY, WORLD_SEED + ANCIENT_JUMPGATE_SALT);
+  return ((hash >>> 0) % 1000000) / 1000000 < ANCIENT_JUMPGATE_SPAWN_RATE;
+}
+
 export function generateGateTarget(
   sectorX: number,
   sectorY: number,
+  isAncient = false,
 ): {
   targetX: number;
   targetY: number;
@@ -27,27 +37,33 @@ export function generateGateTarget(
   requiresMinigame: boolean;
   accessCode: string | null;
 } {
-  const hash = hashCoords(sectorX, sectorY, WORLD_SEED + JUMPGATE_SALT + 1);
-  const hash2 = hashCoords(sectorX, sectorY, WORLD_SEED + JUMPGATE_SALT + 2);
-  const hash3 = hashCoords(sectorX, sectorY, WORLD_SEED + JUMPGATE_SALT + 3);
+  const salt = isAncient ? ANCIENT_JUMPGATE_SALT : JUMPGATE_SALT;
+  const hash = hashCoords(sectorX, sectorY, WORLD_SEED + salt + 1);
+  const hash2 = hashCoords(sectorX, sectorY, WORLD_SEED + salt + 2);
+  const hash3 = hashCoords(sectorX, sectorY, WORLD_SEED + salt + 3);
 
-  // Distance: weighted toward shorter ranges (quadratic distribution)
+  // Distance: ancient gates span multiple quadrants, normal gates are intra-quadrant
   const distNorm = ((hash >>> 0) % 10000) / 10000;
-  const distance = Math.floor(
-    JUMPGATE_MIN_RANGE + distNorm ** 2 * (JUMPGATE_MAX_RANGE - JUMPGATE_MIN_RANGE),
-  );
+  const minRange = isAncient ? ANCIENT_JUMPGATE_MIN_RANGE : JUMPGATE_MIN_RANGE;
+  const maxRange = isAncient ? ANCIENT_JUMPGATE_MAX_RANGE : JUMPGATE_MAX_RANGE;
+  const distance = Math.floor(minRange + distNorm ** 2 * (maxRange - minRange));
 
   // Angle for target direction
   const angle = (((hash2 >>> 0) % 3600) / 3600) * 2 * Math.PI;
   const targetX = sectorX + Math.round(Math.cos(angle) * distance);
   const targetY = sectorY + Math.round(Math.sin(angle) * distance);
 
-  // Gate type: 60% bidirectional, 40% wormhole
-  const gateType: JumpGateType = (hash3 >>> 0) % 100 < 60 ? 'bidirectional' : 'wormhole';
+  // Gate type
+  const gateType: JumpGateType = isAncient
+    ? 'ancient'
+    : (hash3 >>> 0) % 100 < 60
+      ? 'bidirectional'
+      : 'wormhole';
 
-  // Code/minigame requirements
-  const requiresCode = ((hash3 >>> 8) % 100) / 100 < JUMPGATE_CODE_CHANCE;
-  const requiresMinigame = ((hash3 >>> 16) % 100) / 100 < JUMPGATE_MINIGAME_CHANCE;
+  // Code/minigame requirements (ancient always requires minigame)
+  const requiresCode = isAncient ? false : ((hash3 >>> 8) % 100) / 100 < JUMPGATE_CODE_CHANCE;
+  const requiresMinigame =
+    isAncient || ((hash3 >>> 16) % 100) / 100 < JUMPGATE_MINIGAME_CHANCE;
 
   const accessCode = requiresCode ? generateAccessCode(hash3) : null;
 

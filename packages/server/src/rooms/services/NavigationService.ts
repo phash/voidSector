@@ -8,7 +8,7 @@ import { logger } from '../../utils/logger.js';
 import { generateSector } from '../../engine/worldgen.js';
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { validateJump } from '../../engine/commands.js';
-import { checkJumpGate, generateGateTarget } from '../../engine/jumpgates.js';
+import { checkJumpGate, checkAncientJumpGate, generateGateTarget } from '../../engine/jumpgates.js';
 import {
   calculateAutopilotPath,
   calculateAutopilotCosts,
@@ -159,11 +159,12 @@ export class NavigationService {
     sectorY: number,
     returnInfo = false,
   ): Promise<import('@void-sector/shared').JumpGateInfo | null> {
-    if (!checkJumpGate(sectorX, sectorY)) return null;
+    const isAncient = checkAncientJumpGate(sectorX, sectorY);
+    if (!isAncient && !checkJumpGate(sectorX, sectorY)) return null;
 
     let gate = await getJumpGate(sectorX, sectorY);
     if (!gate) {
-      const gateData = generateGateTarget(sectorX, sectorY);
+      const gateData = generateGateTarget(sectorX, sectorY, isAncient);
       const gateId = `gate_${sectorX}_${sectorY}`;
       await insertJumpGate({ id: gateId, sectorX, sectorY, ...gateData });
       gate = { id: gateId, sectorX, sectorY, ...gateData };

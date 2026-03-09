@@ -1466,7 +1466,7 @@ export const FACTION_UPGRADE_TIERS: Record<
 };
 
 // JumpGates
-export const JUMPGATE_CHANCE = 0.02;
+export const JUMPGATE_CHANCE = 0.005; // natural bidirectional/wormhole gates (1 in 200 sectors)
 export const JUMPGATE_SALT = 777;
 export const JUMPGATE_FUEL_COST = 1;
 export const JUMPGATE_MIN_RANGE = 50;
@@ -1475,6 +1475,12 @@ export const JUMPGATE_CODE_LENGTH = 8;
 export const JUMPGATE_MINIGAME_CHANCE = 0.3;
 export const JUMPGATE_CODE_CHANCE = 0.5;
 export const FREQUENCY_MATCH_THRESHOLD = 0.9;
+
+// Ancient Jumpgates (extremely rare, long-range portals)
+export const ANCIENT_JUMPGATE_SPAWN_RATE = 0.0001; // 1 per 10,000 sectors
+export const ANCIENT_JUMPGATE_SALT = 778;
+export const ANCIENT_JUMPGATE_MIN_RANGE = 30000; // ~3 quadrants minimum
+export const ANCIENT_JUMPGATE_MAX_RANGE = 100000; // up to ~10 quadrants
 
 // Rescue Missions
 export const RESCUE_AP_COST = 5;

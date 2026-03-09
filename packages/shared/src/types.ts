@@ -772,7 +772,7 @@ export interface FactionUpgradeResultMessage {
 }
 
 // JumpGates
-export type JumpGateType = 'bidirectional' | 'wormhole';
+export type JumpGateType = 'bidirectional' | 'wormhole' | 'ancient';
 export interface JumpGate {
   id: string;
   sectorX: number;
