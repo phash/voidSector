@@ -2620,3 +2620,139 @@ export async function getAllTerritoryClaims(): Promise<TerritoryClaimRow[]> {
   );
   return res.rows;
 }
+
+// ── Story Quest Progress ──────────────────────────────────────────────────────
+
+export interface StoryQuestProgressRow {
+  player_id: string;
+  current_chapter: number;
+  completed_chapters: number[];
+  branch_choices: Record<string, string>;
+  last_progress: number;
+}
+
+export async function getStoryProgress(playerId: string): Promise<StoryQuestProgressRow> {
+  await query(
+    `INSERT INTO story_quest_progress (player_id)
+     VALUES ($1)
+     ON CONFLICT (player_id) DO NOTHING`,
+    [playerId],
+  );
+  const res = await query<StoryQuestProgressRow>(
+    `SELECT * FROM story_quest_progress WHERE player_id = $1`,
+    [playerId],
+  );
+  return res.rows[0] ?? { player_id: playerId, current_chapter: 0, completed_chapters: [], branch_choices: {}, last_progress: Date.now() };
+}
+
+export async function upsertStoryProgress(
+  playerId: string,
+  chapter: number,
+  completedChapters: number[],
+  branchChoices: Record<string, string>,
+): Promise<void> {
+  await query(
+    `INSERT INTO story_quest_progress (player_id, current_chapter, completed_chapters, branch_choices, last_progress)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (player_id) DO UPDATE
+     SET current_chapter = $2, completed_chapters = $3, branch_choices = $4, last_progress = $5`,
+    [playerId, chapter, JSON.stringify(completedChapters), JSON.stringify(branchChoices), Date.now()],
+  );
+}
+
+// ── Humanity Reputation ───────────────────────────────────────────────────────
+
+export async function contributeHumanityRep(alienFactionId: string, delta: number): Promise<void> {
+  await query(
+    `INSERT INTO humanity_reputation (alien_faction_id, rep_value, interaction_count, last_updated)
+     VALUES ($1, $2, 1, $3)
+     ON CONFLICT (alien_faction_id) DO UPDATE
+     SET rep_value = humanity_reputation.rep_value + $2,
+         interaction_count = humanity_reputation.interaction_count + 1,
+         last_updated = $3`,
+    [alienFactionId, delta, Date.now()],
+  );
+}
+
+export async function getHumanityRep(alienFactionId: string): Promise<number> {
+  const res = await query<{ rep_value: number }>(
+    'SELECT rep_value FROM humanity_reputation WHERE alien_faction_id = $1',
+    [alienFactionId],
+  );
+  return res.rows[0]?.rep_value ?? 0;
+}
+
+// ── Community Alien Quests ────────────────────────────────────────────────────
+
+export interface CommunityAlienQuestRow {
+  id: number;
+  alien_faction_id: string;
+  quest_type: string;
+  title: string;
+  description: string | null;
+  target_count: number;
+  current_count: number;
+  reward_type: string | null;
+  started_at: number;
+  expires_at: number | null;
+  completed_at: number | null;
+  status: string;
+}
+
+export async function getActiveCommunityAlienQuest(): Promise<CommunityAlienQuestRow | null> {
+  const res = await query<CommunityAlienQuestRow>(
+    `SELECT * FROM community_alien_quests WHERE status = 'active' ORDER BY started_at DESC LIMIT 1`,
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function insertCommunityAlienQuest(
+  factionId: string,
+  questType: string,
+  title: string,
+  description: string,
+  targetCount: number,
+  rewardType: string,
+  expiresAt: number,
+): Promise<CommunityAlienQuestRow> {
+  const res = await query<CommunityAlienQuestRow>(
+    `INSERT INTO community_alien_quests (alien_faction_id, quest_type, title, description, target_count, reward_type, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [factionId, questType, title, description, targetCount, rewardType, expiresAt],
+  );
+  return res.rows[0];
+}
+
+export async function addCommunityQuestContribution(
+  questId: number,
+  playerId: string,
+  amount: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO community_quest_contributions (quest_id, player_id, contribution)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (quest_id, player_id) DO UPDATE
+     SET contribution = community_quest_contributions.contribution + $3,
+         contributed_at = $4`,
+    [questId, playerId, amount, Date.now()],
+  );
+  await query(
+    `UPDATE community_alien_quests SET current_count = current_count + $1 WHERE id = $2`,
+    [amount, questId],
+  );
+}
+
+export async function expireOldCommunityQuests(): Promise<void> {
+  await query(
+    `UPDATE community_alien_quests SET status = 'expired'
+     WHERE status = 'active' AND expires_at IS NOT NULL AND expires_at < $1`,
+    [Date.now()],
+  );
+}
+
+export async function completeCommunityQuest(questId: number): Promise<void> {
+  await query(
+    `UPDATE community_alien_quests SET status = 'completed', completed_at = $1 WHERE id = $2`,
+    [Date.now(), questId],
+  );
+}
