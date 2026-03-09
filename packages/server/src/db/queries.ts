@@ -2761,9 +2761,10 @@ export async function expireOldCommunityQuests(): Promise<void> {
   );
 }
 
-export async function completeCommunityQuest(questId: number): Promise<void> {
-  await query(
-    `UPDATE community_alien_quests SET status = 'completed', completed_at = $1 WHERE id = $2`,
+export async function completeCommunityQuest(questId: number): Promise<boolean> {
+  const res = await query(
+    `UPDATE community_alien_quests SET status = 'completed', completed_at = $1 WHERE id = $2 AND status = 'active'`,
     [Date.now(), questId],
   );
+  return (res.rowCount ?? 0) > 0;
 }

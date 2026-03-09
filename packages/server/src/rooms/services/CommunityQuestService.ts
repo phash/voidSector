@@ -72,8 +72,10 @@ export class CommunityQuestService {
     if (!quest) return;
     await addCommunityQuestContribution(quest.id, playerId, amount);
     if (quest.current_count + amount >= quest.target_count) {
-      await completeCommunityQuest(quest.id);
-      await contributeHumanityRep(quest.alien_faction_id, 50).catch(() => {});
+      const questCompleted = await completeCommunityQuest(quest.id);
+      if (questCompleted) {
+        await contributeHumanityRep(quest.alien_faction_id, 50).catch(() => {});
+      }
       await this.createNext();
     }
   }
