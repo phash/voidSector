@@ -180,8 +180,8 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
       }
 
-      // Background highlight for non-empty discovered sectors
-      if (sector && sector.type !== 'empty' && !isPlayer) {
+      // Background highlight for non-empty discovered sectors (also shown when player is here)
+      if (sector && sector.type !== 'empty') {
         const sectorBgColor = isHome
           ? SECTOR_COLORS.home_base
           : (sector as any).environment === 'black_hole'
@@ -252,6 +252,17 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.font = COORD_FONT;
           ctx.fillStyle = state.themeColor;
           ctx.textAlign = labelLeftAlign ? 'left' : 'center';
+          ctx.textBaseline = 'bottom';
+          // Show sector type above player label if sector has info (#154)
+          if (sector && sector.type !== 'empty' && (sector as any).environment !== 'black_hole') {
+            const sectorLabel = getSectorLabel(sector.type, (sector as any).environment);
+            const sectorColor =
+              SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty;
+            ctx.fillStyle = sectorColor;
+            ctx.textBaseline = 'top';
+            ctx.fillText(sectorLabel, labelX, cellY - CELL_H / 2 + 3);
+          }
+          ctx.fillStyle = state.themeColor;
           ctx.textBaseline = 'bottom';
           ctx.fillText(isHome ? 'HOME BASE' : 'YOU', labelX, cellY + CELL_H / 2 - 2);
         }
