@@ -4,6 +4,93 @@ import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc } from '@void-sector/shared';
 
+function StoryTab() {
+  const progress = useStore((s) => s.storyProgress);
+
+  useEffect(() => {
+    network.requestStoryProgress();
+  }, []);
+
+  if (!progress) {
+    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>LADE...</div>;
+  }
+
+  return (
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', overflow: 'auto' }}>
+      {progress.chapters.map((ch) => {
+        const completed = progress.completedChapters.includes(ch.id);
+        const current = progress.currentChapter === ch.id && !completed;
+        return (
+          <div
+            key={ch.id}
+            style={{
+              padding: '6px 8px',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              color: completed ? '#00ff88' : current ? 'var(--color-primary)' : 'rgba(255,255,255,0.2)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <span>
+              {completed ? '✓' : current ? '▶' : '○'} KAP.{ch.id} — {ch.title}
+            </span>
+            <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0, marginLeft: 8 }}>
+              {completed && progress.branchChoices[String(ch.id)]
+                ? `[${progress.branchChoices[String(ch.id)]}]`
+                : !completed
+                ? `Q${ch.minQDist}`
+                : ''}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CommunityTab() {
+  const quest = useStore((s) => s.activeCommunityQuest);
+
+  useEffect(() => {
+    network.requestActiveCommunityQuest();
+  }, []);
+
+  if (!quest) {
+    return (
+      <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>
+        KEINE AKTIVE COMMUNITY-QUEST
+      </div>
+    );
+  }
+
+  const pct = Math.min((quest.currentCount / quest.targetCount) * 100, 100);
+  const deadline = quest.expiresAt ? new Date(quest.expiresAt).toLocaleDateString() : '—';
+
+  return (
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', padding: 8 }}>
+      <div style={{ color: 'var(--color-primary)', marginBottom: 8, letterSpacing: '0.1em' }}>
+        {quest.title}
+      </div>
+      <div style={{ color: 'var(--color-dim)', marginBottom: 12, lineHeight: 1.5, fontSize: '0.65rem' }}>
+        {quest.description}
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.65rem' }}>
+          <span style={{ color: 'var(--color-dim)' }}>FORTSCHRITT</span>
+          <span style={{ color: 'var(--color-primary)' }}>
+            {quest.currentCount.toLocaleString()} / {quest.targetCount.toLocaleString()}
+          </span>
+        </div>
+        <div style={{ height: 3, background: 'rgba(255,255,255,0.1)' }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--color-primary)' }} />
+        </div>
+      </div>
+      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>DEADLINE: {deadline}</div>
+    </div>
+  );
+}
+
 export function QuestsScreen() {
   const activeQuests = useStore((s) => s.activeQuests);
   const reputations = useStore((s) => s.reputations);
@@ -17,7 +104,7 @@ export function QuestsScreen() {
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
 
-  const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events' | 'rescue'>('active');
+  const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events' | 'rescue' | 'story' | 'community'>('active');
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
   const [stationNpcs, setStationNpcs] = useState<StationNpc[]>([]);
   const [availableQuests, setAvailableQuests] = useState<AvailableQuest[]>([]);
@@ -53,6 +140,8 @@ export function QuestsScreen() {
     rep: 'REP',
     events: 'EVENTS',
     rescue: 'RETTUNG',
+    story: 'STORY',
+    community: 'COMMUNITY',
   };
 
   return (
@@ -67,8 +156,8 @@ export function QuestsScreen() {
         </button>
       )}
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-        {(['active', 'station', 'rep', 'events', 'rescue'] as const).map((t) => (
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', flexWrap: 'wrap' }}>
+        {(['active', 'station', 'rep', 'events', 'rescue', 'story', 'community'] as const).map((t) => (
           <button
             key={t}
             onClick={() => {
@@ -346,6 +435,12 @@ export function QuestsScreen() {
             })}
         </div>
       )}
+
+      {/* Story tab */}
+      {tab === 'story' && <StoryTab />}
+
+      {/* Community tab */}
+      {tab === 'community' && <CommunityTab />}
 
       {/* Rescue tab */}
       {tab === 'rescue' && (
