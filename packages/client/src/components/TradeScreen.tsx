@@ -164,6 +164,7 @@ export function TradeScreen() {
                 const outOfStock = item.stock < amount;
                 const buyTotal = item.buyPrice * amount;
                 const sellTotal = item.sellPrice * amount;
+                const playerAmount = cargo[item.itemType as 'ore' | 'gas' | 'crystal'] ?? 0;
                 return (
                   <div key={item.itemType} style={{ marginBottom: 6 }}>
                     <div
@@ -179,6 +180,9 @@ export function TradeScreen() {
                       <span style={{ letterSpacing: '0.05em' }}>{stockBar}</span>
                       <span style={{ opacity: 0.6, minWidth: 60 }}>
                         {item.stock}/{item.maxStock}
+                      </span>
+                      <span style={{ opacity: 0.5, marginLeft: 'auto', fontSize: '0.65rem' }}>
+                        AN BORD: <span style={{ color: 'var(--color-primary)' }}>{playerAmount}</span>
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginTop: 2, marginLeft: 56 }}>
@@ -220,27 +224,33 @@ export function TradeScreen() {
               >
                 NPC PREISE (KAUF / VERKAUF)
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', marginBottom: 8, fontSize: '0.65rem', opacity: 0.5 }}>
+                <span>STATION</span><span>BESTAND</span>
+              </div>
               {(['ore', 'gas', 'crystal'] as const).map((res) => {
                 const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
                 const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
+                const playerAmount = isStation ? cargo[res] : storage[res];
                 return (
                   <div
                     key={res}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignItems: 'center', marginBottom: 6 }}
                   >
-                    <span style={{ width: 60 }}>{res.toUpperCase()}</span>
-                    <button
-                      style={btnStyle}
-                      onClick={() => network.sendNpcTrade(res, amount, 'buy')}
-                    >
-                      KAUFEN ({buyPrice} CR)
-                    </button>
-                    <button
-                      style={btnStyle}
-                      onClick={() => network.sendNpcTrade(res, amount, 'sell')}
-                    >
-                      VERKAUFEN ({sellPrice} CR)
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontSize: '0.75rem' }}>{res.toUpperCase()}</span>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button style={{ ...btnStyle, fontSize: '0.6rem' }} onClick={() => network.sendNpcTrade(res, amount, 'buy')}>
+                          K ({buyPrice}CR)
+                        </button>
+                        <button style={{ ...btnStyle, fontSize: '0.6rem' }} onClick={() => network.sendNpcTrade(res, amount, 'sell')}>
+                          V ({sellPrice}CR)
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', paddingLeft: 4 }}>
+                      {playerAmount}
+                      <span style={{ opacity: 0.4, fontSize: '0.65rem' }}> {isStation ? 'Cargo' : 'Lager'}</span>
+                    </div>
                   </div>
                 );
               })}

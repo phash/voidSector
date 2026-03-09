@@ -88,8 +88,8 @@ describe('TradeScreen', () => {
     });
     render(<TradeScreen />);
     expect(screen.getByText(/NPC PREISE/)).toBeTruthy();
-    expect(screen.getByText(/STATION/)).toBeTruthy();
-    expect(screen.getByText(/CARGO/)).toBeTruthy();
+    expect(screen.getAllByText(/STATION/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/CARGO/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows stock bars and dynamic prices when npcStationData is available', () => {
