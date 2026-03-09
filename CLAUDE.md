@@ -74,7 +74,8 @@ Next: **045**.
 ## Key Patterns
 
 - **AP**: lazy evaluation, no tick loop — `calculateCurrentAP(state, Date.now())` on each action
-- **World gen**: deterministic `hashCoords(x, y, seed)` — sectors generated on demand, saved to DB
+- **World gen**: deterministic `hashCoords(x, y, seed)` — sectors generated on demand, saved to DB. Origin is **(0,0)** — world extends into positive x/y.
+- **Spawn**: new players spawn within **radius 5 of (0,0)** — coords x∈[1,5], y∈[1,5] (`engine/spawn.ts`)
 - **Rooms**: per-quadrant. Intra-quadrant: `moveSector` message. Cross-quadrant: full leave/join
 - **Errors**: server sends `{ code, message }` → client logs + sets `actionError` for `InlineError`
 - **Tests**: Vitest everywhere. Client: jsdom + RTL + jest-canvas-mock (jest-shim.ts)
