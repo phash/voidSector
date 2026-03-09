@@ -15,5 +15,11 @@ CREATE INDEX IF NOT EXISTS idx_inventory_player ON inventory (player_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_player_type ON inventory (player_id, item_type);
 
 -- Extend Kontor orders to support all item types (was resource-only)
+-- item_type: category ('resource' | 'module' | 'blueprint')
+-- item_id: specific item identifier (e.g. 'ore', 'drive_mk2')
+-- The original item_type column stored resource names; item_id replaces that role.
 ALTER TABLE kontor_orders
   ADD COLUMN IF NOT EXISTS item_type TEXT NOT NULL DEFAULT 'resource';
+
+ALTER TABLE kontor_orders
+  ADD COLUMN IF NOT EXISTS item_id TEXT NOT NULL DEFAULT '';

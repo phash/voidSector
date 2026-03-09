@@ -14,6 +14,7 @@ vi.mock('../../db/queries.js', () => ({
   deductCredits: vi.fn(),
   addCredits: vi.fn(),
   deductCargo: vi.fn(),
+  transferInventoryItem: vi.fn(),
 }));
 
 import {
@@ -25,7 +26,7 @@ import {
   deactivateKontorOrder,
 } from '../../db/kontorQueries.js';
 import type { KontorOrder } from '../../db/kontorQueries.js';
-import { getPlayerCredits, deductCredits, addCredits, deductCargo } from '../../db/queries.js';
+import { getPlayerCredits, deductCredits, addCredits, deductCargo, transferInventoryItem } from '../../db/queries.js';
 import {
   placeKontorOrder,
   cancelKontorOrder,
@@ -44,6 +45,7 @@ const mockGetPlayerCredits = vi.mocked(getPlayerCredits);
 const mockDeductCredits = vi.mocked(deductCredits);
 const mockAddCredits = vi.mocked(addCredits);
 const mockDeductCargo = vi.mocked(deductCargo);
+const mockTransferInventoryItem = vi.mocked(transferInventoryItem);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -55,7 +57,8 @@ function makeOrder(overrides: Partial<KontorOrder> = {}): KontorOrder {
     ownerId: 'owner-1',
     sectorX: 5,
     sectorY: 10,
-    itemType: 'ore',
+    itemType: 'resource',
+    itemId: 'ore',
     amountWanted: 100,
     amountFilled: 0,
     pricePerUnit: 10,
@@ -72,38 +75,38 @@ function makeOrder(overrides: Partial<KontorOrder> = {}): KontorOrder {
 // ---------------------------------------------------------------------------
 describe('placeKontorOrder', () => {
   it('validates params — rejects non-positive amount', async () => {
-    const result = await placeKontorOrder('owner-1', 5, 10, 'ore', 0, 10);
+    const result = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', 0, 10);
     expect(result.success).toBe(false);
     expect(result.error).toBe('Invalid amount');
   });
 
   it('validates params — rejects negative amount', async () => {
-    const result = await placeKontorOrder('owner-1', 5, 10, 'ore', -5, 10);
+    const result = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', -5, 10);
     expect(result.success).toBe(false);
     expect(result.error).toBe('Invalid amount');
   });
 
   it('validates params — rejects non-integer amount', async () => {
-    const result = await placeKontorOrder('owner-1', 5, 10, 'ore', 1.5, 10);
+    const result = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', 1.5, 10);
     expect(result.success).toBe(false);
     expect(result.error).toBe('Invalid amount');
   });
 
   it('validates params — rejects non-positive price', async () => {
-    const result = await placeKontorOrder('owner-1', 5, 10, 'ore', 10, 0);
+    const result = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', 10, 0);
     expect(result.success).toBe(false);
     expect(result.error).toBe('Invalid price');
   });
 
   it('validates params — rejects non-integer price', async () => {
-    const result = await placeKontorOrder('owner-1', 5, 10, 'ore', 10, 2.5);
+    const result = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', 10, 2.5);
     expect(result.success).toBe(false);
     expect(result.error).toBe('Invalid price');
   });
 
   it('rejects when player lacks credits for budget', async () => {
     mockGetPlayerCredits.mockResolvedValueOnce(500);
-    const result = await placeKontorOrder('owner-1', 5, 10, 'ore', 100, 10); // budget = 1000
+    const result = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', 100, 10); // budget = 1000
     expect(result.success).toBe(false);
     expect(result.error).toBe('Insufficient credits');
   });
@@ -111,7 +114,7 @@ describe('placeKontorOrder', () => {
   it('handles race condition when deductCredits fails', async () => {
     mockGetPlayerCredits.mockResolvedValueOnce(1000);
     mockDeductCredits.mockResolvedValueOnce(false);
-    const result = await placeKontorOrder('owner-1', 5, 10, 'ore', 100, 10);
+    const result = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', 100, 10);
     expect(result.success).toBe(false);
     expect(result.error).toBe('Insufficient credits');
   });
@@ -122,7 +125,7 @@ describe('placeKontorOrder', () => {
     mockDeductCredits.mockResolvedValueOnce(true);
     mockCreateKontorOrder.mockResolvedValueOnce(createdOrder);
 
-    const result = await placeKontorOrder('owner-1', 5, 10, 'ore', 100, 10);
+    const result = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', 100, 10);
     expect(result.success).toBe(true);
     expect(result.order).toEqual(createdOrder);
 
@@ -131,7 +134,8 @@ describe('placeKontorOrder', () => {
       ownerId: 'owner-1',
       sectorX: 5,
       sectorY: 10,
-      itemType: 'ore',
+      itemType: 'resource',
+      itemId: 'ore',
       amountWanted: 100,
       pricePerUnit: 10,
       budgetReserved: 1000,
@@ -253,18 +257,18 @@ describe('fillKontorOrder', () => {
     expect(result.error).toBe('Order already fully filled');
   });
 
-  it('returns error when seller has insufficient cargo', async () => {
+  it('returns error when seller has insufficient inventory', async () => {
     mockGetKontorOrderById.mockResolvedValueOnce(makeOrder());
-    mockDeductCargo.mockResolvedValueOnce(false);
+    mockTransferInventoryItem.mockRejectedValueOnce(new Error('Insufficient inventory'));
 
     const result = await fillKontorOrder('order-1', 'seller-1', 10);
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Insufficient cargo');
+    expect(result.error).toBe('Insufficient inventory');
   });
 
   it('transfers credits to seller and updates fill count', async () => {
     mockGetKontorOrderById.mockResolvedValueOnce(makeOrder());
-    mockDeductCargo.mockResolvedValueOnce(true);
+    mockTransferInventoryItem.mockResolvedValueOnce(undefined);
     mockAddCredits.mockResolvedValueOnce(100);
     mockUpdateKontorOrderFilled.mockResolvedValueOnce(undefined);
 
@@ -272,7 +276,8 @@ describe('fillKontorOrder', () => {
     expect(result.success).toBe(true);
     expect(result.earned).toBe(100); // 10 * 10
 
-    expect(mockDeductCargo).toHaveBeenCalledWith('seller-1', 'ore', 10);
+    expect(mockTransferInventoryItem).toHaveBeenCalledWith('seller-1', 'owner-1', 'resource', 'ore', 10);
+    expect(mockDeductCargo).not.toHaveBeenCalled();
     expect(mockAddCredits).toHaveBeenCalledWith('seller-1', 100);
     expect(mockUpdateKontorOrderFilled).toHaveBeenCalledWith('order-1', 10);
     expect(mockDeactivateKontorOrder).not.toHaveBeenCalled();
@@ -280,7 +285,7 @@ describe('fillKontorOrder', () => {
 
   it('clamps to remaining amount when seller offers more', async () => {
     mockGetKontorOrderById.mockResolvedValueOnce(makeOrder({ amountFilled: 90 })); // 10 remaining
-    mockDeductCargo.mockResolvedValueOnce(true);
+    mockTransferInventoryItem.mockResolvedValueOnce(undefined);
     mockAddCredits.mockResolvedValueOnce(100);
     mockUpdateKontorOrderFilled.mockResolvedValueOnce(undefined);
     mockDeactivateKontorOrder.mockResolvedValueOnce(undefined);
@@ -289,14 +294,15 @@ describe('fillKontorOrder', () => {
     expect(result.success).toBe(true);
     expect(result.earned).toBe(100); // 10 * 10
 
-    expect(mockDeductCargo).toHaveBeenCalledWith('seller-1', 'ore', 10);
+    expect(mockTransferInventoryItem).toHaveBeenCalledWith('seller-1', 'owner-1', 'resource', 'ore', 10);
+    expect(mockDeductCargo).not.toHaveBeenCalled();
     expect(mockUpdateKontorOrderFilled).toHaveBeenCalledWith('order-1', 10);
     expect(mockDeactivateKontorOrder).toHaveBeenCalledWith('order-1');
   });
 
   it('deactivates order when fully filled', async () => {
     mockGetKontorOrderById.mockResolvedValueOnce(makeOrder()); // 100 remaining
-    mockDeductCargo.mockResolvedValueOnce(true);
+    mockTransferInventoryItem.mockResolvedValueOnce(undefined);
     mockAddCredits.mockResolvedValueOnce(1000);
     mockUpdateKontorOrderFilled.mockResolvedValueOnce(undefined);
     mockDeactivateKontorOrder.mockResolvedValueOnce(undefined);
@@ -320,13 +326,13 @@ describe('full lifecycle', () => {
     mockDeductCredits.mockResolvedValueOnce(true);
     mockCreateKontorOrder.mockResolvedValueOnce(order);
 
-    const placeResult = await placeKontorOrder('owner-1', 5, 10, 'ore', 100, 10);
+    const placeResult = await placeKontorOrder('owner-1', 5, 10, 'resource', 'ore', 100, 10);
     expect(placeResult.success).toBe(true);
 
     // Step 2: Seller fills 30 units
     const partiallyFilled = makeOrder({ amountFilled: 0 }); // engine reads fresh from DB
     mockGetKontorOrderById.mockResolvedValueOnce(partiallyFilled);
-    mockDeductCargo.mockResolvedValueOnce(true);
+    mockTransferInventoryItem.mockResolvedValueOnce(undefined);
     mockAddCredits.mockResolvedValueOnce(300);
     mockUpdateKontorOrderFilled.mockResolvedValueOnce(undefined);
 

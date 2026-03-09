@@ -7,13 +7,15 @@ import {
   updateKontorOrderFilled,
   deactivateKontorOrder,
 } from '../db/kontorQueries.js';
-import { getPlayerCredits, deductCredits, addCredits, deductCargo } from '../db/queries.js';
+import { getPlayerCredits, deductCredits, addCredits, transferInventoryItem } from '../db/queries.js';
+import type { ItemType } from '@void-sector/shared';
 
 export async function placeKontorOrder(
   ownerId: string,
   sectorX: number,
   sectorY: number,
-  itemType: string,
+  itemType: ItemType,
+  itemId: string,
   amount: number,
   pricePerUnit: number,
 ): Promise<{ success: boolean; order?: KontorOrder; error?: string }> {
@@ -40,6 +42,7 @@ export async function placeKontorOrder(
     sectorX,
     sectorY,
     itemType,
+    itemId,
     amountWanted: amount,
     pricePerUnit,
     budgetReserved: budget,
@@ -102,9 +105,10 @@ export async function fillKontorOrder(
 
   const fillAmount = Math.min(amount, remaining);
 
-  const cargoDeducted = await deductCargo(sellerId, order.itemType, fillAmount);
-  if (!cargoDeducted) {
-    return { success: false, earned: 0, error: 'Insufficient cargo' };
+  try {
+    await transferInventoryItem(sellerId, order.ownerId, order.itemType as ItemType, order.itemId, fillAmount);
+  } catch {
+    return { success: false, earned: 0, error: 'Insufficient inventory' };
   }
 
   const earned = fillAmount * order.pricePerUnit;

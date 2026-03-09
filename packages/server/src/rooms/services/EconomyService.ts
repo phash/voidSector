@@ -677,7 +677,7 @@ export class EconomyService {
 
   async handleKontorPlaceOrder(
     client: Client,
-    data: { itemType: string; amount: number; pricePerUnit: number },
+    data: { itemType: string; itemId: string; amount: number; pricePerUnit: number },
   ): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'kontorPlaceOrder', 1000)) return;
     if (rejectGuest(client, 'kontor')) return;
@@ -685,6 +685,10 @@ export class EconomyService {
 
     if (!data?.itemType || typeof data.itemType !== 'string') {
       client.send('kontorUpdate', { error: 'Invalid item type' });
+      return;
+    }
+    if (!data?.itemId || typeof data.itemId !== 'string') {
+      client.send('kontorUpdate', { error: 'Invalid item ID' });
       return;
     }
     if (!isPositiveInt(data?.amount) || !isPositiveInt(data?.pricePerUnit)) {
@@ -696,7 +700,8 @@ export class EconomyService {
       auth.userId,
       this.ctx._px(client.sessionId),
       this.ctx._py(client.sessionId),
-      data.itemType,
+      data.itemType as import('@void-sector/shared').ItemType,
+      data.itemId,
       data.amount,
       data.pricePerUnit,
     );
