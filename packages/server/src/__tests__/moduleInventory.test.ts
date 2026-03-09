@@ -76,7 +76,7 @@ vi.mock('../engine/inventoryService.js', () => ({
   transferInventoryItem: vi.fn(),
   getResourceTotal: vi.fn(),
   canAddResource: vi.fn(),
-  getCargoState: vi.fn(),
+  getCargoState: vi.fn().mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 }),
 }));
 
 import { ShipService } from '../rooms/services/ShipService.js';

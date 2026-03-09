@@ -62,9 +62,7 @@ import {
   getSector,
   getPlayerDiscoveries,
   addDiscovery,
-  getPlayerCargo,
   createStructure,
-  deductCargo,
   getPlayerBaseStructures,
   getStorageInventory,
   updateStorageResource,
@@ -114,8 +112,12 @@ import {
   insertJumpGateLink,
   removeJumpGateLink,
   countJumpGateLinks,
-  addToCargo,
 } from '../../db/queries.js';
+import {
+  getCargoState,
+  addToInventory,
+  removeFromInventory,
+} from '../../engine/inventoryService.js';
 import {
   getPlayerKnownQuadrants,
   addPlayerKnownQuadrant,
@@ -162,7 +164,7 @@ export class WorldService {
 
   async handleGetCargo(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', cargo);
   }
 
@@ -261,7 +263,7 @@ export class WorldService {
 
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
 
     const result = validateBuild(currentAP, cargo, data.type);
     if (!result.valid) {
@@ -273,8 +275,9 @@ export class WorldService {
 
     for (const [resource, amount] of Object.entries(result.costs)) {
       if (amount > 0) {
-        const deducted = await deductCargo(auth.userId, resource, amount);
-        if (!deducted) {
+        try {
+          await removeFromInventory(auth.userId, 'resource', resource, amount);
+        } catch {
           client.send('buildResult', {
             success: false,
             error: `Insufficient ${resource} (concurrent modification)`,
@@ -306,7 +309,7 @@ export class WorldService {
 
     client.send('buildResult', { success: true, structure });
     client.send('apUpdate', result.newAP!);
-    const updatedCargo = await getPlayerCargo(auth.userId);
+    const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
     this.ctx.broadcast('structureBuilt', {
       structure,
@@ -345,7 +348,7 @@ export class WorldService {
     }
 
     // Check artefacts
-    const cargoState = await getPlayerCargo(auth.userId);
+    const cargoState = await getCargoState(auth.userId);
     if ((cargoState.artefact ?? 0) < JUMPGATE_BUILD_COST.artefact) {
       client.send('buildResult', { success: false, error: `Need ${JUMPGATE_BUILD_COST.artefact} artefacts` });
       return;
@@ -369,8 +372,8 @@ export class WorldService {
 
     // Deduct all resources
     await deductCredits(auth.userId, JUMPGATE_BUILD_COST.credits);
-    await deductCargo(auth.userId, 'artefact', JUMPGATE_BUILD_COST.artefact);
-    await deductCargo(auth.userId, 'crystal', JUMPGATE_BUILD_COST.crystal);
+    await removeFromInventory(auth.userId, 'resource', 'artefact', JUMPGATE_BUILD_COST.artefact);
+    await removeFromInventory(auth.userId, 'resource', 'crystal', JUMPGATE_BUILD_COST.crystal);
 
     // Insert into jumpgates table
     const gateId = `pgate_${sx}_${sy}`;
@@ -378,7 +381,7 @@ export class WorldService {
 
     client.send('buildResult', { success: true, structure: { id: gateId, type: 'jumpgate', sectorX: sx, sectorY: sy } });
     client.send('apUpdate', newAP);
-    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('cargoUpdate', await getCargoState(auth.userId));
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     client.send('logEntry', `Jumpgate errichtet bei (${sx}, ${sy})`);
   }
@@ -428,7 +431,7 @@ export class WorldService {
       client.send('error', { code: 'UPGRADE_FAIL', message: 'Not enough credits' });
       return;
     }
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     for (const [resource, amount] of Object.entries(costs)) {
       if (resource === 'credits' || !amount) continue;
       if ((cargo[resource as keyof typeof cargo] ?? 0) < amount) {
@@ -441,13 +444,13 @@ export class WorldService {
     await deductCredits(auth.userId, costs.credits ?? 0);
     for (const [resource, amount] of Object.entries(costs)) {
       if (resource === 'credits' || !amount) continue;
-      await deductCargo(auth.userId, resource, amount);
+      await removeFromInventory(auth.userId, 'resource', resource, amount);
     }
 
     await upgradeJumpGate(data.gateId, field, targetLevel);
 
     client.send('jumpgateUpdated', { success: true, gateId: data.gateId, field, newLevel: targetLevel });
-    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('cargoUpdate', await getCargoState(auth.userId));
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     client.send('logEntry', `Jumpgate ${field === 'level_connection' ? 'Verbindung' : 'Distanz'} auf Level ${targetLevel} aufgerüstet`);
   }
@@ -497,12 +500,12 @@ export class WorldService {
 
     // Return resources
     await addCredits(auth.userId, refund.credits);
-    if (refund.ore > 0) await addToCargo(auth.userId, 'ore', refund.ore);
-    if (refund.crystal > 0) await addToCargo(auth.userId, 'crystal', refund.crystal);
-    if (refund.artefact > 0) await addToCargo(auth.userId, 'artefact', refund.artefact);
+    if (refund.ore > 0) await addToInventory(auth.userId, 'resource', 'ore', refund.ore);
+    if (refund.crystal > 0) await addToInventory(auth.userId, 'resource', 'crystal', refund.crystal);
+    if (refund.artefact > 0) await addToInventory(auth.userId, 'resource', 'artefact', refund.artefact);
 
     client.send('jumpgateDismantled', { success: true, refund });
-    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('cargoUpdate', await getCargoState(auth.userId));
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     client.send('logEntry', `Jumpgate abgebaut. Rückerstattung: ${refund.credits} CR`);
   }
@@ -553,7 +556,7 @@ export class WorldService {
     const ship = this.ctx.getShipForClient(client.sessionId);
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
     const validation = validateCreateSlate(
@@ -636,7 +639,7 @@ export class WorldService {
     // Create slate + add to cargo
     const slate = await createDataSlate(auth.userId, data.slateType, sectorData);
     await addSlateToCargo(auth.userId);
-    const updatedCargo = await getPlayerCargo(auth.userId);
+    const updatedCargo = await getCargoState(auth.userId);
 
     client.send('createSlateResult', {
       success: true,
@@ -671,7 +674,7 @@ export class WorldService {
     await deleteSlate(data.slateId);
 
     client.send('activateSlateResult', { success: true, sectorsAdded: sectors.length });
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', cargo);
   }
 
@@ -742,7 +745,7 @@ export class WorldService {
     await deleteSlate(data.slateId);
 
     client.send('jumpgateLinkResult', { success: true });
-    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('cargoUpdate', await getCargoState(auth.userId));
     client.send('logEntry', `Gate bei (${targetGate.sectorX}, ${targetGate.sectorY}) verknüpft`);
   }
 
@@ -779,7 +782,7 @@ export class WorldService {
     await addSlateToCargo(auth.userId);
 
     client.send('jumpgateUnlinkResult', { success: true });
-    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('cargoUpdate', await getCargoState(auth.userId));
     client.send('logEntry', 'Verbindung getrennt. Gate-Slate zurückerhalten.');
   }
 
@@ -806,7 +809,7 @@ export class WorldService {
 
     const credits = await getPlayerCredits(auth.userId);
     client.send('npcBuybackResult', { success: true, credits, creditsEarned: validation.payout });
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', cargo);
   }
 
@@ -829,7 +832,7 @@ export class WorldService {
     await createSlateTradeOrder(auth.userId, data.slateId, data.price);
 
     client.send('orderPlaced', { success: true });
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', cargo);
   }
 
@@ -847,7 +850,7 @@ export class WorldService {
       return;
     }
 
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     const ship = this.ctx.getShipForClient(client.sessionId);
     const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
     if (cargoTotal >= ship.cargoCap) {
@@ -864,7 +867,7 @@ export class WorldService {
     client.send('slateOrderAccepted', { success: true });
     const updatedCredits = await getPlayerCredits(auth.userId);
     client.send('creditsUpdate', { credits: updatedCredits });
-    const updatedCargo = await getPlayerCargo(auth.userId);
+    const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
   }
 

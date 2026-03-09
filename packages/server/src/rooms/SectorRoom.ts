@@ -28,13 +28,15 @@ import {
   setHyperdriveState,
 } from './services/RedisAPStore.js';
 import {
+  getCargoState,
+  addToInventory,
+  getResourceTotal,
+} from '../engine/inventoryService.js';
+import {
   getSector,
   saveSector,
   addDiscovery,
   getPlayerDiscoveries,
-  getPlayerCargo,
-  addToCargo,
-  getCargoTotal,
   getActiveShip,
   createShip,
   getPendingMessages,
@@ -906,7 +908,7 @@ export class SectorRoom extends Room<SectorRoomState> {
           }
           if (event.updates.cargo !== undefined) {
             // Send full cargo refresh after admin edit
-            getPlayerCargo(event.playerId)
+            getCargoState(event.playerId)
               .then((cargo) => client.send('cargoUpdate', cargo))
               .catch(() => {});
           }
@@ -1041,7 +1043,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('apUpdate', updated);
 
       // Send initial cargo
-      const cargo = await getPlayerCargo(auth.userId);
+      const cargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', cargo);
 
       // Send credits
@@ -1223,12 +1225,12 @@ export class SectorRoom extends Room<SectorRoomState> {
       const auth = client.auth as AuthPayload;
       const mining = await getMiningState(auth.userId);
       if (mining.active) {
-        const cargoTotal = await getCargoTotal(auth.userId);
+        const cargoTotal = await getResourceTotal(auth.userId);
         const ship = this.getShipForClient(client.sessionId);
         const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
         const result = stopMining(mining, cargoSpace);
         if (result.mined > 0 && result.resource) {
-          await addToCargo(auth.userId, result.resource, result.mined);
+          await addToInventory(auth.userId, 'resource', result.resource, result.mined);
         }
         await saveMiningState(auth.userId, result.newState);
       }

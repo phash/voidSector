@@ -38,14 +38,16 @@ import {
   getPlayerDiscoveryCount,
   getPlayerCombatVictoryCount,
   getMirrorMindStats,
-  getPlayerCargo,
-  deductCargo,
-  addToCargo,
   addCredits,
   getPlayerCredits,
   recordNewsEvent,
   contributeHumanityRep,
 } from '../../db/queries.js';
+import {
+  getCargoState,
+  addToInventory,
+  removeFromInventory,
+} from '../../engine/inventoryService.js';
 import type { ResourceType } from '@void-sector/shared';
 
 export interface AlienInteractMessage {
@@ -251,16 +253,17 @@ export class AlienInteractionService {
         return;
       }
       const crystal = Math.floor(offerOre / 3);
-      const oreDeducted = await deductCargo(auth.userId, 'ore' as ResourceType, offerOre);
-      if (!oreDeducted) {
+      const cargo = await getCargoState(auth.userId);
+      if ((cargo.ore ?? 0) < offerOre) {
         client.send('alienInteractResult', { success: false, factionId: 'scrappers', error: 'Nicht genug Erz im Cargo.' });
         return;
       }
-      await addToCargo(auth.userId, 'crystal' as ResourceType, crystal);
+      await removeFromInventory(auth.userId, 'resource', 'ore', offerOre);
+      await addToInventory(auth.userId, 'resource', 'crystal', crystal);
       const repAfter = await addAlienReputation(auth.userId, 'scrappers', getRepChangeForAction('trade', 'scrappers'));
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'scrappers', encounterType: 'trade', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { ore: offerOre, crystal }, repBefore, repAfter });
       await contributeHumanityRep('scrappers', 1).catch(() => {});
-      client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+      client.send('cargoUpdate', await getCargoState(auth.userId));
       client.send('alienInteractResult', {
         success: true,
         factionId: 'scrappers',
@@ -389,16 +392,17 @@ export class AlienInteractionService {
         client.send('alienInteractResult', { success: false, factionId: 'consortium', error: 'Ungültige Vertrags-Parameter.' });
         return;
       }
-      const deducted = await deductCargo(auth.userId, resource as ResourceType, amount);
-      if (!deducted) {
+      const consortiumCargo = await getCargoState(auth.userId);
+      if ((consortiumCargo[resource as keyof typeof consortiumCargo] ?? 0) < amount) {
         client.send('alienInteractResult', { success: false, factionId: 'consortium', error: `Nicht genug ${resource} im Cargo (${amount} benötigt).` });
         return;
       }
+      await removeFromInventory(auth.userId, 'resource', resource, amount);
       await addCredits(auth.userId, reward);
       const repAfter = await addAlienReputation(auth.userId, 'consortium', getRepChangeForAction('quest_completed', 'consortium'));
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'consortium', encounterType: 'trade', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { resource, amount, reward }, repBefore, repAfter });
       await contributeHumanityRep('consortium', 1).catch(() => {});
-      client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+      client.send('cargoUpdate', await getCargoState(auth.userId));
       client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
       client.send('alienInteractResult', {
         success: true,
@@ -673,22 +677,23 @@ export class AlienInteractionService {
         client.send('alienInteractResult', { success: false, factionId: 'helions', error: 'Mindest-Opfer: 10 Einheiten.' });
         return;
       }
-      const deducted = await deductCargo(auth.userId, resource, amount);
-      if (!deducted) {
+      const helionCargo = await getCargoState(auth.userId);
+      if ((helionCargo[resource as keyof typeof helionCargo] ?? 0) < amount) {
         client.send('alienInteractResult', { success: false, factionId: 'helions', error: `Nicht genug ${resource} im Cargo.` });
         return;
       }
+      await removeFromInventory(auth.userId, 'resource', resource, amount);
       const repGain = Math.floor(amount / 10);
       const repAfter = await addAlienReputation(auth.userId, 'helions', repGain);
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'helions', encounterType: 'offering', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { resource, amount }, repBefore, repAfter });
       await contributeHumanityRep('helions', 1).catch(() => {});
-      client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+      client.send('cargoUpdate', await getCargoState(auth.userId));
 
       const artefactChance = Math.random();
       const artefactAwarded = repAfter >= 50 && artefactChance < 0.25;
       if (artefactAwarded) {
-        await addToCargo(auth.userId, 'artefact' as ResourceType, 1);
-        client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+        await addToInventory(auth.userId, 'resource', 'artefact', 1);
+        client.send('cargoUpdate', await getCargoState(auth.userId));
       }
       client.send('alienInteractResult', {
         success: true,

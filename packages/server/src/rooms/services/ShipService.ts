@@ -18,6 +18,7 @@ import {
   addToInventory,
   removeFromInventory,
   getInventoryItem,
+  getCargoState,
 } from '../../engine/inventoryService.js';
 import {
   getActiveShip,
@@ -34,8 +35,6 @@ import {
   deleteActiveResearch,
   getPlayerCredits,
   deductCredits,
-  getPlayerCargo,
-  deductCargo,
   getPlayerReputations,
   getStorageInventory,
 } from '../../db/queries.js';
@@ -154,7 +153,7 @@ export class ShipService {
       return;
     }
     // Check resource costs from cargo
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     const cargoMap: Record<string, number> = {
       ore: cargo.ore,
       gas: cargo.gas,
@@ -171,10 +170,10 @@ export class ShipService {
     }
     // Deduct credits
     await deductCredits(auth.userId, moduleDef.cost.credits);
-    // Deduct resources from cargo
+    // Deduct resources from inventory
     for (const [res, amount] of Object.entries(moduleDef.cost)) {
       if (res === 'credits' || !amount) continue;
-      await deductCargo(auth.userId, res, amount as number);
+      await removeFromInventory(auth.userId, 'resource', res, amount as number);
     }
     // Add to unified inventory
     await addToInventory(auth.userId, 'module', data.moduleId, 1);
@@ -251,7 +250,7 @@ export class ShipService {
 
     // Get player resources
     const credits = await getPlayerCredits(auth.userId);
-    const cargo = await getPlayerCargo(auth.userId);
+    const cargo = await getCargoState(auth.userId);
     const storage = await getStorageInventory(auth.userId);
 
     const resources = {
@@ -276,13 +275,13 @@ export class ShipService {
       return;
     }
 
-    // Deduct costs (from credits first, then cargo for resources)
+    // Deduct costs (from credits first, then inventory for resources)
     const cost = mod.researchCost!;
     await deductCredits(auth.userId, cost.credits);
-    if (cost.ore) await deductCargo(auth.userId, 'ore', cost.ore);
-    if (cost.gas) await deductCargo(auth.userId, 'gas', cost.gas);
-    if (cost.crystal) await deductCargo(auth.userId, 'crystal', cost.crystal);
-    if (cost.artefact) await deductCargo(auth.userId, 'artefact', cost.artefact);
+    if (cost.ore) await removeFromInventory(auth.userId, 'resource', 'ore', cost.ore);
+    if (cost.gas) await removeFromInventory(auth.userId, 'resource', 'gas', cost.gas);
+    if (cost.crystal) await removeFromInventory(auth.userId, 'resource', 'crystal', cost.crystal);
+    if (cost.artefact) await removeFromInventory(auth.userId, 'resource', 'artefact', cost.artefact);
 
     // Start research timer
     const now = Date.now();

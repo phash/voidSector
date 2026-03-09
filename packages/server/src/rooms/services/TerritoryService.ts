@@ -22,9 +22,8 @@ import {
   incrementTerritoryVictories,
   getPlayerTerritories,
   getAllTerritoryClaims,
-  getPlayerCargo,
-  deductCargo,
 } from '../../db/queries.js';
+import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { rejectGuest } from './utils.js';
 
@@ -70,11 +69,9 @@ export class TerritoryService {
     }
 
     // Check cargo cost
-    const cargo = await getPlayerCargo(auth.userId);
-    const oreItem = cargo.find((c) => c.resource_type === 'ore');
-    const crystalItem = cargo.find((c) => c.resource_type === 'crystal');
-    const oreCount = oreItem?.quantity ?? 0;
-    const crystalCount = crystalItem?.quantity ?? 0;
+    const cargo = await getCargoState(auth.userId);
+    const oreCount = cargo.ore;
+    const crystalCount = cargo.crystal;
 
     if (oreCount < CLAIM_COST_ORE || crystalCount < CLAIM_COST_CRYSTAL) {
       client.send('territoryResult', {
@@ -84,9 +81,9 @@ export class TerritoryService {
       return;
     }
 
-    // Deduct cargo
-    await deductCargo(auth.userId, 'ore', CLAIM_COST_ORE);
-    await deductCargo(auth.userId, 'crystal', CLAIM_COST_CRYSTAL);
+    // Deduct from inventory
+    await removeFromInventory(auth.userId, 'resource', 'ore', CLAIM_COST_ORE);
+    await removeFromInventory(auth.userId, 'resource', 'crystal', CLAIM_COST_CRYSTAL);
 
     // Determine defense rating
     const defenseRating = isKthariTerritory(qx, qy) ? 'HIGH' : 'LOW';
