@@ -124,6 +124,7 @@ import { CommunityQuestService } from './services/CommunityQuestService.js';
 import { rollForEncounter, isInteractiveEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounterGen.js';
 import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
+import { directTradeService } from '../engine/directTradeService.js';
 import { logger } from '../utils/logger.js';
 
 interface SectorRoomOptions {
@@ -802,6 +803,42 @@ export class SectorRoom extends Room<SectorRoomState> {
         repsWithTiers[factionId] = { repValue, tier: getHumanityRepTier(repValue) };
       }
       client.send('humanityReps', repsWithTiers);
+    });
+
+    // ── Direct Trade ─────────────────────────────────────────────────
+    this.onMessage('tradeRequest', (client, data: { targetPlayerId: string }) => {
+      const auth = client.auth as AuthPayload;
+      directTradeService.initiateTrade(auth.userId, data.targetPlayerId).then((tradeId) => {
+        client.send('tradeStarted', { tradeId });
+        // Notify target if in same room
+        this.clients.forEach((c) => {
+          if ((c.auth as AuthPayload)?.userId === data.targetPlayerId) {
+            c.send('tradeInvite', { tradeId, fromPlayerId: auth.userId });
+          }
+        });
+      }).catch((err) => {
+        logger.error({ err }, 'tradeRequest error');
+        client.send('error', { code: 'TRADE_FAILED', message: 'Failed to start trade' });
+      });
+    });
+    this.onMessage('tradeConfirm', (client, data: { tradeId: string }) => {
+      const auth = client.auth as AuthPayload;
+      directTradeService.confirm(data.tradeId, auth.userId).then(async (bothConfirmed) => {
+        if (bothConfirmed) {
+          await directTradeService.executeTrade(data.tradeId);
+          client.send('tradeComplete', { tradeId: data.tradeId });
+        }
+      }).catch((err) => {
+        logger.error({ err }, 'tradeConfirm error');
+        client.send('error', { code: 'TRADE_CONFIRM_FAILED', message: 'Failed to confirm trade' });
+      });
+    });
+    this.onMessage('tradeCancel', (client, data: { tradeId: string }) => {
+      directTradeService.cancelTrade(data.tradeId).then(() => {
+        client.send('tradeCancelled', { tradeId: data.tradeId });
+      }).catch((err) => {
+        logger.error({ err }, 'tradeCancel error');
+      });
     });
 
     // ── Trade Route Processing Interval ─────────────────────────────
