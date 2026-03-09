@@ -306,6 +306,16 @@ export interface GameSlice {
   // Player stats (logbuch)
   playerStats: PlayerStats;
 
+  // Ship move animation (#155)
+  shipMoveAnimation: {
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+    startTime: number;
+    duration: number;
+  } | null;
+
   // Player Gates
   playerGateInfo: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null;
 
@@ -380,6 +390,8 @@ export interface GameSlice {
   setNpcStationData: (data: GameSlice['npcStationData']) => void;
   setFactoryState: (data: GameSlice['factoryState']) => void;
   setKontorOrders: (orders: GameSlice['kontorOrders']) => void;
+  startShipMoveAnimation: (fromX: number, fromY: number, toX: number, toY: number) => void;
+  clearShipMoveAnimation: () => void;
   setPlayerGateInfo: (info: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null) => void;
   setKnownQuadrants: (quadrants: Array<{ qx: number; qy: number; learnedAt: string }>) => void;
   setCurrentQuadrant: (q: { qx: number; qy: number; name?: string | null } | null) => void;
@@ -466,6 +478,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   selectedQuest: null,
   directChatRecipient: null,
   playerStats: loadPlayerStats(),
+  shipMoveAnimation: null,
   playerGateInfo: null,
   knownQuadrants: [],
   currentQuadrant: null,
@@ -619,6 +632,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setNpcStationData: (npcStationData) => set({ npcStationData }),
   setFactoryState: (factoryState) => set({ factoryState }),
   setKontorOrders: (kontorOrders) => set({ kontorOrders }),
+  startShipMoveAnimation: (fromX, fromY, toX, toY) =>
+    set({ shipMoveAnimation: { fromX, fromY, toX, toY, startTime: performance.now(), duration: 600 } }),
+  clearShipMoveAnimation: () => set({ shipMoveAnimation: null }),
   setPlayerGateInfo: (playerGateInfo) => set({ playerGateInfo }),
   setKnownQuadrants: (knownQuadrants) => set({ knownQuadrants }),
   setCurrentQuadrant: (currentQuadrant) => set({ currentQuadrant }),

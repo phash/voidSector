@@ -42,6 +42,16 @@ export function RadarCanvas() {
       }
     }
 
+    // Update ship move animation (#155)
+    let shipMoveAnimation = state.shipMoveAnimation;
+    if (shipMoveAnimation) {
+      const elapsed = performance.now() - shipMoveAnimation.startTime;
+      if (elapsed >= shipMoveAnimation.duration) {
+        useStore.getState().clearShipMoveAnimation();
+        shipMoveAnimation = null;
+      }
+    }
+
     const radarState = {
       position: state.position,
       discoveries: state.discoveries,
@@ -62,6 +72,7 @@ export function RadarCanvas() {
       animTime: performance.now(),
       navTarget: state.navTarget,
       visitedTrail: state.visitedTrail,
+      shipMoveAnimation,
     };
 
     drawRadar(ctx, radarState);

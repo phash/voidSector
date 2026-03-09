@@ -126,7 +126,11 @@ class GameNetwork {
       this.currentQuadrant.qx === targetQx &&
       this.currentQuadrant.qy === targetQy
     ) {
+      const oldPos = store.position;
       this.sectorRoom.send('moveSector', { sectorX: x, sectorY: y });
+      if (oldPos.x !== x || oldPos.y !== y) {
+        store.startShipMoveAnimation(oldPos.x, oldPos.y, x, y);
+      }
       store.setPosition({ x, y });
       store.resetPan();
       store.addLogEntry(`Entered sector (${x}, ${y})`);

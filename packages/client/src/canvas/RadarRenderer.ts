@@ -78,6 +78,18 @@ interface RadarState {
   animTime?: number;
   navTarget?: { x: number; y: number } | null;
   visitedTrail?: Coords[];
+  shipMoveAnimation?: {
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+    startTime: number;
+    duration: number;
+  } | null;
+}
+
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
@@ -247,7 +259,17 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         const ownHull = state.hullType ?? 'scout';
         const ownPattern = HULL_RADAR_PATTERNS[ownHull];
         const ownPixelSize = isDetailView ? Math.max(8, 2 + state.zoomLevel) : 2 + state.zoomLevel;
-        drawHullIcon(ctx, ownPattern, cellX, cellY, state.themeColor, ownPixelSize);
+        // #155: animate ship icon from old position
+        let iconX = cellX;
+        let iconY = cellY;
+        const moveAnim = state.shipMoveAnimation;
+        if (moveAnim && state.animTime !== undefined) {
+          const elapsed = state.animTime - moveAnim.startTime;
+          const progress = easeInOutCubic(Math.min(1, elapsed / moveAnim.duration));
+          iconX = cellX + (1 - progress) * (moveAnim.fromX - moveAnim.toX) * CELL_W;
+          iconY = cellY + (1 - progress) * (moveAnim.fromY - moveAnim.toY) * CELL_H;
+        }
+        drawHullIcon(ctx, ownPattern, iconX, iconY, state.themeColor, ownPixelSize);
         if (state.zoomLevel >= 1) {
           ctx.font = COORD_FONT;
           ctx.fillStyle = state.themeColor;
