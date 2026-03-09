@@ -43,6 +43,9 @@ vi.mock('../components/QuestDetailPanel', () => ({
 vi.mock('../components/TestPattern', () => ({
   TestPattern: () => <div data-testid="test-pattern">TestPattern</div>,
 }));
+vi.mock('../components/TvScreen', () => ({
+  TvScreen: () => <div data-testid="tv-screen">TvScreen</div>,
+}));
 vi.mock('../components/CommsScreen', () => ({
   CommsScreen: () => <div data-testid="comms-screen">CommsScreen</div>,
 }));
@@ -174,12 +177,29 @@ describe('CockpitLayout', () => {
     expect(screen.queryByTestId('detail-panel')).not.toBeInTheDocument();
   });
 
-  it('renders TestPattern for unknown programs', () => {
+  it('renders TvScreen for unknown programs (default mode)', () => {
     mockStoreState({
       activeProgram: 'UNKNOWN',
       alerts: {},
       chatChannel: 'quadrant',
       monitorPower: {},
+      monitorModes: {},
+      zoomLevel: 2,
+      panOffset: { x: 0, y: 0 },
+      brightness: 1.0,
+      colorProfile: 'Amber Classic',
+    });
+    render(<CockpitLayout renderScreen={mockRenderScreen} />);
+    expect(screen.getByTestId('tv-screen')).toBeInTheDocument();
+  });
+
+  it('renders TestPattern for unknown programs when mode is detail', () => {
+    mockStoreState({
+      activeProgram: 'UNKNOWN',
+      alerts: {},
+      chatChannel: 'quadrant',
+      monitorPower: {},
+      monitorModes: { DETAIL: 'detail' },
       zoomLevel: 2,
       panOffset: { x: 0, y: 0 },
       brightness: 1.0,
@@ -218,9 +238,9 @@ describe('CockpitLayout', () => {
     expect(screen.getByTestId('hw-dpad')).toBeInTheDocument();
   });
 
-  it('renders power button in section 3 hardware strip', () => {
+  it('renders follow button in section 3 hardware strip', () => {
     render(<CockpitLayout renderScreen={mockRenderScreen} />);
-    expect(screen.getByTestId('hw-power')).toBeInTheDocument();
+    expect(screen.getByTestId('hw-follow')).toBeInTheDocument();
   });
 
   it('renders correct detail panel for each program', () => {

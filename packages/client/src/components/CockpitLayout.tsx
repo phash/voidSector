@@ -4,6 +4,7 @@ import { ProgramSelector } from './ProgramSelector';
 import { SettingsPanel } from './SettingsPanel';
 import { HardwareControls } from './HardwareControls';
 import { TestPattern } from './TestPattern';
+import { TvScreen } from './TvScreen';
 import { UnifiedBezel } from './UnifiedBezel';
 import { DetailPanel } from './DetailPanel';
 import { TechDetailPanel } from './TechDetailPanel';
@@ -24,7 +25,7 @@ interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
 }
 
-function getDetailForProgram(programId: string): ReactNode {
+function getDetailForProgram(programId: string): ReactNode | null {
   switch (programId) {
     case 'NAV-COM':
       return <DetailPanel />;
@@ -41,7 +42,7 @@ function getDetailForProgram(programId: string): ReactNode {
     case 'QUESTS':
       return <QuestDetailPanel />;
     default:
-      return <TestPattern />;
+      return null;
   }
 }
 
@@ -56,6 +57,10 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   const channelAlerts = useStore((s) => s.channelAlerts);
   const detailPowerOn = useStore((s) => s.monitorPower['DETAIL'] ?? true);
   const setMonitorPower = useStore((s) => s.setMonitorPower);
+  const autoFollow = useStore((s) => s.autoFollow);
+  const setAutoFollow = useStore((s) => s.setAutoFollow);
+  const detailMonitorMode = useStore((s) => s.monitorModes['DETAIL'] ?? 'tv');
+  const setMonitorMode = useStore((s) => s.setMonitorMode);
 
   const handleMainDpad = (dir: 'up' | 'down' | 'left' | 'right') => {
     const step = 2;
@@ -107,15 +112,33 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       <div className="cockpit-sec3 cockpit-section">
         <div className="cockpit-monitor">
           <UnifiedBezel variant="sidebar" monitorId="DETAIL">
-            {detailPowerOn ? detailContent : <div className="cockpit-off-screen">DISPLAY OFF</div>}
+            {detailPowerOn
+              ? (detailContent ?? (detailMonitorMode === 'tv' ? <TvScreen /> : <TestPattern />))
+              : <div className="cockpit-off-screen">DISPLAY OFF</div>}
           </UnifiedBezel>
         </div>
         <div className="cockpit-hw-strip">
           <HardwareControls
-            power
-            powerOn={detailPowerOn}
-            onPower={() => setMonitorPower('DETAIL', !detailPowerOn)}
+            follow
+            followActive={autoFollow}
+            onFollow={() => setAutoFollow(!autoFollow)}
           />
+          <div className="hw-mode-toggle">
+            <button
+              className={`hw-channel-btn${detailMonitorMode === 'detail' ? ' active' : ''}`}
+              onClick={() => setMonitorMode('DETAIL', 'detail')}
+              title="Detail-Modus"
+            >
+              1
+            </button>
+            <button
+              className={`hw-channel-btn${detailMonitorMode === 'tv' ? ' active' : ''}`}
+              onClick={() => setMonitorMode('DETAIL', 'tv')}
+              title="TV-Modus"
+            >
+              2
+            </button>
+          </div>
         </div>
       </div>
 

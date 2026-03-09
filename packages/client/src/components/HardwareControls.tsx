@@ -19,6 +19,10 @@ interface HardwareControlsProps {
   power?: boolean;
   powerOn?: boolean;
   onPower?: () => void;
+  /** Show follow toggle (#147/#161) */
+  follow?: boolean;
+  followActive?: boolean;
+  onFollow?: () => void;
   /** Show channel buttons */
   channels?: string[];
   activeChannel?: string;
@@ -39,6 +43,9 @@ export function HardwareControls(props: HardwareControlsProps) {
     power,
     powerOn,
     onPower,
+    follow,
+    followActive,
+    onFollow,
     channels,
     activeChannel,
     onChannel,
@@ -101,6 +108,18 @@ export function HardwareControls(props: HardwareControlsProps) {
         >
           <span className={`hw-power-led${powerOn ? ' green' : ' orange'}`} />
           PWR
+        </button>
+      )}
+
+      {follow && (
+        <button
+          className={`hw-power-btn${followActive ? ' on' : ''}`}
+          data-testid="hw-follow"
+          onClick={() => onFollow?.()}
+          title="Auto-Follow: Detail-Monitor folgt Schiff"
+        >
+          <span className={`hw-power-led${followActive ? ' green' : ' orange'}`} />
+          FOL
         </button>
       )}
 
