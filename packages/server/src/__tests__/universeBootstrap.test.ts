@@ -48,7 +48,7 @@ vi.mock('../utils/logger.js', () => ({
   },
 }));
 
-import { getAllHumanityReps } from '../db/queries.js';
+import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant } from '../db/queries.js';
 
 describe('startUniverseEngine', () => {
   beforeEach(() => {
@@ -64,6 +64,13 @@ describe('startUniverseEngine', () => {
       return { start: mockEngineStart, stop: vi.fn() };
     });
     vi.mocked(getAllHumanityReps).mockResolvedValue({ kthari: -40, archivists: 60 });
+  });
+
+  it('seeds Kernwelt on startup', async () => {
+    const { startUniverseEngine } = await import('../engine/universeBootstrap.js');
+    await startUniverseEngine();
+    expect(vi.mocked(ensureKernweltStation)).toHaveBeenCalledOnce();
+    expect(vi.mocked(ensureZentrumQuadrant)).toHaveBeenCalledOnce();
   });
 
   it('starts UniverseTickEngine on call', async () => {

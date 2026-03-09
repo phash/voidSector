@@ -284,6 +284,12 @@ describe('nameQuadrant', () => {
     };
   }
 
+  it('rejects renaming the Zentrum quadrant (0,0)', async () => {
+    const result = await nameQuadrant(0, 0, 'SomeName', 'player-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('protected');
+  });
+
   it('validates name before checking DB', async () => {
     const result = await nameQuadrant(1, 2, '', 'player-1');
     expect(result.success).toBe(false);
