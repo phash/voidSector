@@ -10,6 +10,8 @@ import type {
   ShipModule,
   ShipRecord,
   JumpGateMapEntry,
+  InventoryItem,
+  ItemType,
 } from '@void-sector/shared';
 import {
   SPAWN_CLUSTER_MAX_PLAYERS,
@@ -2932,4 +2934,87 @@ export async function getFactionConfig(
     [factionId],
   );
   return res.rows[0] ?? null;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Unified inventory
+// ──────────────────────────────────────────────────────────────────────────────
+
+export async function getInventory(playerId: string): Promise<InventoryItem[]> {
+  const res = await query<{ item_type: string; item_id: string; quantity: number }>(
+    `SELECT item_type, item_id, quantity FROM inventory WHERE player_id = $1`,
+    [playerId],
+  );
+  return res.rows.map(r => ({
+    itemType: r.item_type as ItemType,
+    itemId: r.item_id,
+    quantity: r.quantity,
+  }));
+}
+
+export async function getInventoryItem(
+  playerId: string,
+  itemType: ItemType,
+  itemId: string,
+): Promise<number> {
+  const res = await query<{ quantity: number }>(
+    `SELECT quantity FROM inventory WHERE player_id = $1 AND item_type = $2 AND item_id = $3`,
+    [playerId, itemType, itemId],
+  );
+  return res.rows[0]?.quantity ?? 0;
+}
+
+export async function upsertInventory(
+  playerId: string,
+  itemType: ItemType,
+  itemId: string,
+  delta: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO inventory (player_id, item_type, item_id, quantity)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (player_id, item_type, item_id)
+     DO UPDATE SET quantity = inventory.quantity + $4`,
+    [playerId, itemType, itemId, delta],
+  );
+}
+
+export async function deductInventory(
+  playerId: string,
+  itemType: ItemType,
+  itemId: string,
+  amount: number,
+): Promise<void> {
+  const res = await query<{ quantity: number }>(
+    `UPDATE inventory SET quantity = quantity - $4
+     WHERE player_id = $1 AND item_type = $2 AND item_id = $3 AND quantity >= $4
+     RETURNING quantity`,
+    [playerId, itemType, itemId, amount],
+  );
+  if (res.rows.length === 0) throw new Error(`Insufficient ${itemType}:${itemId}`);
+  if (res.rows[0].quantity === 0) {
+    await query(
+      `DELETE FROM inventory WHERE player_id = $1 AND item_type = $2 AND item_id = $3`,
+      [playerId, itemType, itemId],
+    );
+  }
+}
+
+export async function transferInventoryItem(
+  fromPlayerId: string,
+  toPlayerId: string,
+  itemType: ItemType,
+  itemId: string,
+  quantity: number,
+): Promise<void> {
+  await deductInventory(fromPlayerId, itemType, itemId, quantity);
+  await upsertInventory(toPlayerId, itemType, itemId, quantity);
+}
+
+export async function getCargoCapForPlayer(playerId: string): Promise<number> {
+  const res = await query<{ cargo_cap: number }>(
+    `SELECT s.cargo_cap FROM ships s WHERE s.owner_id = $1 AND s.active = TRUE LIMIT 1`,
+    [playerId],
+  );
+  return res.rows[0]?.cargo_cap ?? 20;
 }

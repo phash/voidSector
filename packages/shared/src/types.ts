@@ -17,6 +17,14 @@ export type SectorContent =
 export type MineableResourceType = 'ore' | 'gas' | 'crystal';
 export type ResourceType = MineableResourceType | 'artefact';
 
+export type ItemType = 'resource' | 'module' | 'blueprint';
+
+export interface InventoryItem {
+  itemType: ItemType;
+  itemId: string;
+  quantity: number;
+}
+
 export interface SectorResources {
   ore: number;
   gas: number;
