@@ -13,6 +13,7 @@ import { runMigrations } from './db/client.js';
 import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
 import { adminRouter } from './adminRoutes.js';
 import { logger } from './utils/logger.js';
+import { startUniverseEngine } from './engine/universeBootstrap.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -120,6 +121,7 @@ export default config({
     if (expiredGuests > 0) {
       logger.info({ expiredGuests }, 'Cleaned up expired guest accounts');
     }
+    await startUniverseEngine();
     logger.info('Migrations complete, server starting...');
   },
 });
