@@ -2543,3 +2543,73 @@ export async function getPlayerTerritories(playerId: string): Promise<TerritoryC
   );
   return res.rows;
 }
+
+// ── News Events ───────────────────────────────────────────────────────────────
+
+export interface NewsEventRow {
+  id: number;
+  event_type: string;
+  headline: string;
+  summary: string | null;
+  event_data: Record<string, unknown> | null;
+  player_id: string | null;
+  player_name: string | null;
+  quadrant_x: number | null;
+  quadrant_y: number | null;
+  created_at: string;
+}
+
+export async function recordNewsEvent(params: {
+  eventType: string;
+  headline: string;
+  summary?: string;
+  eventData?: Record<string, unknown>;
+  playerId?: string;
+  playerName?: string;
+  quadrantX?: number;
+  quadrantY?: number;
+}): Promise<void> {
+  await query(
+    `INSERT INTO news_events (event_type, headline, summary, event_data, player_id, player_name, quadrant_x, quadrant_y)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [
+      params.eventType,
+      params.headline,
+      params.summary ?? null,
+      params.eventData ? JSON.stringify(params.eventData) : null,
+      params.playerId ?? null,
+      params.playerName ?? null,
+      params.quadrantX ?? null,
+      params.quadrantY ?? null,
+    ],
+  );
+}
+
+export async function getRecentNews(limit = 20): Promise<NewsEventRow[]> {
+  const res = await query<NewsEventRow>(
+    'SELECT * FROM news_events ORDER BY created_at DESC LIMIT $1',
+    [limit],
+  );
+  return res.rows;
+}
+
+export async function getQuadrantDiscoveriesSince(
+  sinceMinutes: number,
+): Promise<{ quadrant_x: number; quadrant_y: number; player_name: string; count: string }[]> {
+  const res = await query<{
+    quadrant_x: number;
+    quadrant_y: number;
+    player_name: string;
+    count: string;
+  }>(
+    `SELECT ne.quadrant_x, ne.quadrant_y, ne.player_name, COUNT(*) as count
+     FROM news_events ne
+     WHERE ne.event_type = 'quadrant_discovery'
+       AND ne.created_at >= NOW() - INTERVAL '1 minute' * $1
+     GROUP BY ne.quadrant_x, ne.quadrant_y, ne.player_name
+     ORDER BY MIN(ne.created_at) DESC
+     LIMIT 50`,
+    [sinceMinutes],
+  );
+  return res.rows;
+}

@@ -50,6 +50,8 @@ import {
   getActiveAutopilotRoute,
   pauseAutopilotRoute,
   updatePlayerStationRep,
+  getRecentNews,
+  getQuadrantDiscoveriesSince,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import {
@@ -493,6 +495,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('defendTerritory', async (client) => {
       await this.territory.handleDefendTerritory(client);
+    });
+
+    // ── News ────────────────────────────────────────────────────────
+    this.onMessage('getNews', async (client) => {
+      const [recentNews, discoveries30m] = await Promise.all([
+        getRecentNews(30),
+        getQuadrantDiscoveriesSince(30),
+      ]);
+      client.send('newsResult', { recentNews, discoveries30m });
     });
 
     // ── Chat ────────────────────────────────────────────────────────

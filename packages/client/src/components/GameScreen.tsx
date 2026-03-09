@@ -26,6 +26,7 @@ import { BaseOverview } from './BaseOverview';
 import { BaseDetailPanel } from './BaseDetailPanel';
 import { BlueprintDialog } from './BlueprintDialog';
 import { QuadMapScreen } from './QuadMapScreen';
+import { NewsScreen } from './NewsScreen';
 import { MehrOverlay } from './MehrOverlay';
 import { StationTerminalOverlay } from './StationTerminalOverlay';
 import { useStore } from '../state/store';
@@ -214,6 +215,8 @@ function renderScreen(monitorId: string) {
       return <TechScreen />;
     case MONITORS.QUAD_MAP:
       return <QuadMapScreen />;
+    case MONITORS.NEWS:
+      return <NewsScreen />;
     case 'MODULES':
       return <ModulePanel />;
     case 'HANGAR':

@@ -865,6 +865,14 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('newsResult', (data: { recentNews: any[]; discoveries30m: any[] }) => {
+      useStore.getState().setNewsItems(data.recentNews ?? []);
+    });
+
+    room.onMessage('territoryResult', (data: { success: boolean; message: string; claim?: any; combat?: any }) => {
+      useStore.getState().addLogEntry(data.message);
+    });
+
     room.onMessage('stationUnderAttack', (data: StationCombatEvent) => {
       useStore.getState().setStationCombatEvent(data);
       useStore
@@ -1975,6 +1983,25 @@ class GameNetwork {
   }
   sendKontorSellTo(orderId: string, amount: number): void {
     this.sectorRoom?.send('kontorSellTo', { orderId, amount });
+  }
+
+  // News
+  requestNews() {
+    this.sectorRoom?.send('getNews');
+  }
+
+  // Territory
+  sendClaimTerritory() {
+    this.sectorRoom?.send('claimTerritory');
+  }
+  sendDefendTerritory() {
+    this.sectorRoom?.send('defendTerritory');
+  }
+  requestTerritory(quadrantX?: number, quadrantY?: number) {
+    this.sectorRoom?.send('getTerritory', { quadrantX, quadrantY });
+  }
+  requestMyTerritories() {
+    this.sectorRoom?.send('listMyTerritories');
   }
 
   // Quadrant system

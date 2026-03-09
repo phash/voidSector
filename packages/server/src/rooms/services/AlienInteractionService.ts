@@ -42,6 +42,7 @@ import {
   addToCargo,
   addCredits,
   getPlayerCredits,
+  recordNewsEvent,
 } from '../../db/queries.js';
 import type { ResourceType } from '@void-sector/shared';
 
@@ -130,6 +131,17 @@ export class AlienInteractionService {
         repBefore,
         repAfter: repBefore,
       });
+      // Record server-wide news event for first contact
+      recordNewsEvent({
+        eventType: 'alien_first_contact',
+        headline: `${auth.username} — Erstkontakt mit ${factionId.toUpperCase()}`,
+        summary: flavor,
+        playerId: auth.userId,
+        playerName: auth.username,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        eventData: { factionId },
+      }).catch(() => {});
       client.send('alienInteractResult', {
         success: true,
         factionId,

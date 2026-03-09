@@ -1431,6 +1431,7 @@ export const MONITORS = {
   QUESTS: 'QUESTS',
   TECH: 'TECH',
   QUAD_MAP: 'QUAD-MAP',
+  NEWS: 'NEWS',
 } as const;
 
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
@@ -1446,6 +1447,7 @@ export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.QUESTS,
   MONITORS.TECH,
   MONITORS.QUAD_MAP,
+  MONITORS.NEWS,
   MONITORS.LOG,
 ];
 
@@ -1460,6 +1462,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
   QUESTS: 'QUESTS',
   TECH: 'TECH',
   'QUAD-MAP': 'QUAD-MAP',
+  NEWS: 'NEWS',
   LOG: 'LOG',
   MODULES: 'MODULES',
   HANGAR: 'HANGAR',

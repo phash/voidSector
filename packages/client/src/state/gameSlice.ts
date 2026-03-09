@@ -326,6 +326,18 @@ export interface GameSlice {
   currentQuadrant: { qx: number; qy: number; name?: string | null } | null;
   firstContactEvent: FirstContactEvent | null;
 
+  // News events
+  newsItems: Array<{
+    id: number;
+    event_type: string;
+    headline: string;
+    summary: string | null;
+    player_name: string | null;
+    quadrant_x: number | null;
+    quadrant_y: number | null;
+    created_at: string;
+  }>;
+
   // Ancient Ruins
   activeAncientRuinScan: {
     fragmentIndex: number;
@@ -410,6 +422,7 @@ export interface GameSlice {
   setCurrentQuadrant: (q: { qx: number; qy: number; name?: string | null } | null) => void;
   setFirstContactEvent: (event: FirstContactEvent | null) => void;
   setActiveAncientRuinScan: (scan: GameSlice['activeAncientRuinScan']) => void;
+  setNewsItems: (items: GameSlice['newsItems']) => void;
   setHyperdriveState: (state: HyperdriveState | null) => void;
   setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
   setNavTarget: (target: { x: number; y: number } | null) => void;
@@ -500,6 +513,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   firstContactEvent: null,
   activeAncientRuinScan: null,
   loreFragmentCount: 0,
+  newsItems: [],
   hyperdriveState: null,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
 
@@ -661,6 +675,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       activeAncientRuinScan,
       loreFragmentCount: activeAncientRuinScan ? s.loreFragmentCount + 1 : s.loreFragmentCount,
     })),
+  setNewsItems: (newsItems) => set({ newsItems }),
   setHyperdriveState: (hyperdriveState) => set({ hyperdriveState }),
   setAutoRefuelConfig: (autoRefuelConfig) => set({ autoRefuelConfig }),
   setNavTarget: (navTarget) => set({ navTarget }),

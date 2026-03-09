@@ -50,6 +50,7 @@ import {
   getAllPlayerGates,
   getAllJumpGateLinks,
   getJumpGateLinks,
+  recordNewsEvent,
 } from '../../db/queries.js';
 import {
   getAPState,
@@ -343,6 +344,19 @@ export class NavigationService {
 
     // Quadrant first-contact detection
     await this.ctx.checkFirstContact(client, auth, targetX, targetY);
+
+    // Record quadrant discovery news event on cross-quadrant jump
+    if (crossQuadrant) {
+      recordNewsEvent({
+        eventType: 'quadrant_discovery',
+        headline: `${auth.username} entdeckte Quadrant ${tgtQx}:${tgtQy}`,
+        playerId: auth.userId,
+        playerName: auth.username,
+        quadrantX: tgtQx,
+        quadrantY: tgtQy,
+        eventData: { fromQuadrant: { qx: curQx, qy: curQy }, toQuadrant: { qx: tgtQx, qy: tgtQy } },
+      }).catch(() => {});
+    }
   }
 
   async handleHyperJump(client: Client, data: HyperJumpMessage): Promise<void> {
