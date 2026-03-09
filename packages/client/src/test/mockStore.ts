@@ -208,6 +208,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     setQuadrantControls: vi.fn(),
     setNpcFleets: vi.fn(),
     addWarTickerEvent: vi.fn(),
+    inventory: [],
+    setInventory: vi.fn(),
     ...overrides,
   };
   useStore.setState(state as StoreState);

@@ -45,6 +45,7 @@ import type {
   QuadrantControlState,
   NpcFleetState,
   WarTickerEvent,
+  InventoryItem,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -1501,6 +1502,14 @@ class GameNetwork {
       useStore.getState().addWarTickerEvent(data);
     });
 
+    room.onMessage('inventoryState', (data: { items: InventoryItem[] }) => {
+      useStore.getState().setInventory(data.items);
+    });
+
+    room.onMessage('inventoryUpdated', () => {
+      room.send('getInventory');
+    });
+
     room.onLeave(async (code) => {
       if (this.intentionalLeave) {
         this.intentionalLeave = false;
@@ -2136,6 +2145,16 @@ class GameNetwork {
 
   requestHumanityReps() {
     this.sectorRoom?.send('getHumanityReps');
+  }
+
+  // --- Unified Inventory ---
+
+  requestInventory() {
+    this.sectorRoom?.send('getInventory');
+  }
+
+  sendCraftModule(blueprintId: string) {
+    this.sectorRoom?.send('craftModule', { blueprintId });
   }
 }
 

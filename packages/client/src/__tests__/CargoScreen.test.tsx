@@ -11,6 +11,10 @@ vi.mock('../network/client', () => ({
     sendActivateSlate: vi.fn(),
     sendNpcBuyback: vi.fn(),
     sendCreateSlate: vi.fn(),
+    requestInventory: vi.fn(),
+    sendInstallModule: vi.fn(),
+    sendActivateBlueprint: vi.fn(),
+    sendCraftModule: vi.fn(),
   },
 }));
 

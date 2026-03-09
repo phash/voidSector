@@ -44,6 +44,7 @@ import type {
   QuadrantControlState,
   NpcFleetState,
   WarTickerEvent,
+  InventoryItem,
 } from '@void-sector/shared';
 
 /**
@@ -413,6 +414,9 @@ export interface GameSlice {
   npcFleets: NpcFleetState[];
   warTicker: WarTickerEvent[];
 
+  // Unified Inventory
+  inventory: InventoryItem[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -508,6 +512,7 @@ export interface GameSlice {
   setQuadrantControls: (controls: QuadrantControlState[]) => void;
   setNpcFleets: (fleets: NpcFleetState[]) => void;
   addWarTickerEvent: (event: WarTickerEvent) => void;
+  setInventory: (items: InventoryItem[]) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -599,6 +604,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   quadrantControls: [],
   npcFleets: [],
   warTicker: [],
+  inventory: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -798,4 +804,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setNpcFleets: (fleets) => set({ npcFleets: fleets }),
   addWarTickerEvent: (event) =>
     set(state => ({ warTicker: [event, ...state.warTicker].slice(0, 10) })),
+  setInventory: (inventory) => set({ inventory }),
 });
