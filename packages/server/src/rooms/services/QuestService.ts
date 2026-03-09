@@ -332,51 +332,26 @@ export function generateDiplomacyQuest(
 
 export type WarSupportSubtype = 'logistics' | 'sabotage' | 'scanning' | 'salvage';
 
-interface WarSupportConfig {
-  defense_bonus: number;
-  enemy_defense_reduction: number;
-  attack_multiplier: number;
-  description: string;
-}
-
-const WAR_SUPPORT_CONFIG: Record<WarSupportSubtype, WarSupportConfig> = {
-  logistics: {
-    defense_bonus: 200,
-    enemy_defense_reduction: 0,
-    attack_multiplier: 1.0,
-    description: 'Deliver munitions and fuel to the front station',
-  },
-  sabotage: {
-    defense_bonus: 0,
-    enemy_defense_reduction: 150,
-    attack_multiplier: 1.0,
-    description: 'Hack enemy comm relays to lower their shields',
-  },
-  scanning: {
-    defense_bonus: 0,
-    enemy_defense_reduction: 0,
-    attack_multiplier: 1.3,
-    description: 'Deep-space scan to reveal enemy fleet positions',
-  },
-  salvage: {
-    defense_bonus: 100,
-    enemy_defense_reduction: 0,
-    attack_multiplier: 1.1,
-    description: 'Collect debris from the battle for tech bonuses',
-  },
-};
-
 export function generateWarSupportQuest(
   subtype: WarSupportSubtype,
   targetQuadrant: { qx: number; qy: number },
 ) {
-  const config = WAR_SUPPORT_CONFIG[subtype];
-  return {
+  const base = {
     type: 'war_support' as const,
     subtype,
     target_qx: targetQuadrant.qx,
     target_qy: targetQuadrant.qy,
-    ...config,
     expires_hours: 24,
   };
+
+  switch (subtype) {
+    case 'logistics':
+      return { ...base, defense_bonus: 200, description: 'Deliver munitions and fuel to the front station' };
+    case 'sabotage':
+      return { ...base, enemy_defense_reduction: 150, description: 'Hack enemy comm relays to lower their shields' };
+    case 'scanning':
+      return { ...base, attack_multiplier: 1.3, description: 'Deep-space scan to reveal enemy fleet positions' };
+    case 'salvage':
+      return { ...base, defense_bonus: 100, attack_multiplier: 1.1, description: 'Collect debris from the battle for tech bonuses' };
+  }
 }
