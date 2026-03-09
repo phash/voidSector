@@ -15,6 +15,8 @@ export interface QuestTemplate {
   resourceOptions?: ResourceType[];
   amountRange?: [number, number];
   distanceRange?: [number, number];
+  /** For multi-objective scan quests: scan N adjacent sectors around a seed-placed target */
+  scanAdjacentCount?: number;
 }
 
 export const QUEST_TEMPLATES: QuestTemplate[] = [
@@ -147,6 +149,21 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardXpBase: 80,
     rewardRepBase: 25,
     distanceRange: [15, 50],
+  },
+  // Black hole cartography (scientists, rare)
+  {
+    id: 'scientists_black_hole_cartography',
+    type: 'scan',
+    factionId: 'scientists',
+    title: 'Schwarzes Loch kartografieren',
+    descriptionTemplate:
+      'Scanne die 4 Nachbar-Sektoren des Schwarzen Lochs. Wichtige Forschungsdaten für die Akademie.',
+    requiredTier: 'friendly',
+    rewardCreditsBase: 500,
+    rewardXpBase: 200,
+    rewardRepBase: 30,
+    distanceRange: [5, 20],
+    scanAdjacentCount: 4,
   },
   // Independent quests (generic)
   {

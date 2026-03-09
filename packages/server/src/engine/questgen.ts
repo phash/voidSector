@@ -98,13 +98,33 @@ function fillQuestTemplate(
     description = description
       .replace('{targetX}', String(targetX))
       .replace('{targetY}', String(targetY));
-    objectives.push({
-      type: template.type,
-      description: `Ziel: (${targetX}, ${targetY})`,
-      targetX,
-      targetY,
-      fulfilled: false,
-    });
+
+    if (template.scanAdjacentCount) {
+      // Multi-objective: scan N adjacent sectors around the target (virtual black hole center)
+      const adjacent = [
+        { dx: 0, dy: -1 },
+        { dx: 1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 },
+      ].slice(0, template.scanAdjacentCount);
+      for (const { dx, dy } of adjacent) {
+        objectives.push({
+          type: 'scan',
+          description: `Scan (${targetX + dx}, ${targetY + dy})`,
+          targetX: targetX + dx,
+          targetY: targetY + dy,
+          fulfilled: false,
+        });
+      }
+    } else {
+      objectives.push({
+        type: template.type,
+        description: `Ziel: (${targetX}, ${targetY})`,
+        targetX,
+        targetY,
+        fulfilled: false,
+      });
+    }
   }
 
   const difficultyMultiplier = 1 + (unsignedSeed % 50) / 100;
