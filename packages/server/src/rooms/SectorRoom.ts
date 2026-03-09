@@ -733,9 +733,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('storyChoice', async (client, data: { chapterId: number; branchChoice: string | null }) => {
       const auth = client.auth as { userId: string } | null;
       if (!auth?.userId) return;
-      await this.storyChain.completeChapter(auth.userId, data.chapterId, data.branchChoice ?? null).catch(() => {});
+      const chapterCompleted = await this.storyChain.completeChapter(auth.userId, data.chapterId, data.branchChoice ?? null).catch(() => false);
       // Story Branch Effekte auch auf Menschheits-Rep anwenden (÷3 skaliert)
-      if (data.branchChoice !== null) {
+      // Only runs when completeChapter actually executed (not a duplicate submission)
+      if (chapterCompleted && data.branchChoice) {
         const branchEffects = applyBranchEffects(data.chapterId, data.branchChoice);
         for (const [factionId, delta] of Object.entries(branchEffects)) {
           const humanityDelta = Math.round((delta as number) / 3);
