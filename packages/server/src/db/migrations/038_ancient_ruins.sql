@@ -1,6 +1,6 @@
 -- Ancient Ruins: track discovered lore fragments per player
 CREATE TABLE IF NOT EXISTS ancient_lore_fragments (
-  player_id VARCHAR(255) NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   sector_x INTEGER NOT NULL,
   sector_y INTEGER NOT NULL,
   fragment_index INTEGER NOT NULL, -- 0-based index into ANCIENT_LORE_FRAGMENTS

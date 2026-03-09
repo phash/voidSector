@@ -4,7 +4,7 @@
  * Budget: 100 XP total, max 50 per path — forces specialisation.
  */
 
-import { query } from '../db/db.js';
+import { query } from '../db/client.js';
 import { calculateTraits } from './traitCalculator.js';
 
 export type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer';
