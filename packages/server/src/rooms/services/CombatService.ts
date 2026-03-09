@@ -12,6 +12,7 @@ import { calculateCurrentAP, spendAP } from '../../engine/ap.js';
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
 import { calculateTraits } from '../../engine/traitCalculator.js';
 import { getPersonalityComment } from '../../engine/personalityMessages.js';
+import { destroyShipAndCreateLegacy, ejectPod } from '../../engine/permadeathService.js';
 import { validateBattleAction, createPirateEncounter } from '../../engine/commands.js';
 import { getPirateLevel } from '../../engine/npcgen.js';
 import {
@@ -45,6 +46,7 @@ import {
   STATION_DEFENSE_DEFS,
   STATION_REPAIR_CR_PER_HP,
   STATION_REPAIR_ORE_PER_HP,
+  calculateShipStats,
 } from '@void-sector/shared';
 
 export class CombatService {
@@ -166,6 +168,8 @@ export class CombatService {
       this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
     } else if (result.outcome === 'defeat') {
       this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});
+      // ACEP/4: Permadeath on combat defeat
+      await this._handlePermadeath(client, auth, data.sectorX, data.sectorY);
     }
   }
 
@@ -229,6 +233,8 @@ export class CombatService {
         this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
       } else if (result.state.status === 'defeat') {
         this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});
+        // ACEP/4: Permadeath on combat defeat
+        await this._handlePermadeath(client, auth, data.sectorX, data.sectorY);
       }
 
       await insertBattleLogV2(
@@ -419,6 +425,87 @@ export class CombatService {
   }
 
   /** Emit a personality comment to the client's event log (fire-and-forget). */
+  async handleEjectPod(client: Client, data: { sectorX: number; sectorY: number }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    if (rejectGuest(client, 'ejectPod')) return;
+
+    const sessionId = client.sessionId;
+    const state = this.ctx.combatV2States.get(sessionId);
+
+    // Eject is only valid during active CombatV2 when HP < 15
+    if (!state || state.status !== 'active') {
+      client.send('error', { code: 'EJECT_FAIL', message: 'Kein aktiver Kampf' });
+      return;
+    }
+    if (state.playerHp >= 15) {
+      client.send('error', { code: 'EJECT_FAIL', message: 'Rumpf noch zu stabil für Notausstieg (HP ≥ 15%)' });
+      return;
+    }
+
+    // End combat state
+    this.ctx.combatV2States.delete(sessionId);
+
+    // Clear all cargo (pod jettison)
+    await ejectPod(auth.userId);
+
+    client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+    client.send('logEntry', '⚠ NOTAUSSTIEG — Kapsel ausgestoßen. Gesamte Ladung verloren. Schiff überlebt.');
+    client.send('ejectPodResult', { success: true });
+  }
+
+  /** Destroy the active ship on permadeath and create a legacy successor. */
+  private async _handlePermadeath(
+    client: Client,
+    auth: AuthPayload,
+    sectorX: number,
+    sectorY: number,
+  ): Promise<void> {
+    const ship = await getActiveShip(auth.userId);
+    if (!ship) return;
+
+    const result = await destroyShipAndCreateLegacy({
+      playerId: auth.userId,
+      shipId: ship.id,
+      playerName: auth.username,
+      quadrantX: this.ctx.quadrantX,
+      quadrantY: this.ctx.quadrantY,
+      sectorX,
+      sectorY,
+      modules: ship.modules.map((m: any) => (typeof m === 'string' ? m : m.type ?? String(m))),
+      lastLogEntry: `Zerstört im Kampf bei [${sectorX}:${sectorY}]`,
+    });
+
+    // Look up and send new ship data to client
+    const newShip = await getActiveShip(auth.userId);
+    if (newShip) {
+      const stats = calculateShipStats(newShip.hullType, newShip.modules);
+      // Update room's ship cache
+      this.ctx.clientShips.set(client.sessionId, stats);
+      this.ctx.clientHullTypes.set(client.sessionId, newShip.hullType);
+      const acepXp = await getAcepXpSummary(newShip.id);
+      client.send('shipData', {
+        id: newShip.id,
+        ownerId: auth.userId,
+        hullType: newShip.hullType,
+        name: newShip.name,
+        modules: newShip.modules,
+        stats,
+        fuel: stats.fuelMax,
+        active: true,
+        acepXp,
+      });
+    }
+
+    // Notify client of permadeath
+    client.send('permadeath', {
+      wreckId: result.wreckId,
+      newShipId: result.newShipId,
+      legacyXp: result.legacyXp,
+      message: '[ PERMADEATH ] Schiff zerstört — Erbschafts-Protokoll aktiviert. Neue Einheit übernimmt Kommando.',
+    });
+    client.send('logEntry', '[ PERMADEATH ] Schiff vernichtet. Erbschafts-Protokoll aktiviert.');
+  }
+
   private async _emitPersonalityComment(
     client: Client,
     playerId: string,

@@ -320,7 +320,7 @@ class GameNetwork {
     // Local scan result
     room.onMessage(
       'localScanResult',
-      (data: { resources: SectorResources; hiddenSignatures: boolean }) => {
+      (data: { resources: SectorResources; hiddenSignatures: boolean; wrecks?: Array<{ id: string; playerName: string; radarIconData: { tier: number; path: string }; lastLogEntry: string | null; hasSalvage: boolean }> }) => {
         const store = useStore.getState();
         store.setScanPending(false);
         if (store.currentSector) {
@@ -334,6 +334,13 @@ class GameNetwork {
         store.addLogEntry(
           `Local scan: Ore ${data.resources.ore}, Gas ${data.resources.gas}, Crystal ${data.resources.crystal}`,
         );
+        // Report wrecks detected in this sector
+        if (data.wrecks && data.wrecks.length > 0) {
+          for (const wreck of data.wrecks) {
+            const salvageNote = wreck.hasSalvage ? ' [BERGBAR]' : '';
+            store.addLogEntry(`WRACK ENTDECKT: ${wreck.playerName} (T${wreck.radarIconData.tier}/${wreck.radarIconData.path})${salvageNote}`);
+          }
+        }
         // Stats: count scan
         store.incrementStat('sectorsScanned');
         // Stats: check for players in same sector
@@ -817,6 +824,22 @@ class GameNetwork {
         }
         store.setActiveCombatV2(null);
         store.setActiveBattle(null);
+      }
+    });
+
+    // Permadeath: ship destroyed in combat → clear combat state, show notification
+    room.onMessage('permadeath', (data: { wreckId: string; newShipId: string; legacyXp: { ausbau: number; intel: number; kampf: number; explorer: number }; message: string }) => {
+      const store = useStore.getState();
+      store.addLogEntry(data.message);
+      store.setActiveCombatV2(null);
+      store.setActiveBattle(null);
+      // shipData for the new ship is sent by server before this message
+    });
+
+    // Eject Pod: cargo lost, combat ended
+    room.onMessage('ejectPodResult', (data: { success: boolean }) => {
+      if (data.success) {
+        useStore.getState().setActiveCombatV2(null);
       }
     });
 
@@ -1646,6 +1669,14 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
+  }
+
+  sendEjectPod(sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('ejectPod', { sectorX, sectorY });
   }
 
   sendInstallDefense(defenseType: string) {

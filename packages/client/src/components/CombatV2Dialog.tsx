@@ -49,6 +49,11 @@ export function CombatV2Dialog() {
     network.sendCombatV2Flee(combat.encounter.sectorX, combat.encounter.sectorY);
   }, [combat]);
 
+  const handleEjectPod = useCallback(() => {
+    if (!combat) return;
+    network.sendEjectPod(combat.encounter.sectorX, combat.encounter.sectorY);
+  }, [combat]);
+
   useEffect(() => {
     if (!combat) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -284,6 +289,17 @@ export function CombatV2Dialog() {
       >
         [ESC] FLUCHT — 2 AP, ~60%
       </button>
+
+      {/* Eject Pod — only available below 15% HP */}
+      {playerHp < 15 && (
+        <button
+          style={{ ...btnStyle(), borderColor: '#FF8800', color: '#FF8800', marginTop: 4 }}
+          onClick={handleEjectPod}
+          title="Notausstieg: Gesamte Ladung verloren, Schiff überlebt"
+        >
+          ⚠ NOTAUSSTIEG — Ladung verloren, Schiff überlebt
+        </button>
+      )}
     </div>
   );
 }

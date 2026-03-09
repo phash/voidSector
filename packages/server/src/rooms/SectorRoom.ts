@@ -345,6 +345,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
       await this.scanning.handleCompleteScanEvent(client, data);
     });
+    this.onMessage('salvageWreck', async (client, data: { wreckId: string }) => {
+      await this.scanning.handleSalvageWreck(client, data);
+    });
 
     // ── Combat ──────────────────────────────────────────────────────
     this.onMessage('battleAction', async (client, data: BattleActionMessage) => {
@@ -355,6 +358,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('combatV2Flee', async (client, data: CombatV2FleeMessage) => {
       await this.combat.handleCombatV2Flee(client, data);
+    });
+    this.onMessage('ejectPod', async (client, data: { sectorX: number; sectorY: number }) => {
+      await this.combat.handleEjectPod(client, data);
     });
     this.onMessage('installDefense', async (client, data: { defenseType: string }) => {
       await this.combat.handleInstallDefense(client, data);

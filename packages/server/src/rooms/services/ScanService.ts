@@ -39,6 +39,7 @@ import {
   getActiveShip,
 } from '../../db/queries.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
+import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
 import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
@@ -70,9 +71,21 @@ export class ScanService {
     );
     const resources = sectorData?.resources ?? { ore: 0, gas: 0, crystal: 0 };
 
+    // Check for ship wrecks in this sector (Permadeath POIs)
+    const px = this.ctx._px(client.sessionId);
+    const py = this.ctx._py(client.sessionId);
+    const wrecks = await getWrecksInSector(this.ctx.quadrantX, this.ctx.quadrantY, px, py);
+
     client.send('localScanResult', {
       resources,
       hiddenSignatures: result.hiddenSignatures,
+      wrecks: wrecks.map((w) => ({
+        id: w.id,
+        playerName: w.playerName,
+        radarIconData: w.radarIconData,
+        lastLogEntry: w.lastLogEntry,
+        hasSalvage: w.salvageableModules.length > 0,
+      })),
     });
     client.send('apUpdate', result.newAP!);
 
@@ -353,6 +366,23 @@ export class ScanService {
     }
 
     client.send('logEntry', `Event abgeschlossen! +${eventData.rewardCredits ?? 0} CR`);
+  }
+
+  /** Salvage a module from a ship wreck. */
+  async handleSalvageWreck(client: Client, data: { wreckId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    if (!data.wreckId) {
+      client.send('error', { code: 'SALVAGE_FAIL', message: 'Wrack-ID fehlt' });
+      return;
+    }
+    const module = await salvageWreckModule(data.wreckId, auth.userId);
+    if (!module) {
+      client.send('salvageResult', { success: false, message: 'Keine bergbaren Module in diesem Wrack' });
+      return;
+    }
+    const moduleName = MODULES[module]?.name ?? module;
+    client.send('salvageResult', { success: true, module, moduleName });
+    client.send('logEntry', `WRACK GEPLÜNDERT: Modul "${moduleName}" geborgen.`);
   }
 
   /** Emit a personality comment to the client's event log (fire-and-forget). */
