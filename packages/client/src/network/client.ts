@@ -308,7 +308,14 @@ class GameNetwork {
       const store = useStore.getState();
       // Don't clear scan animation immediately — let it finish naturally
       store.setScanPending(false);
+      // Track newly revealed sectors for brightness burst animation
+      const burstKeys = data.sectors
+        .filter((s) => !store.discoveries[`${s.x}:${s.y}`])
+        .map((s) => `${s.x}:${s.y}`);
       store.addDiscoveries(data.sectors);
+      if (burstKeys.length > 0) {
+        store.addScanBurstTimestamps(burstKeys, performance.now());
+      }
       const currentAP = store.ap;
       if (currentAP) {
         store.setAP({ ...currentAP, current: data.apRemaining });

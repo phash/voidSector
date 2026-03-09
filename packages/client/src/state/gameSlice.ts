@@ -289,6 +289,9 @@ export interface GameSlice {
   autopilot: AutopilotState | null;
   discoveryTimestamps: Record<string, number>;
 
+  // Brightness burst: sector keys → timestamp when revealed by area scan
+  scanBurstTimestamps: Record<string, number>;
+
   // Hyperdrive
   hyperdriveState: HyperdriveState | null;
   autoRefuelConfig: AutoRefuelConfig;
@@ -483,6 +486,7 @@ export interface GameSlice {
   setBookmarks: (bookmarks: Bookmark[]) => void;
   setAutopilot: (state: AutopilotState | null) => void;
   setDiscoveryTimestamps: (timestamps: Record<string, number>) => void;
+  addScanBurstTimestamps: (keys: string[], now: number) => void;
   setTerritoryMap: (
     map: Record<string, { playerName: string; playerId: string; defenseRating: string }>,
   ) => void;
@@ -600,6 +604,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   bookmarks: [],
   autopilot: null,
   discoveryTimestamps: {},
+  scanBurstTimestamps: {},
   territoryMap: {},
   shipList: [],
   moduleInventory: [],
@@ -785,6 +790,14 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setBookmarks: (bookmarks) => set({ bookmarks }),
   setAutopilot: (autopilot) => set({ autopilot }),
   setDiscoveryTimestamps: (discoveryTimestamps) => set({ discoveryTimestamps }),
+  addScanBurstTimestamps: (keys, now) =>
+    set((s) => {
+      const next = { ...s.scanBurstTimestamps };
+      for (const key of keys) {
+        next[key] = now;
+      }
+      return { scanBurstTimestamps: next };
+    }),
   setTerritoryMap: (territoryMap) => set({ territoryMap }),
   setShipList: (shipList) => set({ shipList }),
   setModuleInventory: (moduleInventory) => set({ moduleInventory }),

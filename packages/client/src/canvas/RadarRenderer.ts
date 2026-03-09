@@ -79,6 +79,7 @@ interface RadarState {
   homeBase?: { x: number; y: number };
   bookmarks?: Bookmark[];
   animTime?: number;
+  scanBurstTimestamps?: Record<string, number>;
   navTarget?: { x: number; y: number } | null;
   visitedTrail?: Coords[];
   shipMoveAnimation?: {
@@ -498,6 +499,28 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         // Crystal: bottom row
         if (hasCrystal) {
           drawDots(dotBaseX, rowY, res.crystal, res.crystal, '#66CCFF');
+        }
+      }
+
+      // Scan brightness burst — newly revealed sectors glow brighter for 1500ms
+      const BURST_DURATION = 1500;
+      const burstTs = state.scanBurstTimestamps?.[key];
+      if (burstTs !== undefined) {
+        const elapsed = (state.animTime ?? Date.now()) - burstTs;
+        if (elapsed >= 0 && elapsed < BURST_DURATION) {
+          const t = elapsed / BURST_DURATION;
+          // Lerp alpha from 0.5 down to 0 — bright amber fill fades out
+          const burstAlpha = 0.5 * (1 - t);
+          ctx.save();
+          ctx.globalAlpha = burstAlpha;
+          ctx.fillStyle = '#FFB000';
+          ctx.fillRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
+          // Inner glow ring
+          ctx.strokeStyle = '#FFD050';
+          ctx.lineWidth = 1;
+          ctx.globalAlpha = burstAlpha * 0.8;
+          ctx.strokeRect(cellX - CELL_W / 2 + 2, cellY - CELL_H / 2 + 2, CELL_W - 4, CELL_H - 4);
+          ctx.restore();
         }
       }
 

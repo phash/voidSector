@@ -6,6 +6,7 @@ import {
   FRAME_LEFT,
   FRAME_PAD,
   FRAME_BOTTOM,
+  calculateVisibleRadius,
 } from '../canvas/RadarRenderer';
 import { updateJumpAnimation } from '../canvas/JumpAnimation';
 import { updateScanAnimation, drawScanOverlay } from '../canvas/ScanAnimation';
@@ -71,6 +72,7 @@ export function RadarCanvas() {
       homeBase: state.homeBase,
       bookmarks: state.bookmarks,
       animTime: performance.now(),
+      scanBurstTimestamps: state.scanBurstTimestamps,
       navTarget: state.navTarget,
       visitedTrail: state.visitedTrail,
       shipMoveAnimation,
@@ -92,7 +94,9 @@ export function RadarCanvas() {
       // Player is at grid center minus pan offset (pan moves the viewport, not the player)
       const playerCenterX = gridCenterX - state.panOffset.x * cellW;
       const playerCenterY = gridCenterY - state.panOffset.y * cellH;
-      const scanRange = state.ship?.stats?.scannerLevel ?? 3;
+      // Use the full visible radar radius so waves reach the edge of the viewport
+      const { radiusX, radiusY } = calculateVisibleRadius(w, h, state.zoomLevel);
+      const scanRange = Math.ceil(Math.sqrt(radiusX * radiusX + radiusY * radiusY));
       drawScanOverlay(ctx, w, h, playerCenterX, playerCenterY, cellW, scanAnimation, scanRange);
     }
   }, []);
