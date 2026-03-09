@@ -9,6 +9,7 @@ import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
+import { getAcepXpSummary, getAcepEffects } from '../engine/acepXpService.js';
 import { recordVisit } from '../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../engine/quadrantEngine.js';
 import { adminBus } from '../adminBus.js';
@@ -54,6 +55,7 @@ import {
   getQuadrantDiscoveriesSince,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
+import { query } from '../db/client.js';
 import {
   RECONNECTION_TIMEOUT_S,
   FEATURE_HYPERDRIVE_V2,
@@ -180,9 +182,27 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
     const faction = await getPlayerFaction(playerId);
-    if (!faction) return calculateBonuses([]);
-    const upgrades = await getFactionUpgrades(faction.id);
-    return calculateBonuses(upgrades.map((u) => ({ tier: u.tier, choice: u.choice as 'A' | 'B' })));
+    const upgrades = faction ? await getFactionUpgrades(faction.id) : [];
+    const bonuses = calculateBonuses(upgrades.map((u) => ({ tier: u.tier, choice: u.choice as 'A' | 'B' })));
+
+    // Blend in ACEP effects on top of faction bonuses
+    const { rows } = await query<{ id: string }>(
+      `SELECT id FROM ships WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
+      [playerId],
+    );
+    if (rows.length > 0) {
+      const acepXp = await getAcepXpSummary(rows[0].id);
+      const fx = getAcepEffects(acepXp);
+      bonuses.miningRateMultiplier *= (1 + fx.miningBonus);
+      bonuses.cargoCapBonus += Math.floor(acepXp.ausbau / 10); // +1 cargo slot per 10 AUSBAU XP
+      bonuses.scanRadiusBonus += fx.scanRadiusBonus;
+      bonuses.combatMultiplier *= (1 + fx.combatDamageBonus);
+      bonuses.extraModuleSlots = fx.extraModuleSlots;
+      bonuses.ancientDetection = fx.ancientDetection;
+      bonuses.helionDecoderEnabled = fx.helionDecoderEnabled;
+    }
+
+    return bonuses;
   }
 
   static async onAuth(token: string) {

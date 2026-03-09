@@ -7,6 +7,10 @@ export interface FactionBonuses {
   apRegenMultiplier: number;
   combatMultiplier: number;
   tradePriceMultiplier: number;
+  // ACEP-derived extras (blended in by SectorRoom.getPlayerBonuses)
+  extraModuleSlots: number;
+  ancientDetection: boolean;
+  helionDecoderEnabled: boolean;
 }
 
 const DEFAULT_BONUSES: FactionBonuses = {
@@ -16,6 +20,9 @@ const DEFAULT_BONUSES: FactionBonuses = {
   apRegenMultiplier: 1.0,
   combatMultiplier: 1.0,
   tradePriceMultiplier: 1.0,
+  extraModuleSlots: 0,
+  ancientDetection: false,
+  helionDecoderEnabled: false,
 };
 
 export function calculateBonuses(

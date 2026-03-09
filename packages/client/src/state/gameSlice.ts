@@ -57,6 +57,15 @@ export interface ClientShipData {
   fuel: number;
   active: boolean;
   acepXp?: { ausbau: number; intel: number; kampf: number; explorer: number; total: number };
+  acepEffects?: {
+    extraModuleSlots: number;
+    cargoMultiplier: number;
+    miningBonus: number;
+    scanRadiusBonus: number;
+    combatDamageBonus: number;
+    ancientDetection: boolean;
+    helionDecoderEnabled: boolean;
+  };
 }
 
 export interface AutopilotStatusInfo {

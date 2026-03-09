@@ -51,7 +51,18 @@ const ACEP_PATHS = [
 function AcepPanel() {
   const ship = useStore((s) => s.ship);
   const xp = ship?.acepXp;
+  const fx = ship?.acepEffects;
   if (!xp) return null;
+
+  const effects: string[] = [];
+  if (fx) {
+    if (fx.extraModuleSlots > 0) effects.push(`+${fx.extraModuleSlots} MODUL-SLOTS`);
+    if (fx.miningBonus > 0) effects.push(`+${Math.round(fx.miningBonus * 100)}% MINING`);
+    if (fx.scanRadiusBonus > 0) effects.push(`+${fx.scanRadiusBonus} SCAN-RADIUS`);
+    if (fx.combatDamageBonus > 0) effects.push(`+${Math.round(fx.combatDamageBonus * 100)}% KAMPF`);
+    if (fx.ancientDetection) effects.push('RUINEN-DETEKTION');
+    if (fx.helionDecoderEnabled) effects.push('HELION-DECODER');
+  }
 
   return (
     <div style={{ marginBottom: 12 }}>
@@ -76,6 +87,15 @@ function AcepPanel() {
       <div style={{ fontSize: '0.58rem', color: 'var(--color-dim)', marginTop: 3 }}>
         BUDGET: {xp.total ?? 0}/100
       </div>
+      {effects.length > 0 && (
+        <div style={{ marginTop: 5, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 4 }}>
+          {effects.map((e) => (
+            <div key={e} style={{ fontSize: '0.55rem', color: '#00FF88', letterSpacing: '0.08em' }}>
+              ▸ {e}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

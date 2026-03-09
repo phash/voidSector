@@ -445,11 +445,19 @@ class GameNetwork {
 
     room.onMessage('shipList', (data: { ships: any[] }) => {
       useStore.setState({ shipList: data.ships });
-      // Refresh acepXp on active ship from latest server data
-      const activeShip = data.ships.find((s) => s.active);
+      // Refresh acepXp + acepEffects on active ship from latest server data
+      const activeShip = data.ships.find((s: any) => s.active);
       if (activeShip?.acepXp) {
         const current = useStore.getState().ship;
-        if (current) useStore.setState({ ship: { ...current, acepXp: activeShip.acepXp } });
+        if (current) {
+          useStore.setState({
+            ship: {
+              ...current,
+              acepXp: activeShip.acepXp,
+              acepEffects: activeShip.acepEffects,
+            },
+          });
+        }
       }
     });
 
