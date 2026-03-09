@@ -19,6 +19,8 @@ import { ShipStatusPanel } from './ShipStatusPanel';
 import { CombatStatusPanel } from './CombatStatusPanel';
 import { CommsScreen } from './CommsScreen';
 import { PlayerContextMenu } from './PlayerContextMenu';
+import { StoryEventOverlay } from './overlays/StoryEventOverlay';
+import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import type { ChatChannel } from '@void-sector/shared';
 
 interface CockpitLayoutProps {
@@ -175,6 +177,8 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
         </div>
       </div>
       <PlayerContextMenu />
+      <StoryEventOverlay />
+      <FirstContactNewsOverlay />
     </div>
   );
 }
