@@ -29,6 +29,7 @@ export function HelpOverlay() {
         justifyContent: 'center',
         padding: '0 0 80px 0',
         pointerEvents: 'auto',
+        cursor: 'pointer',
       }}
     >
       <div

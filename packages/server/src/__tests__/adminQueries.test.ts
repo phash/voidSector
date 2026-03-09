@@ -579,7 +579,7 @@ describe('adminQueries', () => {
       expect(mockQuery).toHaveBeenCalledTimes(3);
       expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM players'));
       expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM structures'));
-      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM discovered_sectors'));
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM player_discoveries'));
     });
 
     it('returns zero counts for empty tables', async () => {

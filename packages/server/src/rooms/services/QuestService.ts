@@ -77,6 +77,7 @@ export class QuestService {
     const questId = await insertQuest(
       auth.userId,
       data.templateId,
+      questTemplate.title,
       data.stationX,
       data.stationY,
       questTemplate.objectives,
@@ -133,7 +134,7 @@ export class QuestService {
       templateId: r.template_id,
       npcName: '',
       npcFactionId: 'independent' as NpcFactionId,
-      title: r.template_id,
+      title: r.title || r.template_id,
       description: '',
       stationX: r.station_x,
       stationY: r.station_y,

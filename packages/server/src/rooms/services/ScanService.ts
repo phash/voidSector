@@ -75,6 +75,12 @@ export class ScanService {
     await this.checkAndEmitScanEvents(client, [
       { x: this.ctx._px(client.sessionId), y: this.ctx._py(client.sessionId), environment: env },
     ]);
+
+    // Check quest progress for scan quests at current sector
+    await this.ctx.checkQuestProgress(client, auth.userId, 'scan', {
+      sectorX: this.ctx._px(client.sessionId),
+      sectorY: this.ctx._py(client.sessionId),
+    });
   }
 
   async handleAreaScan(client: Client): Promise<void> {

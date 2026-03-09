@@ -658,7 +658,7 @@ export async function getServerStats(): Promise<ServerStats> {
   const [playerCount, structureCount, discoveredSectorCount] = await Promise.all([
     safeCount('SELECT COUNT(*) AS count FROM players'),
     safeCount('SELECT COUNT(*) AS count FROM structures'),
-    safeCount('SELECT COUNT(*) AS count FROM discovered_sectors'),
+    safeCount('SELECT COUNT(*) AS count FROM player_discoveries'),
   ]);
   return { playerCount, structureCount, discoveredSectorCount };
 }
