@@ -1,117 +1,105 @@
 # CLAUDE.md — voidSector
 
-## Project
-Multiplayer 2D space-exploration idle MMO with CRT terminal aesthetics. Monorepo with `packages/shared`, `packages/server`, `packages/client`.
+Multiplayer 2D space-exploration idle MMO · CRT terminal aesthetics · TypeScript monorepo
+
+> **Memory files** (in `~/.claude/projects/E--claude-voidSector/memory/`):
+> - Architecture, services, patterns → read **architecture.md** before touching server/client code
+> - DB schema, migrations, Redis → read **database-schema.md** before DB work
+> - Sprint status, open issues, roadmap → read **roadmap.md** before planning/feature work
+> - Git, commits, Docker, tests → read **workflow.md** before dev operations
+
+---
 
 ## Commands
+
 ```bash
 npm run dev:server          # Game server (port 2567)
 npm run dev:client          # Vite dev server (port 3201)
 npm run docker:up           # PostgreSQL + Redis
-npm test                    # All tests
+npm test                    # All tests (run per-package, see below)
 
-# Per-package tests
-cd packages/server && npx vitest run    # 620 tests
-cd packages/client && npx vitest run    # 405 tests
-cd packages/shared && npx vitest run    # 191 tests
+# Tests — always run from package directory
+cd packages/server && npx vitest run    # ~640 tests
+cd packages/client && npx vitest run    # 491 tests
+cd packages/shared && npx vitest run    # ~191 tests
+
+# After changing shared/: REQUIRED
+cd packages/shared && npm run build
 ```
 
+---
+
 ## Code Style
-- TypeScript strict mode, 2-space indent, single quotes, semicolons
+
+- TypeScript strict mode · 2-space indent · single quotes · semicolons
 - `import type { ... }` for type-only imports
-- Server imports use `.js` extension (ESM); client imports don't (bundler)
-- Interfaces: PascalCase. Functions/variables: camelCase. Constants: UPPER_SNAKE_CASE
-- Files: camelCase for modules, PascalCase for React components
-- Conventional commits: `feat:`, `fix:`, `test:`, `docs:`
+- Server: `.js` extension on imports (ESM) · Client: no extension (bundler)
+- Naming: PascalCase interfaces · camelCase functions/vars · UPPER_SNAKE_CASE constants
+- Files: camelCase modules · PascalCase React components
+- Commits: `feat:` `fix:` `test:` `docs:` `chore:` + Co-Author line
 
-## Architecture
-- **Server**: Colyseus rooms (SectorRoom per quadrant, QUADRANT_SIZE=10,000), PostgreSQL (queries.ts), Redis (AP state). SectorRoom delegates to 10 domain services (NavigationService, ScanService, CombatService, MiningService, EconomyService, FactionService, QuestService, ChatService, ShipService, WorldService) via ServiceContext DI. Structured logging via pino.
-- **Client**: React + Zustand (gameSlice + uiSlice), Canvas radar (RadarRenderer), singleton GameNetwork
-- **Shared**: types.ts + constants.ts, consumed by both packages
+---
 
-## Cockpit Layout (6 Sections)
-- **Sec 1** (`cockpit-sec1`): Program Selector — 12-button vertical strip (NAV-COM, RADAR, SCAN, etc.)
-- **Sec 2** (`cockpit-sec2`): Main Monitor — primary content display with UnifiedBezel
-- **Sec 3** (`cockpit-sec3`): Detail Monitor — context-sensitive detail panel per program
-- **Sec 4** (`cockpit-sec4`): Settings — ShipStatusPanel + CombatStatusPanel + SettingsPanel
-- **Sec 5** (`cockpit-sec5`): Navigation — SectorInfo + StatusBar + NavControls + HardwareControls
-- **Sec 6** (`cockpit-sec6`): Comms — CommsScreen
+## Architecture (summary — see architecture.md for full detail)
 
-## Key Patterns
-- AP system: lazy evaluation, no server tick loop — calculated on each action
-- World gen: deterministic seed-based (`hashCoords(x, y, worldSeed)`)
-- Rooms: per-quadrant (not per-sector). Intra-quadrant moves use `moveSector` message, cross-quadrant moves require room leave/join. `playerSectorData` cache tracks per-player sector data.
-- Network: message-based (client sends command, server responds with result)
-- State: Zustand with `useStore.setState()` for shallow merges
-- Tests: Vitest everywhere. Client uses jsdom + RTL + jest-canvas-mock (via jest-shim.ts)
+- **Server**: Colyseus rooms per quadrant (`quadrant_qx_qy`), SectorRoom → 10 domain services via ServiceContext DI. PostgreSQL (all queries in `queries.ts`), Redis (AP/fuel/mining/position state). Structured logging via pino.
+- **Client**: React + Zustand (`gameSlice` + `uiSlice` + `helpSlice`), Canvas radar (`RadarRenderer`), singleton `GameNetwork`
+- **Shared**: `types.ts` + `constants.ts` → compiled to `dist/`, re-exported from `index.ts`
+
+**10 domain services**: NavigationService · ScanService · CombatService · MiningService · EconomyService · FactionService · QuestService · ChatService · ShipService · WorldService
+
+---
 
 ## DB Migrations
-Files in `packages/server/src/db/migrations/` (001-027). Auto-run on startup.
-All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` for idempotency.
 
-## Current State
-Branch `feat/ux-comms-overhaul` (28 commits, merged) adds:
-jump animation, radar zoom/pan, visual overhaul, two-stage scan, AP improvements,
-cluster spawn system, communication/relay routing, structure building.
+`packages/server/src/db/migrations/` — **001–027**, auto-run on startup.
+All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` (idempotent).
+Next: **028** (Phase 2 Sektor-Rebuild).
 
-Branch `feat/storage-trading` (merged) adds:
-Credits currency, Storage building (3 tiers, transfer model), Trading Post (NPC trade + player market),
-TRADE monitor, DetailPanel scan bugfix.
+---
 
-Branch `feat/dataslates-factions` (merged) adds:
-Data Slates (sector/area maps, create/activate/trade/NPC buyback), Factions (create/join/invite/ranks/chat),
-FACTION monitor, CARGO slate UI, TRADE slate marketplace.
+## Cockpit Layout (6 Sections)
 
-Branch `feat/npc-ecosystem` (merged) adds:
-NPC Ecosystem Phase 4: Seed-based NPC generation at stations, 4 NPC factions (Traders/Scientists/Pirates/Ancients + Independent),
-reputation system (-100..+100 per faction), procedural quest system (fetch/delivery/scan/bounty with daily rotation),
-auto-battle (flee/fight/negotiate), scan events (pirate ambush/distress/anomaly/artifact),
-faction upgrades at honored tier, QUESTS monitor, BattleDialog overlay.
+| Section | ID | Content |
+|---------|-----|---------|
+| Sec 1 | `cockpit-sec1` | Program Selector (12 programs: NAV-COM, RADAR, SCAN, MINING, TRADE, CARGO, QUESTS, FACTION, HANGAR, TECH, QUAD-MAP, TV) |
+| Sec 2 | `cockpit-sec2` | Main Monitor — RadarCanvas or program content |
+| Sec 3 | `cockpit-sec3` | Detail Monitor — context panel per program |
+| Sec 4 | `cockpit-sec4` | Settings (ShipStatus + CombatStatus + Settings) |
+| Sec 5 | `cockpit-sec5` | Navigation (SectorInfo + NavControls + HardwareControls) |
+| Sec 6 | `cockpit-sec6` | Comms (CommsScreen) |
 
-Branch `feat/phase5-deep-systems` (merged) adds:
-Phase 5 Deep Systems: Fuel system (consumption + refueling), JumpGates (bidirectional + wormholes + frequency minigame),
-rescue missions (distress calls + survivor delivery), faction upgrade tree (3 tiers, A/B choices with bonuses applied to
-mining/scan/trade/combat), trade route automation, custom data slates, multi-content sectors,
-mining nav-lock bugfix (#17), UI fixes (#16).
+---
 
-Branch `feat/nav-grid-overhaul` (merged) adds:
-Nav-Grid Overhaul: Dynamic grid sizing (fills canvas based on zoom), CSS overflow fix (page no longer scrolls),
-status LEDs on monitor bezels, bookmark system (5 custom slots + HOME/SHIP), far-navigation with autopilot
-(travel to discovered sectors), staleness rendering (dim old discoveries), relog position fix (centers on last position).
-Issues addressed: #21, #22, #23, #24, #25.
+## Key Patterns
 
-Quality Sprint (PR #67, merged): Cheat protection (coord bounds, rate limiting, anomaly logging),
-edge case coverage for comms and scanEvents, context-sensitive help system (HelpSlice, HelpOverlay, 8 tips).
+- **AP**: lazy evaluation, no tick loop — `calculateCurrentAP(state, Date.now())` on each action
+- **World gen**: deterministic `hashCoords(x, y, seed)` — sectors generated on demand, saved to DB
+- **Rooms**: per-quadrant. Intra-quadrant: `moveSector` message. Cross-quadrant: full leave/join
+- **Errors**: server sends `{ code, message }` → client logs + sets `actionError` for `InlineError`
+- **Tests**: Vitest everywhere. Client: jsdom + RTL + jest-canvas-mock (jest-shim.ts)
 
-Branch `feat/combat-v2` (PR #72, merged) adds:
-Combat System v2: 5-round tactical combat with weapon types (laser/railgun/missile/EMP), shield system,
-tactic choices (assault/balanced/defensive), special actions (aim/evade), 13 new ship modules (8 weapons,
-3 shields, point defense, ECM suite), station defense system (turrets/shields/ion cannon with auto-combat),
-CombatV2Dialog UI, DB migration 015, feature-flagged via FEATURE_COMBAT_V2.
+---
 
-Re-implementation sprint (PRs #78, #87, #88, merged): Complete code rewrite of shared/server/client.
-Tech tree & research (artefacts, prerequisites), factory & production (5 recipes), kontor (buy orders),
-expanded ship hulls (5 types with stats), hyperdrive v2 (charge system, lazy regen), fuel rework,
-autopilot (persistent routes, black hole avoidance), station reputation, known jumpgate tracking,
-admin console (quests, broadcasts, economy monitoring), NPC station levels (5 tiers, XP, dynamic pricing).
-DB migrations 016-027. 1189 total tests.
+## Current State (2026-03-09)
 
-Admin economy + quadrants (PR #95, merged): Quadrant system (10K sectors/axis), first-contact naming,
-QUAD-MAP monitor with canvas quadrant renderer, admin economy dashboard.
+**Branch:** `fix/quality-sprint`
 
-UI fixes (#103-#106): Tech/Base split views, scan radius display, main-lower always visible,
-scan timeout safety, controls area layout fix.
+### Merged Branches (all on master)
+- All phases 1–7: fuel, jumpgates, autopilot, ship designer, trade, factions, quests, combat v2
+- Codebase review (#133): SectorRoom decomposed to 10 services, ESLint/Prettier, pino logging
+- Admin console, quadrant system, QUAD-MAP, first-contact naming
+- 6-section cockpit layout, bookmarks, staleness rendering, nav-grid overhaul
 
-Monitor rework (#107): 6-section cockpit layout replacing 3-column sidebar design.
-CockpitLayout grid (program selector, main+detail monitors, settings, navigation, comms).
-12 selectable programs, 4 new detail panels (Cargo, Trade, Mining, Quests), TestPattern canvas,
-HardwareControls (D-Pad, zoom, power, channels). Desktop uses cockpit, mobile unchanged.
+### Active Sprint: fix/quality-sprint
+- **Sprint 0** ✅: Bugfixes #143, #144, #154
+- **Sprint 1** 🔄: UI quick wins — 3 done (#160, #153, #158), 3 remaining (#161/#147, #152, #155)
 
-Quadrant room refactor: Changed from per-sector rooms (`sector_x_y`) to per-quadrant rooms
-(`quadrant_qx_qy`, QUADRANT_SIZE=10,000). filterBy(['quadrantX','quadrantY']).
-Intra-quadrant sector changes via `moveSector` message (no room transition).
-Cross-quadrant moves via `crossQuadrant` flag in jumpResult → full room leave/join.
+### Upcoming (in order)
+1. Sprint 1 remaining → Sprint 2 (nav/map) → Sprint 3 (mining/trade) → Sprint 4 (station)
+2. Phase 2: Sektor-System Rebuild (#162–168) — full sector type system rewrite
+3. Phase LU: Lebendiges Universum (#177–184) — NPC faction expansion, territory system
+4. Phase AQ: Alien Quest System (#170–175) — 5 alien races, story quests
+5. ACEP: Adaptive Craft Evolution Protocol — ship XP/personality/permadeath
 
-Codebase review (#133): SectorRoom.ts decomposed from 4,605 lines into 807-line orchestrator + 10 domain services.
-ESLint + Prettier configs added. pino structured logging (46 console statements replaced). 6 failing tests fixed.
-Playwright E2E infrastructure with 54 test specs across 5 suites. 1,216 total unit tests (all passing).
+Full roadmap: `docs/plans/2026-03-09-master-roadmap.md`
