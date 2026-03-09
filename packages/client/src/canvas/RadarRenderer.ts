@@ -88,6 +88,7 @@ interface RadarState {
     duration: number;
   } | null;
   activeQuests?: Quest[];
+  miningActive?: boolean;
 }
 
 function easeInOutCubic(t: number): number {
@@ -286,6 +287,20 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           iconY = cellY + (1 - progress) * (moveAnim.fromY - moveAnim.toY) * CELL_H;
         }
         drawHullIcon(ctx, ownPattern, iconX, iconY, state.themeColor, ownPixelSize);
+        // #140: pulsing mining ring
+        if (state.miningActive) {
+          const t = state.animTime ?? 0;
+          const pulse = 0.5 + 0.5 * Math.abs(Math.sin(t * 0.003));
+          ctx.save();
+          ctx.strokeStyle = `rgba(255, 176, 0, ${0.3 + pulse * 0.5})`;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.arc(iconX, iconY, 9 + pulse * 3, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
         if (state.zoomLevel >= 1) {
           ctx.font = COORD_FONT;
           ctx.fillStyle = state.themeColor;

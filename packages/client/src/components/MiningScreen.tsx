@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES, innerCoord } from '@void-sector/shared';
@@ -19,10 +20,27 @@ export function MiningScreen() {
   const mining = useStore((s) => s.mining);
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
+  const cargo = useStore((s) => s.cargo);
+  const ship = useStore((s) => s.ship);
+
+  const [miningProgress, setMiningProgress] = useState(0);
+
+  useEffect(() => {
+    if (!mining?.active) { setMiningProgress(0); return; }
+    const tick = () => {
+      const elapsed = (Date.now() - mining.startedAt) / 1000;
+      setMiningProgress(Math.min(1, (elapsed * mining.rate) / mining.sectorYield));
+    };
+    tick();
+    const id = setInterval(tick, 200);
+    return () => clearInterval(id);
+  }, [mining?.active, mining?.startedAt, mining?.rate, mining?.sectorYield]);
 
   const resources = currentSector?.resources || { ore: 0, gas: 0, crystal: 0 };
   const maxYield = Math.max(resources.ore, resources.gas, resources.crystal, 1);
   const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
+  const cargoCap = ship?.stats?.cargoCap ?? 5;
+  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
@@ -59,12 +77,22 @@ export function MiningScreen() {
       >
         {mining?.active ? (
           <>
-            <div>STATUS: MINING {mining.resource?.toUpperCase()}</div>
-            <div>RATE: {mining.rate}u/s</div>
+            <div style={{ marginBottom: '6px' }}>STATUS: MINING {mining.resource?.toUpperCase()} — {mining.rate}u/s</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{ flex: 1, height: '6px', background: '#0a0a0a', border: '1px solid rgba(255,176,0,0.3)' }}>
+                <div style={{ width: `${miningProgress * 100}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 0.2s linear' }} />
+              </div>
+              <span style={{ fontSize: '0.75rem', minWidth: '60px', textAlign: 'right' }}>
+                {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
+              </span>
+            </div>
           </>
         ) : (
           <div>STATUS: IDLE</div>
         )}
+        <div style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '4px' }}>
+          CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} KRISTALL:{cargo.crystal}
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
