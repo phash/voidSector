@@ -1,7 +1,7 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import type { ShipModule, ResearchState, HullType } from '@void-sector/shared';
+import type { ShipModule, ResearchState } from '@void-sector/shared';
 
 import {
   calculateShipStats,
@@ -9,15 +9,10 @@ import {
   isModuleUnlocked,
   canStartResearch,
   MODULES,
-  HULLS,
-  HULL_PRICES,
-  STATION_SHIPYARD_LEVEL_THRESHOLD,
   RESEARCH_TICK_MS,
 } from '@void-sector/shared';
 import { getReputationTier } from '../../engine/commands.js';
-import { hasShipyard } from '../../engine/npcgen.js';
-import { getOrInitStation, getStationLevel } from '../../engine/npcStationEngine.js';
-import { getFuelState, saveFuelState } from './RedisAPStore.js';
+import { getFuelState } from './RedisAPStore.js';
 import { getAcepXpSummary, getAcepEffects } from '../../engine/acepXpService.js';
 import {
   addToInventory,
@@ -28,13 +23,10 @@ import {
   getActiveShip,
   getPlayerHomeBase,
   getPlayerShips,
-  createShip,
-  switchActiveShip,
   updateShipModules,
   renameShip,
   renameBase,
   getInventory,
-  getPlayerLevel,
   getPlayerResearch,
   addUnlockedModule,
   getActiveResearch,
@@ -47,7 +39,6 @@ import {
   getPlayerReputations,
   getStorageInventory,
 } from '../../db/queries.js';
-import { rejectGuest } from './utils.js';
 
 export class ShipService {
   constructor(private ctx: ServiceContext) {}
@@ -67,45 +58,6 @@ export class ShipService {
       }),
     );
     client.send('shipList', { ships: shipsWithStats });
-  }
-
-  async handleSwitchShip(client: Client, data: { shipId: string }): Promise<void> {
-    const auth = client.auth as AuthPayload;
-    // Must be at home base
-    const homeBase = await getPlayerHomeBase(auth.userId);
-    if (
-      this.ctx._px(client.sessionId) !== homeBase.x ||
-      this.ctx._py(client.sessionId) !== homeBase.y
-    ) {
-      client.send('error', {
-        code: 'NOT_AT_BASE',
-        message: 'Must be at home base to switch ships',
-      });
-      return;
-    }
-    const success = await switchActiveShip(auth.userId, data.shipId);
-    if (!success) {
-      client.send('error', { code: 'SWITCH_FAIL', message: 'Ship not found' });
-      return;
-    }
-    // Reload new ship stats
-    const newShip = await getActiveShip(auth.userId);
-    if (newShip) {
-      const newStats = calculateShipStats(newShip.hullType, newShip.modules);
-      this.ctx.clientShips.set(client.sessionId, newStats);
-      this.ctx.clientHullTypes.set(client.sessionId, newShip.hullType);
-      const fuelState = await getFuelState(auth.userId);
-      client.send('shipData', {
-        id: newShip.id,
-        ownerId: auth.userId,
-        hullType: newShip.hullType,
-        name: newShip.name,
-        modules: newShip.modules,
-        stats: newStats,
-        fuel: fuelState ?? newStats.fuelMax,
-        active: true,
-      });
-    }
   }
 
   async handleInstallModule(
@@ -230,90 +182,6 @@ export class ShipService {
     const remainingCredits = await getPlayerCredits(auth.userId);
     client.send('creditsUpdate', { credits: remainingCredits });
     client.send('buyModuleResult', { success: true, moduleId: data.moduleId });
-  }
-
-  async handleBuyHull(
-    client: Client,
-    data: { hullType: string; name?: string; shipColor?: string },
-  ): Promise<void> {
-    if (rejectGuest(client, 'Schiffskauf')) return;
-    const auth = client.auth as AuthPayload;
-    const hullDef = HULLS[data.hullType as HullType];
-    if (!hullDef) {
-      client.send('error', { code: 'UNKNOWN_HULL', message: 'Unknown hull type' });
-      return;
-    }
-    // Must be at station or home base
-    const homeBase = await getPlayerHomeBase(auth.userId);
-    const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const isHomeBase =
-      this.ctx._px(client.sessionId) === homeBase.x &&
-      this.ctx._py(client.sessionId) === homeBase.y;
-    if (!isStation && !isHomeBase) {
-      client.send('error', {
-        code: 'WRONG_LOCATION',
-        message: 'Must be at a station or home base',
-      });
-      return;
-    }
-    // If at an NPC station (not home base), check shipyard availability
-    if (isStation && !isHomeBase) {
-      const sx = this.ctx._px(client.sessionId);
-      const sy = this.ctx._py(client.sessionId);
-      const station = await getOrInitStation(sx, sy);
-      const stationLevelInfo = getStationLevel(station.xp);
-      if (!hasShipyard(stationLevelInfo.level)) {
-        client.send('error', {
-          code: 'NO_SHIPYARD',
-          message: `Station needs level ${STATION_SHIPYARD_LEVEL_THRESHOLD}+ for shipyard`,
-        });
-        return;
-      }
-    }
-    // Check level
-    const playerLevel = await getPlayerLevel(auth.userId);
-    if (playerLevel < hullDef.unlockLevel) {
-      client.send('error', { code: 'LEVEL_TOO_LOW', message: `Need level ${hullDef.unlockLevel}` });
-      return;
-    }
-    // Check credits (use HULL_PRICES)
-    const price = HULL_PRICES[data.hullType as HullType] ?? hullDef.unlockCost;
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < price) {
-      client.send('error', { code: 'INSUFFICIENT_CREDITS', message: 'Not enough credits' });
-      return;
-    }
-    // Deduct credits
-    if (price > 0) {
-      await deductCredits(auth.userId, price);
-    }
-    // Create new ship (becomes active, old one deactivated)
-    const newShip = await createShip(
-      auth.userId,
-      data.hullType as HullType,
-      data.name?.slice(0, 20) || hullDef.name,
-      hullDef.baseFuel,
-    );
-    const newStats = calculateShipStats(newShip.hullType, newShip.modules);
-    this.ctx.clientShips.set(client.sessionId, newStats);
-    this.ctx.clientHullTypes.set(client.sessionId, newShip.hullType);
-    // Reset fuel
-    await saveFuelState(auth.userId, hullDef.baseFuel);
-    // Persist cosmetic ship color
-    const shipColor = data.shipColor?.slice(0, 7) || undefined;
-    client.send('shipData', {
-      id: newShip.id,
-      ownerId: auth.userId,
-      hullType: newShip.hullType,
-      name: newShip.name,
-      modules: newShip.modules,
-      stats: newStats,
-      fuel: hullDef.baseFuel,
-      active: true,
-      shipColor,
-    });
-    const remainingCredits = await getPlayerCredits(auth.userId);
-    client.send('creditsUpdate', { credits: remainingCredits });
   }
 
   async handleRenameShip(client: Client, data: { shipId: string; name: string }): Promise<void> {

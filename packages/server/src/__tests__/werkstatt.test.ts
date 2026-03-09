@@ -16,8 +16,6 @@ vi.mock('../db/queries.js', () => ({
   getActiveShip: vi.fn(),
   getPlayerHomeBase: vi.fn(),
   getPlayerShips: vi.fn(),
-  createShip: vi.fn(),
-  switchActiveShip: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
   renameBase: vi.fn(),
@@ -61,22 +59,15 @@ vi.mock('@void-sector/shared', () => ({
     },
   },
   HULLS: {},
-  HULL_PRICES: {},
   calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
   validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
   isModuleUnlocked: vi.fn().mockReturnValue(true),
   canStartResearch: vi.fn(),
   RESEARCH_TICK_MS: 60000,
-  STATION_SHIPYARD_LEVEL_THRESHOLD: 3,
 }));
 
 // ── Mock engine deps ──────────────────────────────────────────────────────────
 vi.mock('../engine/commands.js', () => ({ getReputationTier: vi.fn() }));
-vi.mock('../engine/npcgen.js', () => ({ hasShipyard: vi.fn().mockReturnValue(true) }));
-vi.mock('../engine/npcStationEngine.js', () => ({
-  getOrInitStation: vi.fn(),
-  getStationLevel: vi.fn(),
-}));
 vi.mock('../engine/acepXpService.js', () => ({
   getAcepXpSummary: vi.fn().mockResolvedValue({}),
   getAcepEffects: vi.fn().mockReturnValue({}),

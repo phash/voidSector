@@ -581,9 +581,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getShips', async (client) => {
       await this.ships.handleGetShips(client);
     });
-    this.onMessage('switchShip', async (client, data: { shipId: string }) => {
-      await this.ships.handleSwitchShip(client, data);
-    });
     this.onMessage(
       'installModule',
       async (client, data: { moduleId: string; slotIndex: number }) => {
@@ -596,12 +593,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('buyModule', async (client, data: { moduleId: string }) => {
       await this.ships.handleBuyModule(client, data);
     });
-    this.onMessage(
-      'buyHull',
-      async (client, data: { hullType: string; name?: string; shipColor?: string }) => {
-        await this.ships.handleBuyHull(client, data);
-      },
-    );
     this.onMessage('renameShip', async (client, data: { shipId: string; name: string }) => {
       await this.ships.handleRenameShip(client, data);
     });

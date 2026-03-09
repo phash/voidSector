@@ -2011,10 +2011,6 @@ class GameNetwork {
     this.sectorRoom?.send('getShips');
   }
 
-  sendSwitchShip(shipId: string) {
-    this.sectorRoom?.send('switchShip', { shipId });
-  }
-
   sendInstallModule(shipId: string, moduleId: string, slotIndex: number) {
     this.sectorRoom?.send('installModule', { shipId, moduleId, slotIndex });
   }
@@ -2025,10 +2021,6 @@ class GameNetwork {
 
   sendBuyModule(moduleId: string) {
     this.sectorRoom?.send('buyModule', { moduleId });
-  }
-
-  sendBuyHull(hullType: string, name: string) {
-    this.sectorRoom?.send('buyHull', { hullType, name });
   }
 
   sendRenameShip(shipId: string, name: string) {

@@ -31,8 +31,6 @@ vi.mock('../db/queries.js', () => ({
   // ShipService deps
   getPlayerHomeBase: vi.fn(),
   getPlayerShips: vi.fn(),
-  createShip: vi.fn(),
-  switchActiveShip: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
   renameBase: vi.fn(),
@@ -67,13 +65,11 @@ vi.mock('@void-sector/shared', () => ({
     drive_mk2: { id: 'drive_mk2', name: 'Drive MK2', researchCost: { credits: 100 } },
   },
   HULLS: {},
-  HULL_PRICES: {},
   calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
   validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
   isModuleUnlocked: vi.fn().mockReturnValue(true),
   canStartResearch: vi.fn(),
   RESEARCH_TICK_MS: 60000,
-  STATION_SHIPYARD_LEVEL_THRESHOLD: 3,
   WORLD_SEED: 42,
   AP_COSTS_LOCAL_SCAN: 1,
   FEATURE_COMBAT_V2: false,
@@ -115,11 +111,6 @@ vi.mock('../engine/permadeathService.js', () => ({
   salvageWreckModule: vi.fn(),
 }));
 vi.mock('../rooms/services/utils.js', () => ({ rejectGuest: vi.fn().mockReturnValue(false) }));
-vi.mock('../engine/npcgen.js', () => ({ hasShipyard: vi.fn().mockReturnValue(true) }));
-vi.mock('../engine/npcStationEngine.js', () => ({
-  getOrInitStation: vi.fn(),
-  getStationLevel: vi.fn(),
-}));
 
 // ── Mock inventoryService ─────────────────────────────────────────────────────
 vi.mock('../engine/inventoryService.js', () => ({
