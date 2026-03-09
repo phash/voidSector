@@ -23,11 +23,11 @@ describe('ProgramSelector', () => {
     });
   });
 
-  it('renders all 10 program buttons (excluding COMMS and SHIP-SYS)', () => {
+  it('renders all program buttons (excluding COMMS and SHIP-SYS)', () => {
     render(<ProgramSelector />);
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(ALL_PROGRAMS.length);
-    expect(ALL_PROGRAMS.length).toBe(10);
+    expect(ALL_PROGRAMS.length).toBe(11); // NEWS added
   });
 
   it('renders a button for each program', () => {

@@ -22,13 +22,14 @@ describe('JumpGate Generation', () => {
     expect(dist).toBeLessThanOrEqual(10002); // slight rounding tolerance
   });
 
-  it('should respect JUMPGATE_CHANCE probability (~2%)', () => {
+  it('should respect JUMPGATE_CHANCE probability (~0.5%)', () => {
     let count = 0;
-    for (let i = 0; i < 10000; i++) {
-      if (checkJumpGate(i, i * 7)) count++;
+    for (let i = 0; i < 50000; i++) {
+      if (checkJumpGate(i * 3 + 1, i * 7 + 2)) count++;
     }
-    expect(count / 10000).toBeGreaterThan(0.01);
-    expect(count / 10000).toBeLessThan(0.04);
+    const rate = count / 50000;
+    expect(rate).toBeGreaterThan(0.001);
+    expect(rate).toBeLessThan(0.015);
   });
 
   it('should convert angles to compass directions', () => {
