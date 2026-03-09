@@ -1771,3 +1771,189 @@ export const UNIVERSE_TICK_MS = 5_000; // 5 seconds per tick
 export const FACTION_EXPANSION_INTERVAL_TICKS = 360; // 30 min (360 × 5s)
 export const FACTION_MAX_STATIONS_PER_QUADRANT = 5;
 export const HUMAN_CIVILIZATION_METER_MAX = 10_000; // max civ level
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Race Visual Identity — #187
+// Framework for alien race aesthetics: colors, radar icons, terminal style
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AlienFactionId =
+  | 'ancients'
+  | 'scrappers'
+  | 'archivists'
+  | 'consortium'
+  | 'kthari'
+  | 'mycelians'
+  | 'mirror_minds'
+  | 'tourist_guild'
+  | 'silent_swarm'
+  | 'helions'
+  | 'axioms';
+
+export interface RaceVisualConfig {
+  /** Primary UI accent color (hex) */
+  accentColor: string;
+  /** Secondary/dim color for backgrounds and inactive elements */
+  dimColor: string;
+  /** Terminal font style hint: 'normal' | 'symbols' | 'math' */
+  fontStyle: 'normal' | 'symbols' | 'math';
+  /** 5×5 pixel pattern for NPC ship icon on radar */
+  radarPattern: number[][];
+  /** Short description of the aesthetic feel */
+  aesthetic: string;
+}
+
+/**
+ * Visual configuration for each alien faction.
+ * Used by station terminals (accent colors) and radar renderer (NPC ship icons).
+ */
+export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
+  ancients: {
+    accentColor: '#c8a96e',
+    dimColor: '#6b5a38',
+    fontStyle: 'symbols',
+    aesthetic: 'ruined organic-crystal, warm amber glow',
+    radarPattern: [
+      [0,1,0,1,0],
+      [1,0,1,0,1],
+      [0,1,1,1,0],
+      [1,0,1,0,1],
+      [0,1,0,1,0],
+    ],
+  },
+  scrappers: {
+    accentColor: '#aaaaaa',
+    dimColor: '#555555',
+    fontStyle: 'normal',
+    aesthetic: 'salvage-heap asymmetric, industrial grey',
+    radarPattern: [
+      [1,0,1,1,0],
+      [0,1,0,1,1],
+      [1,0,1,0,1],
+      [1,1,0,1,0],
+      [0,1,1,0,1],
+    ],
+  },
+  archivists: {
+    accentColor: '#88ffcc',
+    dimColor: '#224433',
+    fontStyle: 'normal',
+    aesthetic: 'geometric clean precision, cool mint',
+    radarPattern: [
+      [0,0,1,0,0],
+      [0,1,1,1,0],
+      [1,1,0,1,1],
+      [0,1,1,1,0],
+      [0,0,1,0,0],
+    ],
+  },
+  consortium: {
+    accentColor: '#ffaa44',
+    dimColor: '#7a5020',
+    fontStyle: 'normal',
+    aesthetic: 'corporate efficient, warm gold-orange',
+    radarPattern: [
+      [0,1,1,1,0],
+      [1,0,0,0,1],
+      [1,0,1,0,1],
+      [1,0,0,0,1],
+      [0,1,1,1,0],
+    ],
+  },
+  kthari: {
+    accentColor: '#ff4444',
+    dimColor: '#7a1111',
+    fontStyle: 'normal',
+    aesthetic: 'military angular combat-jet, sharp red',
+    radarPattern: [
+      [0,0,1,0,0],
+      [0,1,1,0,0],
+      [1,1,1,1,1],
+      [0,1,1,0,0],
+      [0,0,1,0,0],
+    ],
+  },
+  mycelians: {
+    accentColor: '#44ff88',
+    dimColor: '#114422',
+    fontStyle: 'symbols',
+    aesthetic: 'organic growing mycellium, bio-green',
+    radarPattern: [
+      [0,1,0,1,0],
+      [1,0,0,0,1],
+      [0,0,1,0,0],
+      [1,0,0,0,1],
+      [0,1,0,1,0],
+    ],
+  },
+  mirror_minds: {
+    accentColor: '#cc88ff',
+    dimColor: '#441166',
+    fontStyle: 'normal',
+    aesthetic: 'mirrored symmetric reflective, violet',
+    radarPattern: [
+      [1,0,0,0,1],
+      [0,1,0,1,0],
+      [0,0,1,0,0],
+      [0,1,0,1,0],
+      [1,0,0,0,1],
+    ],
+  },
+  tourist_guild: {
+    accentColor: '#ffff44',
+    dimColor: '#7a7a11',
+    fontStyle: 'normal',
+    aesthetic: 'colorful overloaded cruise-ship, bright yellow',
+    radarPattern: [
+      [1,1,0,1,1],
+      [1,0,1,0,1],
+      [0,1,1,1,0],
+      [1,0,1,0,1],
+      [1,1,0,1,1],
+    ],
+  },
+  silent_swarm: {
+    accentColor: '#ff8844',
+    dimColor: '#7a3311',
+    fontStyle: 'normal',
+    aesthetic: 'insectoid modular swarm-cluster, burnt orange',
+    radarPattern: [
+      [1,0,1,0,1],
+      [0,1,0,1,0],
+      [1,0,1,0,1],
+      [0,1,0,1,0],
+      [1,0,1,0,1],
+    ],
+  },
+  helions: {
+    accentColor: '#ff44ff',
+    dimColor: '#7a1177',
+    fontStyle: 'normal',
+    aesthetic: 'plasma radiant solar-wind, vivid magenta',
+    radarPattern: [
+      [0,0,1,0,0],
+      [0,1,1,1,0],
+      [1,1,1,1,1],
+      [0,1,1,1,0],
+      [0,0,1,0,0],
+    ],
+  },
+  axioms: {
+    accentColor: '#ffffff',
+    dimColor: '#888888',
+    fontStyle: 'math',
+    aesthetic: 'abstract mathematical pure-geometry, white',
+    radarPattern: [
+      [1,0,1,0,1],
+      [0,0,0,0,0],
+      [1,0,1,0,1],
+      [0,0,0,0,0],
+      [1,0,1,0,1],
+    ],
+  },
+};
+
+/** Get visual config for a race, or ancients-themed fallback. */
+export function getRaceVisual(raceId: AlienFactionId): RaceVisualConfig {
+  return RACE_VISUAL_CONFIGS[raceId] ?? RACE_VISUAL_CONFIGS.ancients;
+}
