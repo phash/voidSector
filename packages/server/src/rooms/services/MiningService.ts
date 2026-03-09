@@ -9,6 +9,7 @@ import type {
 } from '@void-sector/shared';
 
 import { validateMine, validateJettison } from '../../engine/commands.js';
+import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { stopMining } from '../../engine/mining.js';
 import { getMiningState, saveMiningState } from './RedisAPStore.js';
 import {
@@ -88,6 +89,8 @@ export class MiningService {
 
     if (result.mined > 0 && result.resource) {
       await addToCargo(auth.userId, result.resource, result.mined);
+      // ACEP: AUSBAU-XP for mining
+      addAcepXpForPlayer(auth.userId, 'ausbau', 1).catch(() => {});
     }
 
     await saveMiningState(auth.userId, result.newState);

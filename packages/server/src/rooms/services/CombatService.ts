@@ -9,6 +9,7 @@ import type {
 } from '@void-sector/shared';
 
 import { calculateCurrentAP, spendAP } from '../../engine/ap.js';
+import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { validateBattleAction, createPirateEncounter } from '../../engine/commands.js';
 import { getPirateLevel } from '../../engine/npcgen.js';
 import {
@@ -157,6 +158,8 @@ export class CombatService {
         sectorX: data.sectorX,
         sectorY: data.sectorY,
       });
+      // ACEP: KAMPF-XP for combat victory
+      addAcepXpForPlayer(auth.userId, 'kampf', 3).catch(() => {});
     }
   }
 
@@ -212,6 +215,11 @@ export class CombatService {
       }
       if (finalResult.repChange) {
         await this.ctx.applyReputationChange(auth.userId, 'pirates', finalResult.repChange, client);
+      }
+
+      // ACEP: KAMPF-XP for combat v2 victory
+      if (result.state.status === 'victory') {
+        addAcepXpForPlayer(auth.userId, 'kampf', 3).catch(() => {});
       }
 
       await insertBattleLogV2(

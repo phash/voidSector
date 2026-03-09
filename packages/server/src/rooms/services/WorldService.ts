@@ -124,6 +124,7 @@ import {
   getAllDiscoveredQuadrantCoords,
 } from '../../db/quadrantQueries.js';
 import { isInt, rejectGuest } from './utils.js';
+import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 
 const VALID_STRUCTURE_TYPES = [
   'comm_relay',
@@ -312,6 +313,8 @@ export class WorldService {
       sectorX: this.ctx._px(client.sessionId),
       sectorY: this.ctx._py(client.sessionId),
     });
+    // ACEP: AUSBAU-XP for building a structure
+    addAcepXpForPlayer(auth.userId, 'ausbau', 5).catch(() => {});
   }
 
   // ── Jumpgate Build ─────────────────────────────────────────────────

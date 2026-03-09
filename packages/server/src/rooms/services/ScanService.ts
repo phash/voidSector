@@ -8,6 +8,7 @@ import type {
 } from '@void-sector/shared';
 
 import { calculateCurrentAP } from '../../engine/ap.js';
+import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
 import { checkScanEvent } from '../../engine/scanEvents.js';
 import { generateSector } from '../../engine/worldgen.js';
@@ -86,6 +87,9 @@ export class ScanService {
       sectorY: this.ctx._py(client.sessionId),
     });
 
+    // ACEP: INTEL-XP for scanning
+    addAcepXpForPlayer(auth.userId, 'intel', 1).catch(() => {});
+
     // Ancient ruin scan: reveal lore fragment + artefact chance
     if (sectorData?.contents?.includes('ruin')) {
       const px = this.ctx._px(client.sessionId);
@@ -111,6 +115,8 @@ export class ScanService {
           sectorY: py,
         });
         client.send('logEntry', `ANCIENT RUIN — ${ruinResult.fragmentText.split('\n')[0]}`);
+        // ACEP: EXPLORER-XP for discovering an ancient ruin
+        addAcepXpForPlayer(auth.userId, 'explorer', 10).catch(() => {});
       }
     }
   }
@@ -219,6 +225,11 @@ export class ScanService {
         sectorX: s.x,
         sectorY: s.y,
       });
+    }
+
+    // ACEP: INTEL-XP for area scan (discovering new sectors)
+    if (newSectors.length > 0) {
+      addAcepXpForPlayer(auth.userId, 'intel', 2).catch(() => {});
     }
   }
 
