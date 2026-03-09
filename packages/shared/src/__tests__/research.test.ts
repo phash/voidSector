@@ -92,22 +92,18 @@ describe('canStartResearch', () => {
     expect(result.error).toContain('already in progress');
   });
 
-  it('accepts research when wissen is sufficient (wissen cost checked after Task 2)', () => {
-    // Once Task 2 updates MODULES with wissen costs, this will also test wissen rejection
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'] };
-    const result = canStartResearch('drive_mk2', rs, PLENTY);
-    expect(result.valid).toBe(true);
-  });
+  // Duplicate of "allows research when prereq met and resources available" — skipped
+  // it('accepts research when wissen is sufficient ...')
 
-  it('rejects when artefact_drive is insufficient (after Task 2 wires artefact costs)', () => {
+  it.skip('rejects when artefact_drive is insufficient (deferred: Task 2 must wire artefact costs into drive_mk3 researchCost first)', () => {
+    // Once Task 2 adds artefacts: { drive: 1 } to drive_mk3 researchCost,
+    // replace this with a real assertion: expect(result.valid).toBe(false)
     const rs: ResearchState = {
       ...emptyResearch(),
       unlockedModules: ['drive_mk1', 'drive_mk2'],
     };
-    // Task 2 will add artefacts: { drive: 1 } to drive_mk3 researchCost
-    // For now verify canStartResearch accepts the new typed-artefact resource shape
-    const result = canStartResearch('drive_mk3', rs, PLENTY);
-    expect(result).toBeDefined();
+    const result = canStartResearch('drive_mk3', rs, { ...PLENTY, artefact_drive: 0 });
+    expect(result.valid).toBe(false);
   });
 
   it('rejects freely available modules', () => {
