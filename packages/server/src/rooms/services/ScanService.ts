@@ -366,7 +366,19 @@ export class ScanService {
       }
     }
 
-    client.send('logEntry', `Event abgeschlossen! +${eventData.rewardCredits ?? 0} CR`);
+    // Build completion summary
+    const rewards: string[] = [];
+    if (eventData.rewardCredits) rewards.push(`+${eventData.rewardCredits} CR`);
+    if (eventData.rewardXp) rewards.push(`+${eventData.rewardXp} XP`);
+    if (eventData.rewardArtefact && eventData.rewardArtefact > 0) rewards.push('+1 ARTEFAKT');
+    const rewardSummary = rewards.length > 0 ? rewards.join(', ') : 'REP +';
+    client.send('logEntry', `Event abgeschlossen! ${rewardSummary}`);
+
+    // Remove event from client state
+    client.send('scanEventCompleted', { eventId: data.eventId });
+
+    // ACEP: INTEL-XP for completing a scan event
+    addAcepXpForPlayer(auth.userId, 'intel', 1).catch(() => {});
   }
 
   /** Salvage a module from a ship wreck. */

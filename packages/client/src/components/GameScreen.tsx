@@ -40,6 +40,45 @@ type ShipSysView = 'settings' | 'modules' | 'hangar';
 
 const SHIP_SYS_MODES: ShipSysView[] = ['settings', 'modules', 'hangar'];
 
+const ACEP_PATHS = [
+  { key: 'ausbau', label: 'AUSBAU', color: '#ffaa00', max: 50 },
+  { key: 'intel', label: 'INTEL', color: '#00ffcc', max: 50 },
+  { key: 'kampf', label: 'KAMPF', color: '#ff4444', max: 50 },
+  { key: 'explorer', label: 'EXPLORER', color: '#8888ff', max: 50 },
+] as const;
+
+function AcepPanel() {
+  const ship = useStore((s) => s.ship);
+  const xp = ship?.acepXp;
+  if (!xp) return null;
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: '0.6rem', opacity: 0.6, marginBottom: 4, letterSpacing: '0.1em' }}>
+        ADAPTIVE CRAFT EVOLUTION PROTOCOL
+      </div>
+      {ACEP_PATHS.map(({ key, label, color, max }) => {
+        const val = xp[key] ?? 0;
+        const pct = Math.min(100, (val / max) * 100);
+        return (
+          <div key={key} style={{ marginBottom: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem' }}>
+              <span style={{ color }}>{label}</span>
+              <span style={{ color: 'var(--color-dim)' }}>{val}/{max}</span>
+            </div>
+            <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', marginTop: 1 }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: color, transition: 'width 0.3s' }} />
+            </div>
+          </div>
+        );
+      })}
+      <div style={{ fontSize: '0.58rem', color: 'var(--color-dim)', marginTop: 3 }}>
+        BUDGET: {xp.total ?? 0}/100
+      </div>
+    </div>
+  );
+}
+
 function SettingsView() {
   const colorProfile = useStore((s) => s.colorProfile);
   const setColorProfile = useStore((s) => s.setColorProfile);
@@ -65,6 +104,8 @@ function SettingsView() {
       >
         SYSTEM-EINSTELLUNGEN
       </div>
+
+      <AcepPanel />
 
       <div style={{ marginBottom: 12 }}>
         <label style={{ fontSize: '0.65rem', opacity: 0.6 }}>DISPLAY PROFILE</label>

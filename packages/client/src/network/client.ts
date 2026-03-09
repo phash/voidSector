@@ -885,6 +885,10 @@ class GameNetwork {
       useStore.getState().addLogEntry('Station erfolgreich verteidigt!');
     });
 
+    room.onMessage('scanEventCompleted', (data: { eventId: string }) => {
+      useStore.getState().removeScanEvent(data.eventId);
+    });
+
     room.onMessage('scanEventDiscovered', (data) => {
       const store = useStore.getState();
       store.addScanEvent(data.event);

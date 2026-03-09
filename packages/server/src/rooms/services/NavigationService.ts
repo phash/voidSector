@@ -3,6 +3,7 @@ import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import type { JumpMessage, HyperJumpMessage, ShipStats } from '@void-sector/shared';
 import { isInt, rejectGuest, MAX_COORD } from './utils.js';
+import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { logger } from '../../utils/logger.js';
 
 import { generateSector } from '../../engine/worldgen.js';
@@ -356,6 +357,8 @@ export class NavigationService {
         quadrantY: tgtQy,
         eventData: { fromQuadrant: { qx: curQx, qy: curQy }, toQuadrant: { qx: tgtQx, qy: tgtQy } },
       }).catch(() => {});
+      // ACEP: EXPLORER-XP for cross-quadrant jump
+      addAcepXpForPlayer(auth.userId, 'explorer', 2).catch(() => {});
     }
   }
 

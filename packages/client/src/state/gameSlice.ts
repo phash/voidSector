@@ -396,6 +396,7 @@ export interface GameSlice {
   setStationCombatEvent: (stationCombatEvent: StationCombatEvent | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
   addScanEvent: (event: ScanEvent) => void;
+  removeScanEvent: (eventId: string) => void;
   setJumpGateInfo: (gate: JumpGateInfo | null) => void;
   setKnownJumpGates: (gates: JumpGateMapEntry[]) => void;
   setRescuedSurvivors: (survivors: RescueSurvivor[]) => void;
@@ -643,6 +644,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setStationCombatEvent: (stationCombatEvent) => set({ stationCombatEvent }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
+  removeScanEvent: (eventId) => set((s) => ({ scanEvents: s.scanEvents.filter((e) => e.id !== eventId) })),
   setJumpGateInfo: (jumpGateInfo) => set({ jumpGateInfo }),
   setKnownJumpGates: (knownJumpGates) => set({ knownJumpGates }),
   setRescuedSurvivors: (rescuedSurvivors) => set({ rescuedSurvivors }),
