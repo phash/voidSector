@@ -80,7 +80,7 @@ Das Universum ist eine 10.000 × 10.000 Quadranten-Matrix. Du startest in der N�
 
   {
     id: 'universum',
-    title: 'UNIVERSUM & KOORDINATEN',
+    title: 'UNIVERSUM & WELTGENERIERUNG',
     category: 'grundlagen',
     icon: '◎',
     summary: 'Aufbau des Universums: Quadranten, Sektoren, absolute Koordinaten.',
@@ -212,6 +212,9 @@ Im SHIP-SYS-Programm kannst du den aktuellen Quadranten beanspruchen (CLAIM). Ko
 
 **AP-Regenerations-Bonus:**
 - Wissenschaftler-Fraktion Rang 2: +20% AP-Regen
+
+**Lazy Evaluation:**
+AP wird nicht durch einen Server-Tick aufgefüllt. Stattdessen berechnet der Server bei jeder Aktion, wie viel AP seit dem letzten Zugriff regeneriert wurde (Lazy Evaluation). Das spart Ressourcen und macht das System präzise.
 
 **Faustregel:**
 Bei 100 AP und 1 AP/Sprung hast du 100 Sprünge pro ~3,3 Minuten Regen-Zeit.
@@ -737,7 +740,7 @@ NPC-Stationen kaufen Sektor- und Bereichs-Slates. Preis: 5 CR pro enthaltenen Se
 
 **Jumpgate-Slates:**
 Verlinkung mit Spieler-Jumpgates ermöglicht Routing-Ketten (bis 10 Hops). Gate-Codes sind handelbar.`,
-    seeAlso: ['jumpgates', 'handel', 'strukturen'],
+    seeAlso: ['jumpgates', 'npc-handel', 'strukturen'],
     tags: ['data slate', 'koordinaten', 'karte', 'notizen', 'handel'],
   },
 
