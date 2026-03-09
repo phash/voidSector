@@ -1687,6 +1687,85 @@ export const COSMIC_FACTION_COLORS: Record<CosmicFactionId, string> = {
   scrappers: '#AAAAAA',
 };
 
+// ── ACEP Radar Icon Evolution ──────────────────────────────────────────────
+// Icon grows with total XP. Dominant path shapes the pattern.
+// Tiers: 0-19 (T1 3×3), 20-49 (T2 5×5), 50-79 (T3 7×7), 80-100 (T4 9×9)
+
+export type AcepDominantPath = 'ausbau' | 'intel' | 'kampf' | 'explorer' | 'none';
+
+/** Pixel patterns per tier × dominant path. */
+export const ACEP_RADAR_PATTERNS: Record<1 | 2 | 3 | 4, Record<AcepDominantPath, number[][]>> = {
+  1: {
+    none:     [[0,1,0],[1,1,1],[0,1,0]],
+    ausbau:   [[1,1,1],[1,0,1],[1,1,1]],
+    intel:    [[0,1,0],[1,0,1],[0,1,0]],
+    kampf:    [[0,1,0],[1,1,1],[0,1,0]],
+    explorer: [[1,0,0],[0,1,0],[0,0,1]],
+  },
+  2: {
+    none:     [[0,1,1,1,0],[1,0,0,0,1],[1,0,1,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    ausbau:   [[1,1,1,1,1],[1,0,0,0,1],[1,0,1,0,1],[1,0,0,0,1],[0,1,1,1,0]], // fortress
+    intel:    [[0,0,1,0,0],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[0,0,1,0,0]], // diamond
+    kampf:    [[0,0,1,0,0],[0,1,1,0,0],[1,1,1,1,1],[0,1,1,0,0],[0,0,1,0,0]], // spear
+    explorer: [[1,0,0,0,0],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,1],[0,0,0,0,1]], // asymmetric
+  },
+  3: {
+    none:     [[0,0,1,1,1,0,0],[0,1,0,0,0,1,0],[1,0,1,0,1,0,1],[1,0,0,1,0,0,1],[1,0,1,0,1,0,1],[0,1,0,0,0,1,0],[0,0,1,1,1,0,0]],
+    ausbau:   [[1,1,1,1,1,1,1],[1,0,0,0,0,0,1],[1,0,1,1,1,0,1],[1,0,1,0,1,0,1],[1,0,1,1,1,0,1],[1,0,0,0,0,0,1],[0,1,1,1,1,1,0]], // fortress
+    intel:    [[0,0,0,1,0,0,0],[0,0,1,0,1,0,0],[0,1,0,1,0,1,0],[1,0,1,1,1,0,1],[0,1,0,1,0,1,0],[0,0,1,0,1,0,0],[0,0,0,1,0,0,0]], // crystal
+    kampf:    [[0,0,0,1,0,0,0],[0,0,1,1,0,0,0],[0,1,0,1,0,0,0],[1,1,1,1,1,1,1],[0,1,0,1,0,0,0],[0,0,1,1,0,0,0],[0,0,0,1,0,0,0]], // lance
+    explorer: [[1,0,0,0,0,0,1],[0,1,0,0,0,1,0],[0,0,1,0,1,0,0],[0,0,0,1,0,0,0],[1,0,1,0,1,0,0],[0,1,0,0,0,1,0],[0,0,0,0,0,0,1]], // star-reach
+  },
+  4: {
+    none:     [[0,0,0,1,1,1,0,0,0],[0,0,1,0,0,0,1,0,0],[0,1,0,1,0,1,0,1,0],[1,0,1,0,1,0,1,0,1],[1,0,0,1,1,1,0,0,1],[1,0,1,0,1,0,1,0,1],[0,1,0,1,0,1,0,1,0],[0,0,1,0,0,0,1,0,0],[0,0,0,1,1,1,0,0,0]],
+    ausbau:   [[1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,1],[1,0,1,1,1,1,1,0,1],[1,0,1,0,0,0,1,0,1],[1,0,1,0,1,0,1,0,1],[1,0,1,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1],[1,0,0,0,0,0,0,0,1],[0,1,1,1,1,1,1,1,0]], // citadel
+    intel:    [[0,0,0,0,1,0,0,0,0],[0,0,0,1,0,1,0,0,0],[0,0,1,0,1,0,1,0,0],[0,1,0,1,0,1,0,1,0],[1,0,1,0,1,0,1,0,1],[0,1,0,1,0,1,0,1,0],[0,0,1,0,1,0,1,0,0],[0,0,0,1,0,1,0,0,0],[0,0,0,0,1,0,0,0,0]], // radiant star
+    kampf:    [[0,0,0,0,1,0,0,0,0],[0,0,0,1,1,0,0,0,0],[0,0,1,0,1,0,0,0,0],[0,1,0,0,1,0,0,0,0],[1,1,1,1,1,1,1,1,1],[0,1,0,0,1,0,0,0,0],[0,0,1,0,1,0,0,0,0],[0,0,0,1,1,0,0,0,0],[0,0,0,0,1,0,0,0,0]], // war cross
+    explorer: [[1,0,0,0,0,0,0,0,1],[0,1,0,0,1,0,0,1,0],[0,0,1,0,0,0,1,0,0],[0,0,0,1,0,1,0,0,0],[1,0,0,0,1,0,0,0,1],[0,0,0,1,0,1,0,0,0],[0,0,1,0,0,0,1,0,0],[0,1,0,0,1,0,0,1,0],[1,0,0,0,0,0,0,0,1]], // galaxy
+  },
+};
+
+/** XP tier thresholds (max 100 total XP). */
+export const ACEP_XP_TIERS: Array<{ min: number; tier: 1 | 2 | 3 | 4 }> = [
+  { min: 80, tier: 4 },
+  { min: 50, tier: 3 },
+  { min: 20, tier: 2 },
+  { min: 0,  tier: 1 },
+];
+
+export function getAcepIconTier(totalXp: number): 1 | 2 | 3 | 4 {
+  for (const t of ACEP_XP_TIERS) {
+    if (totalXp >= t.min) return t.tier;
+  }
+  return 1;
+}
+
+export function getAcepDominantPath(xp: {
+  ausbau: number;
+  intel: number;
+  kampf: number;
+  explorer: number;
+}): AcepDominantPath {
+  const total = xp.ausbau + xp.intel + xp.kampf + xp.explorer;
+  if (total === 0) return 'none';
+  const entries = Object.entries(xp) as Array<[AcepDominantPath, number]>;
+  const max = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
+  // Require dominant path to have > 40% of total to "count"
+  return max[1] / total > 0.4 ? max[0] : 'none';
+}
+
+export function getAcepRadarPattern(xp: {
+  ausbau: number;
+  intel: number;
+  kampf: number;
+  explorer: number;
+  total: number;
+}): number[][] {
+  const tier = getAcepIconTier(xp.total);
+  const path = getAcepDominantPath(xp);
+  return ACEP_RADAR_PATTERNS[tier][path];
+}
+
 // Universe Tick Engine constants
 export const UNIVERSE_TICK_MS = 5_000; // 5 seconds per tick
 export const FACTION_EXPANSION_INTERVAL_TICKS = 360; // 30 min (360 × 5s)

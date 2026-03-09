@@ -106,6 +106,7 @@ import { ChatService } from './services/ChatService.js';
 import { ShipService } from './services/ShipService.js';
 import { WorldService } from './services/WorldService.js';
 import { logger } from '../utils/logger.js';
+import { getAcepXpSummary } from '../engine/acepXpService.js';
 
 interface SectorRoomOptions {
   quadrantX: number;
@@ -776,6 +777,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
       // Send ship data to client
       const fuelState = await getFuelState(auth.userId);
+      const acepXp = await getAcepXpSummary(shipRecord.id);
       client.send('shipData', {
         id: shipRecord.id,
         ownerId: auth.userId,
@@ -785,6 +787,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         stats,
         fuel: fuelState ?? stats.fuelMax,
         active: true,
+        acepXp,
       });
 
       // Init fuel state in Redis

@@ -67,6 +67,7 @@ export function RadarCanvas() {
       scanEvents: state.scanEvents,
       discoveryTimestamps: state.discoveryTimestamps,
       hullType: state.ship?.hullType,
+      acepXp: state.ship?.acepXp ?? null,
       homeBase: state.homeBase,
       bookmarks: state.bookmarks,
       animTime: performance.now(),

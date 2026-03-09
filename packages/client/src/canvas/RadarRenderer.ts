@@ -5,6 +5,7 @@ import {
   STALENESS_FADE_DAYS,
   HULL_RADAR_PATTERNS,
   innerCoord,
+  getAcepRadarPattern,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -74,6 +75,7 @@ interface RadarState {
   scanEvents?: ScanEvent[];
   discoveryTimestamps?: Record<string, number>;
   hullType?: HullType;
+  acepXp?: { ausbau: number; intel: number; kampf: number; explorer: number; total: number } | null;
   homeBase?: { x: number; y: number };
   bookmarks?: Bookmark[];
   animTime?: number;
@@ -274,7 +276,10 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
       if (isPlayer) {
         const ownHull = state.hullType ?? 'scout';
-        const ownPattern = HULL_RADAR_PATTERNS[ownHull];
+        // ACEP/3: use evolved icon when XP >= 20 (Tier 2+)
+        const ownPattern = (state.acepXp && state.acepXp.total >= 20)
+          ? getAcepRadarPattern(state.acepXp)
+          : HULL_RADAR_PATTERNS[ownHull];
         const ownPixelSize = isDetailView ? Math.max(8, 2 + state.zoomLevel) : 2 + state.zoomLevel;
         // #155: animate ship icon from old position
         let iconX = cellX;

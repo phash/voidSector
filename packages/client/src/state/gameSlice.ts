@@ -56,6 +56,7 @@ export interface ClientShipData {
   stats: ShipStats;
   fuel: number;
   active: boolean;
+  acepXp?: { ausbau: number; intel: number; kampf: number; explorer: number; total: number };
 }
 
 export interface AutopilotStatusInfo {
