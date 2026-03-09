@@ -516,6 +516,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('defendTerritory', async (client) => {
       await this.territory.handleDefendTerritory(client);
     });
+    this.onMessage('getAllTerritories', async (client) => {
+      await this.territory.handleGetAllTerritories(client);
+    });
 
     // ── News ────────────────────────────────────────────────────────
     this.onMessage('getNews', async (client) => {

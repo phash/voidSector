@@ -899,6 +899,18 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('allTerritories', (data: { claims: any[] }) => {
+      const map: Record<string, { playerName: string; playerId: string; defenseRating: string }> = {};
+      for (const c of data.claims) {
+        map[`${c.quadrant_x}:${c.quadrant_y}`] = {
+          playerName: c.player_name,
+          playerId: c.player_id,
+          defenseRating: c.defense_rating,
+        };
+      }
+      useStore.getState().setTerritoryMap(map);
+    });
+
     room.onMessage('stationUnderAttack', (data: StationCombatEvent) => {
       useStore.getState().setStationCombatEvent(data);
       useStore
@@ -2032,6 +2044,9 @@ class GameNetwork {
   }
   requestMyTerritories() {
     this.sectorRoom?.send('listMyTerritories');
+  }
+  requestAllTerritories() {
+    this.sectorRoom?.send('getAllTerritories');
   }
 
   // Quadrant system

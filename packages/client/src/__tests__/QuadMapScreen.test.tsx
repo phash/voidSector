@@ -19,6 +19,7 @@ beforeAll(() => {
 vi.mock('../network/client', () => ({
   network: {
     requestKnownQuadrants: vi.fn(),
+    requestAllTerritories: vi.fn(),
     requestSyncQuadrants: vi.fn(),
     sendNameQuadrant: vi.fn(),
   },

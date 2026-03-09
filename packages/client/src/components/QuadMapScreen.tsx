@@ -180,6 +180,16 @@ function FirstContactDialog() {
   );
 }
 
+/** Derive a stable HSL color for a player/faction based on their ID string. */
+function playerColor(playerId: string): string {
+  let hash = 0;
+  for (let i = 0; i < playerId.length; i++) {
+    hash = (hash * 31 + playerId.charCodeAt(i)) >>> 0;
+  }
+  const hue = hash % 360;
+  return `hsl(${hue}, 80%, 55%)`;
+}
+
 // --- QuadMapScreen ---
 
 export function QuadMapScreen() {
@@ -190,9 +200,10 @@ export function QuadMapScreen() {
   const position = useStore((s) => s.position);
   const currentQuadrant = sectorToQuadrantCoords(position.x, position.y);
 
-  // Request known quadrants on mount
+  // Request known quadrants + territory data on mount
   useEffect(() => {
     network.requestKnownQuadrants();
+    network.requestAllTerritories();
   }, []);
 
   // Update current quadrant in store
@@ -205,6 +216,12 @@ export function QuadMapScreen() {
       const state = useStore.getState();
       const themeColors = COLOR_PROFILES[state.colorProfile];
 
+      // Build faction territory color map
+      const factionTerritoryColors = new Map<string, string>();
+      for (const [key, claim] of Object.entries(state.territoryMap)) {
+        factionTerritoryColors.set(key, playerColor(claim.playerId));
+      }
+
       drawQuadrantMap(ctx, {
         knownQuadrants: state.knownQuadrants,
         currentQuadrant: sectorToQuadrantCoords(state.position.x, state.position.y),
@@ -214,6 +231,7 @@ export function QuadMapScreen() {
         zoomLevel,
         panOffset,
         animTime: performance.now(),
+        factionTerritoryColors,
       });
     },
     [zoomLevel, panOffset, selectedQuadrant],
@@ -308,6 +326,10 @@ export function QuadMapScreen() {
   const selectedInfo = selectedQuadrant
     ? knownQuadrants.find((q) => q.qx === selectedQuadrant.qx && q.qy === selectedQuadrant.qy) ?? null
     : null;
+  const territoryMap = useStore((s) => s.territoryMap);
+  const selectedTerritory = selectedQuadrant
+    ? territoryMap[`${selectedQuadrant.qx}:${selectedQuadrant.qy}`] ?? null
+    : null;
 
   return (
     <div
@@ -400,6 +422,17 @@ export function QuadMapScreen() {
                     <span>
                       {' '}| FIRST CONTACT:{' '}
                       <span style={{ color: '#00FF88' }}>{selectedInfo.discoveredByName}</span>
+                    </span>
+                  )}
+                  {selectedTerritory && (
+                    <span>
+                      {' '}| TERRITORY:{' '}
+                      <span style={{ color: playerColor(selectedTerritory.playerId) }}>
+                        {selectedTerritory.playerName}
+                      </span>
+                      {selectedTerritory.defenseRating === 'HIGH' && (
+                        <span style={{ color: '#FF3333' }}> [HIGH DEF]</span>
+                      )}
                     </span>
                   )}
                 </>

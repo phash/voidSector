@@ -2613,3 +2613,10 @@ export async function getQuadrantDiscoveriesSince(
   );
   return res.rows;
 }
+
+export async function getAllTerritoryClaims(): Promise<TerritoryClaimRow[]> {
+  const res = await query<TerritoryClaimRow>(
+    'SELECT * FROM territory_claims ORDER BY claimed_at DESC',
+  );
+  return res.rows;
+}

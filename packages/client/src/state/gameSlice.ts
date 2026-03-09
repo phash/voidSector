@@ -251,6 +251,9 @@ export interface GameSlice {
   hyperdriveState: HyperdriveState | null;
   autoRefuelConfig: AutoRefuelConfig;
 
+  // Territory claims for QUAD-MAP overlay (quadrantKey "qx:qy" → player_name)
+  territoryMap: Record<string, { playerName: string; playerId: string; defenseRating: string }>;
+
   // Ship designer
   shipList: (ShipRecord & { stats: ShipStats })[];
   moduleInventory: string[];
@@ -416,6 +419,7 @@ export interface GameSlice {
   setBookmarks: (bookmarks: Bookmark[]) => void;
   setAutopilot: (state: AutopilotState | null) => void;
   setDiscoveryTimestamps: (timestamps: Record<string, number>) => void;
+  setTerritoryMap: (map: Record<string, { playerName: string; playerId: string; defenseRating: string }>) => void;
   setShipList: (ships: (ShipRecord & { stats: ShipStats })[]) => void;
   setModuleInventory: (modules: string[]) => void;
   setBaseName: (name: string) => void;
@@ -499,6 +503,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   bookmarks: [],
   autopilot: null,
   discoveryTimestamps: {},
+  territoryMap: {},
   shipList: [],
   moduleInventory: [],
   baseName: '',
@@ -665,6 +670,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setBookmarks: (bookmarks) => set({ bookmarks }),
   setAutopilot: (autopilot) => set({ autopilot }),
   setDiscoveryTimestamps: (discoveryTimestamps) => set({ discoveryTimestamps }),
+  setTerritoryMap: (territoryMap) => set({ territoryMap }),
   setShipList: (shipList) => set({ shipList }),
   setModuleInventory: (moduleInventory) => set({ moduleInventory }),
   setBaseName: (baseName) => set({ baseName }),

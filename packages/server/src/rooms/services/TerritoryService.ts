@@ -21,6 +21,7 @@ import {
   deleteTerritoryClaim,
   incrementTerritoryVictories,
   getPlayerTerritories,
+  getAllTerritoryClaims,
   getPlayerCargo,
   deductCargo,
 } from '../../db/queries.js';
@@ -115,6 +116,12 @@ export class TerritoryService {
     const auth = client.auth as AuthPayload;
     const territories = await getPlayerTerritories(auth.userId);
     client.send('myTerritories', { territories });
+  }
+
+  /** Return all territory claims for QUAD-MAP faction color overlay. */
+  async handleGetAllTerritories(client: Client): Promise<void> {
+    const claims = await getAllTerritoryClaims();
+    client.send('allTerritories', { claims });
   }
 
   /**
