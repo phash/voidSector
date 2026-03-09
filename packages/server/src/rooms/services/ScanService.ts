@@ -29,6 +29,8 @@ import {
   getPlayerCargo,
   getPlayerReputation,
   addBlueprint,
+  getPlayerFaction,
+  getFactionMembersByPlayerIds,
 } from '../../db/queries.js';
 import type { SectorData } from '@void-sector/shared';
 import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
@@ -158,6 +160,20 @@ export class ScanService {
     });
 
     client.send('scanResult', { sectors: foggedSectors, apRemaining: scanResult.newAP!.current });
+
+    // #159: Share scan results with online faction members
+    try {
+      const playerFaction = await getPlayerFaction(auth.userId);
+      if (playerFaction) {
+        const memberIds = await getFactionMembersByPlayerIds(playerFaction.id);
+        for (const memberId of memberIds) {
+          if (memberId === auth.userId) continue;
+          this.ctx.sendToPlayer(memberId, 'scanResult', { sectors: foggedSectors, apRemaining: 0, sharedByScan: true });
+        }
+      }
+    } catch {
+      // Faction sharing failure must not break scan
+    }
 
     // Phase 4: Check quest progress for scan quests
     for (const s of sectors) {
