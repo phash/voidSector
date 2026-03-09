@@ -19,8 +19,8 @@ npm run docker:up           # PostgreSQL + Redis
 npm test                    # All tests (run per-package, see below)
 
 # Tests — always run from package directory
-cd packages/server && npx vitest run    # ~640 tests
-cd packages/client && npx vitest run    # 491 tests
+cd packages/server && npx vitest run    # ~912 tests
+cd packages/client && npx vitest run    # ~498 tests
 cd packages/shared && npx vitest run    # ~191 tests
 
 # After changing shared/: REQUIRED
@@ -52,9 +52,9 @@ cd packages/shared && npm run build
 
 ## DB Migrations
 
-`packages/server/src/db/migrations/` — **001–027**, auto-run on startup.
+`packages/server/src/db/migrations/` — **001–042**, auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` (idempotent).
-Next: **028** (Phase 2 Sektor-Rebuild).
+Next: **043** (Phase 2 Sektor-Rebuild).
 
 ---
 
@@ -83,23 +83,18 @@ Next: **028** (Phase 2 Sektor-Rebuild).
 
 ## Current State (2026-03-09)
 
-**Branch:** `fix/quality-sprint`
+**Branch:** `master`
 
-### Merged Branches (all on master)
+### Merged (all on master)
 - All phases 1–7: fuel, jumpgates, autopilot, ship designer, trade, factions, quests, combat v2
 - Codebase review (#133): SectorRoom decomposed to 10 services, ESLint/Prettier, pino logging
 - Admin console, quadrant system, QUAD-MAP, first-contact naming
 - 6-section cockpit layout, bookmarks, staleness rendering, nav-grid overhaul
-
-### Active Sprint: fix/quality-sprint
-- **Sprint 0** ✅: Bugfixes #143, #144, #154
-- **Sprint 1** 🔄: UI quick wins — 3 done (#160, #153, #158), 3 remaining (#161/#147, #152, #155)
+- All Quality Sprints (S0–S4), Phase 2, Phase LU, Phase D, Phase AQ (#170–175)
+- **Humanity Rep System** ✅: server-wide aggregate alien rep, encounter chance modifier, ALIEN REP tab, AlienEncounterToast tier display
 
 ### Upcoming (in order)
-1. Sprint 1 remaining → Sprint 2 (nav/map) → Sprint 3 (mining/trade) → Sprint 4 (station)
-2. Phase 2: Sektor-System Rebuild (#162–168) — full sector type system rewrite
-3. Phase LU: Lebendiges Universum (#177–184) — NPC faction expansion, territory system
-4. Phase AQ: Alien Quest System (#170–175) — 5 alien races, story quests
-5. ACEP: Adaptive Craft Evolution Protocol — ship XP/personality/permadeath
+1. ACEP: Adaptive Craft Evolution Protocol — ship XP/personality/permadeath
+2. Phase EW: Galactic Expansion & Warfare (diplomacy, territory, fleet combat)
 
 Full roadmap: `docs/plans/2026-03-09-master-roadmap.md`

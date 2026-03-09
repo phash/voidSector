@@ -15,7 +15,7 @@ Explore, mine, build, communicate: Players move sector by sector through an infi
 | Game Server | [Colyseus](https://colyseus.io/) | Room abstraction, state sync, clustering-ready |
 | Frontend | React 18 + Canvas | Terminal UI, radar rendering with CRT effects |
 | State | Zustand | Client-side state management (game + UI slices) |
-| Testing | Vitest + RTL | 1189 tests (612 server, 386 client, 191 shared) |
+| Testing | Vitest + RTL | 1601 tests (912 server, 498 client, 191 shared) |
 | Database | PostgreSQL 16 | Persistent storage (players, sectors, discoveries) |
 | Cache | Redis 7 | AP state, player positions, sessions |
 | Shared Types | TypeScript Package | Shared interfaces between client and server |
@@ -152,13 +152,15 @@ void-sector/
 - [x] Procedural quest system (fetch/delivery/scan/bounty, daily rotation)
 - [x] Cluster spawn system (10M+ sectors from origin)
 - [x] Quadrant system (10K sectors/axis, first-contact naming)
+- [x] Alien Quest System: 9-chapter story chain, 4 community quests, 10 alien factions
+- [x] Menschheits-Reputation: server-wide aggregate rep per faction, encounter chance modifier (0.5×–1.5×), tier-aware dialogs, ALIEN REP tab
 
 ### Polish
 - [x] 6-section cockpit layout with CRT hardware aesthetic
 - [x] 4 color profiles (Amber Classic, Green Phosphor, Ice Blue, High Contrast)
 - [x] JumpGates (bidirectional + wormholes + frequency minigame)
 - [x] Admin console (quests, broadcasts, economy monitoring)
-- [x] 1189 automated tests
+- [x] 1601 automated tests
 
 ## License
 
