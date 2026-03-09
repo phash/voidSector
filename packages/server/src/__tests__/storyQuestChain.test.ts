@@ -34,7 +34,11 @@ describe('storyQuestChain', () => {
   });
 
   it('canUnlockChapter requires previous chapter completed for chapter > 0', () => {
-    const noProgress: StoryProgress = { currentChapter: 0, completedChapters: [], branchChoices: {} };
+    const noProgress: StoryProgress = {
+      currentChapter: 0,
+      completedChapters: [],
+      branchChoices: {},
+    };
     expect(canUnlockChapter(1, 50, noProgress)).toBe(false);
 
     const withCh0: StoryProgress = { currentChapter: 1, completedChapters: [0], branchChoices: {} };
@@ -42,7 +46,7 @@ describe('storyQuestChain', () => {
   });
 
   it('getChapterForDistance returns correct chapter', () => {
-    expect(getChapterForDistance(5)).toBe(null);   // below ch0
+    expect(getChapterForDistance(5)).toBe(null); // below ch0
     expect(getChapterForDistance(6)).toBe(0);
     expect(getChapterForDistance(40)).toBe(1);
     expect(getChapterForDistance(100)).toBe(2);

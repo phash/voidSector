@@ -99,12 +99,7 @@ vi.mock('../rooms/services/RedisAPStore.js', () => ({
 }));
 
 import { EconomyService } from '../rooms/services/EconomyService.js';
-import {
-  addToCargo,
-  deductCargo,
-  getPlayerCargo,
-  getCargoTotal,
-} from '../db/queries.js';
+import { addToCargo, deductCargo, getPlayerCargo, getCargoTotal } from '../db/queries.js';
 import {
   addToInventory,
   removeFromInventory,
@@ -152,7 +147,13 @@ describe('EconomyService.handleNpcTrade station sell — inventory migration', (
     const ctx = makeCtx();
     const svc = new EconomyService(ctx);
 
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 10,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(getResourceTotal).mockResolvedValue(10);
     vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80 });
 
@@ -167,7 +168,13 @@ describe('EconomyService.handleNpcTrade station sell — inventory migration', (
     const ctx = makeCtx();
     const svc = new EconomyService(ctx);
 
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 10,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(getResourceTotal).mockResolvedValue(10);
     vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80 });
 
@@ -182,7 +189,13 @@ describe('EconomyService.handleNpcTrade station sell — inventory migration', (
     const ctx = makeCtx();
     const svc = new EconomyService(ctx);
 
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 10,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(getResourceTotal).mockResolvedValue(10);
     vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80 });
 
@@ -202,7 +215,13 @@ describe('EconomyService.handleNpcTrade station buy — inventory migration', ()
     const ctx = makeCtx();
     const svc = new EconomyService(ctx);
 
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 0,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(getResourceTotal).mockResolvedValue(0);
     vi.mocked(canBuyFromStation).mockResolvedValue({ ok: true, stock: 50, price: 100 });
     const { deductCredits } = await import('../db/queries.js');
@@ -224,11 +243,24 @@ describe('EconomyService.handleTransfer toStorage — inventory migration', () =
     const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
     // Player at home base
     const { findPlayerByUsername } = await import('../db/queries.js');
-    vi.mocked(findPlayerByUsername).mockResolvedValue({ id: 'user-123', username: 'test', xp: 0, level: 1, homeBase: { x: 5, y: 10 }, passwordHash: '' });
+    vi.mocked(findPlayerByUsername).mockResolvedValue({
+      id: 'user-123',
+      username: 'test',
+      xp: 0,
+      level: 1,
+      homeBase: { x: 5, y: 10 },
+      passwordHash: '',
+    });
     const { validateTransfer: vt } = await import('../engine/commands.js');
     vi.mocked(vt).mockReturnValue({ valid: true });
 
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 20, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 20,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new EconomyService(ctx);
@@ -242,11 +274,24 @@ describe('EconomyService.handleTransfer toStorage — inventory migration', () =
     const client = makeClient();
     const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
     const { findPlayerByUsername } = await import('../db/queries.js');
-    vi.mocked(findPlayerByUsername).mockResolvedValue({ id: 'user-123', username: 'test', xp: 0, level: 1, homeBase: { x: 5, y: 10 }, passwordHash: '' });
+    vi.mocked(findPlayerByUsername).mockResolvedValue({
+      id: 'user-123',
+      username: 'test',
+      xp: 0,
+      level: 1,
+      homeBase: { x: 5, y: 10 },
+      passwordHash: '',
+    });
     const { validateTransfer: vt } = await import('../engine/commands.js');
     vi.mocked(vt).mockReturnValue({ valid: true });
 
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 20, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 20,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new EconomyService(ctx);
@@ -265,11 +310,24 @@ describe('EconomyService.handleTransfer toCargo — inventory migration', () => 
     const client = makeClient();
     const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
     const { findPlayerByUsername } = await import('../db/queries.js');
-    vi.mocked(findPlayerByUsername).mockResolvedValue({ id: 'user-123', username: 'test', xp: 0, level: 1, homeBase: { x: 5, y: 10 }, passwordHash: '' });
+    vi.mocked(findPlayerByUsername).mockResolvedValue({
+      id: 'user-123',
+      username: 'test',
+      xp: 0,
+      level: 1,
+      homeBase: { x: 5, y: 10 },
+      passwordHash: '',
+    });
     const { validateTransfer: vt } = await import('../engine/commands.js');
     vi.mocked(vt).mockReturnValue({ valid: true });
 
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 0,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(addToInventory).mockResolvedValue(undefined);
 
     const svc = new EconomyService(ctx);
@@ -288,9 +346,20 @@ describe('EconomyService.handleFactoryTransfer — inventory migration', () => {
     const client = makeClient();
     const ctx = makeCtx();
     const { getPlayerStructure } = await import('../db/queries.js');
-    vi.mocked(getPlayerStructure).mockResolvedValue({ id: 'factory-1', tier: 1, type: 'factory', owner_id: 'user-123' } as any);
+    vi.mocked(getPlayerStructure).mockResolvedValue({
+      id: 'factory-1',
+      tier: 1,
+      type: 'factory',
+      owner_id: 'user-123',
+    } as any);
     vi.mocked(transferOutputToCargo).mockResolvedValue({ success: true });
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 0,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(addToInventory).mockResolvedValue(undefined);
 
     const svc = new EconomyService(ctx);
@@ -304,7 +373,12 @@ describe('EconomyService.handleFactoryTransfer — inventory migration', () => {
     const client = makeClient();
     const ctx = makeCtx();
     const { getPlayerStructure } = await import('../db/queries.js');
-    vi.mocked(getPlayerStructure).mockResolvedValue({ id: 'factory-1', tier: 1, type: 'factory', owner_id: 'user-123' } as any);
+    vi.mocked(getPlayerStructure).mockResolvedValue({
+      id: 'factory-1',
+      tier: 1,
+      type: 'factory',
+      owner_id: 'user-123',
+    } as any);
     vi.mocked(transferOutputToCargo).mockResolvedValue({ success: true });
     const cargoState = { ore: 0, gas: 0, crystal: 0, slates: 3, artefact: 0 };
     vi.mocked(getCargoState).mockResolvedValue(cargoState);

@@ -3,7 +3,13 @@ import type { JumpGateMapEntry, QuadrantControlState, NpcFleetState } from '@voi
 import { drawQuadrantJumpGateLines } from './jumpGateOverlay';
 
 export interface QuadrantMapState {
-  knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>;
+  knownQuadrants: Array<{
+    qx: number;
+    qy: number;
+    learnedAt: string;
+    name?: string;
+    discoveredByName?: string;
+  }>;
   currentQuadrant: { qx: number; qy: number } | null;
   selectedQuadrant: { qx: number; qy: number } | null;
   themeColor: string;
@@ -23,18 +29,18 @@ export interface QuadrantMapState {
 // ─── Expansion Warfare Overlay Helpers ───────────────────────────────────────
 
 const FACTION_COLORS: Record<string, string> = {
-  human:         'rgba(64, 128, 255, 0.30)',
-  kthari:        'rgba(255, 68, 68, 0.30)',
-  silent_swarm:  'rgba(255, 136, 68, 0.30)',
-  archivists:    'rgba(136, 255, 204, 0.30)',
-  consortium:    'rgba(255, 170, 68, 0.30)',
-  mycelians:     'rgba(68, 255, 136, 0.30)',
-  mirror_minds:  'rgba(204, 136, 255, 0.30)',
+  human: 'rgba(64, 128, 255, 0.30)',
+  kthari: 'rgba(255, 68, 68, 0.30)',
+  silent_swarm: 'rgba(255, 136, 68, 0.30)',
+  archivists: 'rgba(136, 255, 204, 0.30)',
+  consortium: 'rgba(255, 170, 68, 0.30)',
+  mycelians: 'rgba(68, 255, 136, 0.30)',
+  mirror_minds: 'rgba(204, 136, 255, 0.30)',
   tourist_guild: 'rgba(255, 255, 68, 0.30)',
 };
 
 function getOverlayColor(qx: number, qy: number, controls: QuadrantControlState[]): string | null {
-  const ctrl = controls.find(c => c.qx === qx && c.qy === qy);
+  const ctrl = controls.find((c) => c.qx === qx && c.qy === qy);
   if (!ctrl) return null;
   return FACTION_COLORS[ctrl.controlling_faction] ?? 'rgba(128,128,128,0.2)';
 }
@@ -130,7 +136,7 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
 
       // Expansion warfare: controlling faction color overlay
       const controls = state.quadrantControls;
-      const ctrl = controls?.find(c => c.qx === qx && c.qy === qy) ?? null;
+      const ctrl = controls?.find((c) => c.qx === qx && c.qy === qy) ?? null;
       if (ctrl) {
         const overlayColor = getOverlayColor(qx, qy, controls!);
         if (overlayColor) {
@@ -233,7 +239,7 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         }
 
         // Incoming fleet indicator ▶ (bottom-right corner)
-        const hasFleet = state.npcFleets?.some(f => f.to_qx === qx && f.to_qy === qy) ?? false;
+        const hasFleet = state.npcFleets?.some((f) => f.to_qx === qx && f.to_qy === qy) ?? false;
         if (hasFleet) {
           ctx.fillStyle = 'rgba(180, 180, 180, 0.75)';
           ctx.textAlign = 'right';

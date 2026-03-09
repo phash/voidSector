@@ -90,12 +90,12 @@ vi.mock('../engine/inventoryService.js', () => ({
 }));
 
 import { ShipService } from '../rooms/services/ShipService.js';
-import { addToInventory, removeFromInventory, getInventoryItem } from '../engine/inventoryService.js';
 import {
-  getPlayerResearch,
-  getPlayerCredits,
-  deductCredits,
-} from '../db/queries.js';
+  addToInventory,
+  removeFromInventory,
+  getInventoryItem,
+} from '../engine/inventoryService.js';
+import { getPlayerResearch, getPlayerCredits, deductCredits } from '../db/queries.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

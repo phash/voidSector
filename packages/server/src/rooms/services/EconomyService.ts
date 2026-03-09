@@ -180,7 +180,9 @@ export class EconomyService {
           return;
         }
         // Execute trade
-        const deducted = await removeFromInventory(auth.userId, 'resource', resource, amount).then(() => true).catch(() => false);
+        const deducted = await removeFromInventory(auth.userId, 'resource', resource, amount)
+          .then(() => true)
+          .catch(() => false);
         if (!deducted) {
           client.send('npcTradeResult', { success: false, error: 'Cargo changed' });
           return;

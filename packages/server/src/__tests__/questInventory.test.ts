@@ -92,9 +92,7 @@ function makeFetchQuestRow(playerId = 'user-123') {
     title: 'Deliver Ore',
     station_x: 5,
     station_y: 10,
-    objectives: [
-      { type: 'fetch', resource: 'ore', amount: 5, fulfilled: false },
-    ],
+    objectives: [{ type: 'fetch', resource: 'ore', amount: 5, fulfilled: false }],
     rewards: { credits: 200, xp: 50 },
     status: 'active',
     accepted_at: new Date().toISOString(),
@@ -110,13 +108,20 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
   it('uses getCargoState (not getPlayerCargo) to check resources', async () => {
     const client = makeClient();
     const ctx = makeCtx();
-    const { getActiveQuests, updateQuestObjectives, updateQuestStatus } = await import('../db/queries.js');
+    const { getActiveQuests, updateQuestObjectives, updateQuestStatus } =
+      await import('../db/queries.js');
 
     vi.mocked(getActiveQuests).mockResolvedValue([makeFetchQuestRow()] as any);
     vi.mocked(updateQuestObjectives).mockResolvedValue(true);
     vi.mocked(updateQuestStatus).mockResolvedValue(true);
     // Player has enough ore
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 10,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
 
     const svc = new QuestService(ctx);
     // arrive action triggers fetch quest check
@@ -129,12 +134,19 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
   it('uses removeFromInventory (not deductCargo) when deducting fetch resources', async () => {
     const client = makeClient();
     const ctx = makeCtx();
-    const { getActiveQuests, updateQuestObjectives, updateQuestStatus } = await import('../db/queries.js');
+    const { getActiveQuests, updateQuestObjectives, updateQuestStatus } =
+      await import('../db/queries.js');
 
     vi.mocked(getActiveQuests).mockResolvedValue([makeFetchQuestRow()] as any);
     vi.mocked(updateQuestObjectives).mockResolvedValue(true);
     vi.mocked(updateQuestStatus).mockResolvedValue(true);
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 10,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new QuestService(ctx);
@@ -147,7 +159,8 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
   it('sends cargoUpdate using getCargoState (not getPlayerCargo) after quest completion', async () => {
     const client = makeClient();
     const ctx = makeCtx();
-    const { getActiveQuests, updateQuestObjectives, updateQuestStatus } = await import('../db/queries.js');
+    const { getActiveQuests, updateQuestObjectives, updateQuestStatus } =
+      await import('../db/queries.js');
 
     vi.mocked(getActiveQuests)
       .mockResolvedValueOnce([makeFetchQuestRow()] as any) // first call during checkQuestProgress

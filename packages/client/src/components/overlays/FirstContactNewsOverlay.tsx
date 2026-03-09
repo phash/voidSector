@@ -44,12 +44,17 @@ function NewsOverlay({ newsText, factionId, onDone }: NewsOverlayProps) {
   if (!visible) return null;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: '#000',
-      zIndex: 300,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#000',
+        zIndex: 300,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <div style={{ position: 'relative', width: '100%', maxWidth: 800 }}>
         <video
           ref={videoRef}
@@ -57,38 +62,53 @@ function NewsOverlay({ newsText, factionId, onDone }: NewsOverlayProps) {
           style={{ width: '100%', display: 'block' }}
         />
         {/* Text overlaid on the greenscreen area */}
-        <div style={{
-          position: 'absolute',
-          top: '18%', left: '38%',
-          width: '58%', height: '55%',
-          background: '#000',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'flex-start', justifyContent: 'center',
-          padding: '12px 16px',
-          fontFamily: 'var(--font-mono)',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            fontSize: '0.55rem', letterSpacing: '0.3em',
-            color, marginBottom: 8,
-          }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: '18%',
+            left: '38%',
+            width: '58%',
+            height: '55%',
+            background: '#000',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            padding: '12px 16px',
+            fontFamily: 'var(--font-mono)',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.55rem',
+              letterSpacing: '0.3em',
+              color,
+              marginBottom: 8,
+            }}
+          >
             ⚠ EILMELDUNG — ERSTKONTAKT
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#fff', lineHeight: 1.5 }}>
-            {newsText}
-          </div>
+          <div style={{ fontSize: '0.8rem', color: '#fff', lineHeight: 1.5 }}>{newsText}</div>
         </div>
       </div>
 
       <button
-        onClick={() => { setVisible(false); onDone(); }}
+        onClick={() => {
+          setVisible(false);
+          onDone();
+        }}
         style={{
-          position: 'absolute', bottom: 32, right: 32,
+          position: 'absolute',
+          bottom: 32,
+          right: 32,
           background: 'transparent',
           border: '1px solid rgba(255,255,255,0.3)',
           color: 'rgba(255,255,255,0.5)',
           fontFamily: 'var(--font-mono)',
-          fontSize: '0.65rem', padding: '4px 12px', cursor: 'pointer',
+          fontSize: '0.65rem',
+          padding: '4px 12px',
+          cursor: 'pointer',
         }}
       >
         ÜBERSPRINGEN

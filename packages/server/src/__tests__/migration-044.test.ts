@@ -7,10 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe('migration 044 — inventory table schema', () => {
   it('inventory table columns are defined in migration SQL', () => {
-    const sql = readFileSync(
-      join(__dirname, '../db/migrations/044_unified_inventory.sql'),
-      'utf8',
-    );
+    const sql = readFileSync(join(__dirname, '../db/migrations/044_unified_inventory.sql'), 'utf8');
     // Required columns
     expect(sql).toContain('player_id');
     expect(sql).toContain('item_type');

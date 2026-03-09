@@ -7,12 +7,12 @@
 import type { AlienFactionId } from './alienReputationService.js';
 
 export type AlienQuestType =
-  | 'alien_scan'         // Scan sectors for alien faction data
-  | 'alien_delivery'     // Deliver goods to alien station
-  | 'alien_bounty'       // Defeat specified enemies for faction
-  | 'alien_escort'       // Escort NPC convoy
-  | 'alien_branch'       // Choice-based quest with branching outcomes
-  | 'alien_community';   // Server-wide collective goal
+  | 'alien_scan' // Scan sectors for alien faction data
+  | 'alien_delivery' // Deliver goods to alien station
+  | 'alien_bounty' // Defeat specified enemies for faction
+  | 'alien_escort' // Escort NPC convoy
+  | 'alien_branch' // Choice-based quest with branching outcomes
+  | 'alien_community'; // Server-wide collective goal
 
 export interface AlienQuestTemplate {
   id: string;
@@ -49,7 +49,8 @@ export const ALIEN_QUEST_TEMPLATES: AlienQuestTemplate[] = [
     factionId: 'archivists',
     type: 'alien_scan',
     title: 'Stellarkartographie für die Archivare',
-    descriptionTemplate: 'Die Archivare benötigen Scan-Daten aus 5 unerforschten Sektoren in Ihrer Nähe.',
+    descriptionTemplate:
+      'Die Archivare benötigen Scan-Daten aus 5 unerforschten Sektoren in Ihrer Nähe.',
     minQuadrantDistance: 90,
     minReputation: -10,
     rewardCreditsBase: 300,
@@ -61,7 +62,8 @@ export const ALIEN_QUEST_TEMPLATES: AlienQuestTemplate[] = [
     factionId: 'archivists',
     type: 'alien_delivery',
     title: 'Verlorene Datensonde bergen',
-    descriptionTemplate: 'Eine Archivar-Datensonde ist in Sektor [{targetX}:{targetY}] abgestürzt. Bergung und Lieferung erforderlich.',
+    descriptionTemplate:
+      'Eine Archivar-Datensonde ist in Sektor [{targetX}:{targetY}] abgestürzt. Bergung und Lieferung erforderlich.',
     minQuadrantDistance: 90,
     minReputation: 10,
     rewardCreditsBase: 500,
@@ -75,7 +77,8 @@ export const ALIEN_QUEST_TEMPLATES: AlienQuestTemplate[] = [
     factionId: 'consortium',
     type: 'alien_delivery',
     title: 'Konsortium-Handelslieferung',
-    descriptionTemplate: 'Das Konsortium möchte 100 Einheiten Erz an Station [{targetX}:{targetY}] geliefert bekommen.',
+    descriptionTemplate:
+      'Das Konsortium möchte 100 Einheiten Erz an Station [{targetX}:{targetY}] geliefert bekommen.',
     minQuadrantDistance: 150,
     minReputation: -10,
     rewardCreditsBase: 800,
@@ -88,8 +91,9 @@ export const ALIEN_QUEST_TEMPLATES: AlienQuestTemplate[] = [
     id: 'kthari_prove_strength',
     factionId: 'kthari',
     type: 'alien_bounty',
-    title: 'K\'thari Ehrenbounty',
-    descriptionTemplate: 'Bezwinge 3 Piraten-Schiffe zur Demonstration deiner Stärke für das K\'thari Dominion.',
+    title: "K'thari Ehrenbounty",
+    descriptionTemplate:
+      "Bezwinge 3 Piraten-Schiffe zur Demonstration deiner Stärke für das K'thari Dominion.",
     minQuadrantDistance: 200,
     minReputation: -10,
     rewardCreditsBase: 600,
@@ -103,7 +107,8 @@ export const ALIEN_QUEST_TEMPLATES: AlienQuestTemplate[] = [
     factionId: 'mycelians',
     type: 'alien_branch',
     title: 'Mycelian Ökosystem-Entscheidung',
-    descriptionTemplate: 'Die Mycelianer haben eine Kolonie auf einem Planeten in Ihrem Gebiet entdeckt. Sie müssen eine Entscheidung treffen.',
+    descriptionTemplate:
+      'Die Mycelianer haben eine Kolonie auf einem Planeten in Ihrem Gebiet entdeckt. Sie müssen eine Entscheidung treffen.',
     minQuadrantDistance: 300,
     minReputation: 0,
     rewardCreditsBase: 0,
@@ -143,7 +148,8 @@ export const ALIEN_QUEST_TEMPLATES: AlienQuestTemplate[] = [
     factionId: 'archivists',
     type: 'alien_community',
     title: 'Die Große Kartierung',
-    descriptionTemplate: 'Die Archivare bitten alle Piloten, 10.000 neue Sektoren zu kartieren. Kollektives Ziel.',
+    descriptionTemplate:
+      'Die Archivare bitten alle Piloten, 10.000 neue Sektoren zu kartieren. Kollektives Ziel.',
     minQuadrantDistance: 90,
     minReputation: -10,
     rewardCreditsBase: 1000,
@@ -158,7 +164,8 @@ export const ALIEN_QUEST_TEMPLATES: AlienQuestTemplate[] = [
     factionId: 'tourist_guild',
     type: 'alien_scan',
     title: 'Touristengilde: Galaktische Sehenswürdigkeiten',
-    descriptionTemplate: 'Die Touristengilde möchte Bilder von 5 Schwarzen Löchern für ihren Reiseführer.',
+    descriptionTemplate:
+      'Die Touristengilde möchte Bilder von 5 Schwarzen Löchern für ihren Reiseführer.',
     minQuadrantDistance: 700,
     minReputation: -10,
     rewardCreditsBase: 1500,

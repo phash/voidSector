@@ -49,7 +49,15 @@ describe('generateSectorEnvironment', () => {
 
   it('planet environment gets a planet subtype', () => {
     let foundPlanet = false;
-    const validSubtypes = ['terrestrial', 'water', 'ice', 'lava', 'exotic_a', 'exotic_b', 'exotic_c'];
+    const validSubtypes = [
+      'terrestrial',
+      'water',
+      'ice',
+      'lava',
+      'exotic_a',
+      'exotic_b',
+      'exotic_c',
+    ];
     for (let x = 0; x < 50000 && !foundPlanet; x += 7) {
       const env = generateSectorEnvironment(x, x + 3);
       if (env.environmentType === 'planet') {
@@ -97,7 +105,18 @@ describe('generateSectorContents', () => {
   });
 
   it('returns valid content types', () => {
-    const valid = ['asteroid_field', 'station', 'anomaly', 'pirate_zone', 'home_base', 'player_base', 'meteor', 'relic', 'npc_ship', 'ruin'];
+    const valid = [
+      'asteroid_field',
+      'station',
+      'anomaly',
+      'pirate_zone',
+      'home_base',
+      'player_base',
+      'meteor',
+      'relic',
+      'npc_ship',
+      'ruin',
+    ];
     for (let x = 0; x < 500; x += 7) {
       const contents = generateSectorContents(x, x + 5, 'empty', 1.0);
       for (const c of contents) {
@@ -110,7 +129,7 @@ describe('generateSectorContents', () => {
     let found = false;
     for (let x = 0; x < 50000 && !found; x += 3) {
       const contents = generateSectorContents(x, x * 2 + 1, 'empty', 1.5);
-      const meteor = contents.find(c => c.contentType === 'meteor');
+      const meteor = contents.find((c) => c.contentType === 'meteor');
       if (meteor) {
         expect(meteor.oreYield).toBeGreaterThan(0);
         found = true;
@@ -123,7 +142,7 @@ describe('generateSectorContents', () => {
     let found = false;
     for (let x = 0; x < 50000 && !found; x += 3) {
       const contents = generateSectorContents(x, x + 7, 'nebula', 1.5);
-      if (contents.some(c => c.contentType === 'relic')) {
+      if (contents.some((c) => c.contentType === 'relic')) {
         found = true;
       }
     }

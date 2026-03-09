@@ -80,7 +80,11 @@ vi.mock('../engine/inventoryService.js', () => ({
 }));
 
 import { ShipService } from '../rooms/services/ShipService.js';
-import { addToInventory, removeFromInventory, getInventoryItem } from '../engine/inventoryService.js';
+import {
+  addToInventory,
+  removeFromInventory,
+  getInventoryItem,
+} from '../engine/inventoryService.js';
 import {
   getActiveShip,
   getPlayerHomeBase,
@@ -135,10 +139,19 @@ describe('ShipService.handleBuyModule', () => {
   it('calls addToInventory with module item type after purchase', async () => {
     vi.mocked(getPlayerHomeBase).mockResolvedValue({ x: 0, y: 0 });
     vi.mocked(getPlayerCredits).mockResolvedValue(1000);
-    vi.mocked(getPlayerCargo).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getPlayerCargo).mockResolvedValue({
+      ore: 10,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(deductCargo).mockResolvedValue(true);
-    vi.mocked(getPlayerResearch).mockResolvedValue({ unlockedModules: ['drive_mk2'], blueprints: [] });
+    vi.mocked(getPlayerResearch).mockResolvedValue({
+      unlockedModules: ['drive_mk2'],
+      blueprints: [],
+    });
 
     const svc = new ShipService(makeCtx());
     const client = makeClient();
@@ -150,10 +163,19 @@ describe('ShipService.handleBuyModule', () => {
   it('does NOT call legacy addModuleToInventory after migration', async () => {
     vi.mocked(getPlayerHomeBase).mockResolvedValue({ x: 0, y: 0 });
     vi.mocked(getPlayerCredits).mockResolvedValue(1000);
-    vi.mocked(getPlayerCargo).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getPlayerCargo).mockResolvedValue({
+      ore: 10,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 0,
+    });
     vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(deductCargo).mockResolvedValue(true);
-    vi.mocked(getPlayerResearch).mockResolvedValue({ unlockedModules: ['drive_mk2'], blueprints: [] });
+    vi.mocked(getPlayerResearch).mockResolvedValue({
+      unlockedModules: ['drive_mk2'],
+      blueprints: [],
+    });
 
     const svc = new ShipService(makeCtx());
     const client = makeClient();
@@ -189,7 +211,10 @@ describe('ShipService.handleInstallModule', () => {
     const client = makeClient();
     await svc.handleInstallModule(client, { moduleId: 'drive_mk2', slotIndex: 0 });
 
-    expect(client.send).toHaveBeenCalledWith('error', expect.objectContaining({ code: 'NO_MODULE' }));
+    expect(client.send).toHaveBeenCalledWith(
+      'error',
+      expect.objectContaining({ code: 'NO_MODULE' }),
+    );
     expect(updateShipModules).not.toHaveBeenCalled();
   });
 
@@ -246,8 +271,20 @@ describe('permadeathService.salvageWreckModule', () => {
 
     const { query } = await import('../db/client.js');
     vi.mocked(query)
-      .mockResolvedValueOnce({ rows: [{ salvageable_modules: ['drive_mk2', 'cargo_hold'] }], command: 'SELECT', rowCount: 1, oid: 0, fields: [] } as any) // SELECT
-      .mockResolvedValueOnce({ rows: [], command: 'UPDATE', rowCount: 0, oid: 0, fields: [] } as any); // UPDATE wreck
+      .mockResolvedValueOnce({
+        rows: [{ salvageable_modules: ['drive_mk2', 'cargo_hold'] }],
+        command: 'SELECT',
+        rowCount: 1,
+        oid: 0,
+        fields: [],
+      } as any) // SELECT
+      .mockResolvedValueOnce({
+        rows: [],
+        command: 'UPDATE',
+        rowCount: 0,
+        oid: 0,
+        fields: [],
+      } as any); // UPDATE wreck
 
     const { salvageWreckModule } = await import('../engine/permadeathService.js');
     const result = await salvageWreckModule('wreck-1', 'player-1');

@@ -43,9 +43,12 @@ describe('DirectTradeService', () => {
 
   it('confirm returns false when only one player confirmed', async () => {
     const session = {
-      fromPlayerId: 'playerA', toPlayerId: 'playerB',
-      fromItems: [], fromCredits: 0,
-      toItems: [], toCredits: 0,
+      fromPlayerId: 'playerA',
+      toPlayerId: 'playerB',
+      fromItems: [],
+      fromCredits: 0,
+      toItems: [],
+      toCredits: 0,
       confirmedBy: [],
       expiresAt: Date.now() + 60000,
     };
@@ -56,9 +59,12 @@ describe('DirectTradeService', () => {
 
   it('confirm returns true when both players confirmed', async () => {
     const session = {
-      fromPlayerId: 'playerA', toPlayerId: 'playerB',
-      fromItems: [], fromCredits: 0,
-      toItems: [], toCredits: 0,
+      fromPlayerId: 'playerA',
+      toPlayerId: 'playerB',
+      fromItems: [],
+      fromCredits: 0,
+      toItems: [],
+      toCredits: 0,
       confirmedBy: ['playerA'],
       expiresAt: Date.now() + 60000,
     };
@@ -70,7 +76,8 @@ describe('DirectTradeService', () => {
   it('executeTrade calls transferInventoryItem for each offered item', async () => {
     const { transferInventoryItem } = await import('../db/queries.js');
     const session = {
-      fromPlayerId: 'playerA', toPlayerId: 'playerB',
+      fromPlayerId: 'playerA',
+      toPlayerId: 'playerB',
       fromItems: [{ itemType: 'resource', itemId: 'ore', quantity: 3 }],
       fromCredits: 100,
       toItems: [{ itemType: 'module', itemId: 'drive_mk2', quantity: 1 }],
@@ -81,10 +88,18 @@ describe('DirectTradeService', () => {
     mockRedis.get.mockResolvedValue(JSON.stringify(session));
     await service.executeTrade('tradeId');
     expect(vi.mocked(transferInventoryItem)).toHaveBeenCalledWith(
-      'playerA', 'playerB', 'resource', 'ore', 3,
+      'playerA',
+      'playerB',
+      'resource',
+      'ore',
+      3,
     );
     expect(vi.mocked(transferInventoryItem)).toHaveBeenCalledWith(
-      'playerB', 'playerA', 'module', 'drive_mk2', 1,
+      'playerB',
+      'playerA',
+      'module',
+      'drive_mk2',
+      1,
     );
   });
 });

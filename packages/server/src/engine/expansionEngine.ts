@@ -8,7 +8,7 @@ export interface BorderContactResult {
 
 export function checkBorderContact(
   a: QuadrantControlRow,
-  b: QuadrantControlRow
+  b: QuadrantControlRow,
 ): BorderContactResult {
   if (a.controlling_faction === b.controlling_faction) {
     return { hasContact: false, factions: [] };
@@ -29,10 +29,10 @@ export function checkBorderContact(
 export function getExpansionTarget(
   faction: string,
   allControls: QuadrantControlRow[],
-  _style: 'sphere' | 'wave' | 'jumpgate'
+  _style: 'sphere' | 'wave' | 'jumpgate',
 ): { qx: number; qy: number } | null {
-  const claimedSet = new Set(allControls.map(q => `${q.qx},${q.qy}`));
-  const ownedQuadrants = allControls.filter(q => q.controlling_faction === faction);
+  const claimedSet = new Set(allControls.map((q) => `${q.qx},${q.qy}`));
+  const ownedQuadrants = allControls.filter((q) => q.controlling_faction === faction);
 
   if (ownedQuadrants.length === 0) return null;
 
@@ -57,7 +57,7 @@ export function getExpansionTarget(
 }
 
 export function findAllBorderPairs(
-  allControls: QuadrantControlRow[]
+  allControls: QuadrantControlRow[],
 ): Array<{ a: QuadrantControlRow; b: QuadrantControlRow }> {
   const pairs: Array<{ a: QuadrantControlRow; b: QuadrantControlRow }> = [];
   for (let i = 0; i < allControls.length; i++) {

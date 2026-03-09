@@ -48,7 +48,7 @@ export async function runMigrations(): Promise<void> {
   `);
 
   const { rows: applied } = await pool.query<{ filename: string }>(
-    'SELECT filename FROM _migrations_applied'
+    'SELECT filename FROM _migrations_applied',
   );
   const appliedSet = new Set(applied.map((r) => r.filename));
 

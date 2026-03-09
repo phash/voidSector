@@ -23,9 +23,19 @@ const defaultSector: SectorData = {
 };
 
 const defaultCargo: CargoState = {
-  ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0,
-  artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0,
-  artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0,
+  ore: 0,
+  gas: 0,
+  crystal: 0,
+  slates: 0,
+  artefact: 0,
+  artefact_drive: 0,
+  artefact_cargo: 0,
+  artefact_scanner: 0,
+  artefact_armor: 0,
+  artefact_weapon: 0,
+  artefact_shield: 0,
+  artefact_defense: 0,
+  artefact_special: 0,
   artefact_mining: 0,
 };
 
@@ -80,7 +90,14 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     moduleInventory: [],
     baseName: '',
     homeBase: { x: 0, y: 0 },
-    research: { unlockedModules: [], blueprints: [], activeResearch: null, activeResearch2: null, wissen: 0, wissenRate: 0 },
+    research: {
+      unlockedModules: [],
+      blueprints: [],
+      activeResearch: null,
+      activeResearch2: null,
+      wissen: 0,
+      wissenRate: 0,
+    },
     pendingBlueprint: null,
     npcStationData: null,
     factoryState: null,

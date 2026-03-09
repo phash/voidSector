@@ -345,12 +345,29 @@ export function generateWarSupportQuest(
 
   switch (subtype) {
     case 'logistics':
-      return { ...base, defense_bonus: 200, description: 'Deliver munitions and fuel to the front station' };
+      return {
+        ...base,
+        defense_bonus: 200,
+        description: 'Deliver munitions and fuel to the front station',
+      };
     case 'sabotage':
-      return { ...base, enemy_defense_reduction: 150, description: 'Hack enemy comm relays to lower their shields' };
+      return {
+        ...base,
+        enemy_defense_reduction: 150,
+        description: 'Hack enemy comm relays to lower their shields',
+      };
     case 'scanning':
-      return { ...base, attack_multiplier: 1.3, description: 'Deep-space scan to reveal enemy fleet positions' };
+      return {
+        ...base,
+        attack_multiplier: 1.3,
+        description: 'Deep-space scan to reveal enemy fleet positions',
+      };
     case 'salvage':
-      return { ...base, defense_bonus: 100, attack_multiplier: 1.1, description: 'Collect debris from the battle for tech bonuses' };
+      return {
+        ...base,
+        defense_bonus: 100,
+        attack_multiplier: 1.1,
+        description: 'Collect debris from the battle for tech bonuses',
+      };
   }
 }

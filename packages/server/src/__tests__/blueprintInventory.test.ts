@@ -130,11 +130,7 @@ import {
   removeFromInventory,
   getInventoryItem,
 } from '../engine/inventoryService.js';
-import {
-  addBlueprint,
-  addUnlockedModule,
-  getPlayerResearch,
-} from '../db/queries.js';
+import { addBlueprint, addUnlockedModule, getPlayerResearch } from '../db/queries.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

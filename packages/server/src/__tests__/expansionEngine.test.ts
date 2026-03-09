@@ -8,7 +8,8 @@ import type { QuadrantControlRow } from '../db/queries.js';
 
 function makeQuadrant(qx: number, qy: number, faction: string): QuadrantControlRow {
   return {
-    qx, qy,
+    qx,
+    qy,
     controlling_faction: faction,
     faction_shares: { [faction]: 100 },
     attack_value: 0,
@@ -21,45 +22,31 @@ function makeQuadrant(qx: number, qy: number, faction: string): QuadrantControlR
 
 describe('checkBorderContact', () => {
   it('detects contact between neighboring different-faction quadrants', () => {
-    const result = checkBorderContact(
-      makeQuadrant(1, 0, 'human'),
-      makeQuadrant(2, 0, 'kthari')
-    );
+    const result = checkBorderContact(makeQuadrant(1, 0, 'human'), makeQuadrant(2, 0, 'kthari'));
     expect(result.hasContact).toBe(true);
     expect(result.factions).toContain('human');
     expect(result.factions).toContain('kthari');
   });
 
   it('no contact for same-faction quadrants', () => {
-    const result = checkBorderContact(
-      makeQuadrant(0, 0, 'human'),
-      makeQuadrant(1, 0, 'human')
-    );
+    const result = checkBorderContact(makeQuadrant(0, 0, 'human'), makeQuadrant(1, 0, 'human'));
     expect(result.hasContact).toBe(false);
   });
 
   it('no contact for non-neighboring different-faction quadrants', () => {
-    const result = checkBorderContact(
-      makeQuadrant(0, 0, 'human'),
-      makeQuadrant(5, 5, 'kthari')
-    );
+    const result = checkBorderContact(makeQuadrant(0, 0, 'human'), makeQuadrant(5, 5, 'kthari'));
     expect(result.hasContact).toBe(false);
   });
 
   it('detects diagonal neighbor contact', () => {
-    const result = checkBorderContact(
-      makeQuadrant(0, 0, 'human'),
-      makeQuadrant(1, 1, 'kthari')
-    );
+    const result = checkBorderContact(makeQuadrant(0, 0, 'human'), makeQuadrant(1, 1, 'kthari'));
     expect(result.hasContact).toBe(true);
   });
 });
 
 describe('getExpansionTarget', () => {
   it('returns an unclaimed neighbor of the faction', () => {
-    const allControls = [
-      makeQuadrant(0, 0, 'human'),
-    ];
+    const allControls = [makeQuadrant(0, 0, 'human')];
     const target = getExpansionTarget('human', allControls, 'wave');
     expect(target).not.toBeNull();
     // Must be adjacent to (0,0)
@@ -101,10 +88,7 @@ describe('findAllBorderPairs', () => {
   });
 
   it('finds no pairs when all quadrants belong to same faction', () => {
-    const allControls = [
-      makeQuadrant(0, 0, 'human'),
-      makeQuadrant(1, 0, 'human'),
-    ];
+    const allControls = [makeQuadrant(0, 0, 'human'), makeQuadrant(1, 0, 'human')];
     const pairs = findAllBorderPairs(allControls);
     expect(pairs.length).toBe(0);
   });

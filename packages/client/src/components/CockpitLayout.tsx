@@ -115,9 +115,11 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       <div className="cockpit-sec3 cockpit-section">
         <div className="cockpit-monitor">
           <UnifiedBezel variant="sidebar" monitorId="DETAIL">
-            {detailPowerOn
-              ? (detailContent ?? (detailMonitorMode === 'tv' ? <TvScreen /> : <TestPattern />))
-              : <div className="cockpit-off-screen">DISPLAY OFF</div>}
+            {detailPowerOn ? (
+              (detailContent ?? (detailMonitorMode === 'tv' ? <TvScreen /> : <TestPattern />))
+            ) : (
+              <div className="cockpit-off-screen">DISPLAY OFF</div>
+            )}
           </UnifiedBezel>
         </div>
         <div className="cockpit-hw-strip">

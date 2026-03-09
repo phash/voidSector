@@ -105,7 +105,11 @@ export async function destroyShipAndCreateLegacy(params: {
   sectorY: number;
   modules: string[];
   lastLogEntry?: string;
-}): Promise<{ newShipId: string; wreckId: string; legacyXp: { ausbau: number; intel: number; kampf: number; explorer: number } }> {
+}): Promise<{
+  newShipId: string;
+  wreckId: string;
+  legacyXp: { ausbau: number; intel: number; kampf: number; explorer: number };
+}> {
   // Read ACEP XP for legacy computation
   const acepXp = await getAcepXpSummary(params.shipId);
   const traits = calculateTraits(acepXp);
@@ -121,7 +125,7 @@ export async function destroyShipAndCreateLegacy(params: {
     const hash = params.shipId
       .split('')
       .reduce((acc, ch, ci) => acc ^ (ch.charCodeAt(0) * (ci + 1) * 31), i * 97);
-    return (Math.abs(hash) % 100) < 25;
+    return Math.abs(hash) % 100 < 25;
   });
 
   // Create wreck POI

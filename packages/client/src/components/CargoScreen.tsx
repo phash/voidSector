@@ -125,13 +125,19 @@ export function CargoScreen() {
 
       {/* Inventory Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-        <button style={tabBtnStyle(activeTab === 'resource')} onClick={() => setActiveTab('resource')}>
+        <button
+          style={tabBtnStyle(activeTab === 'resource')}
+          onClick={() => setActiveTab('resource')}
+        >
           RESSOURCEN
         </button>
         <button style={tabBtnStyle(activeTab === 'module')} onClick={() => setActiveTab('module')}>
           MODULE
         </button>
-        <button style={tabBtnStyle(activeTab === 'blueprint')} onClick={() => setActiveTab('blueprint')}>
+        <button
+          style={tabBtnStyle(activeTab === 'blueprint')}
+          onClick={() => setActiveTab('blueprint')}
+        >
           BLAUPAUSEN
         </button>
       </div>
@@ -231,7 +237,9 @@ export function CargoScreen() {
               marginBottom: '16px',
             }}
           >
-            <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>CREATE SLATE</div>
+            <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>
+              CREATE SLATE
+            </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               <button
                 className="vs-btn"
@@ -278,7 +286,9 @@ export function CargoScreen() {
                 className="vs-input"
                 placeholder="Notizen (max 500)"
                 value={customNotes}
-                onChange={(e) => setCustomNotes(e.target.value.slice(0, CUSTOM_SLATE_MAX_NOTES_LENGTH))}
+                onChange={(e) =>
+                  setCustomNotes(e.target.value.slice(0, CUSTOM_SLATE_MAX_NOTES_LENGTH))
+                }
                 style={{ width: '100%', height: 60, resize: 'vertical', marginBottom: 4 }}
               />
               <div style={{ display: 'flex', gap: 6 }}>

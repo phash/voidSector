@@ -14,8 +14,15 @@ const emptyResearch: ResearchState = {
 
 // Plenty of every artefact category
 const fullArtefacts: Partial<Record<string, number>> = {
-  drive: 99, cargo: 99, scanner: 99, armor: 99,
-  weapon: 99, shield: 99, defense: 99, special: 99, mining: 99,
+  drive: 99,
+  cargo: 99,
+  scanner: 99,
+  armor: 99,
+  weapon: 99,
+  shield: 99,
+  defense: 99,
+  special: 99,
+  mining: 99,
 };
 
 describe('research flow integration', () => {
@@ -44,15 +51,25 @@ describe('research flow integration', () => {
 
   it('can research drive_mk3 after drive_mk2', () => {
     // drive_mk3: T3, needs labTier 3, 1 drive artefact, 800 wissen
-    const after: ResearchState = { ...emptyResearch, unlockedModules: ['drive_mk2'], wissen: 99999 };
+    const after: ResearchState = {
+      ...emptyResearch,
+      unlockedModules: ['drive_mk2'],
+      wissen: 99999,
+    };
     const result = canStartResearch('drive_mk3', after, fullArtefacts, 3);
     expect(result.valid).toBe(true);
   });
 
   it('void_drive requires ancient honored', () => {
     // void_drive: T3, needs labTier 3, special artefacts, 800 wissen, prereq drive_mk3, ancients: honored
-    const after: ResearchState = { ...emptyResearch, unlockedModules: ['drive_mk3'], wissen: 99999 };
-    const result = canStartResearch('void_drive', after, fullArtefacts, 3, 1, { ancients: 'friendly' });
+    const after: ResearchState = {
+      ...emptyResearch,
+      unlockedModules: ['drive_mk3'],
+      wissen: 99999,
+    };
+    const result = canStartResearch('void_drive', after, fullArtefacts, 3, 1, {
+      ancients: 'friendly',
+    });
     expect(result.valid).toBe(false);
   });
 

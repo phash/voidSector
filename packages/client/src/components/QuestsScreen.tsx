@@ -26,7 +26,11 @@ function StoryTab() {
             style={{
               padding: '6px 8px',
               borderBottom: '1px solid rgba(255,255,255,0.05)',
-              color: completed ? '#00ff88' : current ? 'var(--color-primary)' : 'rgba(255,255,255,0.2)',
+              color: completed
+                ? '#00ff88'
+                : current
+                  ? 'var(--color-primary)'
+                  : 'rgba(255,255,255,0.2)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -35,12 +39,19 @@ function StoryTab() {
             <span>
               {completed ? '✓' : current ? '▶' : '○'} KAP.{ch.id} — {ch.title}
             </span>
-            <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0, marginLeft: 8 }}>
+            <span
+              style={{
+                fontSize: '0.6rem',
+                color: 'rgba(255,255,255,0.3)',
+                flexShrink: 0,
+                marginLeft: 8,
+              }}
+            >
               {completed && progress.branchChoices[String(ch.id)]
                 ? `[${progress.branchChoices[String(ch.id)]}]`
                 : !completed
-                ? `Q${ch.minQDist}`
-                : ''}
+                  ? `Q${ch.minQDist}`
+                  : ''}
             </span>
           </div>
         );
@@ -88,7 +99,8 @@ function AlienRepTab() {
           <div key={id} style={{ display: 'flex', gap: '8px', marginBottom: '2px' }}>
             <span style={{ width: '100px', opacity: 0.7 }}>{label}</span>
             <span style={{ color: rep >= 0 ? 'var(--color-primary)' : '#FF3333' }}>
-              {rep >= 0 ? '+' : ''}{rep}
+              {rep >= 0 ? '+' : ''}
+              {rep}
             </span>
           </div>
         );
@@ -100,18 +112,23 @@ function AlienRepTab() {
       </div>
       {Object.entries(FACTION_LABELS).map(([id, label]) => {
         const entry = humanityReps[id];
-        if (!entry) return (
-          <div key={id} style={{ display: 'flex', gap: '8px', marginBottom: '2px', opacity: 0.4 }}>
-            <span style={{ width: '100px' }}>{label}</span>
-            <span>0 — NEUTRAL</span>
-          </div>
-        );
+        if (!entry)
+          return (
+            <div
+              key={id}
+              style={{ display: 'flex', gap: '8px', marginBottom: '2px', opacity: 0.4 }}
+            >
+              <span style={{ width: '100px' }}>{label}</span>
+              <span>0 — NEUTRAL</span>
+            </div>
+          );
         const color = TIER_COLORS[entry.tier as keyof typeof TIER_COLORS] ?? 'var(--color-primary)';
         return (
           <div key={id} style={{ display: 'flex', gap: '8px', marginBottom: '2px' }}>
             <span style={{ width: '100px', opacity: 0.7 }}>{label}</span>
             <span style={{ color }}>
-              {entry.repValue >= 0 ? '+' : ''}{entry.repValue} — {entry.tier}
+              {entry.repValue >= 0 ? '+' : ''}
+              {entry.repValue} — {entry.tier}
             </span>
           </div>
         );
@@ -143,11 +160,25 @@ function CommunityTab() {
       <div style={{ color: 'var(--color-primary)', marginBottom: 8, letterSpacing: '0.1em' }}>
         {quest.title}
       </div>
-      <div style={{ color: 'var(--color-dim)', marginBottom: 12, lineHeight: 1.5, fontSize: '0.65rem' }}>
+      <div
+        style={{
+          color: 'var(--color-dim)',
+          marginBottom: 12,
+          lineHeight: 1.5,
+          fontSize: '0.65rem',
+        }}
+      >
         {quest.description}
       </div>
       <div style={{ marginBottom: 8 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.65rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginBottom: 4,
+            fontSize: '0.65rem',
+          }}
+        >
           <span style={{ color: 'var(--color-dim)' }}>FORTSCHRITT</span>
           <span style={{ color: 'var(--color-primary)' }}>
             {quest.currentCount.toLocaleString()} / {quest.targetCount.toLocaleString()}
@@ -175,7 +206,9 @@ export function QuestsScreen() {
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
 
-  const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events' | 'rescue' | 'story' | 'community' | 'alien_rep'>('active');
+  const [tab, setTab] = useState<
+    'active' | 'station' | 'rep' | 'events' | 'rescue' | 'story' | 'community' | 'alien_rep'
+  >('active');
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
   const [stationNpcs, setStationNpcs] = useState<StationNpc[]>([]);
   const [availableQuests, setAvailableQuests] = useState<AvailableQuest[]>([]);
@@ -222,14 +255,28 @@ export function QuestsScreen() {
         <button
           className="vs-btn"
           style={{ fontSize: '0.7rem', marginBottom: 8 }}
-          onClick={() => { setActiveProgram(navReturnProgram); clearNavReturn(); }}
+          onClick={() => {
+            setActiveProgram(navReturnProgram);
+            clearNavReturn();
+          }}
         >
           [← ZURÜCK]
         </button>
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', flexWrap: 'wrap' }}>
-        {(['active', 'station', 'rep', 'events', 'rescue', 'story', 'community', 'alien_rep'] as const).map((t) => (
+        {(
+          [
+            'active',
+            'station',
+            'rep',
+            'events',
+            'rescue',
+            'story',
+            'community',
+            'alien_rep',
+          ] as const
+        ).map((t) => (
           <button
             key={t}
             onClick={() => {
@@ -293,15 +340,25 @@ export function QuestsScreen() {
                   <span style={{ color: allDone ? '#00FF88' : '#FFB000' }}>
                     {allDone ? '[✓] ' : `[${doneCount}/${q.objectives.length}] `}
                     {q.title}
-                    {hasTarget && <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '9px' }}> ◎</span>}
+                    {hasTarget && (
+                      <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '9px' }}> ◎</span>
+                    )}
                   </span>
-                  <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px' }}>{isExpanded ? '▲' : '▼'}</span>
+                  <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px' }}>
+                    {isExpanded ? '▲' : '▼'}
+                  </span>
                 </div>
 
                 {/* Expanded journal entry */}
                 {isExpanded && (
                   <div style={{ padding: '4px 6px', borderTop: '1px solid rgba(255,176,0,0.2)' }}>
-                    <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px', marginBottom: '4px' }}>
+                    <div
+                      style={{
+                        color: 'rgba(255,176,0,0.6)',
+                        fontSize: '10px',
+                        marginBottom: '4px',
+                      }}
+                    >
                       {q.description}
                     </div>
                     {q.objectives.map((obj, i) => (
@@ -317,17 +374,21 @@ export function QuestsScreen() {
                         {obj.fulfilled ? '[x]' : '[ ]'} {obj.description}
                         {obj.amount != null && obj.progress != null && (
                           <span style={{ color: 'rgba(255,176,0,0.4)' }}>
-                            {' '}({obj.progress}/{obj.amount})
+                            {' '}
+                            ({obj.progress}/{obj.amount})
                           </span>
                         )}
                         {obj.targetX != null && obj.targetY != null && !obj.fulfilled && (
                           <span style={{ color: 'rgba(255,176,0,0.4)' }}>
-                            {' '}→ ({innerCoord(obj.targetX)}, {innerCoord(obj.targetY)})
+                            {' '}
+                            → ({innerCoord(obj.targetX)}, {innerCoord(obj.targetY)})
                           </span>
                         )}
                       </div>
                     ))}
-                    <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px', marginTop: '4px' }}>
+                    <div
+                      style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px', marginTop: '4px' }}
+                    >
                       BELOHNUNG: +{q.rewards.credits} CR | +{q.rewards.xp} XP
                       {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
                     </div>

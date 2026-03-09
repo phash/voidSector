@@ -42,11 +42,8 @@ describe('StrategicTickService', () => {
   });
 
   it('pushWarTickerEvent stores event in Redis and trims to 10', async () => {
-    await service.pushWarTickerEvent('K\'THARI INVASION — Quadrant [4/-2]');
-    expect(mockRedis.lpush).toHaveBeenCalledWith(
-      'war_ticker',
-      expect.stringContaining('K\'THARI')
-    );
+    await service.pushWarTickerEvent("K'THARI INVASION — Quadrant [4/-2]");
+    expect(mockRedis.lpush).toHaveBeenCalledWith('war_ticker', expect.stringContaining("K'THARI"));
     expect(mockRedis.ltrim).toHaveBeenCalledWith('war_ticker', 0, 9);
   });
 

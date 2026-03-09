@@ -37,7 +37,8 @@ export class StrategicTickService {
     const borderPairs = findAllBorderPairs(allControls);
     for (const { a, b } of borderPairs) {
       if (a.controlling_faction !== 'human' && b.controlling_faction !== 'human') continue;
-      const alienFaction = a.controlling_faction === 'human' ? b.controlling_faction : a.controlling_faction;
+      const alienFaction =
+        a.controlling_faction === 'human' ? b.controlling_faction : a.controlling_faction;
       const humanQ = a.controlling_faction === 'human' ? a : b;
       const alienQ = a.controlling_faction === 'human' ? b : a;
 
@@ -74,7 +75,7 @@ export class StrategicTickService {
   private async processWarfareTick(
     humanQ: QuadrantControlRow,
     alienQ: QuadrantControlRow,
-    alienFaction: string
+    alienFaction: string,
   ): Promise<void> {
     const result = resolveStrategicTick({
       attack: alienQ.attack_value,
@@ -104,16 +105,15 @@ export class StrategicTickService {
 
   private async processAlienExpansion(
     allControls: QuadrantControlRow[],
-    repStore: RepStore
+    repStore: RepStore,
   ): Promise<void> {
-    const factions = this.factionConfig.getActiveFactions()
-      .filter(f => f.faction_id !== 'human');
+    const factions = this.factionConfig.getActiveFactions().filter((f) => f.faction_id !== 'human');
 
     for (const faction of factions) {
       const target = getExpansionTarget(
         faction.faction_id,
         allControls,
-        faction.expansion_style as 'sphere' | 'wave' | 'jumpgate'
+        faction.expansion_style as 'sphere' | 'wave' | 'jumpgate',
       );
       if (!target) continue;
 
@@ -136,7 +136,7 @@ export class StrategicTickService {
 
       logger.debug(
         { faction: faction.faction_id, to_qx: target.qx, to_qy: target.qy },
-        'Alien expansion fleet dispatched'
+        'Alien expansion fleet dispatched',
       );
     }
   }

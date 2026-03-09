@@ -6,11 +6,7 @@ import {
   quadrantDistance,
   type StoryProgress,
 } from '../../engine/storyQuestChain.js';
-import {
-  getStoryProgress,
-  upsertStoryProgress,
-  addAlienReputation,
-} from '../../db/queries.js';
+import { getStoryProgress, upsertStoryProgress, addAlienReputation } from '../../db/queries.js';
 
 export interface StoryTriggerEvent {
   chapterId: number;
@@ -43,7 +39,11 @@ export class StoryQuestChainService {
     };
   }
 
-  async completeChapter(playerId: string, chapterId: number, branchChoice: string | null): Promise<boolean> {
+  async completeChapter(
+    playerId: string,
+    chapterId: number,
+    branchChoice: string | null,
+  ): Promise<boolean> {
     const row = await getStoryProgress(playerId);
     // Idempotency: ignore if already completed
     if (row.completed_chapters.includes(chapterId)) return false;

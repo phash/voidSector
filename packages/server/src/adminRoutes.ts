@@ -23,10 +23,7 @@ import {
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput, AdminStoryInput } from './db/adminQueries.js';
 import type { AdminPlayerUpdateEvent } from './adminBus.js';
-import {
-  getPlayerPosition,
-  savePlayerPosition,
-} from './rooms/services/RedisAPStore.js';
+import { getPlayerPosition, savePlayerPosition } from './rooms/services/RedisAPStore.js';
 import { adminBus } from './adminBus.js';
 import { logger } from './utils/logger.js';
 

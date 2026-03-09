@@ -4,9 +4,20 @@ import type { CargoState } from '@void-sector/shared';
 import { createAPState } from '../ap.js';
 
 const fullCargo = {
-  ore: 999, gas: 999, crystal: 999, artefact: 0, slates: 0,
-  artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0,
-  artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0, artefact_mining: 0,
+  ore: 999,
+  gas: 999,
+  crystal: 999,
+  artefact: 0,
+  slates: 0,
+  artefact_drive: 0,
+  artefact_cargo: 0,
+  artefact_scanner: 0,
+  artefact_armor: 0,
+  artefact_weapon: 0,
+  artefact_shield: 0,
+  artefact_defense: 0,
+  artefact_special: 0,
+  artefact_mining: 0,
 };
 
 describe('validateLabUpgrade', () => {

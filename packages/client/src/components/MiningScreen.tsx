@@ -26,7 +26,10 @@ export function MiningScreen() {
   const [miningProgress, setMiningProgress] = useState(0);
 
   useEffect(() => {
-    if (!mining?.active || mining.startedAt === null) { setMiningProgress(0); return; }
+    if (!mining?.active || mining.startedAt === null) {
+      setMiningProgress(0);
+      return;
+    }
     const startedAt = mining.startedAt;
     const tick = () => {
       const elapsed = (Date.now() - startedAt) / 1000;
@@ -78,10 +81,26 @@ export function MiningScreen() {
       >
         {mining?.active ? (
           <>
-            <div style={{ marginBottom: '6px' }}>STATUS: MINING {mining.resource?.toUpperCase()} — {mining.rate}u/s</div>
+            <div style={{ marginBottom: '6px' }}>
+              STATUS: MINING {mining.resource?.toUpperCase()} — {mining.rate}u/s
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <div style={{ flex: 1, height: '6px', background: '#0a0a0a', border: '1px solid rgba(255,176,0,0.3)' }}>
-                <div style={{ width: `${miningProgress * 100}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 0.2s linear' }} />
+              <div
+                style={{
+                  flex: 1,
+                  height: '6px',
+                  background: '#0a0a0a',
+                  border: '1px solid rgba(255,176,0,0.3)',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${miningProgress * 100}%`,
+                    height: '100%',
+                    background: 'var(--color-primary)',
+                    transition: 'width 0.2s linear',
+                  }}
+                />
               </div>
               <span style={{ fontSize: '0.75rem', minWidth: '60px', textAlign: 'right' }}>
                 {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u

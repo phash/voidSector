@@ -83,7 +83,10 @@ const MYCELIAN_SYMBOLS = ['▣', '○', '△', '◈', '✦', '⬡', '⊕'];
 function generateSymbolPuzzle(seed: number): { shown: string[]; correct: string } {
   const idx = seed % MYCELIAN_SYMBOLS.length;
   const size = 3 + (seed % 3);
-  const pattern = Array.from({ length: size }, (_, i) => MYCELIAN_SYMBOLS[(idx + i) % MYCELIAN_SYMBOLS.length]);
+  const pattern = Array.from(
+    { length: size },
+    (_, i) => MYCELIAN_SYMBOLS[(idx + i) % MYCELIAN_SYMBOLS.length],
+  );
   const correct = MYCELIAN_SYMBOLS[(idx + size) % MYCELIAN_SYMBOLS.length];
   return { shown: pattern, correct };
 }
@@ -97,8 +100,16 @@ export class AlienInteractionService {
 
     // Validate faction exists
     const validFactions: AlienFactionId[] = [
-      'scrappers', 'archivists', 'consortium', 'kthari', 'mycelians',
-      'mirror_minds', 'tourist_guild', 'silent_swarm', 'helions', 'axioms',
+      'scrappers',
+      'archivists',
+      'consortium',
+      'kthari',
+      'mycelians',
+      'mirror_minds',
+      'tourist_guild',
+      'silent_swarm',
+      'helions',
+      'axioms',
     ];
     if (!validFactions.includes(factionId)) {
       client.send('alienInteractResult', { success: false, error: 'Unbekannte Fraktion' });
@@ -136,7 +147,12 @@ export class AlienInteractionService {
         repAfter: repBefore,
       });
       // Record server-wide news event for first contact (Gemini-generated text)
-      generateFirstContactNews(factionId as any, auth.username ?? auth.userId, this.ctx.quadrantX, this.ctx.quadrantY)
+      generateFirstContactNews(
+        factionId as any,
+        auth.username ?? auth.userId,
+        this.ctx.quadrantX,
+        this.ctx.quadrantY,
+      )
         .then((aiText) => {
           recordNewsEvent({
             eventType: 'alien_first_contact',
@@ -212,8 +228,13 @@ export class AlienInteractionService {
   // ── Scrappers: barter without credits, unlock via salvage count ──────────────
 
   private async _handleScrappers(
-    client: Client, auth: AuthPayload, action: string, payload: Record<string, unknown> | undefined,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    payload: Record<string, unknown> | undefined,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     const salvageCount = await getPlayerSalvageCount(auth.userId);
 
@@ -233,7 +254,8 @@ export class AlienInteractionService {
         success: true,
         factionId: 'scrappers',
         action: 'greet',
-        message: 'SCRAPPER-FUNK: "Endlich! Jemand der NÜTZLICH ist! Wir handeln. Aber nur Materialien. Keine Credits — wozu? Zeig was du hast!"',
+        message:
+          'SCRAPPER-FUNK: "Endlich! Jemand der NÜTZLICH ist! Wir handeln. Aber nur Materialien. Keine Credits — wozu? Zeig was du hast!"',
         repTier: getRepTierLabel(getRepTier(repBefore)),
         repValue: repBefore,
       });
@@ -255,13 +277,32 @@ export class AlienInteractionService {
       const crystal = Math.floor(offerOre / 3);
       const cargo = await getCargoState(auth.userId);
       if ((cargo.ore ?? 0) < offerOre) {
-        client.send('alienInteractResult', { success: false, factionId: 'scrappers', error: 'Nicht genug Erz im Cargo.' });
+        client.send('alienInteractResult', {
+          success: false,
+          factionId: 'scrappers',
+          error: 'Nicht genug Erz im Cargo.',
+        });
         return;
       }
       await removeFromInventory(auth.userId, 'resource', 'ore', offerOre);
       await addToInventory(auth.userId, 'resource', 'crystal', crystal);
-      const repAfter = await addAlienReputation(auth.userId, 'scrappers', getRepChangeForAction('trade', 'scrappers'));
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'scrappers', encounterType: 'trade', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { ore: offerOre, crystal }, repBefore, repAfter });
+      const repAfter = await addAlienReputation(
+        auth.userId,
+        'scrappers',
+        getRepChangeForAction('trade', 'scrappers'),
+      );
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'scrappers',
+        encounterType: 'trade',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: { ore: offerOre, crystal },
+        repBefore,
+        repAfter,
+      });
       await contributeHumanityRep('scrappers', 1).catch(() => {});
       client.send('cargoUpdate', await getCargoState(auth.userId));
       client.send('alienInteractResult', {
@@ -275,14 +316,23 @@ export class AlienInteractionService {
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'scrappers', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'scrappers',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 
   // ── Archivists: scan data as currency, library by rep tier ──────────────────
 
   private async _handleArchivists(
-    client: Client, auth: AuthPayload, action: string, payload: Record<string, unknown> | undefined,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    payload: Record<string, unknown> | undefined,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     if (action === 'greet') {
       const discoveries = await getPlayerDiscoveryCount(auth.userId);
@@ -302,11 +352,26 @@ export class AlienInteractionService {
       const discoveries = await getPlayerDiscoveryCount(auth.userId);
       const repGain = Math.min(10, Math.floor(discoveries / 50)); // up to +10 rep per 500 sectors
       if (repGain === 0) {
-        client.send('alienInteractResult', { success: false, factionId: 'archivists', error: 'Scanne mehr unbekannte Sektoren bevor du zurückkommst.' });
+        client.send('alienInteractResult', {
+          success: false,
+          factionId: 'archivists',
+          error: 'Scanne mehr unbekannte Sektoren bevor du zurückkommst.',
+        });
         return;
       }
       const repAfter = await addAlienReputation(auth.userId, 'archivists', repGain);
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'archivists', encounterType: 'scan_share', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { discoveries, repGain }, repBefore, repAfter });
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'archivists',
+        encounterType: 'scan_share',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: { discoveries, repGain },
+        repBefore,
+        repAfter,
+      });
       await contributeHumanityRep('archivists', 1).catch(() => {});
       client.send('alienInteractResult', {
         success: true,
@@ -323,16 +388,24 @@ export class AlienInteractionService {
     if (action === 'queryLibrary') {
       const tier = getRepTier(repBefore);
       if (tier === 'enemy' || tier === 'hostile' || tier === 'neutral') {
-        client.send('alienInteractResult', { success: false, factionId: 'archivists', error: 'Bibliotheks-Zugang ab Tier NEUGIERIG. Liefere mehr Scandaten.' });
+        client.send('alienInteractResult', {
+          success: false,
+          factionId: 'archivists',
+          error: 'Bibliotheks-Zugang ab Tier NEUGIERIG. Liefere mehr Scandaten.',
+        });
         return;
       }
       const depth = tier === 'honored' ? 'tief' : tier === 'friendly' ? 'mittel' : 'basis';
       const hints =
         tier === 'honored'
-          ? ['Ancient-Ruinen bei Q+89:+91', 'Seltene Ressourcen bei Q+95:+88', 'Konsortium-Handelsposten bei Q+110:+110']
+          ? [
+              'Ancient-Ruinen bei Q+89:+91',
+              'Seltene Ressourcen bei Q+95:+88',
+              'Konsortium-Handelsposten bei Q+110:+110',
+            ]
           : tier === 'friendly'
-          ? ['Asteroid-Cluster bei Q+92:+86', 'Empfohlene Scan-Route: +91 bis +93']
-          : ['Offene Bibliotheks-Abschnitte: Grundkatalog, Sternkarten-Basis'];
+            ? ['Asteroid-Cluster bei Q+92:+86', 'Empfohlene Scan-Route: +91 bis +93']
+            : ['Offene Bibliotheks-Abschnitte: Grundkatalog, Sternkarten-Basis'];
       client.send('alienInteractResult', {
         success: true,
         factionId: 'archivists',
@@ -344,21 +417,31 @@ export class AlienInteractionService {
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'archivists', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'archivists',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 
   // ── Consortium: delivery contracts ──────────────────────────────────────────
 
   private async _handleConsortium(
-    client: Client, auth: AuthPayload, action: string, payload: Record<string, unknown> | undefined,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    payload: Record<string, unknown> | undefined,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     if (action === 'greet') {
       client.send('alienInteractResult', {
         success: true,
         factionId: 'consortium',
         action: 'greet',
-        message: 'KONSORTIUM TERMINAL: "Spezies Human, Randregion. Wir handeln mit allem. Aktuelle Verträge verfügbar. Konditionen: Standardtarif."',
+        message:
+          'KONSORTIUM TERMINAL: "Spezies Human, Randregion. Wir handeln mit allem. Aktuelle Verträge verfügbar. Konditionen: Standardtarif."',
         repTier: getRepTierLabel(getRepTier(repBefore)),
       });
       return;
@@ -369,9 +452,30 @@ export class AlienInteractionService {
       const tier = getRepTier(repBefore);
       const bonus = tier === 'honored' ? 1.2 : tier === 'friendly' ? 1.1 : 1.0;
       const contracts = [
-        { id: 'ore_500', resource: 'ore', amount: 500, reward: Math.floor(800 * bonus), ticks: 10, description: '500 Erz innerhalb 10 Ticks' },
-        { id: 'crystal_200', resource: 'crystal', amount: 200, reward: Math.floor(600 * bonus), ticks: 8, description: '200 Kristall innerhalb 8 Ticks' },
-        { id: 'gas_300', resource: 'gas', amount: 300, reward: Math.floor(450 * bonus), ticks: 6, description: '300 Gas innerhalb 6 Ticks' },
+        {
+          id: 'ore_500',
+          resource: 'ore',
+          amount: 500,
+          reward: Math.floor(800 * bonus),
+          ticks: 10,
+          description: '500 Erz innerhalb 10 Ticks',
+        },
+        {
+          id: 'crystal_200',
+          resource: 'crystal',
+          amount: 200,
+          reward: Math.floor(600 * bonus),
+          ticks: 8,
+          description: '200 Kristall innerhalb 8 Ticks',
+        },
+        {
+          id: 'gas_300',
+          resource: 'gas',
+          amount: 300,
+          reward: Math.floor(450 * bonus),
+          ticks: 6,
+          description: '300 Gas innerhalb 6 Ticks',
+        },
       ];
       client.send('alienInteractResult', {
         success: true,
@@ -389,18 +493,41 @@ export class AlienInteractionService {
       const amount = parseInt(String(payload?.amount ?? '0'), 10);
       const reward = parseInt(String(payload?.reward ?? '0'), 10);
       if (!resource || amount <= 0 || reward <= 0) {
-        client.send('alienInteractResult', { success: false, factionId: 'consortium', error: 'Ungültige Vertrags-Parameter.' });
+        client.send('alienInteractResult', {
+          success: false,
+          factionId: 'consortium',
+          error: 'Ungültige Vertrags-Parameter.',
+        });
         return;
       }
       const consortiumCargo = await getCargoState(auth.userId);
       if ((consortiumCargo[resource as keyof typeof consortiumCargo] ?? 0) < amount) {
-        client.send('alienInteractResult', { success: false, factionId: 'consortium', error: `Nicht genug ${resource} im Cargo (${amount} benötigt).` });
+        client.send('alienInteractResult', {
+          success: false,
+          factionId: 'consortium',
+          error: `Nicht genug ${resource} im Cargo (${amount} benötigt).`,
+        });
         return;
       }
       await removeFromInventory(auth.userId, 'resource', resource, amount);
       await addCredits(auth.userId, reward);
-      const repAfter = await addAlienReputation(auth.userId, 'consortium', getRepChangeForAction('quest_completed', 'consortium'));
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'consortium', encounterType: 'trade', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { resource, amount, reward }, repBefore, repAfter });
+      const repAfter = await addAlienReputation(
+        auth.userId,
+        'consortium',
+        getRepChangeForAction('quest_completed', 'consortium'),
+      );
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'consortium',
+        encounterType: 'trade',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: { resource, amount, reward },
+        repBefore,
+        repAfter,
+      });
       await contributeHumanityRep('consortium', 1).catch(() => {});
       client.send('cargoUpdate', await getCargoState(auth.userId));
       client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
@@ -415,14 +542,22 @@ export class AlienInteractionService {
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'consortium', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'consortium',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 
   // ── K'thari: military rank via combat victories ──────────────────────────────
 
   private async _handleKthari(
-    client: Client, auth: AuthPayload, action: string,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     const victories = await getPlayerCombatVictoryCount(auth.userId);
     const rankEntry = KTHARI_RANKS.find((r) => victories >= r.minVictories)!;
@@ -455,7 +590,18 @@ export class AlienInteractionService {
     if (action === 'claimRank') {
       const repGain = rankEntry.rank * 10;
       const repAfter = await addAlienReputation(auth.userId, 'kthari', repGain);
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'kthari', encounterType: 'rank_claim', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { rank: rankEntry.rank, victories }, repBefore, repAfter });
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'kthari',
+        encounterType: 'rank_claim',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: { rank: rankEntry.rank, victories },
+        repBefore,
+        repAfter,
+      });
       await contributeHumanityRep('kthari', 1).catch(() => {});
       client.send('alienInteractResult', {
         success: true,
@@ -470,18 +616,27 @@ export class AlienInteractionService {
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'kthari', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'kthari',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 
   // ── Mycelians: symbol puzzle, patience mechanic ──────────────────────────────
 
   private async _handleMycelians(
-    client: Client, auth: AuthPayload, action: string, payload: Record<string, unknown> | undefined,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    payload: Record<string, unknown> | undefined,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     if (action === 'observe') {
       // Receive a symbol puzzle
-      const seed = Date.now() ^ auth.userId.charCodeAt(0) * 31;
+      const seed = Date.now() ^ (auth.userId.charCodeAt(0) * 31);
       const puzzle = generateSymbolPuzzle(seed);
       client.send('alienInteractResult', {
         success: true,
@@ -496,16 +651,31 @@ export class AlienInteractionService {
 
     if (action === 'respond') {
       const answer = String(payload?.symbol ?? '');
-      const seed = Date.now() ^ auth.userId.charCodeAt(0) * 31;
+      const seed = Date.now() ^ (auth.userId.charCodeAt(0) * 31);
       // Validate: check if answer is a Mycelian symbol
       if (!MYCELIAN_SYMBOLS.includes(answer)) {
-        client.send('alienInteractResult', { success: false, factionId: 'mycelians', error: 'Kein gültiges Symbol.' });
+        client.send('alienInteractResult', {
+          success: false,
+          factionId: 'mycelians',
+          error: 'Kein gültiges Symbol.',
+        });
         return;
       }
       // Regardless of correctness (patience mechanic), small rep gain
       const repGain = 2;
       const repAfter = await addAlienReputation(auth.userId, 'mycelians', repGain);
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'mycelians', encounterType: 'puzzle', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { answer }, repBefore, repAfter });
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'mycelians',
+        encounterType: 'puzzle',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: { answer },
+        repBefore,
+        repAfter,
+      });
       await contributeHumanityRep('mycelians', 1).catch(() => {});
       client.send('alienInteractResult', {
         success: true,
@@ -518,21 +688,30 @@ export class AlienInteractionService {
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'mycelians', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'mycelians',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 
   // ── Mirror Minds: stat mirror + promise-keeping ──────────────────────────────
 
   private async _handleMirrorMinds(
-    client: Client, auth: AuthPayload, action: string,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     if (action === 'greet') {
       client.send('alienInteractResult', {
         success: true,
         factionId: 'mirror_minds',
         action: 'greet',
-        message: 'MIRROR MIND ECHO: "[Sie sehen sich selbst. Dann eine andere Version. Dann beide gleichzeitig.] Du bist... interessant. Wie viele bist du?"',
+        message:
+          'MIRROR MIND ECHO: "[Sie sehen sich selbst. Dann eine andere Version. Dann beide gleichzeitig.] Du bist... interessant. Wie viele bist du?"',
       });
       return;
     }
@@ -550,7 +729,18 @@ export class AlienInteractionService {
 
       const repGain = 5; // Viewing your reflection gains rep (self-awareness)
       const repAfter = await addAlienReputation(auth.userId, 'mirror_minds', repGain);
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'mirror_minds', encounterType: 'stat_mirror', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: stats as any, repBefore, repAfter });
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'mirror_minds',
+        encounterType: 'stat_mirror',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: stats as any,
+        repBefore,
+        repAfter,
+      });
       await contributeHumanityRep('mirror_minds', 1).catch(() => {});
 
       client.send('alienInteractResult', {
@@ -565,32 +755,51 @@ export class AlienInteractionService {
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'mirror_minds', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'mirror_minds',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 
   // ── Tourist Guild: tourist visits, info broker ───────────────────────────────
 
   private async _handleTouristGuild(
-    client: Client, auth: AuthPayload, action: string,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     if (action === 'greet' || action === 'welcomeTourists') {
       const repGain = action === 'welcomeTourists' ? 10 : 0;
-      const repAfter = repGain > 0
-        ? await addAlienReputation(auth.userId, 'tourist_guild', repGain)
-        : repBefore;
+      const repAfter =
+        repGain > 0 ? await addAlienReputation(auth.userId, 'tourist_guild', repGain) : repBefore;
       if (repGain > 0) {
-        await recordAlienEncounter({ playerId: auth.userId, factionId: 'tourist_guild', encounterType: 'tourist_visit', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, repBefore, repAfter });
+        await recordAlienEncounter({
+          playerId: auth.userId,
+          factionId: 'tourist_guild',
+          encounterType: 'tourist_visit',
+          sectorX,
+          sectorY,
+          quadrantX: this.ctx.quadrantX,
+          quadrantY: this.ctx.quadrantY,
+          repBefore,
+          repAfter,
+        });
         await contributeHumanityRep('tourist_guild', 1).catch(() => {});
       }
       client.send('alienInteractResult', {
         success: true,
         factionId: 'tourist_guild',
         action,
-        message: 'TOURIST GUILD: "Oh! Ein MENSCH! Wie ENTZÜCKEND! Dürfen wir Fotos machen? Wir haben Koordinaten einer interessanten... Anomalie. Als Dankeschön!"',
-        tip: repAfter >= 40
-          ? { type: 'anomaly', message: 'Geheimtipp: Anomalie-Cluster bei Q+72:+68' }
-          : null,
+        message:
+          'TOURIST GUILD: "Oh! Ein MENSCH! Wie ENTZÜCKEND! Dürfen wir Fotos machen? Wir haben Koordinaten einer interessanten... Anomalie. Als Dankeschön!"',
+        tip:
+          repAfter >= 40
+            ? { type: 'anomaly', message: 'Geheimtipp: Anomalie-Cluster bei Q+72:+68' }
+            : null,
         repAfter,
         repTier: getRepTierLabel(getRepTier(repAfter)),
       });
@@ -603,21 +812,30 @@ export class AlienInteractionService {
         success: true,
         factionId: 'tourist_guild',
         action: 'rejectTourists',
-        message: 'TOURIST GUILD: "Oh... Oh. Das ist... unfreundlich. Wir notieren das in unserer Bewertung. 2 Sterne."',
+        message:
+          'TOURIST GUILD: "Oh... Oh. Das ist... unfreundlich. Wir notieren das in unserer Bewertung. 2 Sterne."',
         repAfter,
         repTier: getRepTierLabel(getRepTier(repAfter)),
       });
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'tourist_guild', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'tourist_guild',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 
   // ── Silent Swarm: proximity aggression, no dialog ────────────────────────────
 
   private async _handleSilentSwarm(
-    client: Client, auth: AuthPayload, action: string,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     // Silent Swarm has no dialog — any interaction triggers aggression
     const chebyshev = Math.max(Math.abs(this.ctx.quadrantX), Math.abs(this.ctx.quadrantY));
@@ -629,7 +847,18 @@ export class AlienInteractionService {
         ? '[STILLE]\n[Dann: Ein einzelner Klick.]\n[Warnsignal: Geschwindigkeit reduziert.]'
         : `[TAUSEND KLICKS]\n[${depth > 100 ? 'SCHWARM-EINHEITEN AKTIVIERT' : 'PATROL DETEKTIERT'}] — Flieht sofort.`;
       const repAfter = await addAlienReputation(auth.userId, 'silent_swarm', warning ? -5 : -20);
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'silent_swarm', encounterType: 'proximity', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { depth, warning }, repBefore, repAfter });
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'silent_swarm',
+        encounterType: 'proximity',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: { depth, warning },
+        repBefore,
+        repAfter,
+      });
       client.send('alienInteractResult', {
         success: true,
         factionId: 'silent_swarm',
@@ -655,15 +884,21 @@ export class AlienInteractionService {
   // ── Helions: resource offering, passive scan bonus ───────────────────────────
 
   private async _handleHelions(
-    client: Client, auth: AuthPayload, action: string, payload: Record<string, unknown> | undefined,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    payload: Record<string, unknown> | undefined,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     if (action === 'observe') {
       client.send('alienInteractResult', {
         success: true,
         factionId: 'helions',
         action: 'observe',
-        message: 'HELION KOLLEKTIV — SONNENBOTSCHAFT: "Euer Stern ist jung. Euer Volk ist jung. Wir haben eure Sonne als Nebel gesehen." [Strahlung: Scan ×2, Hülle verliert langsam HP]',
+        message:
+          'HELION KOLLEKTIV — SONNENBOTSCHAFT: "Euer Stern ist jung. Euer Volk ist jung. Wir haben eure Sonne als Nebel gesehen." [Strahlung: Scan ×2, Hülle verliert langsam HP]',
         passiveEffect: { scanBonus: 2, hullDrain: true },
       });
       return;
@@ -674,18 +909,37 @@ export class AlienInteractionService {
       const resource = String(payload?.resource ?? 'ore') as ResourceType;
       const amount = parseInt(String(payload?.amount ?? '10'), 10);
       if (amount < 10) {
-        client.send('alienInteractResult', { success: false, factionId: 'helions', error: 'Mindest-Opfer: 10 Einheiten.' });
+        client.send('alienInteractResult', {
+          success: false,
+          factionId: 'helions',
+          error: 'Mindest-Opfer: 10 Einheiten.',
+        });
         return;
       }
       const helionCargo = await getCargoState(auth.userId);
       if ((helionCargo[resource as keyof typeof helionCargo] ?? 0) < amount) {
-        client.send('alienInteractResult', { success: false, factionId: 'helions', error: `Nicht genug ${resource} im Cargo.` });
+        client.send('alienInteractResult', {
+          success: false,
+          factionId: 'helions',
+          error: `Nicht genug ${resource} im Cargo.`,
+        });
         return;
       }
       await removeFromInventory(auth.userId, 'resource', resource, amount);
       const repGain = Math.floor(amount / 10);
       const repAfter = await addAlienReputation(auth.userId, 'helions', repGain);
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'helions', encounterType: 'offering', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { resource, amount }, repBefore, repAfter });
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'helions',
+        encounterType: 'offering',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: { resource, amount },
+        repBefore,
+        repAfter,
+      });
       await contributeHumanityRep('helions', 1).catch(() => {});
       client.send('cargoUpdate', await getCargoState(auth.userId));
 
@@ -709,21 +963,31 @@ export class AlienInteractionService {
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'helions', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'helions',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 
   // ── Axioms: math puzzles, universe edge map fragments ───────────────────────
 
   private async _handleAxioms(
-    client: Client, auth: AuthPayload, action: string, payload: Record<string, unknown> | undefined,
-    repBefore: number, sectorX: number, sectorY: number,
+    client: Client,
+    auth: AuthPayload,
+    action: string,
+    payload: Record<string, unknown> | undefined,
+    repBefore: number,
+    sectorX: number,
+    sectorY: number,
   ): Promise<void> {
     if (action === 'greet') {
       client.send('alienInteractResult', {
         success: true,
         factionId: 'axioms',
         action: 'greet',
-        message: '[ÜBERTRAGUNG AUF METAEBENE]\n"Du bist die 1.847.234ste Spezies, die bis hierher vorgedrungen ist."\n"Du bist nicht die letzte."\n[PUZZLE-SEQUENZ FOLGT]',
+        message:
+          '[ÜBERTRAGUNG AUF METAEBENE]\n"Du bist die 1.847.234ste Spezies, die bis hierher vorgedrungen ist."\n"Du bist nicht die letzte."\n[PUZZLE-SEQUENZ FOLGT]',
       });
       return;
     }
@@ -761,13 +1025,25 @@ export class AlienInteractionService {
 
       const repGain = 8;
       const repAfter = await addAlienReputation(auth.userId, 'axioms', repGain);
-      await recordAlienEncounter({ playerId: auth.userId, factionId: 'axioms', encounterType: 'puzzle', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { puzzleSeed: seed, answer, correct }, repBefore, repAfter });
+      await recordAlienEncounter({
+        playerId: auth.userId,
+        factionId: 'axioms',
+        encounterType: 'puzzle',
+        sectorX,
+        sectorY,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        encounterData: { puzzleSeed: seed, answer, correct },
+        repBefore,
+        repAfter,
+      });
       await contributeHumanityRep('axioms', 1).catch(() => {});
 
       // Map fragment at higher rep
-      const mapFragment = repAfter >= 40
-        ? `Rand-Kartenfragment: Richtung ~Q+${2500 + Math.floor(repAfter * 10)}:+${2500 + Math.floor(repAfter * 8)}`
-        : null;
+      const mapFragment =
+        repAfter >= 40
+          ? `Rand-Kartenfragment: Richtung ~Q+${2500 + Math.floor(repAfter * 10)}:+${2500 + Math.floor(repAfter * 8)}`
+          : null;
 
       client.send('alienInteractResult', {
         success: true,
@@ -785,6 +1061,10 @@ export class AlienInteractionService {
       return;
     }
 
-    client.send('alienInteractResult', { success: false, factionId: 'axioms', error: `Unbekannte Aktion: ${action}` });
+    client.send('alienInteractResult', {
+      success: false,
+      factionId: 'axioms',
+      error: `Unbekannte Aktion: ${action}`,
+    });
   }
 }

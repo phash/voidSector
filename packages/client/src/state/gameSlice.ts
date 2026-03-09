@@ -378,7 +378,13 @@ export interface GameSlice {
   playerGateInfo: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null;
 
   // Quadrant system
-  knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>;
+  knownQuadrants: Array<{
+    qx: number;
+    qy: number;
+    learnedAt: string;
+    name?: string;
+    discoveredByName?: string;
+  }>;
   currentQuadrant: { qx: number; qy: number; name?: string | null } | null;
   firstContactEvent: FirstContactEvent | null;
 
@@ -477,7 +483,9 @@ export interface GameSlice {
   setBookmarks: (bookmarks: Bookmark[]) => void;
   setAutopilot: (state: AutopilotState | null) => void;
   setDiscoveryTimestamps: (timestamps: Record<string, number>) => void;
-  setTerritoryMap: (map: Record<string, { playerName: string; playerId: string; defenseRating: string }>) => void;
+  setTerritoryMap: (
+    map: Record<string, { playerName: string; playerId: string; defenseRating: string }>,
+  ) => void;
   setShipList: (ships: (ShipRecord & { stats: ShipStats })[]) => void;
   setModuleInventory: (modules: string[]) => void;
   setBaseName: (name: string) => void;
@@ -491,7 +499,9 @@ export interface GameSlice {
   setKontorOrders: (orders: GameSlice['kontorOrders']) => void;
   startShipMoveAnimation: (fromX: number, fromY: number, toX: number, toY: number) => void;
   clearShipMoveAnimation: () => void;
-  setPlayerGateInfo: (info: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null) => void;
+  setPlayerGateInfo: (
+    info: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null,
+  ) => void;
   setKnownQuadrants: (quadrants: Array<{ qx: number; qy: number; learnedAt: string }>) => void;
   setCurrentQuadrant: (q: { qx: number; qy: number; name?: string | null } | null) => void;
   setFirstContactEvent: (event: FirstContactEvent | null) => void;
@@ -512,7 +522,9 @@ export interface GameSlice {
   setAlienEncounterEvent: (e: AlienEncounterEventPayload | null) => void;
   setStoryProgress: (p: StoryProgressPayload | null) => void;
   setActiveCommunityQuest: (q: CommunityQuestPayload | null) => void;
-  setHumanityReps: (reps: Record<string, { repValue: number; tier: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH' }>) => void;
+  setHumanityReps: (
+    reps: Record<string, { repValue: number; tier: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH' }>,
+  ) => void;
   setQuadrantControls: (controls: QuadrantControlState[]) => void;
   setNpcFleets: (fleets: NpcFleetState[]) => void;
   addWarTickerEvent: (event: WarTickerEvent) => void;
@@ -760,7 +772,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setStationCombatEvent: (stationCombatEvent) => set({ stationCombatEvent }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
-  removeScanEvent: (eventId) => set((s) => ({ scanEvents: s.scanEvents.filter((e) => e.id !== eventId) })),
+  removeScanEvent: (eventId) =>
+    set((s) => ({ scanEvents: s.scanEvents.filter((e) => e.id !== eventId) })),
   setJumpGateInfo: (jumpGateInfo) => set({ jumpGateInfo }),
   setKnownJumpGates: (knownJumpGates) => set({ knownJumpGates }),
   setRescuedSurvivors: (rescuedSurvivors) => set({ rescuedSurvivors }),
@@ -785,7 +798,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setFactoryState: (factoryState) => set({ factoryState }),
   setKontorOrders: (kontorOrders) => set({ kontorOrders }),
   startShipMoveAnimation: (fromX, fromY, toX, toY) =>
-    set({ shipMoveAnimation: { fromX, fromY, toX, toY, startTime: performance.now(), duration: 600 } }),
+    set({
+      shipMoveAnimation: { fromX, fromY, toX, toY, startTime: performance.now(), duration: 600 },
+    }),
   clearShipMoveAnimation: () => set({ shipMoveAnimation: null }),
   setPlayerGateInfo: (playerGateInfo) => set({ playerGateInfo }),
   setKnownQuadrants: (knownQuadrants) => set({ knownQuadrants }),
@@ -833,6 +848,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setQuadrantControls: (controls) => set({ quadrantControls: controls }),
   setNpcFleets: (fleets) => set({ npcFleets: fleets }),
   addWarTickerEvent: (event) =>
-    set(state => ({ warTicker: [event, ...state.warTicker].slice(0, 10) })),
+    set((state) => ({ warTicker: [event, ...state.warTicker].slice(0, 10) })),
   setInventory: (inventory) => set({ inventory }),
 });

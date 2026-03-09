@@ -101,7 +101,10 @@ export class TerritoryService {
     });
   }
 
-  async handleGetTerritory(client: Client, data: { quadrantX?: number; quadrantY?: number }): Promise<void> {
+  async handleGetTerritory(
+    client: Client,
+    data: { quadrantX?: number; quadrantY?: number },
+  ): Promise<void> {
     const qx = data.quadrantX ?? this.ctx.quadrantX;
     const qy = data.quadrantY ?? this.ctx.quadrantY;
     const claim = await getTerritoryClaim(qx, qy);
@@ -164,7 +167,13 @@ export class TerritoryService {
       // Attacker wins — steal the claim
       await deleteTerritoryClaim(qx, qy);
       const newDefenseRating = isKthariTerritory(qx, qy) ? 'HIGH' : 'LOW';
-      await createTerritoryClaim(auth.userId, auth.username ?? auth.userId, qx, qy, newDefenseRating);
+      await createTerritoryClaim(
+        auth.userId,
+        auth.username ?? auth.userId,
+        qx,
+        qy,
+        newDefenseRating,
+      );
       await addAcepXpForPlayer(auth.userId, 'kampf', 5).catch(() => {});
       const newClaim = await getTerritoryClaim(qx, qy);
       client.send('territoryResult', {

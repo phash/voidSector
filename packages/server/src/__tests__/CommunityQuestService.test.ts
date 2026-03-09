@@ -39,7 +39,8 @@ describe('CommunityQuestService', () => {
   });
 
   it('seedInitialIfEmpty does not create quest when one is active', async () => {
-    const { getActiveCommunityAlienQuest, insertCommunityAlienQuest } = await import('../db/queries.js');
+    const { getActiveCommunityAlienQuest, insertCommunityAlienQuest } =
+      await import('../db/queries.js');
     vi.mocked(getActiveCommunityAlienQuest).mockResolvedValueOnce({
       id: 1,
       status: 'active',
@@ -59,7 +60,8 @@ describe('CommunityQuestService', () => {
   });
 
   it('contribute calls addCommunityQuestContribution', async () => {
-    const { addCommunityQuestContribution, getActiveCommunityAlienQuest } = await import('../db/queries.js');
+    const { addCommunityQuestContribution, getActiveCommunityAlienQuest } =
+      await import('../db/queries.js');
     vi.mocked(getActiveCommunityAlienQuest).mockResolvedValueOnce({
       id: 42,
       status: 'active',

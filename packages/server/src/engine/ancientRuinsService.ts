@@ -27,7 +27,7 @@ export const ANCIENT_LORE_FRAGMENTS: readonly string[] = [
   'FRAGMENT #0019 — ÜBERSETZUNG 34%\n"Wir haben 10.000 Sternensysteme in 400 Jahren kartiert. Ihr braucht länger für einen Quadranten. Trotzdem: Respekt für den Versuch."',
   'FRAGMENT #0020 — ÜBERSETZUNG 60%\n"Das Universum hat eine Grenze. Dahinter liegt ein weiteres Universum. Dahinter noch eines. Wir haben drei überquert."',
   'FRAGMENT #0021 — ÜBERSETZUNG 19%\n"[TEILWEISE LESBAR]...die Stille hinter dem Rand ist nicht Leere...sie ist voller...wir haben kein Wort dafür..."',
-  'FRAGMENT #0022 — ÜBERSETZUNG 71%\n"Für Spezies 7.841: Ihr habt Sektor 0:0 \'Heimat\' genannt. Beachtenswert. Wir nannten unsere Heimat \'Ausgangspunkt\'."',
+  "FRAGMENT #0022 — ÜBERSETZUNG 71%\n\"Für Spezies 7.841: Ihr habt Sektor 0:0 'Heimat' genannt. Beachtenswert. Wir nannten unsere Heimat 'Ausgangspunkt'.\"",
   'FRAGMENT #0023 — ÜBERSETZUNG 47%\n"Artefakte wurden nicht zurückgelassen aus Nostalgie. Sie wurden zurückgelassen als Test. Ihr habt sie gefunden. Erste Prüfung bestanden."',
   'FRAGMENT #0024 — ÜBERSETZUNG 95%\n"Abschlusseintrag der Ancients, vollständige Übersetzung:\n\'Wir gehen jetzt. Macht euch keine Sorgen. Irgendwann versteht ihr es selbst.\'"',
 ];
@@ -51,9 +51,9 @@ export function getRuinFragmentIndex(sectorX: number, sectorY: number, worldSeed
 export function getRuinLevel(sectorX: number, sectorY: number, worldSeed: number): 1 | 2 | 3 {
   const hash = ((sectorX * 17392643) ^ (sectorY * 93456789) ^ (worldSeed * 56789123)) >>> 0;
   const roll = (hash & 0xffff) / 0x10000; // 0..1
-  if (roll < 0.6) return 1;  // 60% level 1
-  if (roll < 0.9) return 2;  // 30% level 2
-  return 3;                  // 10% level 3
+  if (roll < 0.6) return 1; // 60% level 1
+  if (roll < 0.9) return 2; // 30% level 2
+  return 3; // 10% level 3
 }
 
 /**

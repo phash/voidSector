@@ -5,11 +5,7 @@ import {
   getEligibleFactions,
   getFactionSpawnModifier,
 } from '../sectorTypeAwarenessService.js';
-import {
-  getDynamicPrice,
-  getDynamicSellPrice,
-  BASE_PRICES,
-} from '../dynamicPriceService.js';
+import { getDynamicPrice, getDynamicSellPrice, BASE_PRICES } from '../dynamicPriceService.js';
 
 describe('sectorTypeAwarenessService', () => {
   it('traders prefer empty sectors', () => {
@@ -105,7 +101,12 @@ describe('dynamicPriceService', () => {
   });
 
   it('sell price is always less than buy price', () => {
-    const resources: Array<'ore' | 'gas' | 'crystal' | 'exotic'> = ['ore', 'gas', 'crystal', 'exotic'];
+    const resources: Array<'ore' | 'gas' | 'crystal' | 'exotic'> = [
+      'ore',
+      'gas',
+      'crystal',
+      'exotic',
+    ];
     for (const r of resources) {
       const buy = getDynamicPrice(r, 500, 500, 'empty', 0);
       const sell = getDynamicSellPrice(r, 500, 500, 'empty', 0);

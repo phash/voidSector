@@ -2,11 +2,11 @@ import { useEffect, useRef } from 'react';
 
 const ADS = [
   'VOID-CORP™',
-  'MINING ISN\'T JUST A JOB,',
-  'IT\'S A LIFESTYLE.',
+  "MINING ISN'T JUST A JOB,",
+  "IT'S A LIFESTYLE.",
   '---',
   'VISIT QUADRANT 0:0',
-  'HUMANITY\'S PROUD CENTER™',
+  "HUMANITY'S PROUD CENTER™",
   '(TERMS APPLY)',
   '---',
   'BUY ORE. SELL ORE.',
@@ -64,7 +64,7 @@ export function TvScreen() {
 
       // Scanline effect
       ctx.fillStyle = 'rgba(0,255,0,0.015)';
-      const scanY = ((now / 12) % h);
+      const scanY = (now / 12) % h;
       ctx.fillRect(0, scanY, w, 2);
 
       // CRT noise

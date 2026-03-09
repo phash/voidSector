@@ -18,7 +18,15 @@ async function freshImports() {
     transferInventoryItem,
     getCargoCapForPlayer,
   } = await import('../db/queries.js');
-  return { query, getInventory, getInventoryItem, upsertInventory, deductInventory, transferInventoryItem, getCargoCapForPlayer };
+  return {
+    query,
+    getInventory,
+    getInventoryItem,
+    upsertInventory,
+    deductInventory,
+    transferInventoryItem,
+    getCargoCapForPlayer,
+  };
 }
 
 afterEach(() => {
@@ -49,10 +57,12 @@ describe('inventory queries', () => {
     const { query, upsertInventory } = await freshImports();
     vi.mocked(query).mockResolvedValue({ rows: [] } as any);
     await upsertInventory('player1', 'resource', 'ore', 3);
-    expect(vi.mocked(query)).toHaveBeenCalledWith(
-      expect.stringContaining('ON CONFLICT'),
-      ['player1', 'resource', 'ore', 3],
-    );
+    expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT'), [
+      'player1',
+      'resource',
+      'ore',
+      3,
+    ]);
   });
 
   it('deductInventory throws when insufficient quantity', async () => {
@@ -66,18 +76,22 @@ describe('inventory queries', () => {
     // deductInventory needs to succeed (returns a row with quantity > 0 to avoid a delete call)
     vi.mocked(query)
       .mockResolvedValueOnce({ rows: [{ quantity: 3 }] } as any) // deduct UPDATE succeeds
-      .mockResolvedValueOnce({ rows: [] } as any);               // upsert (no delete since qty > 0)
+      .mockResolvedValueOnce({ rows: [] } as any); // upsert (no delete since qty > 0)
     await transferInventoryItem('player1', 'player2', 'module', 'drive_mk2', 2);
     // First call should be the deduct UPDATE
-    expect(vi.mocked(query)).toHaveBeenCalledWith(
-      expect.stringContaining('UPDATE inventory'),
-      ['player1', 'module', 'drive_mk2', 2],
-    );
+    expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('UPDATE inventory'), [
+      'player1',
+      'module',
+      'drive_mk2',
+      2,
+    ]);
     // Last call should be the upsert INSERT
-    expect(vi.mocked(query)).toHaveBeenCalledWith(
-      expect.stringContaining('ON CONFLICT'),
-      ['player2', 'module', 'drive_mk2', 2],
-    );
+    expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT'), [
+      'player2',
+      'module',
+      'drive_mk2',
+      2,
+    ]);
   });
 
   it('getCargoCapForPlayer queries hull_type+modules and computes cargoCap via calculateShipStats', async () => {
@@ -88,14 +102,10 @@ describe('inventory queries', () => {
     } as any);
     const cap = await getCargoCapForPlayer('player1');
     // Verify the query selects hull_type and modules (not the dropped cargo_cap column)
-    expect(vi.mocked(query)).toHaveBeenCalledWith(
-      expect.stringContaining('hull_type'),
-      ['player1'],
-    );
-    expect(vi.mocked(query)).toHaveBeenCalledWith(
-      expect.stringContaining('modules'),
-      ['player1'],
-    );
+    expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('hull_type'), [
+      'player1',
+    ]);
+    expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('modules'), ['player1']);
     // scout baseCargo = 3, no module bonuses
     expect(cap).toBe(3);
   });

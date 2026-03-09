@@ -110,11 +110,11 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
 
 /** Base Wissen generation per hour by research lab tier (1–5) */
 export const RESEARCH_LAB_WISSEN_RATE: Record<number, number> = {
-  1: 5,   // Grundlabor
-  2: 12,  // Forschungslabor
-  3: 25,  // Analysestation
-  4: 45,  // Forschungsturm
-  5: 80,  // Observatorium
+  1: 5, // Grundlabor
+  2: 12, // Forschungslabor
+  3: 25, // Analysestation
+  4: 45, // Forschungsturm
+  5: 80, // Observatorium
 };
 
 export const RESEARCH_LAB_NAMES: Record<number, string> = {
@@ -130,7 +130,11 @@ export const RESEARCH_LAB_MAX_TIER = 5;
 
 /** Lab tier required to research modules of each module tier */
 export const RESEARCH_LAB_TIER_FOR_MODULE_TIER: Record<number, number> = {
-  1: 1, 2: 2, 3: 3, 4: 4, 5: 5,
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
 };
 
 /** Wissen multipliers by sector type/environment present in the station's sector */
@@ -153,7 +157,11 @@ export const WISSEN_COST_BY_TIER: Record<number, number> = {
 
 /** Required artefacts (matching module category) per module tier */
 export const ARTEFACT_REQUIRED_BY_TIER: Record<number, number> = {
-  1: 0, 2: 0, 3: 1, 4: 2, 5: 3,
+  1: 0,
+  2: 0,
+  3: 1,
+  4: 2,
+  5: 3,
 };
 
 /** Wissen cost reduction per matching artefact used */
@@ -166,10 +174,13 @@ export const ARTEFACT_TIME_BONUS_PER = 0.1;
 export const MAX_ARTEFACTS_PER_RESEARCH = 3;
 
 /** Credits + material cost to upgrade research lab to the given tier */
-export const RESEARCH_LAB_UPGRADE_COSTS: Record<number, { credits: number; ore: number; crystal: number }> = {
-  2: { credits: 500,  ore: 30,  crystal: 20  },
-  3: { credits: 1200, ore: 60,  crystal: 40  },
-  4: { credits: 2500, ore: 100, crystal: 80  },
+export const RESEARCH_LAB_UPGRADE_COSTS: Record<
+  number,
+  { credits: number; ore: number; crystal: number }
+> = {
+  2: { credits: 500, ore: 30, crystal: 20 },
+  3: { credits: 1200, ore: 60, crystal: 40 },
+  4: { credits: 2500, ore: 100, crystal: 80 },
   5: { credits: 5000, ore: 150, crystal: 120 },
 };
 
@@ -1327,7 +1338,7 @@ export const ENVIRONMENT_WEIGHTS: Record<string, number> = {
 export const SECTOR_ENVIRONMENT_WEIGHTS: Record<string, number> = {
   empty: 0.55,
   nebula: 0.12,
-  planet: 0.10,
+  planet: 0.1,
   asteroid: 0.12,
   star: 0.08,
   black_hole: 0.03,
@@ -1335,13 +1346,13 @@ export const SECTOR_ENVIRONMENT_WEIGHTS: Record<string, number> = {
 
 // Planet subtype distribution
 export const PLANET_SUBTYPE_WEIGHTS: Record<string, number> = {
-  terrestrial: 0.40,
+  terrestrial: 0.4,
   water: 0.25,
-  ice: 0.20,
+  ice: 0.2,
   lava: 0.12,
-  exotic_a: 0.010,
-  exotic_b: 0.010,
-  exotic_c: 0.010,
+  exotic_a: 0.01,
+  exotic_b: 0.01,
+  exotic_c: 0.01,
 };
 
 // Distance-based density multipliers for sector content generation
@@ -1714,32 +1725,74 @@ export const QUADRANT_NAME_MIN_LENGTH = 3;
 // ---- Lebendiges Universum (Living Universe) ----
 
 export const COSMIC_FACTION_IDS = [
-  'humans', 'archivists', 'consortium', 'kthari',
-  'mycelians', 'mirror_minds', 'tourist_guild',
-  'silent_swarm', 'helions', 'axioms', 'scrappers',
+  'humans',
+  'archivists',
+  'consortium',
+  'kthari',
+  'mycelians',
+  'mirror_minds',
+  'tourist_guild',
+  'silent_swarm',
+  'helions',
+  'axioms',
+  'scrappers',
 ] as const;
-export type CosmicFactionId = typeof COSMIC_FACTION_IDS[number];
+export type CosmicFactionId = (typeof COSMIC_FACTION_IDS)[number];
 
 // Human starting territory: quadrants 0:0 to 4:4 (25 quadrants)
 export const HUMAN_STARTING_TERRITORY: Array<[number, number]> = [
-  [0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2],
-  [0,3],[1,3],[2,3],[3,0],[3,1],[3,2],[3,3],[4,0],[4,1],
-  [4,2],[4,3],[0,4],[1,4],[2,4],[3,4],[4,4],
+  [0, 0],
+  [0, 1],
+  [0, 2],
+  [1, 0],
+  [1, 1],
+  [1, 2],
+  [2, 0],
+  [2, 1],
+  [2, 2],
+  [0, 3],
+  [1, 3],
+  [2, 3],
+  [3, 0],
+  [3, 1],
+  [3, 2],
+  [3, 3],
+  [4, 0],
+  [4, 1],
+  [4, 2],
+  [4, 3],
+  [0, 4],
+  [1, 4],
+  [2, 4],
+  [3, 4],
+  [4, 4],
 ];
 
 // Alien starting regions (distant from humans, no overlap with 0:0–4:4)
-export const ALIEN_STARTING_REGIONS: Record<CosmicFactionId, { qx: number; qy: number; radius: number }[]> = {
+export const ALIEN_STARTING_REGIONS: Record<
+  CosmicFactionId,
+  { qx: number; qy: number; radius: number }[]
+> = {
   humans: [],
-  archivists: [{ qx: 95, qy: 105, radius: 3 }, { qx: 110, qy: 90, radius: 2 }],
+  archivists: [
+    { qx: 95, qy: 105, radius: 3 },
+    { qx: 110, qy: 90, radius: 2 },
+  ],
   consortium: [{ qx: 200, qy: 210, radius: 4 }],
-  kthari: [{ qx: 270, qy: 280, radius: 5 }, { qx: 290, qy: 260, radius: 3 }],
+  kthari: [
+    { qx: 270, qy: 280, radius: 5 },
+    { qx: 290, qy: 260, radius: 3 },
+  ],
   mycelians: [{ qx: 410, qy: 420, radius: 3 }],
   mirror_minds: [{ qx: 550, qy: 560, radius: 2 }],
   tourist_guild: [{ qx: 690, qy: 700, radius: 6 }],
   silent_swarm: [{ qx: 1090, qy: 1100, radius: 8 }],
   helions: [{ qx: 1400, qy: 1390, radius: 4 }],
   axioms: [{ qx: 2800, qy: 2790, radius: 2 }],
-  scrappers: [{ qx: 65, qy: 70, radius: 2 }, { qx: 80, qy: 65, radius: 2 }],
+  scrappers: [
+    { qx: 65, qy: 70, radius: 2 },
+    { qx: 80, qy: 65, radius: 2 },
+  ],
 };
 
 // Hex colors for each cosmic faction (for QUAD-MAP rendering)
@@ -1766,32 +1819,172 @@ export type AcepDominantPath = 'ausbau' | 'intel' | 'kampf' | 'explorer' | 'none
 /** Pixel patterns per tier × dominant path. */
 export const ACEP_RADAR_PATTERNS: Record<1 | 2 | 3 | 4, Record<AcepDominantPath, number[][]>> = {
   1: {
-    none:     [[0,1,0],[1,1,1],[0,1,0]],
-    ausbau:   [[1,1,1],[1,0,1],[1,1,1]],
-    intel:    [[0,1,0],[1,0,1],[0,1,0]],
-    kampf:    [[0,1,0],[1,1,1],[0,1,0]],
-    explorer: [[1,0,0],[0,1,0],[0,0,1]],
+    none: [
+      [0, 1, 0],
+      [1, 1, 1],
+      [0, 1, 0],
+    ],
+    ausbau: [
+      [1, 1, 1],
+      [1, 0, 1],
+      [1, 1, 1],
+    ],
+    intel: [
+      [0, 1, 0],
+      [1, 0, 1],
+      [0, 1, 0],
+    ],
+    kampf: [
+      [0, 1, 0],
+      [1, 1, 1],
+      [0, 1, 0],
+    ],
+    explorer: [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ],
   },
   2: {
-    none:     [[0,1,1,1,0],[1,0,0,0,1],[1,0,1,0,1],[1,0,0,0,1],[0,1,1,1,0]],
-    ausbau:   [[1,1,1,1,1],[1,0,0,0,1],[1,0,1,0,1],[1,0,0,0,1],[0,1,1,1,0]], // fortress
-    intel:    [[0,0,1,0,0],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[0,0,1,0,0]], // diamond
-    kampf:    [[0,0,1,0,0],[0,1,1,0,0],[1,1,1,1,1],[0,1,1,0,0],[0,0,1,0,0]], // spear
-    explorer: [[1,0,0,0,0],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,1],[0,0,0,0,1]], // asymmetric
+    none: [
+      [0, 1, 1, 1, 0],
+      [1, 0, 0, 0, 1],
+      [1, 0, 1, 0, 1],
+      [1, 0, 0, 0, 1],
+      [0, 1, 1, 1, 0],
+    ],
+    ausbau: [
+      [1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 1],
+      [1, 0, 1, 0, 1],
+      [1, 0, 0, 0, 1],
+      [0, 1, 1, 1, 0],
+    ], // fortress
+    intel: [
+      [0, 0, 1, 0, 0],
+      [0, 1, 0, 1, 0],
+      [1, 0, 1, 0, 1],
+      [0, 1, 0, 1, 0],
+      [0, 0, 1, 0, 0],
+    ], // diamond
+    kampf: [
+      [0, 0, 1, 0, 0],
+      [0, 1, 1, 0, 0],
+      [1, 1, 1, 1, 1],
+      [0, 1, 1, 0, 0],
+      [0, 0, 1, 0, 0],
+    ], // spear
+    explorer: [
+      [1, 0, 0, 0, 0],
+      [0, 1, 0, 1, 0],
+      [0, 0, 1, 0, 0],
+      [0, 1, 0, 1, 1],
+      [0, 0, 0, 0, 1],
+    ], // asymmetric
   },
   3: {
-    none:     [[0,0,1,1,1,0,0],[0,1,0,0,0,1,0],[1,0,1,0,1,0,1],[1,0,0,1,0,0,1],[1,0,1,0,1,0,1],[0,1,0,0,0,1,0],[0,0,1,1,1,0,0]],
-    ausbau:   [[1,1,1,1,1,1,1],[1,0,0,0,0,0,1],[1,0,1,1,1,0,1],[1,0,1,0,1,0,1],[1,0,1,1,1,0,1],[1,0,0,0,0,0,1],[0,1,1,1,1,1,0]], // fortress
-    intel:    [[0,0,0,1,0,0,0],[0,0,1,0,1,0,0],[0,1,0,1,0,1,0],[1,0,1,1,1,0,1],[0,1,0,1,0,1,0],[0,0,1,0,1,0,0],[0,0,0,1,0,0,0]], // crystal
-    kampf:    [[0,0,0,1,0,0,0],[0,0,1,1,0,0,0],[0,1,0,1,0,0,0],[1,1,1,1,1,1,1],[0,1,0,1,0,0,0],[0,0,1,1,0,0,0],[0,0,0,1,0,0,0]], // lance
-    explorer: [[1,0,0,0,0,0,1],[0,1,0,0,0,1,0],[0,0,1,0,1,0,0],[0,0,0,1,0,0,0],[1,0,1,0,1,0,0],[0,1,0,0,0,1,0],[0,0,0,0,0,0,1]], // star-reach
+    none: [
+      [0, 0, 1, 1, 1, 0, 0],
+      [0, 1, 0, 0, 0, 1, 0],
+      [1, 0, 1, 0, 1, 0, 1],
+      [1, 0, 0, 1, 0, 0, 1],
+      [1, 0, 1, 0, 1, 0, 1],
+      [0, 1, 0, 0, 0, 1, 0],
+      [0, 0, 1, 1, 1, 0, 0],
+    ],
+    ausbau: [
+      [1, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 0, 0, 1],
+      [1, 0, 1, 1, 1, 0, 1],
+      [1, 0, 1, 0, 1, 0, 1],
+      [1, 0, 1, 1, 1, 0, 1],
+      [1, 0, 0, 0, 0, 0, 1],
+      [0, 1, 1, 1, 1, 1, 0],
+    ], // fortress
+    intel: [
+      [0, 0, 0, 1, 0, 0, 0],
+      [0, 0, 1, 0, 1, 0, 0],
+      [0, 1, 0, 1, 0, 1, 0],
+      [1, 0, 1, 1, 1, 0, 1],
+      [0, 1, 0, 1, 0, 1, 0],
+      [0, 0, 1, 0, 1, 0, 0],
+      [0, 0, 0, 1, 0, 0, 0],
+    ], // crystal
+    kampf: [
+      [0, 0, 0, 1, 0, 0, 0],
+      [0, 0, 1, 1, 0, 0, 0],
+      [0, 1, 0, 1, 0, 0, 0],
+      [1, 1, 1, 1, 1, 1, 1],
+      [0, 1, 0, 1, 0, 0, 0],
+      [0, 0, 1, 1, 0, 0, 0],
+      [0, 0, 0, 1, 0, 0, 0],
+    ], // lance
+    explorer: [
+      [1, 0, 0, 0, 0, 0, 1],
+      [0, 1, 0, 0, 0, 1, 0],
+      [0, 0, 1, 0, 1, 0, 0],
+      [0, 0, 0, 1, 0, 0, 0],
+      [1, 0, 1, 0, 1, 0, 0],
+      [0, 1, 0, 0, 0, 1, 0],
+      [0, 0, 0, 0, 0, 0, 1],
+    ], // star-reach
   },
   4: {
-    none:     [[0,0,0,1,1,1,0,0,0],[0,0,1,0,0,0,1,0,0],[0,1,0,1,0,1,0,1,0],[1,0,1,0,1,0,1,0,1],[1,0,0,1,1,1,0,0,1],[1,0,1,0,1,0,1,0,1],[0,1,0,1,0,1,0,1,0],[0,0,1,0,0,0,1,0,0],[0,0,0,1,1,1,0,0,0]],
-    ausbau:   [[1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,1],[1,0,1,1,1,1,1,0,1],[1,0,1,0,0,0,1,0,1],[1,0,1,0,1,0,1,0,1],[1,0,1,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1],[1,0,0,0,0,0,0,0,1],[0,1,1,1,1,1,1,1,0]], // citadel
-    intel:    [[0,0,0,0,1,0,0,0,0],[0,0,0,1,0,1,0,0,0],[0,0,1,0,1,0,1,0,0],[0,1,0,1,0,1,0,1,0],[1,0,1,0,1,0,1,0,1],[0,1,0,1,0,1,0,1,0],[0,0,1,0,1,0,1,0,0],[0,0,0,1,0,1,0,0,0],[0,0,0,0,1,0,0,0,0]], // radiant star
-    kampf:    [[0,0,0,0,1,0,0,0,0],[0,0,0,1,1,0,0,0,0],[0,0,1,0,1,0,0,0,0],[0,1,0,0,1,0,0,0,0],[1,1,1,1,1,1,1,1,1],[0,1,0,0,1,0,0,0,0],[0,0,1,0,1,0,0,0,0],[0,0,0,1,1,0,0,0,0],[0,0,0,0,1,0,0,0,0]], // war cross
-    explorer: [[1,0,0,0,0,0,0,0,1],[0,1,0,0,1,0,0,1,0],[0,0,1,0,0,0,1,0,0],[0,0,0,1,0,1,0,0,0],[1,0,0,0,1,0,0,0,1],[0,0,0,1,0,1,0,0,0],[0,0,1,0,0,0,1,0,0],[0,1,0,0,1,0,0,1,0],[1,0,0,0,0,0,0,0,1]], // galaxy
+    none: [
+      [0, 0, 0, 1, 1, 1, 0, 0, 0],
+      [0, 0, 1, 0, 0, 0, 1, 0, 0],
+      [0, 1, 0, 1, 0, 1, 0, 1, 0],
+      [1, 0, 1, 0, 1, 0, 1, 0, 1],
+      [1, 0, 0, 1, 1, 1, 0, 0, 1],
+      [1, 0, 1, 0, 1, 0, 1, 0, 1],
+      [0, 1, 0, 1, 0, 1, 0, 1, 0],
+      [0, 0, 1, 0, 0, 0, 1, 0, 0],
+      [0, 0, 0, 1, 1, 1, 0, 0, 0],
+    ],
+    ausbau: [
+      [1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 1, 1, 1, 1, 1, 0, 1],
+      [1, 0, 1, 0, 0, 0, 1, 0, 1],
+      [1, 0, 1, 0, 1, 0, 1, 0, 1],
+      [1, 0, 1, 0, 0, 0, 1, 0, 1],
+      [1, 0, 1, 1, 1, 1, 1, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 1],
+      [0, 1, 1, 1, 1, 1, 1, 1, 0],
+    ], // citadel
+    intel: [
+      [0, 0, 0, 0, 1, 0, 0, 0, 0],
+      [0, 0, 0, 1, 0, 1, 0, 0, 0],
+      [0, 0, 1, 0, 1, 0, 1, 0, 0],
+      [0, 1, 0, 1, 0, 1, 0, 1, 0],
+      [1, 0, 1, 0, 1, 0, 1, 0, 1],
+      [0, 1, 0, 1, 0, 1, 0, 1, 0],
+      [0, 0, 1, 0, 1, 0, 1, 0, 0],
+      [0, 0, 0, 1, 0, 1, 0, 0, 0],
+      [0, 0, 0, 0, 1, 0, 0, 0, 0],
+    ], // radiant star
+    kampf: [
+      [0, 0, 0, 0, 1, 0, 0, 0, 0],
+      [0, 0, 0, 1, 1, 0, 0, 0, 0],
+      [0, 0, 1, 0, 1, 0, 0, 0, 0],
+      [0, 1, 0, 0, 1, 0, 0, 0, 0],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [0, 1, 0, 0, 1, 0, 0, 0, 0],
+      [0, 0, 1, 0, 1, 0, 0, 0, 0],
+      [0, 0, 0, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 0, 0, 0, 0],
+    ], // war cross
+    explorer: [
+      [1, 0, 0, 0, 0, 0, 0, 0, 1],
+      [0, 1, 0, 0, 1, 0, 0, 1, 0],
+      [0, 0, 1, 0, 0, 0, 1, 0, 0],
+      [0, 0, 0, 1, 0, 1, 0, 0, 0],
+      [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      [0, 0, 0, 1, 0, 1, 0, 0, 0],
+      [0, 0, 1, 0, 0, 0, 1, 0, 0],
+      [0, 1, 0, 0, 1, 0, 0, 1, 0],
+      [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    ], // galaxy
   },
 };
 
@@ -1800,7 +1993,7 @@ export const ACEP_XP_TIERS: Array<{ min: number; tier: 1 | 2 | 3 | 4 }> = [
   { min: 80, tier: 4 },
   { min: 50, tier: 3 },
   { min: 20, tier: 2 },
-  { min: 0,  tier: 1 },
+  { min: 0, tier: 1 },
 ];
 
 export function getAcepIconTier(totalXp: number): 1 | 2 | 3 | 4 {
@@ -1884,11 +2077,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'symbols',
     aesthetic: 'ruined organic-crystal, warm amber glow',
     radarPattern: [
-      [0,1,0,1,0],
-      [1,0,1,0,1],
-      [0,1,1,1,0],
-      [1,0,1,0,1],
-      [0,1,0,1,0],
+      [0, 1, 0, 1, 0],
+      [1, 0, 1, 0, 1],
+      [0, 1, 1, 1, 0],
+      [1, 0, 1, 0, 1],
+      [0, 1, 0, 1, 0],
     ],
   },
   scrappers: {
@@ -1897,11 +2090,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'normal',
     aesthetic: 'salvage-heap asymmetric, industrial grey',
     radarPattern: [
-      [1,0,1,1,0],
-      [0,1,0,1,1],
-      [1,0,1,0,1],
-      [1,1,0,1,0],
-      [0,1,1,0,1],
+      [1, 0, 1, 1, 0],
+      [0, 1, 0, 1, 1],
+      [1, 0, 1, 0, 1],
+      [1, 1, 0, 1, 0],
+      [0, 1, 1, 0, 1],
     ],
   },
   archivists: {
@@ -1910,11 +2103,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'normal',
     aesthetic: 'geometric clean precision, cool mint',
     radarPattern: [
-      [0,0,1,0,0],
-      [0,1,1,1,0],
-      [1,1,0,1,1],
-      [0,1,1,1,0],
-      [0,0,1,0,0],
+      [0, 0, 1, 0, 0],
+      [0, 1, 1, 1, 0],
+      [1, 1, 0, 1, 1],
+      [0, 1, 1, 1, 0],
+      [0, 0, 1, 0, 0],
     ],
   },
   consortium: {
@@ -1923,11 +2116,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'normal',
     aesthetic: 'corporate efficient, warm gold-orange',
     radarPattern: [
-      [0,1,1,1,0],
-      [1,0,0,0,1],
-      [1,0,1,0,1],
-      [1,0,0,0,1],
-      [0,1,1,1,0],
+      [0, 1, 1, 1, 0],
+      [1, 0, 0, 0, 1],
+      [1, 0, 1, 0, 1],
+      [1, 0, 0, 0, 1],
+      [0, 1, 1, 1, 0],
     ],
   },
   kthari: {
@@ -1936,11 +2129,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'normal',
     aesthetic: 'military angular combat-jet, sharp red',
     radarPattern: [
-      [0,0,1,0,0],
-      [0,1,1,0,0],
-      [1,1,1,1,1],
-      [0,1,1,0,0],
-      [0,0,1,0,0],
+      [0, 0, 1, 0, 0],
+      [0, 1, 1, 0, 0],
+      [1, 1, 1, 1, 1],
+      [0, 1, 1, 0, 0],
+      [0, 0, 1, 0, 0],
     ],
   },
   mycelians: {
@@ -1949,11 +2142,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'symbols',
     aesthetic: 'organic growing mycellium, bio-green',
     radarPattern: [
-      [0,1,0,1,0],
-      [1,0,0,0,1],
-      [0,0,1,0,0],
-      [1,0,0,0,1],
-      [0,1,0,1,0],
+      [0, 1, 0, 1, 0],
+      [1, 0, 0, 0, 1],
+      [0, 0, 1, 0, 0],
+      [1, 0, 0, 0, 1],
+      [0, 1, 0, 1, 0],
     ],
   },
   mirror_minds: {
@@ -1962,11 +2155,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'normal',
     aesthetic: 'mirrored symmetric reflective, violet',
     radarPattern: [
-      [1,0,0,0,1],
-      [0,1,0,1,0],
-      [0,0,1,0,0],
-      [0,1,0,1,0],
-      [1,0,0,0,1],
+      [1, 0, 0, 0, 1],
+      [0, 1, 0, 1, 0],
+      [0, 0, 1, 0, 0],
+      [0, 1, 0, 1, 0],
+      [1, 0, 0, 0, 1],
     ],
   },
   tourist_guild: {
@@ -1975,11 +2168,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'normal',
     aesthetic: 'colorful overloaded cruise-ship, bright yellow',
     radarPattern: [
-      [1,1,0,1,1],
-      [1,0,1,0,1],
-      [0,1,1,1,0],
-      [1,0,1,0,1],
-      [1,1,0,1,1],
+      [1, 1, 0, 1, 1],
+      [1, 0, 1, 0, 1],
+      [0, 1, 1, 1, 0],
+      [1, 0, 1, 0, 1],
+      [1, 1, 0, 1, 1],
     ],
   },
   silent_swarm: {
@@ -1988,11 +2181,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'normal',
     aesthetic: 'insectoid modular swarm-cluster, burnt orange',
     radarPattern: [
-      [1,0,1,0,1],
-      [0,1,0,1,0],
-      [1,0,1,0,1],
-      [0,1,0,1,0],
-      [1,0,1,0,1],
+      [1, 0, 1, 0, 1],
+      [0, 1, 0, 1, 0],
+      [1, 0, 1, 0, 1],
+      [0, 1, 0, 1, 0],
+      [1, 0, 1, 0, 1],
     ],
   },
   helions: {
@@ -2001,11 +2194,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'normal',
     aesthetic: 'plasma radiant solar-wind, vivid magenta',
     radarPattern: [
-      [0,0,1,0,0],
-      [0,1,1,1,0],
-      [1,1,1,1,1],
-      [0,1,1,1,0],
-      [0,0,1,0,0],
+      [0, 0, 1, 0, 0],
+      [0, 1, 1, 1, 0],
+      [1, 1, 1, 1, 1],
+      [0, 1, 1, 1, 0],
+      [0, 0, 1, 0, 0],
     ],
   },
   axioms: {
@@ -2014,11 +2207,11 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     fontStyle: 'math',
     aesthetic: 'abstract mathematical pure-geometry, white',
     radarPattern: [
-      [1,0,1,0,1],
-      [0,0,0,0,0],
-      [1,0,1,0,1],
-      [0,0,0,0,0],
-      [1,0,1,0,1],
+      [1, 0, 1, 0, 1],
+      [0, 0, 0, 0, 0],
+      [1, 0, 1, 0, 1],
+      [0, 0, 0, 0, 0],
+      [1, 0, 1, 0, 1],
     ],
   },
 };

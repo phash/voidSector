@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  generateDiplomacyQuest,
-  generateWarSupportQuest,
-} from '../rooms/services/QuestService.js';
+import { generateDiplomacyQuest, generateWarSupportQuest } from '../rooms/services/QuestService.js';
 
 describe('generateDiplomacyQuest', () => {
   it('returns a quest object with correct type and faction', () => {

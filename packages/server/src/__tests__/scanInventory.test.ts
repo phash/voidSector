@@ -22,7 +22,12 @@ vi.mock('../db/queries.js', () => ({
   addToCargo: vi.fn(),
   getPlayerCargo: vi.fn(),
   // Other queries ScanService needs
-  getSector: vi.fn().mockResolvedValue({ resources: { ore: 5, gas: 2, crystal: 1 }, contents: [], type: 'empty', environment: 'empty' }),
+  getSector: vi.fn().mockResolvedValue({
+    resources: { ore: 5, gas: 2, crystal: 1 },
+    contents: [],
+    type: 'empty',
+    environment: 'empty',
+  }),
   saveSector: vi.fn().mockResolvedValue(undefined),
   addDiscoveriesBatch: vi.fn().mockResolvedValue(undefined),
   addDiscovery: vi.fn().mockResolvedValue(undefined),
@@ -53,7 +58,9 @@ vi.mock('../engine/ap.js', () => ({
 }));
 
 vi.mock('../engine/commands.js', () => ({
-  validateLocalScan: vi.fn().mockReturnValue({ valid: true, newAP: { current: 90 }, hiddenSignatures: 0 }),
+  validateLocalScan: vi
+    .fn()
+    .mockReturnValue({ valid: true, newAP: { current: 90 }, hiddenSignatures: 0 }),
   validateAreaScan: vi.fn().mockReturnValue({ valid: true, newAP: { current: 80 }, radius: 3 }),
   createPirateEncounter: vi.fn().mockReturnValue({}),
   getReputationTier: vi.fn().mockReturnValue('neutral'),
@@ -64,7 +71,15 @@ vi.mock('../engine/scanEvents.js', () => ({
 }));
 
 vi.mock('../engine/worldgen.js', () => ({
-  generateSector: vi.fn().mockReturnValue({ x: 0, y: 0, type: 'empty', environment: 'empty', resources: {}, contents: [], metadata: {} }),
+  generateSector: vi.fn().mockReturnValue({
+    x: 0,
+    y: 0,
+    type: 'empty',
+    environment: 'empty',
+    resources: {},
+    contents: [],
+    metadata: {},
+  }),
 }));
 
 vi.mock('../engine/combatV2.js', () => ({
@@ -163,7 +178,13 @@ describe('ScanService.handleLocalScan ruin artefact — inventory migration', ()
       ruinLevel: 2,
       artefactFound: true,
     });
-    vi.mocked(getCargoState).mockResolvedValue({ ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 1 });
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 0,
+      gas: 0,
+      crystal: 0,
+      slates: 0,
+      artefact: 1,
+    });
 
     const svc = new ScanService(ctx);
     await svc.handleLocalScan(client);

@@ -32,9 +32,9 @@ describe('inventory state in gameSlice', () => {
   });
 
   it('setInventory can set blueprint items', () => {
-    useStore.getState().setInventory([
-      { itemType: 'blueprint', itemId: 'drive_mk3_blueprint', quantity: 1 },
-    ]);
+    useStore
+      .getState()
+      .setInventory([{ itemType: 'blueprint', itemId: 'drive_mk3_blueprint', quantity: 1 }]);
     const items = useStore.getState().inventory;
     expect(items[0].itemType).toBe('blueprint');
     expect(items[0].itemId).toBe('drive_mk3_blueprint');

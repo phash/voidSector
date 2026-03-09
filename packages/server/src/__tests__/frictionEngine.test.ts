@@ -32,7 +32,7 @@ describe('calculateFriction', () => {
     expect(result.state).toBe('total_war');
   });
 
-  it('increases friction for high aggression (K\'thari aggression=2.0)', () => {
+  it("increases friction for high aggression (K'thari aggression=2.0)", () => {
     const result = calculateFriction('neutral', 2.0);
     // neutral base=35, delta=(2.0-1.0)*20=20 → score=55 → escalation
     expect(result.score).toBe(55);

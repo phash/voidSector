@@ -440,7 +440,10 @@ export class CombatService {
       return;
     }
     if (state.playerHp >= 15) {
-      client.send('error', { code: 'EJECT_FAIL', message: 'Rumpf noch zu stabil für Notausstieg (HP ≥ 15%)' });
+      client.send('error', {
+        code: 'EJECT_FAIL',
+        message: 'Rumpf noch zu stabil für Notausstieg (HP ≥ 15%)',
+      });
       return;
     }
 
@@ -451,7 +454,10 @@ export class CombatService {
     await ejectPod(auth.userId);
 
     client.send('cargoUpdate', await getCargoState(auth.userId));
-    client.send('logEntry', '⚠ NOTAUSSTIEG — Kapsel ausgestoßen. Gesamte Ladung verloren. Schiff überlebt.');
+    client.send(
+      'logEntry',
+      '⚠ NOTAUSSTIEG — Kapsel ausgestoßen. Gesamte Ladung verloren. Schiff überlebt.',
+    );
     client.send('ejectPodResult', { success: true });
   }
 
@@ -473,7 +479,7 @@ export class CombatService {
       quadrantY: this.ctx.quadrantY,
       sectorX,
       sectorY,
-      modules: ship.modules.map((m: any) => (typeof m === 'string' ? m : m.type ?? String(m))),
+      modules: ship.modules.map((m: any) => (typeof m === 'string' ? m : (m.type ?? String(m)))),
       lastLogEntry: `Zerstört im Kampf bei [${sectorX}:${sectorY}]`,
     });
 
@@ -503,7 +509,8 @@ export class CombatService {
       wreckId: result.wreckId,
       newShipId: result.newShipId,
       legacyXp: result.legacyXp,
-      message: '[ PERMADEATH ] Schiff zerstört — Erbschafts-Protokoll aktiviert. Neue Einheit übernimmt Kommando.',
+      message:
+        '[ PERMADEATH ] Schiff zerstört — Erbschafts-Protokoll aktiviert. Neue Einheit übernimmt Kommando.',
     });
     client.send('logEntry', '[ PERMADEATH ] Schiff vernichtet. Erbschafts-Protokoll aktiviert.');
   }

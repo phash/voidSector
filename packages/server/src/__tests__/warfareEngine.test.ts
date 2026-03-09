@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { resolveStrategicTick, calculateBaseDefense, STATION_DEFENSE } from '../engine/warfareEngine.js';
+import {
+  resolveStrategicTick,
+  calculateBaseDefense,
+  STATION_DEFENSE,
+} from '../engine/warfareEngine.js';
 
 describe('resolveStrategicTick', () => {
   it('attacker wins when attack > defense * 1.2', () => {
@@ -21,7 +25,7 @@ describe('resolveStrategicTick', () => {
   it('stalemate when neither side has 1.2x advantage', () => {
     const result = resolveStrategicTick({ attack: 1000, defense: 1000 });
     expect(result.outcome).toBe('stalemate');
-    expect(result.newAttack).toBe(950);  // 5% reduction: 1000 * 0.95
+    expect(result.newAttack).toBe(950); // 5% reduction: 1000 * 0.95
     expect(result.newDefense).toBe(950); // 5% reduction: 1000 * 0.95
   });
 
@@ -83,7 +87,7 @@ describe('STATION_DEFENSE', () => {
 describe('calculateBaseDefense', () => {
   it('sums station defense and fleet strength', () => {
     expect(calculateBaseDefense(3, 200)).toBe(900); // 700 + 200
-    expect(calculateBaseDefense(1, 0)).toBe(100);   // 100 + 0
+    expect(calculateBaseDefense(1, 0)).toBe(100); // 100 + 0
     expect(calculateBaseDefense(0, 500)).toBe(500); // 0 + 500
   });
 });

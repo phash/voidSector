@@ -40,21 +40,23 @@ beforeEach(() => {
 describe('kontorQueries — createKontorOrder includes item_type in SQL', () => {
   it('INSERT SQL contains item_type column and passes the value', async () => {
     mockQuery.mockResolvedValueOnce({
-      rows: [{
-        id: 'order-uuid',
-        owner_id: 'player-1',
-        sector_x: 3,
-        sector_y: 7,
-        item_type: 'module',
-        item_id: 'drive_mk2',
-        amount_wanted: 2,
-        amount_filled: 0,
-        price_per_unit: 500,
-        budget_reserved: 1000,
-        active: true,
-        created_at: '2026-01-01',
-        expires_at: null,
-      }],
+      rows: [
+        {
+          id: 'order-uuid',
+          owner_id: 'player-1',
+          sector_x: 3,
+          sector_y: 7,
+          item_type: 'module',
+          item_id: 'drive_mk2',
+          amount_wanted: 2,
+          amount_filled: 0,
+          price_per_unit: 500,
+          budget_reserved: 1000,
+          active: true,
+          created_at: '2026-01-01',
+          expires_at: null,
+        },
+      ],
     });
 
     const { createKontorOrder } = await import('../db/kontorQueries.js');
@@ -89,21 +91,23 @@ describe('kontorQueries — createKontorOrder includes item_type in SQL', () => 
 
   it('backward compat: resource item_type works and is returned', async () => {
     mockQuery.mockResolvedValueOnce({
-      rows: [{
-        id: 'order-uuid-2',
-        owner_id: 'player-2',
-        sector_x: 1,
-        sector_y: 1,
-        item_type: 'resource',
-        item_id: 'ore',
-        amount_wanted: 10,
-        amount_filled: 0,
-        price_per_unit: 50,
-        budget_reserved: 500,
-        active: true,
-        created_at: '2026-01-01',
-        expires_at: null,
-      }],
+      rows: [
+        {
+          id: 'order-uuid-2',
+          owner_id: 'player-2',
+          sector_x: 1,
+          sector_y: 1,
+          item_type: 'resource',
+          item_id: 'ore',
+          amount_wanted: 10,
+          amount_filled: 0,
+          price_per_unit: 50,
+          budget_reserved: 500,
+          active: true,
+          created_at: '2026-01-01',
+          expires_at: null,
+        },
+      ],
     });
 
     const { createKontorOrder } = await import('../db/kontorQueries.js');
@@ -162,21 +166,23 @@ describe('kontorEngine — fillKontorOrder uses transferInventoryItem not deduct
     // getKontorOrderById returns a module order
     mockQuery
       .mockResolvedValueOnce({
-        rows: [{
-          id: 'ord-module',
-          owner_id: 'buyer-1',
-          sector_x: 0,
-          sector_y: 0,
-          item_type: 'module',
-          item_id: 'drive_mk2',
-          amount_wanted: 1,
-          amount_filled: 0,
-          price_per_unit: 300,
-          budget_reserved: 300,
-          active: true,
-          created_at: '2026-01-01',
-          expires_at: null,
-        }],
+        rows: [
+          {
+            id: 'ord-module',
+            owner_id: 'buyer-1',
+            sector_x: 0,
+            sector_y: 0,
+            item_type: 'module',
+            item_id: 'drive_mk2',
+            amount_wanted: 1,
+            amount_filled: 0,
+            price_per_unit: 300,
+            budget_reserved: 300,
+            active: true,
+            created_at: '2026-01-01',
+            expires_at: null,
+          },
+        ],
       })
       // updateKontorOrderFilled
       .mockResolvedValueOnce({ rowCount: 1, rows: [] })
@@ -208,21 +214,23 @@ describe('kontorEngine — fillKontorOrder uses transferInventoryItem not deduct
   it('calls transferInventoryItem for resource orders (backward compat)', async () => {
     mockQuery
       .mockResolvedValueOnce({
-        rows: [{
-          id: 'ord-res',
-          owner_id: 'buyer-2',
-          sector_x: 0,
-          sector_y: 0,
-          item_type: 'resource',
-          item_id: 'ore',
-          amount_wanted: 5,
-          amount_filled: 0,
-          price_per_unit: 40,
-          budget_reserved: 200,
-          active: true,
-          created_at: '2026-01-01',
-          expires_at: null,
-        }],
+        rows: [
+          {
+            id: 'ord-res',
+            owner_id: 'buyer-2',
+            sector_x: 0,
+            sector_y: 0,
+            item_type: 'resource',
+            item_id: 'ore',
+            amount_wanted: 5,
+            amount_filled: 0,
+            price_per_unit: 40,
+            budget_reserved: 200,
+            active: true,
+            created_at: '2026-01-01',
+            expires_at: null,
+          },
+        ],
       })
       .mockResolvedValueOnce({ rowCount: 1, rows: [] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [] });
@@ -246,21 +254,23 @@ describe('kontorEngine — fillKontorOrder uses transferInventoryItem not deduct
 
   it('returns error when transferInventoryItem throws (insufficient inventory)', async () => {
     mockQuery.mockResolvedValueOnce({
-      rows: [{
-        id: 'ord-fail',
-        owner_id: 'buyer-3',
-        sector_x: 0,
-        sector_y: 0,
-        item_type: 'module',
-        item_id: 'shield_mk1',
-        amount_wanted: 1,
-        amount_filled: 0,
-        price_per_unit: 100,
-        budget_reserved: 100,
-        active: true,
-        created_at: '2026-01-01',
-        expires_at: null,
-      }],
+      rows: [
+        {
+          id: 'ord-fail',
+          owner_id: 'buyer-3',
+          sector_x: 0,
+          sector_y: 0,
+          item_type: 'module',
+          item_id: 'shield_mk1',
+          amount_wanted: 1,
+          amount_filled: 0,
+          price_per_unit: 100,
+          budget_reserved: 100,
+          active: true,
+          created_at: '2026-01-01',
+          expires_at: null,
+        },
+      ],
     });
 
     mockTransferInventoryItem.mockRejectedValue(new Error('Insufficient inventory'));

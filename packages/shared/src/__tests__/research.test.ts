@@ -11,13 +11,27 @@ import { ARTEFACT_TYPES, ARTEFACT_TYPE_FOR_CATEGORY } from '../types';
 import type { ResearchState } from '../types';
 
 function emptyResearch(): ResearchState {
-  return { unlockedModules: [], blueprints: [], activeResearch: null, activeResearch2: null, wissen: 0, wissenRate: 0 };
+  return {
+    unlockedModules: [],
+    blueprints: [],
+    activeResearch: null,
+    activeResearch2: null,
+    wissen: 0,
+    wissenRate: 0,
+  };
 }
 
 /** Artefacts with plenty of every type */
 const PLENTY_ARTEFACTS: Partial<Record<string, number>> = {
-  drive: 99, cargo: 99, scanner: 99, armor: 99,
-  weapon: 99, shield: 99, defense: 99, special: 99, mining: 99,
+  drive: 99,
+  cargo: 99,
+  scanner: 99,
+  armor: 99,
+  weapon: 99,
+  shield: 99,
+  defense: 99,
+  special: 99,
+  mining: 99,
 };
 
 describe('isModuleFreelyAvailable', () => {
@@ -78,7 +92,11 @@ describe('canStartResearch', () => {
   });
 
   it('rejects when already unlocked', () => {
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1', 'drive_mk2'], wissen: 99999 };
+    const rs: ResearchState = {
+      ...emptyResearch(),
+      unlockedModules: ['drive_mk1', 'drive_mk2'],
+      wissen: 99999,
+    };
     const result = canStartResearch('drive_mk2', rs, {}, 2);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Already unlocked');
@@ -169,7 +187,9 @@ describe('canStartResearch', () => {
       unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
       wissen: 99999,
     };
-    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, { ancients: 'friendly' });
+    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, {
+      ancients: 'friendly',
+    });
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Faction requirement');
   });
@@ -180,7 +200,9 @@ describe('canStartResearch', () => {
       unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
       wissen: 99999,
     };
-    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, { ancients: 'honored' });
+    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, {
+      ancients: 'honored',
+    });
     expect(result.valid).toBe(true);
   });
 

@@ -7,7 +7,12 @@ import {
   updateKontorOrderFilled,
   deactivateKontorOrder,
 } from '../db/kontorQueries.js';
-import { getPlayerCredits, deductCredits, addCredits, transferInventoryItem } from '../db/queries.js';
+import {
+  getPlayerCredits,
+  deductCredits,
+  addCredits,
+  transferInventoryItem,
+} from '../db/queries.js';
 import type { ItemType } from '@void-sector/shared';
 
 export async function placeKontorOrder(
@@ -106,7 +111,13 @@ export async function fillKontorOrder(
   const fillAmount = Math.min(amount, remaining);
 
   try {
-    await transferInventoryItem(sellerId, order.ownerId, order.itemType as ItemType, order.itemId, fillAmount);
+    await transferInventoryItem(
+      sellerId,
+      order.ownerId,
+      order.itemType as ItemType,
+      order.itemId,
+      fillAmount,
+    );
   } catch {
     return { success: false, earned: 0, error: 'Insufficient inventory' };
   }

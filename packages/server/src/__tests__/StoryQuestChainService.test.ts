@@ -30,7 +30,7 @@ describe('StoryQuestChainService', () => {
   });
 
   it('checkTrigger returns chapter 0 event at qDist 6', async () => {
-    const result = await service.checkTrigger('p1', 6, 0);  // qDist = 6
+    const result = await service.checkTrigger('p1', 6, 0); // qDist = 6
     expect(result).not.toBeNull();
     expect(result?.chapterId).toBe(0);
   });

@@ -26,7 +26,13 @@ import {
   deactivateKontorOrder,
 } from '../../db/kontorQueries.js';
 import type { KontorOrder } from '../../db/kontorQueries.js';
-import { getPlayerCredits, deductCredits, addCredits, deductCargo, transferInventoryItem } from '../../db/queries.js';
+import {
+  getPlayerCredits,
+  deductCredits,
+  addCredits,
+  deductCargo,
+  transferInventoryItem,
+} from '../../db/queries.js';
 import {
   placeKontorOrder,
   cancelKontorOrder,
@@ -276,7 +282,13 @@ describe('fillKontorOrder', () => {
     expect(result.success).toBe(true);
     expect(result.earned).toBe(100); // 10 * 10
 
-    expect(mockTransferInventoryItem).toHaveBeenCalledWith('seller-1', 'owner-1', 'resource', 'ore', 10);
+    expect(mockTransferInventoryItem).toHaveBeenCalledWith(
+      'seller-1',
+      'owner-1',
+      'resource',
+      'ore',
+      10,
+    );
     expect(mockDeductCargo).not.toHaveBeenCalled();
     expect(mockAddCredits).toHaveBeenCalledWith('seller-1', 100);
     expect(mockUpdateKontorOrderFilled).toHaveBeenCalledWith('order-1', 10);
@@ -294,7 +306,13 @@ describe('fillKontorOrder', () => {
     expect(result.success).toBe(true);
     expect(result.earned).toBe(100); // 10 * 10
 
-    expect(mockTransferInventoryItem).toHaveBeenCalledWith('seller-1', 'owner-1', 'resource', 'ore', 10);
+    expect(mockTransferInventoryItem).toHaveBeenCalledWith(
+      'seller-1',
+      'owner-1',
+      'resource',
+      'ore',
+      10,
+    );
     expect(mockDeductCargo).not.toHaveBeenCalled();
     expect(mockUpdateKontorOrderFilled).toHaveBeenCalledWith('order-1', 10);
     expect(mockDeactivateKontorOrder).toHaveBeenCalledWith('order-1');

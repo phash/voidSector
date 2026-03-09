@@ -7,12 +7,12 @@
 import type { AcepXpSummary } from './acepXpService.js';
 
 export type AcepTrait =
-  | 'veteran'       // Combat-hardened — high kampf XP
-  | 'curious'       // Constantly scanning — high intel XP
-  | 'reckless'      // Fighter, ignores logistics — high kampf, low ausbau
-  | 'cautious'      // Builder, avoids conflict — high ausbau, low kampf
+  | 'veteran' // Combat-hardened — high kampf XP
+  | 'curious' // Constantly scanning — high intel XP
+  | 'reckless' // Fighter, ignores logistics — high kampf, low ausbau
+  | 'cautious' // Builder, avoids conflict — high ausbau, low kampf
   | 'ancient-touched' // Has discovered ruins — high explorer XP
-  | 'scarred';      // Mostly combat, little else — tunnel-vision fighter
+  | 'scarred'; // Mostly combat, little else — tunnel-vision fighter
 
 /**
  * Derive a ship's trait set from its current XP summary.
@@ -44,7 +44,7 @@ export function calculateTraits(xp: AcepXpSummary): AcepTrait[] {
   }
 
   // Scarred: mostly combat, almost nothing else (tunnel-vision)
-  if (xp.kampf >= 10 && (xp.intel + xp.ausbau + xp.explorer) <= xp.kampf * 0.4) {
+  if (xp.kampf >= 10 && xp.intel + xp.ausbau + xp.explorer <= xp.kampf * 0.4) {
     traits.push('scarred');
   }
 
@@ -57,7 +57,12 @@ export function calculateTraits(xp: AcepXpSummary): AcepTrait[] {
  */
 export function dominantTrait(traits: AcepTrait[]): AcepTrait | null {
   const priority: AcepTrait[] = [
-    'ancient-touched', 'veteran', 'scarred', 'reckless', 'cautious', 'curious',
+    'ancient-touched',
+    'veteran',
+    'scarred',
+    'reckless',
+    'cautious',
+    'curious',
   ];
   for (const t of priority) {
     if (traits.includes(t)) return t;

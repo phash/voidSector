@@ -16,7 +16,14 @@ vi.mock('../network/client', () => ({
 describe('TechTreePanel', () => {
   it('renders TECH header', () => {
     mockStoreState({
-      research: { unlockedModules: [], blueprints: [], activeResearch: null, activeResearch2: null, wissen: 0, wissenRate: 0 },
+      research: {
+        unlockedModules: [],
+        blueprints: [],
+        activeResearch: null,
+        activeResearch2: null,
+        wissen: 0,
+        wissenRate: 0,
+      },
       homeBase: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
     });
@@ -49,7 +56,14 @@ describe('TechTreePanel', () => {
 
   it('shows freely available modules', () => {
     mockStoreState({
-      research: { unlockedModules: [], blueprints: [], activeResearch: null, activeResearch2: null, wissen: 0, wissenRate: 0 },
+      research: {
+        unlockedModules: [],
+        blueprints: [],
+        activeResearch: null,
+        activeResearch2: null,
+        wissen: 0,
+        wissenRate: 0,
+      },
       homeBase: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
     });

@@ -6,7 +6,8 @@ export function AncientRuinDialog() {
 
   if (!scan) return null;
 
-  const levelLabel = scan.ruinLevel === 3 ? 'MAJOR RUIN' : scan.ruinLevel === 2 ? 'RUIN' : 'MINOR RUIN';
+  const levelLabel =
+    scan.ruinLevel === 3 ? 'MAJOR RUIN' : scan.ruinLevel === 2 ? 'RUIN' : 'MINOR RUIN';
 
   return (
     <div
@@ -36,52 +37,62 @@ export function AncientRuinDialog() {
         }}
       >
         {/* Header */}
-        <div style={{
-          color: '#c8a96e',
-          fontSize: '0.7rem',
-          letterSpacing: '0.2em',
-          marginBottom: '12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-        }}>
+        <div
+          style={{
+            color: '#c8a96e',
+            fontSize: '0.7rem',
+            letterSpacing: '0.2em',
+            marginBottom: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
           <span>◈ ANCIENT RUINS — {levelLabel}</span>
-          <span style={{ color: '#664a20' }}>SEKTOR ({scan.sectorX}, {scan.sectorY})</span>
+          <span style={{ color: '#664a20' }}>
+            SEKTOR ({scan.sectorX}, {scan.sectorY})
+          </span>
         </div>
 
         {/* Lore fragment */}
-        <div style={{
-          color: '#c8a96e',
-          fontSize: '0.8rem',
-          lineHeight: 1.8,
-          whiteSpace: 'pre-line',
-          borderTop: '1px solid #3a2a10',
-          paddingTop: '12px',
-          marginBottom: '12px',
-        }}>
+        <div
+          style={{
+            color: '#c8a96e',
+            fontSize: '0.8rem',
+            lineHeight: 1.8,
+            whiteSpace: 'pre-line',
+            borderTop: '1px solid #3a2a10',
+            paddingTop: '12px',
+            marginBottom: '12px',
+          }}
+        >
           {scan.fragmentText}
         </div>
 
         {/* Artefact reward */}
         {scan.artefactFound && (
-          <div style={{
-            color: '#FFB000',
-            fontSize: '0.75rem',
-            letterSpacing: '0.1em',
-            borderTop: '1px solid #3a2a10',
-            paddingTop: '10px',
-            marginBottom: '12px',
-          }}>
+          <div
+            style={{
+              color: '#FFB000',
+              fontSize: '0.75rem',
+              letterSpacing: '0.1em',
+              borderTop: '1px solid #3a2a10',
+              paddingTop: '10px',
+              marginBottom: '12px',
+            }}
+          >
             ◆ ARTEFAKT GEFUNDEN — +1 ARTEFAKT IN CARGO
           </div>
         )}
 
         {/* Dismiss */}
-        <div style={{
-          textAlign: 'right',
-          fontSize: '0.65rem',
-          color: '#664a20',
-          letterSpacing: '0.1em',
-        }}>
+        <div
+          style={{
+            textAlign: 'right',
+            fontSize: '0.65rem',
+            color: '#664a20',
+            letterSpacing: '0.1em',
+          }}
+        >
           [KLICK ZUM SCHLIEßEN]
         </div>
       </div>

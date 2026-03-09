@@ -1448,10 +1448,20 @@ export async function getPlayerJumpGateById(gateId: string): Promise<any | null>
   return rows[0] ?? null;
 }
 
-export async function getJumpGateLinks(gateId: string): Promise<Array<{
-  gateId: string; sectorX: number; sectorY: number; ownerName?: string;
-}>> {
-  const { rows } = await query<{ gateId: string; sectorX: number; sectorY: number; ownerName?: string }>(
+export async function getJumpGateLinks(gateId: string): Promise<
+  Array<{
+    gateId: string;
+    sectorX: number;
+    sectorY: number;
+    ownerName?: string;
+  }>
+> {
+  const { rows } = await query<{
+    gateId: string;
+    sectorX: number;
+    sectorY: number;
+    ownerName?: string;
+  }>(
     `SELECT g.id as "gateId", g.sector_x as "sectorX", g.sector_y as "sectorY",
             p.username as "ownerName"
      FROM jumpgate_links jl
@@ -1510,10 +1520,22 @@ export async function deleteJumpGate(gateId: string): Promise<void> {
   await query(`DELETE FROM jumpgates WHERE id = $1`, [gateId]);
 }
 
-export async function getAllPlayerGateLinks(): Promise<Array<{
-  gateId: string; fromX: number; fromY: number; toX: number; toY: number;
-}>> {
-  const { rows } = await query<{ gateId: string; fromX: number; fromY: number; toX: number; toY: number }>(
+export async function getAllPlayerGateLinks(): Promise<
+  Array<{
+    gateId: string;
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+  }>
+> {
+  const { rows } = await query<{
+    gateId: string;
+    fromX: number;
+    fromY: number;
+    toX: number;
+    toY: number;
+  }>(
     `SELECT jl.gate_id as "gateId",
             g1.sector_x as "fromX", g1.sector_y as "fromY",
             g2.sector_x as "toX", g2.sector_y as "toY"
@@ -1526,7 +1548,9 @@ export async function getAllPlayerGateLinks(): Promise<Array<{
   return rows;
 }
 
-export async function getPlayerGateTollConfig(gateId: string): Promise<{ ownerId: string; tollCredits: number } | null> {
+export async function getPlayerGateTollConfig(
+  gateId: string,
+): Promise<{ ownerId: string; tollCredits: number } | null> {
   const { rows } = await query<{ ownerId: string; tollCredits: number }>(
     `SELECT owner_id as "ownerId", toll_credits as "tollCredits" FROM jumpgates WHERE id = $1`,
     [gateId],
@@ -1534,10 +1558,22 @@ export async function getPlayerGateTollConfig(gateId: string): Promise<{ ownerId
   return rows[0] ?? null;
 }
 
-export async function getAllPlayerGates(): Promise<Array<{
-  id: string; sectorX: number; sectorY: number; tollCredits: number; ownerId: string;
-}>> {
-  const { rows } = await query<{ id: string; sectorX: number; sectorY: number; tollCredits: number; ownerId: string }>(
+export async function getAllPlayerGates(): Promise<
+  Array<{
+    id: string;
+    sectorX: number;
+    sectorY: number;
+    tollCredits: number;
+    ownerId: string;
+  }>
+> {
+  const { rows } = await query<{
+    id: string;
+    sectorX: number;
+    sectorY: number;
+    tollCredits: number;
+    ownerId: string;
+  }>(
     `SELECT id, sector_x as "sectorX", sector_y as "sectorY",
             toll_credits as "tollCredits", owner_id as "ownerId"
      FROM jumpgates
@@ -1547,9 +1583,12 @@ export async function getAllPlayerGates(): Promise<Array<{
   return rows;
 }
 
-export async function getAllJumpGateLinks(): Promise<Array<{
-  gateId: string; linkedGateId: string;
-}>> {
+export async function getAllJumpGateLinks(): Promise<
+  Array<{
+    gateId: string;
+    linkedGateId: string;
+  }>
+> {
   const { rows } = await query<{ gateId: string; linkedGateId: string }>(
     `SELECT gate_id as "gateId", linked_gate_id as "linkedGateId"
      FROM jumpgate_links`,
@@ -2150,9 +2189,7 @@ function isTypedArtefactKey(key: string): key is TypedArtefactKey {
  * Returns typed artefact quantities for a player.
  * Keys are bare category names: { drive: N, cargo: N, ... }
  */
-export async function getTypedArtefacts(
-  userId: string,
-): Promise<Partial<Record<string, number>>> {
+export async function getTypedArtefacts(userId: string): Promise<Partial<Record<string, number>>> {
   const { rows } = await query<{ resource: string; quantity: number }>(
     `SELECT resource, quantity FROM cargo
      WHERE player_id = $1 AND resource LIKE 'artefact_%'`,
@@ -2170,11 +2207,7 @@ export async function getTypedArtefacts(
  * Adds typed artefacts to a player's cargo.
  * @param type - bare category name (e.g. 'drive', 'scanner')
  */
-export async function addTypedArtefact(
-  userId: string,
-  type: string,
-  amount = 1,
-): Promise<void> {
+export async function addTypedArtefact(userId: string, type: string, amount = 1): Promise<void> {
   const key = `artefact_${type}`;
   if (!isTypedArtefactKey(key)) throw new Error(`Invalid artefact type: ${type}`);
   await query(
@@ -2458,10 +2491,24 @@ export async function insertAncientRuinScan(
   );
 }
 
-export async function getPlayerLoreFragments(
-  playerId: string,
-): Promise<Array<{ sector_x: number; sector_y: number; fragment_index: number; ruin_level: number; artefact_found: boolean; discovered_at: number }>> {
-  const { rows } = await query<{ sector_x: number; sector_y: number; fragment_index: number; ruin_level: number; artefact_found: boolean; discovered_at: number }>(
+export async function getPlayerLoreFragments(playerId: string): Promise<
+  Array<{
+    sector_x: number;
+    sector_y: number;
+    fragment_index: number;
+    ruin_level: number;
+    artefact_found: boolean;
+    discovered_at: number;
+  }>
+> {
+  const { rows } = await query<{
+    sector_x: number;
+    sector_y: number;
+    fragment_index: number;
+    ruin_level: number;
+    artefact_found: boolean;
+    discovered_at: number;
+  }>(
     `SELECT sector_x, sector_y, fragment_index, ruin_level, artefact_found, discovered_at
      FROM ancient_lore_fragments
      WHERE player_id = $1
@@ -2474,10 +2521,7 @@ export async function getPlayerLoreFragments(
 // ── Alien Reputation (issues #190-#199) ──────────────────────────────────────
 
 /** Get a player's reputation with one alien faction. Returns 0 if no entry. */
-export async function getAlienReputation(
-  playerId: string,
-  factionId: string,
-): Promise<number> {
+export async function getAlienReputation(playerId: string, factionId: string): Promise<number> {
   const { rows } = await query<{ reputation: number }>(
     'SELECT reputation FROM alien_reputation WHERE player_id = $1 AND alien_faction_id = $2',
     [playerId, factionId],
@@ -2486,9 +2530,7 @@ export async function getAlienReputation(
 }
 
 /** Get reputation values for all alien factions for a player. */
-export async function getAllAlienReputations(
-  playerId: string,
-): Promise<Record<string, number>> {
+export async function getAllAlienReputations(playerId: string): Promise<Record<string, number>> {
   const { rows } = await query<{ alien_faction_id: string; reputation: number }>(
     'SELECT alien_faction_id, reputation FROM alien_reputation WHERE player_id = $1',
     [playerId],
@@ -2524,10 +2566,7 @@ export async function addAlienReputation(
 }
 
 /** Set first_contact_at timestamp (called on first contact only). */
-export async function setAlienFirstContact(
-  playerId: string,
-  factionId: string,
-): Promise<void> {
+export async function setAlienFirstContact(playerId: string, factionId: string): Promise<void> {
   await query(
     `INSERT INTO alien_reputation (player_id, alien_faction_id, reputation, encounter_count, first_contact_at, last_interaction)
      VALUES ($1, $2, 0, 1, $3, $3)
@@ -2624,10 +2663,9 @@ export async function getMirrorMindStats(playerId: string): Promise<{
        FROM quests WHERE player_id = $1`,
       [playerId],
     ),
-    query<{ count: string }>(
-      'SELECT COUNT(*) as count FROM discoveries WHERE player_id = $1',
-      [playerId],
-    ),
+    query<{ count: string }>('SELECT COUNT(*) as count FROM discoveries WHERE player_id = $1', [
+      playerId,
+    ]),
   ]);
   return {
     battles: parseInt(battleRows.rows[0]?.total ?? '0', 10),
@@ -2677,10 +2715,7 @@ export async function createTerritoryClaim(
   );
 }
 
-export async function deleteTerritoryClaim(
-  quadrantX: number,
-  quadrantY: number,
-): Promise<void> {
+export async function deleteTerritoryClaim(quadrantX: number, quadrantY: number): Promise<void> {
   await query('DELETE FROM territory_claims WHERE quadrant_x = $1 AND quadrant_y = $2', [
     quadrantX,
     quadrantY,
@@ -2803,7 +2838,15 @@ export async function getStoryProgress(playerId: string): Promise<StoryQuestProg
     `SELECT * FROM story_quest_progress WHERE player_id = $1`,
     [playerId],
   );
-  return res.rows[0] ?? { player_id: playerId, current_chapter: 0, completed_chapters: [], branch_choices: {}, last_progress: Date.now() };
+  return (
+    res.rows[0] ?? {
+      player_id: playerId,
+      current_chapter: 0,
+      completed_chapters: [],
+      branch_choices: {},
+      last_progress: Date.now(),
+    }
+  );
 }
 
 export async function upsertStoryProgress(
@@ -2817,7 +2860,13 @@ export async function upsertStoryProgress(
      VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (player_id) DO UPDATE
      SET current_chapter = $2, completed_chapters = $3, branch_choices = $4, last_progress = $5`,
-    [playerId, chapter, JSON.stringify(completedChapters), JSON.stringify(branchChoices), Date.now()],
+    [
+      playerId,
+      chapter,
+      JSON.stringify(completedChapters),
+      JSON.stringify(branchChoices),
+      Date.now(),
+    ],
   );
 }
 
@@ -3018,9 +3067,7 @@ export async function getAllQuadrantControls(): Promise<QuadrantControlRow[]> {
   return res.rows;
 }
 
-export async function getBorderQuadrants(
-  faction: string,
-): Promise<QuadrantControlRow[]> {
+export async function getBorderQuadrants(faction: string): Promise<QuadrantControlRow[]> {
   const res = await query<QuadrantControlRow>(
     `SELECT DISTINCT qc.*
      FROM quadrant_control qc
@@ -3066,9 +3113,7 @@ export async function createNpcFleet(data: {
 }
 
 export async function getActiveNpcFleets(): Promise<NpcFleetRow[]> {
-  const res = await query<NpcFleetRow>(
-    'SELECT * FROM npc_fleet WHERE eta > NOW() ORDER BY eta',
-  );
+  const res = await query<NpcFleetRow>('SELECT * FROM npc_fleet WHERE eta > NOW() ORDER BY eta');
   return res.rows;
 }
 
@@ -3079,19 +3124,14 @@ export async function deleteArrivedNpcFleets(): Promise<void> {
 // ─── Faction Config ───────────────────────────────────────────────────────────
 
 export async function getAllFactionConfigs(): Promise<FactionConfigRow[]> {
-  const res = await query<FactionConfigRow>(
-    'SELECT * FROM faction_config WHERE active = true',
-  );
+  const res = await query<FactionConfigRow>('SELECT * FROM faction_config WHERE active = true');
   return res.rows;
 }
 
-export async function getFactionConfig(
-  factionId: string,
-): Promise<FactionConfigRow | null> {
-  const res = await query<FactionConfigRow>(
-    'SELECT * FROM faction_config WHERE faction_id = $1',
-    [factionId],
-  );
+export async function getFactionConfig(factionId: string): Promise<FactionConfigRow | null> {
+  const res = await query<FactionConfigRow>('SELECT * FROM faction_config WHERE faction_id = $1', [
+    factionId,
+  ]);
   return res.rows[0] ?? null;
 }
 
@@ -3104,7 +3144,7 @@ export async function getInventory(playerId: string): Promise<InventoryItem[]> {
     `SELECT item_type, item_id, quantity FROM inventory WHERE player_id = $1`,
     [playerId],
   );
-  return res.rows.map(r => ({
+  return res.rows.map((r) => ({
     itemType: r.item_type as ItemType,
     itemId: r.item_id,
     quantity: r.quantity,
@@ -3152,10 +3192,11 @@ export async function deductInventory(
   );
   if (res.rows.length === 0) throw new Error(`Insufficient ${itemType}:${itemId}`);
   if (res.rows[0].quantity === 0) {
-    await query(
-      `DELETE FROM inventory WHERE player_id = $1 AND item_type = $2 AND item_id = $3`,
-      [playerId, itemType, itemId],
-    );
+    await query(`DELETE FROM inventory WHERE player_id = $1 AND item_type = $2 AND item_id = $3`, [
+      playerId,
+      itemType,
+      itemId,
+    ]);
   }
 }
 

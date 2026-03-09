@@ -41,11 +41,25 @@ describe('getPersonalityComment', () => {
   });
 
   it('each defined trait has at least one message for at least one context', () => {
-    const traits: AcepTrait[] = ['veteran', 'curious', 'ancient-touched', 'reckless', 'cautious', 'scarred'];
+    const traits: AcepTrait[] = [
+      'veteran',
+      'curious',
+      'ancient-touched',
+      'reckless',
+      'cautious',
+      'scarred',
+    ];
     for (const trait of traits) {
       // Try all contexts, at least one should return a message
-      const contexts = ['scan', 'scan_ruin', 'combat_victory', 'combat_defeat', 'mine', 'build'] as const;
-      const hasAnyMessage = contexts.some(ctx => getPersonalityComment([trait], ctx, 0) !== null);
+      const contexts = [
+        'scan',
+        'scan_ruin',
+        'combat_victory',
+        'combat_defeat',
+        'mine',
+        'build',
+      ] as const;
+      const hasAnyMessage = contexts.some((ctx) => getPersonalityComment([trait], ctx, 0) !== null);
       expect(hasAnyMessage, `trait ${trait} has no messages at all`).toBe(true);
     }
   });
