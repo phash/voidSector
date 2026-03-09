@@ -43,7 +43,13 @@ import type {
   PlayerJumpGate,
   JumpGateDestination,
 } from '@void-sector/shared';
-import type { ClientShipData } from '../state/gameSlice';
+import type {
+  ClientShipData,
+  StoryEventPayload,
+  AlienEncounterEventPayload,
+  StoryProgressPayload,
+  CommunityQuestPayload,
+} from '../state/gameSlice';
 
 /** Schema-level player object from Colyseus room state. */
 interface RoomPlayerSchema {
@@ -1449,6 +1455,33 @@ class GameNetwork {
       }
     });
 
+    // --- AQ Story / Community Quest ---
+
+    room.onMessage('storyEvent', (data: StoryEventPayload) => {
+      useStore.getState().setStoryEvent(data);
+    });
+
+    room.onMessage('storyProgress', (data: StoryProgressPayload) => {
+      useStore.getState().setStoryProgress(data);
+    });
+
+    room.onMessage('storyChoiceResult', () => {
+      useStore.getState().setStoryEvent(null);
+      network.requestStoryProgress();
+    });
+
+    room.onMessage('alienEncounterEvent', (data: AlienEncounterEventPayload) => {
+      useStore.getState().setAlienEncounterEvent(data);
+    });
+
+    room.onMessage('alienEncounterResolved', () => {
+      useStore.getState().setAlienEncounterEvent(null);
+    });
+
+    room.onMessage('activeCommunityQuest', (data: { quest: CommunityQuestPayload | null }) => {
+      useStore.getState().setActiveCommunityQuest(data.quest);
+    });
+
     room.onLeave(async (code) => {
       if (this.intentionalLeave) {
         this.intentionalLeave = false;
@@ -2058,6 +2091,28 @@ class GameNetwork {
   }
   sendNameQuadrant(qx: number, qy: number, name: string) {
     this.sectorRoom?.send('nameQuadrant', { qx, qy, name });
+  }
+
+  // --- AQ Story / Community Quest ---
+
+  sendStoryChoice(chapterId: number, branchChoice: string | null) {
+    this.sectorRoom?.send('storyChoice', { chapterId, branchChoice });
+  }
+
+  requestStoryProgress() {
+    this.sectorRoom?.send('getStoryProgress', {});
+  }
+
+  requestActiveCommunityQuest() {
+    this.sectorRoom?.send('getActiveCommunityQuest', {});
+  }
+
+  contributeToQuest(amount: number) {
+    this.sectorRoom?.send('contributeToQuest', { amount });
+  }
+
+  resolveAlienEncounter(factionId: string, eventType: string, accepted: boolean) {
+    this.sectorRoom?.send('resolveAlienEncounter', { factionId, eventType, accepted });
   }
 }
 

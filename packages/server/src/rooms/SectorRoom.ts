@@ -53,6 +53,7 @@ import {
   updatePlayerStationRep,
   getRecentNews,
   getQuadrantDiscoveriesSince,
+  addAlienReputation,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -112,6 +113,9 @@ import { WorldService } from './services/WorldService.js';
 import { AlienInteractionService } from './services/AlienInteractionService.js';
 import type { AlienInteractMessage } from './services/AlienInteractionService.js';
 import { TerritoryService } from './services/TerritoryService.js';
+import { StoryQuestChainService } from './services/StoryQuestChainService.js';
+import { CommunityQuestService } from './services/CommunityQuestService.js';
+import { rollForEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounterGen.js';
 import { logger } from '../utils/logger.js';
 import { getAcepXpSummary } from '../engine/acepXpService.js';
 
@@ -150,6 +154,9 @@ export class SectorRoom extends Room<SectorRoomState> {
   private world!: WorldService;
   private alienInteraction!: AlienInteractionService;
   private territory!: TerritoryService;
+  private storyChain!: StoryQuestChainService;
+  private communityQuests!: CommunityQuestService;
+  private encounterSteps = new Map<string, number>();  // playerId -> steps since last encounter
 
   /** Get a player's current sector X coordinate */
   private _px(sid: string): number {
@@ -285,6 +292,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.world = new WorldService(this.serviceCtx);
     this.alienInteraction = new AlienInteractionService(this.serviceCtx);
     this.territory = new TerritoryService(this.serviceCtx);
+    this.storyChain = new StoryQuestChainService();
+    this.communityQuests = new CommunityQuestService();
+    await this.communityQuests.seedInitialIfEmpty().catch(() => {});
 
     // Wire cross-service callbacks
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
@@ -307,6 +317,30 @@ export class SectorRoom extends Room<SectorRoomState> {
             [{ x: data.sectorX, y: data.sectorY, environment: sectorData.environment }],
             true,
           );
+        }
+
+        // Story trigger + spontaneous encounter
+        const moveSectorAuth = client.auth as { userId: string; username?: string } | null;
+        if (moveSectorAuth?.userId) {
+          const storyTrigger = await this.storyChain
+            .checkTrigger(moveSectorAuth.userId, this.serviceCtx.quadrantX, this.serviceCtx.quadrantY)
+            .catch(() => null);
+          if (storyTrigger) client.send('storyEvent', storyTrigger);
+
+          const steps = (this.encounterSteps.get(moveSectorAuth.userId) ?? 0) + 1;
+          this.encounterSteps.set(moveSectorAuth.userId, steps);
+          const encounter = rollForEncounter(
+            moveSectorAuth.userId,
+            data.sectorX,
+            data.sectorY,
+            this.serviceCtx.quadrantX,
+            this.serviceCtx.quadrantY,
+            steps,
+          );
+          if (encounter) {
+            this.encounterSteps.set(moveSectorAuth.userId, 0);
+            client.send('alienEncounterEvent', encounter);
+          }
         }
       } catch (err) {
         logger.error({ err }, 'moveSector error');
@@ -692,12 +726,63 @@ export class SectorRoom extends Room<SectorRoomState> {
       await this.world.handleSyncQuadrants(client);
     });
 
+    // ── Story / Community Quests / Alien Encounters ─────────────────
+    this.onMessage('storyChoice', async (client, data: { chapterId: number; branchChoice: string | null }) => {
+      const auth = client.auth as { userId: string } | null;
+      if (!auth?.userId) return;
+      await this.storyChain.completeChapter(auth.userId, data.chapterId, data.branchChoice ?? null).catch(() => {});
+      client.send('storyChoiceResult', { success: true, chapterId: data.chapterId });
+    });
+
+    this.onMessage('getStoryProgress', async (client) => {
+      const auth = client.auth as { userId: string } | null;
+      if (!auth?.userId) return;
+      const progress = await this.storyChain.getProgress(auth.userId).catch(() => null);
+      if (progress) client.send('storyProgress', progress);
+    });
+
+    this.onMessage('getActiveCommunityQuest', async (client) => {
+      const quest = await this.communityQuests.getActive().catch(() => null);
+      client.send('activeCommunityQuest', { quest });
+    });
+
+    this.onMessage('contributeToQuest', async (client, data: { amount: number }) => {
+      const auth = client.auth as { userId: string } | null;
+      if (!auth?.userId) return;
+      const amount = Math.max(1, Math.min(data.amount ?? 1, 100));  // cap at 100 per contribution
+      await this.communityQuests.contribute(auth.userId, amount).catch(() => {});
+      const quest = await this.communityQuests.getActive().catch(() => null);
+      client.send('activeCommunityQuest', { quest });
+    });
+
+    this.onMessage('resolveAlienEncounter', async (client, data: { factionId: string; eventType: string; accepted: boolean }) => {
+      const auth = client.auth as { userId: string } | null;
+      if (!auth?.userId) return;
+
+      // Look up encounter from server-side table — never trust client-supplied rep values
+      const entry = ALIEN_ENCOUNTER_TABLE.find(
+        (e) => e.factionId === data.factionId && e.eventType === data.eventType,
+      );
+      if (!entry) return; // Unknown encounter — ignore
+
+      const delta = data.accepted ? entry.repOnAccept : entry.repOnDecline;
+      if (delta !== 0) {
+        await addAlienReputation(auth.userId, data.factionId, delta).catch(() => {});
+      }
+      client.send('alienEncounterResolved', { factionId: data.factionId, repDelta: delta });
+    });
+
     // ── Trade Route Processing Interval ─────────────────────────────
     this.clock.setInterval(() => {
       this.world
         .processTradeRoutes()
         .catch((err) => logger.error({ err }, 'Trade routes tick error'));
     }, 60000);
+
+    // ── Community Quest Rotation — every hour ────────────────────────
+    this.clock.setInterval(async () => {
+      await this.communityQuests.checkAndAdvanceRotation().catch(() => {});
+    }, 60 * 60 * 1000);
 
     // ── Admin Bus ───────────────────────────────────────────────────
     const onBroadcast = (event: AdminBroadcastEvent) => {
@@ -1061,6 +1146,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.playerSectorData.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
+
+    const leaveAuth = client.auth as { userId?: string } | null;
+    if (leaveAuth?.userId) {
+      this.encounterSteps.delete(leaveAuth.userId);
+    }
   }
 
   async onDispose() {

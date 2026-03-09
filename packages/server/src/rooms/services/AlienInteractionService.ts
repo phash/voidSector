@@ -19,6 +19,7 @@ import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import type { AlienFactionId } from '../../engine/alienReputationService.js';
+import { generateFirstContactNews } from '../../engine/geminiNewsService.js';
 
 import {
   getRepTier,
@@ -131,17 +132,21 @@ export class AlienInteractionService {
         repBefore,
         repAfter: repBefore,
       });
-      // Record server-wide news event for first contact
-      recordNewsEvent({
-        eventType: 'alien_first_contact',
-        headline: `${auth.username} — Erstkontakt mit ${factionId.toUpperCase()}`,
-        summary: flavor,
-        playerId: auth.userId,
-        playerName: auth.username,
-        quadrantX: this.ctx.quadrantX,
-        quadrantY: this.ctx.quadrantY,
-        eventData: { factionId },
-      }).catch(() => {});
+      // Record server-wide news event for first contact (Gemini-generated text)
+      generateFirstContactNews(factionId as any, auth.username ?? auth.userId, this.ctx.quadrantX, this.ctx.quadrantY)
+        .then((aiText) => {
+          recordNewsEvent({
+            eventType: 'alien_first_contact',
+            headline: `ERSTKONTAKT: ${String(factionId).toUpperCase()}`,
+            summary: aiText,
+            playerId: auth.userId,
+            playerName: auth.username,
+            quadrantX: this.ctx.quadrantX,
+            quadrantY: this.ctx.quadrantY,
+            eventData: { factionId, pilotName: auth.username ?? auth.userId },
+          }).catch(() => {});
+        })
+        .catch(() => {});
       client.send('alienInteractResult', {
         success: true,
         factionId,
