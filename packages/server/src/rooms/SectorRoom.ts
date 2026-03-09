@@ -616,6 +616,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.ships.handleActivateBlueprint(client, data),
     );
     this.onMessage('getResearchState', (client) => this.ships.handleGetResearchState(client));
+    this.onMessage('craftModule', (client, data) => this.ships.handleCraftModule(client, data));
 
     // ── World / Data Queries ────────────────────────────────────────
     this.onMessage('getAP', async (client) => {

@@ -466,6 +466,53 @@ export class ShipService {
     );
   }
 
+  async handleCraftModule(client: Client, data: { moduleId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const mod = MODULES[data.moduleId];
+
+    if (!mod) {
+      client.send('craftResult', { success: false, error: 'Unknown module' });
+      return;
+    }
+
+    // Check recipe: either researched OR has blueprint in inventory
+    const [research, bpQty] = await Promise.all([
+      getPlayerResearch(auth.userId),
+      getInventoryItem(auth.userId, 'blueprint', data.moduleId),
+    ]);
+
+    const hasRecipe = research.unlockedModules.includes(data.moduleId) || bpQty >= 1;
+    if (!hasRecipe) {
+      client.send('craftResult', { success: false, error: 'No recipe available' });
+      return;
+    }
+
+    // Check and deduct credits
+    const creditCost = mod.cost?.credits ?? 0;
+    if (creditCost > 0) {
+      const credits = await getPlayerCredits(auth.userId);
+      if (credits < creditCost) {
+        client.send('craftResult', { success: false, error: 'Not enough credits' });
+        return;
+      }
+      await deductCredits(auth.userId, creditCost);
+    }
+
+    // Deduct resource costs from inventory
+    if (mod.cost?.ore) await removeFromInventory(auth.userId, 'resource', 'ore', mod.cost.ore);
+    if (mod.cost?.gas) await removeFromInventory(auth.userId, 'resource', 'gas', mod.cost.gas);
+    if (mod.cost?.crystal)
+      await removeFromInventory(auth.userId, 'resource', 'crystal', mod.cost.crystal);
+    if (mod.cost?.artefact)
+      await removeFromInventory(auth.userId, 'resource', 'artefact', mod.cost.artefact);
+
+    // Produce module
+    await addToInventory(auth.userId, 'module', data.moduleId, 1);
+
+    client.send('craftResult', { success: true, moduleId: data.moduleId });
+    client.send('logEntry', `HERGESTELLT: ${mod.name ?? data.moduleId}`);
+  }
+
   async handleActivateBlueprint(client: Client, data: { moduleId: string }): Promise<void> {
     const auth = client.auth as AuthPayload;
     // Check blueprint in unified inventory (type='blueprint')
