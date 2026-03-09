@@ -17,6 +17,7 @@ import { BattleResultDialog } from './BattleResultDialog';
 import { ModulePanel } from './ModulePanel';
 import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
+import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
 import { StationCombatOverlay } from './StationCombatOverlay';
 import { TechTreePanel } from './TechTreePanel';
@@ -324,6 +325,7 @@ export function GameScreen() {
       <BlueprintDialog />
       <CompendiumOverlay />
       <HelpOverlay />
+      <AncientRuinDialog />
       <StationTerminalGate />
     </div>
   );

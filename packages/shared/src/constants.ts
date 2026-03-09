@@ -1293,6 +1293,7 @@ export const CONTENT_WEIGHTS: Record<string, number> = {
   pirate: 0.1,
   anomaly: 0.05,
   station: 0.08,
+  ruin: 0.02,
 };
 
 // Black hole generation
@@ -1387,6 +1388,7 @@ export const CONTENT_SYMBOLS: Partial<Record<SectorContent, string>> = {
   meteor: 'm',
   relic: 'R',
   npc_ship: '\u25B8', // ▸
+  ruin: '\u2627', // ☧ (ancient cross/ruin marker)
 };
 
 // Content overlay colors
@@ -1400,6 +1402,7 @@ export const CONTENT_COLORS: Partial<Record<SectorContent, string>> = {
   meteor: '#FFD700',
   relic: '#CC44FF',
   npc_ship: '#44AAFF',
+  ruin: '#c8a96e', // amber-gold — Ancient aesthetic
 };
 
 // Colors — Amber-Monochrom as per visual_design.md

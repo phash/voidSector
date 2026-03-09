@@ -11,7 +11,8 @@ export type SectorContent =
   | 'player_base'
   | 'meteor'
   | 'relic'
-  | 'npc_ship';
+  | 'npc_ship'
+  | 'ruin';
 
 export type MineableResourceType = 'ore' | 'gas' | 'crystal';
 export type ResourceType = MineableResourceType | 'artefact';

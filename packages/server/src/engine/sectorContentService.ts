@@ -117,6 +117,7 @@ export function generateSectorContents(
   const rngMeteor = ((seed ^ 0x33333333) >>> 0) / 0x100000000;
   const rngRelic = ((seed ^ 0x44444444) >>> 0) / 0x100000000;
   const rngNpc = ((seed ^ 0x55555555) >>> 0) / 0x100000000;
+  const rngRuin = ((seed ^ 0x66666666) >>> 0) / 0x100000000;
 
   // Station: 8% base, density-adjusted
   const stationMult = getDistanceMultiplier(
@@ -189,6 +190,22 @@ export function generateSectorContents(
       gasYield: 0,
       crystalYield: 0,
       exoticYield: 5 + Math.floor(rngRelic * 20), // 5-25 exotic from relics
+      respawnAt: null,
+    });
+  }
+
+  // Ancient ruin: 2% base, uniform across all non-star non-black-hole environments
+  // Slightly more common far from origin (Ancients spread everywhere)
+  const ruinMult = getDistanceMultiplier(sectorX, sectorY, 0.8, 1.2);
+  if (rngRuin < 0.02 * ruinMult * contentVariance) {
+    contents.push({
+      sectorX,
+      sectorY,
+      contentType: 'ruin',
+      oreYield: 0,
+      gasYield: 0,
+      crystalYield: 0,
+      exoticYield: 0,
       respawnAt: null,
     });
   }

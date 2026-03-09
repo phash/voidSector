@@ -2262,3 +2262,50 @@ export async function updatePlayerStationRep(
   );
   return rows[0].reputation;
 }
+
+// ── Ancient Ruins ────────────────────────────────────────────────────
+
+export async function hasScannedRuin(
+  playerId: string,
+  sectorX: number,
+  sectorY: number,
+): Promise<boolean> {
+  const { rows } = await query<{ exists: boolean }>(
+    `SELECT EXISTS(
+       SELECT 1 FROM ancient_lore_fragments
+       WHERE player_id = $1 AND sector_x = $2 AND sector_y = $3
+     ) AS exists`,
+    [playerId, sectorX, sectorY],
+  );
+  return rows[0].exists;
+}
+
+export async function insertAncientRuinScan(
+  playerId: string,
+  sectorX: number,
+  sectorY: number,
+  fragmentIndex: number,
+  ruinLevel: number,
+  artefactFound: boolean,
+): Promise<void> {
+  await query(
+    `INSERT INTO ancient_lore_fragments
+       (player_id, sector_x, sector_y, fragment_index, ruin_level, artefact_found, discovered_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (player_id, sector_x, sector_y) DO NOTHING`,
+    [playerId, sectorX, sectorY, fragmentIndex, ruinLevel, artefactFound, Date.now()],
+  );
+}
+
+export async function getPlayerLoreFragments(
+  playerId: string,
+): Promise<Array<{ sector_x: number; sector_y: number; fragment_index: number; ruin_level: number; artefact_found: boolean; discovered_at: number }>> {
+  const { rows } = await query(
+    `SELECT sector_x, sector_y, fragment_index, ruin_level, artefact_found, discovered_at
+     FROM ancient_lore_fragments
+     WHERE player_id = $1
+     ORDER BY discovered_at DESC`,
+    [playerId],
+  );
+  return rows;
+}

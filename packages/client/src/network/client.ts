@@ -795,6 +795,12 @@ class GameNetwork {
       store.addLogEntry(`PIRATEN-HINTERHALT bei (${data.sectorX}, ${data.sectorY})!`);
     });
 
+    room.onMessage('ancientRuinScan', (data) => {
+      const store = useStore.getState();
+      store.setActiveAncientRuinScan(data);
+      store.addLogEntry(`ANCIENT RUIN — ${data.fragmentText.split('\n')[0]}`);
+    });
+
     room.onMessage('combatV2Init', (data: { state: CombatV2State }) => {
       useStore.getState().setActiveCombatV2(data.state);
     });

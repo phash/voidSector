@@ -31,7 +31,11 @@ import {
   addBlueprint,
   getPlayerFaction,
   getFactionMembersByPlayerIds,
+  hasScannedRuin,
+  insertAncientRuinScan,
 } from '../../db/queries.js';
+import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
+import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
 import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
 
@@ -81,6 +85,34 @@ export class ScanService {
       sectorX: this.ctx._px(client.sessionId),
       sectorY: this.ctx._py(client.sessionId),
     });
+
+    // Ancient ruin scan: reveal lore fragment + artefact chance
+    if (sectorData?.contents?.includes('ruin')) {
+      const px = this.ctx._px(client.sessionId);
+      const py = this.ctx._py(client.sessionId);
+      const alreadyScanned = await hasScannedRuin(auth.userId, px, py);
+      if (!alreadyScanned) {
+        const scanSeed = (Date.now() ^ auth.userId.charCodeAt(0)) >>> 0;
+        const ruinResult = resolveAncientRuinScan(px, py, WORLD_SEED, scanSeed);
+        await insertAncientRuinScan(
+          auth.userId, px, py,
+          ruinResult.fragmentIndex, ruinResult.ruinLevel, ruinResult.artefactFound,
+        );
+        if (ruinResult.artefactFound) {
+          await addToCargo(auth.userId, 'artefact' as ResourceType, 1);
+          client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+        }
+        client.send('ancientRuinScan', {
+          fragmentIndex: ruinResult.fragmentIndex,
+          fragmentText: ruinResult.fragmentText,
+          ruinLevel: ruinResult.ruinLevel,
+          artefactFound: ruinResult.artefactFound,
+          sectorX: px,
+          sectorY: py,
+        });
+        client.send('logEntry', `ANCIENT RUIN — ${ruinResult.fragmentText.split('\n')[0]}`);
+      }
+    }
   }
 
   async handleAreaScan(client: Client): Promise<void> {

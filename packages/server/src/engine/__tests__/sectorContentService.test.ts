@@ -97,7 +97,7 @@ describe('generateSectorContents', () => {
   });
 
   it('returns valid content types', () => {
-    const valid = ['asteroid_field', 'station', 'anomaly', 'pirate_zone', 'home_base', 'player_base', 'meteor', 'relic', 'npc_ship'];
+    const valid = ['asteroid_field', 'station', 'anomaly', 'pirate_zone', 'home_base', 'player_base', 'meteor', 'relic', 'npc_ship', 'ruin'];
     for (let x = 0; x < 500; x += 7) {
       const contents = generateSectorContents(x, x + 5, 'empty', 1.0);
       for (const c of contents) {

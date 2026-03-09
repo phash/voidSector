@@ -324,6 +324,17 @@ export interface GameSlice {
   currentQuadrant: { qx: number; qy: number; name?: string | null } | null;
   firstContactEvent: FirstContactEvent | null;
 
+  // Ancient Ruins
+  activeAncientRuinScan: {
+    fragmentIndex: number;
+    fragmentText: string;
+    ruinLevel: 1 | 2 | 3;
+    artefactFound: boolean;
+    sectorX: number;
+    sectorY: number;
+  } | null;
+  loreFragmentCount: number;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -396,6 +407,7 @@ export interface GameSlice {
   setKnownQuadrants: (quadrants: Array<{ qx: number; qy: number; learnedAt: string }>) => void;
   setCurrentQuadrant: (q: { qx: number; qy: number; name?: string | null } | null) => void;
   setFirstContactEvent: (event: FirstContactEvent | null) => void;
+  setActiveAncientRuinScan: (scan: GameSlice['activeAncientRuinScan']) => void;
   setHyperdriveState: (state: HyperdriveState | null) => void;
   setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
   setNavTarget: (target: { x: number; y: number } | null) => void;
@@ -483,6 +495,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
+  activeAncientRuinScan: null,
+  loreFragmentCount: 0,
   hyperdriveState: null,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
 
@@ -639,6 +653,11 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setKnownQuadrants: (knownQuadrants) => set({ knownQuadrants }),
   setCurrentQuadrant: (currentQuadrant) => set({ currentQuadrant }),
   setFirstContactEvent: (firstContactEvent) => set({ firstContactEvent }),
+  setActiveAncientRuinScan: (activeAncientRuinScan) =>
+    set((s) => ({
+      activeAncientRuinScan,
+      loreFragmentCount: activeAncientRuinScan ? s.loreFragmentCount + 1 : s.loreFragmentCount,
+    })),
   setHyperdriveState: (hyperdriveState) => set({ hyperdriveState }),
   setAutoRefuelConfig: (autoRefuelConfig) => set({ autoRefuelConfig }),
   setNavTarget: (navTarget) => set({ navTarget }),
