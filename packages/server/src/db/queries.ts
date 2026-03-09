@@ -19,6 +19,7 @@ import {
   RESOURCE_REGEN_PER_MINUTE,
   CRYSTAL_REGEN_PER_MINUTE,
   RESOURCE_REGEN_DELAY_MINUTES,
+  calculateShipStats,
 } from '@void-sector/shared';
 
 export async function createPlayer(
@@ -3012,9 +3013,12 @@ export async function transferInventoryItem(
 }
 
 export async function getCargoCapForPlayer(playerId: string): Promise<number> {
-  const res = await query<{ cargo_cap: number }>(
-    `SELECT s.cargo_cap FROM ships s WHERE s.owner_id = $1 AND s.active = TRUE LIMIT 1`,
+  const res = await query<{ hull_type: string; modules: ShipModule[] }>(
+    `SELECT s.hull_type, s.modules FROM ships s WHERE s.owner_id = $1 AND s.active = TRUE LIMIT 1`,
     [playerId],
   );
-  return res.rows[0]?.cargo_cap ?? 20;
+  const row = res.rows[0];
+  if (!row) return 20;
+  const stats = calculateShipStats(row.hull_type as HullType, row.modules ?? []);
+  return stats.cargoCap;
 }
