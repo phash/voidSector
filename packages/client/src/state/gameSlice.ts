@@ -41,6 +41,9 @@ import type {
   AutoRefuelConfig,
   PlayerJumpGate,
   JumpGateDestination,
+  QuadrantControlState,
+  NpcFleetState,
+  WarTickerEvent,
 } from '@void-sector/shared';
 
 /**
@@ -405,6 +408,11 @@ export interface GameSlice {
   storyProgress: StoryProgressPayload | null;
   activeCommunityQuest: CommunityQuestPayload | null;
 
+  // Expansion & Warfare
+  quadrantControls: QuadrantControlState[];
+  npcFleets: NpcFleetState[];
+  warTicker: WarTickerEvent[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -497,6 +505,9 @@ export interface GameSlice {
   setStoryProgress: (p: StoryProgressPayload | null) => void;
   setActiveCommunityQuest: (q: CommunityQuestPayload | null) => void;
   setHumanityReps: (reps: Record<string, { repValue: number; tier: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH' }>) => void;
+  setQuadrantControls: (controls: QuadrantControlState[]) => void;
+  setNpcFleets: (fleets: NpcFleetState[]) => void;
+  addWarTickerEvent: (event: WarTickerEvent) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -585,6 +596,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   alienEncounterEvent: null,
   storyProgress: null,
   activeCommunityQuest: null,
+  quadrantControls: [],
+  npcFleets: [],
+  warTicker: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -780,4 +794,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setStoryProgress: (p) => set({ storyProgress: p }),
   setActiveCommunityQuest: (q) => set({ activeCommunityQuest: q }),
   setHumanityReps: (reps) => set({ humanityReps: reps }),
+  setQuadrantControls: (controls) => set({ quadrantControls: controls }),
+  setNpcFleets: (fleets) => set({ npcFleets: fleets }),
+  addWarTickerEvent: (event) =>
+    set(state => ({ warTicker: [event, ...state.warTicker].slice(0, 10) })),
 });

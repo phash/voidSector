@@ -312,3 +312,46 @@ export class QuestService {
     }
   }
 }
+
+// ─── Expansion & Warfare Quest Generators ────────────────────────────────────
+
+export function generateDiplomacyQuest(
+  targetFaction: string,
+  borderQuadrant: { qx: number; qy: number },
+) {
+  return {
+    type: 'diplomacy' as const,
+    target_faction: targetFaction,
+    border_qx: borderQuadrant.qx,
+    border_qy: borderQuadrant.qy,
+    description: `Build trust with the ${targetFaction} — deliver cultural artifacts to their border station`,
+    rep_reward: 15,
+    expires_hours: 48,
+  };
+}
+
+export type WarSupportSubtype = 'logistics' | 'sabotage' | 'scanning' | 'salvage';
+
+export function generateWarSupportQuest(
+  subtype: WarSupportSubtype,
+  targetQuadrant: { qx: number; qy: number },
+) {
+  const base = {
+    type: 'war_support' as const,
+    subtype,
+    target_qx: targetQuadrant.qx,
+    target_qy: targetQuadrant.qy,
+    expires_hours: 24,
+  };
+
+  switch (subtype) {
+    case 'logistics':
+      return { ...base, defense_bonus: 200, description: 'Deliver munitions and fuel to the front station' };
+    case 'sabotage':
+      return { ...base, enemy_defense_reduction: 150, description: 'Hack enemy comm relays to lower their shields' };
+    case 'scanning':
+      return { ...base, attack_multiplier: 1.3, description: 'Deep-space scan to reveal enemy fleet positions' };
+    case 'salvage':
+      return { ...base, defense_bonus: 100, attack_multiplier: 1.1, description: 'Collect debris from the battle for tech bonuses' };
+  }
+}

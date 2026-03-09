@@ -10,6 +10,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { COLOR_PROFILES } from '../styles/themes';
 import { QUADRANT_NAME_MIN_LENGTH, QUADRANT_NAME_MAX_LENGTH } from '@void-sector/shared';
+import { WarTicker } from './WarTicker';
 
 // --- First-Contact Dialog ---
 
@@ -232,6 +233,8 @@ export function QuadMapScreen() {
         panOffset,
         animTime: performance.now(),
         factionTerritoryColors,
+        quadrantControls: state.quadrantControls,
+        npcFleets: state.npcFleets,
       });
     },
     [zoomLevel, panOffset, selectedQuadrant],
@@ -443,6 +446,9 @@ export function QuadMapScreen() {
           </div>
         )}
       </div>
+
+      {/* Expansion warfare: war event ticker */}
+      <WarTicker />
     </div>
   );
 }

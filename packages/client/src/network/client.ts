@@ -42,6 +42,9 @@ import type {
   AutoRefuelConfig,
   PlayerJumpGate,
   JumpGateDestination,
+  QuadrantControlState,
+  NpcFleetState,
+  WarTickerEvent,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -1484,6 +1487,18 @@ class GameNetwork {
 
     room.onMessage('activeCommunityQuest', (data: { quest: CommunityQuestPayload | null }) => {
       useStore.getState().setActiveCommunityQuest(data.quest);
+    });
+
+    room.onMessage('quadrantControls', (data: QuadrantControlState[]) => {
+      useStore.getState().setQuadrantControls(data);
+    });
+
+    room.onMessage('npcFleets', (data: NpcFleetState[]) => {
+      useStore.getState().setNpcFleets(data);
+    });
+
+    room.onMessage('warTicker', (data: WarTickerEvent) => {
+      useStore.getState().addWarTickerEvent(data);
     });
 
     room.onLeave(async (code) => {

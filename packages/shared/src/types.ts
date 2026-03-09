@@ -1255,3 +1255,33 @@ export interface CivilizationMeter {
   playerContributions: Record<string, number>; // playerId → contribution points
   lastTick: number;
 }
+
+// ─── Expansion & Warfare ─────────────────────────────────────────────────────
+
+export interface QuadrantControlState {
+  qx: number;
+  qy: number;
+  controlling_faction: string;
+  faction_shares: Record<string, number>;
+  friction_score: number;
+  friction_state: 'peaceful_halt' | 'skirmish' | 'escalation' | 'total_war';
+  attack_value: number;
+  defense_value: number;
+  station_tier: number;
+}
+
+export interface NpcFleetState {
+  id: string;
+  faction: string;
+  fleet_type: 'build_ship' | 'invasion' | 'patrol';
+  from_qx: number;
+  from_qy: number;
+  to_qx: number;
+  to_qy: number;
+  eta: number; // unix timestamp ms
+}
+
+export interface WarTickerEvent {
+  message: string;
+  ts: number; // unix timestamp ms
+}
