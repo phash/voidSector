@@ -54,6 +54,8 @@ import {
   getRecentNews,
   getQuadrantDiscoveriesSince,
   addAlienReputation,
+  contributeHumanityRep,
+  getAllHumanityReps,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -116,6 +118,8 @@ import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
 import { rollForEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounterGen.js';
+import { applyBranchEffects } from '../engine/storyQuestChain.js';
+import { getHumanityRepTier } from '../engine/humanityRepTier.js';
 import { logger } from '../utils/logger.js';
 import { getAcepXpSummary } from '../engine/acepXpService.js';
 
@@ -731,6 +735,16 @@ export class SectorRoom extends Room<SectorRoomState> {
       const auth = client.auth as { userId: string } | null;
       if (!auth?.userId) return;
       await this.storyChain.completeChapter(auth.userId, data.chapterId, data.branchChoice ?? null).catch(() => {});
+      // Story Branch Effekte auch auf Menschheits-Rep anwenden (÷3 skaliert)
+      if (data.branchChoice !== null) {
+        const branchEffects = applyBranchEffects(data.chapterId, data.branchChoice);
+        for (const [factionId, delta] of Object.entries(branchEffects)) {
+          const humanityDelta = Math.round((delta as number) / 3);
+          if (humanityDelta !== 0) {
+            await contributeHumanityRep(factionId, humanityDelta).catch(() => {});
+          }
+        }
+      }
       client.send('storyChoiceResult', { success: true, chapterId: data.chapterId });
     });
 
@@ -769,7 +783,18 @@ export class SectorRoom extends Room<SectorRoomState> {
       if (delta !== 0) {
         await addAlienReputation(auth.userId, data.factionId, delta).catch(() => {});
       }
+      const humanityDelta = data.accepted ? 3 : -2;
+      await contributeHumanityRep(data.factionId, humanityDelta).catch(() => {});
       client.send('alienEncounterResolved', { factionId: data.factionId, repDelta: delta });
+    });
+
+    this.onMessage('getHumanityReps', async (client) => {
+      const rawReps = await getAllHumanityReps();
+      const repsWithTiers: Record<string, { repValue: number; tier: string }> = {};
+      for (const [factionId, repValue] of Object.entries(rawReps)) {
+        repsWithTiers[factionId] = { repValue, tier: getHumanityRepTier(repValue) };
+      }
+      client.send('humanityReps', repsWithTiers);
     });
 
     // ── Trade Route Processing Interval ─────────────────────────────
