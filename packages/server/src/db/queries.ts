@@ -2476,3 +2476,70 @@ export async function getMirrorMindStats(playerId: string): Promise<{
     sectorsScanned: parseInt(discRows.rows[0]?.count ?? '0', 10),
   };
 }
+
+// ── Territory Claims ──────────────────────────────────────────────────────────
+
+export interface TerritoryClaimRow {
+  id: number;
+  player_id: string;
+  player_name: string;
+  quadrant_x: number;
+  quadrant_y: number;
+  claimed_at: string;
+  defense_rating: string;
+  victories: number;
+}
+
+export async function getTerritoryClaim(
+  quadrantX: number,
+  quadrantY: number,
+): Promise<TerritoryClaimRow | null> {
+  const res = await query<TerritoryClaimRow>(
+    'SELECT * FROM territory_claims WHERE quadrant_x = $1 AND quadrant_y = $2',
+    [quadrantX, quadrantY],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function createTerritoryClaim(
+  playerId: string,
+  playerName: string,
+  quadrantX: number,
+  quadrantY: number,
+  defenseRating: string,
+): Promise<void> {
+  await query(
+    `INSERT INTO territory_claims (player_id, player_name, quadrant_x, quadrant_y, defense_rating)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (quadrant_x, quadrant_y) DO NOTHING`,
+    [playerId, playerName, quadrantX, quadrantY, defenseRating],
+  );
+}
+
+export async function deleteTerritoryClaim(
+  quadrantX: number,
+  quadrantY: number,
+): Promise<void> {
+  await query('DELETE FROM territory_claims WHERE quadrant_x = $1 AND quadrant_y = $2', [
+    quadrantX,
+    quadrantY,
+  ]);
+}
+
+export async function incrementTerritoryVictories(
+  quadrantX: number,
+  quadrantY: number,
+): Promise<void> {
+  await query(
+    'UPDATE territory_claims SET victories = victories + 1 WHERE quadrant_x = $1 AND quadrant_y = $2',
+    [quadrantX, quadrantY],
+  );
+}
+
+export async function getPlayerTerritories(playerId: string): Promise<TerritoryClaimRow[]> {
+  const res = await query<TerritoryClaimRow>(
+    'SELECT * FROM territory_claims WHERE player_id = $1 ORDER BY claimed_at DESC',
+    [playerId],
+  );
+  return res.rows;
+}

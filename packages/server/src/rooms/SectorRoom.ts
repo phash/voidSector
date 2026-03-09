@@ -107,6 +107,7 @@ import { ShipService } from './services/ShipService.js';
 import { WorldService } from './services/WorldService.js';
 import { AlienInteractionService } from './services/AlienInteractionService.js';
 import type { AlienInteractMessage } from './services/AlienInteractionService.js';
+import { TerritoryService } from './services/TerritoryService.js';
 import { logger } from '../utils/logger.js';
 import { getAcepXpSummary } from '../engine/acepXpService.js';
 
@@ -144,6 +145,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private ships!: ShipService;
   private world!: WorldService;
   private alienInteraction!: AlienInteractionService;
+  private territory!: TerritoryService;
 
   /** Get a player's current sector X coordinate */
   private _px(sid: string): number {
@@ -260,6 +262,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.ships = new ShipService(this.serviceCtx);
     this.world = new WorldService(this.serviceCtx);
     this.alienInteraction = new AlienInteractionService(this.serviceCtx);
+    this.territory = new TerritoryService(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
@@ -476,6 +479,20 @@ export class SectorRoom extends Room<SectorRoomState> {
     // ── Alien Interactions ──────────────────────────────────────────
     this.onMessage('alienInteract', async (client, data: AlienInteractMessage) => {
       await this.alienInteraction.handleAlienInteract(client, data);
+    });
+
+    // ── Territory ───────────────────────────────────────────────────
+    this.onMessage('claimTerritory', async (client) => {
+      await this.territory.handleClaimTerritory(client);
+    });
+    this.onMessage('getTerritory', async (client, data: { quadrantX?: number; quadrantY?: number }) => {
+      await this.territory.handleGetTerritory(client, data);
+    });
+    this.onMessage('listMyTerritories', async (client) => {
+      await this.territory.handleListMyTerritories(client);
+    });
+    this.onMessage('defendTerritory', async (client) => {
+      await this.territory.handleDefendTerritory(client);
     });
 
     // ── Chat ────────────────────────────────────────────────────────
