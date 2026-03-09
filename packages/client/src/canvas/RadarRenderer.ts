@@ -14,6 +14,7 @@ import type {
   ScanEvent,
   HullType,
   Bookmark,
+  Quest,
 } from '@void-sector/shared';
 import type { PlayerPresence } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
@@ -86,6 +87,7 @@ interface RadarState {
     startTime: number;
     duration: number;
   } | null;
+  activeQuests?: Quest[];
 }
 
 function easeInOutCubic(t: number): number {
@@ -228,6 +230,20 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         ctx.strokeStyle = state.themeColor;
         ctx.lineWidth = 3;
         ctx.strokeRect(cellX - CELL_W / 2 + 1, cellY - CELL_H / 2 + 1, CELL_W - 2, CELL_H - 2);
+      }
+
+      // Quest target marker (#151): amber ◎ border for sectors targeted by active quest objectives
+      if (state.activeQuests && !isPlayer) {
+        const isQuestTarget = state.activeQuests.some((q) =>
+          q.objectives.some((o) => o.targetX === sx && o.targetY === sy && !o.fulfilled),
+        );
+        if (isQuestTarget) {
+          const t = state.animTime ?? 0;
+          const pulse = 0.5 + 0.5 * Math.sin(t / 600);
+          ctx.strokeStyle = `rgba(255,176,0,${0.4 + pulse * 0.4})`;
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(cellX - CELL_W / 2 + 2, cellY - CELL_H / 2 + 2, CELL_W - 4, CELL_H - 4);
+        }
       }
 
       // Coordinates label — only at zoom >= 1 (frame handles coords at zoom 0)

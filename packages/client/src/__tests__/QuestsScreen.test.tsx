@@ -26,11 +26,11 @@ describe('QuestsScreen', () => {
   it('shows empty state with no active quests', () => {
     mockStoreState({ activeQuests: [] });
     render(<QuestsScreen />);
-    expect(screen.getByText(/AKTIVE QUESTS/)).toBeDefined();
-    expect(screen.getByText(/Keine aktiven Quests/)).toBeDefined();
+    expect(screen.getByText(/JOURNAL/)).toBeDefined();
+    expect(screen.getByText(/KEINE AKTIVEN AUFTRÄGE/)).toBeDefined();
   });
 
-  it('shows active quest with objectives', () => {
+  it('shows active quest title in collapsed mode', () => {
     mockStoreState({
       activeQuests: [
         {
@@ -60,7 +60,40 @@ describe('QuestsScreen', () => {
       ],
     });
     render(<QuestsScreen />);
-    expect(screen.getByText('Erz-Lieferung')).toBeDefined();
+    expect(screen.getByText(/Erz-Lieferung/)).toBeDefined();
+  });
+
+  it('expands quest to show objectives and rewards', async () => {
+    mockStoreState({
+      activeQuests: [
+        {
+          id: 'q1',
+          templateId: 't1',
+          npcName: 'Zar',
+          npcFactionId: 'traders',
+          title: 'Erz-Lieferung',
+          description: 'Bringe 3 Ore',
+          stationX: 10,
+          stationY: 20,
+          objectives: [
+            {
+              type: 'fetch',
+              description: '3 ore',
+              resource: 'ore',
+              amount: 3,
+              progress: 0,
+              fulfilled: false,
+            },
+          ],
+          rewards: { credits: 30, xp: 10, reputation: 5 },
+          status: 'active',
+          acceptedAt: Date.now(),
+          expiresAt: Date.now() + 86400000,
+        },
+      ],
+    });
+    render(<QuestsScreen />);
+    await userEvent.click(screen.getByText(/Erz-Lieferung/));
     expect(screen.getByText(/3 ore/)).toBeDefined();
     expect(screen.getByText(/\+30 CR/)).toBeDefined();
   });
@@ -85,7 +118,7 @@ describe('QuestsScreen', () => {
     expect(network.requestReputation).toHaveBeenCalled();
   });
 
-  it('shows abandon button for active quest', async () => {
+  it('shows abandon button for active quest when expanded', async () => {
     mockStoreState({
       activeQuests: [
         {
@@ -115,6 +148,8 @@ describe('QuestsScreen', () => {
       ],
     });
     render(<QuestsScreen />);
+    // Quest must be expanded first to see the abandon button
+    await userEvent.click(screen.getByText(/Test Quest/));
     await userEvent.click(screen.getByText('[ABBRECHEN]'));
     expect(network.sendAbandonQuest).toHaveBeenCalledWith('q1');
   });

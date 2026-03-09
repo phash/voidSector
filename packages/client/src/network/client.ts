@@ -1315,7 +1315,7 @@ class GameNetwork {
 
     room.onMessage(
       'knownQuadrants',
-      (data: { quadrants: Array<{ qx: number; qy: number; learnedAt: string }> }) => {
+      (data: { quadrants: Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }> }) => {
         useStore.getState().setKnownQuadrants(data.quadrants);
       },
     );
@@ -1324,7 +1324,7 @@ class GameNetwork {
       'syncQuadrantsResult',
       (data: {
         success: boolean;
-        quadrants?: Array<{ qx: number; qy: number; learnedAt: string }>;
+        quadrants?: Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>;
         synced?: number;
         error?: string;
       }) => {

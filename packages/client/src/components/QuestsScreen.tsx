@@ -15,6 +15,7 @@ export function QuestsScreen() {
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
 
   const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events' | 'rescue'>('active');
+  const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
   const [stationNpcs, setStationNpcs] = useState<StationNpc[]>([]);
   const [availableQuests, setAvailableQuests] = useState<AvailableQuest[]>([]);
 
@@ -79,56 +80,104 @@ export function QuestsScreen() {
         ))}
       </div>
 
-      {/* Active quests tab */}
+      {/* Active quests tab — Journal format */}
       {tab === 'active' && (
         <div>
-          <div style={{ color: '#FFB000', marginBottom: '4px' }}>
-            --- AKTIVE QUESTS ({activeQuests.length}/3) ---
+          <div style={{ color: '#FFB000', marginBottom: '4px', letterSpacing: '0.1em' }}>
+            ─── JOURNAL ({activeQuests.length}/3) ───
           </div>
           {activeQuests.length === 0 && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Keine aktiven Quests</div>
+            <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
+              KEINE AKTIVEN AUFTRÄGE
+            </div>
           )}
-          {activeQuests.map((q) => (
-            <div
-              key={q.id}
-              style={{
-                border: '1px solid rgba(255,176,0,0.3)',
-                padding: '4px',
-                marginBottom: '4px',
-              }}
-            >
-              <div style={{ color: '#FFB000' }}>{q.title}</div>
-              {q.objectives.map((obj) => (
-                <div
-                  key={obj.description}
-                  style={{
-                    color: obj.fulfilled ? '#00FF88' : 'rgba(255,176,0,0.6)',
-                    paddingLeft: '8px',
-                  }}
-                >
-                  {obj.fulfilled ? '[x]' : '[ ]'} {obj.description}
-                </div>
-              ))}
-              <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
-                +{q.rewards.credits} CR | +{q.rewards.xp} XP | +{q.rewards.reputation} REP
-              </div>
-              <button
-                onClick={() => network.sendAbandonQuest(q.id)}
+          {activeQuests.map((q) => {
+            const isExpanded = expandedQuestId === q.id;
+            const doneCount = q.objectives.filter((o) => o.fulfilled).length;
+            const allDone = doneCount === q.objectives.length;
+            const hasTarget = q.objectives.some((o) => o.targetX != null && o.targetY != null);
+            return (
+              <div
+                key={q.id}
                 style={{
-                  background: 'none',
-                  color: '#FF3333',
-                  border: '1px solid #FF3333',
-                  padding: '1px 4px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  fontSize: '10px',
-                  marginTop: '2px',
+                  border: `1px solid ${allDone ? '#00FF88' : 'rgba(255,176,0,0.3)'}`,
+                  marginBottom: '4px',
+                  overflow: 'hidden',
                 }}
               >
-                [ABBRECHEN]
-              </button>
-            </div>
-          ))}
+                {/* Header row — click to expand */}
+                <div
+                  onClick={() => setExpandedQuestId(isExpanded ? null : q.id)}
+                  style={{
+                    padding: '4px 6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: isExpanded ? 'rgba(255,176,0,0.08)' : 'transparent',
+                  }}
+                >
+                  <span style={{ color: allDone ? '#00FF88' : '#FFB000' }}>
+                    {allDone ? '[✓] ' : `[${doneCount}/${q.objectives.length}] `}
+                    {q.title}
+                    {hasTarget && <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '9px' }}> ◎</span>}
+                  </span>
+                  <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px' }}>{isExpanded ? '▲' : '▼'}</span>
+                </div>
+
+                {/* Expanded journal entry */}
+                {isExpanded && (
+                  <div style={{ padding: '4px 6px', borderTop: '1px solid rgba(255,176,0,0.2)' }}>
+                    <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px', marginBottom: '4px' }}>
+                      {q.description}
+                    </div>
+                    {q.objectives.map((obj, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          color: obj.fulfilled ? '#00FF88' : 'rgba(255,176,0,0.7)',
+                          paddingLeft: '6px',
+                          fontSize: '10px',
+                          marginBottom: '2px',
+                        }}
+                      >
+                        {obj.fulfilled ? '[x]' : '[ ]'} {obj.description}
+                        {obj.amount != null && obj.progress != null && (
+                          <span style={{ color: 'rgba(255,176,0,0.4)' }}>
+                            {' '}({obj.progress}/{obj.amount})
+                          </span>
+                        )}
+                        {obj.targetX != null && obj.targetY != null && !obj.fulfilled && (
+                          <span style={{ color: 'rgba(255,176,0,0.4)' }}>
+                            {' '}→ ({innerCoord(obj.targetX)}, {innerCoord(obj.targetY)})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px', marginTop: '4px' }}>
+                      BELOHNUNG: +{q.rewards.credits} CR | +{q.rewards.xp} XP
+                      {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
+                    </div>
+                    <button
+                      onClick={() => network.sendAbandonQuest(q.id)}
+                      style={{
+                        background: 'none',
+                        color: '#FF3333',
+                        border: '1px solid #FF3333',
+                        padding: '1px 4px',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        fontSize: '9px',
+                        marginTop: '3px',
+                      }}
+                    >
+                      [ABBRECHEN]
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

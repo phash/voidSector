@@ -21,6 +21,36 @@ type DrillDown =
   | { type: 'station'; name: string }
   | null;
 
+// Capability labels shown in sector detail (#148)
+const CAPABILITY_LABELS: Record<string, string> = {
+  trade: 'TRADE',
+  quest: 'QUEST',
+  mine: 'MINE',
+  jump: 'JUMP',
+  build: 'BUILD',
+  scan: 'SCAN',
+};
+
+function getSectorCapabilities(sector: any, jumpGateInfo: any, playerGateInfo: any, isPlayerHere: boolean): string[] {
+  const caps: string[] = [];
+  const contents: string[] = (sector as any).contents ?? [];
+  const type: string = sector?.type ?? '';
+
+  if (type === 'station' || contents.includes('station')) {
+    caps.push('trade', 'quest');
+  }
+  if (type === 'asteroid_field' || contents.includes('asteroid_field') || type === 'nebula' || contents.includes('nebula')) {
+    caps.push('mine');
+  }
+  if (jumpGateInfo || playerGateInfo || contents.includes('jumpgate')) {
+    caps.push('jump');
+  }
+  if (isPlayerHere) {
+    caps.push('build', 'scan');
+  }
+  return caps;
+}
+
 function RefuelPanel({
   fuel,
   isFreeRefuel,
@@ -101,6 +131,8 @@ export function DetailPanel() {
   const mining = useStore((s) => s.mining);
   const shipList = useStore((s) => s.shipList);
   const homeBase = useStore((s) => s.homeBase);
+  const activeQuests = useStore((s) => s.activeQuests);
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
 
@@ -128,6 +160,13 @@ export function DetailPanel() {
   const sector = discoveries[key];
   const isPlayerHere = selectedSector.x === position.x && selectedSector.y === position.y;
   const isHome = selectedSector.x === homeBase.x && selectedSector.y === homeBase.y;
+
+  // Quest target detection (#151)
+  const questsTargetingHere = activeQuests.filter((q) =>
+    q.objectives.some(
+      (o) => o.targetX === selectedSector.x && o.targetY === selectedSector.y && !o.fulfilled,
+    ),
+  );
   const playersHere = Object.values(players).filter(
     (p) => p.x === selectedSector.x && p.y === selectedSector.y,
   );
@@ -245,6 +284,31 @@ export function DetailPanel() {
         SECTOR ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})
       </div>
 
+      {/* Capability chips (#148) */}
+      {sector && (() => {
+        const caps = getSectorCapabilities(sector, jumpGateInfo, playerGateInfo, isPlayerHere);
+        if (caps.length === 0) return null;
+        return (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            {caps.map((cap) => (
+              <span
+                key={cap}
+                style={{
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.1em',
+                  padding: '1px 5px',
+                  border: '1px solid var(--color-dim)',
+                  color: 'var(--color-dim)',
+                  opacity: 0.8,
+                }}
+              >
+                {CAPABILITY_LABELS[cap]}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
+
       {sector ? (
         <>
           <div>
@@ -300,6 +364,31 @@ export function DetailPanel() {
           )}
           {isPlayerHere && (
             <div style={{ marginTop: 8, color: 'var(--color-primary)' }}>YOU ARE HERE</div>
+          )}
+          {/* Quest target hint (#151) */}
+          {questsTargetingHere.length > 0 && (
+            <div
+              style={{
+                marginTop: 8,
+                padding: '4px 6px',
+                border: '1px solid rgba(255,176,0,0.5)',
+                fontSize: '0.7rem',
+              }}
+            >
+              <div style={{ color: '#FFB000', marginBottom: 2, letterSpacing: '0.1em' }}>
+                ◎ QUEST-ZIEL
+              </div>
+              {questsTargetingHere.map((q) => (
+                <div key={q.id} style={{ color: 'rgba(255,176,0,0.7)', fontSize: '0.65rem' }}>
+                  <span
+                    style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
+                    onClick={() => setActiveProgram('QUESTS')}
+                  >
+                    {q.title}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
           {mining?.active && mining.sectorX === sector?.x && mining.sectorY === sector?.y && (
             <div

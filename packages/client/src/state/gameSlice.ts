@@ -320,7 +320,7 @@ export interface GameSlice {
   playerGateInfo: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null;
 
   // Quadrant system
-  knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
+  knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>;
   currentQuadrant: { qx: number; qy: number; name?: string | null } | null;
   firstContactEvent: FirstContactEvent | null;
 
