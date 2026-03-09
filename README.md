@@ -15,7 +15,7 @@ Explore, mine, build, communicate: Players move sector by sector through an infi
 | Game Server | [Colyseus](https://colyseus.io/) | Room abstraction, state sync, clustering-ready |
 | Frontend | React 18 + Canvas | Terminal UI, radar rendering with CRT effects |
 | State | Zustand | Client-side state management (game + UI slices) |
-| Testing | Vitest + RTL | 1601 tests (912 server, 498 client, 191 shared) |
+| Testing | Vitest + RTL | 1646 tests (957 server, 498 client, 191 shared) |
 | Database | PostgreSQL 16 | Persistent storage (players, sectors, discoveries) |
 | Cache | Redis 7 | AP state, player positions, sessions |
 | Shared Types | TypeScript Package | Shared interfaces between client and server |
@@ -66,8 +66,8 @@ void-sector/
 │   │       ├── auth.ts              # JWT auth (register/login) + spawn
 │   │       ├── app.config.ts        # Colyseus + Express config
 │   │       ├── index.ts             # Server entry point
-│   │       ├── db/                  # PostgreSQL client, migrations (001-027), queries
-│   │       ├── engine/              # AP, commands, comms, mining, spawn, worldgen
+│   │       ├── db/                  # PostgreSQL client, migrations (001-043), queries
+│   │       ├── engine/              # AP, ACEP XP/traits/permadeath, expansion warfare, universe tick
 │   │       └── rooms/               # SectorRoom, schemas, Redis store
 │   └── client/          # React frontend
 │       └── src/
@@ -155,12 +155,34 @@ void-sector/
 - [x] Alien Quest System: 9-chapter story chain, 4 community quests, 10 alien factions
 - [x] Menschheits-Reputation: server-wide aggregate rep per faction, encounter chance modifier (0.5×–1.5×), tier-aware dialogs, ALIEN REP tab
 
+### Ship Progression — ACEP
+- [x] 4 XP paths: AUSBAU (build/mine) · INTEL (scan/explore) · KAMPF (combat) · EXPLORER (ruins/first contact)
+- [x] XP budget: 100 points total, max 50 per path — forces specialisation
+- [x] 6 personality traits derived from XP distribution (veteran, curious, reckless, cautious, ancient-touched, scarred)
+- [x] Ship personality: contextual log comments per trait (scan, combat, mining, build)
+- [x] Evolving radar icon: tier 1–4 pixel patterns, path-specific shapes, active from XP ≥ 20
+- [x] Permadeath: ship destroyed → wreck POI in universe, 25% module salvage chance
+- [x] Legacy: successor ship inherits 30% XP + 1 dominant trait
+- [x] Eject pod: cargo jettisoned, ship survives at < 15% HP
+- [ ] ACEP panel in HANGAR (XP bars, trait overview, effects) — not yet built
+- [ ] Wreck POIs visible on radar — not yet built
+
+### Galactic Expansion & Warfare — Phase EW
+- [x] Bilateral expansion: humans wave from 0:0, aliens sphere from home centres
+- [x] Friction system: humanityRepTier → friction score (0–100), per-faction aggression modifier
+- [x] 4 border states: peaceful_halt / skirmish / escalation / total_war
+- [x] Quadrant Attack/Defense model, strategic tick every 60 s
+- [x] NPC fleet spawning (build_ship, invasion, patrol) stored in DB
+- [x] QUAD-MAP overlays: faction territory colours, friction glow (orange ≥ 50, red ≥ 71), ⚔ icons, incoming fleet markers
+- [x] War Ticker: last-10 events shown at bottom of QUAD-MAP
+- [x] Diplomacy & war-support quest templates
+
 ### Polish
 - [x] 6-section cockpit layout with CRT hardware aesthetic
 - [x] 4 color profiles (Amber Classic, Green Phosphor, Ice Blue, High Contrast)
 - [x] JumpGates (bidirectional + wormholes + frequency minigame)
 - [x] Admin console (quests, broadcasts, economy monitoring)
-- [x] 1601 automated tests
+- [x] 1646 automated tests
 
 ## License
 

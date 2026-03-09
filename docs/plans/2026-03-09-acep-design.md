@@ -1,7 +1,7 @@
 # ACEP — Adaptive Craft Evolution Protocol: Design Dokument
 
 **Datum:** 2026-03-09
-**Status:** APPROVED
+**Status:** TEILWEISE IMPLEMENTIERT (Stand: 2026-03-09)
 **Ersetzt:** #146 (Schiffswechsel) — wird geschlossen
 
 ---
@@ -269,10 +269,12 @@ CREATE TABLE ship_promises (
 
 ## Implementierungs-Reihenfolge
 
-1. **DB-Migration** — ACEP-Felder zu ships, ship_wrecks Tabelle
-2. **XP-Engine** — XP-Vergabe bei Aktionen (in bestehende Services integrieren)
-3. **Trait-System** — Trait-Berechnung aus XP + Ereignissen
-4. **Persönlichkeits-Meldungen** — Schiff-Log mit Persönlichkeits-Typ
-5. **Radar-Icon-Evolution** — Icon wächst mit XP-Summe
-6. **Permadeath-Flow** — HP 0 → Wrack spawnen → Nachfolger mit Legacy
-7. **Heraldik-Editor** *(deferred)*
+1. ✅ **DB-Migration** — `039_acep_xp.sql`: ACEP-Felder zu `ships`, `ship_wrecks` Tabelle
+2. ✅ **XP-Engine** — `acepXpService.ts`: XP-Vergabe in Mining/Scan/Combat/Navigation/World/Territory Services
+3. ✅ **Trait-System** — `traitCalculator.ts`: 6 Traits aus XP-Verteilung (veteran, curious, reckless, cautious, ancient-touched, scarred)
+4. ✅ **Persönlichkeits-Meldungen** — `personalityMessages.ts`: Schiff-Kommentare, in CombatService + ScanService eingehängt
+5. ✅ **Radar-Icon-Evolution** — `getAcepRadarPattern()` in shared, ab XP ≥ 20 aktiv im Radar-Renderer
+6. ✅ **Permadeath-Flow** — `permadeathService.ts`: Wrack spawnen, Legacy-Schiff erstellen, Eject-Pod, Salvage
+7. ❌ **UI-Panel (HANGAR/ACEP-Tab)** — XP-Anzeige, Pfad-Fortschritt, Trait-Übersicht → **NOCH OFFEN**
+8. ❌ **Wrack-POIs auf Radar** — Wracks aus DB laden und als Icon auf dem Radar darstellen → **NOCH OFFEN**
+9. ❌ **Heraldik-Editor** *(deferred)*
