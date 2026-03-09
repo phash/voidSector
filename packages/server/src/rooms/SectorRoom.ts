@@ -329,7 +329,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
           const steps = (this.encounterSteps.get(moveSectorAuth.userId) ?? 0) + 1;
           this.encounterSteps.set(moveSectorAuth.userId, steps);
-          const encounter = rollForEncounter(
+          const encounter = await rollForEncounter(
             moveSectorAuth.userId,
             data.sectorX,
             data.sectorY,
