@@ -38,15 +38,22 @@ export async function upsertQuadrant(data: QuadrantData): Promise<void> {
 
 export async function getPlayerKnownQuadrants(
   playerId: string,
-): Promise<Array<{ qx: number; qy: number; learnedAt: string }>> {
+): Promise<Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>> {
   const { rows } = await query<any>(
-    'SELECT qx, qy, learned_at FROM player_known_quadrants WHERE player_id = $1',
+    `SELECT pkq.qx, pkq.qy, pkq.learned_at,
+            q.name, p.username AS discovered_by_name
+     FROM player_known_quadrants pkq
+     LEFT JOIN quadrants q ON q.qx = pkq.qx AND q.qy = pkq.qy
+     LEFT JOIN players p ON p.id = q.discovered_by
+     WHERE pkq.player_id = $1`,
     [playerId],
   );
   return rows.map((r: any) => ({
     qx: r.qx,
     qy: r.qy,
     learnedAt: r.learned_at?.toISOString() ?? '',
+    ...(r.name ? { name: r.name } : {}),
+    ...(r.discovered_by_name ? { discoveredByName: r.discovered_by_name } : {}),
   }));
 }
 

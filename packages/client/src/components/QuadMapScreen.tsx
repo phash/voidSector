@@ -306,7 +306,7 @@ export function QuadMapScreen() {
 
   // Find selected quadrant info
   const selectedInfo = selectedQuadrant
-    ? knownQuadrants.find((q) => q.qx === selectedQuadrant.qx && q.qy === selectedQuadrant.qy)
+    ? knownQuadrants.find((q) => q.qx === selectedQuadrant.qx && q.qy === selectedQuadrant.qy) ?? null
     : null;
 
   return (
@@ -385,14 +385,24 @@ export function QuadMapScreen() {
           >
             <span>
               SELECTED: ({selectedQuadrant.qx}, {selectedQuadrant.qy})
+              {selectedInfo?.name && (
+                <span style={{ color: 'var(--color-primary)' }}> ★ {selectedInfo.name}</span>
+              )}
               {selectedInfo ? (
-                <span>
-                  {' '}
-                  | DISCOVERED:{' '}
-                  <span style={{ color: 'var(--color-primary)' }}>
-                    {new Date(selectedInfo.learnedAt).toLocaleDateString()}
+                <>
+                  <span>
+                    {' '}| LEARNED:{' '}
+                    <span style={{ color: 'var(--color-primary)' }}>
+                      {new Date(selectedInfo.learnedAt).toLocaleDateString()}
+                    </span>
                   </span>
-                </span>
+                  {selectedInfo.discoveredByName && (
+                    <span>
+                      {' '}| FIRST CONTACT:{' '}
+                      <span style={{ color: '#00FF88' }}>{selectedInfo.discoveredByName}</span>
+                    </span>
+                  )}
+                </>
               ) : (
                 <span style={{ color: '#FF3333' }}> | UNKNOWN</span>
               )}

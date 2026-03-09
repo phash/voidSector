@@ -3,7 +3,7 @@ import type { JumpGateMapEntry } from '@void-sector/shared';
 import { drawQuadrantJumpGateLines } from './jumpGateOverlay';
 
 export interface QuadrantMapState {
-  knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string }>;
+  knownQuadrants: Array<{ qx: number; qy: number; learnedAt: string; name?: string; discoveredByName?: string }>;
   currentQuadrant: { qx: number; qy: number } | null;
   selectedQuadrant: { qx: number; qy: number } | null;
   themeColor: string;
@@ -62,9 +62,9 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
   const viewQy = (state.currentQuadrant?.qy ?? 0) + state.panOffset.y;
 
   // Build lookup set for known quadrants
-  const knownSet = new Map<string, string>();
+  const knownSet = new Map<string, { learnedAt: string; name?: string }>();
   for (const q of state.knownQuadrants) {
-    knownSet.set(`${q.qx}:${q.qy}`, q.learnedAt);
+    knownSet.set(`${q.qx}:${q.qy}`, { learnedAt: q.learnedAt, name: q.name });
   }
 
   const FONT = `${Math.max(8, CELL_W * 0.6)}px 'Share Tech Mono', 'Courier New', monospace`;
@@ -78,7 +78,9 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
       const cellX = gridCenterX + dx * CELL_W;
       const cellY = gridCenterY + dy * CELL_H;
       const key = `${qx}:${qy}`;
-      const isKnown = knownSet.has(key);
+      const knownEntry = knownSet.get(key);
+      const isKnown = knownEntry !== undefined;
+      const quadrantName = knownEntry?.name;
       const isCurrent =
         state.currentQuadrant !== null &&
         qx === state.currentQuadrant.qx &&
@@ -126,7 +128,17 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = isCurrent ? state.themeColor : '#00FF88';
-        ctx.fillText(`${qx},${qy}`, cellX, cellY);
+        // Show ★ prefix if quadrant has a name
+        const coordLabel = quadrantName ? `★ ${qx},${qy}` : `${qx},${qy}`;
+        ctx.fillText(coordLabel, cellX, cellY - (quadrantName ? CELL_H * 0.15 : 0));
+        // Show short name below coordinates at zoom 3
+        if (quadrantName && state.zoomLevel >= 3) {
+          const nameFont = `${Math.max(6, CELL_W * 0.25)}px 'Share Tech Mono', 'Courier New', monospace`;
+          ctx.font = nameFont;
+          ctx.fillStyle = isCurrent ? state.themeColor : 'rgba(0,255,136,0.6)';
+          const shortName = quadrantName.length > 8 ? quadrantName.slice(0, 7) + '…' : quadrantName;
+          ctx.fillText(shortName, cellX, cellY + CELL_H * 0.2);
+        }
       } else if (isKnown && state.zoomLevel >= 1) {
         // Just a dot at zoom 1
         ctx.fillStyle = isCurrent ? state.themeColor : '#00FF88';
