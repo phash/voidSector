@@ -121,7 +121,6 @@ import { rollForEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounte
 import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
 import { logger } from '../utils/logger.js';
-import { getAcepXpSummary } from '../engine/acepXpService.js';
 
 interface SectorRoomOptions {
   quadrantX: number;
