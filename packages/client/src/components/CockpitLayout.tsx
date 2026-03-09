@@ -21,6 +21,7 @@ import { CommsScreen } from './CommsScreen';
 import { PlayerContextMenu } from './PlayerContextMenu';
 import { StoryEventOverlay } from './overlays/StoryEventOverlay';
 import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
+import { AlienEncounterToast } from './overlays/AlienEncounterToast';
 import type { ChatChannel } from '@void-sector/shared';
 
 interface CockpitLayoutProps {
@@ -179,6 +180,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       <PlayerContextMenu />
       <StoryEventOverlay />
       <FirstContactNewsOverlay />
+      <AlienEncounterToast />
     </div>
   );
 }
