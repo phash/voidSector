@@ -269,6 +269,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('moveSector', async (client, data: { sectorX: number; sectorY: number }) => {
       try {
         await this.navigation.handleMoveSector(client, data);
+        // #144: trigger pirate encounters on sector entry
+        const sectorData = this.playerSectorData.get(client.sessionId);
+        if (sectorData) {
+          await this.scanning.checkAndEmitScanEvents(
+            client,
+            [{ x: data.sectorX, y: data.sectorY, environment: sectorData.environment }],
+            true,
+          );
+        }
       } catch (err) {
         logger.error({ err }, 'moveSector error');
         client.send('error', { code: 'MOVE_FAILED', message: 'Failed to move sector' });
