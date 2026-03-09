@@ -516,31 +516,44 @@ class GameNetwork {
 
     // Tech-Baum: Research
     room.onMessage('researchState', (data) => {
-      useStore.setState({
-        research: {
-          unlockedModules: data.unlockedModules ?? [],
-          blueprints: data.blueprints ?? [],
-          activeResearch: data.activeResearch ?? null,
-        },
+      useStore.getState().setResearch({
+        unlockedModules: data.unlockedModules ?? [],
+        blueprints: data.blueprints ?? [],
+        activeResearch: data.activeResearch ?? null,
+        activeResearch2: data.activeResearch2 ?? null,
+        wissen: data.wissen ?? 0,
+        wissenRate: data.wissenRate ?? 0,
       });
+      if (data.typedArtefacts) {
+        useStore.getState().setTypedArtefacts(data.typedArtefacts);
+      }
     });
 
     room.onMessage('researchResult', (data) => {
       if (data.success) {
+        const current = useStore.getState().research;
         const patch: any = {};
         if (data.unlockedModules !== undefined) {
           patch.research = {
-            ...useStore.getState().research,
+            ...current,
             unlockedModules: data.unlockedModules,
-            blueprints: data.blueprints ?? useStore.getState().research.blueprints,
+            blueprints: data.blueprints ?? current.blueprints,
             activeResearch:
-              data.activeResearch !== undefined
-                ? data.activeResearch
-                : useStore.getState().research.activeResearch,
+              data.activeResearch !== undefined ? data.activeResearch : current.activeResearch,
+            activeResearch2:
+              data.activeResearch2 !== undefined ? data.activeResearch2 : current.activeResearch2,
+            wissen: data.wissen !== undefined ? data.wissen : current.wissen,
+            wissenRate: data.wissenRate !== undefined ? data.wissenRate : current.wissenRate,
           };
         }
         if (data.activeResearch !== undefined && !patch.research) {
-          patch.research = { ...useStore.getState().research, activeResearch: data.activeResearch };
+          patch.research = {
+            ...current,
+            activeResearch: data.activeResearch,
+            activeResearch2:
+              data.activeResearch2 !== undefined ? data.activeResearch2 : current.activeResearch2,
+            wissen: data.wissen !== undefined ? data.wissen : current.wissen,
+          };
         }
         if (Object.keys(patch).length) useStore.setState(patch);
       }
@@ -2035,14 +2048,14 @@ class GameNetwork {
   }
 
   // Tech-Baum: Research
-  sendStartResearch(moduleId: string) {
-    this.sectorRoom?.send('startResearch', { moduleId });
+  sendStartResearch(moduleId: string, slot: 1 | 2 = 1, artefactsToUse?: Record<string, number>) {
+    this.sectorRoom?.send('startResearch', { moduleId, slot, artefactsToUse });
   }
-  sendCancelResearch() {
-    this.sectorRoom?.send('cancelResearch', {});
+  sendCancelResearch(slot: 1 | 2 = 1) {
+    this.sectorRoom?.send('cancelResearch', { slot });
   }
-  sendClaimResearch() {
-    this.sectorRoom?.send('claimResearch', {});
+  sendClaimResearch(slot: 1 | 2 = 1) {
+    this.sectorRoom?.send('claimResearch', { slot });
   }
   sendActivateBlueprint(moduleId: string) {
     this.sectorRoom?.send('activateBlueprint', { moduleId });
