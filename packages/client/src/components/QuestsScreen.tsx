@@ -152,7 +152,7 @@ function CommunityTab() {
     );
   }
 
-  const pct = Math.min((quest.currentCount / quest.targetCount) * 100, 100);
+  const pct = Math.min(((quest.currentCount ?? 0) / (quest.targetCount ?? 1)) * 100, 100);
   const deadline = quest.expiresAt ? new Date(quest.expiresAt).toLocaleDateString() : '—';
 
   return (
@@ -181,7 +181,7 @@ function CommunityTab() {
         >
           <span style={{ color: 'var(--color-dim)' }}>FORTSCHRITT</span>
           <span style={{ color: 'var(--color-primary)' }}>
-            {quest.currentCount.toLocaleString()} / {quest.targetCount.toLocaleString()}
+            {(quest.currentCount ?? 0).toLocaleString()} / {(quest.targetCount ?? 0).toLocaleString()}
           </span>
         </div>
         <div style={{ height: 3, background: 'rgba(255,255,255,0.1)' }}>
