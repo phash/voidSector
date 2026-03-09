@@ -13,6 +13,9 @@ export function QuestsScreen() {
   const position = useStore((s) => s.position);
   const distressCalls = useStore((s) => s.distressCalls);
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
+  const navReturnProgram = useStore((s) => s.navReturnProgram);
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
+  const clearNavReturn = useStore((s) => s.clearNavReturn);
 
   const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events' | 'rescue'>('active');
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
@@ -54,6 +57,15 @@ export function QuestsScreen() {
 
   return (
     <div style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
+      {navReturnProgram && (
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', marginBottom: 8 }}
+          onClick={() => { setActiveProgram(navReturnProgram); clearNavReturn(); }}
+        >
+          [← ZURÜCK]
+        </button>
+      )}
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
         {(['active', 'station', 'rep', 'events', 'rescue'] as const).map((t) => (

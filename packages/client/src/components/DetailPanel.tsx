@@ -123,6 +123,7 @@ export function DetailPanel() {
   const bookmarks = useStore((s) => s.bookmarks);
 
   const setDetailView = useStore((s) => s.setDetailView);
+  const navigateToProgram = useStore((s) => s.navigateToProgram);
 
   const autopilot = useStore((s) => s.autopilot);
   const ship = useStore((s) => s.ship);
@@ -259,13 +260,31 @@ export function DetailPanel() {
         {isPlayerHere && jumpGateInfo && <JumpGatePanel gate={jumpGateInfo} />}
         {isPlayerHere && playerGateInfo && <PlayerGatePanel />}
         {isPlayerHere && sector?.type === 'station' && (
-          <button
-            className="vs-btn"
-            style={{ fontSize: '0.75rem', marginTop: 8, borderColor: '#00FF88', color: '#00FF88', display: 'block', width: '100%' }}
-            onClick={openStationTerminal}
-          >
-            [ANDOCKEN]
-          </button>
+          <>
+            <button
+              className="vs-btn"
+              style={{ fontSize: '0.75rem', marginTop: 8, borderColor: '#00FF88', color: '#00FF88', display: 'block', width: '100%' }}
+              onClick={openStationTerminal}
+            >
+              [ANDOCKEN]
+            </button>
+            <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+              <button
+                className="vs-btn"
+                style={{ flex: 1, fontSize: '0.7rem' }}
+                onClick={() => navigateToProgram('TRADE')}
+              >
+                [→ TRADE]
+              </button>
+              <button
+                className="vs-btn"
+                style={{ flex: 1, fontSize: '0.7rem' }}
+                onClick={() => navigateToProgram('QUESTS')}
+              >
+                [→ QUESTS]
+              </button>
+            </div>
+          </>
         )}
         {isPlayerHere && sector?.type === 'station' && rescuedSurvivors.length > 0 && (
           <button
@@ -514,7 +533,9 @@ export function DetailPanel() {
                     fontFamily: 'inherit',
                     fontSize: 'inherit',
                     padding: '2px 0',
-                    display: 'block',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                   onClick={() =>
                     setDrillDown({
@@ -523,7 +544,23 @@ export function DetailPanel() {
                     })
                   }
                 >
-                  ◆ {generateStationName(selectedSector.x, selectedSector.y)}
+                  <span>◆ {generateStationName(selectedSector.x, selectedSector.y)}</span>
+                  <span style={{ display: 'flex', gap: 2 }}>
+                    {['TRADE', 'QUEST', 'REFUEL'].map((cap) => (
+                      <span
+                        key={cap}
+                        style={{
+                          fontSize: '0.55rem',
+                          padding: '0px 3px',
+                          border: '1px solid rgba(0,191,255,0.4)',
+                          color: 'rgba(0,191,255,0.6)',
+                          letterSpacing: '0.05em',
+                        }}
+                      >
+                        {cap}
+                      </span>
+                    ))}
+                  </span>
                 </button>
               )}
               {isHome && (

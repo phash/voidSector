@@ -49,6 +49,7 @@ export interface UISlice {
   scanAnimation: ScanAnimationState | null;
   scanPending: boolean;
   activeProgram: string;
+  navReturnProgram: string | null;
   contextMenu: { playerId: string; playerName: string; x: number; y: number } | null;
 
   setScreen: (screen: Screen) => void;
@@ -71,6 +72,8 @@ export interface UISlice {
   clearScanAnimation: () => void;
   setScanPending: (pending: boolean) => void;
   setActiveProgram: (program: string) => void;
+  navigateToProgram: (program: string) => void;
+  clearNavReturn: () => void;
   openContextMenu: (playerId: string, playerName: string, x: number, y: number) => void;
   closeContextMenu: () => void;
 
@@ -80,7 +83,7 @@ export interface UISlice {
   closeStationTerminal: () => void;
 }
 
-export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
+export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) => ({
   screen: 'login',
   theme: (safeGetItem('vs_theme') as ThemeColor) || 'amber',
   jumpPending: false,
@@ -98,6 +101,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   scanAnimation: null,
   scanPending: false,
   activeProgram: safeGetItem('vs-active-program') || 'NAV-COM',
+  navReturnProgram: null,
   contextMenu: null,
 
   setScreen: (screen) => set({ screen }),
@@ -152,6 +156,12 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
     safeSetItem('vs-active-program', program);
     set({ activeProgram: program });
   },
+  navigateToProgram: (program) => {
+    const current = get().activeProgram;
+    safeSetItem('vs-active-program', program);
+    set({ activeProgram: program, navReturnProgram: current });
+  },
+  clearNavReturn: () => set({ navReturnProgram: null }),
   openContextMenu: (playerId, playerName, x, y) =>
     set({ contextMenu: { playerId, playerName, x, y } }),
   closeContextMenu: () => set({ contextMenu: null }),

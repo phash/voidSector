@@ -38,6 +38,9 @@ export function TradeScreen() {
   const homeBase = useStore((s) => s.homeBase);
   const npcStationData = useStore((s) => s.npcStationData);
   const kontorOrders = useStore((s) => s.kontorOrders);
+  const navReturnProgram = useStore((s) => s.navReturnProgram);
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
+  const clearNavReturn = useStore((s) => s.clearNavReturn);
   const [amount, setAmount] = useState(1);
   const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
 
@@ -94,6 +97,15 @@ export function TradeScreen() {
         overflow: 'auto',
       }}
     >
+      {navReturnProgram && (
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', marginBottom: 8 }}
+          onClick={() => { setActiveProgram(navReturnProgram); clearNavReturn(); }}
+        >
+          [← ZURÜCK]
+        </button>
+      )}
       <div style={{ letterSpacing: '0.2em', marginBottom: '8px', opacity: 0.6 }}>
         TRADE — {isStation ? 'STATION' : `T${tier}`} | {credits} CR
       </div>
