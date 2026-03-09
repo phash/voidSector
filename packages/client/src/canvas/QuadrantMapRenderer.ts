@@ -1,5 +1,5 @@
 import { QUADRANT_SIZE } from '@void-sector/shared';
-import type { JumpGateMapEntry } from '@void-sector/shared';
+import type { JumpGateMapEntry, QuadrantControlState, NpcFleetState } from '@void-sector/shared';
 import { drawQuadrantJumpGateLines } from './jumpGateOverlay';
 
 export interface QuadrantMapState {
@@ -14,6 +14,35 @@ export interface QuadrantMapState {
   knownJumpGates?: JumpGateMapEntry[];
   /** Map of quadrantKey ("qx:qy") → faction hex color. Optional — renders when present */
   factionTerritoryColors?: Map<string, string>;
+  /** Expansion warfare: quadrant control state per quadrant */
+  quadrantControls?: QuadrantControlState[];
+  /** Expansion warfare: NPC fleets in transit */
+  npcFleets?: NpcFleetState[];
+}
+
+// ─── Expansion Warfare Overlay Helpers ───────────────────────────────────────
+
+const FACTION_COLORS: Record<string, string> = {
+  human:         'rgba(64, 128, 255, 0.30)',
+  kthari:        'rgba(255, 68, 68, 0.30)',
+  silent_swarm:  'rgba(255, 136, 68, 0.30)',
+  archivists:    'rgba(136, 255, 204, 0.30)',
+  consortium:    'rgba(255, 170, 68, 0.30)',
+  mycelians:     'rgba(68, 255, 136, 0.30)',
+  mirror_minds:  'rgba(204, 136, 255, 0.30)',
+  tourist_guild: 'rgba(255, 255, 68, 0.30)',
+};
+
+function getOverlayColor(qx: number, qy: number, controls: QuadrantControlState[]): string | null {
+  const ctrl = controls.find(c => c.qx === qx && c.qy === qy);
+  if (!ctrl) return null;
+  return FACTION_COLORS[ctrl.controlling_faction] ?? 'rgba(128,128,128,0.2)';
+}
+
+function getFrictionGlowColor(ctrl: QuadrantControlState): string | null {
+  if (ctrl.friction_score < 50) return null;
+  if (ctrl.friction_score >= 71) return 'rgba(255,68,68,0.75)';
+  return 'rgba(255,165,0,0.55)';
 }
 
 // Cell sizes per zoom level
@@ -99,6 +128,17 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
       }
 
+      // Expansion warfare: controlling faction color overlay
+      const controls = state.quadrantControls;
+      const ctrl = controls?.find(c => c.qx === qx && c.qy === qy) ?? null;
+      if (ctrl) {
+        const overlayColor = getOverlayColor(qx, qy, controls!);
+        if (overlayColor) {
+          ctx.fillStyle = overlayColor;
+          ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        }
+      }
+
       // Cell background
       if (isKnown) {
         // Known quadrant: green tinted fill (layered over faction tint)
@@ -112,6 +152,16 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         : 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1;
       ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+
+      // Expansion warfare: friction glow border
+      if (ctrl) {
+        const glowColor = getFrictionGlowColor(ctrl);
+        if (glowColor) {
+          ctx.strokeStyle = glowColor;
+          ctx.lineWidth = ctrl.friction_score >= 71 ? 2.5 : 1.5;
+          ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        }
+      }
 
       // Current quadrant pulsing border
       if (isCurrent) {
@@ -167,6 +217,29 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
         ctx.fillText('?', cellX, cellY);
+      }
+
+      // Expansion warfare: conflict icons (at zoom >= 1)
+      if (state.zoomLevel >= 1) {
+        const iconFontSize = Math.max(6, CELL_W * 0.35);
+        ctx.font = `${iconFontSize}px 'Share Tech Mono', 'Courier New', monospace`;
+
+        // Total war icon ⚔ (top-right corner)
+        if (ctrl?.friction_state === 'total_war') {
+          ctx.fillStyle = 'rgba(255, 68, 68, 0.9)';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'top';
+          ctx.fillText('\u2694', cellX + CELL_W / 2 - 1, cellY - CELL_H / 2 + 1);
+        }
+
+        // Incoming fleet indicator ▶ (bottom-right corner)
+        const hasFleet = state.npcFleets?.some(f => f.to_qx === qx && f.to_qy === qy) ?? false;
+        if (hasFleet) {
+          ctx.fillStyle = 'rgba(180, 180, 180, 0.75)';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('\u25BA', cellX + CELL_W / 2 - 1, cellY + CELL_H / 2 - 1);
+        }
       }
     }
   }

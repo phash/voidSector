@@ -195,6 +195,12 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     colorProfile: 'Amber Classic',
     setColorProfile: vi.fn(),
     scanPending: false,
+    quadrantControls: [],
+    npcFleets: [],
+    warTicker: [],
+    setQuadrantControls: vi.fn(),
+    setNpcFleets: vi.fn(),
+    addWarTickerEvent: vi.fn(),
     ...overrides,
   };
   useStore.setState(state as StoreState);
