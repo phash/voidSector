@@ -31,9 +31,8 @@ import {
   setPlayerLevel,
   addCredits,
   getPlayerCredits,
-  getPlayerCargo,
-  deductCargo,
 } from '../../db/queries.js';
+import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
 
 export class QuestService {
   constructor(private ctx: ServiceContext) {}
@@ -207,7 +206,7 @@ export class QuestService {
     context: Record<string, any>,
   ): Promise<void> {
     const rows = await getActiveQuests(playerId);
-    const cargo = await getPlayerCargo(playerId);
+    const cargo = await getCargoState(playerId);
     for (const row of rows) {
       const objectives = row.objectives as QuestObjective[];
       let updated = false;
@@ -296,10 +295,10 @@ export class QuestService {
           // Deduct fetch resources from cargo
           for (const obj of objectives) {
             if (obj.type === 'fetch' && obj.resource && obj.amount) {
-              await deductCargo(playerId, obj.resource, obj.amount);
+              await removeFromInventory(playerId, 'resource', obj.resource, obj.amount);
             }
           }
-          this.ctx.send(client, 'cargoUpdate', await getPlayerCargo(playerId));
+          this.ctx.send(client, 'cargoUpdate', await getCargoState(playerId));
 
           this.ctx.send(
             client,

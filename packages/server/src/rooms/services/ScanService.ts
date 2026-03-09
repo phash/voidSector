@@ -3,7 +3,6 @@ import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import type {
   CompleteScanEventMessage,
-  ResourceType,
   SectorEnvironment,
 } from '@void-sector/shared';
 
@@ -28,8 +27,6 @@ import {
   completeScanEvent,
   getPlayerCredits,
   addCredits,
-  addToCargo,
-  getPlayerCargo,
   getPlayerReputation,
   addBlueprint,
   getPlayerFaction,
@@ -39,6 +36,7 @@ import {
   getActiveShip,
   recordAlienEncounter,
 } from '../../db/queries.js';
+import { addToInventory, getCargoState } from '../../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
 import { WORLD_SEED } from '@void-sector/shared';
@@ -121,8 +119,8 @@ export class ScanService {
           ruinResult.fragmentIndex, ruinResult.ruinLevel, ruinResult.artefactFound,
         );
         if (ruinResult.artefactFound) {
-          await addToCargo(auth.userId, 'artefact' as ResourceType, 1);
-          client.send('cargoUpdate', await getPlayerCargo(auth.userId));
+          await addToInventory(auth.userId, 'resource', 'artefact', 1);
+          client.send('cargoUpdate', await getCargoState(auth.userId));
         }
         client.send('ancientRuinScan', {
           fragmentIndex: ruinResult.fragmentIndex,
@@ -347,8 +345,8 @@ export class ScanService {
       );
     }
     if (eventData.rewardArtefact && eventData.rewardArtefact > 0) {
-      await addToCargo(auth.userId, 'artefact' as ResourceType, eventData.rewardArtefact);
-      const updatedCargo = await getPlayerCargo(auth.userId);
+      await addToInventory(auth.userId, 'resource', 'artefact', eventData.rewardArtefact);
+      const updatedCargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', updatedCargo);
       client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
     }
