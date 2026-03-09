@@ -1255,6 +1255,37 @@ export const ENVIRONMENT_WEIGHTS: Record<string, number> = {
   // black_hole is handled separately via BLACK_HOLE_SPAWN_CHANCE
 };
 
+// Extended environment weights for Phase 2 worldgen (sector environment types)
+// Sums to 1.0. star/black_hole are impassable.
+export const SECTOR_ENVIRONMENT_WEIGHTS: Record<string, number> = {
+  empty: 0.55,
+  nebula: 0.12,
+  planet: 0.10,
+  asteroid: 0.12,
+  star: 0.08,
+  black_hole: 0.03,
+};
+
+// Planet subtype distribution
+export const PLANET_SUBTYPE_WEIGHTS: Record<string, number> = {
+  terrestrial: 0.40,
+  water: 0.25,
+  ice: 0.20,
+  lava: 0.12,
+  exotic_a: 0.010,
+  exotic_b: 0.010,
+  exotic_c: 0.010,
+};
+
+// Distance-based density multipliers for sector content generation
+// At distance 0 (origin): stations 2.5× more common, pirates 0.3×
+// At distance 5000+: stations 0.3×, pirates 3×
+export const DENSITY_STATION_NEAR = 2.5;
+export const DENSITY_STATION_FAR = 0.3;
+export const DENSITY_PIRATE_NEAR = 0.3;
+export const DENSITY_PIRATE_FAR = 3.0;
+export const DENSITY_DISTANCE_THRESHOLD = 5000; // Chebyshev distance in absolute sectors
+
 // Two-stage worldgen: content weights (second roll, for non-blackhole)
 export const CONTENT_WEIGHTS: Record<string, number> = {
   none: 0.45,
@@ -1330,6 +1361,9 @@ export const ENVIRONMENT_COLORS: Record<SectorEnvironment, string> = {
   empty: '#FFB000',
   nebula: '#00BFFF',
   black_hole: '#1A1A1A',
+  star: '#FFF700',
+  planet: '#44FF88',
+  asteroid: '#CC8844',
 };
 
 // Environment-specific radar symbols
@@ -1337,6 +1371,9 @@ export const ENVIRONMENT_SYMBOLS: Record<SectorEnvironment, string> = {
   empty: '\u00B7', // ·
   nebula: '\u2592', // ▒
   black_hole: 'o',
+  star: '*',
+  planet: '\u25CF', // ●
+  asteroid: '\u25C6', // ◆
 };
 
 // Content overlay symbols for radar
@@ -1347,6 +1384,9 @@ export const CONTENT_SYMBOLS: Partial<Record<SectorContent, string>> = {
   player_base: 'B',
   anomaly: '\u25CA', // ◊
   pirate_zone: '\u2620', // ☠
+  meteor: 'm',
+  relic: 'R',
+  npc_ship: '\u25B8', // ▸
 };
 
 // Content overlay colors
@@ -1357,6 +1397,9 @@ export const CONTENT_COLORS: Partial<Record<SectorContent, string>> = {
   pirate_zone: '#FF3333',
   home_base: '#FFFFFF',
   player_base: '#FFFFFF',
+  meteor: '#FFD700',
+  relic: '#CC44FF',
+  npc_ship: '#44AAFF',
 };
 
 // Colors — Amber-Monochrom as per visual_design.md

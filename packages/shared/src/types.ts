@@ -1,13 +1,17 @@
 export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly' | 'pirate';
 
-export type SectorEnvironment = 'empty' | 'nebula' | 'black_hole';
+export type SectorEnvironment = 'empty' | 'nebula' | 'star' | 'planet' | 'asteroid' | 'black_hole';
+export type PlanetSubtype = 'terrestrial' | 'water' | 'ice' | 'lava' | 'exotic_a' | 'exotic_b' | 'exotic_c';
 export type SectorContent =
   | 'asteroid_field'
   | 'station'
   | 'anomaly'
   | 'pirate_zone'
   | 'home_base'
-  | 'player_base';
+  | 'player_base'
+  | 'meteor'
+  | 'relic'
+  | 'npc_ship';
 
 export type MineableResourceType = 'ore' | 'gas' | 'crystal';
 export type ResourceType = MineableResourceType | 'artefact';
@@ -58,6 +62,16 @@ export function legacySectorType(env: SectorEnvironment, contents: SectorContent
 /** Derive environment from legacy SectorType */
 export function deriveEnvironment(type: SectorType): SectorEnvironment {
   return type === 'nebula' ? 'nebula' : 'empty';
+}
+
+/** Returns true if a sector environment can be entered/traversed by a ship */
+export function isTraversable(env: SectorEnvironment): boolean {
+  return env !== 'star' && env !== 'black_hole';
+}
+
+/** Returns true if an environment is a planet type */
+export function isPlanetEnvironment(env: SectorEnvironment): boolean {
+  return env === 'planet';
 }
 
 /** Derive contents from legacy SectorType */
