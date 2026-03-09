@@ -21,7 +21,6 @@ interface EncounterTableEntry {
   minQDist: number;
   chance: number;              // 0.0–1.0 per sector movement
   eventType: string;
-  dialog: string;
   canRespond: boolean;
   acceptLabel?: string;
   declineLabel?: string;
@@ -34,7 +33,6 @@ export const ALIEN_ENCOUNTER_TABLE: EncounterTableEntry[] = [
   {
     factionId: 'archivists', minQDist: 100, chance: 0.02,
     eventType: 'scan_probe',
-    dialog: 'ARCHIVAR-SONDE SCANNT EUER SCHIFF — "Daten akzeptabel. Randspezies verhalten sich berechenbar."',
     canRespond: true, acceptLabel: 'Scan erlauben', declineLabel: 'Abschirmen',
     repOnAccept: 8, repOnDecline: -3,
     dialogByTier: {
@@ -46,7 +44,6 @@ export const ALIEN_ENCOUNTER_TABLE: EncounterTableEntry[] = [
   {
     factionId: 'kthari', minQDist: 200, chance: 0.05,
     eventType: 'toll_demand',
-    dialog: "K'THARI PATROUILLE — \"Mautgebühr für Durchquerung unseres Grenzgebiets: 50 Credits oder Rückzug.\"",
     canRespond: true, acceptLabel: 'Zahlen', declineLabel: 'Verweigern',
     repOnAccept: 10, repOnDecline: -15,
     dialogByTier: {
@@ -58,7 +55,6 @@ export const ALIEN_ENCOUNTER_TABLE: EncounterTableEntry[] = [
   {
     factionId: 'consortium', minQDist: 150, chance: 0.03,
     eventType: 'trade_offer',
-    dialog: 'KONSORTIUM-HÄNDLER NÄHERT SICH — "Sonderrabatt 15% auf nächsten Handel. Zeitlich begrenzt."',
     canRespond: true, acceptLabel: 'Angebot annehmen', declineLabel: 'Ablehnen',
     repOnAccept: 5, repOnDecline: -2,
     dialogByTier: {
@@ -70,7 +66,6 @@ export const ALIEN_ENCOUNTER_TABLE: EncounterTableEntry[] = [
   {
     factionId: 'tourist_guild', minQDist: 500, chance: 0.08,
     eventType: 'photo_op',
-    dialog: 'TOURISTENGILDE LUXUSLINER — "Dürfen wir Fotos machen? Sie sind SO authentisch menschlich!"',
     canRespond: true, acceptLabel: 'Für Fotos posieren', declineLabel: 'Ablehnen',
     repOnAccept: 12, repOnDecline: -5,
     dialogByTier: {
@@ -82,7 +77,6 @@ export const ALIEN_ENCOUNTER_TABLE: EncounterTableEntry[] = [
   {
     factionId: 'scrappers', minQDist: 50, chance: 0.04,
     eventType: 'black_market',
-    dialog: 'SCRAPPER-SCHWARZMARKT — "Psst. Haben was Interessantes. Nur Tausch, keine Credits."',
     canRespond: true, acceptLabel: 'Anschauen', declineLabel: 'Ignorieren',
     repOnAccept: 7, repOnDecline: 0,
     dialogByTier: {
@@ -94,7 +88,6 @@ export const ALIEN_ENCOUNTER_TABLE: EncounterTableEntry[] = [
   {
     factionId: 'mirror_minds', minQDist: 400, chance: 0.01,
     eventType: 'emotion_read',
-    dialog: 'MIRROR MIND KONTAKT — Sie zeigen euch euer eigenes Gesicht. Keine Worte. Nur ein Spiegel.',
     canRespond: false,
     repOnAccept: 0, repOnDecline: 0,
     dialogByTier: {
@@ -106,7 +99,6 @@ export const ALIEN_ENCOUNTER_TABLE: EncounterTableEntry[] = [
   {
     factionId: 'silent_swarm', minQDist: 800, chance: 0.02,
     eventType: 'drone_follow',
-    dialog: 'SILENT SWARM DROHNE FOLGT EUREM SCHIFF — Keine Kommunikation. Nur Beobachtung.',
     canRespond: false,
     repOnAccept: 0, repOnDecline: 0,
     dialogByTier: {

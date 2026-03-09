@@ -1,5 +1,5 @@
 // packages/server/src/__tests__/alienEncounterGen.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   ALIEN_ENCOUNTER_TABLE,
   rollForEncounter,
