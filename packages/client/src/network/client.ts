@@ -554,6 +554,11 @@ class GameNetwork {
               data.activeResearch2 !== undefined ? data.activeResearch2 : current.activeResearch2,
             wissen: data.wissen !== undefined ? data.wissen : current.wissen,
           };
+          // Artefacts were deducted by server — request fresh snapshot
+          this.requestResearchState();
+        }
+        if (data.activated) {
+          patch.pendingBlueprint = null;
         }
         if (Object.keys(patch).length) useStore.setState(patch);
       }
