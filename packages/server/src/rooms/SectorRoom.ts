@@ -117,7 +117,7 @@ import type { AlienInteractMessage } from './services/AlienInteractionService.js
 import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
-import { rollForEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounterGen.js';
+import { rollForEncounter, isInteractiveEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounterGen.js';
 import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
 import { logger } from '../utils/logger.js';
@@ -783,8 +783,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       if (delta !== 0) {
         await addAlienReputation(auth.userId, data.factionId, delta).catch(() => {});
       }
-      const humanityDelta = data.accepted ? 3 : -2;
-      await contributeHumanityRep(data.factionId, humanityDelta).catch(() => {});
+      if (isInteractiveEncounter(data.factionId)) {
+        const humanityDelta = data.accepted ? 3 : -2;
+        await contributeHumanityRep(data.factionId, humanityDelta).catch(() => {});
+      }
       client.send('alienEncounterResolved', { factionId: data.factionId, repDelta: delta });
     });
 

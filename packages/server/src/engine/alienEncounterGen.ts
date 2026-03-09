@@ -2,7 +2,7 @@
 import type { AlienFactionId } from './alienReputationService.js';
 import type { HumanityRepTier } from './humanityRepTier.js';
 import { getHumanityRepTier, getHumanityChanceModifier } from './humanityRepTier.js';
-import { getHumanityRep } from '../db/queries.js';
+import { getAllHumanityReps } from '../db/queries.js';
 
 export interface AlienEncounterEvent {
   factionId: AlienFactionId;
@@ -129,8 +129,10 @@ export async function rollForEncounter(
   const eligible = ALIEN_ENCOUNTER_TABLE.filter((e) => qDist >= e.minQDist);
   if (eligible.length === 0) return null;
 
+  const allHumanityReps = await getAllHumanityReps();
+
   for (const entry of eligible) {
-    const humanityRepValue = await getHumanityRep(entry.factionId);
+    const humanityRepValue = allHumanityReps[entry.factionId] ?? 0;
     const tier = getHumanityRepTier(humanityRepValue);
     const modifier = getHumanityChanceModifier(tier);
     const effectiveChance = entry.chance * modifier;
@@ -150,4 +152,13 @@ export async function rollForEncounter(
     }
   }
   return null;
+}
+
+/**
+ * Returns true if the given faction's encounter is interactive (canRespond: true).
+ * Passive encounters (mirror_minds, silent_swarm) should not generate humanity rep.
+ */
+export function isInteractiveEncounter(factionId: string): boolean {
+  const entry = ALIEN_ENCOUNTER_TABLE.find((e) => e.factionId === factionId);
+  return entry?.canRespond ?? false;
 }

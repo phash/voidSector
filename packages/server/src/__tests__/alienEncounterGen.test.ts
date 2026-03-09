@@ -7,7 +7,7 @@ import {
 } from '../engine/alienEncounterGen.js';
 
 vi.mock('../db/queries.js', () => ({
-  getHumanityRep: vi.fn().mockResolvedValue(0),
+  getAllHumanityReps: vi.fn().mockResolvedValue({}),
 }));
 
 describe('alienEncounterGen', () => {
