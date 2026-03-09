@@ -164,6 +164,9 @@ export interface GameSlice {
   // Event log
   log: string[];
 
+  // Inline action error (shown near the action that caused it)
+  actionError: { code: string; message: string } | null;
+
   // Mining
   mining: MiningState | null;
 
@@ -325,6 +328,7 @@ export interface GameSlice {
   clearPlayers: () => void;
   addDiscoveries: (sectors: SectorData[]) => void;
   addLogEntry: (message: string) => void;
+  setActionError: (error: { code: string; message: string } | null) => void;
   setActiveMonitor: (monitor: string) => void;
   setMining: (mining: MiningState) => void;
   setCargo: (cargo: CargoState) => void;
@@ -407,6 +411,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   players: {},
   discoveries: {},
   log: [],
+  actionError: null,
   mining: null,
   cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
   activeMonitor: 'NAV-COM',
@@ -529,6 +534,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     set((s) => ({
       log: [...s.log.slice(-49), `[${new Date().toLocaleTimeString()}] ${message}`],
     })),
+
+  setActionError: (actionError) => set({ actionError }),
 
   setActiveMonitor: (activeMonitor) => set({ activeMonitor }),
   setMining: (mining) => set({ mining }),

@@ -2,6 +2,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES, innerCoord } from '@void-sector/shared';
 import type { MineableResourceType } from '@void-sector/shared';
+import { InlineError } from './InlineError';
 
 function ResourceBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
@@ -85,6 +86,7 @@ export function MiningScreen() {
           [STOP]
         </button>
       </div>
+      <InlineError codes={['NO_RESOURCES', 'MINE_FAILED', 'RATE_LIMIT', 'INVALID_INPUT']} />
     </div>
   );
 }

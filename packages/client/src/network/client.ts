@@ -374,6 +374,14 @@ class GameNetwork {
       // Reset pending states on any error to prevent permanent UI lockout
       if (store.scanPending) store.setScanPending(false);
       if (store.jumpPending) store.setJumpPending(false);
+      // Set inline error for action-specific panels
+      const inlineCodes = [
+        'NO_RESOURCES', 'MINE_FAILED', 'NOT_MINING', 'RATE_LIMIT',
+        'BUILD_FAIL', 'INSUFFICIENT', 'INVALID_INPUT',
+      ];
+      if (inlineCodes.some((c) => data.code.startsWith(c))) {
+        store.setActionError(data);
+      }
       if (data.code === 'GUEST_RESTRICTED') {
         store.addLogEntry(
           `GAST-EINSCHRÄNKUNG: ${data.message} — Registriere dich für vollen Zugang!`,

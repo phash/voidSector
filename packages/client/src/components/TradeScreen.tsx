@@ -10,6 +10,7 @@ import {
   TRADE_ROUTE_MAX_CYCLE,
 } from '@void-sector/shared';
 import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
+import { InlineError } from './InlineError';
 
 const btnStyle: React.CSSProperties = {
   background: 'transparent',
@@ -504,6 +505,7 @@ export function TradeScreen() {
           })}
         </div>
       )}
+      <InlineError codes={['INSUFFICIENT', 'BUILD_FAIL']} />
     </div>
   );
 }

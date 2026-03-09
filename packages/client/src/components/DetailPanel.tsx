@@ -14,6 +14,7 @@ import type { ChatChannel } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 import { PlayerGatePanel } from './PlayerGatePanel';
+import { InlineError } from './InlineError';
 
 type DrillDown =
   | { type: 'player'; username: string; sessionId: string }
@@ -495,6 +496,8 @@ export function DetailPanel() {
               </button>
             </div>
           )}
+
+          {isPlayerHere && <InlineError codes={['BUILD_FAIL', 'INSUFFICIENT']} />}
 
           {/* Bookmark button */}
           <button
