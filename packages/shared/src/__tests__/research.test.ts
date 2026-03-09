@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { isModuleFreelyAvailable, isModuleUnlocked, canStartResearch } from '../research';
-import { MODULES } from '../constants';
+import {
+  MODULES,
+  WISSEN_COST_BY_TIER,
+  ARTEFACT_REQUIRED_BY_TIER,
+  MAX_ARTEFACTS_PER_RESEARCH,
+  WISSEN_SECTOR_MULTIPLIERS,
+} from '../constants';
 import { ARTEFACT_TYPES, ARTEFACT_TYPE_FOR_CATEGORY } from '../types';
 import type { ResearchState } from '../types';
 
@@ -95,15 +101,14 @@ describe('canStartResearch', () => {
   // Duplicate of "allows research when prereq met and resources available" — skipped
   // it('accepts research when wissen is sufficient ...')
 
-  it.skip('rejects when artefact_drive is insufficient (deferred: Task 2 must wire artefact costs into drive_mk3 researchCost first)', () => {
-    // Once Task 2 adds artefacts: { drive: 1 } to drive_mk3 researchCost,
-    // replace this with a real assertion: expect(result.valid).toBe(false)
+  it('rejects when artefact_drive is insufficient', () => {
     const rs: ResearchState = {
       ...emptyResearch(),
       unlockedModules: ['drive_mk1', 'drive_mk2'],
     };
     const result = canStartResearch('drive_mk3', rs, { ...PLENTY, artefact_drive: 0 });
     expect(result.valid).toBe(false);
+    expect(result.error).toContain('artefact');
   });
 
   it('rejects freely available modules', () => {
@@ -200,5 +205,57 @@ describe('ArtefactType', () => {
     expect(Object.keys(ARTEFACT_TYPE_FOR_CATEGORY)).toHaveLength(9);
     expect(ARTEFACT_TYPE_FOR_CATEGORY['drive']).toBe('drive');
     expect(ARTEFACT_TYPE_FOR_CATEGORY['mining']).toBe('mining');
+  });
+});
+
+describe('Wissen constants', () => {
+  it('WISSEN_COST_BY_TIER covers tiers 1-5', () => {
+    for (let t = 1; t <= 5; t++) {
+      expect(WISSEN_COST_BY_TIER[t]).toBeGreaterThan(0);
+    }
+  });
+
+  it('costs increase with tier', () => {
+    for (let t = 1; t < 5; t++) {
+      expect(WISSEN_COST_BY_TIER[t + 1]).toBeGreaterThan(WISSEN_COST_BY_TIER[t]);
+    }
+  });
+
+  it('T1-T2 require no artefacts, T3-T5 require some', () => {
+    expect(ARTEFACT_REQUIRED_BY_TIER[1]).toBe(0);
+    expect(ARTEFACT_REQUIRED_BY_TIER[2]).toBe(0);
+    expect(ARTEFACT_REQUIRED_BY_TIER[3]).toBeGreaterThan(0);
+    expect(ARTEFACT_REQUIRED_BY_TIER[5]).toBe(MAX_ARTEFACTS_PER_RESEARCH);
+  });
+
+  it('ancient_jumpgate has highest multiplier', () => {
+    const max = Math.max(...Object.values(WISSEN_SECTOR_MULTIPLIERS));
+    expect(WISSEN_SECTOR_MULTIPLIERS['ancient_jumpgate']).toBe(max);
+  });
+});
+
+describe('MODULES researchCost (new format)', () => {
+  it('all researchCost values use wissen (not credits)', () => {
+    for (const [id, mod] of Object.entries(MODULES)) {
+      if (!mod.researchCost) continue;
+      expect((mod.researchCost as any).credits, `${id} should not have credits`).toBeUndefined();
+      expect(mod.researchCost.wissen, `${id} should have wissen`).toBeGreaterThan(0);
+    }
+  });
+
+  it('T3+ modules require matching artefacts', () => {
+    for (const [id, mod] of Object.entries(MODULES)) {
+      if (!mod.researchCost || mod.tier < 3) continue;
+      const total = Object.values(mod.researchCost.artefacts ?? {}).reduce((s, v) => s + v, 0);
+      expect(total, `${id} T${mod.tier} needs artefacts`).toBeGreaterThan(0);
+    }
+  });
+
+  it('T5 modules require 3 artefacts', () => {
+    for (const [id, mod] of Object.entries(MODULES)) {
+      if (!mod.researchCost || mod.tier !== 5) continue;
+      const total = Object.values(mod.researchCost.artefacts ?? {}).reduce((s, v) => s + v, 0);
+      expect(total, `${id} T5 should require 3 artefacts`).toBe(3);
+    }
   });
 });
