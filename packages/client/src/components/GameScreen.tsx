@@ -207,6 +207,10 @@ function TerritoryPanel() {
 function ShipSysScreen() {
   const view = (useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'settings') as ShipSysView;
 
+  useEffect(() => {
+    network.sendGetShips(); // refresh acepXp + ship stats on open
+  }, []);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>

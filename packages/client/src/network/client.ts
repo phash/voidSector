@@ -445,6 +445,12 @@ class GameNetwork {
 
     room.onMessage('shipList', (data: { ships: any[] }) => {
       useStore.setState({ shipList: data.ships });
+      // Refresh acepXp on active ship from latest server data
+      const activeShip = data.ships.find((s) => s.active);
+      if (activeShip?.acepXp) {
+        const current = useStore.getState().ship;
+        if (current) useStore.setState({ ship: { ...current, acepXp: activeShip.acepXp } });
+      }
     });
 
     room.onMessage('moduleInventory', (data: { modules: string[] }) => {
@@ -871,6 +877,18 @@ class GameNetwork {
 
     room.onMessage('territoryResult', (data: { success: boolean; message: string; claim?: any; combat?: any }) => {
       useStore.getState().addLogEntry(data.message);
+    });
+
+    room.onMessage('myTerritories', (data: { territories: any[] }) => {
+      const store = useStore.getState();
+      if (data.territories.length === 0) {
+        store.addLogEntry('TERRITORIUM: Keine Ansprüche registriert.');
+      } else {
+        store.addLogEntry(`TERRITORIUM: ${data.territories.length} Ansprüche —`);
+        for (const t of data.territories) {
+          store.addLogEntry(`  ⬡ [${t.quadrant_x}:${t.quadrant_y}] ${t.defense_rating} — ${t.victories} Siege`);
+        }
+      }
     });
 
     room.onMessage('stationUnderAttack', (data: StationCombatEvent) => {

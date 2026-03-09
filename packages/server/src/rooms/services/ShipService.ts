@@ -19,6 +19,7 @@ import { hasShipyard } from '../../engine/npcgen.js';
 import { getOrInitStation, getStationLevel } from '../../engine/npcStationEngine.js';
 import { query } from '../../db/client.js';
 import { getFuelState, saveFuelState } from './RedisAPStore.js';
+import { getAcepXpSummary } from '../../engine/acepXpService.js';
 import {
   getActiveShip,
   getPlayerHomeBase,
@@ -52,10 +53,13 @@ export class ShipService {
   async handleGetShips(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
     const ships = await getPlayerShips(auth.userId);
-    const shipsWithStats = ships.map((s) => ({
-      ...s,
-      stats: calculateShipStats(s.hullType, s.modules),
-    }));
+    const shipsWithStats = await Promise.all(
+      ships.map(async (s) => ({
+        ...s,
+        stats: calculateShipStats(s.hullType, s.modules),
+        acepXp: await getAcepXpSummary(s.id),
+      })),
+    );
     client.send('shipList', { ships: shipsWithStats });
   }
 
