@@ -12,6 +12,8 @@ export interface QuadrantMapState {
   panOffset: { x: number; y: number };
   animTime: number;
   knownJumpGates?: JumpGateMapEntry[];
+  /** Map of quadrantKey ("qx:qy") → faction hex color. Optional — renders when present */
+  factionTerritoryColors?: Map<string, string>;
 }
 
 // Cell sizes per zoom level
@@ -90,9 +92,16 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         qx === state.selectedQuadrant.qx &&
         qy === state.selectedQuadrant.qy;
 
+      // Faction territory color underlay (if faction data is available)
+      const factionColor = state.factionTerritoryColors?.get(key);
+      if (factionColor) {
+        ctx.fillStyle = factionColor + '22'; // 13% opacity tint
+        ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+      }
+
       // Cell background
       if (isKnown) {
-        // Known quadrant: green tinted fill
+        // Known quadrant: green tinted fill (layered over faction tint)
         ctx.fillStyle = isCurrent ? 'rgba(0, 255, 136, 0.25)' : 'rgba(0, 255, 136, 0.08)';
         ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
       }

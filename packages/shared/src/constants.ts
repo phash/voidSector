@@ -1637,3 +1637,55 @@ export const SPAWN_QUADRANT_BAND = 10;
 export const SPAWN_CLUSTER_MAX_PLAYERS_QUAD = 5;
 export const QUADRANT_NAME_MAX_LENGTH = 24;
 export const QUADRANT_NAME_MIN_LENGTH = 3;
+
+// ---- Lebendiges Universum (Living Universe) ----
+
+export const COSMIC_FACTION_IDS = [
+  'humans', 'archivists', 'consortium', 'kthari',
+  'mycelians', 'mirror_minds', 'tourist_guild',
+  'silent_swarm', 'helions', 'axioms', 'scrappers',
+] as const;
+export type CosmicFactionId = typeof COSMIC_FACTION_IDS[number];
+
+// Human starting territory: quadrants 0:0 to 4:4 (25 quadrants)
+export const HUMAN_STARTING_TERRITORY: Array<[number, number]> = [
+  [0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2],
+  [0,3],[1,3],[2,3],[3,0],[3,1],[3,2],[3,3],[4,0],[4,1],
+  [4,2],[4,3],[0,4],[1,4],[2,4],[3,4],[4,4],
+];
+
+// Alien starting regions (distant from humans, no overlap with 0:0–4:4)
+export const ALIEN_STARTING_REGIONS: Record<CosmicFactionId, { qx: number; qy: number; radius: number }[]> = {
+  humans: [],
+  archivists: [{ qx: 95, qy: 105, radius: 3 }, { qx: 110, qy: 90, radius: 2 }],
+  consortium: [{ qx: 200, qy: 210, radius: 4 }],
+  kthari: [{ qx: 270, qy: 280, radius: 5 }, { qx: 290, qy: 260, radius: 3 }],
+  mycelians: [{ qx: 410, qy: 420, radius: 3 }],
+  mirror_minds: [{ qx: 550, qy: 560, radius: 2 }],
+  tourist_guild: [{ qx: 690, qy: 700, radius: 6 }],
+  silent_swarm: [{ qx: 1090, qy: 1100, radius: 8 }],
+  helions: [{ qx: 1400, qy: 1390, radius: 4 }],
+  axioms: [{ qx: 2800, qy: 2790, radius: 2 }],
+  scrappers: [{ qx: 65, qy: 70, radius: 2 }, { qx: 80, qy: 65, radius: 2 }],
+};
+
+// Hex colors for each cosmic faction (for QUAD-MAP rendering)
+export const COSMIC_FACTION_COLORS: Record<CosmicFactionId, string> = {
+  humans: '#4488FF',
+  archivists: '#88FF88',
+  consortium: '#FF8844',
+  kthari: '#FF4488',
+  mycelians: '#88FFCC',
+  mirror_minds: '#CCCCFF',
+  tourist_guild: '#FFCC44',
+  silent_swarm: '#884488',
+  helions: '#FF8800',
+  axioms: '#44CCFF',
+  scrappers: '#AAAAAA',
+};
+
+// Universe Tick Engine constants
+export const UNIVERSE_TICK_MS = 5_000; // 5 seconds per tick
+export const FACTION_EXPANSION_INTERVAL_TICKS = 360; // 30 min (360 × 5s)
+export const FACTION_MAX_STATIONS_PER_QUADRANT = 5;
+export const HUMAN_CIVILIZATION_METER_MAX = 10_000; // max civ level

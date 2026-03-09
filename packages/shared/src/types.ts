@@ -1207,3 +1207,50 @@ export interface JumpGateDestination {
   totalCost: number;
   hops: number;
 }
+
+// ---- Lebendiges Universum Types ----
+import type { CosmicFactionId } from './constants.js';
+
+export interface CosmicFaction {
+  id: CosmicFactionId;
+  name: string;
+  color: string;
+  description: string;
+  expansionRate: number; // 0.0–1.0 relative to humans
+  minDistanceFromOrigin: number;
+}
+
+export interface QuadrantTerritory {
+  quadrantX: number;
+  quadrantY: number;
+  dominantFaction: CosmicFactionId | null;
+  factionShares: Record<string, number>; // factionId → 0–100
+  totalStations: number;
+  lastUpdated: number;
+}
+
+export interface CosmicNpcFleet {
+  id: string;
+  factionId: CosmicFactionId;
+  type: 'freighter' | 'mining' | 'military' | 'scout';
+  quadrantX: number;
+  quadrantY: number;
+  sectorX: number;
+  sectorY: number;
+  targetQuadrantX: number | null;
+  targetQuadrantY: number | null;
+  targetSectorX: number | null;
+  targetSectorY: number | null;
+  cargoOre: number;
+  cargoGas: number;
+  cargoCrystal: number;
+  ticksToTarget: number;
+  state: 'idle' | 'mining' | 'traveling' | 'building' | 'patrolling';
+}
+
+export interface CivilizationMeter {
+  totalContributions: number;
+  humanStations: number;
+  playerContributions: Record<string, number>; // playerId → contribution points
+  lastTick: number;
+}
