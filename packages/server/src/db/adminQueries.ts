@@ -169,7 +169,7 @@ export async function getPlayerByUsername(username: string): Promise<AdminPlayer
     `SELECT p.id, p.username, p.xp, p.level, fm.faction_id
      FROM players p
      LEFT JOIN faction_members fm ON fm.player_id = p.id
-     WHERE p.username = $1`,
+     WHERE LOWER(p.username) = LOWER($1)`,
     [username],
   );
   if (result.rows.length === 0) return null;
