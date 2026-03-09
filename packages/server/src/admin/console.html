@@ -1183,7 +1183,7 @@ expiresDays: 14"></textarea>
       var editCargo = el('div', { style: 'margin-top:10px' });
       editCargo.appendChild(el('h4', { style: 'margin:0 0 6px' }, 'Edit Cargo Item'));
       var cargoEditRow = el('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' });
-      var inputRes = el('input', { type: 'text', style: 'width:100px', placeholder: 'resource' });
+      var inputRes = el('input', { type: 'text', list: 'cargo-items', style: 'width:140px', placeholder: 'resource...' });
       var inputAmt = el('input', { type: 'number', value: '0', style: 'width:80px', placeholder: 'qty' });
       var btnCargo = el('button', null, 'Set Cargo');
       btnCargo.addEventListener('click', function() {
@@ -2001,5 +2001,22 @@ expiresDays: 14"></textarea>
 })();
 </script>
 
+<datalist id="cargo-items">
+  <option value="ore">
+  <option value="gas">
+  <option value="crystal">
+  <option value="artefact">
+  <option value="artefact_drive">
+  <option value="artefact_cargo">
+  <option value="artefact_scanner">
+  <option value="artefact_armor">
+  <option value="artefact_weapon">
+  <option value="artefact_shield">
+  <option value="artefact_defense">
+  <option value="artefact_special">
+  <option value="artefact_mining">
+  <option value="fuel">
+  <option value="credits">
+</datalist>
 </body>
 </html>
