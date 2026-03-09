@@ -520,7 +520,8 @@ export function DetailPanel() {
             const distance =
               Math.abs(selectedSector.x - position.x) + Math.abs(selectedSector.y - position.y);
             const isAdjacent = distance <= 1;
-            if (!isPlayerHere && !isAdjacent && !autopilot?.active) {
+            const isBlackHole = (selectedSector as any).environment === 'black_hole';
+            if (!isPlayerHere && !isAdjacent && !autopilot?.active && !isBlackHole) {
               const shipStats = ship?.stats ?? null;
               const apCost = shipStats ? calcHyperjumpAP(shipStats.engineSpeed) : 0;
               const fuelCost = shipStats ? calcHyperjumpFuel(shipStats.fuelPerJump, distance) : 0;
