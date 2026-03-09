@@ -89,6 +89,22 @@ describe('QuadMapScreen', () => {
     expect(canvas).not.toBeNull();
   });
 
+  describe('admin zoom gating', () => {
+    it('does not render 250× and 1000× zoom buttons when isAdmin is false', () => {
+      mockStoreState({ isAdmin: false });
+      render(<QuadMapScreen />);
+      expect(screen.queryByText('250×')).toBeNull();
+      expect(screen.queryByText('1000×')).toBeNull();
+    });
+
+    it('renders 250× and 1000× zoom buttons when isAdmin is true', () => {
+      mockStoreState({ isAdmin: true });
+      render(<QuadMapScreen />);
+      expect(screen.getByText('250×')).toBeDefined();
+      expect(screen.getByText('1000×')).toBeDefined();
+    });
+  });
+
   describe('FirstContactDialog', () => {
     const firstContactEvent: FirstContactEvent = {
       quadrant: {

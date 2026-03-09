@@ -126,10 +126,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
     safeSetItem('vs-color-profile', profile);
     set({ colorProfile: profile });
   },
-  setZoomLevel: (level) => set({ zoomLevel: Math.max(0, Math.min(4, level)) }),
+  setZoomLevel: (level) => set({ zoomLevel: Math.max(0, Math.min(5, level)) }),
   setPanOffset: (offset) =>
     set((s) => {
-      if (s.zoomLevel === 4) return {}; // no pan in 3×3 detail view
+      if (s.zoomLevel >= 4) return {}; // no pan in 3×3 detail view or admin deep-zoom
       return {
         panOffset: {
           x: Math.max(-50, Math.min(50, Math.round(offset.x))),
