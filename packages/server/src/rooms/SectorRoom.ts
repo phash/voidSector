@@ -56,6 +56,8 @@ import {
   addAlienReputation,
   contributeHumanityRep,
   getAllHumanityReps,
+  getAllQuadrantControls,
+  getActiveNpcFleets,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -100,6 +102,8 @@ import type {
   CombatV2ActionMessage,
   CombatV2FleeMessage,
   ChatMessage,
+  QuadrantControlState,
+  NpcFleetState,
 } from '@void-sector/shared';
 import type { ServiceContext } from './services/ServiceContext.js';
 import { NavigationService } from './services/NavigationService.js';
@@ -1112,6 +1116,45 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       } catch (err) {
         logger.error({ err }, 'Join autopilot resume error');
+      }
+
+      // Broadcast initial expansion state
+      try {
+        const [controlRows, fleetRows] = await Promise.all([
+          getAllQuadrantControls(),
+          getActiveNpcFleets(),
+        ]);
+        const controls: QuadrantControlState[] = controlRows.map(r => {
+          let friction_state: QuadrantControlState['friction_state'] = 'peaceful_halt';
+          if (r.friction_score > 80) friction_state = 'total_war';
+          else if (r.friction_score > 50) friction_state = 'escalation';
+          else if (r.friction_score > 20) friction_state = 'skirmish';
+          return {
+            qx: r.qx,
+            qy: r.qy,
+            controlling_faction: r.controlling_faction,
+            faction_shares: r.faction_shares,
+            friction_score: r.friction_score,
+            friction_state,
+            attack_value: r.attack_value,
+            defense_value: r.defense_value,
+            station_tier: r.station_tier,
+          };
+        });
+        const fleets: NpcFleetState[] = fleetRows.map(r => ({
+          id: r.id,
+          faction: r.faction,
+          fleet_type: r.fleet_type as NpcFleetState['fleet_type'],
+          from_qx: r.from_qx,
+          from_qy: r.from_qy,
+          to_qx: r.to_qx,
+          to_qy: r.to_qy,
+          eta: new Date(r.eta).getTime(),
+        }));
+        client.send('quadrantControls', controls);
+        client.send('npcFleets', fleets);
+      } catch (err) {
+        logger.error({ err }, 'Join expansion state broadcast error');
       }
     } catch (err) {
       logger.error({ err }, 'Join error');
