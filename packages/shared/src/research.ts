@@ -18,7 +18,7 @@ export function isModuleUnlocked(moduleId: string, research: ResearchState): boo
 export function canStartResearch(
   moduleId: string,
   research: ResearchState,
-  resources: { credits: number; ore: number; gas: number; crystal: number; artefact: number },
+  resources: { wissen?: number; credits?: number; ore?: number; gas?: number; crystal?: number; artefact?: number },
   factionTiers?: Record<string, string>,
 ): { valid: boolean; error?: string } {
   const mod = MODULES[moduleId];
@@ -48,12 +48,16 @@ export function canStartResearch(
 
   // Check resources
   const cost = mod.researchCost;
-  if (resources.credits < cost.credits) return { valid: false, error: 'Not enough credits' };
-  if ((cost.ore ?? 0) > resources.ore) return { valid: false, error: 'Not enough ore' };
-  if ((cost.gas ?? 0) > resources.gas) return { valid: false, error: 'Not enough gas' };
-  if ((cost.crystal ?? 0) > resources.crystal) return { valid: false, error: 'Not enough crystal' };
-  if ((cost.artefact ?? 0) > resources.artefact)
-    return { valid: false, error: 'Not enough artefacts' };
+  if ((resources.wissen ?? 0) < (cost.wissen ?? 0))
+    return { valid: false, error: 'Not enough wissen credits' };
+  if (cost.artefacts) {
+    for (const [type, required] of Object.entries(cost.artefacts)) {
+      const key = `artefact_${type}` as keyof typeof resources;
+      const have = (resources[key] as number | undefined) ?? 0;
+      if (have < (required ?? 0))
+        return { valid: false, error: `Not enough artefact (${type})` };
+    }
+  }
 
   return { valid: true };
 }
