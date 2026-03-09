@@ -133,6 +133,7 @@ export function DetailPanel() {
   const homeBase = useStore((s) => s.homeBase);
   const activeQuests = useStore((s) => s.activeQuests);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
+  const openStationTerminal = useStore((s) => s.openStationTerminal);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
 
@@ -257,6 +258,15 @@ export function DetailPanel() {
         )}
         {isPlayerHere && jumpGateInfo && <JumpGatePanel gate={jumpGateInfo} />}
         {isPlayerHere && playerGateInfo && <PlayerGatePanel />}
+        {isPlayerHere && sector?.type === 'station' && (
+          <button
+            className="vs-btn"
+            style={{ fontSize: '0.75rem', marginTop: 8, borderColor: '#00FF88', color: '#00FF88', display: 'block', width: '100%' }}
+            onClick={openStationTerminal}
+          >
+            [ANDOCKEN]
+          </button>
+        )}
         {isPlayerHere && sector?.type === 'station' && rescuedSurvivors.length > 0 && (
           <button
             className="vs-btn"

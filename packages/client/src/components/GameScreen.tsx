@@ -26,6 +26,7 @@ import { BaseDetailPanel } from './BaseDetailPanel';
 import { BlueprintDialog } from './BlueprintDialog';
 import { QuadMapScreen } from './QuadMapScreen';
 import { MehrOverlay } from './MehrOverlay';
+import { StationTerminalOverlay } from './StationTerminalOverlay';
 import { useStore } from '../state/store';
 import { useMobileTabs } from '../hooks/useMobileTabs';
 import { MONITORS } from '@void-sector/shared';
@@ -323,6 +324,13 @@ export function GameScreen() {
       <BlueprintDialog />
       <CompendiumOverlay />
       <HelpOverlay />
+      <StationTerminalGate />
     </div>
   );
+}
+
+function StationTerminalGate() {
+  const stationTerminalOpen = useStore((s) => s.stationTerminalOpen);
+  if (!stationTerminalOpen) return null;
+  return <StationTerminalOverlay />;
 }

@@ -170,6 +170,9 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     contextMenu: null,
     openContextMenu: vi.fn(),
     closeContextMenu: vi.fn(),
+    stationTerminalOpen: false,
+    openStationTerminal: vi.fn(),
+    closeStationTerminal: vi.fn(),
     directChatRecipient: null,
     setDirectChatRecipient: vi.fn(),
     playerStats: {

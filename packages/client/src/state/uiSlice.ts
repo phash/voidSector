@@ -73,6 +73,11 @@ export interface UISlice {
   setActiveProgram: (program: string) => void;
   openContextMenu: (playerId: string, playerName: string, x: number, y: number) => void;
   closeContextMenu: () => void;
+
+  // Station terminal
+  stationTerminalOpen: boolean;
+  openStationTerminal: () => void;
+  closeStationTerminal: () => void;
 }
 
 export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
@@ -150,4 +155,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set) => ({
   openContextMenu: (playerId, playerName, x, y) =>
     set({ contextMenu: { playerId, playerName, x, y } }),
   closeContextMenu: () => set({ contextMenu: null }),
+
+  stationTerminalOpen: false,
+  openStationTerminal: () => set({ stationTerminalOpen: true }),
+  closeStationTerminal: () => set({ stationTerminalOpen: false }),
 });
