@@ -1318,19 +1318,21 @@ export const SPAWN_CLUSTER_MAX_PLAYERS = 5;
 export const ANCIENT_STATION_CHANCE = 0.15; // 15% of stations are ancient/special variants
 
 // Nebula zone system — seed-based blob generation
-export const NEBULA_ZONE_GRID = 300; // coarse grid spacing (sectors) for nebula zone centers
-export const NEBULA_ZONE_CHANCE = 0.08; // 8% of grid cells become nebula centers
-export const NEBULA_ZONE_MIN_RADIUS = 15; // minimum zone radius in sectors
-export const NEBULA_ZONE_MAX_RADIUS = 50; // maximum zone radius in sectors
+// Target: 1–2 contiguous nebula blobs per quadrant (10 000-sector grid square),
+// each blob 20–200 sectors in area (circular radius 3–8 sectors).
+export const NEBULA_ZONE_GRID = 5_000; // coarse grid spacing: ~4 potential centers per quadrant
+export const NEBULA_ZONE_CHANCE = 0.4; // 40% of centers activate → ~1.6 blobs per quadrant
+export const NEBULA_ZONE_MIN_RADIUS = 3; // min radius → ~28 sectors per blob
+export const NEBULA_ZONE_MAX_RADIUS = 8; // max radius → ~201 sectors per blob
 export const NEBULA_SAFE_ORIGIN = 200; // no nebula zones within this many sectors of origin
 
 // Two-stage worldgen: environment weights (first roll).
-// Weights intentionally sum to 0.70; the remaining 0.30 gap falls through
-// to 'empty' as the default in rollEnvironment().
+// Nebula is handled purely via zone system (NEBULA_ZONE_*) — no scattered random nebula.
+// The entire 'empty' weight falls to 'empty'; the gap falls through to 'empty' as well.
 export const ENVIRONMENT_WEIGHTS: Record<string, number> = {
-  empty: 0.7,
-  nebula: 0.15,
-  // black_hole is handled separately via BLACK_HOLE_SPAWN_CHANCE
+  empty: 1.0,
+  // nebula: handled exclusively by zone system (isInNebulaZone check before this roll)
+  // black_hole: handled separately via BLACK_HOLE_SPAWN_CHANCE
 };
 
 // Extended environment weights for Phase 2 worldgen (sector environment types)
@@ -1364,14 +1366,15 @@ export const DENSITY_PIRATE_NEAR = 0.3;
 export const DENSITY_PIRATE_FAR = 3.0;
 export const DENSITY_DISTANCE_THRESHOLD = 5000; // Chebyshev distance in absolute sectors
 
-// Two-stage worldgen: content weights (second roll, for non-blackhole)
+// Two-stage worldgen: content weights (second roll, for non-blackhole).
+// Target: 90% of all sectors completely empty; remaining 10% keep prior ratios.
 export const CONTENT_WEIGHTS: Record<string, number> = {
-  none: 0.45,
-  asteroid_field: 0.25,
-  pirate: 0.1,
-  anomaly: 0.05,
-  station: 0.08,
-  ruin: 0.02,
+  none: 0.9,
+  asteroid_field: 0.05,
+  pirate: 0.02,
+  anomaly: 0.01,
+  station: 0.016,
+  ruin: 0.004,
 };
 
 // Black hole generation

@@ -43,16 +43,14 @@ describe('worldgen', () => {
       const sector = generateSector(i % 100, Math.floor(i / 100), null);
       counts[sector.type] = (counts[sector.type] || 0) + 1;
     }
-    // All sector types should appear in a large sample
-    for (const type of SECTOR_TYPES) {
-      expect(counts[type] ?? 0).toBeGreaterThan(0);
-    }
-    // empty should be the most common type (weight 0.55)
+    // empty should be the most common sector type
     const emptyCount = counts['empty'] ?? 0;
-    for (const type of SECTOR_TYPES) {
-      if (type !== 'empty') {
-        expect(emptyCount).toBeGreaterThan(counts[type] ?? 0);
-      }
+    expect(emptyCount).toBeGreaterThan(0);
+    // Non-nebula, non-empty content types should all be less common than empty
+    // (nebula is zone-based and won't appear near origin in a 100×100 scan)
+    const nonEmptyTypes = SECTOR_TYPES.filter((t) => t !== 'empty' && t !== 'nebula');
+    for (const type of nonEmptyTypes) {
+      expect(emptyCount).toBeGreaterThan(counts[type] ?? 0);
     }
   });
 
@@ -90,10 +88,11 @@ describe('worldgen', () => {
   });
 
   it('isInNebulaZone: nebula zones appear far from origin (fine-grained scan)', () => {
-    // Fine-grained scan across all quadrants — step=5 ensures min-radius-15 zones are hit
+    // Nebula zones are on a coarse grid (NEBULA_ZONE_GRID sectors).
+    // Scan a wide area covering potential zone centers to find at least one zone.
     let found = false;
-    outer: for (let x = -1500; x <= 1500; x += 5) {
-      for (let y = -1500; y <= 1500; y += 5) {
+    outer: for (let x = -7000; x <= 7000; x += 3) {
+      for (let y = -7000; y <= 7000; y += 3) {
         if (x * x + y * y < 200 * 200) continue; // skip safe origin area
         if (isInNebulaZone(x, y)) {
           found = true;
@@ -224,11 +223,11 @@ describe('worldgen', () => {
   });
 
   it('nebula sectors can contain station content', () => {
-    // Scan nebula zones for sectors with station content
+    // Scan nebula zones for sectors with station content.
+    // Nebula zones are on a coarse grid — scan a wide area to find zone centers.
     let found = false;
-    // Use a very wide scan of nebula zone coordinates
-    for (let x = -1500; x <= 1500 && !found; x += 3) {
-      for (let y = -1500; y <= 1500 && !found; y += 3) {
+    for (let x = -7000; x <= 7000 && !found; x += 3) {
+      for (let y = -7000; y <= 7000 && !found; y += 3) {
         const s = generateSector(x, y, null);
         if (s.environment === 'nebula' && s.contents.includes('station')) {
           expect(s.type).toBe('station');
@@ -241,8 +240,8 @@ describe('worldgen', () => {
 
   it('nebula sectors can contain asteroid_field content', () => {
     let found = false;
-    for (let x = -1500; x <= 1500 && !found; x += 3) {
-      for (let y = -1500; y <= 1500 && !found; y += 3) {
+    for (let x = -7000; x <= 7000 && !found; x += 3) {
+      for (let y = -7000; y <= 7000 && !found; y += 3) {
         const s = generateSector(x, y, null);
         if (s.environment === 'nebula' && s.contents.includes('asteroid_field')) {
           found = true;
