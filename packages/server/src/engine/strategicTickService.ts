@@ -16,6 +16,9 @@ import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
 import { processWissenTick } from './wissenTickHandler.js';
 
+const AGGRESSION_MUL = parseFloat(process.env.ALIEN_AGGRESSION_MUL ?? '1');
+const EXPANSION_RATE_MUL = parseFloat(process.env.ALIEN_EXPANSION_RATE_MUL ?? '1');
+
 // rep store: maps faction_id → numeric reputation (-100..+100)
 export type RepStore = Map<string, number>;
 
@@ -46,7 +49,6 @@ export class StrategicTickService {
       const rep = repStore.get(alienFaction) ?? 0;
       const repTier = repValueToTier(rep);
       const factionCfg = this.factionConfig.getConfig(alienFaction);
-      const AGGRESSION_MUL = parseFloat(process.env.ALIEN_AGGRESSION_MUL ?? '1');
       const aggression = (factionCfg?.aggression ?? 1.0) * AGGRESSION_MUL;
       const { score, state } = calculateFriction(repTier, aggression);
 
@@ -126,7 +128,6 @@ export class StrategicTickService {
       const { state } = calculateFriction(repTier, faction.aggression);
       if (state === 'peaceful_halt') continue;
 
-      const EXPANSION_RATE_MUL = parseFloat(process.env.ALIEN_EXPANSION_RATE_MUL ?? '1');
       const eta = new Date(Date.now() + (faction.expansion_rate / EXPANSION_RATE_MUL) * 60_000);
       await createNpcFleet({
         faction: faction.faction_id,
