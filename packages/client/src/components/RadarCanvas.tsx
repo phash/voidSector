@@ -129,8 +129,8 @@ export function RadarCanvas() {
       const cellH = CELL_SIZES[useStore.getState().zoomLevel]?.h ?? 50;
       const dx = Math.round((e.clientX - dragStartX) / cellW);
       const dy = Math.round((e.clientY - dragStartY) / cellH);
-      const newX = Math.max(-3, Math.min(3, panStartX - dx));
-      const newY = Math.max(-3, Math.min(3, panStartY + dy));
+      const newX = Math.max(-100, Math.min(100, panStartX - dx));
+      const newY = Math.max(-100, Math.min(100, panStartY + dy));
       useStore.getState().setPanOffset({ x: newX, y: newY });
     };
 
