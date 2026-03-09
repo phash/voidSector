@@ -1,10 +1,7 @@
-import Redis from 'ioredis';
 import type { Redis as RedisType } from 'ioredis';
-import dotenv from 'dotenv';
 import type { InventoryItem } from '@void-sector/shared';
 import { transferInventoryItem, deductCredits, addCredits } from '../db/queries.js';
-
-dotenv.config();
+import { redis as sharedRedis } from '../rooms/services/RedisAPStore.js';
 
 interface TradeSession {
   fromPlayerId: string;
@@ -119,6 +116,12 @@ export class DirectTradeService {
   }
 }
 
-// Module-level singleton for use in SectorRoom message handlers
-const _tradeRedis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-export const directTradeService = new DirectTradeService(_tradeRedis);
+// Lazy singleton — uses the project's shared Redis client, no extra connection on import
+let _instance: DirectTradeService | null = null;
+
+export function getDirectTradeService(): DirectTradeService {
+  if (!_instance) {
+    _instance = new DirectTradeService(sharedRedis);
+  }
+  return _instance;
+}

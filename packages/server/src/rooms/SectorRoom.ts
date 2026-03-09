@@ -128,7 +128,7 @@ import { CommunityQuestService } from './services/CommunityQuestService.js';
 import { rollForEncounter, isInteractiveEncounter, ALIEN_ENCOUNTER_TABLE } from '../engine/alienEncounterGen.js';
 import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
-import { directTradeService } from '../engine/directTradeService.js';
+import { getDirectTradeService } from '../engine/directTradeService.js';
 import { logger } from '../utils/logger.js';
 
 interface SectorRoomOptions {
@@ -808,7 +808,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     // ── Direct Trade ─────────────────────────────────────────────────
     this.onMessage('tradeRequest', (client, data: { targetPlayerId: string }) => {
       const auth = client.auth as AuthPayload;
-      directTradeService.initiateTrade(auth.userId, data.targetPlayerId).then((tradeId) => {
+      getDirectTradeService().initiateTrade(auth.userId, data.targetPlayerId).then((tradeId) => {
         client.send('tradeStarted', { tradeId });
         // Notify target if in same room
         this.clients.forEach((c) => {
@@ -823,7 +823,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('tradeOffer', (client, data: { tradeId: string; items: InventoryItem[]; credits: number }) => {
       const auth = client.auth as AuthPayload;
-      directTradeService.updateOffer(data.tradeId, auth.userId, data.items, data.credits)
+      getDirectTradeService().updateOffer(data.tradeId, auth.userId, data.items, data.credits)
         .then(() => {
           client.send('tradeOfferUpdated', { tradeId: data.tradeId });
         })
@@ -833,10 +833,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('tradeConfirm', (client, data: { tradeId: string }) => {
       const auth = client.auth as AuthPayload;
-      directTradeService.getSession(data.tradeId).then(async (session) => {
-        const bothConfirmed = await directTradeService.confirm(data.tradeId, auth.userId);
+      getDirectTradeService().getSession(data.tradeId).then(async (session) => {
+        const bothConfirmed = await getDirectTradeService().confirm(data.tradeId, auth.userId);
         if (bothConfirmed) {
-          await directTradeService.executeTrade(data.tradeId);
+          await getDirectTradeService().executeTrade(data.tradeId);
           client.send('tradeComplete', { tradeId: data.tradeId });
           // Notify the other player too
           const otherPlayerId = session?.fromPlayerId === auth.userId
@@ -856,7 +856,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       });
     });
     this.onMessage('tradeCancel', (client, data: { tradeId: string }) => {
-      directTradeService.cancelTrade(data.tradeId).then(() => {
+      getDirectTradeService().cancelTrade(data.tradeId).then(() => {
         client.send('tradeCancelled', { tradeId: data.tradeId });
       }).catch((err) => {
         logger.error({ err }, 'tradeCancel error');
