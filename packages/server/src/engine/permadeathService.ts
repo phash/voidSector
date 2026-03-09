@@ -7,7 +7,7 @@
  * - HP < 15 (eject pod): ejectPod() — cargo lost, ship survives
  */
 
-import { query } from '../db/db.js';
+import { query } from '../db/client.js';
 import { getAcepXpSummary } from './acepXpService.js';
 import { calculateTraits, dominantTrait } from './traitCalculator.js';
 import { addToInventory } from './inventoryService.js';

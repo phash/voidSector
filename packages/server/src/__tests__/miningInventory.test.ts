@@ -114,7 +114,7 @@ describe('MiningService.handleStopMine — inventory migration', () => {
       sectorYield: 10,
     });
     vi.mocked(getResourceTotal).mockResolvedValue(5);
-    vi.mocked(stopMining).mockReturnValue({ mined: 5, resource: 'ore', newState: { active: false } });
+    vi.mocked(stopMining).mockReturnValue({ mined: 5, resource: 'ore', newState: { active: false, resource: null, sectorX: 0, sectorY: 0, startedAt: null, rate: 0, sectorYield: 0 } });
     vi.mocked(getCargoState).mockResolvedValue({ ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 });
     vi.mocked(saveMiningState).mockResolvedValue(undefined);
 
@@ -139,7 +139,7 @@ describe('MiningService.handleStopMine — inventory migration', () => {
       sectorYield: 10,
     });
     vi.mocked(getResourceTotal).mockResolvedValue(0);
-    vi.mocked(stopMining).mockReturnValue({ mined: 3, resource: 'ore', newState: { active: false } });
+    vi.mocked(stopMining).mockReturnValue({ mined: 3, resource: 'ore', newState: { active: false, resource: null, sectorX: 0, sectorY: 0, startedAt: null, rate: 0, sectorYield: 0 } });
     vi.mocked(getCargoState).mockResolvedValue({ ore: 3, gas: 0, crystal: 0, slates: 0, artefact: 0 });
     vi.mocked(saveMiningState).mockResolvedValue(undefined);
 
@@ -166,7 +166,7 @@ describe('MiningService.handleStopMine — inventory migration', () => {
       sectorYield: 10,
     });
     vi.mocked(getResourceTotal).mockResolvedValue(0);
-    vi.mocked(stopMining).mockReturnValue({ mined: 7, resource: 'ore', newState: { active: false } });
+    vi.mocked(stopMining).mockReturnValue({ mined: 7, resource: 'ore', newState: { active: false, resource: null, sectorX: 0, sectorY: 0, startedAt: null, rate: 0, sectorYield: 0 } });
     vi.mocked(getCargoState).mockResolvedValue(expectedCargo);
     vi.mocked(saveMiningState).mockResolvedValue(undefined);
 
@@ -244,7 +244,7 @@ describe('MiningService.handleMine — inventory migration', () => {
     vi.mocked(getSector).mockResolvedValue({
       resources: { ore: 20, gas: 5, crystal: 2 },
     } as any);
-    vi.mocked(getMiningState).mockResolvedValue({ active: false, resource: null });
+    vi.mocked(getMiningState).mockResolvedValue({ active: false, resource: null, sectorX: 0, sectorY: 0, startedAt: null, rate: 0, sectorYield: 0 });
     vi.mocked(getResourceTotal).mockResolvedValue(5);
     vi.mocked(validateMine).mockReturnValue({
       valid: true,

@@ -113,7 +113,7 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
     const { getActiveQuests, updateQuestObjectives, updateQuestStatus } = await import('../db/queries.js');
 
     vi.mocked(getActiveQuests).mockResolvedValue([makeFetchQuestRow()] as any);
-    vi.mocked(updateQuestObjectives).mockResolvedValue(undefined);
+    vi.mocked(updateQuestObjectives).mockResolvedValue(true);
     vi.mocked(updateQuestStatus).mockResolvedValue(true);
     // Player has enough ore
     vi.mocked(getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
@@ -132,7 +132,7 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
     const { getActiveQuests, updateQuestObjectives, updateQuestStatus } = await import('../db/queries.js');
 
     vi.mocked(getActiveQuests).mockResolvedValue([makeFetchQuestRow()] as any);
-    vi.mocked(updateQuestObjectives).mockResolvedValue(undefined);
+    vi.mocked(updateQuestObjectives).mockResolvedValue(true);
     vi.mocked(updateQuestStatus).mockResolvedValue(true);
     vi.mocked(getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
@@ -152,7 +152,7 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
     vi.mocked(getActiveQuests)
       .mockResolvedValueOnce([makeFetchQuestRow()] as any) // first call during checkQuestProgress
       .mockResolvedValueOnce([] as any); // second call in sendActiveQuests
-    vi.mocked(updateQuestObjectives).mockResolvedValue(undefined);
+    vi.mocked(updateQuestObjectives).mockResolvedValue(true);
     vi.mocked(updateQuestStatus).mockResolvedValue(true);
     const afterCargo = { ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 };
     vi.mocked(getCargoState).mockResolvedValue(afterCargo);

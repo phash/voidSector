@@ -496,7 +496,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     );
     this.onMessage(
       'kontorPlaceOrder',
-      async (client, data: { itemType: string; amount: number; pricePerUnit: number }) => {
+      async (client, data: { itemType: string; itemId: string; amount: number; pricePerUnit: number }) => {
         await this.economy.handleKontorPlaceOrder(client, data);
       },
     );

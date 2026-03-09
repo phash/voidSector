@@ -133,7 +133,7 @@ describe('ShipService.handleCraftModule — research unlock path', () => {
     });
     vi.mocked(getInventoryItem).mockResolvedValue(0); // no blueprint
     vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(undefined);
+    vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
@@ -150,7 +150,7 @@ describe('ShipService.handleCraftModule — research unlock path', () => {
     });
     vi.mocked(getInventoryItem).mockResolvedValue(0);
     vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(undefined);
+    vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
@@ -170,7 +170,7 @@ describe('ShipService.handleCraftModule — research unlock path', () => {
     });
     vi.mocked(getInventoryItem).mockResolvedValue(0);
     vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(undefined);
+    vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
@@ -187,7 +187,7 @@ describe('ShipService.handleCraftModule — research unlock path', () => {
     });
     vi.mocked(getInventoryItem).mockResolvedValue(0);
     vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(undefined);
+    vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
@@ -209,7 +209,7 @@ describe('ShipService.handleCraftModule — blueprint inventory path', () => {
     });
     vi.mocked(getInventoryItem).mockResolvedValue(1); // has blueprint
     vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(undefined);
+    vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
@@ -226,7 +226,7 @@ describe('ShipService.handleCraftModule — blueprint inventory path', () => {
     });
     vi.mocked(getInventoryItem).mockResolvedValue(1);
     vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(undefined);
+    vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
@@ -247,7 +247,7 @@ describe('ShipService.handleCraftModule — blueprint inventory path', () => {
     });
     vi.mocked(getInventoryItem).mockResolvedValue(1);
     vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(undefined);
+    vi.mocked(deductCredits).mockResolvedValue(true);
     vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());

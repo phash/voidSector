@@ -1451,7 +1451,7 @@ export async function getPlayerJumpGateById(gateId: string): Promise<any | null>
 export async function getJumpGateLinks(gateId: string): Promise<Array<{
   gateId: string; sectorX: number; sectorY: number; ownerName?: string;
 }>> {
-  const { rows } = await query(
+  const { rows } = await query<{ gateId: string; sectorX: number; sectorY: number; ownerName?: string }>(
     `SELECT g.id as "gateId", g.sector_x as "sectorX", g.sector_y as "sectorY",
             p.username as "ownerName"
      FROM jumpgate_links jl
@@ -1513,7 +1513,7 @@ export async function deleteJumpGate(gateId: string): Promise<void> {
 export async function getAllPlayerGateLinks(): Promise<Array<{
   gateId: string; fromX: number; fromY: number; toX: number; toY: number;
 }>> {
-  const { rows } = await query(
+  const { rows } = await query<{ gateId: string; fromX: number; fromY: number; toX: number; toY: number }>(
     `SELECT jl.gate_id as "gateId",
             g1.sector_x as "fromX", g1.sector_y as "fromY",
             g2.sector_x as "toX", g2.sector_y as "toY"
@@ -1527,7 +1527,7 @@ export async function getAllPlayerGateLinks(): Promise<Array<{
 }
 
 export async function getPlayerGateTollConfig(gateId: string): Promise<{ ownerId: string; tollCredits: number } | null> {
-  const { rows } = await query(
+  const { rows } = await query<{ ownerId: string; tollCredits: number }>(
     `SELECT owner_id as "ownerId", toll_credits as "tollCredits" FROM jumpgates WHERE id = $1`,
     [gateId],
   );
@@ -1537,7 +1537,7 @@ export async function getPlayerGateTollConfig(gateId: string): Promise<{ ownerId
 export async function getAllPlayerGates(): Promise<Array<{
   id: string; sectorX: number; sectorY: number; tollCredits: number; ownerId: string;
 }>> {
-  const { rows } = await query(
+  const { rows } = await query<{ id: string; sectorX: number; sectorY: number; tollCredits: number; ownerId: string }>(
     `SELECT id, sector_x as "sectorX", sector_y as "sectorY",
             toll_credits as "tollCredits", owner_id as "ownerId"
      FROM jumpgates
@@ -1550,7 +1550,7 @@ export async function getAllPlayerGates(): Promise<Array<{
 export async function getAllJumpGateLinks(): Promise<Array<{
   gateId: string; linkedGateId: string;
 }>> {
-  const { rows } = await query(
+  const { rows } = await query<{ gateId: string; linkedGateId: string }>(
     `SELECT gate_id as "gateId", linked_gate_id as "linkedGateId"
      FROM jumpgate_links`,
     [],
@@ -2303,7 +2303,7 @@ export async function insertAncientRuinScan(
 export async function getPlayerLoreFragments(
   playerId: string,
 ): Promise<Array<{ sector_x: number; sector_y: number; fragment_index: number; ruin_level: number; artefact_found: boolean; discovered_at: number }>> {
-  const { rows } = await query(
+  const { rows } = await query<{ sector_x: number; sector_y: number; fragment_index: number; ruin_level: number; artefact_found: boolean; discovered_at: number }>(
     `SELECT sector_x, sector_y, fragment_index, ruin_level, artefact_found, discovered_at
      FROM ancient_lore_fragments
      WHERE player_id = $1

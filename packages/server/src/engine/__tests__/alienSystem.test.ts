@@ -164,7 +164,7 @@ describe('alienQuestTemplates', () => {
 
   describe('getAvailableAlienQuests', () => {
     it('no quests at origin', () => {
-      const quests = getAvailableAlienQuests(0, 0, {});
+      const quests = getAvailableAlienQuests(0, 0, {} as Record<AlienFactionId, number>);
       expect(quests).toHaveLength(0);
     });
 
