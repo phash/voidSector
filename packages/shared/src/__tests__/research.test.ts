@@ -14,12 +14,10 @@ function emptyResearch(): ResearchState {
   return { unlockedModules: [], blueprints: [], activeResearch: null, activeResearch2: null, wissen: 0, wissenRate: 0 };
 }
 
-const PLENTY = {
-  credits: 99999, ore: 9999, gas: 9999, crystal: 9999, artefact: 9999,
-  wissen: 99999,
-  artefact_drive: 99, artefact_cargo: 99, artefact_scanner: 99, artefact_armor: 99,
-  artefact_weapon: 99, artefact_shield: 99, artefact_defense: 99, artefact_special: 99,
-  artefact_mining: 99,
+/** Artefacts with plenty of every type */
+const PLENTY_ARTEFACTS: Partial<Record<string, number>> = {
+  drive: 99, cargo: 99, scanner: 99, armor: 99,
+  weapon: 99, shield: 99, defense: 99, special: 99, mining: 99,
 };
 
 describe('isModuleFreelyAvailable', () => {
@@ -65,64 +63,102 @@ describe('isModuleUnlocked', () => {
 
 describe('canStartResearch', () => {
   it('allows research when prereq met and resources available', () => {
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'] };
-    const result = canStartResearch('drive_mk2', rs, PLENTY);
+    // drive_mk2: tier 2, requires lab 2, 300 wissen, no artefacts
+    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 300 };
+    const result = canStartResearch('drive_mk2', rs, {}, 2);
     expect(result.valid).toBe(true);
   });
 
   it('rejects when prerequisite not met', () => {
     // drive_mk3 requires drive_mk2 which is NOT freely available
-    const result = canStartResearch('drive_mk3', emptyResearch(), PLENTY);
+    const rs: ResearchState = { ...emptyResearch(), wissen: 99999 };
+    const result = canStartResearch('drive_mk3', rs, PLENTY_ARTEFACTS, 3);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Prerequisite');
   });
 
   it('rejects when already unlocked', () => {
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1', 'drive_mk2'] };
-    const result = canStartResearch('drive_mk2', rs, PLENTY);
+    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1', 'drive_mk2'], wissen: 99999 };
+    const result = canStartResearch('drive_mk2', rs, {}, 2);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Already unlocked');
   });
 
-  it('rejects when research already in progress', () => {
+  it('rejects when research slot 1 already busy', () => {
     const rs: ResearchState = {
       unlockedModules: ['drive_mk1'],
       blueprints: [],
       activeResearch: { moduleId: 'cargo_mk2', startedAt: 1000, completesAt: 2000 },
       activeResearch2: null,
-      wissen: 0,
+      wissen: 99999,
       wissenRate: 0,
     };
-    const result = canStartResearch('drive_mk2', rs, PLENTY);
+    const result = canStartResearch('drive_mk2', rs, {}, 2, 1);
     expect(result.valid).toBe(false);
-    expect(result.error).toContain('already in progress');
+    expect(result.error).toContain('slot 1 already busy');
   });
 
-  // Duplicate of "allows research when prereq met and resources available" — skipped
-  // it('accepts research when wissen is sufficient ...')
+  it('rejects slot 2 when lab tier < 3', () => {
+    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 99999 };
+    const result = canStartResearch('drive_mk2', rs, {}, 2, 2);
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('Slot 2 requires');
+  });
+
+  it('rejects slot 2 when slot 2 already busy', () => {
+    const rs: ResearchState = {
+      unlockedModules: ['drive_mk1'],
+      blueprints: [],
+      activeResearch: null,
+      activeResearch2: { moduleId: 'cargo_mk2', startedAt: 1000, completesAt: 2000 },
+      wissen: 99999,
+      wissenRate: 0,
+    };
+    const result = canStartResearch('drive_mk2', rs, {}, 3, 2);
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('slot 2 already busy');
+  });
+
+  it('allows slot 2 when lab tier >= 3 and slot is free', () => {
+    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 300 };
+    const result = canStartResearch('drive_mk2', rs, {}, 3, 2);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects when lab tier too low', () => {
+    // drive_mk2 requires lab tier 2; labTier = 1
+    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 99999 };
+    const result = canStartResearch('drive_mk2', rs, {}, 1);
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('Requires');
+  });
 
   it('rejects when artefact_drive is insufficient', () => {
+    // drive_mk3: tier 3, requires 1 drive artefact
     const rs: ResearchState = {
       ...emptyResearch(),
       unlockedModules: ['drive_mk1', 'drive_mk2'],
+      wissen: 99999,
     };
-    const result = canStartResearch('drive_mk3', rs, { ...PLENTY, artefact_drive: 0 });
+    const result = canStartResearch('drive_mk3', rs, { drive: 0 }, 3);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('artefact');
   });
 
   it('rejects freely available modules', () => {
-    const result = canStartResearch('drive_mk1', emptyResearch(), PLENTY);
+    const result = canStartResearch('drive_mk1', emptyResearch(), {}, 1);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('does not require research');
   });
 
   it('rejects when faction requirement not met', () => {
+    // void_drive: tier 3, requires ancients honored, prereq drive_mk3
     const rs: ResearchState = {
       ...emptyResearch(),
       unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
+      wissen: 99999,
     };
-    const result = canStartResearch('void_drive', rs, PLENTY);
+    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Faction requirement');
   });
@@ -131,8 +167,9 @@ describe('canStartResearch', () => {
     const rs: ResearchState = {
       ...emptyResearch(),
       unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
+      wissen: 99999,
     };
-    const result = canStartResearch('void_drive', rs, PLENTY, { ancients: 'friendly' });
+    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, { ancients: 'friendly' });
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Faction requirement');
   });
@@ -141,13 +178,22 @@ describe('canStartResearch', () => {
     const rs: ResearchState = {
       ...emptyResearch(),
       unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
+      wissen: 99999,
     };
-    const result = canStartResearch('void_drive', rs, PLENTY, { ancients: 'honored' });
+    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, { ancients: 'honored' });
     expect(result.valid).toBe(true);
   });
 
+  it('rejects when not enough wissen', () => {
+    // drive_mk2 costs 300 wissen
+    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 100 };
+    const result = canStartResearch('drive_mk2', rs, {}, 2);
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('Wissen');
+  });
+
   it('rejects unknown module', () => {
-    const result = canStartResearch('nonexistent', emptyResearch(), PLENTY);
+    const result = canStartResearch('nonexistent', emptyResearch(), {}, 1);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Unknown');
   });

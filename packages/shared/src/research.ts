@@ -1,4 +1,9 @@
-import { MODULES } from './constants.js';
+import {
+  MODULES,
+  RESEARCH_LAB_TIER_FOR_MODULE_TIER,
+  RESEARCH_LAB_NAMES,
+  ARTEFACT_REQUIRED_BY_TIER,
+} from './constants.js';
 import type { ResearchState } from './types.js';
 
 /** Returns true if a module is available without research (no researchCost) */
@@ -14,20 +19,47 @@ export function isModuleUnlocked(moduleId: string, research: ResearchState): boo
   return research.unlockedModules.includes(moduleId) || research.blueprints.includes(moduleId);
 }
 
-/** Checks if research can be started for a module */
+/**
+ * Validates whether a research can be started.
+ *
+ * @param moduleId      - Module to research
+ * @param research      - Current ResearchState (includes wissen balance)
+ * @param artefacts     - Player's typed artefacts: Record<ArtefactType, number>
+ * @param labTier       - Player's current research lab tier (0 = no lab)
+ * @param slot          - Research slot to use (1 or 2); slot 2 requires lab tier >= 3
+ * @param factionTiers  - Optional faction tier map for faction-gated modules
+ */
 export function canStartResearch(
   moduleId: string,
   research: ResearchState,
-  resources: { wissen?: number; credits?: number; ore?: number; gas?: number; crystal?: number; artefact?: number },
+  artefacts: Partial<Record<string, number>>,
+  labTier: number,
+  slot: 1 | 2 = 1,
   factionTiers?: Record<string, string>,
 ): { valid: boolean; error?: string } {
   const mod = MODULES[moduleId];
   if (!mod) return { valid: false, error: 'Unknown module' };
   if (!mod.researchCost) return { valid: false, error: 'Module does not require research' };
   if (isModuleUnlocked(moduleId, research)) return { valid: false, error: 'Already unlocked' };
-  if (research.activeResearch) return { valid: false, error: 'Research already in progress' };
 
-  // Check prerequisite
+  // Slot availability
+  if (slot === 1 && research.activeResearch) {
+    return { valid: false, error: 'Research slot 1 already busy' };
+  }
+  if (slot === 2) {
+    if (labTier < 3) return { valid: false, error: 'Slot 2 requires Analysestation (Lab III+)' };
+    if (research.activeResearch2) return { valid: false, error: 'Research slot 2 already busy' };
+  }
+
+  // Lab tier check
+  const requiredLab = RESEARCH_LAB_TIER_FOR_MODULE_TIER[mod.tier] ?? mod.tier;
+  if (labTier < requiredLab) {
+    const labName = RESEARCH_LAB_NAMES[requiredLab] ?? `Lab ${requiredLab}`;
+    const haveName = labTier > 0 ? (RESEARCH_LAB_NAMES[labTier] ?? `Lab ${labTier}`) : 'kein Labor';
+    return { valid: false, error: `Requires ${labName} (you have: ${haveName})` };
+  }
+
+  // Prerequisite
   if (mod.prerequisite && !isModuleUnlocked(mod.prerequisite, research)) {
     return {
       valid: false,
@@ -35,7 +67,7 @@ export function canStartResearch(
     };
   }
 
-  // Check faction requirement
+  // Faction requirement
   if (mod.factionRequirement) {
     const playerTier = factionTiers?.[mod.factionRequirement.factionId];
     if (!playerTier || !meetsMinTier(playerTier, mod.factionRequirement.minTier)) {
@@ -46,17 +78,26 @@ export function canStartResearch(
     }
   }
 
-  // Check resources
-  const cost = mod.researchCost;
-  if ((resources.wissen ?? 0) < (cost.wissen ?? 0))
-    return { valid: false, error: 'Not enough wissen credits' };
-  if (cost.artefacts) {
-    for (const [type, required] of Object.entries(cost.artefacts)) {
-      const key = `artefact_${type}` as keyof typeof resources;
-      const have = (resources[key] as number | undefined) ?? 0;
-      if (have < (required ?? 0))
-        return { valid: false, error: `Not enough artefact (${type})` };
+  // Artefact requirement (mandatory artefacts by module tier)
+  const requiredCount = ARTEFACT_REQUIRED_BY_TIER[mod.tier] ?? 0;
+  if (requiredCount > 0) {
+    const artefactType = mod.category; // ArtefactType = ModuleCategory
+    const playerHas = artefacts[artefactType] ?? 0;
+    if (playerHas < requiredCount) {
+      return {
+        valid: false,
+        error: `Requires ${requiredCount}× ${artefactType} artefact (you have ${playerHas})`,
+      };
     }
+  }
+
+  // Wissen check
+  const rc = mod.researchCost;
+  if (research.wissen < rc.wissen) {
+    return {
+      valid: false,
+      error: `Not enough Wissen (need ${rc.wissen}, have ${research.wissen})`,
+    };
   }
 
   return { valid: true };
