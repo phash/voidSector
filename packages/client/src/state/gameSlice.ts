@@ -79,6 +79,42 @@ export interface AutopilotStatusInfo {
   eta?: number;
 }
 
+export interface StoryEventPayload {
+  chapterId: number;
+  title: string;
+  flavorText: string;
+  branches?: Array<{ id: string; label: string }>;
+}
+
+export interface AlienEncounterEventPayload {
+  factionId: string;
+  eventType: string;
+  eventText: string;
+  canRespond: boolean;
+  acceptLabel?: string;
+  declineLabel?: string;
+  repOnAccept: number;
+  repOnDecline: number;
+}
+
+export interface StoryProgressPayload {
+  currentChapter: number;
+  completedChapters: number[];
+  branchChoices: Record<string, string>;
+  chapters: Array<{ id: number; title: string; minQDist: number; hasBranch: boolean }>;
+}
+
+export interface CommunityQuestPayload {
+  id: number;
+  title: string;
+  description: string | null;
+  targetCount: number;
+  currentCount: number;
+  rewardType: string | null;
+  expiresAt: number | null;
+  status: string;
+}
+
 function safeGetItem(key: string): string | null {
   try {
     return localStorage.getItem(key);
@@ -361,6 +397,12 @@ export interface GameSlice {
   } | null;
   loreFragmentCount: number;
 
+  // AQ Story / Community
+  storyEvent: StoryEventPayload | null;
+  alienEncounterEvent: AlienEncounterEventPayload | null;
+  storyProgress: StoryProgressPayload | null;
+  activeCommunityQuest: CommunityQuestPayload | null;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -448,6 +490,10 @@ export interface GameSlice {
   setDirectChatRecipient: (recipient: { id: string; name: string } | null) => void;
   incrementStat: (key: keyof PlayerStats) => void;
   addToStatSet: (key: 'quadrantsVisited' | 'stationsVisited', value: string) => void;
+  setStoryEvent: (e: StoryEventPayload | null) => void;
+  setAlienEncounterEvent: (e: AlienEncounterEventPayload | null) => void;
+  setStoryProgress: (p: StoryProgressPayload | null) => void;
+  setActiveCommunityQuest: (q: CommunityQuestPayload | null) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -531,6 +577,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   newsItems: [],
   hyperdriveState: null,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
+  storyEvent: null,
+  alienEncounterEvent: null,
+  storyProgress: null,
+  activeCommunityQuest: null,
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -720,4 +770,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       savePlayerStats(next);
       return { playerStats: next };
     }),
+
+  setStoryEvent: (e) => set({ storyEvent: e }),
+  setAlienEncounterEvent: (e) => set({ alienEncounterEvent: e }),
+  setStoryProgress: (p) => set({ storyProgress: p }),
+  setActiveCommunityQuest: (q) => set({ activeCommunityQuest: q }),
 });
