@@ -1053,7 +1053,7 @@ export async function respondToInvite(
 }
 
 export async function getPlayerIdByUsername(username: string): Promise<string | null> {
-  const result = await query<{ id: string }>('SELECT id FROM players WHERE username = $1', [
+  const result = await query<{ id: string }>('SELECT id FROM players WHERE LOWER(username) = LOWER($1)', [
     username,
   ]);
   return result.rows[0]?.id || null;
