@@ -366,12 +366,17 @@ export class ShipService {
     }
 
     // Deduct resource costs from inventory
-    if (mod.cost?.ore) await removeFromInventory(auth.userId, 'resource', 'ore', mod.cost.ore);
-    if (mod.cost?.gas) await removeFromInventory(auth.userId, 'resource', 'gas', mod.cost.gas);
-    if (mod.cost?.crystal)
-      await removeFromInventory(auth.userId, 'resource', 'crystal', mod.cost.crystal);
-    if (mod.cost?.artefact)
-      await removeFromInventory(auth.userId, 'resource', 'artefact', mod.cost.artefact);
+    try {
+      if (mod.cost?.ore) await removeFromInventory(auth.userId, 'resource', 'ore', mod.cost.ore);
+      if (mod.cost?.gas) await removeFromInventory(auth.userId, 'resource', 'gas', mod.cost.gas);
+      if (mod.cost?.crystal)
+        await removeFromInventory(auth.userId, 'resource', 'crystal', mod.cost.crystal);
+      if (mod.cost?.artefact)
+        await removeFromInventory(auth.userId, 'resource', 'artefact', mod.cost.artefact);
+    } catch (err) {
+      client.send('craftResult', { success: false, error: 'Insufficient resources' });
+      return;
+    }
 
     // Produce module
     await addToInventory(auth.userId, 'module', data.moduleId, 1);

@@ -60,6 +60,7 @@ import {
   getAllHumanityReps,
   getAllQuadrantControls,
   getActiveNpcFleets,
+  getInventory,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -604,6 +605,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getModuleInventory', async (client) => {
       await this.ships.handleGetModuleInventory(client);
     });
+    this.onMessage('getInventory', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const items = await getInventory(auth.userId);
+      client.send('inventoryState', { items });
+    });
     this.onMessage('startResearch', (client, data) => this.ships.handleStartResearch(client, data));
     this.onMessage('cancelResearch', (client) => this.ships.handleCancelResearch(client));
     this.onMessage('claimResearch', (client) => this.ships.handleClaimResearch(client));
@@ -1045,6 +1051,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Send initial cargo
       const cargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', cargo);
+
+      // Send unified inventory state
+      const inventoryItems = await getInventory(auth.userId);
+      client.send('inventoryState', { items: inventoryItems });
 
       // Send credits
       const credits = await getPlayerCredits(auth.userId);

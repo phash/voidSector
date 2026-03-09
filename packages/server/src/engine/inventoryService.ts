@@ -65,10 +65,10 @@ export async function canAddResource(playerId: string, amount: number): Promise<
 export async function getCargoState(playerId: string): Promise<CargoState> {
   const items = await getInventory(playerId);
   const cargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 };
+  const keyMap: Record<string, keyof CargoState> = { slate: 'slates' };
   for (const item of items.filter(i => i.itemType === 'resource')) {
-    if (item.itemId in cargo) {
-      cargo[item.itemId as keyof CargoState] = item.quantity;
-    }
+    const key = keyMap[item.itemId] ?? item.itemId;
+    if (key in cargo) cargo[key as keyof CargoState] = item.quantity;
   }
   return cargo;
 }
