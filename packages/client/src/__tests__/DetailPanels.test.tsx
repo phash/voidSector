@@ -20,7 +20,7 @@ describe('CargoDetailPanel', () => {
   it('shows item details when selectedCargoItem is set', () => {
     mockStoreState({
       selectedCargoItem: 'ore',
-      cargo: { ore: 42, gas: 0, crystal: 0, slates: 0, artefact: 0 },
+      cargo: { ore: 42, gas: 0, crystal: 0, slates: 0, artefact: 0, artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0, artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0, artefact_mining: 0 },
     });
     render(<CargoDetailPanel />);
     expect(screen.getByText('ERZ')).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe('CargoDetailPanel', () => {
   it('shows zero quantity for empty cargo item', () => {
     mockStoreState({
       selectedCargoItem: 'gas',
-      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
+      cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0, artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0, artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0, artefact_mining: 0 },
     });
     render(<CargoDetailPanel />);
     expect(screen.getByText('GAS')).toBeInTheDocument();
@@ -149,7 +149,7 @@ describe('TradeDetailPanel', () => {
         nextLevelXp: 500,
         inventory: [{ itemType: 'ore', stock: 50, maxStock: 200, buyPrice: 5, sellPrice: 3 }],
       },
-      cargo: { ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 },
+      cargo: { ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0, artefact_drive: 0, artefact_cargo: 0, artefact_scanner: 0, artefact_armor: 0, artefact_weapon: 0, artefact_shield: 0, artefact_defense: 0, artefact_special: 0, artefact_mining: 0 },
     });
     render(<TradeDetailPanel />);
     expect(screen.getByText('OMEGA STATION')).toBeInTheDocument();
