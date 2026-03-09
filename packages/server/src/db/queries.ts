@@ -2768,3 +2768,133 @@ export async function completeCommunityQuest(questId: number): Promise<boolean> 
   );
   return (res.rowCount ?? 0) > 0;
 }
+
+// ─── Quadrant Control ────────────────────────────────────────────────────────
+
+export async function getQuadrantControl(
+  qx: number,
+  qy: number,
+): Promise<Record<string, unknown> | null> {
+  const res = await query<Record<string, unknown>>(
+    'SELECT * FROM quadrant_control WHERE qx = $1 AND qy = $2',
+    [qx, qy],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function upsertQuadrantControl(data: {
+  qx: number;
+  qy: number;
+  controlling_faction: string;
+  faction_shares: Record<string, number>;
+  attack_value: number;
+  defense_value: number;
+  friction_score: number;
+  station_tier: number;
+}): Promise<void> {
+  await query(
+    `INSERT INTO quadrant_control
+      (qx, qy, controlling_faction, faction_shares, attack_value, defense_value, friction_score, station_tier, last_strategic_tick)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+     ON CONFLICT (qx,qy) DO UPDATE SET
+       controlling_faction = EXCLUDED.controlling_faction,
+       faction_shares = EXCLUDED.faction_shares,
+       attack_value = EXCLUDED.attack_value,
+       defense_value = EXCLUDED.defense_value,
+       friction_score = EXCLUDED.friction_score,
+       station_tier = EXCLUDED.station_tier,
+       last_strategic_tick = NOW()`,
+    [
+      data.qx,
+      data.qy,
+      data.controlling_faction,
+      JSON.stringify(data.faction_shares),
+      data.attack_value,
+      data.defense_value,
+      data.friction_score,
+      data.station_tier,
+    ],
+  );
+}
+
+export async function getActiveQuadrantControls(): Promise<Array<Record<string, unknown>>> {
+  const res = await query<Record<string, unknown>>('SELECT * FROM quadrant_control');
+  return res.rows;
+}
+
+export async function getBorderQuadrants(
+  faction: string,
+): Promise<Array<Record<string, unknown>>> {
+  const res = await query<Record<string, unknown>>(
+    `SELECT DISTINCT qc.*
+     FROM quadrant_control qc
+     WHERE qc.controlling_faction = $1
+       AND EXISTS (
+         SELECT 1 FROM quadrant_control neighbor
+         WHERE neighbor.controlling_faction != $1
+           AND ABS(neighbor.qx - qc.qx) <= 1
+           AND ABS(neighbor.qy - qc.qy) <= 1
+       )`,
+    [faction],
+  );
+  return res.rows;
+}
+
+// ─── NPC Fleets ──────────────────────────────────────────────────────────────
+
+export async function createNpcFleet(data: {
+  faction: string;
+  fleet_type: string;
+  from_qx: number;
+  from_qy: number;
+  to_qx: number;
+  to_qy: number;
+  strength: number;
+  eta: Date;
+}): Promise<string> {
+  const res = await query<{ id: string }>(
+    `INSERT INTO npc_fleet (faction, fleet_type, from_qx, from_qy, to_qx, to_qy, strength, eta)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+    [
+      data.faction,
+      data.fleet_type,
+      data.from_qx,
+      data.from_qy,
+      data.to_qx,
+      data.to_qy,
+      data.strength,
+      data.eta,
+    ],
+  );
+  return res.rows[0].id;
+}
+
+export async function getActiveNpcFleets(): Promise<Array<Record<string, unknown>>> {
+  const res = await query<Record<string, unknown>>(
+    'SELECT * FROM npc_fleet WHERE eta > NOW() ORDER BY eta',
+  );
+  return res.rows;
+}
+
+export async function deleteArrivedNpcFleets(): Promise<void> {
+  await query('DELETE FROM npc_fleet WHERE eta <= NOW()');
+}
+
+// ─── Faction Config ───────────────────────────────────────────────────────────
+
+export async function getAllFactionConfigs(): Promise<Array<Record<string, unknown>>> {
+  const res = await query<Record<string, unknown>>(
+    'SELECT * FROM faction_config WHERE active = true',
+  );
+  return res.rows;
+}
+
+export async function getFactionConfig(
+  factionId: string,
+): Promise<Record<string, unknown> | null> {
+  const res = await query<Record<string, unknown>>(
+    'SELECT * FROM faction_config WHERE faction_id = $1',
+    [factionId],
+  );
+  return res.rows[0] ?? null;
+}
