@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS npc_fleet (
 );
 
 CREATE INDEX IF NOT EXISTS idx_npc_fleet_eta ON npc_fleet (eta);
+CREATE INDEX IF NOT EXISTS idx_npc_fleet_faction ON npc_fleet (faction);
 
 -- Faction configuration: home coords, expansion behaviour
 CREATE TABLE IF NOT EXISTS faction_config (
@@ -44,9 +45,9 @@ VALUES
   ('human',           0,    0,   8,   1.0,  'wave'),
   ('kthari',         20,  -15,   5,   2.0,  'sphere'),
   ('silent_swarm',  -30,   20,   4,   2.5,  'sphere'),
-  ('archivare',      15,   10,  15,   0.3,  'sphere'),
-  ('konsortium',    -10,  -20,  10,   0.4,  'sphere'),
-  ('mycelianer',     25,    5,  12,   0.5,  'sphere'),
+  ('archivists',     15,   10,  15,   0.3,  'sphere'),
+  ('consortium',    -10,  -20,  10,   0.4,  'sphere'),
+  ('mycelians',      25,    5,  12,   0.5,  'sphere'),
   ('mirror_minds',  -20,   15,  10,   1.0,  'sphere'),
-  ('touristengilde',  -5,  -25,  20,   0.1,  'sphere')
+  ('tourist_guild',  -5,  -25,  20,   0.1,  'sphere')
 ON CONFLICT (faction_id) DO NOTHING;
