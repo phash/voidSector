@@ -2660,8 +2660,7 @@ export async function upsertStoryProgress(
   );
 }
 
-// ── Humanity Reputation ── DEFERRED: server-wide rep tracking, not yet wired in ─────────
-// TODO: call contributeHumanityRep from resolveAlienEncounter and storyChoice handlers
+// ── Humanity Reputation ────────────────────────────────────────────────────────
 
 export async function contributeHumanityRep(alienFactionId: string, delta: number): Promise<void> {
   await query(
@@ -2681,6 +2680,17 @@ export async function getHumanityRep(alienFactionId: string): Promise<number> {
     [alienFactionId],
   );
   return res.rows[0]?.rep_value ?? 0;
+}
+
+export async function getAllHumanityReps(): Promise<Record<string, number>> {
+  const res = await query<{ alien_faction_id: string; rep_value: number }>(
+    'SELECT alien_faction_id, rep_value FROM humanity_reputation',
+  );
+  const result: Record<string, number> = {};
+  for (const row of res.rows) {
+    result[row.alien_faction_id] = row.rep_value;
+  }
+  return result;
 }
 
 // ── Community Alien Quests ────────────────────────────────────────────────────
