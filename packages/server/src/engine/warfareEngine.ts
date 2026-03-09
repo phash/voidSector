@@ -40,8 +40,8 @@ export function resolveStrategicTick(input: WarfareTickInput): WarfareResult {
     } else {
       newDefense = Math.max(0, Math.round(input.defense * (1 - LOSS_ON_WIN)));
     }
-  } else if (effectiveDefense > effectiveAttack) {
-    // Defender wins when effective defense exceeds effective attack (no multiplier needed)
+  } else if (effectiveDefense > effectiveAttack * ADVANTAGE_THRESHOLD) {
+    // Defender needs 1.2x advantage over effective attack to win (symmetric threshold)
     outcome = 'defender_wins';
     if (effectiveDefense >= effectiveAttack * CRUSHING_THRESHOLD) {
       newAttack = 0;

@@ -52,11 +52,14 @@ describe('resolveStrategicTick', () => {
     expect(result.outcome).toBe('attacker_wins');
   });
 
-  it('player defense bonus protects defender', () => {
-    // Without bonus: attack=1300 vs defense=1000 → attacker wins
-    // With bonus: effectiveDefense=1000+400=1400 → 1300 < 1400*1.2=1680 → defender wins
+  it('player defense bonus can prevent attacker win but needs 1.2x to reach defender win', () => {
+    // Without bonus: attack=1300 vs defense=1000 → attacker wins (1300 > 1000*1.2=1200)
+    // With bonus: effectiveAttack=1300, effectiveDefense=1400
+    //   1300 > 1400*1.2=1680? No → not attacker_wins
+    //   1400 > 1300*1.2=1560? No → not defender_wins
+    //   → stalemate
     const result = resolveStrategicTick({ attack: 1300, defense: 1000, playerDefenseBonus: 400 });
-    expect(result.outcome).toBe('defender_wins');
+    expect(result.outcome).toBe('stalemate');
   });
 
   it('attack multiplier applies to effective attack', () => {
