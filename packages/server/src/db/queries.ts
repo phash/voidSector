@@ -3251,3 +3251,15 @@ export async function ensureZentrumQuadrant(): Promise<void> {
      ON CONFLICT (qx, qy) DO NOTHING`,
   );
 }
+
+export async function logExpansionEvent(
+  faction: string,
+  qx: number,
+  qy: number,
+  event: 'colonized' | 'conquered' | 'lost' | 'discovered',
+): Promise<void> {
+  await query(
+    'INSERT INTO expansion_log (faction, qx, qy, event) VALUES ($1, $2, $3, $4)',
+    [faction, qx, qy, event],
+  );
+}

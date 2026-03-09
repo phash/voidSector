@@ -6,6 +6,7 @@ import {
   getAllFactionConfigs,
   createNpcFleet,
   deleteArrivedNpcFleets,
+  logExpansionEvent,
 } from '../db/queries.js';
 import type { QuadrantControlRow } from '../db/queries.js';
 import { FactionConfigService } from './factionConfigService.js';
@@ -45,7 +46,8 @@ export class StrategicTickService {
       const rep = repStore.get(alienFaction) ?? 0;
       const repTier = repValueToTier(rep);
       const factionCfg = this.factionConfig.getConfig(alienFaction);
-      const aggression = factionCfg?.aggression ?? 1.0;
+      const AGGRESSION_MUL = parseFloat(process.env.ALIEN_AGGRESSION_MUL ?? '1');
+      const aggression = (factionCfg?.aggression ?? 1.0) * AGGRESSION_MUL;
       const { score, state } = calculateFriction(repTier, aggression);
 
       // Update friction score on the quadrant
@@ -93,6 +95,8 @@ export class StrategicTickService {
         friction_score: 0,
         station_tier: humanQ.station_tier,
       });
+      await logExpansionEvent(alienFaction, humanQ.qx, humanQ.qy, 'conquered');
+      await logExpansionEvent('human', humanQ.qx, humanQ.qy, 'lost');
       const msg = `${alienFaction.toUpperCase()} CONQUEST — Quadrant [${humanQ.qx}/${humanQ.qy}] lost`;
       logger.warn({ alienFaction, qx: humanQ.qx, qy: humanQ.qy }, msg);
       await this.pushWarTickerEvent(msg);
@@ -122,7 +126,8 @@ export class StrategicTickService {
       const { state } = calculateFriction(repTier, faction.aggression);
       if (state === 'peaceful_halt') continue;
 
-      const eta = new Date(Date.now() + faction.expansion_rate * 60_000);
+      const EXPANSION_RATE_MUL = parseFloat(process.env.ALIEN_EXPANSION_RATE_MUL ?? '1');
+      const eta = new Date(Date.now() + (faction.expansion_rate / EXPANSION_RATE_MUL) * 60_000);
       await createNpcFleet({
         faction: faction.faction_id,
         fleet_type: 'build_ship',
@@ -134,6 +139,7 @@ export class StrategicTickService {
         eta,
       });
 
+      await logExpansionEvent(faction.faction_id, target.qx, target.qy, 'colonized');
       logger.debug(
         { faction: faction.faction_id, to_qx: target.qx, to_qy: target.qy },
         'Alien expansion fleet dispatched',

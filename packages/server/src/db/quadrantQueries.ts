@@ -71,6 +71,18 @@ export async function addPlayerKnownQuadrant(
   );
 }
 
+export async function playerKnowsQuadrant(
+  playerId: string,
+  qx: number,
+  qy: number,
+): Promise<boolean> {
+  const { rows } = await query<{ exists: boolean }>(
+    'SELECT EXISTS(SELECT 1 FROM player_known_quadrants WHERE player_id = $1 AND qx = $2 AND qy = $3) AS exists',
+    [playerId, qx, qy],
+  );
+  return rows[0].exists;
+}
+
 export async function quadrantNameExists(name: string): Promise<boolean> {
   const { rows } = await query<{ count: string }>(
     'SELECT COUNT(*) as count FROM quadrants WHERE LOWER(name) = LOWER($1)',

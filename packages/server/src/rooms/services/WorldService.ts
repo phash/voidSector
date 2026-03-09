@@ -119,6 +119,7 @@ import {
   countJumpGateLinks,
   getResearchLabTier,
   upgradeResearchLabTier,
+  logExpansionEvent,
 } from '../../db/queries.js';
 import {
   getCargoState,
@@ -131,6 +132,7 @@ import {
   addPlayerKnownQuadrantsBatch,
   getQuadrant,
   getAllDiscoveredQuadrantCoords,
+  playerKnowsQuadrant,
 } from '../../db/quadrantQueries.js';
 import { isInt, rejectGuest } from './utils.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
@@ -1454,9 +1456,15 @@ export class WorldService {
         });
         // ACEP: INTEL-XP for first quadrant discovery (spec: +20)
         addAcepXpForPlayer(auth.userId, 'intel', 20).catch(() => {});
+        // Log world-first quadrant discovery
+        logExpansionEvent('human', qx, qy, 'discovered').catch(() => {});
       } else {
         // Quadrant exists but player may not know it yet
+        const alreadyKnown = await playerKnowsQuadrant(auth.userId, qx, qy);
         await addPlayerKnownQuadrant(auth.userId, qx, qy);
+        if (!alreadyKnown) {
+          logExpansionEvent('human', qx, qy, 'discovered').catch(() => {});
+        }
       }
     } catch (err) {
       logger.error({ err }, 'checkFirstContact error');

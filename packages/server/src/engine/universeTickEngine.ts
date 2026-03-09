@@ -156,6 +156,9 @@ export function runUniverseTick(
  * Universe Tick Engine — manages the tick loop for the living universe.
  * Call start() to begin, stop() to halt.
  */
+const TICK_MULTIPLIER = parseFloat(process.env.TICK_MULTIPLIER ?? '1');
+const TICK_INTERVAL_MS = Math.round(UNIVERSE_TICK_MS / TICK_MULTIPLIER);
+
 export class UniverseTickEngine {
   private state: TickState = {
     tickCount: 0,
@@ -176,7 +179,7 @@ export class UniverseTickEngine {
     this.timer = setInterval(() => {
       const result = runUniverseTick(this.state, this.territory, 0, Math.random);
       this.onTick?.(result);
-    }, UNIVERSE_TICK_MS);
+    }, TICK_INTERVAL_MS);
   }
 
   stop(): void {
