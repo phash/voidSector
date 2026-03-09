@@ -44,6 +44,7 @@ import {
   addCredits,
   getPlayerCredits,
   recordNewsEvent,
+  contributeHumanityRep,
 } from '../../db/queries.js';
 import type { ResourceType } from '@void-sector/shared';
 
@@ -258,6 +259,7 @@ export class AlienInteractionService {
       await addToCargo(auth.userId, 'crystal' as ResourceType, crystal);
       const repAfter = await addAlienReputation(auth.userId, 'scrappers', getRepChangeForAction('trade', 'scrappers'));
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'scrappers', encounterType: 'trade', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { ore: offerOre, crystal }, repBefore, repAfter });
+      await contributeHumanityRep('scrappers', 1).catch(() => {});
       client.send('cargoUpdate', await getPlayerCargo(auth.userId));
       client.send('alienInteractResult', {
         success: true,
@@ -302,6 +304,7 @@ export class AlienInteractionService {
       }
       const repAfter = await addAlienReputation(auth.userId, 'archivists', repGain);
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'archivists', encounterType: 'scan_share', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { discoveries, repGain }, repBefore, repAfter });
+      await contributeHumanityRep('archivists', 1).catch(() => {});
       client.send('alienInteractResult', {
         success: true,
         factionId: 'archivists',
@@ -394,6 +397,7 @@ export class AlienInteractionService {
       await addCredits(auth.userId, reward);
       const repAfter = await addAlienReputation(auth.userId, 'consortium', getRepChangeForAction('quest_completed', 'consortium'));
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'consortium', encounterType: 'trade', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { resource, amount, reward }, repBefore, repAfter });
+      await contributeHumanityRep('consortium', 1).catch(() => {});
       client.send('cargoUpdate', await getPlayerCargo(auth.userId));
       client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
       client.send('alienInteractResult', {
@@ -448,6 +452,7 @@ export class AlienInteractionService {
       const repGain = rankEntry.rank * 10;
       const repAfter = await addAlienReputation(auth.userId, 'kthari', repGain);
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'kthari', encounterType: 'rank_claim', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { rank: rankEntry.rank, victories }, repBefore, repAfter });
+      await contributeHumanityRep('kthari', 1).catch(() => {});
       client.send('alienInteractResult', {
         success: true,
         factionId: 'kthari',
@@ -497,6 +502,7 @@ export class AlienInteractionService {
       const repGain = 2;
       const repAfter = await addAlienReputation(auth.userId, 'mycelians', repGain);
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'mycelians', encounterType: 'puzzle', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { answer }, repBefore, repAfter });
+      await contributeHumanityRep('mycelians', 1).catch(() => {});
       client.send('alienInteractResult', {
         success: true,
         factionId: 'mycelians',
@@ -541,6 +547,7 @@ export class AlienInteractionService {
       const repGain = 5; // Viewing your reflection gains rep (self-awareness)
       const repAfter = await addAlienReputation(auth.userId, 'mirror_minds', repGain);
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'mirror_minds', encounterType: 'stat_mirror', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: stats as any, repBefore, repAfter });
+      await contributeHumanityRep('mirror_minds', 1).catch(() => {});
 
       client.send('alienInteractResult', {
         success: true,
@@ -570,6 +577,7 @@ export class AlienInteractionService {
         : repBefore;
       if (repGain > 0) {
         await recordAlienEncounter({ playerId: auth.userId, factionId: 'tourist_guild', encounterType: 'tourist_visit', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, repBefore, repAfter });
+        await contributeHumanityRep('tourist_guild', 1).catch(() => {});
       }
       client.send('alienInteractResult', {
         success: true,
@@ -673,6 +681,7 @@ export class AlienInteractionService {
       const repGain = Math.floor(amount / 10);
       const repAfter = await addAlienReputation(auth.userId, 'helions', repGain);
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'helions', encounterType: 'offering', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { resource, amount }, repBefore, repAfter });
+      await contributeHumanityRep('helions', 1).catch(() => {});
       client.send('cargoUpdate', await getPlayerCargo(auth.userId));
 
       const artefactChance = Math.random();
@@ -748,6 +757,7 @@ export class AlienInteractionService {
       const repGain = 8;
       const repAfter = await addAlienReputation(auth.userId, 'axioms', repGain);
       await recordAlienEncounter({ playerId: auth.userId, factionId: 'axioms', encounterType: 'puzzle', sectorX, sectorY, quadrantX: this.ctx.quadrantX, quadrantY: this.ctx.quadrantY, encounterData: { puzzleSeed: seed, answer, correct }, repBefore, repAfter });
+      await contributeHumanityRep('axioms', 1).catch(() => {});
 
       // Map fragment at higher rep
       const mapFragment = repAfter >= 40

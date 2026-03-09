@@ -5,6 +5,7 @@ import {
   addCommunityQuestContribution,
   expireOldCommunityQuests,
   completeCommunityQuest,
+  contributeHumanityRep,
   type CommunityAlienQuestRow,
 } from '../../db/queries.js';
 
@@ -72,6 +73,7 @@ export class CommunityQuestService {
     await addCommunityQuestContribution(quest.id, playerId, amount);
     if (quest.current_count + amount >= quest.target_count) {
       await completeCommunityQuest(quest.id);
+      await contributeHumanityRep(quest.alien_faction_id, 50).catch(() => {});
       await this.createNext();
     }
   }
