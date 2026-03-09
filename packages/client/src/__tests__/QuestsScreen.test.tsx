@@ -12,6 +12,9 @@ vi.mock('../network/client', () => ({
     sendAcceptQuest: vi.fn(),
     sendAbandonQuest: vi.fn(),
     sendCompleteScanEvent: vi.fn(),
+    requestStoryProgress: vi.fn(),
+    requestActiveCommunityQuest: vi.fn(),
+    requestHumanityReps: vi.fn(),
   },
 }));
 
@@ -116,6 +119,20 @@ describe('QuestsScreen', () => {
     render(<QuestsScreen />);
     expect(network.requestActiveQuests).toHaveBeenCalled();
     expect(network.requestReputation).toHaveBeenCalled();
+  });
+
+  it('renders ALIEN REP tab with personal and global sections', async () => {
+    mockStoreState({
+      alienReputations: { archivists: 5, kthari: -3 },
+      humanityReps: {
+        archivists: { repValue: 120, tier: 'FREUNDLICH' },
+        kthari: { repValue: -50, tier: 'FEINDSELIG' },
+      },
+    });
+    render(<QuestsScreen />);
+    await userEvent.click(screen.getByText('ALIEN REP'));
+    expect(screen.getByText('MEINE ALIEN-REPUTATIONEN')).toBeDefined();
+    expect(screen.getByText('GALAKTISCHE MENSCHHEITS-REP')).toBeDefined();
   });
 
   it('shows abandon button for active quest when expanded', async () => {

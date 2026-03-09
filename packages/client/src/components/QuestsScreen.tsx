@@ -49,6 +49,77 @@ function StoryTab() {
   );
 }
 
+function AlienRepTab() {
+  const alienReps = useStore((s) => s.alienReputations);
+  const humanityReps = useStore((s) => s.humanityReps);
+
+  useEffect(() => {
+    network.requestHumanityReps();
+  }, []);
+
+  const TIER_COLORS = {
+    FREUNDLICH: '#00FF88',
+    NEUTRAL: 'var(--color-primary)',
+    FEINDSELIG: '#FF3333',
+  };
+
+  const FACTION_LABELS: Record<string, string> = {
+    archivists: 'Archivare',
+    kthari: "K'thari",
+    mycelians: 'Mycelianer',
+    consortium: 'Konsortium',
+    tourist_guild: 'Touristengilde',
+    scrappers: 'Scrappers',
+    mirror_minds: 'Mirror Minds',
+    silent_swarm: 'Silent Swarm',
+    helions: 'Helions',
+    axioms: 'Axiome',
+  };
+
+  return (
+    <div style={{ padding: '8px', fontSize: '0.75rem', overflowY: 'auto', height: '100%' }}>
+      {/* Personal alien rep */}
+      <div style={{ opacity: 0.6, marginBottom: '4px', letterSpacing: '0.1em' }}>
+        MEINE ALIEN-REPUTATIONEN
+      </div>
+      {Object.entries(FACTION_LABELS).map(([id, label]) => {
+        const rep = alienReps[id] ?? 0;
+        return (
+          <div key={id} style={{ display: 'flex', gap: '8px', marginBottom: '2px' }}>
+            <span style={{ width: '100px', opacity: 0.7 }}>{label}</span>
+            <span style={{ color: rep >= 0 ? 'var(--color-primary)' : '#FF3333' }}>
+              {rep >= 0 ? '+' : ''}{rep}
+            </span>
+          </div>
+        );
+      })}
+
+      {/* Humanity rep */}
+      <div style={{ opacity: 0.6, marginBottom: '4px', marginTop: '12px', letterSpacing: '0.1em' }}>
+        GALAKTISCHE MENSCHHEITS-REP
+      </div>
+      {Object.entries(FACTION_LABELS).map(([id, label]) => {
+        const entry = humanityReps[id];
+        if (!entry) return (
+          <div key={id} style={{ display: 'flex', gap: '8px', marginBottom: '2px', opacity: 0.4 }}>
+            <span style={{ width: '100px' }}>{label}</span>
+            <span>0 — NEUTRAL</span>
+          </div>
+        );
+        const color = TIER_COLORS[entry.tier as keyof typeof TIER_COLORS] ?? 'var(--color-primary)';
+        return (
+          <div key={id} style={{ display: 'flex', gap: '8px', marginBottom: '2px' }}>
+            <span style={{ width: '100px', opacity: 0.7 }}>{label}</span>
+            <span style={{ color }}>
+              {entry.repValue >= 0 ? '+' : ''}{entry.repValue} — {entry.tier}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CommunityTab() {
   const quest = useStore((s) => s.activeCommunityQuest);
 
@@ -104,7 +175,7 @@ export function QuestsScreen() {
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
 
-  const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events' | 'rescue' | 'story' | 'community'>('active');
+  const [tab, setTab] = useState<'active' | 'station' | 'rep' | 'events' | 'rescue' | 'story' | 'community' | 'alien_rep'>('active');
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
   const [stationNpcs, setStationNpcs] = useState<StationNpc[]>([]);
   const [availableQuests, setAvailableQuests] = useState<AvailableQuest[]>([]);
@@ -142,6 +213,7 @@ export function QuestsScreen() {
     rescue: 'RETTUNG',
     story: 'STORY',
     community: 'COMMUNITY',
+    alien_rep: 'ALIEN REP',
   };
 
   return (
@@ -157,7 +229,7 @@ export function QuestsScreen() {
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', flexWrap: 'wrap' }}>
-        {(['active', 'station', 'rep', 'events', 'rescue', 'story', 'community'] as const).map((t) => (
+        {(['active', 'station', 'rep', 'events', 'rescue', 'story', 'community', 'alien_rep'] as const).map((t) => (
           <button
             key={t}
             onClick={() => {
@@ -441,6 +513,9 @@ export function QuestsScreen() {
 
       {/* Community tab */}
       {tab === 'community' && <CommunityTab />}
+
+      {/* Alien rep tab */}
+      {tab === 'alien_rep' && <AlienRepTab />}
 
       {/* Rescue tab */}
       {tab === 'rescue' && (
