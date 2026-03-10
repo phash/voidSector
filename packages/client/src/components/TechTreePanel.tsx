@@ -113,7 +113,7 @@ export function TechTreePanel() {
             marginBottom: 6,
             cursor: 'pointer',
           }}
-          onClick={() => { pushBreadcrumb({ label: 'TECH', program: 'TECH' }); setSelectedTechModule(activeMod.id); }}
+          onClick={() => { pushBreadcrumb({ label: activeMod.name, program: 'TECH' }); setSelectedTechModule(activeMod.id); }}
         >
           <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em' }}>
             AKTIVE FORSCHUNG
@@ -158,7 +158,7 @@ export function TechTreePanel() {
               return (
                 <div
                   key={mod.id}
-                  onClick={() => { pushBreadcrumb({ label: 'TECH', program: 'TECH' }); setSelectedTechModule(mod.id); }}
+                  onClick={() => { pushBreadcrumb({ label: mod.name, program: 'TECH' }); setSelectedTechModule(mod.id); }}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',

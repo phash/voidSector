@@ -169,8 +169,11 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   clearNavReturn: () => set({ navReturnProgram: null }),
   pushBreadcrumb: (crumb) =>
     set((s) => {
-      const next = [...s.breadcrumbStack, crumb];
-      return { breadcrumbStack: next.slice(-3) };
+      const stack = s.breadcrumbStack;
+      if (stack.length >= 3) {
+        return { breadcrumbStack: [...stack.slice(0, -1), crumb] };
+      }
+      return { breadcrumbStack: [...stack, crumb] };
     }),
   popBreadcrumb: () => {
     const s = get();
@@ -181,7 +184,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
       set({ breadcrumbStack: stack, activeProgram: last.program });
     }
   },
-  clearBreadcrumbs: () => set({ breadcrumbStack: [] }),
+  clearBreadcrumbs: () => set({ breadcrumbStack: [], navReturnProgram: null }),
   openContextMenu: (playerId, playerName, x, y) =>
     set({ contextMenu: { playerId, playerName, x, y } }),
   closeContextMenu: () => set({ contextMenu: null }),

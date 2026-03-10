@@ -449,18 +449,20 @@ export function DetailPanel() {
       {breadcrumbStack.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'monospace', fontSize: '0.7rem', borderBottom: '1px solid #222', paddingBottom: '4px', marginBottom: '6px', flexWrap: 'wrap' }}>
           {breadcrumbStack.map((crumb, i) => (
-            <span key={i}>
+            <span key={i} style={{ display: 'flex', alignItems: 'center' }}>
               {i > 0 && <span style={{ color: '#333', margin: '0 2px' }}>›</span>}
-              <button
-                onClick={() => setActiveProgram(crumb.program)}
-                style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontFamily: 'monospace', fontSize: '0.7rem', padding: 0 }}
-              >
-                {crumb.label}
-              </button>
+              {i < breadcrumbStack.length - 1 ? (
+                <button
+                  onClick={() => setActiveProgram(crumb.program)}
+                  style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontFamily: 'monospace', fontSize: '0.7rem', padding: 0 }}
+                >
+                  {crumb.label}
+                </button>
+              ) : (
+                <span style={{ color: 'var(--color-primary)' }}>{crumb.label}</span>
+              )}
             </span>
           ))}
-          <span style={{ color: '#333', margin: '0 2px' }}>›</span>
-          <span style={{ color: 'var(--color-primary)' }}>DETAIL</span>
         </div>
       )}
       <div style={{ letterSpacing: '0.2em', color: sectorColor, marginBottom: 8 }}>
