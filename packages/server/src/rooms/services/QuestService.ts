@@ -34,6 +34,7 @@ import {
   trackQuest,
   getTrackedQuests,
   getAcceptedQuestTemplateIds,
+  addWissen,
 } from '../../db/queries.js';
 import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
 
@@ -325,6 +326,9 @@ export class QuestService {
               -rewards.reputationPenalty,
               client,
             );
+          }
+          if (rewards.wissen) {
+            await addWissen(playerId, rewards.wissen);
           }
 
           // Deduct fetch resources from cargo
