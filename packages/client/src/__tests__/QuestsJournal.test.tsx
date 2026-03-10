@@ -123,37 +123,37 @@ describe('QuestsScreen — JOURNAL tab', () => {
     expect(trackBtn?.disabled).toBe(true);
   });
 
-  it('shows VERFOLGT counter', async () => {
+  it('shows TRACKED counter', async () => {
     mockStoreState({
       activeQuests: [mockQuest],
       trackedQuests: [{ questId: 'q1', title: 'Erz-Lieferung', type: 'traders' }],
     });
     render(<QuestsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
-    expect(screen.getByText('VERFOLGT: 1/5')).toBeDefined();
+    expect(screen.getByText('TRACKED: 1/5')).toBeDefined();
   });
 
   it('shows type label for quest', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
-    // traders prefix maps to HÄNDLER
-    expect(screen.getByText('[HÄNDLER]')).toBeDefined();
+    // traders prefix maps to TRADERS
+    expect(screen.getAllByText('[TRADERS]').length).toBeGreaterThan(0);
   });
 
   it('shows nearby filter toggle', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
-    expect(screen.getByText('[ ] IN DER NÄHE')).toBeDefined();
+    expect(screen.getByText('[ ] NEARBY')).toBeDefined();
   });
 
   it('toggles nearby filter on click', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
-    await userEvent.click(screen.getByText('[ ] IN DER NÄHE'));
-    expect(screen.getByText('[✓] IN DER NÄHE')).toBeDefined();
+    await userEvent.click(screen.getByText('[ ] NEARBY'));
+    expect(screen.getByText('[✓] NEARBY')).toBeDefined();
   });
 
   it('shows no quests message when filter removes all', async () => {
@@ -164,9 +164,9 @@ describe('QuestsScreen — JOURNAL tab', () => {
     render(<QuestsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     // Enable nearby filter with small radius
-    await userEvent.click(screen.getByText('[ ] IN DER NÄHE'));
+    await userEvent.click(screen.getByText('[ ] NEARBY'));
     // With radius 10 and player at (100,100), quest at (10,20) should be filtered out
     // distance = |10-100| + |20-100| = 90+80 = 170 > 10
-    expect(screen.getByText('KEINE AUFTRÄGE (FILTER AKTIV)')).toBeDefined();
+    expect(screen.getByText('NO QUESTS (FILTER ACTIVE)')).toBeDefined();
   });
 });

@@ -10,18 +10,18 @@ import { useConfirm } from '../hooks/useConfirm';
 const MAX_TRACKED = 5;
 
 const QUEST_TYPE_LABELS: Record<string, string> = {
-  fetch: 'LIEFERUNG',
+  fetch: 'DELIVERY',
   scan: 'SCAN',
-  delivery: 'LIEFERUNG',
-  bounty: 'KOPFGELD',
+  delivery: 'DELIVERY',
+  bounty: 'BOUNTY',
   story: 'STORY',
   community: 'COMMUNITY',
-  traders: 'HÄNDLER',
-  scientists: 'WISS.',
-  pirates: 'PIRATEN',
+  traders: 'TRADERS',
+  scientists: 'SCI.',
+  pirates: 'PIRATES',
   ancients: 'ANCIENTS',
-  diplomacy: 'DIPLOMATIE',
-  war_support: 'KRIEG',
+  diplomacy: 'DIPLOMACY',
+  war_support: 'WAR',
 };
 
 function JournalTab() {
@@ -103,7 +103,7 @@ function JournalTab() {
               fontSize: '0.65rem',
             }}
           >
-            {filterNearby ? '[✓] IN DER NÄHE' : '[ ] IN DER NÄHE'}
+            {filterNearby ? `[✓] ${UI.status.NEARBY}` : `[ ] ${UI.status.NEARBY}`}
           </button>
           {filterNearby && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -141,7 +141,7 @@ function JournalTab() {
                 padding: '1px 3px',
               }}
             >
-              <option value="">ALLE FRAKTIONEN</option>
+              <option value="">{UI.status.ALL_FACTIONS}</option>
               {factionIds.map((f) => (
                 <option key={f} value={f}>
                   {f.toUpperCase()}
@@ -162,7 +162,7 @@ function JournalTab() {
                 padding: '1px 3px',
               }}
             >
-              <option value="">ALLE ARTEN</option>
+              <option value="">{UI.status.ALL_TYPES}</option>
               {questTypes.map((t) => (
                 <option key={t} value={t}>
                   {QUEST_TYPE_LABELS[t] ?? t.toUpperCase()}
@@ -182,13 +182,13 @@ function JournalTab() {
           letterSpacing: '0.05em',
         }}
       >
-        VERFOLGT: {trackedQuests.length}/{MAX_TRACKED}
+        {UI.status.TRACKED}: {trackedQuests.length}/{MAX_TRACKED}
       </div>
 
       {/* Quest list */}
       {filtered.length === 0 && (
         <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
-          KEINE AUFTRÄGE (FILTER AKTIV)
+          {UI.empty.NO_QUESTS_FILTERED}
         </div>
       )}
       {filtered.map((q) => {
@@ -220,7 +220,7 @@ function JournalTab() {
               <button
                 onClick={() => toggleTrack(q.id)}
                 disabled={!canTrack}
-                title={isTracked ? 'Verfolgen beenden' : 'Verfolgen (max 5)'}
+                title={isTracked ? 'Stop tracking' : 'Track quest (max 5)'}
                 style={{
                   background: isTracked ? 'rgba(0,120,255,0.3)' : 'none',
                   color: isTracked ? '#4488FF' : canTrack ? 'rgba(255,176,0,0.5)' : '#333',
@@ -239,7 +239,7 @@ function JournalTab() {
             <div
               style={{ color: 'rgba(255,176,0,0.45)', fontSize: '0.6rem', marginTop: 2 }}
             >
-              {doneCount}/{q.objectives.length} ZIELE
+              {doneCount}/{q.objectives.length} {UI.status.OBJECTIVES}
               {q.npcFactionId && (
                 <span style={{ marginLeft: 6, opacity: 0.7 }}>
                   [{(q.npcFactionId as string).toUpperCase()}]
@@ -261,7 +261,7 @@ function StoryTab() {
   }, []);
 
   if (!progress) {
-    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>LADE...</div>;
+    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>{UI.status.LOADING}</div>;
   }
 
   return (
@@ -286,7 +286,7 @@ function StoryTab() {
             }}
           >
             <span>
-              {completed ? '✓' : current ? '▶' : '○'} KAP.{ch.id} — {ch.title}
+              {completed ? '✓' : current ? '▶' : '○'} CH.{ch.id} — {ch.title}
             </span>
             <span
               style={{
@@ -324,23 +324,23 @@ function AlienRepTab() {
   };
 
   const FACTION_LABELS: Record<string, string> = {
-    archivists: 'Archivare',
+    archivists: 'Archivists',
     kthari: "K'thari",
-    mycelians: 'Mycelianer',
-    consortium: 'Konsortium',
-    tourist_guild: 'Touristengilde',
+    mycelians: 'Mycelians',
+    consortium: 'Consortium',
+    tourist_guild: 'Tourist Guild',
     scrappers: 'Scrappers',
     mirror_minds: 'Mirror Minds',
     silent_swarm: 'Silent Swarm',
     helions: 'Helions',
-    axioms: 'Axiome',
+    axioms: 'Axioms',
   };
 
   return (
     <div style={{ padding: '8px', fontSize: '0.75rem', overflowY: 'auto', height: '100%' }}>
       {/* Personal alien rep */}
       <div style={{ opacity: 0.6, marginBottom: '4px', letterSpacing: '0.1em' }}>
-        MEINE ALIEN-REPUTATIONEN
+        MY ALIEN REPUTATIONS
       </div>
       {Object.entries(FACTION_LABELS).map(([id, label]) => {
         const rep = alienReps[id] ?? 0;
@@ -357,7 +357,7 @@ function AlienRepTab() {
 
       {/* Humanity rep */}
       <div style={{ opacity: 0.6, marginBottom: '4px', marginTop: '12px', letterSpacing: '0.1em' }}>
-        GALAKTISCHE MENSCHHEITS-REP
+        GALACTIC HUMANITY REP
       </div>
       {Object.entries(FACTION_LABELS).map(([id, label]) => {
         const entry = humanityReps[id];
@@ -396,7 +396,7 @@ function CommunityTab() {
   if (!quest) {
     return (
       <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>
-        KEINE AKTIVE COMMUNITY-QUEST
+        {UI.empty.NO_COMMUNITY_QUEST}
       </div>
     );
   }
@@ -428,7 +428,7 @@ function CommunityTab() {
             fontSize: '0.65rem',
           }}
         >
-          <span style={{ color: 'var(--color-dim)' }}>FORTSCHRITT</span>
+          <span style={{ color: 'var(--color-dim)' }}>{UI.status.PROGRESS}</span>
           <span style={{ color: 'var(--color-primary)' }}>
             {(quest.currentCount ?? 0).toLocaleString()} / {(quest.targetCount ?? 0).toLocaleString()}
           </span>
@@ -437,7 +437,7 @@ function CommunityTab() {
           <div style={{ height: '100%', width: `${pct}%`, background: 'var(--color-primary)' }} />
         </div>
       </div>
-      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>DEADLINE: {deadline}</div>
+      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{UI.status.DEADLINE}: {deadline}</div>
     </div>
   );
 }
@@ -497,13 +497,13 @@ export function QuestsScreen() {
   };
 
   const tabLabels: Record<string, string> = {
-    active: 'AKTIV',
+    active: UI.tabs.ACTIVE,
     station: 'STATION',
     rep: 'REP',
     events: 'EVENTS',
-    rescue: 'RETTUNG',
+    rescue: UI.tabs.RESCUE,
     story: 'STORY',
-    community: 'COMMUNITY',
+    community: UI.tabs.COMMUNITY,
     alien_rep: 'ALIEN REP',
     journal: 'JOURNAL',
   };
@@ -519,7 +519,7 @@ export function QuestsScreen() {
             clearNavReturn();
           }}
         >
-          [← ZURÜCK]
+          [← BACK]
         </button>
       )}
       {/* Tab bar */}
@@ -568,7 +568,7 @@ export function QuestsScreen() {
           </div>
           {activeQuests.length === 0 && (
             <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
-              KEINE AKTIVEN AUFTRÄGE
+              NO ACTIVE QUESTS
             </div>
           )}
           {activeQuests.map((q) => {
@@ -649,7 +649,7 @@ export function QuestsScreen() {
                     <div
                       style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px', marginTop: '4px' }}
                     >
-                      BELOHNUNG: +{q.rewards.credits} CR | +{q.rewards.xp} XP
+                      {UI.status.REWARD}: +{q.rewards.credits} CR | +{q.rewards.xp} XP
                       {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
                     </div>
                     <button
@@ -674,10 +674,10 @@ export function QuestsScreen() {
         <div>
           <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- STATION ---</div>
           {!isAtStation && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Nicht an einer Station</div>
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Not at a station</div>
           )}
           {isAtStation && stationNpcs.length === 0 && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Lade NPCs...</div>
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>{UI.status.LOADING}</div>
           )}
           {stationNpcs.map((npc) => (
             <div key={npc.id} style={{ color: '#00FF88', marginBottom: '2px' }}>
@@ -687,7 +687,7 @@ export function QuestsScreen() {
           {availableQuests.length > 0 && (
             <>
               <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>
-                VERFUGBARE QUESTS:
+                AVAILABLE QUESTS:
               </div>
               {availableQuests.map((q) => (
                 <div
@@ -718,7 +718,7 @@ export function QuestsScreen() {
                       marginTop: '2px',
                     }}
                   >
-                    [ANNEHMEN]
+                    {btn(UI.actions.ACCEPT)}
                   </button>
                 </div>
               ))}
@@ -779,15 +779,15 @@ export function QuestsScreen() {
         <div>
           <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- SCAN EVENTS ---</div>
           {scanEvents.filter((e) => e.status === 'discovered').length === 0 && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Keine aktiven Events</div>
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>{UI.empty.NO_ACTIVE_EVENTS}</div>
           )}
           {scanEvents
             .filter((e) => e.status === 'discovered')
             .map((e) => {
               const typeLabels: Record<string, string> = {
-                distress_signal: 'NOTSIGNAL',
-                anomaly_reading: 'ANOMALIE',
-                artifact_find: 'ARTEFAKT',
+                distress_signal: UI.status.DISTRESS_SIGNAL,
+                anomaly_reading: 'ANOMALY',
+                artifact_find: 'ARTEFACT',
               };
               return (
                 <div
@@ -800,7 +800,7 @@ export function QuestsScreen() {
                 >
                   <div style={{ color: '#FF00FF' }}>{typeLabels[e.eventType] ?? e.eventType}</div>
                   <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
-                    Sektor ({innerCoord(e.sectorX)}, {innerCoord(e.sectorY)})
+                    Sector ({innerCoord(e.sectorX)}, {innerCoord(e.sectorY)})
                   </div>
                   <button
                     onClick={() => network.sendCompleteScanEvent(e.id)}
@@ -815,7 +815,7 @@ export function QuestsScreen() {
                       marginTop: '2px',
                     }}
                   >
-                    [UNTERSUCHEN]
+                    {btn(UI.actions.INVESTIGATE)}
                   </button>
                 </div>
               );
@@ -838,12 +838,12 @@ export function QuestsScreen() {
       {/* Rescue tab */}
       {tab === 'rescue' && (
         <div>
-          <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- RETTUNG ---</div>
+          <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- {UI.tabs.RESCUE} ---</div>
 
           {/* Active distress calls */}
           {distressCalls.length > 0 && (
             <div style={{ marginBottom: '8px' }}>
-              <div style={{ color: '#FF3333', marginBottom: '4px' }}>AKTIVE NOTRUFE:</div>
+              <div style={{ color: '#FF3333', marginBottom: '4px' }}>ACTIVE DISTRESS CALLS:</div>
               {distressCalls.map((call) => {
                 const minutesLeft = Math.max(0, Math.ceil((call.expiresAt - Date.now()) / 60000));
                 return (
@@ -856,10 +856,10 @@ export function QuestsScreen() {
                     }}
                   >
                     <div style={{ color: '#FF3333' }}>DISTRESS SIGNAL</div>
-                    <div>RICHTUNG: {call.direction}</div>
-                    <div>ENTFERNUNG: ~{call.estimatedDistance} SEKTOREN</div>
+                    <div>{UI.status.DIRECTION}: {call.direction}</div>
+                    <div>{UI.status.DISTANCE}: ~{call.estimatedDistance} SECTORS</div>
                     <div style={{ fontSize: '10px', opacity: 0.5 }}>
-                      Verfällt in {minutesLeft} min
+                      Expires in {minutesLeft} min
                     </div>
                   </div>
                 );
@@ -868,13 +868,13 @@ export function QuestsScreen() {
           )}
 
           {distressCalls.length === 0 && rescuedSurvivors.length === 0 && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Keine aktiven Rettungsmissionen</div>
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>No active rescue missions</div>
           )}
 
           {/* Rescued survivors in transit */}
           {rescuedSurvivors.length > 0 && (
             <div>
-              <div style={{ color: '#00FF88', marginBottom: '4px' }}>ÜBERLEBENDE AN BORD:</div>
+              <div style={{ color: '#00FF88', marginBottom: '4px' }}>{UI.status.SURVIVORS}:</div>
               {rescuedSurvivors.map((s) => (
                 <div
                   key={s.id}
@@ -884,14 +884,14 @@ export function QuestsScreen() {
                     marginBottom: '4px',
                   }}
                 >
-                  <div>{s.survivorCount} Überlebende</div>
+                  <div>{s.survivorCount} survivors</div>
                   <div style={{ fontSize: '10px', opacity: 0.5 }}>
-                    Geborgen bei ({innerCoord(s.sectorX)}, {innerCoord(s.sectorY)})
+                    Rescued at ({innerCoord(s.sectorX)}, {innerCoord(s.sectorY)})
                   </div>
                 </div>
               ))}
               <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px' }}>
-                An einer Station abliefern für Belohnung
+                Deliver to a station for reward
               </div>
             </div>
           )}
