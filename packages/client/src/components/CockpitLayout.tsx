@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
 import { ProgramSelector } from './ProgramSelector';
 import { SettingsPanel } from './SettingsPanel';
@@ -50,6 +50,25 @@ function getDetailForProgram(programId: string): ReactNode | null {
 }
 
 export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
+  const miningActive = useStore((s) => s.mining?.active ?? false);
+  const cargo = useStore((s) => s.cargo);
+  const ship = useStore((s) => s.ship);
+  const setActionError = useStore((s) => s.setActionError);
+  const cargoFullToastShown = useRef(false);
+
+  const cargoCap = ship?.stats?.cargoCap ?? 5;
+  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+
+  useEffect(() => {
+    if (miningActive && cargoTotal >= cargoCap && !cargoFullToastShown.current) {
+      cargoFullToastShown.current = true;
+      setActionError({ code: 'CARGO_FULL', message: '⚠ CARGO FULL — MINING STOPPED' });
+    }
+    if (!miningActive) {
+      cargoFullToastShown.current = false;
+    }
+  }, [miningActive, cargoTotal, cargoCap, setActionError]);
+
   const activeProgram = useStore((s) => s.activeProgram);
   const zoomLevel = useStore((s) => s.zoomLevel);
   const setZoomLevel = useStore((s) => s.setZoomLevel);
