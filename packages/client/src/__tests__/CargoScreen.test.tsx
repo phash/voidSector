@@ -162,7 +162,7 @@ describe('CargoScreen', () => {
     });
     render(<CargoScreen />);
     expect(screen.getByText(/DATA SLATES: 2/)).toBeDefined();
-    expect(screen.getByText(/AKTIVIEREN/)).toBeDefined();
+    expect(screen.getByText(/\[ACTIVATE\]/)).toBeDefined();
   });
 
   it('shows create slate buttons', () => {
@@ -221,7 +221,7 @@ describe('CargoScreen', () => {
       },
     });
     render(<CargoScreen />);
-    expect(screen.getByText(/SEKTOR-SLATE/)).toBeDefined();
-    expect(screen.getByText(/GEBIETS-SLATE/)).toBeDefined();
+    expect(screen.getByText(/SECTOR-SLATE/)).toBeDefined();
+    expect(screen.getByText(/AREA-SLATE/)).toBeDefined();
   });
 });

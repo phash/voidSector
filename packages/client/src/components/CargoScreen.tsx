@@ -10,7 +10,7 @@ import {
 } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
-import { btn, btnDisabled } from '../ui-strings';
+import { btn, btnDisabled, UI } from '../ui-strings';
 import { useConfirm } from '../hooks/useConfirm';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -132,20 +132,20 @@ export function CargoScreen() {
           style={tabBtnStyle(activeTab === 'resource')}
           onClick={() => setActiveTab('resource')}
         >
-          RESSOURCEN
+          {UI.tabs.RESOURCES}
         </button>
         <button style={tabBtnStyle(activeTab === 'module')} onClick={() => setActiveTab('module')}>
-          MODULE
+          {UI.tabs.MODULES}
         </button>
         <button
           style={tabBtnStyle(activeTab === 'blueprint')}
           onClick={() => setActiveTab('blueprint')}
         >
-          BLAUPAUSEN
+          {UI.tabs.BLUEPRINTS}
         </button>
       </div>
 
-      {/* RESSOURCEN tab */}
+      {/* RESOURCES tab */}
       {activeTab === 'resource' && (
         <>
           <div style={{ marginBottom: '16px' }}>
@@ -176,7 +176,7 @@ export function CargoScreen() {
                 fontSize: '0.8rem',
               }}
             >
-              <div style={{ opacity: 0.6, marginBottom: 4 }}>INVENTAR RESSOURCEN:</div>
+              <div style={{ opacity: 0.6, marginBottom: 4 }}>INVENTORY RESOURCES:</div>
               {resources.map((item) => (
                 <div key={item.itemId} style={{ marginBottom: 2 }}>
                   {item.itemId.toUpperCase()} x{item.quantity}
@@ -219,14 +219,14 @@ export function CargoScreen() {
                     style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                     onClick={() => network.sendActivateSlate(slate.id)}
                   >
-                    [AKTIVIEREN]
+                    {btn(UI.actions.ACTIVATE)}
                   </button>
                   <button
                     className="vs-btn"
                     style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                     onClick={() => network.sendNpcBuyback(slate.id)}
                   >
-                    [NPC VERKAUF]
+                    {btn('NPC SELL')}
                   </button>
                 </div>
               ))}
@@ -249,21 +249,21 @@ export function CargoScreen() {
                 disabled={total >= cargoCap}
                 onClick={() => network.sendCreateSlate('sector')}
               >
-                [SEKTOR-SLATE {SLATE_AP_COST_SECTOR}AP]
+                [SECTOR-SLATE {SLATE_AP_COST_SECTOR}AP]
               </button>
               <button
                 className="vs-btn"
                 disabled={total >= cargoCap}
                 onClick={() => network.sendCreateSlate('area')}
               >
-                [GEBIETS-SLATE]
+                [AREA-SLATE]
               </button>
               <button
                 className="vs-btn"
                 disabled={total >= cargoCap}
                 onClick={() => setShowCustomForm(!showCustomForm)}
               >
-                [DATEN-DISK {CUSTOM_SLATE_AP_COST}AP/{CUSTOM_SLATE_CREDIT_COST}CR]
+                [DATA DISK {CUSTOM_SLATE_AP_COST}AP/{CUSTOM_SLATE_CREDIT_COST}CR]
               </button>
             </div>
           </div>
@@ -277,7 +277,7 @@ export function CargoScreen() {
                 fontSize: '0.8rem',
               }}
             >
-              <div style={{ marginBottom: 4, opacity: 0.6 }}>NEUE DATENDISK</div>
+              <div style={{ marginBottom: 4, opacity: 0.6 }}>NEW DATA DISK</div>
               <input
                 className="vs-input"
                 placeholder="Label (max 32)"
@@ -308,10 +308,10 @@ export function CargoScreen() {
                     setShowCustomForm(false);
                   }}
                 >
-                  [ERSTELLEN]
+                  {btn(UI.actions.CREATE)}
                 </button>
                 <button className="vs-btn" onClick={() => setShowCustomForm(false)}>
-                  [ABBRECHEN]
+                  {btn(UI.actions.CANCEL)}
                 </button>
               </div>
             </div>
@@ -366,7 +366,7 @@ export function CargoScreen() {
       {activeTab === 'module' && (
         <div style={{ fontSize: '0.85rem' }}>
           {modules.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>KEINE MODULE IM INVENTAR</div>
+            <div style={{ opacity: 0.4 }}>{UI.empty.NO_MODULES}</div>
           ) : (
             modules.map((item) => (
               <div
@@ -387,7 +387,7 @@ export function CargoScreen() {
                   style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                   onClick={() => network.sendInstallModule('', item.itemId, 0)}
                 >
-                  [INSTALLIEREN]
+                  {btn(UI.actions.INSTALL)}
                 </button>
               </div>
             ))
@@ -395,11 +395,11 @@ export function CargoScreen() {
         </div>
       )}
 
-      {/* BLAUPAUSEN tab */}
+      {/* BLUEPRINTS tab */}
       {activeTab === 'blueprint' && (
         <div style={{ fontSize: '0.85rem' }}>
           {blueprints.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>KEINE BLAUPAUSEN IM INVENTAR</div>
+            <div style={{ opacity: 0.4 }}>{UI.empty.NO_BLUEPRINTS}</div>
           ) : (
             blueprints.map((item) => (
               <div
@@ -422,14 +422,14 @@ export function CargoScreen() {
                     style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                     onClick={() => network.sendActivateBlueprint(item.itemId)}
                   >
-                    [AKTIVIEREN]
+                    {btn(UI.actions.ACTIVATE)}
                   </button>
                   <button
                     className="vs-btn"
                     style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                     onClick={() => network.sendCraftModule(item.itemId)}
                   >
-                    [HERSTELLEN]
+                    {btn(UI.actions.CRAFT)}
                   </button>
                 </div>
               </div>
