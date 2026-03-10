@@ -2070,15 +2070,9 @@ expiresDays: 14"></textarea>
   }
 
   function centerOnQuadrant(qx, qy) {
-    var canvas = document.getElementById('qmap-canvas');
-    if (!canvas) return;
-    syncCanvasSize(canvas);
-    var cellSize = (canvas.width - AXIS_MARGIN) / (ZOOM_LEVELS[qmapZoom] || 100);
-    // Data area is offset by AXIS_MARGIN; center in data area
-    var dataW = canvas.width - AXIS_MARGIN;
-    var dataH = canvas.height - AXIS_MARGIN;
-    qmapPan.x = dataW / 2 - qx * cellSize - cellSize / 2;
-    qmapPan.y = dataH / 2 - qy * cellSize - cellSize / 2;
+    // qmapPan is now world coordinates — just set center to target
+    qmapPan.x = qx;
+    qmapPan.y = qy;
     renderQmap();
   }
 
@@ -2144,7 +2138,8 @@ expiresDays: 14"></textarea>
     var ctx = canvas.getContext('2d');
     var W = canvas.width;
     var H = canvas.height;
-    var cellSize = (W - AXIS_MARGIN) / (ZOOM_LEVELS[qmapZoom] || 100);
+    var visibleQuadrants = ZOOM_LEVELS[qmapZoom] || 100;
+    var cellSize = (W - AXIS_MARGIN) / visibleQuadrants;
     var showLabels = cellSize >= 32;
 
     // Clear background
@@ -2160,38 +2155,76 @@ expiresDays: 14"></textarea>
       return;
     }
 
-    // Compute bounds
-    var minQx = qmapData[0].qx, maxQx = qmapData[0].qx;
-    var minQy = qmapData[0].qy, maxQy = qmapData[0].qy;
-    for (var i = 0; i < qmapData.length; i++) {
-      var q = qmapData[i];
-      if (q.qx < minQx) minQx = q.qx;
-      if (q.qx > maxQx) maxQx = q.qx;
-      if (q.qy < minQy) minQy = q.qy;
-      if (q.qy > maxQy) maxQy = q.qy;
-    }
-
-    // Data area starts at AXIS_MARGIN offset (left + top for axis labels)
+    // World-coordinate based rendering: qmapPan is in world coords (quadrant units)
+    // Center of viewport = qmapPan (world coords)
     var dataW = W - AXIS_MARGIN;
     var dataH = H - AXIS_MARGIN;
-    var totalW = (maxQx - minQx + 1) * cellSize;
-    var totalH = (maxQy - minQy + 1) * cellSize;
-    // originX/originY relative to data area origin (AXIS_MARGIN, AXIS_MARGIN)
-    var originX = AXIS_MARGIN + Math.floor((dataW - totalW) / 2) + qmapPan.x;
-    var originY = AXIS_MARGIN + Math.floor((dataH - totalH) / 2) + qmapPan.y;
+    var centerScreenX = AXIS_MARGIN + dataW / 2;
+    var centerScreenY = AXIS_MARGIN + dataH / 2;
 
-    // Draw quadrant cells
+    // Convert world coord → screen coord
+    function worldToScreen(qx, qy) {
+      return {
+        x: centerScreenX + (qx - qmapPan.x) * cellSize,
+        y: centerScreenY + (qy - qmapPan.y) * cellSize
+      };
+    }
+
+    // Determine visible range
+    var halfColsX = Math.ceil(dataW / cellSize / 2) + 1;
+    var halfColsY = Math.ceil(dataH / cellSize / 2) + 1;
+    var viewMinQx = Math.floor(qmapPan.x - halfColsX);
+    var viewMaxQx = Math.ceil(qmapPan.x + halfColsX);
+    var viewMinQy = Math.floor(qmapPan.y - halfColsY);
+    var viewMaxQy = Math.ceil(qmapPan.y + halfColsY);
+
+    // Build lookup of quadrant data
+    var qLookup = {};
+    for (var i = 0; i < qmapData.length; i++) {
+      var q = qmapData[i];
+      qLookup[q.qx + ',' + q.qy] = q;
+    }
+
+    // Draw grid lines (subtle)
+    if (cellSize >= 4) {
+      ctx.strokeStyle = 'rgba(255,176,0,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var gx = viewMinQx; gx <= viewMaxQx; gx++) {
+        var sx = worldToScreen(gx, 0).x;
+        if (sx >= AXIS_MARGIN && sx <= W) {
+          ctx.moveTo(Math.round(sx) + 0.5, AXIS_MARGIN);
+          ctx.lineTo(Math.round(sx) + 0.5, H);
+        }
+      }
+      for (var gy = viewMinQy; gy <= viewMaxQy; gy++) {
+        var sy = worldToScreen(0, gy).y;
+        if (sy >= AXIS_MARGIN && sy <= H) {
+          ctx.moveTo(AXIS_MARGIN, Math.round(sy) + 0.5);
+          ctx.lineTo(W, Math.round(sy) + 0.5);
+        }
+      }
+      ctx.stroke();
+    }
+
+    // Draw quadrant cells from data
     for (var j = 0; j < qmapData.length; j++) {
       var qd = qmapData[j];
-      var cx = originX + (qd.qx - minQx) * cellSize;
-      var cy = originY + (qd.qy - minQy) * cellSize;
+      var pos = worldToScreen(qd.qx, qd.qy);
+      var cx = pos.x;
+      var cy = pos.y;
 
-      // Fill — at sub-pixel zoom draw a 1px dot at cell center
-      ctx.fillStyle = FACTION_COLORS[((qd.faction || '').toLowerCase() === 'humans' ? 'human' : (qd.faction || '').toLowerCase())] || FACTION_COLORS.unknown;
+      // Skip if off-screen
+      if (cx + cellSize < AXIS_MARGIN || cx > W || cy + cellSize < AXIS_MARGIN || cy > H) continue;
+
+      // Fill
+      var fk = (qd.faction || '').toLowerCase();
+      if (fk === 'humans') fk = 'human';
+      ctx.fillStyle = FACTION_COLORS[fk] || FACTION_COLORS.unknown;
       if (cellSize < 1) {
         ctx.fillRect(Math.round(cx + cellSize / 2), Math.round(cy + cellSize / 2), 1, 1);
       } else {
-        ctx.fillRect(cx, cy, cellSize, cellSize);
+        ctx.fillRect(cx, cy, Math.max(1, cellSize - (cellSize >= 4 ? 1 : 0)), Math.max(1, cellSize - (cellSize >= 4 ? 1 : 0)));
       }
 
       // Friction glow / warning border
@@ -2233,24 +2266,6 @@ expiresDays: 14"></textarea>
       }
     }
 
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255,176,0,0.1)';
-    ctx.lineWidth = 1;
-    for (var gx = minQx; gx <= maxQx + 1; gx++) {
-      var lx = originX + (gx - minQx) * cellSize;
-      ctx.beginPath();
-      ctx.moveTo(lx, originY);
-      ctx.lineTo(lx, originY + (maxQy - minQy + 1) * cellSize);
-      ctx.stroke();
-    }
-    for (var gy = minQy; gy <= maxQy + 1; gy++) {
-      var ly = originY + (gy - minQy) * cellSize;
-      ctx.beginPath();
-      ctx.moveTo(originX, ly);
-      ctx.lineTo(originX + (maxQx - minQx + 1) * cellSize, ly);
-      ctx.stroke();
-    }
-
     // Axis labels — qx along the top, qy along the left
     ctx.fillStyle = 'rgba(255,176,0,0.6)';
     ctx.font = '9px monospace';
@@ -2260,22 +2275,41 @@ expiresDays: 14"></textarea>
     var stepX = Math.max(1, Math.ceil(minLabelSpacing / cellSize));
     var stepY = Math.max(1, Math.ceil(minLabelSpacing / cellSize));
 
+    // Snap to nice step boundaries
+    var firstQx = Math.ceil(viewMinQx / stepX) * stepX;
+    var firstQy = Math.ceil(viewMinQy / stepY) * stepY;
+
     // Top axis (qx values)
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    for (var ax = minQx; ax <= maxQx; ax += stepX) {
-      var axX = originX + (ax - minQx) * cellSize + cellSize / 2;
-      if (axX < AXIS_MARGIN || axX > W) continue;
-      ctx.fillText(String(ax), axX, 2);
+    for (var ax = firstQx; ax <= viewMaxQx; ax += stepX) {
+      var axPos = worldToScreen(ax, 0);
+      if (axPos.x < AXIS_MARGIN || axPos.x > W) continue;
+      ctx.fillText(String(ax), axPos.x + cellSize / 2, 2);
     }
 
     // Left axis (qy values)
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    for (var ay = minQy; ay <= maxQy; ay += stepY) {
-      var ayY = originY + (ay - minQy) * cellSize + cellSize / 2;
-      if (ayY < AXIS_MARGIN || ayY > H) continue;
-      ctx.fillText(String(ay), AXIS_MARGIN - 3, ayY);
+    for (var ay = firstQy; ay <= viewMaxQy; ay += stepY) {
+      var ayPos = worldToScreen(0, ay);
+      if (ayPos.y < AXIS_MARGIN || ayPos.y > H) continue;
+      ctx.fillText(String(ay), AXIS_MARGIN - 3, ayPos.y + cellSize / 2);
+    }
+
+    // Origin crosshair (0,0)
+    var originPos = worldToScreen(0, 0);
+    if (originPos.x >= AXIS_MARGIN && originPos.x <= W && originPos.y >= AXIS_MARGIN && originPos.y <= H) {
+      ctx.strokeStyle = 'rgba(255,176,0,0.2)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(originPos.x + cellSize / 2, AXIS_MARGIN);
+      ctx.lineTo(originPos.x + cellSize / 2, H);
+      ctx.moveTo(AXIS_MARGIN, originPos.y + cellSize / 2);
+      ctx.lineTo(W, originPos.y + cellSize / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
 
     // Legend
@@ -2387,8 +2421,11 @@ expiresDays: 14"></textarea>
 
     canvas.addEventListener('mousemove', function(e) {
       if (!qmapDragging) return;
-      qmapPan.x = qmapPanStartX + (e.clientX - qmapDragStartX);
-      qmapPan.y = qmapPanStartY + (e.clientY - qmapDragStartY);
+      var visibleQuadrants = ZOOM_LEVELS[qmapZoom] || 100;
+      var cellSize = (canvas.width - AXIS_MARGIN) / visibleQuadrants;
+      // Convert pixel drag delta to world coordinate delta (inverted: drag right = view moves left)
+      qmapPan.x = qmapPanStartX - (e.clientX - qmapDragStartX) / cellSize;
+      qmapPan.y = qmapPanStartY - (e.clientY - qmapDragStartY) / cellSize;
       renderQmap();
     });
 
