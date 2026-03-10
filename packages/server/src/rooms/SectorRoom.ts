@@ -9,7 +9,7 @@ import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
-import { getAcepXpSummary, getAcepEffects } from '../engine/acepXpService.js';
+import { getAcepXpSummary, getAcepEffects, type AcepPath } from '../engine/acepXpService.js';
 import { recordVisit } from '../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../engine/quadrantEngine.js';
 import { isFrontierQuadrant } from '../engine/expansionEngine.js';
@@ -647,6 +647,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     );
     this.onMessage('getResearchState', (client) => this.ships.handleGetResearchState(client));
     this.onMessage('craftModule', (client, data) => this.ships.handleCraftModule(client, data));
+    this.onMessage('acepBoost', (client, data: { path: AcepPath }) =>
+      this.ships.handleAcepBoost(client, data),
+    );
 
     // ── World / Data Queries ────────────────────────────────────────
     this.onMessage('getAP', async (client) => {
