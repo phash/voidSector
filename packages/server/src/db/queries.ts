@@ -1155,6 +1155,7 @@ export async function insertQuest(
   playerId: string,
   templateId: string,
   title: string,
+  description: string,
   stationX: number,
   stationY: number,
   objectives: any,
@@ -1162,13 +1163,14 @@ export async function insertQuest(
   expiresAt: Date,
 ): Promise<string> {
   const { rows } = await query<{ id: string }>(
-    `INSERT INTO player_quests (player_id, template_id, title, station_x, station_y, objectives, rewards, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO player_quests (player_id, template_id, title, description, station_x, station_y, objectives, rewards, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id`,
     [
       playerId,
       templateId,
       title,
+      description,
       stationX,
       stationY,
       JSON.stringify(objectives),

@@ -79,6 +79,7 @@ export class QuestService {
       auth.userId,
       data.templateId,
       questTemplate.title,
+      questTemplate.description,
       data.stationX,
       data.stationY,
       questTemplate.objectives,
