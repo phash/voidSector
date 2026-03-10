@@ -66,7 +66,8 @@ describe('QuestsScreen', () => {
       ],
     });
     render(<QuestsScreen />);
-    expect(screen.getByText(/Erz-Lieferung/)).toBeDefined();
+    // AUFTRÄGE tab is active by default — quest title visible (may appear in both active list and journal)
+    expect(screen.getAllByText(/Erz-Lieferung/).length).toBeGreaterThan(0);
   });
 
   it('expands quest to show objectives and rewards', async () => {
@@ -99,7 +100,8 @@ describe('QuestsScreen', () => {
       ],
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByText(/Erz-Lieferung/));
+    // AUFTRÄGE tab is active by default — click quest header to expand
+    await userEvent.click(screen.getAllByText(/Erz-Lieferung/)[0]);
     expect(screen.getByText(/3 ore/)).toBeDefined();
     expect(screen.getByText(/\+30 CR/)).toBeDefined();
   });
@@ -114,7 +116,7 @@ describe('QuestsScreen', () => {
       ],
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByText('REP'));
+    await userEvent.click(screen.getByText('REPUTATION'));
     expect(screen.getByText(/TRADERS.*FRIENDLY/)).toBeDefined();
   });
 
@@ -133,7 +135,8 @@ describe('QuestsScreen', () => {
       },
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByText('ALIEN REP'));
+    // AlienRepTab is now inside the REPUTATION tab
+    await userEvent.click(screen.getByText('REPUTATION'));
     expect(screen.getByText('MEINE ALIEN-REPUTATIONEN')).toBeDefined();
     expect(screen.getByText('GALAKTISCHE MENSCHHEITS-REP')).toBeDefined();
   });
@@ -168,8 +171,8 @@ describe('QuestsScreen', () => {
       ],
     });
     render(<QuestsScreen />);
-    // Quest must be expanded first to see the abandon button
-    await userEvent.click(screen.getByText(/Test Quest/));
+    // AUFTRÄGE tab is active by default — quest must be expanded first to see the abandon button
+    await userEvent.click(screen.getAllByText(/Test Quest/)[0]);
     await userEvent.click(screen.getByText('[ABBRECHEN]'));
     expect(network.sendAbandonQuest).toHaveBeenCalledWith('q1');
   });

@@ -56,29 +56,29 @@ describe('QuestsScreen — JOURNAL tab', () => {
   it('renders JOURNAL tab button', () => {
     mockStoreState({ activeQuests: [] });
     render(<QuestsScreen />);
-    const journalButtons = screen.getAllByText('JOURNAL');
-    expect(journalButtons.length).toBeGreaterThan(0);
+    // JOURNAL header text is now shown inside the AUFTRÄGE tab (default)
+    const journalElements = screen.getAllByText(/JOURNAL/);
+    expect(journalElements.length).toBeGreaterThan(0);
   });
 
   it('requests tracked quests on journal tab open', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
+    // JournalTab is embedded in AUFTRÄGE/all — requestTrackedQuests called on mount
     expect(network.requestTrackedQuests).toHaveBeenCalled();
   });
 
   it('shows active quests in journal tab', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
+    // AUFTRÄGE tab is active by default — quest title visible
     expect(screen.getByText('Erz-Lieferung')).toBeDefined();
   });
 
   it('shows track toggle button for each quest', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
-    // Track button shows [T] initially
+    // JournalTab embedded in AUFTRÄGE/all — [T] button visible
     expect(screen.getByText('[T]')).toBeDefined();
   });
 
@@ -88,7 +88,6 @@ describe('QuestsScreen — JOURNAL tab', () => {
       trackedQuests: [{ questId: 'q1', title: 'Erz-Lieferung', type: 'traders' }],
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     expect(screen.getByText('[T✓]')).toBeDefined();
   });
 
@@ -98,7 +97,6 @@ describe('QuestsScreen — JOURNAL tab', () => {
       trackedQuests: [],
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     await userEvent.click(screen.getByText('[T]'));
     expect(network.sendTrackQuest).toHaveBeenCalledWith('q1', true);
   });
@@ -116,7 +114,6 @@ describe('QuestsScreen — JOURNAL tab', () => {
       trackedQuests,
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     // Track button should be disabled
     const trackBtn = screen.getByText('[T]').closest('button');
     expect(trackBtn).toBeDefined();
@@ -129,14 +126,12 @@ describe('QuestsScreen — JOURNAL tab', () => {
       trackedQuests: [{ questId: 'q1', title: 'Erz-Lieferung', type: 'traders' }],
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     expect(screen.getByText('VERFOLGT: 1/5')).toBeDefined();
   });
 
   it('shows type label for quest', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     // traders prefix maps to HÄNDLER
     expect(screen.getByText('[HÄNDLER]')).toBeDefined();
   });
@@ -144,14 +139,12 @@ describe('QuestsScreen — JOURNAL tab', () => {
   it('shows nearby filter toggle', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     expect(screen.getByText('[ ] IN DER NÄHE')).toBeDefined();
   });
 
   it('toggles nearby filter on click', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     await userEvent.click(screen.getByText('[ ] IN DER NÄHE'));
     expect(screen.getByText('[✓] IN DER NÄHE')).toBeDefined();
   });
@@ -162,7 +155,6 @@ describe('QuestsScreen — JOURNAL tab', () => {
       position: { x: 100, y: 100 }, // far from quest station at (10,20)
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
     // Enable nearby filter with small radius
     await userEvent.click(screen.getByText('[ ] IN DER NÄHE'));
     // With radius 10 and player at (100,100), quest at (10,20) should be filtered out
