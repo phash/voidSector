@@ -1,15 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-
-type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer';
-
-function boostCost(xp: number): { credits: number; wissen: number } | null {
-  if (xp >= 50) return null;
-  if (xp >= 40) return { credits: 600, wissen: 15 };
-  if (xp >= 20) return { credits: 300, wissen: 8 };
-  return { credits: 100, wissen: 3 };
-}
+import type { AcepPath } from '@void-sector/shared';
+import { getAcepBoostCost } from '@void-sector/shared';
 
 const PATHS: Array<{ key: AcepPath; label: string; color: string }> = [
   { key: 'ausbau', label: 'AUSBAU', color: '#FFB000' },
@@ -28,6 +21,14 @@ export function HangarPanel() {
   useEffect(() => {
     network.sendGetShips();
   }, []);
+
+  const handleRename = (shipId: string) => {
+    if (renameValue.trim() && renameValue.length <= 20) {
+      network.sendRenameShip(shipId, renameValue.trim());
+      setRenamingShipId(null);
+      setRenameValue('');
+    }
+  };
 
   if (!ship) {
     return (
@@ -51,15 +52,7 @@ export function HangarPanel() {
   const baseSlots = 3;
   const extraSlots = effects?.extraModuleSlots ?? 0;
   const totalSlots = baseSlots + extraSlots;
-  const installedCount = ship.modules?.length ?? 0;
-
-  function handleRename(shipId: string) {
-    if (renameValue.trim() && renameValue.length <= 20) {
-      network.sendRenameShip(shipId, renameValue.trim());
-      setRenamingShipId(null);
-      setRenameValue('');
-    }
-  }
+  const installedCount = ship.modules.length;
 
   return (
     <div style={panelStyle}>
@@ -107,7 +100,7 @@ export function HangarPanel() {
       <div style={sectionHdr}>ENTWICKLUNGSPFADE</div>
       {PATHS.map(({ key, label, color }) => {
         const pathXp = xp[key] ?? 0;
-        const cost = boostCost(pathXp);
+        const cost = getAcepBoostCost(pathXp);
         const canBoost =
           cost !== null && credits >= cost.credits && wissen >= cost.wissen && xp.total < 100;
         return (

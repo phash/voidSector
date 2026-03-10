@@ -49,6 +49,7 @@ import type {
   InventoryItem,
   ConstructionSiteState,
   NpcTradeResultMessage,
+  AcepPath,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -2168,7 +2169,7 @@ class GameNetwork {
     this.sectorRoom?.send('renameShip', { shipId, name });
   }
 
-  sendAcepBoost(path: 'ausbau' | 'intel' | 'kampf' | 'explorer') {
+  sendAcepBoost(path: AcepPath) {
     this.sectorRoom?.send('acepBoost', { path });
   }
 

@@ -1,5 +1,7 @@
 export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly' | 'pirate';
 
+export type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer';
+
 export type SectorEnvironment = 'empty' | 'nebula' | 'star' | 'planet' | 'asteroid' | 'black_hole';
 export type PlanetSubtype =
   | 'terrestrial'

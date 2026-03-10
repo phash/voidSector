@@ -7,8 +7,15 @@
 import { query } from '../db/client.js';
 import { calculateTraits } from './traitCalculator.js';
 import { deductCredits, addCredits, deductWissen } from '../db/queries.js';
+import {
+  ACEP_BOOST_COST_TIERS,
+  getAcepBoostCost,
+  type AcepPath,
+} from '@void-sector/shared';
 
-export type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer';
+// Re-export so existing server imports keep working
+export type { AcepPath };
+export { ACEP_BOOST_COST_TIERS, getAcepBoostCost };
 
 export const ACEP_PATH_CAP = 50;
 export const ACEP_TOTAL_CAP = 100;
@@ -140,20 +147,8 @@ export async function addAcepXpForPlayer(
   await addAcepXp(rows[0].id, path, amount);
 }
 
-export const BOOST_COST_TIERS = [
-  { minXp: 40, credits: 600, wissen: 15 },
-  { minXp: 20, credits: 300, wissen: 8  },
-  { minXp: 0,  credits: 100, wissen: 3  },
-] as const;
-
-/** Returns boost cost for +5 XP at the given current-path XP, or null if at cap. */
-export function getBoostCost(
-  currentXp: number,
-): { credits: number; wissen: number } | null {
-  if (currentXp >= ACEP_PATH_CAP) return null;
-  const tier = BOOST_COST_TIERS.find((t) => currentXp >= t.minXp)!;
-  return { credits: tier.credits, wissen: tier.wissen };
-}
+// Backward-compat alias for server code that imported getBoostCost
+export { getAcepBoostCost as getBoostCost };
 
 /**
  * Spend Credits + Wissen to add +5 XP to a specific ACEP path.
@@ -168,7 +163,7 @@ export async function boostAcepPath(
   if (xp.total >= ACEP_TOTAL_CAP) return 'ACEP-Gesamt-Cap erreicht';
 
   const currentPathXp = xp[path];
-  const cost = getBoostCost(currentPathXp);
+  const cost = getAcepBoostCost(currentPathXp);
   if (!cost) return 'Pfad-Cap erreicht';
 
   const creditsOk = await deductCredits(playerId, cost.credits);
