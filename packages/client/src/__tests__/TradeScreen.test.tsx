@@ -41,7 +41,7 @@ describe('TradeScreen', () => {
       },
     });
     render(<TradeScreen />);
-    expect(screen.getByText(/KEIN HANDEL/)).toBeTruthy();
+    expect(screen.getByText(/NO TRADING/)).toBeTruthy();
   });
 
   it('shows NPC trade at home base without trading post', () => {
@@ -52,7 +52,7 @@ describe('TradeScreen', () => {
       storage: { ore: 10, gas: 5, crystal: 2, artefact: 0 },
     });
     render(<TradeScreen />);
-    expect(screen.getByText(/NPC PREISE/)).toBeTruthy();
+    expect(screen.getByText(/NPC PRICES/)).toBeTruthy();
     expect(screen.getByText(/100 CR/)).toBeTruthy();
   });
 
@@ -63,7 +63,7 @@ describe('TradeScreen', () => {
       storage: { ore: 10, gas: 5, crystal: 2, artefact: 0 },
     });
     render(<TradeScreen />);
-    expect(screen.getByText(/NPC PREISE/)).toBeTruthy();
+    expect(screen.getByText(/NPC PRICES/)).toBeTruthy();
     expect(screen.getByText(/100 CR/)).toBeTruthy();
   });
 
@@ -102,7 +102,7 @@ describe('TradeScreen', () => {
       npcStationData: null,
     });
     render(<TradeScreen />);
-    expect(screen.getByText(/NPC PREISE/)).toBeTruthy();
+    expect(screen.getByText(/NPC PRICES/)).toBeTruthy();
     expect(screen.getAllByText(/STATION/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/CARGO/).length).toBeGreaterThanOrEqual(1);
   });
@@ -169,7 +169,7 @@ describe('TradeScreen', () => {
       myOrders: [],
     });
     render(<TradeScreen />);
-    expect(screen.getByText('MARKT')).toBeTruthy();
+    expect(screen.getByText('MARKET')).toBeTruthy();
   });
 
   it('hides market tab at tier 1 at home base', () => {
@@ -179,7 +179,7 @@ describe('TradeScreen', () => {
       storage: { ore: 0, gas: 0, crystal: 0, artefact: 0 },
     });
     render(<TradeScreen />);
-    expect(screen.queryByText('MARKT')).toBeNull();
+    expect(screen.queryByText('MARKET')).toBeNull();
   });
 
   it('hides market/slates/routes tabs at station', () => {
@@ -216,11 +216,11 @@ describe('TradeScreen', () => {
       },
     });
     render(<TradeScreen />);
-    expect(screen.queryByText('MARKT')).toBeNull();
-    expect(screen.queryByText('ROUTEN')).toBeNull();
+    expect(screen.queryByText('MARKET')).toBeNull();
+    expect(screen.queryByText('ROUTES')).toBeNull();
   });
 
-  it('shows KONTOR tab when kontorOrders are present at station', () => {
+  it('shows TRADING POST tab when kontorOrders are present at station', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
@@ -265,10 +265,10 @@ describe('TradeScreen', () => {
       ],
     });
     render(<TradeScreen />);
-    expect(screen.getByText('KONTOR')).toBeTruthy();
+    expect(screen.getByText('TRADING POST')).toBeTruthy();
   });
 
-  it('hides KONTOR tab when no kontorOrders', () => {
+  it('hides TRADING POST tab when no kontorOrders', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
@@ -303,10 +303,10 @@ describe('TradeScreen', () => {
       kontorOrders: [],
     });
     render(<TradeScreen />);
-    expect(screen.queryByText('KONTOR')).toBeNull();
+    expect(screen.queryByText('TRADING POST')).toBeNull();
   });
 
-  it('disables SELL button for own orders in KONTOR tab', () => {
+  it('disables SELL button for own orders in TRADING POST tab', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
@@ -360,7 +360,7 @@ describe('TradeScreen', () => {
       ],
     });
     render(<TradeScreen />);
-    const kontorTab = screen.getByText('KONTOR');
+    const kontorTab = screen.getByText('TRADING POST');
     fireEvent.click(kontorTab);
     const sellButtons = screen.getAllByText('SELL');
     expect(sellButtons[0]).toHaveProperty('disabled', true);
