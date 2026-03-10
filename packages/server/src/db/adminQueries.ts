@@ -876,7 +876,7 @@ export async function getAdminQuadrantMap(): Promise<AdminQuadrantMapEntry[]> {
     LEFT JOIN quadrant_control qc ON qc.qx = k.qx AND qc.qy = k.qy
     LEFT JOIN quadrants q ON q.qx = k.qx AND q.qy = k.qy
     LEFT JOIN faction_config fc ON fc.faction_id = qc.controlling_faction
-    LEFT JOIN npc_fleet nf ON nf.target_qx = k.qx AND nf.target_qy = k.qy
+    LEFT JOIN npc_fleet nf ON nf.to_qx = k.qx AND nf.to_qy = k.qy
     GROUP BY k.qx, k.qy, qc.controlling_faction, q.name, fc.friction_score, fc.border_state
     ORDER BY k.qx, k.qy
   `);
