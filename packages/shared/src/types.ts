@@ -324,9 +324,9 @@ export interface ConstructionSiteState {
 
 export interface DepositConstructionMessage {
   siteId: string;
-  ore: number;
-  gas: number;
-  crystal: number;
+  ore?: number;
+  gas?: number;
+  crystal?: number;
 }
 
 // Communication

@@ -18,6 +18,7 @@ import type {
   SetBookmarkMessage,
   ClearBookmarkMessage,
   MineableResourceType,
+  StructureType,
 } from '@void-sector/shared';
 
 import { logger } from '../../utils/logger.js';
@@ -150,7 +151,7 @@ import type { ConstructionSite } from '../../db/constructionQueries.js';
 function toConstructionSiteState(site: ConstructionSite): ConstructionSiteState {
   return {
     id: site.id,
-    type: site.type as import('@void-sector/shared').StructureType,
+    type: site.type as StructureType,
     sectorX: site.sector_x,
     sectorY: site.sector_y,
     progress: site.progress,
@@ -321,8 +322,6 @@ export class WorldService {
         return;
       }
 
-      await saveAPState(auth.userId, newAP);
-
       const costs = STRUCTURE_COSTS['mining_station'];
       let siteId: string;
       try {
@@ -335,6 +334,7 @@ export class WorldService {
           costs.gas,
           costs.crystal,
         );
+        await saveAPState(auth.userId, newAP!);
       } catch (err: any) {
         if (err.code === '23505') {
           client.send('buildResult', {
@@ -350,7 +350,7 @@ export class WorldService {
       const site = await getConstructionSiteById(siteId);
       const constructionSite = toConstructionSiteState(site!);
       client.send('buildResult', { success: true, constructionSite });
-      client.send('apUpdate', newAP);
+      client.send('apUpdate', newAP!);
       this.ctx.broadcast('constructionSiteCreated', { constructionSite });
       addAcepXpForPlayer(auth.userId, 'ausbau', 10).catch(() => {});
       return;
@@ -417,6 +417,10 @@ export class WorldService {
 
   async handleDepositConstruction(client: Client, data: DepositConstructionMessage): Promise<void> {
     if (rejectGuest(client, 'Ressourcen liefern')) return;
+    if (!this.ctx.checkRate(client.sessionId, 'depositConstruction', 1000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
 
     const site = await getConstructionSiteById(data.siteId);
@@ -442,6 +446,8 @@ export class WorldService {
       return;
     }
 
+    // Multi-player delivery: any player can deposit to any site (by design).
+    // No sector-proximity check required per issue #231 spec.
     if (capOre     > 0) await removeFromInventory(auth.userId, 'resource', 'ore',     capOre);
     if (capGas     > 0) await removeFromInventory(auth.userId, 'resource', 'gas',     capGas);
     if (capCrystal > 0) await removeFromInventory(auth.userId, 'resource', 'crystal', capCrystal);
@@ -454,6 +460,7 @@ export class WorldService {
 
     const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
+    client.send('depositResult', { success: true });
   }
 
   // ── Research Lab Upgrade ────────────────────────────────────────────
