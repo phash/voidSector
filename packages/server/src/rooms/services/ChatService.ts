@@ -32,7 +32,7 @@ export class ChatService {
     const auth = client.auth as AuthPayload;
 
     // Validate channel
-    const VALID_CHANNELS = ['direct', 'faction', 'sector', 'quadrant'] as const;
+    const VALID_CHANNELS = ['direct', 'faction', 'quadrant', 'system'] as const;
     if (!VALID_CHANNELS.includes(data.channel as any)) {
       this.ctx.send(client, 'error', { code: 'INVALID_CHANNEL', message: 'Unknown channel' });
       return;
@@ -87,7 +87,7 @@ export class ChatService {
       delayed: false,
     };
 
-    if (data.channel === 'sector') {
+    if (data.channel === 'system') {
       const senderX = this.ctx._px(client.sessionId);
       const senderY = this.ctx._py(client.sessionId);
       this.ctx.broadcastToSector(chatMsg, senderX, senderY);
