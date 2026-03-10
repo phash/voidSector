@@ -623,6 +623,7 @@ export interface QuestRewards {
   reputation: number;
   reputationPenalty?: number;
   rivalFactionId?: NpcFactionId;
+  wissen?: number;
 }
 
 export interface AvailableQuest {
