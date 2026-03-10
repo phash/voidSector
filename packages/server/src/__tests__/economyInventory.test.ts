@@ -58,7 +58,7 @@ vi.mock('../engine/npcStationEngine.js', () => ({
   getOrInitStation: vi.fn().mockResolvedValue({ xp: 0 }),
   recordTrade: vi.fn().mockResolvedValue(undefined),
   canBuyFromStation: vi.fn().mockResolvedValue({ ok: true, price: 100 }),
-  canSellToStation: vi.fn().mockResolvedValue({ ok: true, price: 80 }),
+  canSellToStation: vi.fn().mockResolvedValue({ ok: true, price: 80, capacity: 150, effectiveAmount: 1 }),
   calculateCurrentStock: vi.fn().mockReturnValue(50),
   getStationLevel: vi.fn().mockReturnValue({ level: 1, name: 'Outpost' }),
   calculatePrice: vi.fn().mockReturnValue(100),
@@ -155,7 +155,7 @@ describe('EconomyService.handleNpcTrade station sell — inventory migration', (
       artefact: 0,
     });
     vi.mocked(getResourceTotal).mockResolvedValue(10);
-    vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80 });
+    vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80, effectiveAmount: 5 });
 
     await svc.handleNpcTrade(client, { resource: 'ore', amount: 5, action: 'sell' });
 
@@ -176,7 +176,7 @@ describe('EconomyService.handleNpcTrade station sell — inventory migration', (
       artefact: 0,
     });
     vi.mocked(getResourceTotal).mockResolvedValue(10);
-    vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80 });
+    vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80, effectiveAmount: 5 });
 
     await svc.handleNpcTrade(client, { resource: 'ore', amount: 5, action: 'sell' });
 
@@ -197,12 +197,32 @@ describe('EconomyService.handleNpcTrade station sell — inventory migration', (
       artefact: 0,
     });
     vi.mocked(getResourceTotal).mockResolvedValue(10);
-    vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80 });
+    vi.mocked(canSellToStation).mockResolvedValue({ ok: true, capacity: 100, price: 80, effectiveAmount: 5 });
 
     await svc.handleNpcTrade(client, { resource: 'ore', amount: 5, action: 'sell' });
 
     expect(removeFromInventory).toHaveBeenCalledWith('user-123', 'resource', 'ore', 5);
     expect(deductCargo).not.toHaveBeenCalled();
+  });
+
+  it('sells partial amount when station capacity is lower than requested amount', async () => {
+    const client = makeClient();
+    const ctx = makeCtx();
+    const svc = new EconomyService(ctx);
+
+    vi.mocked(getCargoState).mockResolvedValueOnce({ ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 });
+    vi.mocked(getResourceTotal).mockResolvedValueOnce(5);
+    vi.mocked(canSellToStation).mockResolvedValueOnce({ ok: true, capacity: 2, price: 20, effectiveAmount: 2 });
+
+    await svc.handleNpcTrade(client, { resource: 'ore', amount: 5, action: 'sell' });
+
+    // Should remove only 2 units (effectiveAmount), not 5
+    expect(removeFromInventory).toHaveBeenCalledWith('user-123', 'resource', 'ore', 2);
+    expect(client.send).toHaveBeenCalledWith('npcTradeResult', expect.objectContaining({
+      success: true,
+      partial: true,
+      soldAmount: 2,
+    }));
   });
 });
 

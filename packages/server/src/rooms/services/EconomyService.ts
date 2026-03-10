@@ -170,17 +170,18 @@ export class EconomyService {
           });
           return;
         }
-        // Check station can accept
+        // Check station capacity — effectiveAmount may be less than requested
         const sellCheck = await canSellToStation(sx, sy, resource, amount);
         if (!sellCheck.ok) {
           client.send('npcTradeResult', {
             success: false,
-            error: 'Station cannot accept more of this resource',
+            error: 'Station kann diese Ressource nicht mehr aufnehmen',
           });
           return;
         }
-        // Execute trade
-        const deducted = await removeFromInventory(auth.userId, 'resource', resource, amount)
+        const effectiveAmount = sellCheck.effectiveAmount;
+        // Execute trade with effectiveAmount
+        const deducted = await removeFromInventory(auth.userId, 'resource', resource, effectiveAmount)
           .then(() => true)
           .catch(() => false);
         if (!deducted) {
@@ -190,15 +191,20 @@ export class EconomyService {
         // Update station stock
         const invItem = await getStationInventoryItem(sx, sy, resource);
         if (invItem) {
-          invItem.stock = Math.min(invItem.stock + amount, invItem.maxStock);
+          invItem.stock = Math.min(invItem.stock + effectiveAmount, invItem.maxStock);
           invItem.lastUpdated = new Date().toISOString();
           await upsertInventoryItem(invItem);
         }
         const newCredits = await addCredits(auth.userId, sellCheck.price);
-        await recordTrade(sx, sy, amount);
+        await recordTrade(sx, sy, effectiveAmount);
         updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
         const updatedCargo = await getCargoState(auth.userId);
-        client.send('npcTradeResult', { success: true, credits: newCredits });
+        const partial = effectiveAmount < amount;
+        client.send('npcTradeResult', {
+          success: true,
+          credits: newCredits,
+          ...(partial && { partial: true, soldAmount: effectiveAmount }),
+        });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
         // Send station info update (rich format with inventory)
