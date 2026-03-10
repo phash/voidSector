@@ -65,8 +65,7 @@ export function nextShipState(
       if (hasMineableResources(newX, newY)) {
         return {
           state: 'traveling',
-          x: newX,
-          y: newY,
+          // x/y intentionally NOT updated — ship starts traveling from current position
           target_x: newX,
           target_y: newY,
           spiral_step: step,
