@@ -68,6 +68,7 @@ export class ShipService {
           stats: calculateShipStats(s.hullType, s.modules),
           acepXp,
           acepEffects: getAcepEffects(acepXp),
+          acepTraits: s.acepTraits,
         };
       }),
     );

@@ -548,6 +548,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('factionUpgrade', (client, data) =>
       this.factions.handleFactionUpgrade(client, data),
     );
+    this.onMessage('setRecruiting', (client, data) =>
+      this.factions.handleSetRecruiting(client, data),
+    );
 
     // ── Quests / NPC ────────────────────────────────────────────────
     this.onMessage('getStationNpcs', async (client, data: GetStationNpcsMessage) => {
@@ -1240,6 +1243,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       await this.quests.sendReputationUpdate(client, auth.userId);
       await this.quests.sendActiveQuests(client, auth.userId);
       await this.quests.handleGetTrackedQuests(client);
+      // Send recruiting factions to new client
+      await this.factions.sendRecruitingFactions(client);
 
       // Send research state
       const researchData = await getPlayerResearch(auth.userId);
