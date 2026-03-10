@@ -1,0 +1,153 @@
+import { useState } from 'react';
+import { useStore } from '../state/store';
+import { network } from '../network/client';
+import {
+  SLATE_AP_COST_SECTOR,
+  CUSTOM_SLATE_AP_COST,
+  CUSTOM_SLATE_CREDIT_COST,
+  CUSTOM_SLATE_MAX_NOTES_LENGTH,
+} from '@void-sector/shared';
+import type { DataSlate } from '@void-sector/shared';
+
+export function SlateControls() {
+  const cargo = useStore((s) => s.cargo);
+  const ship = useStore((s) => s.ship);
+  const mySlates = useStore((s) => s.mySlates);
+  const cargoCap = ship?.stats?.cargoCap ?? 5;
+  const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customLabel, setCustomLabel] = useState('');
+  const [customNotes, setCustomNotes] = useState('');
+
+  return (
+    <div
+      style={{
+        borderTop: '1px solid var(--color-dim)',
+        marginTop: 6,
+        paddingTop: 4,
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.6rem',
+      }}
+    >
+      <div style={{ opacity: 0.6, letterSpacing: '0.1em', marginBottom: 3 }}>── KARTEN ──</div>
+
+      {cargo.slates > 0 && (
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ opacity: 0.6, marginBottom: 2 }}>DATA SLATES: {cargo.slates}</div>
+          {mySlates.map((slate: DataSlate) => (
+            <div
+              key={slate.id}
+              style={{
+                marginBottom: 3,
+                display: 'flex',
+                gap: 3,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ opacity: 0.7 }}>
+                [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : 'C'}]
+                {slate.slateType === 'custom' && slate.customData
+                  ? ` ${slate.customData.label}`
+                  : ` ${slate.sectorData?.length ?? 0} Sektoren`}
+              </span>
+              <button
+                className="vs-btn"
+                style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+                onClick={() => network.sendActivateSlate(slate.id)}
+              >
+                [AKT]
+              </button>
+              <button
+                className="vs-btn"
+                style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+                onClick={() => network.sendNpcBuyback(slate.id)}
+              >
+                [NPC]
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 3 }}>
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+          disabled={total >= cargoCap}
+          onClick={() => network.sendCreateSlate('sector')}
+        >
+          [SEKTOR {SLATE_AP_COST_SECTOR}AP]
+        </button>
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+          disabled={total >= cargoCap}
+          onClick={() => network.sendCreateSlate('area')}
+        >
+          [GEBIET]
+        </button>
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+          disabled={total >= cargoCap}
+          onClick={() => setShowCustomForm(!showCustomForm)}
+        >
+          [DISK {CUSTOM_SLATE_AP_COST}AP/{CUSTOM_SLATE_CREDIT_COST}CR]
+        </button>
+      </div>
+
+      {showCustomForm && (
+        <div
+          style={{
+            border: '1px solid rgba(255,176,0,0.3)',
+            padding: 6,
+            marginBottom: 4,
+          }}
+        >
+          <div style={{ marginBottom: 3, opacity: 0.6 }}>NEUE DATENDISK</div>
+          <input
+            className="vs-input"
+            placeholder="Label (max 32)"
+            value={customLabel}
+            onChange={(e) => setCustomLabel(e.target.value.slice(0, 32))}
+            style={{ width: '100%', marginBottom: 3 }}
+          />
+          <textarea
+            className="vs-input"
+            placeholder="Notizen (max 500)"
+            value={customNotes}
+            onChange={(e) => setCustomNotes(e.target.value.slice(0, CUSTOM_SLATE_MAX_NOTES_LENGTH))}
+            style={{ width: '100%', height: 48, resize: 'vertical', marginBottom: 3 }}
+          />
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              className="vs-btn"
+              style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+              disabled={!customLabel.trim()}
+              onClick={() => {
+                network.sendCreateCustomSlate({
+                  label: customLabel.trim(),
+                  notes: customNotes || undefined,
+                });
+                setCustomLabel('');
+                setCustomNotes('');
+                setShowCustomForm(false);
+              }}
+            >
+              [ERSTELLEN]
+            </button>
+            <button
+              className="vs-btn"
+              style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+              onClick={() => setShowCustomForm(false)}
+            >
+              [ABB]
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

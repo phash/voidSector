@@ -8,6 +8,7 @@ import {
   EMERGENCY_WARP_CREDIT_PER_SECTOR,
   innerCoord,
 } from '@void-sector/shared';
+import { SlateControls } from './SlateControls';
 
 export function NavControls() {
   const position = useStore((s) => s.position);
@@ -211,6 +212,7 @@ export function NavControls() {
           </button>
         </div>
       )}
+      <SlateControls />
     </div>
   );
 }

@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import {
-  RESOURCE_TYPES,
-  SLATE_AP_COST_SECTOR,
-  CUSTOM_SLATE_AP_COST,
-  CUSTOM_SLATE_CREDIT_COST,
-  CUSTOM_SLATE_MAX_NOTES_LENGTH,
-} from '@void-sector/shared';
+import { RESOURCE_TYPES } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
 
@@ -70,9 +64,6 @@ export function CargoScreen() {
   const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
   const [activeTab, setActiveTab] = useState<'resource' | 'module' | 'blueprint'>('resource');
-  const [showCustomForm, setShowCustomForm] = useState(false);
-  const [customLabel, setCustomLabel] = useState('');
-  const [customNotes, setCustomNotes] = useState('');
 
   const resources = inventory.filter((i) => i.itemType === 'resource');
   const modules = inventory.filter((i) => i.itemType === 'module');
@@ -226,90 +217,6 @@ export function CargoScreen() {
                   </button>
                 </div>
               ))}
-            </div>
-          )}
-
-          <div
-            style={{
-              borderTop: '1px solid var(--color-dim)',
-              paddingTop: '8px',
-              marginBottom: '16px',
-            }}
-          >
-            <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>
-              CREATE SLATE
-            </div>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <button
-                className="vs-btn"
-                disabled={total >= cargoCap}
-                onClick={() => network.sendCreateSlate('sector')}
-              >
-                [SEKTOR-SLATE {SLATE_AP_COST_SECTOR}AP]
-              </button>
-              <button
-                className="vs-btn"
-                disabled={total >= cargoCap}
-                onClick={() => network.sendCreateSlate('area')}
-              >
-                [GEBIETS-SLATE]
-              </button>
-              <button
-                className="vs-btn"
-                disabled={total >= cargoCap}
-                onClick={() => setShowCustomForm(!showCustomForm)}
-              >
-                [DATEN-DISK {CUSTOM_SLATE_AP_COST}AP/{CUSTOM_SLATE_CREDIT_COST}CR]
-              </button>
-            </div>
-          </div>
-
-          {showCustomForm && (
-            <div
-              style={{
-                border: '1px solid rgba(255,176,0,0.3)',
-                padding: 8,
-                marginBottom: 16,
-                fontSize: '0.8rem',
-              }}
-            >
-              <div style={{ marginBottom: 4, opacity: 0.6 }}>NEUE DATENDISK</div>
-              <input
-                className="vs-input"
-                placeholder="Label (max 32)"
-                value={customLabel}
-                onChange={(e) => setCustomLabel(e.target.value.slice(0, 32))}
-                style={{ width: '100%', marginBottom: 4 }}
-              />
-              <textarea
-                className="vs-input"
-                placeholder="Notizen (max 500)"
-                value={customNotes}
-                onChange={(e) =>
-                  setCustomNotes(e.target.value.slice(0, CUSTOM_SLATE_MAX_NOTES_LENGTH))
-                }
-                style={{ width: '100%', height: 60, resize: 'vertical', marginBottom: 4 }}
-              />
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  className="vs-btn"
-                  disabled={!customLabel.trim()}
-                  onClick={() => {
-                    network.sendCreateCustomSlate({
-                      label: customLabel.trim(),
-                      notes: customNotes || undefined,
-                    });
-                    setCustomLabel('');
-                    setCustomNotes('');
-                    setShowCustomForm(false);
-                  }}
-                >
-                  [ERSTELLEN]
-                </button>
-                <button className="vs-btn" onClick={() => setShowCustomForm(false)}>
-                  [ABBRECHEN]
-                </button>
-              </div>
             </div>
           )}
 
