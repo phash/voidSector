@@ -37,6 +37,7 @@ export function HelpOverlay() {
   // Spotlight: box-shadow cutout on highlighted element
   useEffect(() => {
     if (onboardingStep === null) return;
+    if (onboardingStep >= ONBOARDING_STEPS.length) return;
     const step = ONBOARDING_STEPS[onboardingStep];
     if (!step.spotlight) return;
     const el = document.getElementById(step.spotlight);
@@ -56,6 +57,7 @@ export function HelpOverlay() {
 
   // Render onboarding flow when active
   if (onboardingStep !== null) {
+    if (onboardingStep >= ONBOARDING_STEPS.length) return null;
     const step = ONBOARDING_STEPS[onboardingStep];
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 10000, pointerEvents: 'none' }}>
@@ -79,7 +81,7 @@ export function HelpOverlay() {
             </button>
             <div style={{ color: '#555', fontSize: '0.7rem' }}>{onboardingStep + 1} / 5</div>
             <button
-              onClick={advanceOnboarding}
+              onClick={(e) => { e.stopPropagation(); advanceOnboarding(); }}
               style={{ border: '1px solid var(--color-primary)', background: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontFamily: 'monospace', padding: '2px 8px' }}
             >
               [WEITER]
