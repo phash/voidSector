@@ -13,8 +13,8 @@ describe('isInNebulaZone distribution', () => {
     }
     const fraction = nebulaCount / total;
     // With 1-2 blobs of ~20-200 sectors in 250,000 total sectors:
-    // expect at least some nebula exists, but less than 50% coverage
-    expect(fraction).toBeLessThan(0.5);
+    // expect at least some nebula exists, but less than 1% coverage
+    expect(fraction).toBeLessThan(0.01);
     expect(nebulaCount).toBeGreaterThan(0);
   });
 

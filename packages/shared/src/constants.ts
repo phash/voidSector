@@ -1318,7 +1318,7 @@ export const SPAWN_CLUSTER_MAX_PLAYERS = 5;
 export const ANCIENT_STATION_CHANCE = 0.15; // 15% of stations are ancient/special variants
 
 // Nebula zone system — seed-based blob generation
-// Target: 1–2 contiguous nebula blobs per quadrant (10 000-sector grid square),
+// Target: 1–2 contiguous nebula blobs per quadrant (500×500 quadrant),
 // each blob 20–200 sectors in area (circular radius 3–8 sectors).
 export const NEBULA_ZONE_GRID = 250;   // was 5_000; 1-2 clusters per 500×500 quadrant
 export const NEBULA_ZONE_CHANCE = 0.4; // 40% of centers activate → ~1.6 blobs per quadrant
