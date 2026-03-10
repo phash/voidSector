@@ -58,6 +58,7 @@ function formatCountdown(ms: number): string {
 
 export function TechTreePanel() {
   const research = useStore((s) => s.research);
+  const wissen = useStore((s) => s.research.wissen ?? 0);
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const setSelectedTechModule = useStore((s) => s.setSelectedTechModule);
 
@@ -98,9 +99,15 @@ export function TechTreePanel() {
           marginBottom: 6,
           borderBottom: '1px solid var(--color-dim)',
           paddingBottom: 2,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
         }}
       >
-        TECH-BAUM / FORSCHUNG
+        <span>TECH-BAUM / FORSCHUNG</span>
+        <span style={{ color: '#FFB000', fontSize: '0.6rem', letterSpacing: '0.08em' }}>
+          ◈ WISSEN: {wissen}
+        </span>
       </div>
 
       {/* Active Research */}
