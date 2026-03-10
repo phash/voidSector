@@ -3292,6 +3292,35 @@ export async function ensureZentrumQuadrant(): Promise<void> {
   );
 }
 
+export async function ensureAlienHomeQuadrants(): Promise<number> {
+  const factions = await getAllFactionConfigs();
+  let seeded = 0;
+  for (const f of factions) {
+    if (f.faction_id === 'human') continue;
+    // Ensure quadrant row exists
+    await query(
+      `INSERT INTO quadrants (qx, qy, seed, name, discovered_by, discovered_at, config)
+       VALUES ($1, $2, 0, $3, NULL, NOW(), '{}')
+       ON CONFLICT (qx, qy) DO NOTHING`,
+      [f.home_qx, f.home_qy, `${f.faction_id}-homeworld`],
+    );
+    // Seed quadrant_control entry for faction home
+    const res = await query(
+      `INSERT INTO quadrant_control (qx, qy, controlling_faction, faction_shares, attack_value, defense_value, friction_score, station_tier)
+       VALUES ($1, $2, $3, $4, 0, 100, 0, 1)
+       ON CONFLICT (qx, qy) DO NOTHING`,
+      [f.home_qx, f.home_qy, f.faction_id, JSON.stringify({ [f.faction_id]: 100 })],
+    );
+    if (res.rowCount && res.rowCount > 0) seeded++;
+  }
+  return seeded;
+}
+
+export async function getArrivedNpcFleets(): Promise<NpcFleetRow[]> {
+  const res = await query<NpcFleetRow>('SELECT * FROM npc_fleet WHERE eta <= NOW()');
+  return res.rows;
+}
+
 export async function logExpansionEvent(
   faction: string,
   qx: number,

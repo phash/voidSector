@@ -8,18 +8,22 @@ vi.mock('../db/queries.js', () => ({
   getAllFactionConfigs: vi.fn(),
   getActiveNpcFleets: vi.fn(),
   createNpcFleet: vi.fn(),
+  getArrivedNpcFleets: vi.fn(),
   deleteArrivedNpcFleets: vi.fn(),
+  logExpansionEvent: vi.fn(),
 }));
 
 import {
   getAllQuadrantControls,
   getAllFactionConfigs,
+  getArrivedNpcFleets,
   deleteArrivedNpcFleets,
   createNpcFleet,
 } from '../db/queries.js';
 
 const mockGetAllQuadrantControls = vi.mocked(getAllQuadrantControls);
 const mockGetAllFactionConfigs = vi.mocked(getAllFactionConfigs);
+const mockGetArrivedNpcFleets = vi.mocked(getArrivedNpcFleets);
 const mockDeleteArrivedNpcFleets = vi.mocked(deleteArrivedNpcFleets);
 const mockCreateNpcFleet = vi.mocked(createNpcFleet);
 
@@ -61,12 +65,14 @@ describe('StrategicTickService', () => {
     expect(mockGetAllFactionConfigs).toHaveBeenCalled();
   });
 
-  it('tick cleans up arrived fleets at start', async () => {
+  it('tick processes arrived fleets and cleans them up', async () => {
+    mockGetArrivedNpcFleets.mockResolvedValue([]);
     mockDeleteArrivedNpcFleets.mockResolvedValue(undefined);
     mockGetAllQuadrantControls.mockResolvedValue([]);
     mockGetAllFactionConfigs.mockResolvedValue([]);
     await service.init();
     await service.tick(new Map());
+    expect(mockGetArrivedNpcFleets).toHaveBeenCalled();
     expect(mockDeleteArrivedNpcFleets).toHaveBeenCalled();
   });
 });

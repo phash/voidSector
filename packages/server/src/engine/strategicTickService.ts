@@ -3,8 +3,8 @@ import type { Redis } from 'ioredis';
 import {
   getAllQuadrantControls,
   upsertQuadrantControl,
-  getAllFactionConfigs,
   createNpcFleet,
+  getArrivedNpcFleets,
   deleteArrivedNpcFleets,
   logExpansionEvent,
 } from '../db/queries.js';
@@ -34,7 +34,7 @@ export class StrategicTickService {
   }
 
   async tick(repStore: RepStore): Promise<void> {
-    await deleteArrivedNpcFleets();
+    await this.processArrivedFleets();
     const allControls = await getAllQuadrantControls();
 
     // 1. Update friction + handle warfare at all human<→alien borders
@@ -70,7 +70,7 @@ export class StrategicTickService {
     }
 
     // 2. Alien expansion into unclaimed space
-    await this.processAlienExpansion(allControls, repStore);
+    await this.processAlienExpansion(allControls);
 
     // 3. Wissen generation for research labs
     await processWissenTick(60_000); // strategic tick interval ~60s
@@ -109,9 +109,38 @@ export class StrategicTickService {
     }
   }
 
+  private async processArrivedFleets(): Promise<void> {
+    const arrived = await getArrivedNpcFleets();
+    if (arrived.length === 0) {
+      await deleteArrivedNpcFleets();
+      return;
+    }
+
+    for (const fleet of arrived) {
+      if (fleet.fleet_type === 'build_ship') {
+        // Colonize target quadrant
+        await upsertQuadrantControl({
+          qx: fleet.to_qx,
+          qy: fleet.to_qy,
+          controlling_faction: fleet.faction,
+          faction_shares: { [fleet.faction]: 100 },
+          attack_value: 0,
+          defense_value: calculateBaseDefense(1, fleet.strength),
+          friction_score: 0,
+          station_tier: 1,
+        });
+        logger.info(
+          { faction: fleet.faction, qx: fleet.to_qx, qy: fleet.to_qy },
+          'Alien fleet colonized quadrant',
+        );
+      }
+    }
+
+    await deleteArrivedNpcFleets();
+  }
+
   private async processAlienExpansion(
     allControls: QuadrantControlRow[],
-    repStore: RepStore,
   ): Promise<void> {
     const factions = this.factionConfig.getActiveFactions().filter((f) => f.faction_id !== 'human');
 
@@ -123,11 +152,8 @@ export class StrategicTickService {
       );
       if (!target) continue;
 
-      const rep = repStore.get(faction.faction_id) ?? 0;
-      const repTier = repValueToTier(rep);
-      const { state } = calculateFriction(repTier, faction.aggression);
-      if (state === 'peaceful_halt') continue;
-
+      // Expansion into unclaimed space is not gated by friction —
+      // friction only governs warfare at faction borders.
       const eta = new Date(Date.now() + (faction.expansion_rate / EXPANSION_RATE_MUL) * 60_000);
       await createNpcFleet({
         faction: faction.faction_id,

@@ -3,7 +3,7 @@ import Redis from 'ioredis';
 import dotenv from 'dotenv';
 import { UniverseTickEngine } from './universeTickEngine.js';
 import { StrategicTickService } from './strategicTickService.js';
-import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant } from '../db/queries.js';
+import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant, ensureAlienHomeQuadrants } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
 
 dotenv.config();
@@ -26,7 +26,8 @@ export function getUniverseTickCount(): number {
 export async function startUniverseEngine(): Promise<void> {
   await ensureKernweltStation();
   await ensureZentrumQuadrant();
-  logger.info('Kernwelt seeded: Zuhause@(0,0), Zentrum quadrant');
+  const alienSeeded = await ensureAlienHomeQuadrants();
+  logger.info({ alienSeeded }, 'Universe seeded: Zentrum@(0,0) + alien homeworlds');
 
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   const strategicTick = new StrategicTickService(redis);
