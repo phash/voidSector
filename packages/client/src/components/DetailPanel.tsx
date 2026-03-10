@@ -9,6 +9,9 @@ import {
   calcHyperjumpAP,
   calcHyperjumpFuel,
   innerCoord,
+  STRUCTURE_COSTS,
+  STRUCTURE_AP_COSTS,
+  JUMPGATE_BUILD_COST,
 } from '@void-sector/shared';
 import type { ChatChannel } from '@void-sector/shared';
 import { network } from '../network/client';
@@ -623,31 +626,49 @@ export function DetailPanel() {
 
           {/* Build buttons - only when player is here */}
           {isPlayerHere && (
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
-              <button
-                className="vs-btn"
-                onClick={() => network.sendBuild('comm_relay')}
-                title="5 Ore, 2 Crystal, 5 AP"
-                style={{ fontSize: '0.7rem' }}
+            <div style={{ marginTop: 8 }}>
+              <div
+                style={{
+                  fontSize: '0.65rem',
+                  color: 'var(--color-dim)',
+                  letterSpacing: '0.15em',
+                  marginBottom: 6,
+                }}
               >
-                [BUILD RELAY]
-              </button>
-              <button
-                className="vs-btn"
-                onClick={() => network.sendBuild('mining_station')}
-                title="30 Ore, 15 Gas, 10 Crystal, 15 AP"
-                style={{ fontSize: '0.7rem' }}
-              >
-                [BUILD STATION]
-              </button>
-              <button
-                className="vs-btn"
-                onClick={() => network.sendBuild('base')}
-                title="50 Ore, 30 Gas, 25 Crystal, 25 AP"
-                style={{ fontSize: '0.7rem' }}
-              >
-                [BUILD BASE]
-              </button>
+                BAUEN
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div>
+                  <button
+                    className="vs-btn"
+                    onClick={() => network.sendBuild('mining_station')}
+                    style={{ fontSize: '0.7rem' }}
+                  >
+                    [BUILD STATION]
+                  </button>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
+                    {STRUCTURE_COSTS.mining_station.ore} ORE ·{' '}
+                    {STRUCTURE_COSTS.mining_station.gas} GAS ·{' '}
+                    {STRUCTURE_COSTS.mining_station.crystal} CRYSTAL ·{' '}
+                    {STRUCTURE_AP_COSTS.mining_station} AP
+                  </div>
+                </div>
+                {!playerGateInfo && (
+                  <div>
+                    <button
+                      className="vs-btn"
+                      onClick={() => network.sendBuild('jumpgate')}
+                      style={{ fontSize: '0.7rem' }}
+                    >
+                      [BUILD JUMPGATE]
+                    </button>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
+                      {JUMPGATE_BUILD_COST.credits} CR · {JUMPGATE_BUILD_COST.crystal} CRYSTAL ·{' '}
+                      {JUMPGATE_BUILD_COST.artefact} ARTEFAKT · {STRUCTURE_AP_COSTS.jumpgate} AP
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
