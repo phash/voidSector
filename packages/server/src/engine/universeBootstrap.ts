@@ -7,6 +7,7 @@ import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant, ensur
 import { logger } from '../utils/logger.js';
 import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
 import { processCivTick } from './civShipService.js';
+import { processConstructionTick } from './constructionTickService.js';
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ export async function startUniverseEngine(): Promise<void> {
   const engine = new UniverseTickEngine(async (result) => {
     // CivShips: move + broadcast every tick (5s)
     await processCivTick();
+    await processConstructionTick();
 
     if (result.tickCount % STRATEGIC_TICK_INTERVAL !== 0) return;
 
