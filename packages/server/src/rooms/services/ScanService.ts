@@ -43,6 +43,29 @@ import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
 import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
 
+export const WISSEN_DAILY_CAP_BASE = 200;
+export const WISSEN_DAILY_CAP_FRONTIER = 300;
+
+function todayKey(userId: string): string {
+  return `wissen_daily:${userId}:${new Date().toISOString().slice(0, 10)}`;
+}
+
+export async function addWissenCapped(
+  redis: import('ioredis').Redis,
+  userId: string,
+  amount: number,
+  isFrontier: boolean,
+): Promise<number> {
+  const cap = isFrontier ? WISSEN_DAILY_CAP_FRONTIER : WISSEN_DAILY_CAP_BASE;
+  const key = todayKey(userId);
+  const current = Number((await redis.get(key)) ?? '0');
+  const remaining = Math.max(0, cap - current);
+  const actual = Math.min(amount, remaining);
+  if (actual <= 0) return 0;
+  await redis.set(key, String(current + actual), 'EX', 93600);
+  return actual;
+}
+
 export class ScanService {
   constructor(private ctx: ServiceContext) {}
 
