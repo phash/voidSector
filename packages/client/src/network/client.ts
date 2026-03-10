@@ -486,7 +486,7 @@ class GameNetwork {
 
     room.onMessage('shipList', (data: { ships: any[] }) => {
       useStore.setState({ shipList: data.ships });
-      // Refresh acepXp + acepEffects on active ship from latest server data
+      // Refresh ACEP fields on active ship from latest server data
       const activeShip = data.ships.find((s: any) => s.active);
       if (activeShip?.acepXp) {
         const current = useStore.getState().ship;
@@ -496,6 +496,8 @@ class GameNetwork {
               ...current,
               acepXp: activeShip.acepXp,
               acepEffects: activeShip.acepEffects,
+              acepGeneration: activeShip.acepGeneration,
+              acepTraits: activeShip.acepTraits,
             },
           });
         }
@@ -2164,6 +2166,10 @@ class GameNetwork {
 
   sendRenameShip(shipId: string, name: string) {
     this.sectorRoom?.send('renameShip', { shipId, name });
+  }
+
+  sendAcepBoost(path: 'ausbau' | 'intel' | 'kampf' | 'explorer') {
+    this.sectorRoom?.send('acepBoost', { path });
   }
 
   sendRenameBase(name: string) {

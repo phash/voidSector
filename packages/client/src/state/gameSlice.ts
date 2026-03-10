@@ -73,6 +73,8 @@ export interface ClientShipData {
     ancientDetection: boolean;
     helionDecoderEnabled: boolean;
   };
+  acepGeneration?: number;
+  acepTraits?: string[];
 }
 
 export interface AutopilotStatusInfo {
