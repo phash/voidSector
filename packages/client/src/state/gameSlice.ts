@@ -84,6 +84,14 @@ export interface ClientShipData {
   acepTraits?: string[];
 }
 
+export interface RecruitingFaction {
+  factionId: string;
+  name: string;
+  color: string | null;
+  slogan: string | null;
+  memberCount: number;
+}
+
 export interface AutopilotStatusInfo {
   targetX: number;
   targetY: number;
@@ -281,6 +289,7 @@ export interface GameSlice {
 
   // Faction
   faction: Faction | null;
+  recruitingFactions: RecruitingFaction[];
   factionMembers: FactionMember[];
   factionInvites: FactionInvite[];
 
@@ -520,6 +529,7 @@ export interface GameSlice {
   addDistressCall: (call: DistressCall) => void;
   removeDistressCall: (id: string) => void;
   setFactionUpgrades: (upgrades: FactionUpgradeState[]) => void;
+  setRecruitingFactions: (factions: RecruitingFaction[]) => void;
   setTradeRoutes: (routes: TradeRoute[]) => void;
   setBookmarks: (bookmarks: Bookmark[]) => void;
   setAutopilot: (state: AutopilotState | null) => void;
@@ -630,6 +640,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   myOrders: [],
   mySlates: [],
   faction: null,
+  recruitingFactions: [],
   factionMembers: [],
   factionInvites: [],
   activeQuests: [],
@@ -839,6 +850,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   removeDistressCall: (id) =>
     set((s) => ({ distressCalls: s.distressCalls.filter((d) => d.id !== id) })),
   setFactionUpgrades: (factionUpgrades) => set({ factionUpgrades }),
+  setRecruitingFactions: (recruitingFactions) => set({ recruitingFactions }),
   setTradeRoutes: (tradeRoutes) => set({ tradeRoutes }),
   setBookmarks: (bookmarks) => set({ bookmarks }),
   setAutopilot: (autopilot) => set({ autopilot }),
