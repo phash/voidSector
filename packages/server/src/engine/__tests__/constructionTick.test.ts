@@ -10,7 +10,7 @@ vi.mock('../../db/queries.js', () => ({
   createStructure: vi.fn(),
 }));
 
-import { processConstructionTick, constructionCompletions } from '../constructionTickService.js';
+import { processConstructionTick } from '../constructionTickService.js';
 import {
   getAllConstructionSites,
   setProgress,
@@ -18,6 +18,7 @@ import {
   deleteConstructionSiteById,
 } from '../../db/constructionQueries.js';
 import { createStructure } from '../../db/queries.js';
+import { constructionBus } from '../../constructionBus.js';
 
 const baseSite = {
   id: 'site-1',
@@ -34,7 +35,6 @@ const baseSite = {
 describe('processConstructionTick', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    constructionCompletions.length = 0;
   });
 
   it('does nothing when no sites', async () => {
@@ -82,10 +82,10 @@ describe('processConstructionTick', () => {
     }]);
     (createStructure as any).mockResolvedValue({ id: 'struct-1' });
     (deleteConstructionSiteById as any).mockResolvedValue(undefined);
+    const emitSpy = vi.spyOn(constructionBus, 'emit');
     await processConstructionTick();
     expect(createStructure).toHaveBeenCalledWith('player-1', 'mining_station', 5, 5);
     expect(deleteConstructionSiteById).toHaveBeenCalledWith('site-1');
-    expect(constructionCompletions).toHaveLength(1);
-    expect(constructionCompletions[0].siteId).toBe('site-1');
+    expect(emitSpy).toHaveBeenCalledWith('completed', { siteId: 'site-1', sectorX: 5, sectorY: 5 });
   });
 });

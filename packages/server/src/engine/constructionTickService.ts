@@ -8,16 +8,6 @@ import { createStructure } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
 import { constructionBus } from '../constructionBus.js';
 
-/**
- * Completions emitted by the current tick. SectorRoom reads and clears this
- * array after calling processConstructionTick() in each universe tick.
- */
-export const constructionCompletions: Array<{
-  siteId: string;
-  sectorX: number;
-  sectorY: number;
-}> = [];
-
 function resourcesNeededAt(progress: number, total: number): number {
   return Math.ceil((progress * total) / 100);
 }
@@ -50,11 +40,6 @@ export async function processConstructionTick(): Promise<void> {
           site.sector_x,
           site.sector_y,
         );
-        constructionCompletions.push({
-          siteId: site.id,
-          sectorX: site.sector_x,
-          sectorY: site.sector_y,
-        });
         await deleteConstructionSiteById(site.id);
         constructionBus.emit('completed', {
           siteId: site.id,
