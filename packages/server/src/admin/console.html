@@ -566,6 +566,7 @@ button.success:hover {
     <div class="tab" data-tab="stats">Stats</div>
     <div class="tab" data-tab="stories">Stories</div>
     <div class="tab" data-tab="quadmap">QUAD-MAP</div>
+    <div class="tab" data-tab="construction">BAUSTELLEN</div>
   </div>
 
   <div id="content">
@@ -886,6 +887,23 @@ expiresDays: 14"></textarea>
       </div>
     </div>
 
+    <div class="tab-panel" id="panel-construction">
+      <div class="section-title">Aktive Baustellen</div>
+      <div id="construction-empty" class="empty-state" style="display:none">Keine aktiven Baustellen.</div>
+      <table class="data-table" id="construction-table">
+        <thead>
+          <tr>
+            <th>Typ</th>
+            <th>Sektor</th>
+            <th>Fortschritt</th>
+            <th>Besitzer-ID</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody id="construction-list"></tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
@@ -1062,6 +1080,7 @@ expiresDays: 14"></textarea>
     else if (name === 'events') loadEvents();
     else if (name === 'stats') loadStats();
     else if (name === 'stories') loadStories();
+    else if (name === 'construction') loadConstructionSites();
     else if (name === 'quadmap') {
       initQmapCanvas();
       if (qmapData.length === 0) fetchQmapData();
@@ -1893,6 +1912,50 @@ expiresDays: 14"></textarea>
     });
   }
 
+  function loadConstructionSites() {
+    api('GET', '/construction-sites').then(function(data) {
+      renderConstructionSites(data.sites || []);
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Fehler beim Laden der Baustellen: ' + err.message, 'error');
+    });
+  }
+
+  function renderConstructionSites(sites) {
+    var tbody = document.getElementById('construction-list');
+    var empty = document.getElementById('construction-empty');
+    clearChildren(tbody);
+
+    if (sites.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    sites.forEach(function(site) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, esc(site.type)));
+      tr.appendChild(el('td', null, esc(site.sector_x) + ', ' + esc(site.sector_y)));
+      tr.appendChild(el('td', null, esc(site.progress) + '/100'));
+      tr.appendChild(el('td', null, esc(site.owner_id)));
+
+      var actionsTd = el('td');
+      var btn = el('button', { className: 'success', style: { fontSize: '10px', padding: '2px 6px' } }, 'Vollenden');
+      btn.addEventListener('click', function() {
+        if (!confirm('Baustelle ' + site.type + ' bei (' + site.sector_x + ', ' + site.sector_y + ') sofort vollenden?')) return;
+        api('POST', '/construction-sites/' + encodeURIComponent(site.id) + '/complete').then(function() {
+          toast('Baustelle vollständig!', 'success');
+          loadConstructionSites();
+        }).catch(function(err) {
+          toast('Fehler: ' + err.message, 'error');
+        });
+      });
+      actionsTd.appendChild(btn);
+      tr.appendChild(actionsTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
   function renderStoryCard(story) {
     var card = el('div', { className: 'stat-card', style: { padding: '16px', cursor: 'pointer' } });
 
@@ -2465,6 +2528,7 @@ expiresDays: 14"></textarea>
         else if (name === 'events') loadEvents();
         else if (name === 'stats') loadStats();
         else if (name === 'stories') loadStories();
+        else if (name === 'construction') loadConstructionSites();
       }
     }, 30000);
   }
