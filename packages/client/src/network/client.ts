@@ -48,6 +48,7 @@ import type {
   WarTickerEvent,
   InventoryItem,
   ConstructionSiteState,
+  NpcTradeResultMessage,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -714,7 +715,7 @@ class GameNetwork {
     });
 
     // NPC trade result
-    room.onMessage('npcTradeResult', (data: { success: boolean; error?: string; partial?: boolean; soldAmount?: number }) => {
+    room.onMessage('npcTradeResult', (data: NpcTradeResultMessage) => {
       const store = useStore.getState();
       if (data.success) {
         store.addLogEntry('Trade complete');
