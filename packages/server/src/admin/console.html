@@ -861,13 +861,13 @@ expiresDays: 14"></textarea>
           <span class="section-title" style="margin:0">QUAD-MAP</span>
           <div id="qmap-zoom-controls" style="display:flex;gap:6px;align-items:center">
             <span style="color:var(--amber-dim);font-size:10px;letter-spacing:1px">ZOOM:</span>
-            <button class="qmap-zoom-btn primary" data-zoom="0">1×</button>
-            <button class="qmap-zoom-btn" data-zoom="1">5×</button>
-            <button class="qmap-zoom-btn" data-zoom="2">10×</button>
-            <button class="qmap-zoom-btn" data-zoom="3">25×</button>
-            <button class="qmap-zoom-btn" data-zoom="4">50×</button>
-            <button class="qmap-zoom-btn" data-zoom="5" style="color:#ff9900">250×</button>
-            <button class="qmap-zoom-btn" data-zoom="6" style="color:#ff9900">1000×</button>
+            <button class="qmap-zoom-btn" data-zoom="0">3</button>
+            <button class="qmap-zoom-btn" data-zoom="1">10</button>
+            <button class="qmap-zoom-btn" data-zoom="2">25</button>
+            <button class="qmap-zoom-btn" data-zoom="3">50</button>
+            <button class="qmap-zoom-btn primary" data-zoom="4">100</button>
+            <button class="qmap-zoom-btn" data-zoom="5">250</button>
+            <button class="qmap-zoom-btn" data-zoom="6">1000</button>
           </div>
           <button id="qmap-fullscreen-btn">&#10562; FULLSCREEN</button>
           <button id="qmap-refresh-btn">&#8635; Refresh</button>
@@ -2005,7 +2005,7 @@ expiresDays: 14"></textarea>
   // ── QUAD-MAP ───────────────────────────────────────────────────
 
   var qmapData = [];
-  var qmapZoom = 2; // default 10×
+  var qmapZoom = 4; // default 100 quadrants across
   var qmapPan = { x: 0, y: 0 };
   var qmapDragging = false;
   var qmapDragStartX = 0;
@@ -2016,24 +2016,26 @@ expiresDays: 14"></textarea>
   var qmapFsOverlay = null;
   var AXIS_MARGIN = 20; // px reserved for axis labels
 
-  // pixels per quadrant cell at each zoom index
-  var ZOOM_CELL_SIZES = [4, 8, 16, 32, 64, 128, 512];
+  // number of quadrants visible across canvas width at each zoom index
+  var ZOOM_LEVELS = [3, 10, 25, 50, 100, 250, 1000];
 
   var FACTION_COLORS = {
-    humans:   '#2a7a2a',
-    valtoris: '#7a2a2a',
-    nexaris:  '#2a2a7a',
-    tharion:  '#7a5a00',
-    zelphyr:  '#00607a',
-    moruvek:  '#5a007a',
-    drakneth: '#7a3a00',
-    skivari:  '#007a5a',
+    human:    '#2a7a2a',
+    valtoris: '#cc4444',
+    nexaris:  '#4444cc',
+    tharion:  '#cc9900',
+    zelphyr:  '#00aacc',
+    moruvek:  '#9944cc',
+    drakneth: '#cc6600',
+    skivari:  '#00cc88',
     unknown:  '#555555',
   };
 
   function getFactionColor(faction) {
     if (!faction) return '#222222';
     var key = faction.toLowerCase();
+    // normalise 'humans' → 'human'
+    if (key === 'humans') key = 'human';
     return FACTION_COLORS[key] || FACTION_COLORS.unknown;
   }
 
@@ -2071,7 +2073,7 @@ expiresDays: 14"></textarea>
     var canvas = document.getElementById('qmap-canvas');
     if (!canvas) return;
     syncCanvasSize(canvas);
-    var cellSize = ZOOM_CELL_SIZES[qmapZoom] || 16;
+    var cellSize = (canvas.width - AXIS_MARGIN) / (ZOOM_LEVELS[qmapZoom] || 100);
     // Data area is offset by AXIS_MARGIN; center in data area
     var dataW = canvas.width - AXIS_MARGIN;
     var dataH = canvas.height - AXIS_MARGIN;
@@ -2085,47 +2087,53 @@ expiresDays: 14"></textarea>
     if (!container) return;
     while (container.firstChild) container.removeChild(container.firstChild);
 
-    function makeBookmark(label, qx, qy) {
+    function makeBookmark(label, qx, qy, factionKey) {
+      var color = FACTION_COLORS[factionKey] || FACTION_COLORS.unknown;
       var btn = document.createElement('button');
-      btn.style.cssText = 'width:100%;text-align:left;padding:6px 8px;font-size:10px;letter-spacing:1px;border:1px solid rgba(255,176,0,0.2);background:transparent;color:rgba(255,176,0,0.7);cursor:pointer;white-space:pre-line;line-height:1.4;transition:all 0.2s';
+      btn.style.cssText = 'width:100%;text-align:left;padding:6px 8px;font-size:10px;letter-spacing:1px;border:1px solid ' + color + '44;border-left:3px solid ' + color + ';background:transparent;color:' + color + ';cursor:pointer;white-space:pre-line;line-height:1.4;transition:all 0.2s';
       btn.textContent = label;
       btn.addEventListener('mouseenter', function() {
-        btn.style.background = 'rgba(255,176,0,0.08)';
-        btn.style.borderColor = 'rgba(255,176,0,0.6)';
-        btn.style.color = '#ffb000';
+        btn.style.background = color + '18';
+        btn.style.borderColor = color;
+        btn.style.borderLeftColor = color;
       });
       btn.addEventListener('mouseleave', function() {
         if (!btn.classList.contains('qmap-bm-active')) {
           btn.style.background = 'transparent';
-          btn.style.borderColor = 'rgba(255,176,0,0.2)';
-          btn.style.color = 'rgba(255,176,0,0.7)';
+          btn.style.borderColor = color + '44';
+          btn.style.borderLeftColor = color;
         }
       });
       btn.addEventListener('click', function() {
         container.querySelectorAll('button').forEach(function(b) {
           b.classList.remove('qmap-bm-active');
+          var bc = b._bmColor || FACTION_COLORS.unknown;
           b.style.background = 'transparent';
-          b.style.borderColor = 'rgba(255,176,0,0.2)';
-          b.style.color = 'rgba(255,176,0,0.7)';
+          b.style.borderColor = bc + '44';
+          b.style.borderLeftColor = bc;
+          b.style.color = bc;
         });
         btn.classList.add('qmap-bm-active');
-        btn.style.background = 'rgba(255,176,0,0.15)';
-        btn.style.borderColor = '#ffb000';
-        btn.style.color = '#ffb000';
+        btn.style.background = color + '28';
+        btn.style.borderColor = color;
+        btn.style.borderLeftColor = color;
+        btn.style.color = color;
         centerOnQuadrant(qx, qy);
       });
+      btn._bmColor = color;
       return btn;
     }
 
     // Human home always first
-    container.appendChild(makeBookmark('HUMAN — ZENTRUM\n(0, 0)', 0, 0));
+    container.appendChild(makeBookmark('HUMAN — ZENTRUM\n(0, 0)', 0, 0, 'human'));
 
     // Alien faction homes from DB
     for (var i = 0; i < homes.length; i++) {
       var h = homes[i];
-      if (h.factionId === 'humans') continue; // skip if humans appear in DB too
+      if (h.factionId === 'humans' || h.factionId === 'human') continue; // skip if humans appear in DB too
+      var fk = h.factionId.toLowerCase();
       var lbl = h.factionId.toUpperCase() + '\n(' + h.homeQx + ', ' + h.homeQy + ')';
-      container.appendChild(makeBookmark(lbl, h.homeQx, h.homeQy));
+      container.appendChild(makeBookmark(lbl, h.homeQx, h.homeQy, fk));
     }
   }
 
@@ -2136,8 +2144,8 @@ expiresDays: 14"></textarea>
     var ctx = canvas.getContext('2d');
     var W = canvas.width;
     var H = canvas.height;
-    var cellSize = ZOOM_CELL_SIZES[qmapZoom] || 16;
-    var showLabels = qmapZoom >= 5;
+    var cellSize = (W - AXIS_MARGIN) / (ZOOM_LEVELS[qmapZoom] || 100);
+    var showLabels = cellSize >= 32;
 
     // Clear background
     ctx.fillStyle = '#050505';
@@ -2178,9 +2186,13 @@ expiresDays: 14"></textarea>
       var cx = originX + (qd.qx - minQx) * cellSize;
       var cy = originY + (qd.qy - minQy) * cellSize;
 
-      // Fill
-      ctx.fillStyle = getFactionColor(qd.faction);
-      ctx.fillRect(cx, cy, cellSize, cellSize);
+      // Fill — at sub-pixel zoom draw a 1px dot at cell center
+      ctx.fillStyle = FACTION_COLORS[((qd.faction || '').toLowerCase() === 'humans' ? 'human' : (qd.faction || '').toLowerCase())] || FACTION_COLORS.unknown;
+      if (cellSize < 1) {
+        ctx.fillRect(Math.round(cx + cellSize / 2), Math.round(cy + cellSize / 2), 1, 1);
+      } else {
+        ctx.fillRect(cx, cy, cellSize, cellSize);
+      }
 
       // Friction glow / warning border
       if (qd.friction >= 71) {
