@@ -6,6 +6,7 @@ import {
 } from '../db/constructionQueries.js';
 import { createStructure } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
+import { constructionBus } from '../constructionBus.js';
 
 /**
  * Completions emitted by the current tick. SectorRoom reads and clears this
@@ -55,6 +56,11 @@ export async function processConstructionTick(): Promise<void> {
           sectorY: site.sector_y,
         });
         await deleteConstructionSiteById(site.id);
+        constructionBus.emit('completed', {
+          siteId: site.id,
+          sectorX: site.sector_x,
+          sectorY: site.sector_y,
+        });
         logger.info(
           { type: site.type, x: site.sector_x, y: site.sector_y },
           'Construction complete',

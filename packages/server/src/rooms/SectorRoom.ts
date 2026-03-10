@@ -19,6 +19,8 @@ import { commsBus } from '../commsBus.js';
 import type { CommsBroadcastEvent } from '../commsBus.js';
 import { civShipBus } from '../civShipBus.js';
 import type { CivShipsTickEvent } from '../civShipBus.js';
+import { constructionBus } from '../constructionBus.js';
+import type { ConstructionCompletedEvent } from '../constructionBus.js';
 import {
   getAPState,
   saveAPState,
@@ -1027,6 +1029,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     };
     civShipBus.on('civShipsTick', onCivShipsTick);
 
+    // Construction completions — broadcast to clients when a site in this quadrant finishes
+    const onConstructionCompleted = (event: ConstructionCompletedEvent) => {
+      const { qx, qy } = sectorToQuadrant(event.sectorX, event.sectorY);
+      if (qx !== this.quadrantX || qy !== this.quadrantY) return;
+      this.broadcast('constructionSiteCompleted', { siteId: event.siteId });
+      this.broadcast('structureBuilt', { sectorX: event.sectorX, sectorY: event.sectorY });
+    };
+    constructionBus.on('completed', onConstructionCompleted);
+
     commsBus.on('commsBroadcast', onCommsBroadcast);
 
     this.disposeCallbacks.push(() => {
@@ -1035,6 +1046,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       adminBus.off('adminPlayerUpdate', onPlayerUpdate);
       commsBus.off('commsBroadcast', onCommsBroadcast);
       civShipBus.off('civShipsTick', onCivShipsTick);
+      constructionBus.off('completed', onConstructionCompleted);
     });
   }
 
