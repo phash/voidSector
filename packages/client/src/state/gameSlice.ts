@@ -47,6 +47,7 @@ import type {
   CivShip,
   WarTickerEvent,
   InventoryItem,
+  ConstructionSiteState,
 } from '@void-sector/shared';
 
 /**
@@ -437,6 +438,9 @@ export interface GameSlice {
   civShips: CivShip[];
   warTicker: WarTickerEvent[];
 
+  // Construction Sites
+  constructionSites: ConstructionSiteState[];
+
   // Unified Inventory
   inventory: InventoryItem[];
 
@@ -550,6 +554,9 @@ export interface GameSlice {
   addWarTickerEvent: (event: WarTickerEvent) => void;
   setInventory: (items: InventoryItem[]) => void;
   setTrackedQuests: (quests: TrackedQuest[]) => void;
+  setConstructionSites: (sites: ConstructionSiteState[]) => void;
+  upsertConstructionSite: (site: ConstructionSiteState) => void;
+  removeConstructionSite: (siteId: string) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -669,6 +676,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   warTicker: [],
   inventory: [],
   trackedQuests: [],
+  constructionSites: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -886,4 +894,13 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     set((state) => ({ warTicker: [event, ...state.warTicker].slice(0, 10) })),
   setInventory: (inventory) => set({ inventory }),
   setTrackedQuests: (trackedQuests) => set({ trackedQuests }),
+  setConstructionSites: (sites) => set({ constructionSites: sites }),
+  upsertConstructionSite: (site) => set((s) => ({
+    constructionSites: s.constructionSites.some((c) => c.id === site.id)
+      ? s.constructionSites.map((c) => (c.id === site.id ? site : c))
+      : [...s.constructionSites, site],
+  })),
+  removeConstructionSite: (siteId) => set((s) => ({
+    constructionSites: s.constructionSites.filter((c) => c.id !== siteId),
+  })),
 });

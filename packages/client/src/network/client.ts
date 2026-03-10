@@ -47,6 +47,7 @@ import type {
   CivShip,
   WarTickerEvent,
   InventoryItem,
+  ConstructionSiteState,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -1602,6 +1603,16 @@ class GameNetwork {
       useStore.getState().setCivShips(data);
     });
 
+    room.onMessage('constructionSiteCreated', (data: { site: ConstructionSiteState }) => {
+      useStore.getState().upsertConstructionSite(data.site);
+    });
+    room.onMessage('constructionSiteUpdate', (data: ConstructionSiteState) => {
+      useStore.getState().upsertConstructionSite(data);
+    });
+    room.onMessage('constructionSiteCompleted', (data: { siteId: string }) => {
+      useStore.getState().removeConstructionSite(data.siteId);
+    });
+
     room.onMessage('warTicker', (data: WarTickerEvent) => {
       useStore.getState().addWarTickerEvent(data);
     });
@@ -1762,6 +1773,10 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('build', { type });
+  }
+
+  sendDepositConstruction(siteId: string, ore: number, gas: number, crystal: number) {
+    this.sectorRoom?.send('depositConstruction', { siteId, ore, gas, crystal });
   }
 
   sendTransfer(resource: string, amount: number, direction: 'toStorage' | 'fromStorage') {
