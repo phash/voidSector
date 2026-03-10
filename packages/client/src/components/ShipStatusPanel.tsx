@@ -204,7 +204,6 @@ export function ShipStatusPanel() {
       {/* Quick nav */}
       <div style={{ display: 'flex', gap: 8, marginTop: 6, borderTop: '1px solid var(--color-dim)', paddingTop: 4 }}>
         <button style={linkBtn} onClick={() => setActiveProgram('MODULES')}>[MODULES]</button>
-        <button style={linkBtn} onClick={() => setActiveProgram('HANGAR')}>[HANGAR]</button>
       </div>
     </div>
   );

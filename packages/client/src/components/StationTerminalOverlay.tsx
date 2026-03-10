@@ -3,6 +3,7 @@ import { useStore } from '../state/store';
 import { TradeScreen } from './TradeScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { generateStationName, innerCoord } from '@void-sector/shared';
+import { btn, UI } from '../ui-strings';
 
 type TerminalProgram = 'handel' | 'quests';
 
@@ -72,7 +73,7 @@ export function StationTerminalOverlay() {
             letterSpacing: '0.1em',
           }}
         >
-          [ABDOCKEN]
+          {btn(UI.actions.UNDOCK)}
         </button>
       </div>
 

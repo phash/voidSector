@@ -281,11 +281,10 @@ describe('ShipStatusPanel', () => {
     expect(screen.queryByText('HYPERDRIVE')).not.toBeInTheDocument();
   });
 
-  it('renders [MODULES] and [HANGAR] quick links', () => {
+  it('renders [MODULES] quick link', () => {
     render(<ShipStatusPanel />);
 
     expect(screen.getByText('[MODULES]')).toBeInTheDocument();
-    expect(screen.getByText('[HANGAR]')).toBeInTheDocument();
   });
 
   it('clicking [MODULES] calls setActiveProgram with MODULES', async () => {
@@ -299,14 +298,4 @@ describe('ShipStatusPanel', () => {
     expect(setActiveProgram).toHaveBeenCalledWith('MODULES');
   });
 
-  it('clicking [HANGAR] calls setActiveProgram with HANGAR', async () => {
-    const user = userEvent.setup();
-    const setActiveProgram = vi.fn();
-    mockStoreState({ ship: baseShip, setActiveProgram });
-    render(<ShipStatusPanel />);
-
-    await user.click(screen.getByText('[HANGAR]'));
-
-    expect(setActiveProgram).toHaveBeenCalledWith('HANGAR');
-  });
 });
