@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ShipStatusPanel } from '../components/ShipStatusPanel';
 import { mockStoreState } from '../test/mockStore';
@@ -126,6 +126,21 @@ describe('ShipStatusPanel', () => {
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), 'CHANGED');
     await user.keyboard('{Escape}');
+    expect(network.sendRenameShip).not.toHaveBeenCalled();
+  });
+
+  it('does not call sendRenameShip when blur fires after Escape', async () => {
+    const user = userEvent.setup();
+    render(<ShipStatusPanel />);
+    await user.click(screen.getByText('Astral Hawk'));
+    const input = screen.getByRole('textbox');
+    await user.clear(input);
+    await user.type(input, 'CHANGED');
+    // Press Escape to cancel
+    await user.keyboard('{Escape}');
+    // Then explicitly trigger blur (simulates browser firing blur after Escape)
+    fireEvent.blur(document.activeElement || document.body);
+    // sendRenameShip must NOT have been called
     expect(network.sendRenameShip).not.toHaveBeenCalled();
   });
 
