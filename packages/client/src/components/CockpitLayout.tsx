@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
+import { btn } from '../ui-strings';
 import { ProgramSelector } from './ProgramSelector';
 import { SettingsPanel } from './SettingsPanel';
 import { HardwareControls } from './HardwareControls';
@@ -22,6 +23,7 @@ import { PlayerContextMenu } from './PlayerContextMenu';
 import { StoryEventOverlay } from './overlays/StoryEventOverlay';
 import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
+import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
 
 interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
@@ -149,14 +151,14 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
               onClick={() => setMonitorMode('DETAIL', 'detail')}
               title="Detail-Modus"
             >
-              1
+              {btn('DET')}
             </button>
             <button
               className={`hw-channel-btn${detailMonitorMode === 'tv' ? ' active' : ''}`}
               onClick={() => setMonitorMode('DETAIL', 'tv')}
               title="TV-Modus"
             >
-              2
+              {btn('TV')}
             </button>
           </div>
         </div>
@@ -193,6 +195,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       <StoryEventOverlay />
       <FirstContactNewsOverlay />
       <AlienEncounterToast />
+      <QuestCompleteOverlay />
     </div>
   );
 }

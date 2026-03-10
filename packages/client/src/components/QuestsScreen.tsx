@@ -5,23 +5,24 @@ import { innerCoord } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc, SectorData } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
 import { findNearestStation } from '../utils/sectorUtils';
-
+import { btn, btnDisabled, UI } from '../ui-strings';
+import { useConfirm } from '../hooks/useConfirm';
 
 const MAX_TRACKED = 5;
 
 const QUEST_TYPE_LABELS: Record<string, string> = {
-  fetch: 'LIEFERUNG',
+  fetch: 'DELIVERY',
   scan: 'SCAN',
-  delivery: 'LIEFERUNG',
-  bounty: 'KOPFGELD',
+  delivery: 'DELIVERY',
+  bounty: 'BOUNTY',
   story: 'STORY',
   community: 'COMMUNITY',
-  traders: 'HÄNDLER',
-  scientists: 'WISS.',
-  pirates: 'PIRATEN',
+  traders: 'TRADERS',
+  scientists: 'SCI.',
+  pirates: 'PIRATES',
   ancients: 'ANCIENTS',
-  diplomacy: 'DIPLOMATIE',
-  war_support: 'KRIEG',
+  diplomacy: 'DIPLOMACY',
+  war_support: 'WAR',
 };
 
 function JournalTab() {
@@ -103,7 +104,7 @@ function JournalTab() {
               fontSize: '0.65rem',
             }}
           >
-            {filterNearby ? '[✓] IN DER NÄHE' : '[ ] IN DER NÄHE'}
+            {filterNearby ? `[✓] ${UI.status.NEARBY}` : `[ ] ${UI.status.NEARBY}`}
           </button>
           {filterNearby && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -141,7 +142,7 @@ function JournalTab() {
                 padding: '1px 3px',
               }}
             >
-              <option value="">ALLE FRAKTIONEN</option>
+              <option value="">{UI.status.ALL_FACTIONS}</option>
               {factionIds.map((f) => (
                 <option key={f} value={f}>
                   {f.toUpperCase()}
@@ -162,7 +163,7 @@ function JournalTab() {
                 padding: '1px 3px',
               }}
             >
-              <option value="">ALLE ARTEN</option>
+              <option value="">{UI.status.ALL_TYPES}</option>
               {questTypes.map((t) => (
                 <option key={t} value={t}>
                   {QUEST_TYPE_LABELS[t] ?? t.toUpperCase()}
@@ -182,13 +183,13 @@ function JournalTab() {
           letterSpacing: '0.05em',
         }}
       >
-        VERFOLGT: {trackedQuests.length}/{MAX_TRACKED}
+        {UI.status.TRACKED}: {trackedQuests.length}/{MAX_TRACKED}
       </div>
 
       {/* Quest list */}
       {filtered.length === 0 && (
         <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
-          KEINE AUFTRÄGE (FILTER AKTIV)
+          {UI.empty.NO_QUESTS_FILTERED}
         </div>
       )}
       {filtered.map((q) => {
@@ -220,7 +221,7 @@ function JournalTab() {
               <button
                 onClick={() => toggleTrack(q.id)}
                 disabled={!canTrack}
-                title={isTracked ? 'Verfolgen beenden' : 'Verfolgen (max 5)'}
+                title={isTracked ? 'Stop tracking' : 'Track quest (max 5)'}
                 style={{
                   background: isTracked ? 'rgba(0,120,255,0.3)' : 'none',
                   color: isTracked ? '#4488FF' : canTrack ? 'rgba(255,176,0,0.5)' : '#333',
@@ -239,7 +240,7 @@ function JournalTab() {
             <div
               style={{ color: 'rgba(255,176,0,0.45)', fontSize: '0.6rem', marginTop: 2 }}
             >
-              {doneCount}/{q.objectives.length} ZIELE
+              {doneCount}/{q.objectives.length} {UI.status.OBJECTIVES}
               {q.npcFactionId && (
                 <span style={{ marginLeft: 6, opacity: 0.7 }}>
                   [{(q.npcFactionId as string).toUpperCase()}]
@@ -261,7 +262,7 @@ function StoryTab() {
   }, []);
 
   if (!progress) {
-    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>LADE...</div>;
+    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>{UI.status.LOADING}</div>;
   }
 
   return (
@@ -286,7 +287,7 @@ function StoryTab() {
             }}
           >
             <span>
-              {completed ? '✓' : current ? '▶' : '○'} KAP.{ch.id} — {ch.title}
+              {completed ? '✓' : current ? '▶' : '○'} CH.{ch.id} — {ch.title}
             </span>
             <span
               style={{
@@ -324,23 +325,23 @@ function AlienRepTab() {
   };
 
   const FACTION_LABELS: Record<string, string> = {
-    archivists: 'Archivare',
+    archivists: 'Archivists',
     kthari: "K'thari",
-    mycelians: 'Mycelianer',
-    consortium: 'Konsortium',
-    tourist_guild: 'Touristengilde',
+    mycelians: 'Mycelians',
+    consortium: 'Consortium',
+    tourist_guild: 'Tourist Guild',
     scrappers: 'Scrappers',
     mirror_minds: 'Mirror Minds',
     silent_swarm: 'Silent Swarm',
     helions: 'Helions',
-    axioms: 'Axiome',
+    axioms: 'Axioms',
   };
 
   return (
     <div style={{ padding: '8px', fontSize: '0.75rem', overflowY: 'auto', height: '100%' }}>
       {/* Personal alien rep */}
       <div style={{ opacity: 0.6, marginBottom: '4px', letterSpacing: '0.1em' }}>
-        MEINE ALIEN-REPUTATIONEN
+        MY ALIEN REPUTATIONS
       </div>
       {Object.entries(FACTION_LABELS).map(([id, label]) => {
         const rep = alienReps[id] ?? 0;
@@ -357,7 +358,7 @@ function AlienRepTab() {
 
       {/* Humanity rep */}
       <div style={{ opacity: 0.6, marginBottom: '4px', marginTop: '12px', letterSpacing: '0.1em' }}>
-        GALAKTISCHE MENSCHHEITS-REP
+        GALACTIC HUMANITY REP
       </div>
       {Object.entries(FACTION_LABELS).map(([id, label]) => {
         const entry = humanityReps[id];
@@ -396,7 +397,7 @@ function CommunityTab() {
   if (!quest) {
     return (
       <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>
-        KEINE AKTIVE COMMUNITY-QUEST
+        {UI.empty.NO_COMMUNITY_QUEST}
       </div>
     );
   }
@@ -428,7 +429,7 @@ function CommunityTab() {
             fontSize: '0.65rem',
           }}
         >
-          <span style={{ color: 'var(--color-dim)' }}>FORTSCHRITT</span>
+          <span style={{ color: 'var(--color-dim)' }}>{UI.status.PROGRESS}</span>
           <span style={{ color: 'var(--color-primary)' }}>
             {(quest.currentCount ?? 0).toLocaleString()} / {(quest.targetCount ?? 0).toLocaleString()}
           </span>
@@ -437,7 +438,7 @@ function CommunityTab() {
           <div style={{ height: '100%', width: `${pct}%`, background: 'var(--color-primary)' }} />
         </div>
       </div>
-      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>DEADLINE: {deadline}</div>
+      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{UI.status.DEADLINE}: {deadline}</div>
     </div>
   );
 }
@@ -455,6 +456,7 @@ export function QuestsScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
+  const { confirm, isArmed } = useConfirm();
 
   const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'reputation' | 'story'>('auftraege');
   const [subFilter, setSubFilter] = useState<'all' | 'rescue'>('all');
@@ -505,7 +507,7 @@ export function QuestsScreen() {
             clearNavReturn();
           }}
         >
-          [← ZURÜCK]
+          [← BACK]
         </button>
       )}
       {/* Tab bar */}
@@ -669,19 +671,13 @@ export function QuestsScreen() {
                           {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
                         </div>
                         <button
-                          onClick={() => network.sendAbandonQuest(q.id)}
-                          style={{
-                            background: 'none',
-                            color: '#FF3333',
-                            border: '1px solid #FF3333',
-                            padding: '1px 4px',
-                            cursor: 'pointer',
-                            fontFamily: 'inherit',
-                            fontSize: '9px',
-                            marginTop: '3px',
-                          }}
+                          className="vs-btn"
+                          onClick={() => confirm(`abandon-${q.id}`, () => network.sendAbandonQuest(q.id))}
+                          style={isArmed(`abandon-${q.id}`) ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
                         >
-                          [ABBRECHEN]
+                          {isArmed(`abandon-${q.id}`)
+                            ? btnDisabled(UI.actions.ABANDON, 'SURE?')
+                            : btn(UI.actions.ABANDON)}
                         </button>
                       </div>
                     )}
@@ -779,7 +775,7 @@ export function QuestsScreen() {
             );
           })()}
           {isAtStation && stationNpcs.length === 0 && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Lade NPCs...</div>
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>{UI.status.LOADING}</div>
           )}
           {stationNpcs.map((npc) => (
             <div key={npc.id} style={{ color: '#00FF88', marginBottom: '2px' }}>
@@ -789,7 +785,7 @@ export function QuestsScreen() {
           {availableQuests.length > 0 && (
             <>
               <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>
-                VERFÜGBARE QUESTS:
+                AVAILABLE QUESTS:
               </div>
               {availableQuests.map((q) => (
                 <div
@@ -820,7 +816,7 @@ export function QuestsScreen() {
                       marginTop: '2px',
                     }}
                   >
-                    [ANNEHMEN]
+                    {btn(UI.actions.ACCEPT)}
                   </button>
                 </div>
               ))}

@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useStore } from '../state/store';
-import { HangarPanel } from './HangarPanel';
+import { FabrikPanel } from './FabrikPanel';
 import { TradeScreen } from './TradeScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { generateStationName, innerCoord } from '@void-sector/shared';
+import { btn, UI } from '../ui-strings';
 
-type TerminalProgram = 'hangar' | 'handel' | 'quests' | 'forschung';
+type TerminalProgram = 'fabrik' | 'handel' | 'quests';
 
 const PROGRAM_LABELS: Record<TerminalProgram, string> = {
-  hangar: 'HANGAR',
+  fabrik: 'FABRIK',
   handel: 'HANDEL',
   quests: 'QUESTS',
-  forschung: 'FORSCHUNG',
 };
 
 const green = '#00FF88';
@@ -75,7 +75,7 @@ export function StationTerminalOverlay() {
             letterSpacing: '0.1em',
           }}
         >
-          [ABDOCKEN]
+          {btn(UI.actions.UNDOCK)}
         </button>
       </div>
 
@@ -125,14 +125,9 @@ export function StationTerminalOverlay() {
             } as React.CSSProperties
           }
         >
-          {program === 'hangar' && <HangarPanel />}
+          {program === 'fabrik' && <FabrikPanel />}
           {program === 'handel' && <TradeScreen />}
           {program === 'quests' && <QuestsScreen />}
-          {program === 'forschung' && (
-            <div style={{ padding: 16, opacity: 0.4, fontSize: '0.8rem' }}>
-              FORSCHUNG — NICHT VERFÜGBAR
-            </div>
-          )}
         </div>
       </div>
     </div>

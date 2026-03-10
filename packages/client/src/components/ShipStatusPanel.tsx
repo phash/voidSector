@@ -4,10 +4,10 @@ import { network } from '../network/client';
 import { HULLS } from '@void-sector/shared';
 
 const ACEP_PATHS = [
-  { key: 'ausbau',   label: 'AUSBAU',   color: '#ffaa00', max: 50 },
-  { key: 'intel',    label: 'INTEL',    color: '#00ffcc', max: 50 },
-  { key: 'kampf',    label: 'KAMPF',    color: '#ff4444', max: 50 },
-  { key: 'explorer', label: 'EXPLORER', color: '#8888ff', max: 50 },
+  { key: 'ausbau',   label: 'CONSTRUCTION', color: '#ffaa00', max: 50 },
+  { key: 'intel',    label: 'INTEL',        color: '#00ffcc', max: 50 },
+  { key: 'kampf',    label: 'COMBAT',       color: '#ff4444', max: 50 },
+  { key: 'explorer', label: 'EXPLORER',     color: '#8888ff', max: 50 },
 ] as const;
 
 const mono = { fontFamily: 'var(--font-mono)', fontSize: '0.55rem' };
@@ -89,7 +89,7 @@ export function ShipStatusPanel() {
       ) : (
         <div
           onClick={startRename}
-          title="Klicken zum Umbenennen"
+          title="Click to rename"
           style={{ fontSize: '0.6rem', letterSpacing: '0.15em', borderBottom: '1px solid var(--color-dim)', paddingBottom: 2, marginBottom: 2, cursor: 'text' }}
         >
           {shipName}
@@ -140,7 +140,7 @@ export function ShipStatusPanel() {
             ['ORE',      cargo.ore],
             ['GAS',      cargo.gas],
             ['CRYSTAL',  cargo.crystal],
-            ['ARTEFAKT', cargo.artefact],
+            ['ARTEFACT', cargo.artefact],
           ] as [string, number][]).map(([label, val]) => (
             <div key={label} style={row}>
               <span style={dim}>{label}</span>
@@ -148,7 +148,7 @@ export function ShipStatusPanel() {
             </div>
           ))}
           <div style={row}>
-            <span style={dim}>KAPAZITÄT</span>
+            <span style={dim}>CAPACITY</span>
             <span style={pri}>{stats.cargoCap}</span>
           </div>
         </div>
@@ -159,12 +159,12 @@ export function ShipStatusPanel() {
         <div style={{ marginTop: 4 }}>
           {mining?.active ? (
             <>
-              <div style={row}><span style={dim}>RESSOURCE</span><span style={pri}>{mining.resource?.toUpperCase() ?? '—'}</span></div>
+              <div style={row}><span style={dim}>RESOURCE</span><span style={pri}>{mining.resource?.toUpperCase() ?? '—'}</span></div>
               <div style={row}><span style={dim}>RATE</span><span style={pri}>{mining.rate}/tick</span></div>
               <div style={row}><span style={dim}>YIELD</span><span style={pri}>{mining.sectorYield}</span></div>
             </>
           ) : (
-            <div style={{ ...dim, marginTop: 4, opacity: 0.5 }}>INAKTIV</div>
+            <div style={{ ...dim, marginTop: 4, opacity: 0.5 }}>INACTIVE</div>
           )}
         </div>
       )}
@@ -192,7 +192,7 @@ export function ShipStatusPanel() {
         <>
           <div style={hdr}>HYPERDRIVE</div>
           <div style={row}>
-            <span style={dim}>LADUNG</span>
+            <span style={dim}>CHARGE</span>
             <span style={pri}>{chargePercent}%</span>
           </div>
           <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', marginTop: 2 }}>
@@ -204,7 +204,6 @@ export function ShipStatusPanel() {
       {/* Quick nav */}
       <div style={{ display: 'flex', gap: 8, marginTop: 6, borderTop: '1px solid var(--color-dim)', paddingTop: 4 }}>
         <button style={linkBtn} onClick={() => setActiveProgram('MODULES')}>[MODULES]</button>
-        <button style={linkBtn} onClick={() => setActiveProgram('HANGAR')}>[HANGAR]</button>
       </div>
     </div>
   );

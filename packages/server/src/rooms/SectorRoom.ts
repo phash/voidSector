@@ -9,7 +9,7 @@ import { calculateCurrentAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
-import { getAcepXpSummary, getAcepEffects } from '../engine/acepXpService.js';
+import { getAcepXpSummary, getAcepEffects, type AcepPath } from '../engine/acepXpService.js';
 import { recordVisit } from '../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../engine/quadrantEngine.js';
 import { isFrontierQuadrant } from '../engine/expansionEngine.js';
@@ -63,6 +63,9 @@ import {
   getAllHumanityReps,
   getAllQuadrantControls,
   getActiveNpcFleets,
+  recordQuadrantVisit,
+  getVisitedQuadrantSet,
+  getAllAlienReputations,
   getInventory,
   getResearchLabTier,
 } from '../db/queries.js';
@@ -76,6 +79,7 @@ import {
   calculateCurrentCharge,
   HULLS,
   STATION_REP_VISIT,
+  COSMIC_FACTION_IDS,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -567,6 +571,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getTrackedQuests', async (client) => {
       await this.quests.handleGetTrackedQuests(client);
     });
+    this.onMessage(
+      'deliverQuestResources',
+      async (client, data: { questId: string; sectorX: number; sectorY: number }) => {
+        await this.quests.handleDeliverQuestResources(client, data);
+      },
+    );
 
     // ── Alien Interactions ──────────────────────────────────────────
     this.onMessage('alienInteract', async (client, data: AlienInteractMessage) => {
@@ -647,6 +657,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     );
     this.onMessage('getResearchState', (client) => this.ships.handleGetResearchState(client));
     this.onMessage('craftModule', (client, data) => this.ships.handleCraftModule(client, data));
+    this.onMessage('acepBoost', (client, data: { path: AcepPath }) =>
+      this.ships.handleAcepBoost(client, data),
+    );
 
     // ── World / Data Queries ────────────────────────────────────────
     this.onMessage('getAP', async (client) => {
@@ -1110,6 +1123,9 @@ export class SectorRoom extends Room<SectorRoomState> {
         name: quadrantData?.name ?? null,
       });
 
+      // Record quadrant visit for Fog-of-War
+      await recordQuadrantVisit(auth.userId, this.quadrantX, this.quadrantY);
+
       // Save position
       await savePlayerPosition(auth.userId, sectorX, sectorY);
 
@@ -1299,29 +1315,41 @@ export class SectorRoom extends Room<SectorRoomState> {
         logger.error({ err }, 'Join autopilot resume error');
       }
 
-      // Broadcast initial expansion state
+      // Broadcast initial expansion state (filtered by visited quadrants for Fog-of-War)
       try {
-        const [controlRows, fleetRows] = await Promise.all([
+        const [controlRows, fleetRows, visitedSet, alienReps] = await Promise.all([
           getAllQuadrantControls(),
           getActiveNpcFleets(),
+          getVisitedQuadrantSet(auth.userId),
+          getAllAlienReputations(auth.userId),
         ]);
-        const controls: QuadrantControlState[] = controlRows.map((r) => {
-          let friction_state: QuadrantControlState['friction_state'] = 'peaceful_halt';
-          if (r.friction_score > 80) friction_state = 'total_war';
-          else if (r.friction_score > 50) friction_state = 'escalation';
-          else if (r.friction_score > 20) friction_state = 'skirmish';
-          return {
-            qx: r.qx,
-            qy: r.qy,
-            controlling_faction: r.controlling_faction,
-            faction_shares: r.faction_shares,
-            friction_score: r.friction_score,
-            friction_state,
-            attack_value: r.attack_value,
-            defense_value: r.defense_value,
-            station_tier: r.station_tier,
-          };
-        });
+        const alienFactionIds = new Set<string>(COSMIC_FACTION_IDS.filter((id) => id !== 'humans'));
+        const contactedAlienIds = new Set<string>(Object.keys(alienReps));
+        const controls: QuadrantControlState[] = controlRows
+          .filter((r) => visitedSet.has(`${r.qx}:${r.qy}`))
+          .map((r) => {
+            let friction_state: QuadrantControlState['friction_state'] = 'peaceful_halt';
+            if (r.friction_score > 80) friction_state = 'total_war';
+            else if (r.friction_score > 50) friction_state = 'escalation';
+            else if (r.friction_score > 20) friction_state = 'skirmish';
+            // Hide alien faction info until player has made contact
+            const isAlien = alienFactionIds.has(r.controlling_faction);
+            const controlling_faction =
+              isAlien && !contactedAlienIds.has(r.controlling_faction)
+                ? 'human'
+                : r.controlling_faction;
+            return {
+              qx: r.qx,
+              qy: r.qy,
+              controlling_faction,
+              faction_shares: r.faction_shares,
+              friction_score: r.friction_score,
+              friction_state,
+              attack_value: r.attack_value,
+              defense_value: r.defense_value,
+              station_tier: r.station_tier,
+            };
+          });
         const fleets: NpcFleetState[] = fleetRows.map((r) => ({
           id: r.id,
           faction: r.faction,
@@ -1334,6 +1362,13 @@ export class SectorRoom extends Room<SectorRoomState> {
         }));
         client.send('quadrantControls', controls);
         client.send('npcFleets', fleets);
+        client.send(
+          'visitedQuadrants',
+          Array.from(visitedSet).map((key) => {
+            const [qx, qy] = key.split(':').map(Number);
+            return { qx, qy };
+          }),
+        );
       } catch (err) {
         logger.error({ err }, 'Join expansion state broadcast error');
       }

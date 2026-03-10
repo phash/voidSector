@@ -49,7 +49,7 @@ describe('TechTreePanel', () => {
       position: { x: 0, y: 0 },
     });
     render(<TechTreePanel />);
-    expect(screen.getByText('AKTIVE FORSCHUNG')).toBeInTheDocument();
+    expect(screen.getByText('ACTIVE RESEARCH')).toBeInTheDocument();
     // drive_mk2 appears in the active research section and the list
     expect(screen.getAllByText(/ION DRIVE MK\.II/).length).toBeGreaterThanOrEqual(1);
   });

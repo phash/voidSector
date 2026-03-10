@@ -53,7 +53,7 @@ export function ModulePanel() {
 
   if (!ship) {
     return (
-      <div style={{ padding: '6px 8px', fontSize: '0.65rem', opacity: 0.5 }}>KEIN SCHIFF AKTIV</div>
+      <div style={{ padding: '6px 8px', fontSize: '0.65rem', opacity: 0.5 }}>NO ACTIVE SHIP</div>
     );
   }
 
@@ -86,7 +86,7 @@ export function ModulePanel() {
       }}
     >
       {/* A) Installed Modules */}
-      <div style={sectionHeader}>INSTALLIERTE MODULE</div>
+      <div style={sectionHeader}>INSTALLED MODULES</div>
       {Array.from({ length: totalSlots }, (_, i) => {
         const mod = ship.modules.find((m) => m.slotIndex === i);
         const def = mod ? MODULES[mod.moduleId] : null;
@@ -105,12 +105,12 @@ export function ModulePanel() {
               {def ? (
                 <span style={{ color: 'var(--color-primary)' }}>{def.name}</span>
               ) : (
-                <span style={{ color: 'var(--color-dim)', opacity: 0.4 }}>--- LEER ---</span>
+                <span style={{ color: 'var(--color-dim)', opacity: 0.4 }}>--- EMPTY ---</span>
               )}
             </span>
             {def && (
               <button style={btnDangerStyle} onClick={() => network.sendRemoveModule(ship.id, i)}>
-                ENTFERNEN
+                REMOVE
               </button>
             )}
           </div>
@@ -120,7 +120,7 @@ export function ModulePanel() {
       {/* B) Module Inventory */}
       <div style={sectionHeader}>INVENTAR</div>
       {moduleInventory.length === 0 ? (
-        <div style={{ opacity: 0.4, padding: '2px 0' }}>LEER</div>
+        <div style={{ opacity: 0.4, padding: '2px 0' }}>EMPTY</div>
       ) : (
         moduleInventory.map((moduleId, idx) => {
           const def = MODULES[moduleId];
@@ -145,10 +145,10 @@ export function ModulePanel() {
                   style={btnStyle}
                   onClick={() => network.sendInstallModule(ship.id, moduleId, targetSlot)}
                 >
-                  SLOT {targetSlot} EINBAUEN
+                  INSTALL SLOT {targetSlot}
                 </button>
               ) : (
-                <span style={{ color: 'var(--color-dim)', fontSize: '0.55rem' }}>VOLL</span>
+                <span style={{ color: 'var(--color-dim)', fontSize: '0.55rem' }}>FULL</span>
               )}
             </div>
           );
@@ -164,9 +164,9 @@ export function ModulePanel() {
             .map((def: ModuleDefinition) => {
               const costParts: string[] = [];
               costParts.push(`${def.cost.credits} CR`);
-              if (def.cost.ore) costParts.push(`${def.cost.ore} ERZ`);
+              if (def.cost.ore) costParts.push(`${def.cost.ore} ORE`);
               if (def.cost.gas) costParts.push(`${def.cost.gas} GAS`);
-              if (def.cost.crystal) costParts.push(`${def.cost.crystal} KRI`);
+              if (def.cost.crystal) costParts.push(`${def.cost.crystal} CRY`);
               const canAfford = credits >= def.cost.credits;
               return (
                 <div
@@ -199,7 +199,7 @@ export function ModulePanel() {
                     disabled={!canAfford}
                     onClick={() => network.sendBuyModule(def.id)}
                   >
-                    KAUFEN
+                    BUY
                   </button>
                 </div>
               );

@@ -9,7 +9,8 @@ import {
   TRADE_ROUTE_MIN_CYCLE,
   TRADE_ROUTE_MAX_CYCLE,
 } from '@void-sector/shared';
-import type { ResourceType, DataSlate, ConfigureRouteMessage, SectorData } from '@void-sector/shared';
+import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
+import { btn, UI } from '../ui-strings';
 import { InlineError } from './InlineError';
 import { findNearestStation } from '../utils/sectorUtils';
 
@@ -122,7 +123,7 @@ export function TradeScreen() {
             clearNavReturn();
           }}
         >
-          [← ZURÜCK]
+          [← BACK]
         </button>
       )}
       <div style={{ letterSpacing: '0.2em', marginBottom: '8px', opacity: 0.6 }}>
@@ -131,32 +132,32 @@ export function TradeScreen() {
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>
-          NPC HANDEL
+          NPC {UI.tabs.TRADE}
         </button>
         {!isStation && tier >= 2 && (
           <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>
-            MARKT
+            {UI.tabs.MARKET}
           </button>
         )}
         {!isStation && tier >= 2 && (
           <button style={tabStyle(tab === 'slates')} onClick={() => setTab('slates')}>
-            [SLATES]
+            {btn('SLATES')}
           </button>
         )}
         {!isStation && tier >= 3 && (
           <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>
-            ROUTEN
+            {UI.tabs.ROUTES}
           </button>
         )}
         {hasKontorOrders && (
           <button style={tabStyle(tab === 'kontor')} onClick={() => setTab('kontor')}>
-            KONTOR
+            {UI.programs.TRADING_POST}
           </button>
         )}
       </div>
 
       <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
-        <label>MENGE: </label>
+        <label>{UI.status.AMOUNT}: </label>
         <input
           type="number"
           min={1}
@@ -209,7 +210,7 @@ export function TradeScreen() {
                       letterSpacing: '0.1em',
                     }}
                   >
-                    STATION ANGEBOT
+                    STATION LISTING
                   </div>
                   <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {npcStationData.inventory.map((item) => {
@@ -259,14 +260,14 @@ export function TradeScreen() {
                                 style={{ ...btnStyle, fontSize: '0.6rem' }}
                                 onClick={() => network.sendNpcTrade(item.itemType, amount, 'buy')}
                               >
-                                KAUFEN ({buyTotal}CR)
+                                BUY ({buyTotal}CR)
                               </button>
                             )}
                             <button
                               style={{ ...btnStyle, fontSize: '0.6rem' }}
                               onClick={() => network.sendNpcTrade(item.itemType, amount, 'sell')}
                             >
-                              VERKAUFEN ({sellTotal}CR)
+                              SELL ({sellTotal}CR)
                             </button>
                           </div>
                         </div>
@@ -284,7 +285,7 @@ export function TradeScreen() {
                       letterSpacing: '0.1em',
                     }}
                   >
-                    AN BORD ({cargoTotal}/{cargoCap})
+                    ON BOARD ({cargoTotal}/{cargoCap})
                   </div>
                   <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {npcStationData.inventory.map((item) => {
@@ -334,7 +335,7 @@ export function TradeScreen() {
                   marginBottom: '8px',
                 }}
               >
-                NPC PREISE (KAUF / VERKAUF)
+                NPC PRICES (BUY / SELL)
               </div>
               <div
                 style={{
@@ -377,20 +378,20 @@ export function TradeScreen() {
                               style={{ ...btnStyle, fontSize: '0.6rem' }}
                               onClick={() => network.sendNpcTrade(res, amount, 'buy')}
                             >
-                              K ({buyPrice}CR)
+                              B ({buyPrice}CR)
                             </button>
                             <button
                               style={{ ...btnStyle, fontSize: '0.6rem' }}
                               onClick={() => network.sendNpcTrade(res, amount, 'sell')}
                             >
-                              V ({sellPrice}CR)
+                              S ({sellPrice}CR)
                             </button>
                             {playerAmount > 0 && (
                               <button
                                 style={{ ...btnStyle, fontSize: '0.55rem', opacity: 0.8 }}
                                 onClick={() => network.sendNpcTrade(res, playerAmount, 'sell')}
                               >
-                                ALLES ({playerAmount})
+                                ALL ({playerAmount})
                               </button>
                             )}
                           </div>
@@ -409,7 +410,7 @@ export function TradeScreen() {
                       letterSpacing: '0.1em',
                     }}
                   >
-                    BESTAND
+                    STORAGE
                   </div>
                   <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {(['ore', 'gas', 'crystal'] as const).map((res) => {
@@ -443,12 +444,12 @@ export function TradeScreen() {
               </div>
               {isStation ? (
                 <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-                  CARGO: ERZ {cargo.ore} | GAS {cargo.gas} | KRISTALL {cargo.crystal} | ART{' '}
+                  CARGO: ORE {cargo.ore} | GAS {cargo.gas} | CRYSTAL {cargo.crystal} | ART{' '}
                   {cargo.artefact} ({cargoTotal}/{cargoCap})
                 </div>
               ) : (
                 <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-                  LAGER: ERZ {storage.ore} | GAS {storage.gas} | KRISTALL {storage.crystal} | ART{' '}
+                  STORAGE: ORE {storage.ore} | GAS {storage.gas} | CRYSTAL {storage.crystal} | ART{' '}
                   {storage.artefact}
                 </div>
               )}
@@ -466,10 +467,10 @@ export function TradeScreen() {
               marginBottom: '8px',
             }}
           >
-            MARKT ORDERS
+            MARKET ORDERS
           </div>
           {tradeOrders.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>KEINE ORDERS</div>
+            <div style={{ opacity: 0.4 }}>NO ORDERS</div>
           ) : (
             tradeOrders.map((o: any) => (
               <div key={o.id} style={{ fontSize: '0.7rem', marginBottom: 4 }}>
@@ -487,10 +488,10 @@ export function TradeScreen() {
               marginTop: '12px',
             }}
           >
-            MEINE ORDERS
+            MY ORDERS
           </div>
           {myOrders.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>KEINE EIGENEN ORDERS</div>
+            <div style={{ opacity: 0.4 }}>NO ORDERS</div>
           ) : (
             myOrders.map((o: any) => (
               <div key={o.id} style={{ fontSize: '0.7rem', display: 'flex', gap: 8 }}>
@@ -510,13 +511,13 @@ export function TradeScreen() {
       {tab === 'slates' && !isStation && (
         <div>
           <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '8px' }}>
-            SLATE MARKTPLATZ
+            DATA SLATES
           </div>
 
           {mySlates.length > 0 && (
             <div style={{ marginBottom: '12px' }}>
               <div style={{ fontSize: '0.8rem', marginBottom: '4px', opacity: 0.7 }}>
-                MEINE SLATES:
+                MY SLATES:
               </div>
               {mySlates.map((slate: DataSlate) => (
                 <div
@@ -553,14 +554,14 @@ export function TradeScreen() {
                       if (price > 0) network.sendListSlate(slate.id, price);
                     }}
                   >
-                    [LISTEN]
+                    {btn('LIST')}
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          <div style={{ fontSize: '0.8rem', marginBottom: '4px', opacity: 0.7 }}>ANGEBOTE:</div>
+          <div style={{ fontSize: '0.8rem', marginBottom: '4px', opacity: 0.7 }}>LISTINGS:</div>
           {tradeOrders
             .filter((o: any) => o.resource === 'slate')
             .map((order: any) => (
@@ -583,12 +584,12 @@ export function TradeScreen() {
                   disabled={order.playerId === playerId}
                   onClick={() => network.sendAcceptSlateOrder(order.id)}
                 >
-                  [KAUFEN]
+                  {btn('BUY')}
                 </button>
               </div>
             ))}
           {tradeOrders.filter((o: any) => o.resource === 'slate').length === 0 && (
-            <div style={{ fontSize: '0.8rem', opacity: 0.5 }}>Keine Angebote</div>
+            <div style={{ fontSize: '0.8rem', opacity: 0.5 }}>No listings</div>
           )}
         </div>
       )}
@@ -602,7 +603,7 @@ export function TradeScreen() {
               marginBottom: '8px',
             }}
           >
-            HANDELSROUTEN ({tradeRoutes.length}/{MAX_TRADE_ROUTES})
+            TRADE ROUTES ({tradeRoutes.length}/{MAX_TRADE_ROUTES})
           </div>
 
           {tradeRoutes.map((route) => (
@@ -629,7 +630,7 @@ export function TradeScreen() {
                 </div>
               )}
               <div>
-                ZYKLUS: {route.cycleMinutes} MIN | {route.active ? 'AKTIV' : 'PAUSIERT'}
+                CYCLE: {route.cycleMinutes} MIN | {route.active ? 'ACTIVE' : 'PAUSED'}
               </div>
               <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                 <button
@@ -642,14 +643,14 @@ export function TradeScreen() {
                   style={{ ...btnStyle, borderColor: '#FF3333', color: '#FF3333' }}
                   onClick={() => network.sendDeleteRoute(route.id)}
                 >
-                  LÖSCHEN
+                  DELETE
                 </button>
               </div>
             </div>
           ))}
 
           {tradeRoutes.length === 0 && (
-            <div style={{ opacity: 0.4, marginBottom: 8 }}>KEINE ROUTEN</div>
+            <div style={{ opacity: 0.4, marginBottom: 8 }}>NO ROUTES</div>
           )}
 
           {tradeRoutes.length < MAX_TRADE_ROUTES && <NewRouteForm />}
@@ -737,9 +738,9 @@ function NewRouteForm() {
 
   return (
     <div style={{ borderTop: '1px solid var(--color-dim)', paddingTop: 8, fontSize: '0.7rem' }}>
-      <div style={{ marginBottom: 4, opacity: 0.6 }}>NEUE ROUTE</div>
+      <div style={{ marginBottom: 4, opacity: 0.6 }}>NEW ROUTE</div>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
-        <label>ZIEL X:</label>
+        <label>TARGET X:</label>
         <input
           type="number"
           value={targetX}
@@ -799,7 +800,7 @@ function NewRouteForm() {
         />
       </div>
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 6 }}>
-        <label>ZYKLUS:</label>
+        <label>CYCLE:</label>
         <input
           type="number"
           min={TRADE_ROUTE_MIN_CYCLE}
@@ -830,7 +831,7 @@ function NewRouteForm() {
           cursor: 'pointer',
         }}
       >
-        ROUTE ERSTELLEN
+        CREATE ROUTE
       </button>
     </div>
   );

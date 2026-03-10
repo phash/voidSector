@@ -48,7 +48,14 @@ import type {
   WarTickerEvent,
   InventoryItem,
   ConstructionSiteState,
+  QuestRewards,
 } from '@void-sector/shared';
+
+export interface QuestCompleteEntry {
+  id: string;
+  title: string;
+  rewards: QuestRewards;
+}
 
 /**
  * Extended ship data as sent by the server in the new ship designer system.
@@ -73,6 +80,8 @@ export interface ClientShipData {
     ancientDetection: boolean;
     helionDecoderEnabled: boolean;
   };
+  acepGeneration?: number;
+  acepTraits?: string[];
 }
 
 export interface AutopilotStatusInfo {
@@ -426,6 +435,12 @@ export interface GameSlice {
   } | null;
   loreFragmentCount: number;
 
+  // QuadMap Fog-of-War
+  visitedQuadrants: Set<string>; // "qx:qy" keys of physically visited quadrants
+
+  // Quest completion
+  questCompleteQueue: QuestCompleteEntry[];
+
   // AQ Story / Community
   storyEvent: StoryEventPayload | null;
   alienEncounterEvent: AlienEncounterEventPayload | null;
@@ -545,6 +560,9 @@ export interface GameSlice {
   setDirectChatRecipient: (recipient: { id: string; name: string } | null) => void;
   incrementStat: (key: keyof PlayerStats) => void;
   addToStatSet: (key: 'quadrantsVisited' | 'stationsVisited', value: string) => void;
+  setVisitedQuadrants: (quadrants: Array<{ qx: number; qy: number }>) => void;
+  addQuestComplete: (entry: QuestCompleteEntry) => void;
+  shiftQuestComplete: () => void;
   setStoryEvent: (e: StoryEventPayload | null) => void;
   setAlienEncounterEvent: (e: AlienEncounterEventPayload | null) => void;
   setStoryProgress: (p: StoryProgressPayload | null) => void;
@@ -670,6 +688,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   newsItems: [],
   hyperdriveState: null,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
+  visitedQuadrants: new Set<string>(),
+  questCompleteQueue: [],
   storyEvent: null,
   alienEncounterEvent: null,
   storyProgress: null,
@@ -888,6 +908,12 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       return { playerStats: next };
     }),
 
+  setVisitedQuadrants: (quadrants) =>
+    set({ visitedQuadrants: new Set(quadrants.map((q) => `${q.qx}:${q.qy}`)) }),
+  addQuestComplete: (entry) =>
+    set((s) => ({ questCompleteQueue: [...s.questCompleteQueue, entry] })),
+  shiftQuestComplete: () =>
+    set((s) => ({ questCompleteQueue: s.questCompleteQueue.slice(1) })),
   setStoryEvent: (e) => set({ storyEvent: e }),
   setAlienEncounterEvent: (e) => set({ alienEncounterEvent: e }),
   setStoryProgress: (p) => set({ storyProgress: p }),

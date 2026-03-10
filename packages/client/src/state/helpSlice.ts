@@ -57,6 +57,11 @@ export const HELP_TIPS: HelpTip[] = [
     body: 'Anomalien liefern Erfahrungspunkte und Ruf-Boni. Scanne den Sektor vollständig um alle Geheimnisse zu entdecken.',
     articleId: 'scan',
   },
+  {
+    id: 'ap-depleted-first',
+    title: 'ACTION POINTS',
+    body: 'AP powers all movement and actions. They regenerate automatically — watch the bar in the status panel.',
+  },
 ];
 
 export interface HelpSlice {

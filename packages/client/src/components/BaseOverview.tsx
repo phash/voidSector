@@ -3,14 +3,14 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 
 const STRUCTURE_LABELS: Record<string, string> = {
-  base: 'KOMMANDO-KERN',
+  base: 'COMMAND CENTER',
   comm_relay: 'COMM RELAY',
   mining_station: 'MINING STATION',
-  storage: 'LAGER',
-  trading_post: 'HANDELSPLATZ',
-  factory: 'FABRIK',
+  storage: 'STORAGE',
+  trading_post: 'TRADING POST',
+  factory: 'FACTORY',
   kontor: 'KONTOR',
-  research_lab: 'FORSCHUNGSLABOR',
+  research_lab: 'RESEARCH LAB',
 };
 
 const STRUCTURE_ICONS: Record<string, string> = {
@@ -52,9 +52,9 @@ export function BaseOverview() {
         <div style={{ letterSpacing: '0.2em', marginBottom: 4, opacity: 0.6 }}>
           BASE-LINK — NO SIGNAL
         </div>
-        <div style={{ opacity: 0.4, marginBottom: 12 }}>KEINE BASIS ERRICHTET</div>
+        <div style={{ opacity: 0.4, marginBottom: 12 }}>NO BASE CONSTRUCTED</div>
         <div style={{ fontSize: '0.65rem', opacity: 0.5 }}>
-          Navigiere zu einem Sektor und nutze [BUILD BASE] um deine Heimatbasis zu errichten.
+          Navigate to a sector and use [BUILD BASE] to establish your home base.
         </div>
       </div>
     );
@@ -80,7 +80,7 @@ export function BaseOverview() {
           paddingBottom: 2,
         }}
       >
-        {baseName || 'HEIMATBASIS'} — CONNECTED
+        {baseName || 'HOME BASE'} — CONNECTED
       </div>
 
       <div style={{ color: 'var(--color-dim)', marginBottom: 8 }}>
@@ -95,7 +95,7 @@ export function BaseOverview() {
           marginBottom: 4,
         }}
       >
-        GEBÄUDE ({baseStructures.length})
+        STRUCTURES ({baseStructures.length})
       </div>
 
       {baseStructures.map((s: any) => (
@@ -123,7 +123,7 @@ export function BaseOverview() {
             </span>
           </span>
           <span style={{ opacity: 0.5, fontSize: '0.55rem' }}>
-            {s.tier > 1 ? `T${s.tier}` : ''} AKTIV
+            {s.tier > 1 ? `T${s.tier}` : ''} ACTIVE
           </span>
         </div>
       ))}

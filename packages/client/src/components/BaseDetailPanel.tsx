@@ -14,14 +14,14 @@ const btnStyle: React.CSSProperties = {
 };
 
 const STRUCTURE_LABELS: Record<string, string> = {
-  base: 'KOMMANDO-KERN',
+  base: 'COMMAND CENTER',
   comm_relay: 'COMM RELAY',
   mining_station: 'MINING STATION',
-  storage: 'LAGER',
-  trading_post: 'HANDELSPLATZ',
-  factory: 'FABRIK',
+  storage: 'STORAGE',
+  trading_post: 'TRADING POST',
+  factory: 'FACTORY',
   kontor: 'KONTOR',
-  research_lab: 'FORSCHUNGSLABOR',
+  research_lab: 'RESEARCH LAB',
 };
 
 export function BaseDetailPanel() {
@@ -55,7 +55,7 @@ export function BaseDetailPanel() {
           marginTop: 24,
         }}
       >
-        GEBÄUDE AUSWÄHLEN
+        SELECT A STRUCTURE
       </div>
     );
   }
@@ -90,7 +90,7 @@ export function BaseDetailPanel() {
         {STRUCTURE_LABELS[structure.type] || structure.type.toUpperCase()}
       </div>
       <div style={{ color: 'var(--color-dim)', marginBottom: 8 }}>
-        {structure.tier > 1 ? `TIER ${structure.tier}` : 'TIER 1'} | AKTIV
+        {structure.tier > 1 ? `TIER ${structure.tier}` : 'TIER 1'} | ACTIVE
       </div>
 
       {/* Base — rename + basic storage */}
@@ -131,7 +131,7 @@ export function BaseDetailPanel() {
                   setRenameValue(baseName || '');
                 }}
               >
-                UMBENENNEN
+                RENAME
               </button>
             )}
           </div>
@@ -150,14 +150,14 @@ export function BaseDetailPanel() {
                 }}
               >
                 <div style={{ opacity: 0.6, marginBottom: 4 }}>
-                  BASIS-LAGER: {storageTotal}/{storageCap}
+                  BASE STORAGE: {storageTotal}/{storageCap}
                 </div>
                 <div style={{ marginBottom: 4 }}>
-                  ERZ: {storage.ore} | GAS: {storage.gas} | KRI: {storage.crystal} | ART:{' '}
+                  ORE: {storage.ore} | GAS: {storage.gas} | CRY: {storage.crystal} | ART:{' '}
                   {storage.artefact}
                 </div>
                 <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-                  <label>MENGE:</label>
+                  <label>AMOUNT:</label>
                   <input
                     type="number"
                     min={1}
@@ -181,13 +181,13 @@ export function BaseDetailPanel() {
                         style={btnStyle}
                         onClick={() => network.sendTransfer(res, transferAmount, 'toStorage')}
                       >
-                        {res.toUpperCase()}→LAG
+                        {res.toUpperCase()}→STG
                       </button>
                       <button
                         style={btnStyle}
                         onClick={() => network.sendTransfer(res, transferAmount, 'fromStorage')}
                       >
-                        LAG→{res.toUpperCase()}
+                        STG→{res.toUpperCase()}
                       </button>
                     </div>
                   ))}
@@ -207,10 +207,10 @@ export function BaseDetailPanel() {
           return (
             <>
               <div style={{ marginBottom: 6 }}>
-                KAPAZITÄT: {storageTotal}/{storageCap}
+                CAPACITY: {storageTotal}/{storageCap}
               </div>
               <div style={{ marginBottom: 4 }}>
-                ERZ: {storage.ore} | GAS: {storage.gas} | KRI: {storage.crystal} | ART:{' '}
+                ORE: {storage.ore} | GAS: {storage.gas} | CRY: {storage.crystal} | ART:{' '}
                 {storage.artefact}
               </div>
               <div
@@ -222,7 +222,7 @@ export function BaseDetailPanel() {
                   alignItems: 'center',
                 }}
               >
-                <label>MENGE:</label>
+                <label>AMOUNT:</label>
                 <input
                   type="number"
                   min={1}
@@ -280,7 +280,7 @@ export function BaseDetailPanel() {
           {factoryState.activeRecipe ? (
             <>
               <div>
-                Rezept: {factoryState.activeRecipe.outputItem.replace(/_/g, ' ').toUpperCase()}
+                Recipe: {factoryState.activeRecipe.outputItem.replace(/_/g, ' ').toUpperCase()}
               </div>
               <div style={{ fontFamily: 'var(--font-mono)' }}>
                 {(() => {
@@ -289,23 +289,23 @@ export function BaseDetailPanel() {
                   return `${'\u2588'.repeat(filled)}${'\u2591'.repeat(10 - filled)} ${Math.round(pct * 100)}%`;
                 })()}
               </div>
-              <div>Fertig: {factoryState.completedCycles} Zyklen</div>
+              <div>Done: {factoryState.completedCycles} cycles</div>
               <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                 {factoryState.completedCycles > 0 && (
                   <button style={btnStyle} onClick={() => network.sendFactoryCollect()}>
-                    [EINSAMMELN]
+                    [COLLECT]
                   </button>
                 )}
                 <button style={btnStyle} onClick={() => setShowRecipeSelector(!showRecipeSelector)}>
-                  [REZEPT WECHSELN]
+                  [CHANGE RECIPE]
                 </button>
               </div>
             </>
           ) : (
             <div>
-              <span style={{ opacity: 0.5 }}>Kein Rezept aktiv. </span>
+              <span style={{ opacity: 0.5 }}>No active recipe. </span>
               <button style={btnStyle} onClick={() => setShowRecipeSelector(!showRecipeSelector)}>
-                [REZEPT WÄHLEN]
+                [SELECT RECIPE]
               </button>
             </div>
           )}
@@ -319,7 +319,7 @@ export function BaseDetailPanel() {
                   <div key={r.id} style={{ marginBottom: 2 }}>
                     {locked ? (
                       <span style={{ opacity: 0.4 }}>
-                        {r.outputItem.replace(/_/g, ' ').toUpperCase()} — gesperrt
+                        {r.outputItem.replace(/_/g, ' ').toUpperCase()} — locked
                       </span>
                     ) : (
                       <button
@@ -352,7 +352,7 @@ export function BaseDetailPanel() {
       {structure.type === 'kontor' && (
         <>
           <div style={{ border: '1px solid var(--color-dim)', padding: 4, marginBottom: 6 }}>
-            <div style={{ opacity: 0.6, marginBottom: 4 }}>NEUER AUFTRAG</div>
+            <div style={{ opacity: 0.6, marginBottom: 4 }}>NEW ORDER</div>
             <div
               style={{
                 display: 'flex',
@@ -374,9 +374,9 @@ export function BaseDetailPanel() {
                   padding: '2px',
                 }}
               >
-                <option value="ore">ERZ</option>
+                <option value="ore">ORE</option>
                 <option value="gas">GAS</option>
-                <option value="crystal">KRISTALL</option>
+                <option value="crystal">CRYSTAL</option>
               </select>
               <input
                 type="number"
@@ -415,7 +415,7 @@ export function BaseDetailPanel() {
                   network.sendKontorPlaceOrder(kontorItemType, kontorAmount, kontorPrice)
                 }
               >
-                AUFGEBEN
+                PLACE
               </button>
             </div>
           </div>
@@ -448,7 +448,7 @@ export function BaseDetailPanel() {
               </div>
             ))
           ) : (
-            <div style={{ opacity: 0.4 }}>KEINE AUFTRÄGE</div>
+            <div style={{ opacity: 0.4 }}>NO ORDERS</div>
           )}
         </>
       )}
@@ -466,7 +466,7 @@ export function BaseDetailPanel() {
 
       {/* Generic info for other structures */}
       {!['base', 'storage', 'factory', 'kontor', 'trading_post'].includes(structure.type) && (
-        <div style={{ color: 'var(--color-dim)' }}>Status: AKTIV</div>
+        <div style={{ color: 'var(--color-dim)' }}>Status: ACTIVE</div>
       )}
 
       {/* Cargo on ship */}
@@ -479,7 +479,7 @@ export function BaseDetailPanel() {
           fontSize: '0.55rem',
         }}
       >
-        CARGO: ERZ:{cargo.ore} GAS:{cargo.gas} KRI:{cargo.crystal} ART:{cargo.artefact}
+        CARGO: ORE:{cargo.ore} GAS:{cargo.gas} CRY:{cargo.crystal} ART:{cargo.artefact}
       </div>
     </div>
   );

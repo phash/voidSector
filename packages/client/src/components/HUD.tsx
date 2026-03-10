@@ -28,6 +28,12 @@ export function StatusBar() {
   const credits = useStore((s) => s.credits);
   const alienCredits = useStore((s) => s.alienCredits);
   const isGuest = useStore((s) => s.isGuest);
+  const wissen = useStore((s) => s.research.wissen ?? 0);
+  const hyperdrive = useStore((s) => s.hyperdriveState);
+  const seenTips = useStore((s) => s.seenTips);
+  const showTip = useStore((s) => s.showTip);
+
+
   // Live-updating AP accounting for regen since last server tick
   const [displayAP, setDisplayAP] = useState(ap?.current ?? 0);
 
@@ -44,15 +50,43 @@ export function StatusBar() {
   // Flash animation on AP spend
   const prevAP = useRef(ap?.current ?? 0);
   const [flashing, setFlashing] = useState(false);
+  const [apPulse, setApPulse] = useState(false);
 
   useEffect(() => {
-    if (ap && ap.current < prevAP.current) {
+    const prev = prevAP.current;
+    const curr = ap?.current ?? 0;
+
+    if (ap && curr < prev) {
       setFlashing(true);
       const timer = setTimeout(() => setFlashing(false), 400);
-      prevAP.current = ap.current;
+      prevAP.current = curr;
+
+      // NEU: AP-Erschöpfungs-Feedback
+      if (prev > 0 && curr === 0) {
+        // Layer B: AP-Balken Pulse
+        setApPulse(true);
+        setTimeout(() => setApPulse(false), 1500);
+
+        // Layer A: InlineError-Meldung
+        const secondsToFull = ap
+          ? Math.ceil((ap.max - curr) / (ap.regenPerSecond ?? 1))
+          : null;
+        const msg = secondsToFull
+          ? `⚡ NO AP — REGENERATING · FULL IN ${secondsToFull}s`
+          : '⚡ NO AP — REGENERATING AUTOMATICALLY';
+        useStore.getState().setActionError({ code: 'NO_AP', message: msg });
+        setTimeout(() => useStore.getState().setActionError(null), 3000);
+
+        // Layer D: einmaliger HelpTip beim ersten AP=0
+        const AP_TIP_KEY = 'ap-depleted-first';
+        if (!seenTips.has(AP_TIP_KEY)) {
+          showTip(AP_TIP_KEY);
+        }
+      }
+
       return () => clearTimeout(timer);
     }
-    prevAP.current = ap?.current ?? 0;
+    prevAP.current = curr;
   }, [ap?.current]);
 
   // Regen timer display
@@ -76,7 +110,7 @@ export function StatusBar() {
         overflow: 'hidden',
       }}
     >
-      <span className={flashing ? 'ap-flash' : ''}>
+      <span className={[flashing ? 'ap-flash' : '', apPulse ? 'ap-pulse' : ''].filter(Boolean).join(' ')}>
         AP: {ap ? `${displayAP}/${ap.max}` : '---'}{' '}
         <SegmentedBar current={ap ? displayAP : 0} max={ap?.max ?? 100} width={8} />
       </span>
@@ -118,6 +152,7 @@ export function StatusBar() {
       )}
       <span style={{ color: 'var(--color-dim)' }}>|</span>
       <span>CR: {credits.toLocaleString()}</span>
+      <span style={{ color: 'var(--color-dim)', fontSize: '0.7rem' }}>◈ WISSEN: {wissen}</span>
       {alienCredits > 0 && (
         <>
           <span style={{ color: 'var(--color-dim)' }}>|</span>

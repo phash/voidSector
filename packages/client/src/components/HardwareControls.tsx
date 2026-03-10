@@ -99,7 +99,7 @@ export function HardwareControls(props: HardwareControlsProps) {
           className={`hw-power-btn${followActive ? ' on' : ''}`}
           data-testid="hw-follow"
           onClick={() => onFollow?.()}
-          title="Auto-Follow: Detail-Monitor folgt Schiff"
+          title="Auto-Follow: Detail-Monitor follows ship"
         >
           <span className={`hw-power-led${followActive ? ' green' : ' orange'}`} />
           FOL
