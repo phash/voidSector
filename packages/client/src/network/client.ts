@@ -489,7 +489,7 @@ class GameNetwork {
       useStore.setState({ shipList: data.ships });
       // Refresh ACEP fields on active ship from latest server data
       const activeShip = data.ships.find((s: any) => s.active);
-      if (activeShip?.acepXp) {
+      if (activeShip) {
         const current = useStore.getState().ship;
         if (current) {
           useStore.setState({
@@ -1601,6 +1601,10 @@ class GameNetwork {
       useStore.getState().setHumanityReps(data);
     });
 
+    room.onMessage('recruitingFactionsUpdate', (data: any[]) => {
+      useStore.getState().setRecruitingFactions(data);
+    });
+
     room.onMessage('activeCommunityQuest', (data: { quest: CommunityQuestPayload | null }) => {
       useStore.getState().setActiveCommunityQuest(data.quest);
     });
@@ -2299,6 +2303,10 @@ class GameNetwork {
 
   requestHumanityReps() {
     this.sectorRoom?.send('getHumanityReps');
+  }
+
+  sendSetRecruiting(isRecruiting: boolean, slogan: string | null): void {
+    this.sectorRoom?.send('setRecruiting', { isRecruiting, slogan });
   }
 
   // --- Unified Inventory ---
