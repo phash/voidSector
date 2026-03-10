@@ -28,29 +28,31 @@ const baseMembers = [
   { playerId: 'p2', playerName: 'Member1', rank: 'member' as const, joinedAt: Date.now() },
 ];
 
+function upgradesState(overrides: Record<string, any> = {}) {
+  mockStoreState({
+    faction: baseFaction,
+    factionMembers: baseMembers,
+    factionUpgrades: [],
+    playerId: 'p1',
+    monitorModes: { FACTION: 'upgrades' },
+    setMonitorMode: vi.fn(),
+    ...overrides,
+  } as any);
+}
+
 describe('FactionUpgradeTree', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('shows UPGRADE TREE section header', () => {
-    mockStoreState({
-      faction: baseFaction,
-      factionMembers: baseMembers,
-      factionUpgrades: [],
-      player: { id: 'p1', username: 'TestPlayer' },
-    } as any);
+  it('shows VERBESSERUNGSBAUM section header', () => {
+    upgradesState();
     render(<FactionScreen />);
-    expect(screen.getByText('UPGRADE TREE')).toBeDefined();
+    expect(screen.getByText('VERBESSERUNGSBAUM')).toBeDefined();
   });
 
   it('shows tier labels with cost', () => {
-    mockStoreState({
-      faction: baseFaction,
-      factionMembers: baseMembers,
-      factionUpgrades: [],
-      player: { id: 'p1', username: 'TestPlayer' },
-    } as any);
+    upgradesState();
     render(<FactionScreen />);
     expect(screen.getByText(/TIER 1 — 500 CR/)).toBeDefined();
     expect(screen.getByText(/TIER 2 — 1500 CR/)).toBeDefined();
@@ -58,12 +60,7 @@ describe('FactionUpgradeTree', () => {
   });
 
   it('renders option A and B buttons for each tier', () => {
-    mockStoreState({
-      faction: baseFaction,
-      factionMembers: baseMembers,
-      factionUpgrades: [],
-      player: { id: 'p1', username: 'TestPlayer' },
-    } as any);
+    upgradesState();
     render(<FactionScreen />);
     expect(screen.getByText('MINING BOOST')).toBeDefined();
     expect(screen.getByText('CARGO EXPANSION')).toBeDefined();
@@ -74,12 +71,7 @@ describe('FactionUpgradeTree', () => {
   });
 
   it('shows effect descriptions', () => {
-    mockStoreState({
-      faction: baseFaction,
-      factionMembers: baseMembers,
-      factionUpgrades: [],
-      player: { id: 'p1', username: 'TestPlayer' },
-    } as any);
+    upgradesState();
     render(<FactionScreen />);
     expect(screen.getByText('+15% mining rate')).toBeDefined();
     expect(screen.getByText('+3 cargo capacity')).toBeDefined();
@@ -90,12 +82,9 @@ describe('FactionUpgradeTree', () => {
   });
 
   it('highlights chosen upgrade', () => {
-    mockStoreState({
-      faction: baseFaction,
-      factionMembers: baseMembers,
+    upgradesState({
       factionUpgrades: [{ tier: 1, choice: 'A', chosenAt: new Date().toISOString() }],
-      player: { id: 'p1', username: 'TestPlayer' },
-    } as any);
+    });
     render(<FactionScreen />);
     // MINING BOOST button should exist and be disabled (already chosen)
     const miningButton = screen.getByText('MINING BOOST').closest('button');

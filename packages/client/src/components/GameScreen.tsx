@@ -37,7 +37,7 @@ import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 // --- SHIP-SYS: Settings + Modules ---
 
-type ShipSysView = 'settings' | 'modules';
+type ShipSysView = 'settings' | 'modules' | 'acep';
 
 const SHIP_SYS_MODES: ShipSysView[] = ['settings', 'modules'];
 
@@ -245,6 +245,11 @@ function ShipSysScreen() {
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         {view === 'settings' && <SettingsView />}
         {view === 'modules' && <ModulePanel />}
+        {view === 'acep' && (
+          <div style={{ padding: '12px', color: '#555', fontSize: '0.8rem' }}>
+            ACEP — COMING SOON
+          </div>
+        )}
       </div>
     </div>
   );

@@ -30,6 +30,8 @@ import {
   deductCredits,
   getFactionUpgrades,
   setFactionUpgrade,
+  getRecruitingFactions,
+  setFactionRecruiting,
 } from '../../db/queries.js';
 
 export class FactionService {
@@ -462,5 +464,47 @@ export class FactionService {
         chosenAt: Date.now(),
       })),
     });
+  }
+
+  async sendRecruitingFactions(client: Client): Promise<void> {
+    const rows = await getRecruitingFactions();
+    const recruitingFactions = rows.map((r) => ({
+      factionId: r.id,
+      name: r.name,
+      color: r.color,
+      slogan: r.slogan,
+      memberCount: Number(r.member_count),
+    }));
+    this.ctx.send(client, 'recruitingFactionsUpdate', recruitingFactions);
+  }
+
+  async broadcastRecruitingFactions(): Promise<void> {
+    const rows = await getRecruitingFactions();
+    const recruitingFactions = rows.map((r) => ({
+      factionId: r.id,
+      name: r.name,
+      color: r.color,
+      slogan: r.slogan,
+      memberCount: Number(r.member_count),
+    }));
+    this.ctx.broadcast('recruitingFactionsUpdate', recruitingFactions);
+  }
+
+  async handleSetRecruiting(
+    client: Client,
+    data: { isRecruiting: boolean; slogan?: string },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const myFaction = await getPlayerFaction(auth.userId);
+    if (!myFaction || myFaction.player_rank !== 'leader') {
+      this.ctx.send(client, 'setRecruitingResult', {
+        success: false,
+        error: 'Only faction leader can set recruiting',
+      });
+      return;
+    }
+    await setFactionRecruiting(myFaction.id, data.isRecruiting, data.slogan ?? null);
+    this.ctx.send(client, 'setRecruitingResult', { success: true });
+    await this.broadcastRecruitingFactions();
   }
 }

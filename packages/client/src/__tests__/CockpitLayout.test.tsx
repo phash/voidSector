@@ -9,6 +9,8 @@ vi.mock('../network/client', () => ({
   network: {
     sendChat: vi.fn(),
     sendCancelAutopilot: vi.fn(),
+    requestHumanityReps: vi.fn(),
+    requestFaction: vi.fn(),
   },
 }));
 
@@ -39,6 +41,12 @@ vi.mock('../components/MiningDetailPanel', () => ({
 }));
 vi.mock('../components/QuestDetailPanel', () => ({
   QuestDetailPanel: () => <div data-testid="quest-detail-panel">QuestDetailPanel</div>,
+}));
+vi.mock('../components/FactionDetailPanel', () => ({
+  FactionDetailPanel: () => <div data-testid="faction-detail-panel">FactionDetailPanel</div>,
+}));
+vi.mock('../components/ShipDetailPanel', () => ({
+  ShipDetailPanel: () => <div data-testid="ship-detail-panel">ShipDetailPanel</div>,
 }));
 vi.mock('../components/TestPattern', () => ({
   TestPattern: () => <div data-testid="test-pattern">TestPattern</div>,
@@ -250,6 +258,8 @@ describe('CockpitLayout', () => {
       TRADE: 'trade-detail-panel',
       MINING: 'mining-detail-panel',
       QUESTS: 'quest-detail-panel',
+      FACTION: 'faction-detail-panel',
+      'SHIP-SYS': 'ship-detail-panel',
     };
 
     for (const [program, testId] of Object.entries(programToDetail)) {
