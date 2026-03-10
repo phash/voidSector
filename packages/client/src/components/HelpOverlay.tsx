@@ -1,11 +1,23 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/store';
 
+const ONBOARDING_STEPS = [
+  { text: 'RADAR — Dein Universum. Klicke auf Sektoren für Details.', spotlight: 'cockpit-sec2' },
+  { text: 'D-PAD — Steuere dein Schiff. 1 AP pro Sprung.', spotlight: 'cockpit-sec5' },
+  { text: 'AP — Action Points: die Kern-Ressource. Sie regenerieren automatisch.', spotlight: null },
+  { text: 'ZIEL: Finde einen Asteroiden-Sektor und starte MINING.', spotlight: null },
+  { text: 'Kompendium [◈] für alle Details. Viel Erfolg, Pilot.', spotlight: 'compendium-btn' },
+];
+
 export function HelpOverlay() {
   const activeTip = useStore((s) => s.activeTip);
   const dismissTip = useStore((s) => s.dismissTip);
   const openCompendium = useStore((s) => s.openCompendium);
+  const onboardingStep = useStore((s) => s.onboardingStep);
+  const advanceOnboarding = useStore((s) => s.advanceOnboarding);
+  const skipOnboarding = useStore((s) => s.skipOnboarding);
 
+  // Keyboard dismiss for help tip
   useEffect(() => {
     if (!activeTip) return;
     const handler = (e: KeyboardEvent) => {
@@ -14,6 +26,69 @@ export function HelpOverlay() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [activeTip, dismissTip]);
+
+  // Auto-advance onboarding after 3s
+  useEffect(() => {
+    if (onboardingStep === null) return;
+    const timer = setTimeout(advanceOnboarding, 3000);
+    return () => clearTimeout(timer);
+  }, [onboardingStep, advanceOnboarding]);
+
+  // Spotlight: box-shadow cutout on highlighted element
+  useEffect(() => {
+    if (onboardingStep === null) return;
+    const step = ONBOARDING_STEPS[onboardingStep];
+    if (!step.spotlight) return;
+    const el = document.getElementById(step.spotlight);
+    if (el) {
+      el.style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.7)';
+      el.style.position = 'relative';
+      el.style.zIndex = '10001';
+    }
+    return () => {
+      if (el) {
+        el.style.boxShadow = '';
+        el.style.position = '';
+        el.style.zIndex = '';
+      }
+    };
+  }, [onboardingStep]);
+
+  // Render onboarding flow when active
+  if (onboardingStep !== null) {
+    const step = ONBOARDING_STEPS[onboardingStep];
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 10000, pointerEvents: 'none' }}>
+        {/* Click-through overlay to advance on click */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'all' }} onClick={advanceOnboarding} />
+        {/* Message Box */}
+        <div style={{
+          position: 'absolute', bottom: '20%', left: '50%', transform: 'translateX(-50%)',
+          background: '#0a0a0a', border: '1px solid var(--color-primary)',
+          padding: '16px 24px', fontFamily: 'monospace', fontSize: '0.85rem',
+          color: 'var(--color-primary)', maxWidth: '400px', textAlign: 'center',
+          pointerEvents: 'all', zIndex: 1,
+        }}>
+          <div style={{ marginBottom: '12px' }}>{step.text}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              onClick={skipOnboarding}
+              style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontFamily: 'monospace', fontSize: '0.7rem' }}
+            >
+              [ÜBERSPRINGEN]
+            </button>
+            <div style={{ color: '#555', fontSize: '0.7rem' }}>{onboardingStep + 1} / 5</div>
+            <button
+              onClick={advanceOnboarding}
+              style={{ border: '1px solid var(--color-primary)', background: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontFamily: 'monospace', padding: '2px 8px' }}
+            >
+              [WEITER]
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!activeTip) return null;
 

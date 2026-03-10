@@ -1,6 +1,19 @@
 import { useStore } from '../state/store';
 import { COCKPIT_PROGRAMS, COCKPIT_PROGRAM_LABELS, MONITORS } from '@void-sector/shared';
 
+const PULSE_PROGRAMS = ['NAV-COM', 'MINING', 'CARGO'] as const;
+
+function progKey(id: string): string {
+  return id.toLowerCase().replace(/-/g, '');
+}
+
+function isProgramPulsing(id: string): boolean {
+  if (!PULSE_PROGRAMS.includes(id as (typeof PULSE_PROGRAMS)[number])) return false;
+  try {
+    return !localStorage.getItem(`vs_prog_used_${progKey(id)}`);
+  } catch { return false; }
+}
+
 export function ProgramSelector() {
   const activeProgram = useStore((s) => s.activeProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
@@ -28,7 +41,11 @@ export function ProgramSelector() {
             key={id}
             className={`program-btn${isActive ? ' active' : ''}${hasAlert ? ' alert' : ''}`}
             data-testid={`program-btn-${id}`}
-            onClick={() => setActiveProgram(id)}
+            style={isProgramPulsing(id) ? { animation: 'prog-pulse 2s ease-in-out infinite' } : undefined}
+            onClick={() => {
+              try { localStorage.setItem(`vs_prog_used_${progKey(id)}`, '1'); } catch {}
+              setActiveProgram(id);
+            }}
           >
             <span className={`program-led${hasAlert ? ' blink' : ''}${isActive ? ' on' : ''}`} />
             {showMiningLed && (
