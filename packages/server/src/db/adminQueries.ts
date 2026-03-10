@@ -869,15 +869,14 @@ export async function getAdminQuadrantMap(): Promise<AdminQuadrantMapEntry[]> {
       k.qx, k.qy,
       qc.controlling_faction AS faction,
       q.name,
-      COALESCE(fc.friction_score, 0) AS friction,
-      fc.border_state,
+      COALESCE(qc.friction_score, 0) AS friction,
+      NULL::text AS border_state,
       COUNT(nf.id)::int AS fleet_count
     FROM known k
     LEFT JOIN quadrant_control qc ON qc.qx = k.qx AND qc.qy = k.qy
     LEFT JOIN quadrants q ON q.qx = k.qx AND q.qy = k.qy
-    LEFT JOIN faction_config fc ON fc.faction_id = qc.controlling_faction
     LEFT JOIN npc_fleet nf ON nf.to_qx = k.qx AND nf.to_qy = k.qy
-    GROUP BY k.qx, k.qy, qc.controlling_faction, q.name, fc.friction_score, fc.border_state
+    GROUP BY k.qx, k.qy, qc.controlling_faction, q.name, qc.friction_score
     ORDER BY k.qx, k.qy
   `);
   return rows.map((r) => ({
