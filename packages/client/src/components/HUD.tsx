@@ -28,8 +28,6 @@ export function StatusBar() {
   const credits = useStore((s) => s.credits);
   const alienCredits = useStore((s) => s.alienCredits);
   const isGuest = useStore((s) => s.isGuest);
-  const hyperdrive = useStore((s) => s.hyperdriveState);
-
   // Live-updating AP accounting for regen since last server tick
   const [displayAP, setDisplayAP] = useState(ap?.current ?? 0);
 
@@ -42,22 +40,6 @@ export function StatusBar() {
     }, 500);
     return () => clearInterval(interval);
   }, [ap]);
-
-  // Live-updating hyperdrive charge accounting for regen since last tick
-  const [displayCharge, setDisplayCharge] = useState(hyperdrive?.charge ?? 0);
-
-  useEffect(() => {
-    if (!hyperdrive) return;
-    const interval = setInterval(() => {
-      const elapsed = (Date.now() - hyperdrive.lastTick) / 1000;
-      const regen = Math.min(
-        hyperdrive.charge + elapsed * hyperdrive.regenPerSecond,
-        hyperdrive.maxCharge,
-      );
-      setDisplayCharge(Math.floor(regen));
-    }, 500);
-    return () => clearInterval(interval);
-  }, [hyperdrive]);
 
   // Flash animation on AP spend
   const prevAP = useRef(ap?.current ?? 0);
@@ -76,13 +58,6 @@ export function StatusBar() {
   // Regen timer display
   const isFull = ap && displayAP >= ap.max;
   const secondsToFull = ap && !isFull ? Math.ceil((ap.max - displayAP) / ap.regenPerSecond) : 0;
-
-  // Hyperdrive regen timer
-  const hdFull = hyperdrive && displayCharge >= hyperdrive.maxCharge;
-  const hdSecondsToFull =
-    hyperdrive && !hdFull && hyperdrive.regenPerSecond > 0
-      ? Math.ceil((hyperdrive.maxCharge - displayCharge) / hyperdrive.regenPerSecond)
-      : 0;
 
   return (
     <div
@@ -138,28 +113,6 @@ export function StatusBar() {
           )}
           <span style={{ fontSize: '0.7rem', color: 'var(--color-dim)' }}>
             SPD {ship?.stats.engineSpeed ?? 1}
-          </span>
-        </>
-      )}
-      {hyperdrive && (
-        <>
-          <span style={{ color: 'var(--color-dim)' }}>|</span>
-          <span
-            style={{
-              color:
-                displayCharge <= 0
-                  ? '#FF3333'
-                  : displayCharge < hyperdrive.maxCharge * 0.2
-                    ? '#FF6644'
-                    : '#00CCFF',
-            }}
-          >
-            HYPER: {displayCharge}/{hyperdrive.maxCharge}{' '}
-            <SegmentedBar current={displayCharge} max={hyperdrive.maxCharge} width={8} />
-          </span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
-            {hyperdrive.regenPerSecond}/s{' '}
-            {hdFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `FULL ${hdSecondsToFull}s`}
           </span>
         </>
       )}
