@@ -12,6 +12,7 @@ import type { FactionBonuses } from '../engine/factionBonuses.js';
 import { getAcepXpSummary, getAcepEffects } from '../engine/acepXpService.js';
 import { recordVisit } from '../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../engine/quadrantEngine.js';
+import { isFrontierQuadrant } from '../engine/expansionEngine.js';
 import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent, AdminPlayerUpdateEvent } from '../adminBus.js';
 import { commsBus } from '../commsBus.js';
@@ -1063,7 +1064,11 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Load or generate sector for this player
       let sectorData = await getSector(sectorX, sectorY);
       if (!sectorData) {
-        sectorData = generateSector(sectorX, sectorY, auth.userId);
+        {
+          const { qx, qy } = sectorToQuadrant(sectorX, sectorY);
+          const _controls = await getAllQuadrantControls();
+          sectorData = generateSector(sectorX, sectorY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+        }
         await saveSector(sectorData);
       }
       this.playerSectorData.set(client.sessionId, sectorData);

@@ -23,6 +23,7 @@ import { getReputationTier } from '../../engine/commands.js';
 import { getStationFaction } from '../../engine/npcgen.js';
 import { recordVisit } from '../../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
+import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
 import {
   getSector,
   saveSector,
@@ -52,6 +53,7 @@ import {
   getAllJumpGateLinks,
   getJumpGateLinks,
   recordNewsEvent,
+  getAllQuadrantControls,
 } from '../../db/queries.js';
 import {
   getAPState,
@@ -113,7 +115,11 @@ export class NavigationService {
     // Load or generate sector
     let sectorData = await getSector(sectorX, sectorY);
     if (!sectorData) {
-      sectorData = generateSector(sectorX, sectorY, auth.userId);
+      {
+        const { qx, qy } = sectorToQuadrant(sectorX, sectorY);
+        const _controls = await getAllQuadrantControls();
+        sectorData = generateSector(sectorX, sectorY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+      }
       await saveSector(sectorData);
     }
 
@@ -268,7 +274,11 @@ export class NavigationService {
     // Load or generate target sector
     let targetSector = await getSector(targetX, targetY);
     if (!targetSector) {
-      targetSector = generateSector(targetX, targetY, auth.userId);
+      {
+        const { qx, qy } = sectorToQuadrant(targetX, targetY);
+        const _controls = await getAllQuadrantControls();
+        targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+      }
       await saveSector(targetSector);
     }
 
@@ -620,7 +630,11 @@ export class NavigationService {
             }
             let targetSector = await getSector(targetX, targetY);
             if (!targetSector) {
-              targetSector = generateSector(targetX, targetY, auth.userId);
+              {
+                const { qx, qy } = sectorToQuadrant(targetX, targetY);
+                const _controls = await getAllQuadrantControls();
+                targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+              }
               await saveSector(targetSector);
             }
             this.ctx.playerSectorData.set(client.sessionId, targetSector);
@@ -737,7 +751,11 @@ export class NavigationService {
             // Load or generate target sector
             let targetSector = await getSector(targetX, targetY);
             if (!targetSector) {
-              targetSector = generateSector(targetX, targetY, auth.userId);
+              {
+                const { qx, qy } = sectorToQuadrant(targetX, targetY);
+                const _controls = await getAllQuadrantControls();
+                targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+              }
               await saveSector(targetSector);
             }
             this.ctx.playerSectorData.set(client.sessionId, targetSector);
@@ -987,7 +1005,11 @@ export class NavigationService {
           // Load or generate target sector
           let targetSector = await getSector(target.x, target.y);
           if (!targetSector) {
-            targetSector = generateSector(target.x, target.y, auth.userId);
+            {
+              const { qx, qy } = sectorToQuadrant(target.x, target.y);
+              const _controls = await getAllQuadrantControls();
+              targetSector = generateSector(target.x, target.y, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+            }
             await saveSector(targetSector);
           }
           this.ctx.playerSectorData.set(client.sessionId, targetSector);
@@ -1250,7 +1272,11 @@ export class NavigationService {
     // Load or generate home base sector
     let targetSector = await getSector(homeBase.x, homeBase.y);
     if (!targetSector) {
-      targetSector = generateSector(homeBase.x, homeBase.y, auth.userId);
+      {
+        const { qx, qy } = sectorToQuadrant(homeBase.x, homeBase.y);
+        const _controls = await getAllQuadrantControls();
+        targetSector = generateSector(homeBase.x, homeBase.y, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+      }
       await saveSector(targetSector);
     }
 
@@ -1422,7 +1448,11 @@ export class NavigationService {
     // Load or generate target sector
     let targetSector = await getSector(targetX, targetY);
     if (!targetSector) {
-      targetSector = generateSector(targetX, targetY, auth.userId);
+      {
+        const { qx, qy } = sectorToQuadrant(targetX, targetY);
+        const _controls = await getAllQuadrantControls();
+        targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+      }
       await saveSector(targetSector);
     }
 
