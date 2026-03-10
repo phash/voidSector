@@ -44,6 +44,7 @@ import type {
   JumpGateDestination,
   QuadrantControlState,
   NpcFleetState,
+  CivShip,
   WarTickerEvent,
   InventoryItem,
 } from '@void-sector/shared';
@@ -1595,6 +1596,10 @@ class GameNetwork {
 
     room.onMessage('npcFleets', (data: NpcFleetState[]) => {
       useStore.getState().setNpcFleets(data);
+    });
+
+    room.onMessage('civ_ships_tick', (data: CivShip[]) => {
+      useStore.getState().setCivShips(data);
     });
 
     room.onMessage('warTicker', (data: WarTickerEvent) => {
