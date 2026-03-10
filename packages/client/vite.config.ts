@@ -51,6 +51,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': serverUrl,
+      '/admin': serverUrl,
       '/matchmake': serverUrl,
       '/colyseus': {
         target: serverWs,
