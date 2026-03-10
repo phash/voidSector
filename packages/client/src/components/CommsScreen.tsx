@@ -103,7 +103,7 @@ export function CommsScreen() {
       }}
     >
       {/* Channel switcher */}
-      <div style={{ display: 'flex', gap: '2px', marginBottom: '6px', fontFamily: 'monospace', fontSize: '0.75rem', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: '2px', fontFamily: 'monospace', fontSize: '0.75rem', flexShrink: 0 }}>
         {(['quadrant', 'faction', 'direct', 'system'] as const).map((ch) => (
           <button
             key={ch}
@@ -209,7 +209,7 @@ export function CommsScreen() {
         {filtered.length === 0 && channel !== 'direct' && (
           <div style={{ color: '#555', fontSize: '0.75rem' }}>NO MESSAGES ON THIS CHANNEL</div>
         )}
-        {filtered.length === 0 && channel === 'direct' && (
+        {filtered.length === 0 && channel === 'direct' && recentContacts.length === 0 && (
           <div style={{ color: '#555', fontSize: '0.75rem' }}>
             NO CONTACTS<br/>
             <span style={{ fontSize: '0.65rem' }}>Right-click a player on the radar to contact them.</span>
