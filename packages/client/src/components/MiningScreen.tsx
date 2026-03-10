@@ -3,6 +3,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES, innerCoord } from '@void-sector/shared';
 import type { MineableResourceType } from '@void-sector/shared';
+import { btn, UI } from '../ui-strings';
 import { InlineError } from './InlineError';
 
 function ResourceBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -61,7 +62,7 @@ export function MiningScreen() {
 
       {!hasResources && !mining?.active && (
         <div style={{ fontSize: '0.8rem', color: 'var(--color-dim)', marginBottom: '12px' }}>
-          KEINE RESSOURCEN IN DIESEM SEKTOR. NAVIGIERE ZU EINEM ASTEROIDENFELD ODER NEBEL.
+          {UI.empty.NO_RESOURCES}
         </div>
       )}
 
@@ -83,7 +84,7 @@ export function MiningScreen() {
           <>
             <div style={{ marginBottom: '6px' }}>
               MINING {mining.resource?.toUpperCase()} — RATE: {mining.rate}u/s |{' '}
-              AUSBEUTE: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
+              {UI.status.YIELD}: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <div
@@ -106,10 +107,10 @@ export function MiningScreen() {
             </div>
           </>
         ) : (
-          <div>STATUS: IDLE</div>
+          <div>STATUS: {UI.status.IDLE}</div>
         )}
         <div style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '4px' }}>
-          CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} KRISTALL:{cargo.crystal}
+          CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
         </div>
       </div>
 
@@ -129,7 +130,7 @@ export function MiningScreen() {
           disabled={!mining?.active}
           onClick={() => network.sendStopMine()}
         >
-          [STOP]
+          {btn(UI.actions.STOP)}
         </button>
       </div>
       <InlineError codes={['NO_RESOURCES', 'MINE_FAILED', 'RATE_LIMIT', 'INVALID_INPUT']} />
