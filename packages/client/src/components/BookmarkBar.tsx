@@ -30,7 +30,7 @@ function TrackedQuestPanel({ quest }: { quest: TrackedQuest }) {
         background: '#0a0a0a',
         border: '1px solid rgba(0,120,255,0.5)',
         padding: '6px 8px',
-        fontSize: '0.7rem',
+        fontSize: '0.75rem',
         fontFamily: 'monospace',
         zIndex: 100,
         minWidth: 160,
@@ -46,19 +46,19 @@ function TrackedQuestPanel({ quest }: { quest: TrackedQuest }) {
           color: '#4488FF',
           marginBottom: 4,
           letterSpacing: '0.05em',
-          fontSize: '0.65rem',
+          fontSize: '0.75rem',
         }}
       >
         [{quest.type.toUpperCase()}] VERFOLGT
       </div>
       <div style={{ color: '#FFB000', marginBottom: 4 }}>{quest.title}</div>
       {quest.description && (
-        <div style={{ color: 'rgba(255,176,0,0.75)', fontSize: '0.65rem', marginBottom: 4 }}>
+        <div style={{ color: 'rgba(255,176,0,0.75)', fontSize: '0.75rem', marginBottom: 4 }}>
           {quest.description}
         </div>
       )}
       {quest.targetX != null && quest.targetY != null && (
-        <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.65rem' }}>
+        <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.75rem' }}>
           ZIEL: ({innerCoord(quest.targetX)}, {innerCoord(quest.targetY)})
         </div>
       )}
@@ -155,7 +155,7 @@ export function BookmarkBar() {
                   color: '#f44',
                   cursor: 'pointer',
                   fontFamily: 'monospace',
-                  fontSize: '0.7rem',
+                  fontSize: '0.75rem',
                   padding: '0 2px',
                 }}
               >
