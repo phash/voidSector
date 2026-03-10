@@ -3,6 +3,7 @@ import {
   createScanAnimation,
   updateScanAnimation,
 } from '../canvas/ScanAnimation';
+import { BURST_DURATION } from '../canvas/RadarRenderer';
 
 describe('ScanAnimation', () => {
   describe('createScanAnimation', () => {
@@ -59,8 +60,6 @@ describe('ScanAnimation', () => {
 });
 
 describe('Scan brightness burst interpolation', () => {
-  const BURST_DURATION = 1500;
-
   /**
    * The brightness burst lerps alpha from 0.5 (at t=0) down to 0 (at t=1).
    * burstAlpha = 0.5 * (1 - t)  where t = elapsed / BURST_DURATION

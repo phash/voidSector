@@ -22,6 +22,8 @@ import type { JumpAnimationState } from './JumpAnimation';
 import { drawLongJumpCRTEffect } from './JumpAnimation';
 import { drawJumpGateLines, drawJumpGateIcons } from './jumpGateOverlay';
 
+export const BURST_DURATION = 1500;
+
 const BOOKMARK_COLORS: Record<number, string> = {
   0: '#33FF33', // HOME — green
   1: '#FF6644', // Slot 1 — red-orange
@@ -518,7 +520,6 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       }
 
       // Scan brightness burst — newly revealed sectors glow brighter for 1500ms
-      const BURST_DURATION = 1500;
       const burstTs = state.scanBurstTimestamps?.[key];
       if (burstTs !== undefined) {
         const elapsed = (state.animTime ?? Date.now()) - burstTs;
