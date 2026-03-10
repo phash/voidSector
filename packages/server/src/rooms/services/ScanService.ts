@@ -33,12 +33,14 @@ import {
   recordAlienEncounter,
   addTypedArtefact,
   getAllQuadrantControls,
+  addWissen,
 } from '../../db/queries.js';
 import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
 import { addToInventory, getInventoryItem, getCargoState } from '../../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
+import { redis } from './RedisAPStore.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
 import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
@@ -281,6 +283,17 @@ export class ScanService {
     // ACEP: INTEL-XP for area scan (discovering new sectors) (spec: +3)
     if (newSectors.length > 0) {
       addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
+    }
+
+    // Wissen: +1 per newly discovered sector (with daily cap)
+    const newSectorCount = newSectors.length;
+    if (newSectorCount > 0) {
+      const isFrontier =
+        Math.max(Math.abs(this.ctx.quadrantX), Math.abs(this.ctx.quadrantY)) > 3;
+      const wissenGained = await addWissenCapped(redis, auth.userId, newSectorCount, isFrontier);
+      if (wissenGained > 0) {
+        await addWissen(auth.userId, wissenGained);
+      }
     }
   }
 
