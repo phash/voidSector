@@ -1219,9 +1219,9 @@ export async function trackQuest(
 
 export async function getTrackedQuests(
   playerId: string,
-): Promise<Array<{ questId: string; title: string; type: string; targetX?: number; targetY?: number }>> {
+): Promise<Array<{ questId: string; title: string; type: string; description: string; targetX?: number; targetY?: number }>> {
   const { rows } = await query(
-    `SELECT id, title, template_id, objectives
+    `SELECT id, title, template_id, description, objectives
      FROM player_quests
      WHERE player_id = $1 AND tracked = TRUE AND status = 'active'
      ORDER BY accepted_at DESC`,
@@ -1236,6 +1236,7 @@ export async function getTrackedQuests(
       questId: r.id,
       title: r.title ?? r.template_id,
       type: (r.template_id as string).split('_')[0] ?? 'quest',
+      description: r.description ?? '',
       targetX: firstTarget?.targetX,
       targetY: firstTarget?.targetY,
     };

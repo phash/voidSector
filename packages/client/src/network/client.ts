@@ -880,6 +880,12 @@ class GameNetwork {
       useStore.getState().setTrackedQuests(data.quests);
     });
 
+    room.onMessage('trackQuestResult', (data: { success: boolean; error?: string }) => {
+      if (!data.success && data.error === 'MAX_TRACKED_REACHED') {
+        useStore.getState().setActionError({ code: 'MAX_TRACKED_REACHED', message: 'Maximal 5 Quests können gleichzeitig verfolgt werden.' });
+      }
+    });
+
     room.onMessage('reputationUpdate', (data) => {
       const store = useStore.getState();
       store.setReputations(data.reputations);

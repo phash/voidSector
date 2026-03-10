@@ -113,6 +113,7 @@ export interface TrackedQuest {
   questId: string;
   title: string;
   type: string;
+  description: string;
   targetX?: number;
   targetY?: number;
 }

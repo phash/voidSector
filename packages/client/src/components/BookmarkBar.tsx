@@ -52,6 +52,11 @@ function TrackedQuestTooltip({ quest, onClose }: { quest: TrackedQuest; onClose:
         [{quest.type.toUpperCase()}] VERFOLGT
       </div>
       <div style={{ color: '#FFB000', marginBottom: 4 }}>{quest.title}</div>
+      {quest.description && (
+        <div style={{ color: 'rgba(255,176,0,0.75)', fontSize: '0.6rem', marginBottom: 4 }}>
+          {quest.description}
+        </div>
+      )}
       {quest.targetX != null && quest.targetY != null && (
         <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.6rem' }}>
           ZIEL: ({innerCoord(quest.targetX)}, {innerCoord(quest.targetY)})
