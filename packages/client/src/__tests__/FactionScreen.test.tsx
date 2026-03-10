@@ -25,7 +25,7 @@ describe('FactionScreen', () => {
 
   it('shows create/join when not in faction', () => {
     render(<FactionScreen />);
-    expect(screen.getByText(/No Faction/)).toBeDefined();
+    expect(screen.getByText(/NOT IN A FACTION/)).toBeDefined();
     expect(screen.getByText('[FOUND]')).toBeDefined();
     expect(screen.getByText('[JOIN]')).toBeDefined();
   });
@@ -71,8 +71,8 @@ describe('FactionScreen', () => {
     render(<FactionScreen />);
     expect(screen.getByText(/COOL/)).toBeDefined();
     expect(screen.getByText(/Cool Faction/)).toBeDefined();
-    expect(screen.getByText(/YES/)).toBeDefined();
-    expect(screen.getByText(/NO/)).toBeDefined();
+    expect(screen.getByText('[YES]')).toBeDefined();
+    expect(screen.getByText('[NO]')).toBeDefined();
   });
 
   it('shows management buttons for leader', () => {

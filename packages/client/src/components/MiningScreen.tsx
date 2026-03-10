@@ -23,6 +23,7 @@ export function MiningScreen() {
   const position = useStore((s) => s.position);
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
   const ap = useStore((s) => s.ap);
 
   const [miningProgress, setMiningProgress] = useState(0);
@@ -63,86 +64,92 @@ export function MiningScreen() {
         {currentSector?.type?.toUpperCase() || 'UNKNOWN'}
       </div>
 
-      {!hasResources && !mining?.active && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--color-dim)', marginBottom: '12px' }}>
-          {UI.empty.NO_RESOURCES}
-        </div>
-      )}
-
-      <div style={{ marginBottom: '16px' }}>
-        <ResourceBar label="ORE" value={resources.ore} max={maxYield} />
-        <ResourceBar label="GAS" value={resources.gas} max={maxYield} />
-        <ResourceBar label="CRYSTAL" value={resources.crystal} max={maxYield} />
-      </div>
-
-      <div
-        style={{
-          fontSize: '0.9rem',
-          marginBottom: '16px',
-          padding: '8px',
-          border: '1px solid var(--color-dim)',
-        }}
-      >
-        {mining?.active ? (
-          <>
-            <div style={{ marginBottom: '6px' }}>
-              MINING {mining.resource?.toUpperCase()} — RATE: {mining.rate}u/s |{' '}
-              {UI.status.YIELD}: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <div
-                style={{
-                  flex: 1,
-                  height: '6px',
-                  background: '#0a0a0a',
-                  border: '1px solid rgba(255,176,0,0.3)',
-                }}
-              >
-                <div
-                  style={{
-                    width: `${miningProgress * 100}%`,
-                    height: '100%',
-                    background: 'var(--color-primary)',
-                    transition: 'width 0.2s linear',
-                  }}
-                />
-              </div>
-            </div>
-          </>
-        ) : (
-          <div>STATUS: {UI.status.IDLE}</div>
-        )}
-        <div style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '4px' }}>
-          CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-        {RESOURCE_TYPES.map((res: MineableResourceType) => (
-          <button
-            key={res}
-            className="vs-btn"
-            disabled={mining?.active === true || resources[res] <= 0 || cargoFull || apCurrent < 1}
-            onClick={() => network.sendMine(res)}
-          >
-            {mining?.active === true || resources[res] <= 0
-              ? btn(`MINE ${res.toUpperCase()}`)
-              : cargoFull
-                ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.CARGO_FULL)
-                : apCurrent < 1
-                  ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.NO_AP)
-                  : btn(`MINE ${res.toUpperCase()}`)}
+      {!hasResources && !mining?.active ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', fontFamily: 'monospace', color: '#555', marginBottom: '12px' }}>
+          <div>NO RESOURCES IN THIS SECTOR</div>
+          <div style={{ fontSize: '0.7rem' }}>Navigate to ASTEROID or NEBULA</div>
+          <button onClick={() => setActiveProgram('NAV-COM')} style={{ border: '1px solid #333', background: 'none', color: '#888', fontFamily: 'monospace', cursor: 'pointer', padding: '3px 8px', fontSize: '0.75rem' }}>
+            [OPEN RADAR]
           </button>
-        ))}
-        <button
-          className="vs-btn"
-          disabled={!mining?.active}
-          onClick={() => network.sendStopMine()}
-        >
-          {btn(UI.actions.STOP)}
-        </button>
-      </div>
-      <InlineError codes={['NO_RESOURCES', 'MINE_FAILED', 'RATE_LIMIT', 'INVALID_INPUT']} />
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: '16px' }}>
+            <ResourceBar label="ORE" value={resources.ore} max={maxYield} />
+            <ResourceBar label="GAS" value={resources.gas} max={maxYield} />
+            <ResourceBar label="CRYSTAL" value={resources.crystal} max={maxYield} />
+          </div>
+
+          <div
+            style={{
+              fontSize: '0.9rem',
+              marginBottom: '16px',
+              padding: '8px',
+              border: '1px solid var(--color-dim)',
+            }}
+          >
+            {mining?.active ? (
+              <>
+                <div style={{ marginBottom: '6px' }}>
+                  MINING {mining.resource?.toUpperCase()} — RATE: {mining.rate}u/s |{' '}
+                  {UI.status.YIELD}: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: '6px',
+                      background: '#0a0a0a',
+                      border: '1px solid rgba(255,176,0,0.3)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${miningProgress * 100}%`,
+                        height: '100%',
+                        background: 'var(--color-primary)',
+                        transition: 'width 0.2s linear',
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div>STATUS: {UI.status.IDLE}</div>
+            )}
+            <div style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '4px' }}>
+              CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {RESOURCE_TYPES.map((res: MineableResourceType) => (
+              <button
+                key={res}
+                className="vs-btn"
+                disabled={mining?.active === true || resources[res] <= 0 || cargoFull || apCurrent < 1}
+                onClick={() => network.sendMine(res)}
+              >
+                {mining?.active === true || resources[res] <= 0
+                  ? btn(`MINE ${res.toUpperCase()}`)
+                  : cargoFull
+                    ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.CARGO_FULL)
+                    : apCurrent < 1
+                      ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.NO_AP)
+                      : btn(`MINE ${res.toUpperCase()}`)}
+              </button>
+            ))}
+            <button
+              className="vs-btn"
+              disabled={!mining?.active}
+              onClick={() => network.sendStopMine()}
+            >
+              {btn(UI.actions.STOP)}
+            </button>
+          </div>
+          <InlineError codes={['NO_RESOURCES', 'MINE_FAILED', 'RATE_LIMIT', 'INVALID_INPUT']} />
+        </>
+      )}
     </div>
   );
 }

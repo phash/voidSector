@@ -72,6 +72,7 @@ export function CargoScreen() {
   const resources = inventory.filter((i) => i.itemType === 'resource');
   const modules = inventory.filter((i) => i.itemType === 'module');
   const blueprints = inventory.filter((i) => i.itemType === 'blueprint');
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
 
   useEffect(() => {
     network.requestMySlates();
@@ -139,6 +140,14 @@ export function CargoScreen() {
       {/* RESOURCES tab */}
       {activeTab === 'resource' && (
         <>
+          {total === 0 && resources.length === 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', fontFamily: 'monospace', color: '#555', marginBottom: '12px' }}>
+              <div>CARGO HOLD EMPTY</div>
+              <button onClick={() => setActiveProgram('MINING')} style={{ border: '1px solid #333', background: 'none', color: '#888', fontFamily: 'monospace', cursor: 'pointer', padding: '3px 8px', fontSize: '0.75rem' }}>
+                [OPEN MINING]
+              </button>
+            </div>
+          )}
           <div style={{ marginBottom: '16px' }}>
             <CargoBar label="ORE" value={cargo.ore} max={cargoCap} />
             <CargoBar label="GAS" value={cargo.gas} max={cargoCap} />

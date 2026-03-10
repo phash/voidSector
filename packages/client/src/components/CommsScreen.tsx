@@ -8,6 +8,7 @@ const MESSAGE_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 export function CommsScreen() {
   const messages = useStore((s) => s.chatMessages);
   const channel = useStore((s) => s.chatChannel);
+  const setChatChannel = useStore((s) => s.setChatChannel);
   const clearAlert = useStore((s) => s.clearAlert);
   const recentContacts = useStore((s) => s.recentContacts);
   const addRecentContact = useStore((s) => s.addRecentContact);
@@ -49,6 +50,19 @@ export function CommsScreen() {
     logRef.current?.scrollTo(0, logRef.current.scrollHeight);
   }, [messages]);
 
+  // Keyboard shortcuts: q=quadrant, s=system, f=faction, d=direct
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'q') setChatChannel('quadrant');
+      else if (e.key === 'f') setChatChannel('faction');
+      else if (e.key === 'd') setChatChannel('direct');
+      else if (e.key === 's') setChatChannel('system');
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [setChatChannel]);
+
   const filtered = messages.filter((m) => m.channel === channel);
 
   const send = () => {
@@ -88,9 +102,23 @@ export function CommsScreen() {
         gap: 8,
       }}
     >
-      {/* Channel indicator -- switching is handled by the bezel mode switcher */}
-      <div style={{ fontSize: '0.65rem', color: 'var(--color-dim)', flexShrink: 0 }}>
-        CHANNEL: <span style={{ color: 'var(--color-primary)' }}>{channel.toUpperCase()}</span>
+      {/* Channel switcher */}
+      <div style={{ display: 'flex', gap: '2px', fontFamily: 'monospace', fontSize: '0.75rem', flexShrink: 0 }}>
+        {(['quadrant', 'faction', 'direct', 'system'] as const).map((ch) => (
+          <button
+            key={ch}
+            onClick={() => setChatChannel(ch)}
+            style={{
+              border: `1px solid ${channel === ch ? 'var(--color-primary)' : '#333'}`,
+              background: channel === ch ? '#001100' : 'none',
+              color: channel === ch ? 'var(--color-primary)' : '#555',
+              padding: '2px 6px', cursor: 'pointer', fontFamily: 'monospace',
+              textTransform: 'uppercase', flex: 1,
+            }}
+          >
+            {ch.slice(0, 4).toUpperCase()}
+          </button>
+        ))}
       </div>
 
       {/* Direct message recipient selector */}
@@ -178,8 +206,14 @@ export function CommsScreen() {
             {msg.content}
           </div>
         ))}
-        {filtered.length === 0 && (
-          <div style={{ color: 'var(--color-dim)' }}>NO MESSAGES ON THIS CHANNEL</div>
+        {filtered.length === 0 && channel !== 'direct' && (
+          <div style={{ color: '#555', fontSize: '0.75rem' }}>NO MESSAGES ON THIS CHANNEL</div>
+        )}
+        {filtered.length === 0 && channel === 'direct' && recentContacts.length === 0 && (
+          <div style={{ color: '#555', fontSize: '0.75rem' }}>
+            NO CONTACTS<br/>
+            <span style={{ fontSize: '0.65rem' }}>Right-click a player on the radar to contact them.</span>
+          </div>
         )}
       </div>
 

@@ -1,10 +1,3 @@
-const CHANNEL_LABELS: Record<string, string> = {
-  quadrant: 'QUADRANT',
-  sector: 'SECTOR',
-  faction: 'FACTION',
-  direct: 'DIRECT',
-};
-
 interface HardwareControlsProps {
   /** Show D-Pad (up/down/left/right) */
   dpad?: boolean;
@@ -23,12 +16,6 @@ interface HardwareControlsProps {
   follow?: boolean;
   followActive?: boolean;
   onFollow?: () => void;
-  /** Show channel buttons */
-  channels?: string[];
-  activeChannel?: string;
-  onChannel?: (channel: string) => void;
-  /** Per-channel alert state */
-  channelAlerts?: Record<string, boolean>;
 }
 
 export function HardwareControls(props: HardwareControlsProps) {
@@ -46,10 +33,6 @@ export function HardwareControls(props: HardwareControlsProps) {
     follow,
     followActive,
     onFollow,
-    channels,
-    activeChannel,
-    onChannel,
-    channelAlerts,
   } = props;
 
   return (
@@ -123,20 +106,6 @@ export function HardwareControls(props: HardwareControlsProps) {
         </button>
       )}
 
-      {channels && channels.length > 0 && (
-        <div className="hw-channel-strip" data-testid="hw-channels">
-          {channels.map((ch) => (
-            <button
-              key={ch}
-              className={`hw-channel-btn${activeChannel === ch ? ' active' : ''}${channelAlerts?.[ch] && activeChannel !== ch ? ' alert' : ''}`}
-              data-testid={`hw-channel-${ch}`}
-              onClick={() => onChannel?.(ch)}
-            >
-              {CHANNEL_LABELS[ch] || ch.toUpperCase().slice(0, 4)}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

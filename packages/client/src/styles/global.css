@@ -66,6 +66,18 @@ html, body {
   letter-spacing: -1px;
 }
 
+/* Mining LED pulse animation */
+@keyframes led-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Program button pulse for first-use hint */
+@keyframes prog-pulse {
+  0%, 100% { border-color: currentColor; }
+  50% { border-color: transparent; }
+}
+
 /* AP flash animation on spend */
 @keyframes ap-flash {
   0% { color: #FF3333; text-shadow: 0 0 8px #FF3333; }

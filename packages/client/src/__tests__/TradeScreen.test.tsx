@@ -41,7 +41,7 @@ describe('TradeScreen', () => {
       },
     });
     render(<TradeScreen />);
-    expect(screen.getByText(/NO TRADING/)).toBeTruthy();
+    expect(screen.getByText(/NO TRADING AVAILABLE/)).toBeTruthy();
   });
 
   it('shows NPC trade at home base without trading post', () => {

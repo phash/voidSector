@@ -78,6 +78,9 @@ export interface HelpSlice {
   setCompendiumArticle: (id: string) => void;
   setCompendiumSearch: (query: string) => void;
   showArticlePopup: (articleId: string) => void;
+  onboardingStep: number | null;
+  advanceOnboarding: () => void;
+  skipOnboarding: () => void;
 }
 
 const STORAGE_KEY = 'vs_seen_tips';
@@ -106,6 +109,7 @@ export const createHelpSlice: StateCreator<HelpSlice> = (set, get) => ({
   compendiumOpen: false,
   compendiumArticleId: null,
   compendiumSearch: '',
+  onboardingStep: localStorage.getItem('vs_first_run') ? null : 0,
 
   showTip: (tipId) => {
     if (get().seenTips.has(tipId)) return;
@@ -150,5 +154,21 @@ export const createHelpSlice: StateCreator<HelpSlice> = (set, get) => ({
         articleId,
       },
     });
+  },
+
+  advanceOnboarding: () => {
+    const current = get().onboardingStep;
+    if (current === null) return;
+    if (current >= 4) {
+      try { localStorage.setItem('vs_first_run', '1'); } catch {}
+      set({ onboardingStep: null });
+    } else {
+      set({ onboardingStep: current + 1 });
+    }
+  },
+
+  skipOnboarding: () => {
+    try { localStorage.setItem('vs_first_run', '1'); } catch {}
+    set({ onboardingStep: null });
   },
 });

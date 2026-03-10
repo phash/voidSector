@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
 import { btn } from '../ui-strings';
 import { ProgramSelector } from './ProgramSelector';
@@ -24,7 +24,6 @@ import { StoryEventOverlay } from './overlays/StoryEventOverlay';
 import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
 import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
-import type { ChatChannel } from '@void-sector/shared';
 
 interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
@@ -52,14 +51,30 @@ function getDetailForProgram(programId: string): ReactNode | null {
 }
 
 export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
+  const miningActive = useStore((s) => s.mining?.active ?? false);
+  const cargo = useStore((s) => s.cargo);
+  const ship = useStore((s) => s.ship);
+  const setActionError = useStore((s) => s.setActionError);
+  const cargoFullToastShown = useRef(false);
+
+  const cargoCap = ship?.stats?.cargoCap ?? 5;
+  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+
+  useEffect(() => {
+    if (miningActive && cargoTotal >= cargoCap && !cargoFullToastShown.current) {
+      cargoFullToastShown.current = true;
+      setActionError({ code: 'CARGO_FULL', message: '⚠ CARGO FULL — MINING STOPPED' });
+    }
+    if (!miningActive) {
+      cargoFullToastShown.current = false;
+    }
+  }, [miningActive, cargoTotal, cargoCap, setActionError]);
+
   const activeProgram = useStore((s) => s.activeProgram);
   const zoomLevel = useStore((s) => s.zoomLevel);
   const setZoomLevel = useStore((s) => s.setZoomLevel);
   const panOffset = useStore((s) => s.panOffset);
   const setPanOffset = useStore((s) => s.setPanOffset);
-  const chatChannel = useStore((s) => s.chatChannel);
-  const setChatChannel = useStore((s) => s.setChatChannel);
-  const channelAlerts = useStore((s) => s.channelAlerts);
   const detailPowerOn = useStore((s) => s.monitorPower['DETAIL'] ?? true);
   const setMonitorPower = useStore((s) => s.setMonitorPower);
   const autoFollow = useStore((s) => s.autoFollow);
@@ -173,12 +188,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
           <CommsScreen />
         </div>
         <div className="cockpit-hw-strip">
-          <HardwareControls
-            channels={['quadrant', 'sector', 'faction', 'direct']}
-            activeChannel={chatChannel}
-            onChannel={(ch) => setChatChannel(ch as ChatChannel)}
-            channelAlerts={channelAlerts}
-          />
+          <HardwareControls />
         </div>
       </div>
       <PlayerContextMenu />

@@ -61,6 +61,7 @@ export function TechTreePanel() {
   const wissen = research.wissen ?? 0;
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const setSelectedTechModule = useStore((s) => s.setSelectedTechModule);
+  const pushBreadcrumb = useStore((s) => s.pushBreadcrumb);
 
   const [now, setNow] = useState(Date.now());
 
@@ -119,7 +120,7 @@ export function TechTreePanel() {
             marginBottom: 6,
             cursor: 'pointer',
           }}
-          onClick={() => setSelectedTechModule(activeMod.id)}
+          onClick={() => { pushBreadcrumb({ label: activeMod.name, program: 'TECH' }); setSelectedTechModule(activeMod.id); }}
         >
           <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em' }}>
             ACTIVE RESEARCH
@@ -164,7 +165,7 @@ export function TechTreePanel() {
               return (
                 <div
                   key={mod.id}
-                  onClick={() => setSelectedTechModule(mod.id)}
+                  onClick={() => { pushBreadcrumb({ label: mod.name, program: 'TECH' }); setSelectedTechModule(mod.id); }}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',

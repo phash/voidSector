@@ -50,6 +50,7 @@ export interface UISlice {
   scanPending: boolean;
   activeProgram: string;
   navReturnProgram: string | null;
+  breadcrumbStack: Array<{ label: string; program: string }>;
   contextMenu: { playerId: string; playerName: string; x: number; y: number } | null;
 
   setScreen: (screen: Screen) => void;
@@ -74,6 +75,9 @@ export interface UISlice {
   setActiveProgram: (program: string) => void;
   navigateToProgram: (program: string) => void;
   clearNavReturn: () => void;
+  pushBreadcrumb: (crumb: { label: string; program: string }) => void;
+  popBreadcrumb: () => void;
+  clearBreadcrumbs: () => void;
   openContextMenu: (playerId: string, playerName: string, x: number, y: number) => void;
   closeContextMenu: () => void;
 
@@ -102,6 +106,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   scanPending: false,
   activeProgram: safeGetItem('vs-active-program') || 'NAV-COM',
   navReturnProgram: null,
+  breadcrumbStack: [],
   contextMenu: null,
 
   setScreen: (screen) => set({ screen }),
@@ -154,7 +159,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   setScanPending: (pending) => set({ scanPending: pending }),
   setActiveProgram: (program) => {
     safeSetItem('vs-active-program', program);
-    set({ activeProgram: program });
+    set({ activeProgram: program, breadcrumbStack: [] });
   },
   navigateToProgram: (program) => {
     const current = get().activeProgram;
@@ -162,6 +167,24 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
     set({ activeProgram: program, navReturnProgram: current });
   },
   clearNavReturn: () => set({ navReturnProgram: null }),
+  pushBreadcrumb: (crumb) =>
+    set((s) => {
+      const stack = s.breadcrumbStack;
+      if (stack.length >= 3) {
+        return { breadcrumbStack: [...stack.slice(0, -1), crumb] };
+      }
+      return { breadcrumbStack: [...stack, crumb] };
+    }),
+  popBreadcrumb: () => {
+    const s = get();
+    const stack = [...s.breadcrumbStack];
+    const last = stack.pop();
+    if (last) {
+      safeSetItem('vs-active-program', last.program);
+      set({ breadcrumbStack: stack, activeProgram: last.program });
+    }
+  },
+  clearBreadcrumbs: () => set({ breadcrumbStack: [], navReturnProgram: null }),
   openContextMenu: (playerId, playerName, x, y) =>
     set({ contextMenu: { playerId, playerName, x, y } }),
   closeContextMenu: () => set({ contextMenu: null }),

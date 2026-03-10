@@ -12,6 +12,7 @@ import {
 import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
 import { btn, UI } from '../ui-strings';
 import { InlineError } from './InlineError';
+import { findNearestStation } from '../utils/sectorUtils';
 
 const btnStyle: React.CSSProperties = {
   background: 'transparent',
@@ -37,6 +38,7 @@ export function TradeScreen() {
   const tradeRoutes = useStore((s) => s.tradeRoutes);
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
+  const discoveries = useStore((s) => s.discoveries);
   const ship = useStore((s) => s.ship);
   const homeBase = useStore((s) => s.homeBase);
   const npcStationData = useStore((s) => s.npcStationData);
@@ -72,10 +74,21 @@ export function TradeScreen() {
   }, [tier, isStation]);
 
   if (!canTrade) {
+    const nearest = findNearestStation(position, discoveries);
     return (
-      <div style={{ padding: 16, textAlign: 'center', opacity: 0.4, fontSize: '0.8rem' }}>
-        <div style={{ marginBottom: 8 }}>{UI.empty.NO_TRADE}</div>
-        <div style={{ fontSize: '0.7rem' }}>{UI.empty.NAVIGATE_TO_STATION}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', fontFamily: 'monospace', color: '#555' }}>
+        <div>NO TRADING AVAILABLE</div>
+        {nearest && (
+          <div style={{ fontSize: '0.7rem' }}>
+            Nearest station: ({nearest.x}, {nearest.y})
+          </div>
+        )}
+        <button
+          onClick={() => setActiveProgram('NAV-COM')}
+          style={{ border: '1px solid #333', background: 'none', color: '#888', fontFamily: 'monospace', cursor: 'pointer', padding: '3px 8px', fontSize: '0.75rem' }}
+        >
+          [NAVIGATE]
+        </button>
       </div>
     );
   }
