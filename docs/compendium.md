@@ -17,8 +17,8 @@ Das Universum ist ein unendliches 2D-Gitter. Koordinaten werden zweistellig darg
 [QUAD:INNER]  →  z.B. [03E8:0042]
 ```
 
-- **QUAD** (hex): `Math.floor(x / 10_000)` — Quadrant im Universum
-- **INNER** (dez): `x % 10_000` — Lokale Position im Quadranten
+- **QUAD** (hex): `Math.floor((x + 250) / 500)` — Quadrant im Universum (zentriert, Ursprung in Quadrantmitte)
+- **INNER** (dez): lokale Position im Quadranten, Bereich -250..249
 - Spieler spawnen in **Clustern** ab Distanz `10_000_000` vom Ursprung
 - Cluster-Radius: 300 Sektoren, max. 5 Spieler pro Cluster
 
@@ -74,7 +74,7 @@ Seed-basierte Blob-Generierung fuer grossflaechige Nebel:
 
 ## 2. Quadranten-System
 
-Jeder Quadrant umfasst **10.000 x 10.000** Sektoren (`QUADRANT_SIZE = 10_000`).
+Jeder Quadrant umfasst **500 x 500** Sektoren (`QUADRANT_SIZE = 500`). Das Koordinatensystem ist zentriert: Quadrant (0,0) deckt Sektoren x∈[-250, 249], y∈[-250, 249] ab. Der Ursprung (0,0) liegt in der Mitte von Quadrant (0,0).
 
 ### Erstkontakt-Benennung
 

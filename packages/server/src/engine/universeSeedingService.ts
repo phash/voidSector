@@ -139,8 +139,9 @@ export function generateQuadrantData(
 ): { environments: SectorEnvironmentRecord[]; contents: SectorContentRecord[] } {
   const environments: SectorEnvironmentRecord[] = [];
   const contents: SectorContentRecord[] = [];
-  const baseX = quadrantX * QUADRANT_SIZE;
-  const baseY = quadrantY * QUADRANT_SIZE;
+  const half = Math.floor(QUADRANT_SIZE / 2);
+  const baseX = quadrantX * QUADRANT_SIZE - half;
+  const baseY = quadrantY * QUADRANT_SIZE - half;
 
   for (let sx = 0; sx < QUADRANT_SIZE; sx++) {
     for (let sy = 0; sy < QUADRANT_SIZE; sy++) {

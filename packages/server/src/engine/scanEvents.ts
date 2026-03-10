@@ -26,11 +26,12 @@ const EVENT_TYPE_WEIGHTS: { type: ScanEventType; weight: number; immediate: bool
   { type: 'blueprint_find', weight: 0.1, immediate: false },
 ];
 
-/** Distance from nearest quadrant edge (0 = at edge) */
+/** Distance from nearest quadrant edge (0 = at edge). Uses centered quadrant layout. */
 function quadrantEdgeDistance(x: number, y: number): number {
-  const modX = ((x % QUADRANT_SIZE) + QUADRANT_SIZE) % QUADRANT_SIZE;
-  const modY = ((y % QUADRANT_SIZE) + QUADRANT_SIZE) % QUADRANT_SIZE;
-  return Math.min(modX, QUADRANT_SIZE - modX, modY, QUADRANT_SIZE - modY);
+  const half = Math.floor(QUADRANT_SIZE / 2);
+  const posX = ((x + half) % QUADRANT_SIZE + QUADRANT_SIZE) % QUADRANT_SIZE;
+  const posY = ((y + half) % QUADRANT_SIZE + QUADRANT_SIZE) % QUADRANT_SIZE;
+  return Math.min(posX, QUADRANT_SIZE - posX, posY, QUADRANT_SIZE - posY);
 }
 
 /**
@@ -48,7 +49,7 @@ export function getEffectiveEventChance(
   y: number,
 ): number {
   const edgeDist = quadrantEdgeDistance(x, y);
-  const nearEdge = edgeDist < 500;
+  const nearEdge = edgeDist < 50;
 
   if (environment === 'nebula') {
     return nearEdge ? 0.95 : 0.3;

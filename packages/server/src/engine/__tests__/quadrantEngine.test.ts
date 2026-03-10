@@ -42,30 +42,34 @@ beforeEach(() => {
 // sectorToQuadrant
 // ---------------------------------------------------------------------------
 describe('sectorToQuadrant', () => {
+  // Centered layout: quadrant (0,0) spans x∈[-half, half-1] where half = floor(QS/2)
+  const half = Math.floor(QUADRANT_SIZE / 2);
+
   it('maps positive coordinates correctly', () => {
     expect(sectorToQuadrant(0, 0)).toEqual({ qx: 0, qy: 0 });
-    expect(sectorToQuadrant(9999, 9999)).toEqual({ qx: 0, qy: 0 });
-    expect(sectorToQuadrant(10000, 10000)).toEqual({ qx: 1, qy: 1 });
-    expect(sectorToQuadrant(25000, 15000)).toEqual({ qx: 2, qy: 1 });
+    expect(sectorToQuadrant(half - 1, half - 1)).toEqual({ qx: 0, qy: 0 }); // last of q0
+    expect(sectorToQuadrant(half, half)).toEqual({ qx: 1, qy: 1 });          // first of q1
+    expect(sectorToQuadrant(QUADRANT_SIZE + half, QUADRANT_SIZE)).toEqual({ qx: 2, qy: 1 });
   });
 
   it('maps negative coordinates correctly', () => {
-    expect(sectorToQuadrant(-1, -1)).toEqual({ qx: -1, qy: -1 });
-    expect(sectorToQuadrant(-10000, -10000)).toEqual({ qx: -1, qy: -1 });
-    expect(sectorToQuadrant(-10001, -10001)).toEqual({ qx: -2, qy: -2 });
+    expect(sectorToQuadrant(-1, -1)).toEqual({ qx: 0, qy: 0 });                         // still in q0
+    expect(sectorToQuadrant(-half, -half)).toEqual({ qx: 0, qy: 0 });                   // left edge of q0
+    expect(sectorToQuadrant(-(half + 1), -(half + 1))).toEqual({ qx: -1, qy: -1 });     // first in q-1
   });
 
   it('handles boundary values', () => {
-    // Right at the boundary: QUADRANT_SIZE should be in the next quadrant
+    // half is the first sector of q1
     expect(sectorToQuadrant(QUADRANT_SIZE, 0)).toEqual({ qx: 1, qy: 0 });
     expect(sectorToQuadrant(0, QUADRANT_SIZE)).toEqual({ qx: 0, qy: 1 });
-    // Just below boundary
-    expect(sectorToQuadrant(QUADRANT_SIZE - 1, QUADRANT_SIZE - 1)).toEqual({ qx: 0, qy: 0 });
+    expect(sectorToQuadrant(half - 1, 0)).toEqual({ qx: 0, qy: 0 });
+    expect(sectorToQuadrant(half, 0)).toEqual({ qx: 1, qy: 0 });
   });
 
   it('handles mixed positive/negative', () => {
-    expect(sectorToQuadrant(15000, -5000)).toEqual({ qx: 1, qy: -1 });
-    expect(sectorToQuadrant(-15000, 5000)).toEqual({ qx: -2, qy: 0 });
+    // q2 starts at QS+half; q-1 starts at -(half+1)
+    expect(sectorToQuadrant(QUADRANT_SIZE + half, -(half + 1))).toEqual({ qx: 2, qy: -1 });
+    expect(sectorToQuadrant(-(half + 1), QUADRANT_SIZE + half)).toEqual({ qx: -1, qy: 2 });
   });
 });
 
