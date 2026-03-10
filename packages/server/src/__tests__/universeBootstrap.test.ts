@@ -30,6 +30,21 @@ vi.mock('../db/queries.js', () => ({
   getAllHumanityReps: vi.fn().mockResolvedValue({ kthari: -40, archivists: 60 }),
   ensureKernweltStation: vi.fn().mockResolvedValue(undefined),
   ensureZentrumQuadrant: vi.fn().mockResolvedValue(undefined),
+  ensureAlienHomeQuadrants: vi.fn().mockResolvedValue(false),
+  getAllQuadrantControls: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../engine/civStationService.js', () => ({
+  ensureCivStations: vi.fn().mockResolvedValue(undefined),
+  spawnMissingDrones: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../engine/civShipService.js', () => ({
+  processCivTick: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../engine/constructionTickService.js', () => ({
+  processConstructionTick: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('ioredis', () => ({
