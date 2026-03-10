@@ -29,6 +29,8 @@ export function StatusBar() {
   const alienCredits = useStore((s) => s.alienCredits);
   const isGuest = useStore((s) => s.isGuest);
   const hyperdrive = useStore((s) => s.hyperdriveState);
+  const seenTips = useStore((s) => s.seenTips);
+  const showTip = useStore((s) => s.showTip);
 
   // Live-updating AP accounting for regen since last server tick
   const [displayAP, setDisplayAP] = useState(ap?.current ?? 0);
@@ -88,6 +90,12 @@ export function StatusBar() {
           : '⚡ NO AP — REGENERATING AUTOMATICALLY';
         useStore.getState().setActionError({ code: 'NO_AP', message: msg });
         setTimeout(() => useStore.getState().setActionError(null), 3000);
+
+        // Layer D: einmaliger HelpTip beim ersten AP=0
+        const AP_TIP_KEY = 'ap-depleted-first';
+        if (!seenTips.has(AP_TIP_KEY)) {
+          showTip(AP_TIP_KEY);
+        }
       }
 
       return () => clearTimeout(timer);
