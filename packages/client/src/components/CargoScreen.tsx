@@ -7,7 +7,6 @@ import {
   CUSTOM_SLATE_AP_COST,
   CUSTOM_SLATE_CREDIT_COST,
   CUSTOM_SLATE_MAX_NOTES_LENGTH,
-  HULLS,
 } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
@@ -102,7 +101,7 @@ export function CargoScreen() {
       </div>
 
       <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
-        VESSEL: {ship ? HULLS[ship.hullType].name : 'VOID SCOUT'}
+        VESSEL: {ship?.name ?? '---'}
       </div>
 
       <div
