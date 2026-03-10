@@ -13,7 +13,7 @@ import {
   STRUCTURE_AP_COSTS,
   JUMPGATE_BUILD_COST,
 } from '@void-sector/shared';
-import type { ChatChannel } from '@void-sector/shared';
+import type { ChatChannel, ConstructionSiteState } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 import { PlayerGatePanel } from './PlayerGatePanel';
@@ -121,6 +121,69 @@ function RefuelPanel({
   );
 }
 
+function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
+  const cargo = useStore((s) => s.cargo);
+
+  const remainOre     = Math.max(0, site.neededOre     - site.depositedOre);
+  const remainGas     = Math.max(0, site.neededGas     - site.depositedGas);
+  const remainCrystal = Math.max(0, site.neededCrystal - site.depositedCrystal);
+
+  const canDeposit = cargo.ore >= 1 || cargo.gas >= 1 || cargo.crystal >= 1;
+  const pct = site.progress;
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      {/* Header */}
+      <div style={{ fontSize: '0.65rem', color: 'var(--color-dim)', letterSpacing: '0.15em', marginBottom: 4 }}>
+        {site.type === 'mining_station' ? 'STATION' : 'JUMPGATE'} — IN BAU
+        {site.paused && (
+          <span style={{ color: '#ff4444', marginLeft: 8 }}>⏸ PAUSIERT</span>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', marginBottom: 2 }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: 'var(--color-primary)', transition: 'width 0.5s' }} />
+      </div>
+      <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginBottom: 6 }}>
+        {pct}/100 Ticks
+      </div>
+
+      {/* Resource status */}
+      {([
+        ['ORE',     site.depositedOre,     site.neededOre],
+        ['GAS',     site.depositedGas,     site.neededGas],
+        ['CRYSTAL', site.depositedCrystal, site.neededCrystal],
+      ] as [string, number, number][]).filter(([, , needed]) => needed > 0).map(([label, deposited, needed]) => (
+        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem' }}>
+          <span style={{ color: 'var(--color-dim)' }}>{label}</span>
+          <span style={{ color: deposited >= needed ? 'var(--color-primary)' : '#ffaa00' }}>
+            {deposited}/{needed}
+          </span>
+        </div>
+      ))}
+
+      {/* Deposit button */}
+      {canDeposit && (
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', marginTop: 6 }}
+          onClick={() =>
+            network.sendDepositConstruction(
+              site.id,
+              Math.min(cargo.ore, remainOre),
+              Math.min(cargo.gas, remainGas),
+              Math.min(cargo.crystal, remainCrystal),
+            )
+          }
+        >
+          [RESSOURCEN LIEFERN]
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function DetailPanel() {
   const selectedSector = useStore((s) => s.selectedSector);
   const discoveries = useStore((s) => s.discoveries);
@@ -147,6 +210,7 @@ export function DetailPanel() {
   const homeBase = useStore((s) => s.homeBase);
   const activeQuests = useStore((s) => s.activeQuests);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
+  const constructionSites = useStore((s) => s.constructionSites);
   const openStationTerminal = useStore((s) => s.openStationTerminal);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
@@ -175,6 +239,9 @@ export function DetailPanel() {
   const sector = discoveries[key];
   const isPlayerHere = selectedSector.x === position.x && selectedSector.y === position.y;
   const isHome = selectedSector.x === homeBase.x && selectedSector.y === homeBase.y;
+  const constructionSite = constructionSites.find(
+    (c) => c.sectorX === selectedSector.x && c.sectorY === selectedSector.y,
+  );
 
   // Quest target detection (#151)
   const questsTargetingHere = activeQuests.filter((q) =>
@@ -625,7 +692,9 @@ export function DetailPanel() {
           )}
 
           {/* Build buttons - only when player is here */}
-          {isPlayerHere && (
+          {isPlayerHere && constructionSite ? (
+            <ConstructionSitePanel site={constructionSite} />
+          ) : isPlayerHere ? (
             <div style={{ marginTop: 8 }}>
               <div
                 style={{
@@ -670,7 +739,7 @@ export function DetailPanel() {
                 )}
               </div>
             </div>
-          )}
+          ) : null}
 
           {isPlayerHere && <InlineError codes={['BUILD_FAIL', 'INSUFFICIENT']} />}
 
