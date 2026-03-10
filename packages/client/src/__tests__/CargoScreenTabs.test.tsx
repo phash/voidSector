@@ -64,7 +64,7 @@ describe('CargoScreen inventory tabs', () => {
     expect(screen.getByText('[INSTALLIEREN]')).toBeDefined();
   });
 
-  it('BLAUPAUSEN tab shows blueprint with AKTIVIEREN and HERSTELLEN buttons', async () => {
+  it('BLAUPAUSEN tab shows blueprint with AKTIVIEREN button (HERSTELLEN moved to FabrikPanel)', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'blueprint', itemId: 'shield_mk1', quantity: 2 }],
@@ -73,7 +73,7 @@ describe('CargoScreen inventory tabs', () => {
     await userEvent.click(screen.getByText('BLAUPAUSEN'));
     expect(screen.getByText(/SHIELD_MK1/)).toBeDefined();
     expect(screen.getByText('[AKTIVIEREN]')).toBeDefined();
-    expect(screen.getByText('[HERSTELLEN]')).toBeDefined();
+    expect(screen.queryByText('[HERSTELLEN]')).toBeNull();
   });
 
   it('INSTALLIEREN calls sendInstallModule', async () => {
@@ -87,15 +87,14 @@ describe('CargoScreen inventory tabs', () => {
     expect(network.sendInstallModule).toHaveBeenCalled();
   });
 
-  it('HERSTELLEN calls sendCraftModule', async () => {
+  it('HERSTELLEN moved to FabrikPanel — sendCraftModule not in CargoScreen', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'blueprint', itemId: 'engine_blueprint', quantity: 1 }],
     });
     render(<CargoScreen />);
     await userEvent.click(screen.getByText('BLAUPAUSEN'));
-    await userEvent.click(screen.getByText('[HERSTELLEN]'));
-    expect(network.sendCraftModule).toHaveBeenCalledWith('engine_blueprint');
+    expect(screen.queryByText('[HERSTELLEN]')).toBeNull();
   });
 
   it('AKTIVIEREN on blueprint calls sendActivateBlueprint', async () => {

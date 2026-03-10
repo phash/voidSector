@@ -297,22 +297,13 @@ export function CargoScreen() {
                 <span>
                   {item.itemId.toUpperCase()} x{item.quantity}
                 </span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button
+                <button
                     className="vs-btn"
                     style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                     onClick={() => network.sendActivateBlueprint(item.itemId)}
                   >
                     [AKTIVIEREN]
                   </button>
-                  <button
-                    className="vs-btn"
-                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-                    onClick={() => network.sendCraftModule(item.itemId)}
-                  >
-                    [HERSTELLEN]
-                  </button>
-                </div>
               </div>
             ))
           )}
