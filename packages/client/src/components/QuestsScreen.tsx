@@ -4,21 +4,8 @@ import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc, SectorData } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
+import { findNearestStation } from '../utils/sectorUtils';
 
-function findNearestStation(
-  position: { x: number; y: number },
-  discoveries: Record<string, SectorData>,
-): SectorData | null {
-  return (
-    Object.values(discoveries)
-      .filter((s) => s.type === 'station')
-      .sort((a, b) => {
-        const distA = Math.abs(a.x - position.x) + Math.abs(a.y - position.y);
-        const distB = Math.abs(b.x - position.x) + Math.abs(b.y - position.y);
-        return distA - distB;
-      })[0] ?? null
-  );
-}
 
 const MAX_TRACKED = 5;
 
