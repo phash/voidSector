@@ -1,5 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { CargoDetailPanel } from '../components/CargoDetailPanel';
 import { mockStoreState } from '../test/mockStore';
 
@@ -23,12 +24,11 @@ describe('CargoDetailPanel', () => {
     expect(screen.getByText('AUSWAHL TREFFEN')).toBeTruthy();
   });
 
-  it('calls sendJettison when ABWERFEN button clicked', () => {
+  it('calls sendJettison when ABWERFEN button clicked', async () => {
     mockStoreState({ selectedCargoItem: 'ore', cargo: { ore: 5 } as any });
     render(<CargoDetailPanel />);
     const btn = screen.getByText('[ABWERFEN]');
-    expect(btn).toBeTruthy();
-    fireEvent.click(btn);
+    await userEvent.click(btn);
     expect(network.sendJettison).toHaveBeenCalledWith('ore');
   });
 
