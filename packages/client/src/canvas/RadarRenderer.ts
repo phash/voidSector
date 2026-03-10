@@ -300,7 +300,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         // ACEP/3: use evolved icon when XP >= 20 (Tier 2+)
         const ownPattern =
           state.acepXp && state.acepXp.total >= 20
-            ? getAcepRadarPattern(state.acepXp)
+            ? (getAcepRadarPattern(state.acepXp) ?? HULL_RADAR_PATTERNS[ownHull])
             : HULL_RADAR_PATTERNS[ownHull];
         const ownPixelSize = isDetailView ? Math.max(8, 2 + state.zoomLevel) : 2 + state.zoomLevel;
         // #155: animate ship icon from old position

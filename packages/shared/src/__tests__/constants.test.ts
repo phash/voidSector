@@ -10,6 +10,9 @@ import {
   STRUCTURE_AP_COSTS,
   RELAY_RANGES,
   PRODUCTION_RECIPES,
+  getAcepDominantPath,
+  getAcepRadarPattern,
+  ACEP_RADAR_PATTERNS,
 } from '../constants';
 
 describe('constants', () => {
@@ -95,5 +98,49 @@ describe('constants', () => {
     expect(outputItems.has('alloy_plate')).toBe(true);
     expect(outputItems.has('void_shard')).toBe(true);
     expect(outputItems.has('bio_extract')).toBe(true);
+  });
+
+  describe('getAcepDominantPath', () => {
+    it('returns none when all XP is zero', () => {
+      expect(getAcepDominantPath({ ausbau: 0, intel: 0, kampf: 0, explorer: 0 })).toBe('none');
+    });
+
+    it('returns dominant path when > 40%', () => {
+      expect(getAcepDominantPath({ ausbau: 30, intel: 5, kampf: 5, explorer: 5 })).toBe('ausbau');
+      expect(getAcepDominantPath({ ausbau: 5, intel: 30, kampf: 5, explorer: 5 })).toBe('intel');
+      expect(getAcepDominantPath({ ausbau: 5, intel: 5, kampf: 30, explorer: 5 })).toBe('kampf');
+      expect(getAcepDominantPath({ ausbau: 5, intel: 5, kampf: 5, explorer: 30 })).toBe('explorer');
+    });
+
+    it('returns none when no path exceeds 40%', () => {
+      expect(getAcepDominantPath({ ausbau: 10, intel: 10, kampf: 10, explorer: 10 })).toBe('none');
+    });
+
+    it('ignores extra properties on the xp object (regression: total contamination)', () => {
+      // The caller passes { ausbau, intel, kampf, explorer, total } — the
+      // total field must NOT pollute Object.entries / the entries array.
+      const xp = { ausbau: 30, intel: 5, kampf: 5, explorer: 5, total: 45 } as any;
+      expect(getAcepDominantPath(xp)).toBe('ausbau');
+    });
+  });
+
+  describe('getAcepRadarPattern', () => {
+    it('returns a valid pattern for ACEP XP with total property', () => {
+      const xp = { ausbau: 30, intel: 5, kampf: 5, explorer: 5, total: 45 };
+      const pattern = getAcepRadarPattern(xp);
+      expect(pattern).toBeDefined();
+      expect(Array.isArray(pattern)).toBe(true);
+      expect(pattern.length).toBeGreaterThan(0);
+    });
+
+    it('returns valid patterns for all tier/path combinations', () => {
+      for (const tier of [1, 2, 3, 4] as const) {
+        for (const path of ['ausbau', 'intel', 'kampf', 'explorer', 'none'] as const) {
+          const pattern = ACEP_RADAR_PATTERNS[tier][path];
+          expect(pattern).toBeDefined();
+          expect(Array.isArray(pattern)).toBe(true);
+        }
+      }
+    });
   });
 });

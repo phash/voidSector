@@ -2016,9 +2016,12 @@ export function getAcepDominantPath(xp: {
   kampf: number;
   explorer: number;
 }): AcepDominantPath {
-  const total = xp.ausbau + xp.intel + xp.kampf + xp.explorer;
+  const { ausbau, intel, kampf, explorer } = xp;
+  const total = ausbau + intel + kampf + explorer;
   if (total === 0) return 'none';
-  const entries = Object.entries(xp) as Array<[AcepDominantPath, number]>;
+  const entries: Array<[AcepDominantPath, number]> = [
+    ['ausbau', ausbau], ['intel', intel], ['kampf', kampf], ['explorer', explorer],
+  ];
   const max = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
   // Require dominant path to have > 40% of total to "count"
   return max[1] / total > 0.4 ? max[0] : 'none';
