@@ -126,8 +126,11 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
     fuel: number;
     active: boolean;
     created_at: string;
+    acep_generation: number;
+    acep_traits: string[];
   }>(
-    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at
+    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at,
+            acep_generation, acep_traits
      FROM ships WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
     [playerId],
   );
@@ -141,16 +144,30 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
     modules: row.modules,
     active: row.active,
     createdAt: row.created_at,
+    acepGeneration: row.acep_generation ?? 1,
+    acepTraits: (row.acep_traits as string[]) ?? [],
   };
 }
 
 export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
-  const { rows } = await query<any>(
-    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at
+  const { rows } = await query<{
+    id: string;
+    owner_id: string;
+    hull_type: string;
+    name: string;
+    modules: ShipModule[];
+    fuel: number;
+    active: boolean;
+    created_at: string;
+    acep_generation: number;
+    acep_traits: string[];
+  }>(
+    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at,
+            acep_generation, acep_traits
      FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
     [playerId],
   );
-  return rows.map((row: any) => ({
+  return rows.map((row) => ({
     id: row.id,
     ownerId: row.owner_id,
     hullType: row.hull_type as HullType,
@@ -158,6 +175,8 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
     modules: row.modules,
     active: row.active,
     createdAt: row.created_at,
+    acepGeneration: row.acep_generation ?? 1,
+    acepTraits: (row.acep_traits as string[]) ?? [],
   }));
 }
 
