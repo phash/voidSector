@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { useStore } from '../state/store';
-import { HangarPanel } from './HangarPanel';
 import { TradeScreen } from './TradeScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { generateStationName, innerCoord } from '@void-sector/shared';
 
-type TerminalProgram = 'hangar' | 'handel' | 'quests' | 'forschung';
+type TerminalProgram = 'handel' | 'quests';
 
 const PROGRAM_LABELS: Record<TerminalProgram, string> = {
-  hangar: 'HANGAR',
   handel: 'HANDEL',
   quests: 'QUESTS',
-  forschung: 'FORSCHUNG',
 };
 
 const green = '#00FF88';
@@ -125,14 +122,8 @@ export function StationTerminalOverlay() {
             } as React.CSSProperties
           }
         >
-          {program === 'hangar' && <HangarPanel />}
           {program === 'handel' && <TradeScreen />}
           {program === 'quests' && <QuestsScreen />}
-          {program === 'forschung' && (
-            <div style={{ padding: 16, opacity: 0.4, fontSize: '0.8rem' }}>
-              FORSCHUNG — NICHT VERFÜGBAR
-            </div>
-          )}
         </div>
       </div>
     </div>
