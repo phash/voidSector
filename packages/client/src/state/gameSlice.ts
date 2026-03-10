@@ -44,6 +44,7 @@ import type {
   JumpGateDestination,
   QuadrantControlState,
   NpcFleetState,
+  CivShip,
   WarTickerEvent,
   InventoryItem,
 } from '@void-sector/shared';
@@ -433,6 +434,7 @@ export interface GameSlice {
   // Expansion & Warfare
   quadrantControls: QuadrantControlState[];
   npcFleets: NpcFleetState[];
+  civShips: CivShip[];
   warTicker: WarTickerEvent[];
 
   // Unified Inventory
@@ -544,6 +546,7 @@ export interface GameSlice {
   ) => void;
   setQuadrantControls: (controls: QuadrantControlState[]) => void;
   setNpcFleets: (fleets: NpcFleetState[]) => void;
+  setCivShips: (ships: CivShip[]) => void;
   addWarTickerEvent: (event: WarTickerEvent) => void;
   setInventory: (items: InventoryItem[]) => void;
   setTrackedQuests: (quests: TrackedQuest[]) => void;
@@ -662,6 +665,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   activeCommunityQuest: null,
   quadrantControls: [],
   npcFleets: [],
+  civShips: [],
   warTicker: [],
   inventory: [],
   trackedQuests: [],
@@ -877,6 +881,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setHumanityReps: (reps) => set({ humanityReps: reps }),
   setQuadrantControls: (controls) => set({ quadrantControls: controls }),
   setNpcFleets: (fleets) => set({ npcFleets: fleets }),
+  setCivShips: (ships) => set({ civShips: ships }),
   addWarTickerEvent: (event) =>
     set((state) => ({ warTicker: [event, ...state.warTicker].slice(0, 10) })),
   setInventory: (inventory) => set({ inventory }),

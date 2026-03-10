@@ -5,6 +5,8 @@ import { UniverseTickEngine } from './universeTickEngine.js';
 import { StrategicTickService } from './strategicTickService.js';
 import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant, ensureAlienHomeQuadrants } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
+import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
+import { processCivTick } from './civShipService.js';
 
 dotenv.config();
 
@@ -29,11 +31,18 @@ export async function startUniverseEngine(): Promise<void> {
   const alienSeeded = await ensureAlienHomeQuadrants();
   logger.info({ alienSeeded }, 'Universe seeded: Zentrum@(0,0) + alien homeworlds');
 
+  await ensureCivStations();
+  await spawnMissingDrones();
+  logger.info('CivShips: stations seeded and initial drones spawned');
+
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   const strategicTick = new StrategicTickService(redis);
   await strategicTick.init();
 
   const engine = new UniverseTickEngine(async (result) => {
+    // CivShips: move + broadcast every tick (5s)
+    await processCivTick();
+
     if (result.tickCount % STRATEGIC_TICK_INTERVAL !== 0) return;
 
     const repsRecord = await getAllHumanityReps();

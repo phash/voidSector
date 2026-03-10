@@ -1340,6 +1340,34 @@ export interface NpcFleetState {
   eta: number; // unix timestamp ms
 }
 
+export type CivShipType = 'mining_drone' | 'station_builder' | 'combat';
+export type CivShipState = 'idle' | 'exploring' | 'traveling' | 'mining' | 'returning';
+
+export interface CivShip {
+  id: number;
+  faction: string;
+  ship_type: CivShipType;
+  state: CivShipState;
+  x: number;
+  y: number;
+  home_x: number;
+  home_y: number;
+  target_x?: number;
+  target_y?: number;
+  spiral_step?: number;
+  resources_carried?: number;
+}
+
+export interface CivStation {
+  id: number;
+  sector_x: number;
+  sector_y: number;
+  faction: string;
+  has_shipyard: boolean;
+  has_warehouse: boolean;
+  has_kontor: boolean;
+}
+
 export interface WarTickerEvent {
   message: string;
   ts: number; // unix timestamp ms
