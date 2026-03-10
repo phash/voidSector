@@ -1134,6 +1134,8 @@ export interface ShipRecord {
   active: boolean;
   createdAt: string;
   shipColor?: string;
+  acepGeneration?: number;
+  acepTraits?: string[];
 }
 
 export interface ResearchState {
