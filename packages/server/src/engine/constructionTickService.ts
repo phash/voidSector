@@ -7,6 +7,10 @@ import {
 import { createStructure } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
 
+/**
+ * Completions emitted by the current tick. SectorRoom reads and clears this
+ * array after calling processConstructionTick() in each universe tick.
+ */
 export const constructionCompletions: Array<{
   siteId: string;
   sectorX: number;
@@ -41,7 +45,7 @@ export async function processConstructionTick(): Promise<void> {
       try {
         await createStructure(
           site.owner_id,
-          site.type as any, // StructureType — validated at build time
+          site.type,
           site.sector_x,
           site.sector_y,
         );
