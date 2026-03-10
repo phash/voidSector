@@ -24,6 +24,8 @@ export interface QuadrantMapState {
   quadrantControls?: QuadrantControlState[];
   /** Expansion warfare: NPC fleets in transit */
   npcFleets?: NpcFleetState[];
+  /** Fog-of-War: set of "qx:qy" keys the player has physically entered */
+  visitedQuadrants?: Set<string>;
 }
 
 // ─── Expansion Warfare Overlay Helpers ───────────────────────────────────────
@@ -223,7 +225,23 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         ctx.fillRect(cellX - 1, cellY - 1, 3, 3);
       }
 
-      // Fog-of-war symbol for unknown quadrants at higher zoom
+      // Fog-of-war: known-but-unvisited quadrant gets "░░░ UNBEKANNT" label
+      const isVisited = !state.visitedQuadrants || state.visitedQuadrants.has(key);
+      if (isKnown && !isVisited && state.zoomLevel >= 2) {
+        ctx.font = COORD_FONT;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillText('░░░', cellX, cellY - CELL_H * 0.1);
+        if (state.zoomLevel >= 3) {
+          const fogFont = `${Math.max(5, CELL_W * 0.18)}px 'Share Tech Mono', 'Courier New', monospace`;
+          ctx.font = fogFont;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.fillText('UNBEKANNT', cellX, cellY + CELL_H * 0.2);
+        }
+      }
+
+      // Unknown (never seen) quadrant: question mark
       if (!isKnown && state.zoomLevel >= 2) {
         ctx.font = COORD_FONT;
         ctx.textAlign = 'center';

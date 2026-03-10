@@ -435,6 +435,9 @@ export interface GameSlice {
   } | null;
   loreFragmentCount: number;
 
+  // QuadMap Fog-of-War
+  visitedQuadrants: Set<string>; // "qx:qy" keys of physically visited quadrants
+
   // Quest completion
   questCompleteQueue: QuestCompleteEntry[];
 
@@ -557,6 +560,7 @@ export interface GameSlice {
   setDirectChatRecipient: (recipient: { id: string; name: string } | null) => void;
   incrementStat: (key: keyof PlayerStats) => void;
   addToStatSet: (key: 'quadrantsVisited' | 'stationsVisited', value: string) => void;
+  setVisitedQuadrants: (quadrants: Array<{ qx: number; qy: number }>) => void;
   addQuestComplete: (entry: QuestCompleteEntry) => void;
   shiftQuestComplete: () => void;
   setStoryEvent: (e: StoryEventPayload | null) => void;
@@ -684,6 +688,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   newsItems: [],
   hyperdriveState: null,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
+  visitedQuadrants: new Set<string>(),
   questCompleteQueue: [],
   storyEvent: null,
   alienEncounterEvent: null,
@@ -903,6 +908,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       return { playerStats: next };
     }),
 
+  setVisitedQuadrants: (quadrants) =>
+    set({ visitedQuadrants: new Set(quadrants.map((q) => `${q.qx}:${q.qy}`)) }),
   addQuestComplete: (entry) =>
     set((s) => ({ questCompleteQueue: [...s.questCompleteQueue, entry] })),
   shiftQuestComplete: () =>

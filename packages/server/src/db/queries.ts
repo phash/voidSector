@@ -3372,3 +3372,28 @@ export async function logExpansionEvent(
     [faction, qx, qy, event],
   );
 }
+
+// ── Quadrant Fog-of-War (#244) ────────────────────────────────────────────────
+
+/** Record that a player has entered a quadrant. Idempotent (ON CONFLICT DO NOTHING). */
+export async function recordQuadrantVisit(
+  playerId: string,
+  qx: number,
+  qy: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO player_quadrant_visits (player_id, qx, qy)
+     VALUES ($1, $2, $3)
+     ON CONFLICT DO NOTHING`,
+    [playerId, qx, qy],
+  );
+}
+
+/** Returns the set of visited quadrant keys ("qx:qy") for a player. */
+export async function getVisitedQuadrantSet(playerId: string): Promise<Set<string>> {
+  const { rows } = await query<{ qx: number; qy: number }>(
+    'SELECT qx, qy FROM player_quadrant_visits WHERE player_id = $1',
+    [playerId],
+  );
+  return new Set(rows.map((r) => `${r.qx}:${r.qy}`));
+}

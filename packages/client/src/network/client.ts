@@ -1609,6 +1609,10 @@ class GameNetwork {
       useStore.getState().setQuadrantControls(data);
     });
 
+    room.onMessage('visitedQuadrants', (data: Array<{ qx: number; qy: number }>) => {
+      useStore.getState().setVisitedQuadrants(data);
+    });
+
     room.onMessage('npcFleets', (data: NpcFleetState[]) => {
       useStore.getState().setNpcFleets(data);
     });
