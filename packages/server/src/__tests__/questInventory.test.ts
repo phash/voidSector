@@ -6,6 +6,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Client } from 'colyseus';
 
+// --- Mock DB client (for direct query function tests) ---
+vi.mock('../db/client.js', () => ({
+  query: vi.fn(),
+}));
+
 // --- Mock inventoryService ---
 vi.mock('../engine/inventoryService.js', () => ({
   addToInventory: vi.fn().mockResolvedValue(undefined),
@@ -178,5 +183,37 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
     expect(ctx.send).toHaveBeenCalledWith(client, 'cargoUpdate', afterCargo);
     expect(getPlayerCargo).not.toHaveBeenCalled();
     expect(deductCargo).not.toHaveBeenCalled();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// getAcceptedQuestTemplateIds — DB query for filtering already-accepted quests
+// ──────────────────────────────────────────────────────────────────────────────
+describe('getAcceptedQuestTemplateIds', () => {
+  it('returns template_ids of active quests at given station', async () => {
+    const { query } = await import('../db/client.js');
+    vi.mocked(query).mockResolvedValueOnce({
+      rows: [{ template_id: 'delivery_ore_basic' }, { template_id: 'scan_sector' }],
+      rowCount: 2,
+    } as any);
+
+    const { getAcceptedQuestTemplateIds } = await vi.importActual<
+      typeof import('../db/queries.js')
+    >('../db/queries.js');
+    const result = await getAcceptedQuestTemplateIds('player-1', 5, 10);
+
+    expect(result).toEqual(['delivery_ore_basic', 'scan_sector']);
+  });
+
+  it('returns empty array when player has no active quests at station', async () => {
+    const { query } = await import('../db/client.js');
+    vi.mocked(query).mockResolvedValueOnce({ rows: [], rowCount: 0 } as any);
+
+    const { getAcceptedQuestTemplateIds } = await vi.importActual<
+      typeof import('../db/queries.js')
+    >('../db/queries.js');
+    const result = await getAcceptedQuestTemplateIds('player-1', 5, 10);
+
+    expect(result).toEqual([]);
   });
 });

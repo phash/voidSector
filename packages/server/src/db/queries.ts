@@ -1151,6 +1151,27 @@ export async function getActiveQuestCount(playerId: string): Promise<number> {
   return parseInt(rows[0].count, 10);
 }
 
+/**
+ * Returns template_ids of quests the player currently has active at a station.
+ * Used to filter out already-accepted quests from the available quest list.
+ * Only filters 'active' status — completed quests can be offered again.
+ */
+export async function getAcceptedQuestTemplateIds(
+  playerId: string,
+  stationX: number,
+  stationY: number,
+): Promise<string[]> {
+  const { rows } = await query<{ template_id: string }>(
+    `SELECT template_id FROM player_quests
+     WHERE player_id = $1
+       AND station_x = $2
+       AND station_y = $3
+       AND status = 'active'`,
+    [playerId, stationX, stationY],
+  );
+  return rows.map((r) => r.template_id);
+}
+
 export async function insertQuest(
   playerId: string,
   templateId: string,
