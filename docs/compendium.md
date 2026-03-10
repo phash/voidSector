@@ -28,18 +28,38 @@ Das Universum ist ein unendliches 2D-Gitter. Koordinaten werden zweistellig darg
 WORLD_SEED = 77
 ```
 
-Alle Sektoren werden deterministisch aus `hashCoords(x, y, WORLD_SEED)` generiert. Gleicher Seed = gleiche Karte.
+Alle Sektoren werden deterministisch aus `hashCoords(x, y, WORLD_SEED)` generiert. Gleicher Seed = gleiche Karte nach jedem Server-Neustart.
 
-### Sektor-Dichte (45 % non-leer)
+**Zwei-Stufen-Generierung:**
 
-| Sektortyp       | Gewicht | Anteil   |
-|-----------------|---------|----------|
-| empty           | 0.55    | ~55 %    |
-| asteroid_field  | 0.15    | ~15 %    |
-| nebula          | 0.10    | ~10 %    |
-| anomaly         | 0.08    | ~8 %     |
-| pirate          | 0.07    | ~7 %     |
-| station         | 0.05    | ~5 %     |
+1. **Environment-Roll** — Nebula und Black Holes werden vor dem Roll via Zone-System abgefangen (`isInNebulaZone`, `isInBlackHoleCluster`). Alles andere: `empty`.
+2. **Content-Roll** — Bestimmt den Inhalt des Sektors (unabhängiger Hash).
+
+**Salt-Prinzip** — Jedes System bekommt seinen eigenen Salt um Korrelationen zu vermeiden:
+
+| System           | Salt                         |
+|------------------|------------------------------|
+| Sektoren (Basis) | `WORLD_SEED`                 |
+| Jumpgates        | `WORLD_SEED + JUMPGATE_SALT` |
+| NPCs             | `WORLD_SEED + NPC_SEED_SALT` |
+| Quests           | `WORLD_SEED + QUEST_SEED_SALT + dayOfYear` |
+| Nebula-Zonen     | `WORLD_SEED ^ 0xa5a5a5a5`   |
+| Black-Hole-Cluster | `WORLD_SEED ^ 0xb1ac4001` |
+
+### Sektor-Dichte (Content-Weights, zweiter Roll)
+
+90 % aller Sektoren sind vollstaendig leer. Die restlichen 10 % verteilen sich:
+
+| Content          | Gewicht | Anteil   |
+|------------------|---------|----------|
+| none (leer)      | 0.900   | ~90 %    |
+| asteroid_field   | 0.050   | ~5 %     |
+| pirate           | 0.020   | ~2 %     |
+| station          | 0.016   | ~1.6 %   |
+| anomaly          | 0.010   | ~1 %     |
+| ruin             | 0.004   | ~0.4 %   |
+
+`pirate` erzeugt immer `['pirate_zone', 'asteroid_field']`. `station` hat 15 % Chance auf `stationVariant: 'ancient'`.
 
 ### Umgebungssystem (Environment + Content)
 
@@ -141,7 +161,8 @@ Dedizierter Monitor zur Visualisierung der Quadranten-Karte mit Canvas-Rendering
 - **Farbe:** Rot `#FF3333`
 - **Ressourcen:** Ore 8, Gas 3, Crystal 8
 - **Symbol:** `☠`
-- **Besonderheiten:** Automatischer Kampf beim Betreten. Piraten-Level skaliert mit Distanz vom Ursprung.
+- **Besonderheiten:** Automatischer Kampf beim Betreten. Piraten-Level skaliert mit Distanz vom Ursprung (Level 1 bei Distanz 0–49, +1 pro 50 Sektoren, max. Level 10).
+- **Frontier-Regel:** Piraten generieren und kaempfen **nur in Frontier-Quadranten** (1–5 unkontrollierte Nachbarquadranten). In gesicherten Quadranten (tief im Zivilisationsgebiet) wird `pirate_zone` beim Generieren entfernt; bestehende DB-Eintraege bleiben erhalten, Kampf ist aber inaktiv (`NO_PIRATES`-Error).
 
 ### `home_base` — Heimatbasis (Spezial)
 - **Farbe:** Weiss `#FFFFFF`
@@ -681,6 +702,201 @@ Stationen kaufen Slates zurueck: **5 CR pro enthaltenem Sektor** (`SLATE_NPC_PRI
 | 8     | 3000        | —                                        |
 | 9     | 4000        | —                                        |
 | 10    | 5000        | Max Level                                |
+
+---
+
+## 20a. ACEP — Adaptive Craft Evolution Protocol
+
+ACEP ist das Schiffsprogression-System von voidSector. Ein Schiff entwickelt sich durch gelebte Erfahrung — nicht durch manuelle Punktverteilung. Es lernt durch das, was der Pilot tut.
+
+> **Was ACEP ist:** Ein bleibendes Erfahrungsgedächtnis des Schiffs. Unsichtbar im Hintergrund, spürbar in jedem Moment.
+>
+> **Was ACEP nicht ist:** Kein Talent-Baum. Kein Skill-System. Kein Gacha. Kein manuelles Leveln. Das Schiff lernt alleine.
+
+### Grundprinzip
+
+```
+Punkte-Budget: 100 XP total
+Max pro Pfad:   50 XP
+→ Volle Spezialisierung ist möglich — aber nicht in allem gleichzeitig.
+```
+
+XP kommt **emergent durch Aktionen**. Wer kämpft, wird ein Kampfschiff. Wer scannt, wird ein Aufklärungsschiff. Wer baut und Fracht transportiert, wird ein Versorgungsschiff. Der Pilot entscheidet durch sein Verhalten — nicht durch ein Menü.
+
+---
+
+### Die 4 Entwicklungspfade
+
+#### AUSBAU — Logistik & Konstruktion
+
+*"Mehr Raum. Mehr Kapazität. Mehr Möglichkeiten."*
+
+**XP-Quellen (implementiert):**
+
+| Aktion | XP |
+|--------|-----|
+| Ressourcen abbauen (Mining-Tick) | +2 XP |
+| Station bauen | +10 XP |
+| Basis bauen | +10 XP |
+
+**Effekte:**
+
+| XP | Effekt |
+|----|--------|
+| ≥ 10 | +1 extra Modul-Slot |
+| ≥ 25 | +2 extra Modul-Slots |
+| ≥ 40 | +3 extra Modul-Slots |
+| ≥ 50 | +4 extra Modul-Slots (Maximum) |
+| linear | Cargo-Multiplikator: 1.0 + XP × 0.01 (max +50 % bei 50 XP) |
+| linear | Mining-Bonus: XP × 0.006 (max +30 % bei 50 XP) |
+
+---
+
+#### INTEL — Aufklärung & Navigation
+
+*"Daten sind Macht. Das Schiff denkt mit."*
+
+**XP-Quellen (implementiert):**
+
+| Aktion | XP |
+|--------|-----|
+| Sektor scannen | +3 XP |
+| Neuen Quadranten entdecken | +20 XP |
+| Ancient-Anomalie scannen (intern) | variabel |
+
+**Effekte:**
+
+| XP | Effekt |
+|----|--------|
+| ≥ 20 | +1 Scan-Radius |
+| ≥ 40 | +2 Scan-Radius |
+| ≥ 50 | +3 Scan-Radius |
+| linear | Staleness-Multiplikator: 1.0 + XP × 0.02 (Sektoren bleiben bis zu 2× länger frisch) |
+
+---
+
+#### KAMPF — Gefechtserprobung
+
+*"Das Schiff kennt seine Feinde. Es lernt aus jedem Treffer."*
+
+**XP-Quellen (implementiert):**
+
+| Aktion | XP |
+|--------|-----|
+| Pirat besiegt | +5 XP |
+| Kampf gewonnen | +5 XP |
+| Territorial-Angriff | +2–5 XP |
+
+**Effekte:**
+
+| XP | Effekt |
+|----|--------|
+| linear | Schaden-Bonus: XP × 0.004 auf `combatMultiplier` (max +20 % bei 50 XP) |
+| linear | Schild-Regen-Bonus: XP × 0.006 (max +30 % bei 50 XP) |
+
+---
+
+#### EXPLORER — Entdeckung & Erforschung
+
+*"Das Schiff spürt das Unbekannte. Es zieht es an."*
+
+**XP-Quellen (implementiert):**
+
+| Aktion | XP |
+|--------|-----|
+| Neuen Sektor entdecken (Navigation) | +2 XP |
+| Ancient-Ruine scannen | +15 XP |
+
+**Effekte:**
+
+| XP | Effekt |
+|----|--------|
+| ≥ 25 | Ancient-Ruinen auf Radar sichtbar |
+| ≥ 50 | Helion-Decoder aktiv (kein Modul nötig) |
+| linear | Anomalie-Chance-Bonus: XP × 0.002 (max +10 % bei 50 XP) |
+
+---
+
+### Trait-System
+
+Traits entstehen **automatisch** aus der XP-Verteilung. Ein Schiff kann mehrere Traits gleichzeitig tragen.
+
+| Trait | Auslöser | Bedeutung |
+|-------|----------|-----------|
+| `veteran` | kampf ≥ 20 | Kampferprobt |
+| `curious` | intel ≥ 20 | Unersättlich neugierig |
+| `ancient-touched` | explorer ≥ 15 | Hat Altes berührt |
+| `reckless` | kampf ≥ 15 & ausbau ≤ 5 | Kämpfer, ignoriert Logistik |
+| `cautious` | ausbau ≥ 20 & kampf ≤ 5 | Baumeister, meidet Konflikte |
+| `scarred` | kampf ≥ 10 & (rest ≤ 40 % von kampf) | Tunnelvision-Kämpfer |
+
+Dominanz-Priorität für Persönlichkeitsauswahl: `ancient-touched` > `veteran` > `scarred` > `reckless` > `cautious` > `curious`
+
+---
+
+### Persönlichkeitssystem
+
+Schiffe kommentieren Situationen basierend auf ihren Traits. Ton und Charakter ändern sich mit der Erfahrung.
+
+| Schiffstyp | Scan-Kommentar |
+|------------|----------------|
+| Junges Schiff | *(schweigt)* |
+| Veteran | `SYSTEM: Scan nominal. Wir haben schlimmeres gesehen.` |
+| Curious | `SYSTEM: Interessante Energiemuster. Weitere Daten erforderlich.` |
+| Ancient-touched | `SYSTEM: Diese Leere... wir waren schon hier. In einer anderen Form.` |
+| Reckless | `SYSTEM: Scan durch. Kein Kontakt. Schade.` |
+
+Kontexte: `scan`, `scan_ruin`, `combat_victory`, `combat_defeat`, `mine`, `build`
+
+---
+
+### Radar-Icon-Evolution
+
+Ab XP ≥ 20 total überschreibt das ACEP-System das Hull-Standard-Radar-Icon.
+
+| Tier | XP-Gesamt | Beschreibung |
+|------|-----------|-------------|
+| 1 | 0–24 | Hull-Standard-Icon |
+| 2 | 25–49 | Pfad-beeinflusste Variante |
+| 3 | 50–74 | Ausgeprägter Charakter |
+| 4 | ≥ 75 | Vollständige ACEP-Form |
+
+Das dominante Icon-Muster wird durch den dominantesten XP-Pfad bestimmt (Ausbau=breit, Intel=schmal, Kampf=spitz, Explorer=asymmetrisch).
+
+---
+
+### DIFF: Konzept vs. Implementierung (Stand 2026-03-10)
+
+| Bereich | Konzept | Implementiert | Status |
+|---------|---------|---------------|--------|
+| XP-Budget (100 total / 50 pro Pfad) | ✅ | ✅ | OK |
+| AUSBAU: Extra Slots (bis +4) | ✅ | ✅ | OK |
+| AUSBAU: Cargo-Multiplikator | ✅ | ✅ | OK |
+| AUSBAU: Mining-Bonus | ✅ | ✅ | OK |
+| AUSBAU: Schiff nimmt größere Form an (visuell) | ✅ | ❌ | **Offen** |
+| AUSBAU: XP für Bulk-Verkäufe (+2) | ✅ | ❌ | Nicht umgesetzt |
+| INTEL: Scan-Radius-Bonus | ✅ | ✅ | OK |
+| INTEL: Staleness-Multiplikator | ✅ | ✅ | OK |
+| INTEL: Autopilot-Qualität | ✅ | ❌ | **Offen** |
+| INTEL: Axiom-Puzzle-Erleichterung | ✅ | ❌ | Kein Puzzle-System |
+| KAMPF: Schaden-Bonus | ✅ | ✅ | OK |
+| KAMPF: Schild-Regen-Bonus | ✅ | ✅ | OK |
+| KAMPF: Waffen feuern schneller | ✅ | ❌ | **Offen** |
+| KAMPF: K'thari-Rang-Voraussetzungen reduziert | ✅ | ❌ | Kein K'thari-System |
+| KAMPF: XP für Konvoi-Schutz (+15) | ✅ | ❌ | Kein Konvoi-System |
+| EXPLORER: Ancient-Detection auf Radar | ✅ | ✅ | OK |
+| EXPLORER: Helion-Decoder ohne Modul | ✅ | ✅ | OK |
+| EXPLORER: Anomalie-Chance-Bonus | ✅ | ✅ | OK |
+| EXPLORER: Infiltrations-Module effizienter | ✅ | ❌ | Kein Silent-Swarm |
+| Traits: 6 Typen | ✅ | ✅ | OK (Auslöser vereinfacht: XP statt Event-Zähler) |
+| Persönlichkeitsmeldungen | ✅ | ✅ | OK |
+| Radar-Icon-Evolution (4 Tiers) | ✅ | ✅ | OK (alle 3×3, keine Icon-Größen-Skalierung) |
+| Permadeath + Legacy (30 % XP-Vererbung) | ✅ | ✅ | OK |
+| Wrack-POIs auf Radar | ✅ | ❌ | **Offen** |
+| Heraldik-Editor | ✅ | ❌ | Deferred |
+| UI-Panel (ACEP-Tab im HANGAR) | ✅ | Teilweise | ShipStatusPanel zeigt Bars, kein dedizierter ACEP-Tab |
+
+**Legende:** ✅ = im Konzept vorgesehen | ❌ = noch nicht implementiert
 
 ---
 
