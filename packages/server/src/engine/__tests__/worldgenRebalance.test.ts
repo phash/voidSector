@@ -33,8 +33,10 @@ describe('worldgen rebalance (#113)', () => {
     expect(ENVIRONMENT_WEIGHTS.empty).toBeGreaterThanOrEqual(0.7);
   });
 
-  it('content weights have more asteroids than before', () => {
-    expect(CONTENT_WEIGHTS.asteroid_field).toBeGreaterThanOrEqual(0.25);
+  it('content weights have positive asteroid weight', () => {
+    // PR #219 rebalanced: none=0.90 (sparse universe), asteroid_field=0.05
+    expect(CONTENT_WEIGHTS.asteroid_field).toBeGreaterThan(0);
+    expect(CONTENT_WEIGHTS.none).toBeGreaterThanOrEqual(0.85);
   });
 
   it('resource regen constants are positive', () => {
