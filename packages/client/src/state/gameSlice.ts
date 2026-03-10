@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import { BURST_DURATION } from '../canvas/RadarRenderer';
 import type {
   APState,
   SectorData,
@@ -806,11 +807,13 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setDiscoveryTimestamps: (discoveryTimestamps) => set({ discoveryTimestamps }),
   addScanBurstTimestamps: (keys, now) =>
     set((s) => {
-      const next = { ...s.scanBurstTimestamps };
-      for (const key of keys) {
-        next[key] = now;
+      const updated = { ...s.scanBurstTimestamps };
+      for (const k of keys) updated[k] = now;
+      // Remove stale entries (older than BURST_DURATION)
+      for (const k of Object.keys(updated)) {
+        if (now - updated[k] > BURST_DURATION) delete updated[k];
       }
-      return { scanBurstTimestamps: next };
+      return { scanBurstTimestamps: updated };
     }),
   setTerritoryMap: (territoryMap) => set({ territoryMap }),
   setShipList: (shipList) => set({ shipList }),
