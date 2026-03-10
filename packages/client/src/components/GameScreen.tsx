@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { CockpitLayout } from './CockpitLayout';
+import { btn, UI } from '../ui-strings';
 import { RadarCanvas } from './RadarCanvas';
 import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
@@ -210,7 +211,7 @@ function TerritoryPanel() {
             cursor: 'pointer',
           }}
         >
-          ⬡ CLAIM
+          {btn(UI.actions.CLAIM)}
         </button>
         <button
           onClick={() => network.requestMyTerritories()}
@@ -225,7 +226,7 @@ function TerritoryPanel() {
             cursor: 'pointer',
           }}
         >
-          LIST
+          {btn('LIST')}
         </button>
       </div>
     </div>
