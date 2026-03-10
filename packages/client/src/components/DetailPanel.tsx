@@ -261,6 +261,7 @@ export function DetailPanel() {
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const constructionSites = useStore((s) => s.constructionSites);
   const openStationTerminal = useStore((s) => s.openStationTerminal);
+  const breadcrumbStack = useStore((s) => s.breadcrumbStack);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
 
@@ -445,6 +446,23 @@ export function DetailPanel() {
         overflow: 'auto',
       }}
     >
+      {breadcrumbStack.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'monospace', fontSize: '0.7rem', borderBottom: '1px solid #222', paddingBottom: '4px', marginBottom: '6px', flexWrap: 'wrap' }}>
+          {breadcrumbStack.map((crumb, i) => (
+            <span key={i}>
+              {i > 0 && <span style={{ color: '#333', margin: '0 2px' }}>›</span>}
+              <button
+                onClick={() => setActiveProgram(crumb.program)}
+                style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontFamily: 'monospace', fontSize: '0.7rem', padding: 0 }}
+              >
+                {crumb.label}
+              </button>
+            </span>
+          ))}
+          <span style={{ color: '#333', margin: '0 2px' }}>›</span>
+          <span style={{ color: 'var(--color-primary)' }}>DETAIL</span>
+        </div>
+      )}
       <div style={{ letterSpacing: '0.2em', color: sectorColor, marginBottom: 8 }}>
         SECTOR ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})
       </div>
