@@ -8,6 +8,7 @@ vi.mock('../network/client', () => ({
     requestBookmarks: vi.fn(),
     sendSetBookmark: vi.fn(),
     sendClearBookmark: vi.fn(),
+    sendTrackQuest: vi.fn(),
   },
 }));
 
