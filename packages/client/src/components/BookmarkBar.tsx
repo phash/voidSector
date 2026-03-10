@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
@@ -75,6 +75,12 @@ export function BookmarkBar() {
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const [questPanelSlot, setQuestPanelSlot] = useState<string | null>(null);
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hideTimeout.current) clearTimeout(hideTimeout.current);
+    };
+  }, []);
 
   function jumpTo(x: number, y: number) {
     setPanOffset({ x: x - position.x, y: y - position.y });
@@ -234,7 +240,7 @@ export function BookmarkBar() {
                       color: '#f44',
                       cursor: 'pointer',
                       fontFamily: 'monospace',
-                      fontSize: '0.7rem',
+                      fontSize: '0.75rem',
                       padding: '0 2px',
                     }}
                   >
