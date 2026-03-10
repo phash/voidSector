@@ -123,15 +123,36 @@ function RefuelPanel({
 
 function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
   const cargo = useStore((s) => s.cargo);
+  const [amounts, setAmounts] = useState({ ore: 0, gas: 0, crystal: 0 });
 
   const remainOre     = Math.max(0, site.neededOre     - site.depositedOre);
   const remainGas     = Math.max(0, site.neededGas     - site.depositedGas);
   const remainCrystal = Math.max(0, site.neededCrystal - site.depositedCrystal);
 
-  const canDeposit = (remainOre > 0 && cargo.ore >= 1) ||
-                     (remainGas > 0 && cargo.gas >= 1) ||
-                     (remainCrystal > 0 && cargo.crystal >= 1);
+  const maxOre     = Math.min(cargo.ore,     remainOre);
+  const maxGas     = Math.min(cargo.gas,     remainGas);
+  const maxCrystal = Math.min(cargo.crystal, remainCrystal);
+
   const pct = site.progress;
+  const canDeliver = amounts.ore + amounts.gas + amounts.crystal > 0;
+
+  type ResKey = 'ore' | 'gas' | 'crystal';
+  const rows: [string, ResKey, number][] = [
+    ['ORE',     'ore',     maxOre],
+    ['GAS',     'gas',     maxGas],
+    ['CRYSTAL', 'crystal', maxCrystal],
+  ];
+  const deliverableRows = rows.filter(([, , max]) => max > 0);
+
+  function setAmt(key: ResKey, raw: number, max: number) {
+    const v = Math.max(0, Math.min(max, isNaN(raw) ? 0 : raw));
+    setAmounts((prev) => ({ ...prev, [key]: v }));
+  }
+
+  function deliver() {
+    network.sendDepositConstruction(site.id, amounts.ore, amounts.gas, amounts.crystal);
+    setAmounts({ ore: 0, gas: 0, crystal: 0 });
+  }
 
   return (
     <div style={{ marginTop: 8 }}>
@@ -165,22 +186,48 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
         </div>
       ))}
 
-      {/* Deposit button */}
-      {canDeposit && (
-        <button
-          className="vs-btn"
-          style={{ fontSize: '0.7rem', marginTop: 6 }}
-          onClick={() =>
-            network.sendDepositConstruction(
-              site.id,
-              Math.min(cargo.ore, remainOre),
-              Math.min(cargo.gas, remainGas),
-              Math.min(cargo.crystal, remainCrystal),
-            )
-          }
-        >
-          [RESSOURCEN LIEFERN]
-        </button>
+      {/* Deposit sliders */}
+      {deliverableRows.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          {deliverableRows.map(([label, key, max]) => (
+            <div key={key} style={{ marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.6rem' }}>
+                <span style={{ color: 'var(--color-dim)', width: 44 }}>{label}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={max}
+                  value={amounts[key]}
+                  onChange={(e) => setAmt(key, Number(e.target.value), max)}
+                  style={{ flex: 1, accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={max}
+                  value={amounts[key]}
+                  onChange={(e) => setAmt(key, Number(e.target.value), max)}
+                  style={{ width: 36, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontSize: '0.6rem', textAlign: 'center', padding: '1px 2px' }}
+                />
+                <button
+                  className="vs-btn"
+                  style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+                  onClick={() => setAmt(key, max, max)}
+                >
+                  MAX
+                </button>
+              </div>
+            </div>
+          ))}
+          <button
+            className="vs-btn"
+            style={{ fontSize: '0.7rem', marginTop: 4, width: '100%' }}
+            disabled={!canDeliver}
+            onClick={deliver}
+          >
+            [LIEFERN]
+          </button>
+        </div>
       )}
     </div>
   );
@@ -695,7 +742,7 @@ export function DetailPanel() {
 
           {/* Build buttons - only when player is here */}
           {isPlayerHere && constructionSite ? (
-            <ConstructionSitePanel site={constructionSite} />
+            <ConstructionSitePanel key={constructionSite.id} site={constructionSite} />
           ) : isPlayerHere ? (
             <div style={{ marginTop: 8 }}>
               <div
