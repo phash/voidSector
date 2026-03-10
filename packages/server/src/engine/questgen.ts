@@ -86,6 +86,24 @@ function fillQuestTemplate(
     });
   }
 
+  if (template.type === 'delivery' && template.resourceOptions && template.amountRange) {
+    const resIdx = unsignedSeed % template.resourceOptions.length;
+    const resource = template.resourceOptions[resIdx];
+    const [minAmt, maxAmt] = template.amountRange;
+    const amount = minAmt + ((unsignedSeed >>> 8) % (maxAmt - minAmt + 1));
+    description = description
+      .replace('{resource}', resource.toUpperCase())
+      .replace('{amount}', String(amount));
+    objectives.push({
+      type: 'delivery',
+      description: `${amount} ${resource} an Station liefern`,
+      resource,
+      amount,
+      progress: 0,
+      fulfilled: false,
+    });
+  }
+
   if (
     (template.type === 'delivery' || template.type === 'scan' || template.type === 'bounty') &&
     template.distanceRange
@@ -142,6 +160,7 @@ function fillQuestTemplate(
       reputation: template.rewardRepBase,
       reputationPenalty: template.rivalRepPenalty,
       rivalFactionId: template.rivalFactionId,
+      wissen: template.rewardWissenBase,
     },
     requiredTier: template.requiredTier,
   };

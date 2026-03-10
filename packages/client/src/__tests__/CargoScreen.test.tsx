@@ -161,7 +161,7 @@ describe('CargoScreen', () => {
     expect(screen.getByText(/AKTIVIEREN/)).toBeDefined();
   });
 
-  it('shows create slate buttons', () => {
+  it('does not show create slate buttons (moved to SlateControls)', () => {
     mockStoreState({
       cargo: {
         ore: 0,
@@ -217,7 +217,7 @@ describe('CargoScreen', () => {
       },
     });
     render(<CargoScreen />);
-    expect(screen.getByText(/SEKTOR-SLATE/)).toBeDefined();
-    expect(screen.getByText(/GEBIETS-SLATE/)).toBeDefined();
+    expect(screen.queryByText(/SEKTOR-SLATE/)).toBeNull();
+    expect(screen.queryByText(/GEBIETS-SLATE/)).toBeNull();
   });
 });

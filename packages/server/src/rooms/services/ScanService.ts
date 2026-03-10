@@ -33,15 +33,45 @@ import {
   recordAlienEncounter,
   addTypedArtefact,
   getAllQuadrantControls,
+  addWissen,
 } from '../../db/queries.js';
 import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
 import { addToInventory, getInventoryItem, getCargoState } from '../../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
+import { redis } from './RedisAPStore.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
 import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
+
+export const WISSEN_DAILY_CAP_BASE = 200;
+export const WISSEN_DAILY_CAP_FRONTIER = 300;
+
+function todayKey(userId: string): string {
+  return `wissen_daily:${userId}:${new Date().toISOString().slice(0, 10)}`;
+}
+
+export async function addWissenCapped(
+  redis: import('ioredis').Redis,
+  userId: string,
+  amount: number,
+  isFrontier: boolean,
+): Promise<number> {
+  const cap = isFrontier ? WISSEN_DAILY_CAP_FRONTIER : WISSEN_DAILY_CAP_BASE;
+  const key = todayKey(userId);
+  const current = Number((await redis.get(key)) ?? '0');
+  const remaining = Math.max(0, cap - current);
+  const actual = Math.min(amount, remaining);
+  if (actual <= 0) return 0;
+  await redis.set(key, String(current + actual), 'EX', 93600);
+  return actual;
+}
+
+function wissenForSector(sectorType: string): number {
+  const special = ['anomaly', 'asteroid_field', 'nebula'].includes(sectorType);
+  return special ? 25 : 10;
+}
 
 export class ScanService {
   constructor(private ctx: ServiceContext) {}
@@ -105,6 +135,17 @@ export class ScanService {
     // ACEP: INTEL-XP + personality comment for scanning (spec: +3 per scan)
     addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
     this._emitPersonalityComment(client, auth.userId, 'scan').catch(() => {});
+
+    // Wissen: +10 for normal sectors, +25 for special sectors (daily cap)
+    {
+      const isFrontier =
+        Math.max(Math.abs(this.ctx.quadrantX), Math.abs(this.ctx.quadrantY)) > 3;
+      const wissenBase = wissenForSector(sectorData?.type ?? 'empty');
+      const wissenGained = await addWissenCapped(redis, auth.userId, wissenBase, isFrontier);
+      if (wissenGained > 0) {
+        await addWissen(auth.userId, wissenGained);
+      }
+    }
 
     // Ancient ruin scan: reveal lore fragment + artefact chance
     if (sectorData?.contents?.includes('ruin')) {
@@ -258,6 +299,12 @@ export class ScanService {
     // ACEP: INTEL-XP for area scan (discovering new sectors) (spec: +3)
     if (newSectors.length > 0) {
       addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
+    }
+
+    // Wissen: +1 per newly discovered sector (NOT capped — amounts are small: 1 per sector)
+    const newSectorCount = newSectors.length;
+    if (newSectorCount > 0) {
+      await addWissen(auth.userId, newSectorCount);
     }
   }
 

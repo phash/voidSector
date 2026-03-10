@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useStore } from '../state/store';
 import { HangarPanel } from './HangarPanel';
+import { FabrikPanel } from './FabrikPanel';
 import { TradeScreen } from './TradeScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { generateStationName, innerCoord } from '@void-sector/shared';
 
-type TerminalProgram = 'hangar' | 'handel' | 'quests' | 'forschung';
+type TerminalProgram = 'hangar' | 'fabrik' | 'handel' | 'quests' | 'forschung';
 
 const PROGRAM_LABELS: Record<TerminalProgram, string> = {
   hangar: 'HANGAR',
+  fabrik: 'FABRIK',
   handel: 'HANDEL',
   quests: 'QUESTS',
   forschung: 'FORSCHUNG',
@@ -126,6 +128,7 @@ export function StationTerminalOverlay() {
           }
         >
           {program === 'hangar' && <HangarPanel />}
+          {program === 'fabrik' && <FabrikPanel />}
           {program === 'handel' && <TradeScreen />}
           {program === 'quests' && <QuestsScreen />}
           {program === 'forschung' && (

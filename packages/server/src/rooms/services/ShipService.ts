@@ -18,7 +18,12 @@ import {
 } from '@void-sector/shared';
 import { getReputationTier } from '../../engine/commands.js';
 import { getFuelState } from './RedisAPStore.js';
-import { getAcepXpSummary, getAcepEffects } from '../../engine/acepXpService.js';
+import {
+  getAcepXpSummary,
+  getAcepEffects,
+  boostAcepPath,
+  type AcepPath,
+} from '../../engine/acepXpService.js';
 import {
   addToInventory,
   removeFromInventory,
@@ -481,5 +486,34 @@ export class ShipService {
       'logEntry',
       `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`,
     );
+  }
+
+  async handleAcepBoost(
+    client: Client,
+    data: { path: AcepPath },
+  ): Promise<void> {
+    const VALID_ACEP_PATHS: AcepPath[] = ['ausbau', 'intel', 'kampf', 'explorer'];
+    if (!VALID_ACEP_PATHS.includes(data.path)) {
+      this.ctx.send(client, 'actionError', 'Ungültiger Pfad');
+      return;
+    }
+
+    const auth = client.auth as AuthPayload;
+    const ship = await getActiveShip(auth.userId);
+    if (!ship) {
+      this.ctx.send(client, 'actionError', 'Kein aktives Schiff');
+      return;
+    }
+
+    const error = await boostAcepPath(ship.id, data.path, auth.userId);
+    if (error) {
+      this.ctx.send(client, 'actionError', error);
+      return;
+    }
+
+    // Re-push updated ship state (so client ACEP bars refresh)
+    await this.handleGetShips(client);
+    // Re-push wissen (so client Wissen balance refreshes)
+    await this.handleGetResearchState(client);
   }
 }

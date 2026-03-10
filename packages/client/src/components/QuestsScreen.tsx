@@ -649,6 +649,51 @@ export function QuestsScreen() {
                       BELOHNUNG: +{q.rewards.credits} CR | +{q.rewards.xp} XP
                       {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
                     </div>
+                    {(() => {
+                      const deliveryObjs = q.objectives.filter(
+                        (o) => o.type === 'delivery' && o.resource && o.amount != null && !o.fulfilled,
+                      );
+                      const atStation =
+                        currentSector?.type === 'station' &&
+                        position.x === q.stationX &&
+                        position.y === q.stationY;
+                      if (deliveryObjs.length > 0 && atStation) {
+                        return (
+                          <div style={{ marginTop: 4 }}>
+                            {deliveryObjs.map((obj, i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  color: 'rgba(255,176,0,0.5)',
+                                  fontSize: '9px',
+                                  marginBottom: 2,
+                                }}
+                              >
+                                {obj.progress ?? 0}/{obj.amount} {obj.resource?.toUpperCase()}
+                              </div>
+                            ))}
+                            <button
+                              onClick={() =>
+                                network.sendDeliverQuestResources(q.id, position.x, position.y)
+                              }
+                              style={{
+                                background: '#1a1a1a',
+                                color: '#00FF88',
+                                border: '1px solid #00FF88',
+                                padding: '1px 4px',
+                                cursor: 'pointer',
+                                fontFamily: 'inherit',
+                                fontSize: '9px',
+                                marginTop: '2px',
+                              }}
+                            >
+                              [ROHSTOFFE ABLIEFERN]
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     <button
                       onClick={() => network.sendAbandonQuest(q.id)}
                       style={{

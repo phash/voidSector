@@ -6,6 +6,7 @@ import {
   expireOldCommunityQuests,
   completeCommunityQuest,
   contributeHumanityRep,
+  addWissen,
   type CommunityAlienQuestRow,
 } from '../../db/queries.js';
 
@@ -76,6 +77,7 @@ export class CommunityQuestService {
       const questCompleted = await completeCommunityQuest(quest.id);
       if (questCompleted) {
         await contributeHumanityRep(quest.alien_faction_id, 50).catch(() => {});
+        await addWissen(playerId, 5);
       }
       await this.createNext();
     }

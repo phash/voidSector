@@ -6,8 +6,16 @@
 
 import { query } from '../db/client.js';
 import { calculateTraits } from './traitCalculator.js';
+import { deductCredits, addCredits, deductWissen } from '../db/queries.js';
+import {
+  ACEP_BOOST_COST_TIERS,
+  getAcepBoostCost,
+  type AcepPath,
+} from '@void-sector/shared';
 
-export type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer';
+// Re-export so existing server imports keep working
+export type { AcepPath };
+export { ACEP_BOOST_COST_TIERS, getAcepBoostCost };
 
 export const ACEP_PATH_CAP = 50;
 export const ACEP_TOTAL_CAP = 100;
@@ -137,4 +145,36 @@ export async function addAcepXpForPlayer(
   );
   if (rows.length === 0) return;
   await addAcepXp(rows[0].id, path, amount);
+}
+
+// Backward-compat alias for server code that imported getBoostCost
+export { getAcepBoostCost as getBoostCost };
+
+/**
+ * Spend Credits + Wissen to add +5 XP to a specific ACEP path.
+ * Returns an error string on failure, undefined on success.
+ */
+export async function boostAcepPath(
+  shipId: string,
+  path: AcepPath,
+  playerId: string,
+): Promise<string | undefined> {
+  const xp = await getAcepXpSummary(shipId);
+  if (xp.total >= ACEP_TOTAL_CAP) return 'ACEP-Gesamt-Cap erreicht';
+
+  const currentPathXp = xp[path];
+  const cost = getAcepBoostCost(currentPathXp);
+  if (!cost) return 'Pfad-Cap erreicht';
+
+  const creditsOk = await deductCredits(playerId, cost.credits);
+  if (!creditsOk) return 'Zu wenig Credits';
+
+  const wissenOk = await deductWissen(playerId, cost.wissen);
+  if (!wissenOk) {
+    await addCredits(playerId, cost.credits); // refund credits
+    return 'Zu wenig Wissen';
+  }
+
+  await addAcepXp(shipId, path, 5);
+  return undefined; // success
 }
