@@ -1,4 +1,5 @@
 import { useStore } from '../state/store';
+import { network } from '../network/client';
 
 const panelStyle: React.CSSProperties = {
   padding: '12px',
@@ -65,7 +66,7 @@ export function CargoDetailPanel() {
           display: 'block',
           width: '100%',
         }}
-        disabled
+        onClick={() => network.sendJettison(selectedCargoItem)}
       >
         [ABWERFEN]
       </button>
