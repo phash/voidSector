@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useStore } from '../state/store';
+import { FabrikPanel } from './FabrikPanel';
 import { TradeScreen } from './TradeScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { generateStationName, innerCoord } from '@void-sector/shared';
 import { btn, UI } from '../ui-strings';
 
-type TerminalProgram = 'handel' | 'quests';
+type TerminalProgram = 'fabrik' | 'handel' | 'quests';
 
 const PROGRAM_LABELS: Record<TerminalProgram, string> = {
+  fabrik: 'FABRIK',
   handel: 'HANDEL',
   quests: 'QUESTS',
 };
@@ -123,6 +125,7 @@ export function StationTerminalOverlay() {
             } as React.CSSProperties
           }
         >
+          {program === 'fabrik' && <FabrikPanel />}
           {program === 'handel' && <TradeScreen />}
           {program === 'quests' && <QuestsScreen />}
         </div>

@@ -10,6 +10,7 @@ export interface QuestTemplate {
   rewardCreditsBase: number;
   rewardXpBase: number;
   rewardRepBase: number;
+  rewardWissenBase?: number;
   rivalFactionId?: NpcFactionId;
   rivalRepPenalty?: number;
   resourceOptions?: ResourceType[];
@@ -31,6 +32,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 30,
     rewardXpBase: 10,
     rewardRepBase: 5,
+    rewardWissenBase: 2,
     resourceOptions: ['ore'],
     amountRange: [2, 5],
   },
@@ -44,6 +46,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 40,
     rewardXpBase: 12,
     rewardRepBase: 5,
+    rewardWissenBase: 2,
     resourceOptions: ['gas'],
     amountRange: [2, 4],
   },
@@ -57,6 +60,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 80,
     rewardXpBase: 20,
     rewardRepBase: 10,
+    rewardWissenBase: 2,
     distanceRange: [5, 20],
   },
   {
@@ -69,6 +73,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 200,
     rewardXpBase: 50,
     rewardRepBase: 20,
+    rewardWissenBase: 2,
     distanceRange: [10, 40],
   },
   // Scientist quests
@@ -82,6 +87,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 20,
     rewardXpBase: 15,
     rewardRepBase: 5,
+    rewardWissenBase: 3,
     distanceRange: [3, 15],
   },
   {
@@ -94,6 +100,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 60,
     rewardXpBase: 30,
     rewardRepBase: 10,
+    rewardWissenBase: 3,
     distanceRange: [10, 30],
   },
   {
@@ -106,6 +113,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 150,
     rewardXpBase: 60,
     rewardRepBase: 20,
+    rewardWissenBase: 3,
     distanceRange: [20, 50],
     rivalFactionId: 'pirates',
     rivalRepPenalty: 5,
@@ -121,6 +129,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 50,
     rewardXpBase: 20,
     rewardRepBase: 8,
+    rewardWissenBase: 2,
     distanceRange: [3, 15],
   },
   {
@@ -133,6 +142,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 150,
     rewardXpBase: 40,
     rewardRepBase: 15,
+    rewardWissenBase: 2,
     distanceRange: [10, 30],
     rivalFactionId: 'traders',
     rivalRepPenalty: 5,
@@ -148,6 +158,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 300,
     rewardXpBase: 80,
     rewardRepBase: 25,
+    rewardWissenBase: 3,
     distanceRange: [15, 50],
   },
   // Black hole cartography (scientists, rare)
@@ -162,8 +173,38 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 500,
     rewardXpBase: 200,
     rewardRepBase: 30,
+    rewardWissenBase: 3,
     distanceRange: [5, 20],
     scanAdjacentCount: 4,
+  },
+  // Resource delivery quests (bring resources to issuing station, partial OK)
+  {
+    id: 'traders_ore_delivery',
+    type: 'delivery',
+    factionId: 'traders',
+    title: 'Erz-Transport',
+    descriptionTemplate: 'Liefere {amount} {resource} zu dieser Station. Teillieferungen möglich.',
+    requiredTier: 'neutral',
+    rewardCreditsBase: 60,
+    rewardXpBase: 18,
+    rewardRepBase: 8,
+    rewardWissenBase: 2,
+    resourceOptions: ['ore'],
+    amountRange: [15, 40],
+  },
+  {
+    id: 'traders_mixed_delivery',
+    type: 'delivery',
+    factionId: 'traders',
+    title: 'Rohstoff-Kontrakt',
+    descriptionTemplate: 'Kontrakt: {amount} {resource} an diese Station.',
+    requiredTier: 'friendly',
+    rewardCreditsBase: 100,
+    rewardXpBase: 30,
+    rewardRepBase: 12,
+    rewardWissenBase: 2,
+    resourceOptions: ['ore', 'gas', 'crystal'],
+    amountRange: [20, 50],
   },
   // Independent quests (generic)
   {
@@ -176,6 +217,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 20,
     rewardXpBase: 8,
     rewardRepBase: 0,
+    rewardWissenBase: 2,
     resourceOptions: ['ore', 'gas', 'crystal'],
     amountRange: [1, 3],
   },
@@ -189,6 +231,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardCreditsBase: 15,
     rewardXpBase: 10,
     rewardRepBase: 0,
+    rewardWissenBase: 3,
     distanceRange: [2, 10],
   },
 ];

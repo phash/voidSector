@@ -199,6 +199,7 @@ export function QuadMapScreen() {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [selectedQuadrant, setSelectedQuadrant] = useState<{ qx: number; qy: number } | null>(null);
   const knownQuadrants = useStore((s) => s.knownQuadrants);
+  const visitedQuadrants = useStore((s) => s.visitedQuadrants);
   const position = useStore((s) => s.position);
   const currentQuadrant = sectorToQuadrantCoords(position.x, position.y);
   const zoomMax = QUAD_ZOOM_MAX_NORMAL;
@@ -237,6 +238,7 @@ export function QuadMapScreen() {
         factionTerritoryColors,
         quadrantControls: state.quadrantControls,
         npcFleets: state.npcFleets,
+        visitedQuadrants: state.visitedQuadrants,
       });
     },
     [zoomLevel, panOffset, selectedQuadrant],

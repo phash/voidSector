@@ -23,6 +23,7 @@ import { PlayerContextMenu } from './PlayerContextMenu';
 import { StoryEventOverlay } from './overlays/StoryEventOverlay';
 import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
+import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
 import type { ChatChannel } from '@void-sector/shared';
 
 interface CockpitLayoutProps {
@@ -184,6 +185,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       <StoryEventOverlay />
       <FirstContactNewsOverlay />
       <AlienEncounterToast />
+      <QuestCompleteOverlay />
     </div>
   );
 }

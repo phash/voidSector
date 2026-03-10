@@ -49,6 +49,7 @@ import type {
   InventoryItem,
   ConstructionSiteState,
   NpcTradeResultMessage,
+  AcepPath,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -149,7 +150,7 @@ class GameNetwork {
         store.startShipMoveAnimation(oldPos.x, oldPos.y, x, y);
       }
       store.setPosition({ x, y });
-      store.resetPan();
+      setTimeout(() => useStore.getState().resetPan(), 600);
       store.addLogEntry(`Entered sector (${x}, ${y})`);
       return;
     }
@@ -486,7 +487,7 @@ class GameNetwork {
 
     room.onMessage('shipList', (data: { ships: any[] }) => {
       useStore.setState({ shipList: data.ships });
-      // Refresh acepXp + acepEffects on active ship from latest server data
+      // Refresh ACEP fields on active ship from latest server data
       const activeShip = data.ships.find((s: any) => s.active);
       if (activeShip?.acepXp) {
         const current = useStore.getState().ship;
@@ -496,6 +497,8 @@ class GameNetwork {
               ...current,
               acepXp: activeShip.acepXp,
               acepEffects: activeShip.acepEffects,
+              acepGeneration: activeShip.acepGeneration,
+              acepTraits: activeShip.acepTraits,
             },
           });
         }
@@ -886,6 +889,10 @@ class GameNetwork {
       store.setActiveQuests(quests);
       store.addLogEntry('Quest-Fortschritt aktualisiert');
       if (!isMonitorVisible('QUESTS')) store.setAlert('QUESTS', true);
+    });
+
+    room.onMessage('questComplete', (data: { id: string; title: string; rewards: any }) => {
+      useStore.getState().addQuestComplete({ id: data.id, title: data.title, rewards: data.rewards });
     });
 
     room.onMessage('trackedQuestsUpdate', (data: { quests: TrackedQuest[] }) => {
@@ -1602,6 +1609,10 @@ class GameNetwork {
       useStore.getState().setQuadrantControls(data);
     });
 
+    room.onMessage('visitedQuadrants', (data: Array<{ qx: number; qy: number }>) => {
+      useStore.getState().setVisitedQuadrants(data);
+    });
+
     room.onMessage('npcFleets', (data: NpcFleetState[]) => {
       useStore.getState().setNpcFleets(data);
     });
@@ -1901,6 +1912,14 @@ class GameNetwork {
     this.sectorRoom.send('abandonQuest', { questId });
   }
 
+  sendDeliverQuestResources(questId: string, sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('deliverQuestResources', { questId, sectorX, sectorY });
+  }
+
   requestActiveQuests() {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('getActiveQuests', {});
@@ -2164,6 +2183,10 @@ class GameNetwork {
 
   sendRenameShip(shipId: string, name: string) {
     this.sectorRoom?.send('renameShip', { shipId, name });
+  }
+
+  sendAcepBoost(path: AcepPath) {
+    this.sectorRoom?.send('acepBoost', { path });
   }
 
   sendRenameBase(name: string) {

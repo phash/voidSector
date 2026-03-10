@@ -64,7 +64,7 @@ describe('CargoScreen inventory tabs', () => {
     expect(screen.getByText('[INSTALL]')).toBeDefined();
   });
 
-  it('BLUEPRINTS tab shows blueprint with ACTIVATE and CRAFT buttons', async () => {
+  it('BLUEPRINTS tab shows blueprint with ACTIVATE button (CRAFT moved to FabrikPanel)', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'blueprint', itemId: 'shield_mk1', quantity: 2 }],
@@ -73,7 +73,7 @@ describe('CargoScreen inventory tabs', () => {
     await userEvent.click(screen.getByText('BLUEPRINTS'));
     expect(screen.getByText(/SHIELD_MK1/)).toBeDefined();
     expect(screen.getByText('[ACTIVATE]')).toBeDefined();
-    expect(screen.getByText('[CRAFT]')).toBeDefined();
+    expect(screen.queryByText('[CRAFT]')).toBeNull();
   });
 
   it('INSTALL calls sendInstallModule', async () => {
@@ -87,15 +87,14 @@ describe('CargoScreen inventory tabs', () => {
     expect(network.sendInstallModule).toHaveBeenCalled();
   });
 
-  it('CRAFT calls sendCraftModule', async () => {
+  it('CRAFT moved to FabrikPanel — sendCraftModule not in CargoScreen', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'blueprint', itemId: 'engine_blueprint', quantity: 1 }],
     });
     render(<CargoScreen />);
     await userEvent.click(screen.getByText('BLUEPRINTS'));
-    await userEvent.click(screen.getByText('[CRAFT]'));
-    expect(network.sendCraftModule).toHaveBeenCalledWith('engine_blueprint');
+    expect(screen.queryByText('[CRAFT]')).toBeNull();
   });
 
   it('ACTIVATE on blueprint calls sendActivateBlueprint', async () => {

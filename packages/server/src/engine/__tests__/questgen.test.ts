@@ -38,4 +38,27 @@ describe('questgen', () => {
     const honored = generateStationQuests(100, 200, 1, 'honored');
     expect(honored.length).toBeGreaterThanOrEqual(neutral.length);
   });
+
+  it('delivery quests with resource requirements generate resource/amount objectives', () => {
+    // Run many stations to find a delivery quest with resource requirements
+    let found = false;
+    for (let day = 1; day <= 100 && !found; day++) {
+      for (let x = 1; x <= 50 && !found; x++) {
+        const quests = generateStationQuests(x * 37, x * 13, day, 'friendly');
+        for (const q of quests) {
+          const deliveryObj = q.objectives.find(
+            (o) => o.type === 'delivery' && o.resource != null && o.amount != null,
+          );
+          if (deliveryObj) {
+            expect(deliveryObj.resource).toBeTruthy();
+            expect(deliveryObj.amount).toBeGreaterThan(0);
+            expect(deliveryObj.progress).toBe(0);
+            expect(deliveryObj.fulfilled).toBe(false);
+            found = true;
+          }
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
 });

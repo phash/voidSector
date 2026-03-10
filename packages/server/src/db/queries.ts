@@ -126,8 +126,11 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
     fuel: number;
     active: boolean;
     created_at: string;
+    acep_generation: number;
+    acep_traits: string[];
   }>(
-    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at
+    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at,
+            acep_generation, acep_traits
      FROM ships WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
     [playerId],
   );
@@ -141,16 +144,30 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
     modules: row.modules,
     active: row.active,
     createdAt: row.created_at,
+    acepGeneration: row.acep_generation ?? 1,
+    acepTraits: (row.acep_traits as string[]) ?? [],
   };
 }
 
 export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
-  const { rows } = await query<any>(
-    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at
+  const { rows } = await query<{
+    id: string;
+    owner_id: string;
+    hull_type: string;
+    name: string;
+    modules: ShipModule[];
+    fuel: number;
+    active: boolean;
+    created_at: string;
+    acep_generation: number;
+    acep_traits: string[];
+  }>(
+    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at,
+            acep_generation, acep_traits
      FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
     [playerId],
   );
-  return rows.map((row: any) => ({
+  return rows.map((row) => ({
     id: row.id,
     ownerId: row.owner_id,
     hullType: row.hull_type as HullType,
@@ -158,6 +175,8 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
     modules: row.modules,
     active: row.active,
     createdAt: row.created_at,
+    acepGeneration: row.acep_generation ?? 1,
+    acepTraits: (row.acep_traits as string[]) ?? [],
   }));
 }
 
@@ -3352,4 +3371,29 @@ export async function logExpansionEvent(
     'INSERT INTO expansion_log (faction, qx, qy, event) VALUES ($1, $2, $3, $4)',
     [faction, qx, qy, event],
   );
+}
+
+// ── Quadrant Fog-of-War (#244) ────────────────────────────────────────────────
+
+/** Record that a player has entered a quadrant. Idempotent (ON CONFLICT DO NOTHING). */
+export async function recordQuadrantVisit(
+  playerId: string,
+  qx: number,
+  qy: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO player_quadrant_visits (player_id, qx, qy)
+     VALUES ($1, $2, $3)
+     ON CONFLICT DO NOTHING`,
+    [playerId, qx, qy],
+  );
+}
+
+/** Returns the set of visited quadrant keys ("qx:qy") for a player. */
+export async function getVisitedQuadrantSet(playerId: string): Promise<Set<string>> {
+  const { rows } = await query<{ qx: number; qy: number }>(
+    'SELECT qx, qy FROM player_quadrant_visits WHERE player_id = $1',
+    [playerId],
+  );
+  return new Set(rows.map((r) => `${r.qx}:${r.qy}`));
 }
