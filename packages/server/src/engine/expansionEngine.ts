@@ -70,3 +70,24 @@ export function findAllBorderPairs(
   }
   return pairs;
 }
+
+/**
+ * A quadrant is a "frontier" if it has between 1 and 5 unclaimed/empty
+ * neighboring quadrants. 0 empty = deep interior; 6-8 empty = deep wilderness.
+ * Pirates only exist and fight in frontier quadrants.
+ */
+export function isFrontierQuadrant(
+  qx: number,
+  qy: number,
+  allControls: QuadrantControlRow[],
+): boolean {
+  const controlled = new Set(allControls.map((q) => `${q.qx},${q.qy}`));
+  let emptyNeighbors = 0;
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      if (dx === 0 && dy === 0) continue;
+      if (!controlled.has(`${qx + dx},${qy + dy}`)) emptyNeighbors++;
+    }
+  }
+  return emptyNeighbors >= 1 && emptyNeighbors <= 5;
+}
