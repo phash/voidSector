@@ -301,15 +301,10 @@ export class ScanService {
       addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
     }
 
-    // Wissen: +1 per newly discovered sector (with daily cap)
+    // Wissen: +1 per newly discovered sector (NOT capped — amounts are small: 1 per sector)
     const newSectorCount = newSectors.length;
     if (newSectorCount > 0) {
-      const isFrontier =
-        Math.max(Math.abs(this.ctx.quadrantX), Math.abs(this.ctx.quadrantY)) > 3;
-      const wissenGained = await addWissenCapped(redis, auth.userId, newSectorCount, isFrontier);
-      if (wissenGained > 0) {
-        await addWissen(auth.userId, wissenGained);
-      }
+      await addWissen(auth.userId, newSectorCount);
     }
   }
 
