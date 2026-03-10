@@ -351,7 +351,7 @@ export class WorldService {
       const constructionSite = toConstructionSiteState(site!);
       client.send('buildResult', { success: true, constructionSite });
       client.send('apUpdate', newAP!);
-      this.ctx.broadcast('constructionSiteCreated', { constructionSite });
+      this.ctx.broadcast('constructionSiteCreated', { site: constructionSite });
       addAcepXpForPlayer(auth.userId, 'ausbau', 10).catch(() => {});
       return;
     }

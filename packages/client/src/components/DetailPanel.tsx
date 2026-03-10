@@ -128,7 +128,9 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
   const remainGas     = Math.max(0, site.neededGas     - site.depositedGas);
   const remainCrystal = Math.max(0, site.neededCrystal - site.depositedCrystal);
 
-  const canDeposit = cargo.ore >= 1 || cargo.gas >= 1 || cargo.crystal >= 1;
+  const canDeposit = (remainOre > 0 && cargo.ore >= 1) ||
+                     (remainGas > 0 && cargo.gas >= 1) ||
+                     (remainCrystal > 0 && cargo.crystal >= 1);
   const pct = site.progress;
 
   return (

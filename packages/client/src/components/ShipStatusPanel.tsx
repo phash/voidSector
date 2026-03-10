@@ -36,7 +36,7 @@ export function ShipStatusPanel() {
     return <div style={{ padding: '4px 8px', ...dim, opacity: 0.5 }}>NO SHIP DATA</div>;
   }
 
-  const { id: shipId, name: shipName, hullType, modules, stats, acepXp: xp } = ship;
+  const { id: shipId, name: shipName, hullType, stats, acepXp: xp } = ship;
   const hull = HULLS[hullType];
 
   function startRename() {

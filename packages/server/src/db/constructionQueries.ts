@@ -94,12 +94,3 @@ export async function deleteConstructionSiteById(id: string): Promise<void> {
   await query('DELETE FROM construction_sites WHERE id=$1', [id]);
 }
 
-export async function deleteConstructionSite(
-  sectorX: number,
-  sectorY: number,
-): Promise<void> {
-  await query(
-    'DELETE FROM construction_sites WHERE sector_x=$1 AND sector_y=$2',
-    [sectorX, sectorY],
-  );
-}
