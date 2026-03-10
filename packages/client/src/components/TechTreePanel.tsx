@@ -58,7 +58,7 @@ function formatCountdown(ms: number): string {
 
 export function TechTreePanel() {
   const research = useStore((s) => s.research);
-  const wissen = useStore((s) => s.research.wissen ?? 0);
+  const wissen = research.wissen ?? 0;
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const setSelectedTechModule = useStore((s) => s.setSelectedTechModule);
 

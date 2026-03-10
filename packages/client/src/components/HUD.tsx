@@ -166,7 +166,7 @@ export function StatusBar() {
       )}
       <span style={{ color: 'var(--color-dim)' }}>|</span>
       <span>CR: {credits.toLocaleString()}</span>
-      <span style={{ color: 'var(--color-dim)', fontSize: '0.7rem' }}>◈ W: {wissen}</span>
+      <span style={{ color: 'var(--color-dim)', fontSize: '0.7rem' }}>◈ WISSEN: {wissen}</span>
       {alienCredits > 0 && (
         <>
           <span style={{ color: 'var(--color-dim)' }}>|</span>
