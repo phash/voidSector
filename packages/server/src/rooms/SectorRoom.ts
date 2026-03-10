@@ -16,6 +16,8 @@ import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent, AdminPlayerUpdateEvent } from '../adminBus.js';
 import { commsBus } from '../commsBus.js';
 import type { CommsBroadcastEvent } from '../commsBus.js';
+import { civShipBus } from '../civShipBus.js';
+import type { CivShipsTickEvent } from '../civShipBus.js';
 import {
   getAPState,
   saveAPState,
@@ -1013,6 +1015,13 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       }
     };
+    // CivShips — broadcast visible NPC ships to clients in this quadrant
+    const onCivShipsTick = (event: CivShipsTickEvent) => {
+      if (event.qx !== this.quadrantX || event.qy !== this.quadrantY) return;
+      this.broadcast('civ_ships_tick', event.ships);
+    };
+    civShipBus.on('civShipsTick', onCivShipsTick);
+
     commsBus.on('commsBroadcast', onCommsBroadcast);
 
     this.disposeCallbacks.push(() => {
@@ -1020,6 +1029,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       adminBus.off('adminQuestCreated', onQuestCreated);
       adminBus.off('adminPlayerUpdate', onPlayerUpdate);
       commsBus.off('commsBroadcast', onCommsBroadcast);
+      civShipBus.off('civShipsTick', onCivShipsTick);
     });
   }
 
