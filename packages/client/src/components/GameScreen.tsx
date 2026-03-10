@@ -15,7 +15,6 @@ import { BattleDialog } from './BattleDialog';
 import { CombatV2Dialog } from './CombatV2Dialog';
 import { BattleResultDialog } from './BattleResultDialog';
 import { ModulePanel } from './ModulePanel';
-import { HangarPanel } from './HangarPanel';
 import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
@@ -35,11 +34,11 @@ import { useMobileTabs } from '../hooks/useMobileTabs';
 import { MONITORS } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
-// --- SHIP-SYS: Settings + Modules + Hangar ---
+// --- SHIP-SYS: Settings + Modules ---
 
-type ShipSysView = 'settings' | 'modules' | 'hangar';
+type ShipSysView = 'settings' | 'modules';
 
-const SHIP_SYS_MODES: ShipSysView[] = ['settings', 'modules', 'hangar'];
+const SHIP_SYS_MODES: ShipSysView[] = ['settings', 'modules'];
 
 const ACEP_PATHS = [
   { key: 'ausbau', label: 'AUSBAU', color: '#ffaa00', max: 50 },
@@ -245,7 +244,6 @@ function ShipSysScreen() {
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         {view === 'settings' && <SettingsView />}
         {view === 'modules' && <ModulePanel />}
-        {view === 'hangar' && <HangarPanel />}
       </div>
     </div>
   );
@@ -352,8 +350,6 @@ function renderScreen(monitorId: string) {
       return <NewsScreen />;
     case 'MODULES':
       return <ModulePanel />;
-    case 'HANGAR':
-      return <HangarPanel />;
     default:
       return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
