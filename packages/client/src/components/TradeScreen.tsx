@@ -22,6 +22,8 @@ const btnStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
+const NPC_COLUMN_MAX_HEIGHT = 240;
+
 export function TradeScreen() {
   const credits = useStore((s) => s.credits);
   const storage = useStore((s) => s.storage);
@@ -190,7 +192,7 @@ export function TradeScreen() {
                   >
                     STATION ANGEBOT
                   </div>
-                  <div style={{ overflowY: 'auto', maxHeight: 240 }}>
+                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {npcStationData.inventory.map((item) => {
                       const filled =
                         item.maxStock > 0 ? Math.round((item.stock / item.maxStock) * 10) : 0;
@@ -265,8 +267,9 @@ export function TradeScreen() {
                   >
                     AN BORD ({cargoTotal}/{cargoCap})
                   </div>
-                  <div style={{ overflowY: 'auto', maxHeight: 240 }}>
+                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {npcStationData.inventory.map((item) => {
+                      // itemType is always a resource key for NPC station inventory items
                       const playerAmount =
                         cargo[item.itemType as 'ore' | 'gas' | 'crystal'] ?? 0;
                       return (
@@ -333,7 +336,7 @@ export function TradeScreen() {
                   >
                     STATION
                   </div>
-                  <div style={{ overflowY: 'auto', maxHeight: 240 }}>
+                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {(['ore', 'gas', 'crystal'] as const).map((res) => {
                       const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
                       const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
@@ -380,7 +383,7 @@ export function TradeScreen() {
                   >
                     BESTAND
                   </div>
-                  <div style={{ overflowY: 'auto', maxHeight: 240 }}>
+                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {(['ore', 'gas', 'crystal'] as const).map((res) => {
                       const playerAmount = isStation ? cargo[res] : storage[res];
                       return (
