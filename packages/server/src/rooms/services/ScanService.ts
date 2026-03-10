@@ -276,6 +276,16 @@ export class ScanService {
         const pirateLevel = (eventResult.data?.pirateLevel as number) ?? 1;
         const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
         const encounter = createPirateEncounter(pirateLevel, sector.x, sector.y, pirateRep);
+        // Frontier guard: pirates only fight in frontier quadrants
+        const { qx: v2Qx, qy: v2Qy } = sectorToQuadrant(sector.x, sector.y);
+        const v2Controls = await getAllQuadrantControls();
+        if (!isFrontierQuadrant(v2Qx, v2Qy, v2Controls)) {
+          client.send('actionError', {
+            code: 'NO_PIRATES',
+            message: 'Dieser Sektor liegt tief im Zivilisationsgebiet. Keine Piraten mehr aktiv.',
+          });
+          continue;
+        }
         client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
         // Init combat v2 state
         if (FEATURE_COMBAT_V2) {

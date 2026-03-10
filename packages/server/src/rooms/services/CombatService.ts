@@ -41,7 +41,10 @@ import {
   getStructureHp,
   updateStructureHp,
   getActiveShip,
+  getAllQuadrantControls,
 } from '../../db/queries.js';
+import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
+import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
 import {
   FEATURE_COMBAT_V2,
   BATTLE_AP_COST_FLEE,
@@ -62,6 +65,17 @@ export class CombatService {
     const credits = await getPlayerCredits(auth.userId);
     const cargo = await getCargoState(auth.userId);
     const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
+
+    // Frontier guard: pirates only fight in frontier quadrants
+    const { qx: bQx, qy: bQy } = sectorToQuadrant(data.sectorX, data.sectorY);
+    const bControls = await getAllQuadrantControls();
+    if (!isFrontierQuadrant(bQx, bQy, bControls)) {
+      client.send('actionError', {
+        code: 'NO_PIRATES',
+        message: 'Dieser Sektor liegt tief im Zivilisationsgebiet. Keine Piraten mehr aktiv.',
+      });
+      return;
+    }
 
     const pirateLevel = getPirateLevel(data.sectorX, data.sectorY);
     const encounter = createPirateEncounter(pirateLevel, data.sectorX, data.sectorY, pirateRep);
