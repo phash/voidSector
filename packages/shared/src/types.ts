@@ -414,6 +414,8 @@ export interface NpcTradeResultMessage {
   credits?: number;
   cargo?: CargoState;
   storage?: StorageInventory;
+  partial?: boolean;
+  soldAmount?: number;
 }
 
 export interface PlaceOrderMessage {

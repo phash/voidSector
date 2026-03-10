@@ -43,6 +43,7 @@ export function TradeScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
+  const tradeMessage = useStore((s) => s.tradeMessage);
   const [amount, setAmount] = useState(1);
   const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
 
@@ -158,6 +159,11 @@ export function TradeScreen() {
           }}
         />
       </div>
+      {tradeMessage && (
+        <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', opacity: 0.7, marginTop: 4, marginBottom: 4 }}>
+          {tradeMessage}
+        </div>
+      )}
 
       {tab === 'npc' && (
         <div>
@@ -340,6 +346,7 @@ export function TradeScreen() {
                     {(['ore', 'gas', 'crystal'] as const).map((res) => {
                       const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
                       const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
+                      const playerAmount = isStation ? cargo[res] : storage[res];
                       return (
                         <div
                           key={res}
@@ -352,7 +359,7 @@ export function TradeScreen() {
                           <div style={{ fontSize: '0.75rem', marginBottom: 3 }}>
                             {res.toUpperCase()}
                           </div>
-                          <div style={{ display: 'flex', gap: 4 }}>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                             <button
                               style={{ ...btnStyle, fontSize: '0.6rem' }}
                               onClick={() => network.sendNpcTrade(res, amount, 'buy')}
@@ -365,6 +372,14 @@ export function TradeScreen() {
                             >
                               V ({sellPrice}CR)
                             </button>
+                            {playerAmount > 0 && (
+                              <button
+                                style={{ ...btnStyle, fontSize: '0.55rem', opacity: 0.8 }}
+                                onClick={() => network.sendNpcTrade(res, playerAmount, 'sell')}
+                              >
+                                ALLES ({playerAmount})
+                              </button>
+                            )}
                           </div>
                         </div>
                       );

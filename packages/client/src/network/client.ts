@@ -714,12 +714,18 @@ class GameNetwork {
     });
 
     // NPC trade result
-    room.onMessage('npcTradeResult', (data: { success: boolean; error?: string }) => {
+    room.onMessage('npcTradeResult', (data: { success: boolean; error?: string; partial?: boolean; soldAmount?: number }) => {
       const store = useStore.getState();
       if (data.success) {
         store.addLogEntry('Trade complete');
+        if (data.partial) {
+          store.setTradeMessage(`Nur ${data.soldAmount}x verkauft — Station ist fast voll`);
+        } else {
+          store.setTradeMessage(null);
+        }
       } else {
         store.addLogEntry(`Trade failed: ${data.error}`);
+        store.setTradeMessage(null);
       }
     });
 

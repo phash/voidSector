@@ -447,6 +447,9 @@ export interface GameSlice {
   // Tracked quests
   trackedQuests: TrackedQuest[];
 
+  // Trade feedback (partial sell message)
+  tradeMessage: string | null;
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -462,6 +465,7 @@ export interface GameSlice {
   addDiscoveries: (sectors: SectorData[]) => void;
   addLogEntry: (message: string) => void;
   setActionError: (error: { code: string; message: string } | null) => void;
+  setTradeMessage: (message: string | null) => void;
   setActiveMonitor: (monitor: string) => void;
   setMining: (mining: MiningState) => void;
   setCargo: (cargo: CargoState) => void;
@@ -677,6 +681,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   inventory: [],
   trackedQuests: [],
   constructionSites: [],
+  tradeMessage: null,
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -741,6 +746,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     })),
 
   setActionError: (actionError) => set({ actionError }),
+  setTradeMessage: (tradeMessage) => set({ tradeMessage }),
 
   setActiveMonitor: (activeMonitor) => set({ activeMonitor }),
   setMining: (mining) => set({ mining }),

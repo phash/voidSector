@@ -451,6 +451,7 @@ adminRouter.get('/faction-homes', async (_req: Request, res: Response) => {
 adminRouter.get('/construction-sites', async (_req: Request, res: Response) => {
   try {
     const sites = await getAllConstructionSites();
+    await logAdminEvent('list_construction_sites', { count: sites.length });
     res.json({ sites });
   } catch (err) {
     logger.error({ err }, 'Admin construction-sites GET error');
@@ -459,8 +460,8 @@ adminRouter.get('/construction-sites', async (_req: Request, res: Response) => {
 });
 
 adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: Response) => {
-  const { id } = req.params;
   try {
+    const { id } = req.params;
     const site = await getConstructionSiteById(id);
     if (!site) {
       res.status(404).json({ error: 'Construction site not found' });
@@ -468,21 +469,22 @@ adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: R
     }
     try {
       await createStructure(site.owner_id, site.type, site.sector_x, site.sector_y);
+      await deleteConstructionSiteById(site.id);
     } catch (err: any) {
       if (err.code !== '23505') throw err;
       // Duplicate structure — delete site anyway and treat as success
+      await deleteConstructionSiteById(site.id);
     }
-    await deleteConstructionSiteById(site.id);
+    await logAdminEvent('complete_construction', { siteId: site.id, type: site.type, sectorX: site.sector_x, sectorY: site.sector_y });
     constructionBus.emit('completed', {
       siteId: site.id,
       sectorX: site.sector_x,
       sectorY: site.sector_y,
     });
-    await logAdminEvent('complete_construction', { siteId: site.id, type: site.type, sectorX: site.sector_x, sectorY: site.sector_y });
     logger.info({ id, type: site.type }, 'Admin completed construction site');
     res.json({ success: true });
   } catch (err) {
-    logger.error({ err, id }, 'Admin construction-sites POST complete error');
+    logger.error({ err }, 'Admin construction-sites POST complete error');
     res.status(500).json({ error: 'Internal error' });
   }
 });
