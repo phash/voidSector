@@ -32,7 +32,10 @@ import {
   getActiveShip,
   recordAlienEncounter,
   addTypedArtefact,
+  getAllQuadrantControls,
 } from '../../db/queries.js';
+import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
+import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
 import { addToInventory, getInventoryItem, getCargoState } from '../../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
@@ -180,6 +183,7 @@ export class ScanService {
     const sectors: SectorData[] = [];
     const newSectors: SectorData[] = [];
     const allCoords: { x: number; y: number }[] = [];
+    const scanControls = await getAllQuadrantControls(); // fetch once for all sectors in batch
 
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dy = -radius; dy <= radius; dy++) {
@@ -188,7 +192,9 @@ export class ScanService {
         const key = `${tx}:${ty}`;
         let sector = existingMap.get(key);
         if (!sector) {
-          sector = generateSector(tx, ty, auth.userId);
+          const { qx, qy } = sectorToQuadrant(tx, ty);
+          const frontier = isFrontierQuadrant(qx, qy, scanControls);
+          sector = generateSector(tx, ty, auth.userId, frontier);
           newSectors.push(sector);
         }
         sectors.push(sector);
