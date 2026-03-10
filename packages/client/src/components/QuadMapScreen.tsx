@@ -6,7 +6,6 @@ import {
   sectorToQuadrantCoords,
   QUAD_CELL_SIZES,
   QUAD_ZOOM_MAX_NORMAL,
-  QUAD_ZOOM_MAX_ADMIN,
 } from '../canvas/QuadrantMapRenderer';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
@@ -195,21 +194,14 @@ function playerColor(playerId: string): string {
 
 // --- QuadMapScreen ---
 
-// Admin-only zoom level definitions
-const ADMIN_EXTRA_ZOOMS: Array<{ index: number; label: string }> = [
-  { index: 4, label: '250×' },
-  { index: 5, label: '1000×' },
-];
-
 export function QuadMapScreen() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [selectedQuadrant, setSelectedQuadrant] = useState<{ qx: number; qy: number } | null>(null);
   const knownQuadrants = useStore((s) => s.knownQuadrants);
   const position = useStore((s) => s.position);
-  const isAdmin = useStore((s) => s.isAdmin);
   const currentQuadrant = sectorToQuadrantCoords(position.x, position.y);
-  const zoomMax = isAdmin ? QUAD_ZOOM_MAX_ADMIN : QUAD_ZOOM_MAX_NORMAL;
+  const zoomMax = QUAD_ZOOM_MAX_NORMAL;
 
   // Request known quadrants + territory data on mount
   useEffect(() => {
@@ -396,22 +388,6 @@ export function QuadMapScreen() {
             >
               +
             </button>
-            {isAdmin &&
-              ADMIN_EXTRA_ZOOMS.map(({ index, label }) => (
-                <button
-                  key={index}
-                  onClick={() => setZoomLevel(index)}
-                  style={{
-                    ...zoomBtnStyle,
-                    borderColor:
-                      zoomLevel === index ? 'var(--color-primary)' : 'rgba(255,100,0,0.5)',
-                    color: zoomLevel === index ? 'var(--color-primary)' : 'rgba(255,150,0,0.8)',
-                  }}
-                  title={`Admin zoom ${label}`}
-                >
-                  {label}
-                </button>
-              ))}
             <button
               onClick={() => {
                 setPanOffset({ x: 0, y: 0 });

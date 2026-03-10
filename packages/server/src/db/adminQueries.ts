@@ -786,3 +786,50 @@ function mapStoryRow(row: {
     createdAt: row.created_at,
   };
 }
+
+// ── Admin Quadrant Map Query ─────────────────────────────────────────
+
+export interface AdminQuadrantMapEntry {
+  qx: number;
+  qy: number;
+  faction: string | null;
+  name: string | null;
+  friction: number;
+  border_state: string | null;
+  fleet_count: number;
+}
+
+export async function getAdminQuadrantMap(): Promise<AdminQuadrantMapEntry[]> {
+  const { rows } = await query<{
+    qx: number;
+    qy: number;
+    faction: string | null;
+    name: string | null;
+    friction: string;
+    border_state: string | null;
+    fleet_count: number;
+  }>(`
+    SELECT
+      qc.qx, qc.qy,
+      qc.controlling_faction AS faction,
+      q.name,
+      COALESCE(fc.friction_score, 0) AS friction,
+      fc.border_state,
+      COUNT(nf.id)::int AS fleet_count
+    FROM quadrant_control qc
+    LEFT JOIN quadrants q ON q.qx = qc.qx AND q.qy = qc.qy
+    LEFT JOIN faction_config fc ON fc.faction_id = qc.controlling_faction
+    LEFT JOIN npc_fleet nf ON nf.target_qx = qc.qx AND nf.target_qy = qc.qy
+    GROUP BY qc.qx, qc.qy, qc.controlling_faction, q.name, fc.friction_score, fc.border_state
+    ORDER BY qc.qx, qc.qy
+  `);
+  return rows.map((r) => ({
+    qx: r.qx,
+    qy: r.qy,
+    faction: r.faction,
+    name: r.name,
+    friction: typeof r.friction === 'string' ? parseFloat(r.friction) : r.friction,
+    border_state: r.border_state,
+    fleet_count: r.fleet_count,
+  }));
+}

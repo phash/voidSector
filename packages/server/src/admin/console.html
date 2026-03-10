@@ -565,6 +565,7 @@ button.success:hover {
     <div class="tab" data-tab="events">Events</div>
     <div class="tab" data-tab="stats">Stats</div>
     <div class="tab" data-tab="stories">Stories</div>
+    <div class="tab" data-tab="quadmap">QUAD-MAP</div>
   </div>
 
   <div id="content">
@@ -827,6 +828,29 @@ expiresDays: 14"></textarea>
       <div id="stories-list" style="display:flex;flex-direction:column;gap:16px;overflow:auto;max-height:calc(100vh - 200px);padding-right:8px"></div>
     </div>
 
+    <!-- ── QUAD-MAP Tab ─────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-quadmap">
+      <div class="card" style="padding:12px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+          <span class="section-title" style="margin:0">QUAD-MAP</span>
+          <div id="qmap-zoom-controls" style="display:flex;gap:6px;align-items:center">
+            <span style="color:var(--amber-dim);font-size:10px;letter-spacing:1px">ZOOM:</span>
+            <button class="qmap-zoom-btn primary" data-zoom="0">1×</button>
+            <button class="qmap-zoom-btn" data-zoom="1">5×</button>
+            <button class="qmap-zoom-btn" data-zoom="2">10×</button>
+            <button class="qmap-zoom-btn" data-zoom="3">25×</button>
+            <button class="qmap-zoom-btn" data-zoom="4">50×</button>
+            <button class="qmap-zoom-btn" data-zoom="5" style="color:#ff9900">250×</button>
+            <button class="qmap-zoom-btn" data-zoom="6" style="color:#ff9900">1000×</button>
+          </div>
+          <button id="qmap-refresh-btn" style="margin-left:auto">&#8635; Refresh</button>
+          <span id="qmap-status" style="font-size:10px;color:var(--amber-dim)"></span>
+        </div>
+        <canvas id="qmap-canvas" width="900" height="600" style="border:1px solid var(--amber-dim);cursor:grab;display:block;max-width:100%"></canvas>
+        <div style="margin-top:8px;font-size:10px;color:var(--amber-dim);display:flex;gap:16px;flex-wrap:wrap" id="qmap-legend"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1003,6 +1027,11 @@ expiresDays: 14"></textarea>
     else if (name === 'events') loadEvents();
     else if (name === 'stats') loadStats();
     else if (name === 'stories') loadStories();
+    else if (name === 'quadmap') {
+      initQmapCanvas();
+      if (qmapData.length === 0) fetchQmapData();
+      else renderQmap();
+    }
   }
 
   function switchQuestSubTab(name) {
@@ -1896,6 +1925,241 @@ expiresDays: 14"></textarea>
     return card;
   }
 
+  // ── QUAD-MAP ───────────────────────────────────────────────────
+
+  var qmapData = [];
+  var qmapZoom = 2; // default 10×
+  var qmapPan = { x: 0, y: 0 };
+  var qmapDragging = false;
+  var qmapDragStartX = 0;
+  var qmapDragStartY = 0;
+  var qmapPanStartX = 0;
+  var qmapPanStartY = 0;
+
+  // pixels per quadrant cell at each zoom index
+  var ZOOM_CELL_SIZES = [4, 8, 16, 32, 64, 128, 512];
+
+  var FACTION_COLORS = {
+    humans:   '#2a7a2a',
+    valtoris: '#7a2a2a',
+    nexaris:  '#2a2a7a',
+    tharion:  '#7a5a00',
+    zelphyr:  '#00607a',
+    moruvek:  '#5a007a',
+    drakneth: '#7a3a00',
+    skivari:  '#007a5a',
+    unknown:  '#555555',
+  };
+
+  function getFactionColor(faction) {
+    if (!faction) return '#222222';
+    var key = faction.toLowerCase();
+    return FACTION_COLORS[key] || FACTION_COLORS.unknown;
+  }
+
+  function fetchQmapData() {
+    var statusEl = document.getElementById('qmap-status');
+    statusEl.textContent = 'Loading...';
+    api('GET', '/quadrant-map').then(function(data) {
+      qmapData = Array.isArray(data) ? data : [];
+      statusEl.textContent = qmapData.length + ' quadrants';
+      renderQmap();
+      setStatus(true);
+    }).catch(function(err) {
+      statusEl.textContent = 'Error';
+      setStatus(false);
+      if (err.message !== 'Unauthorized') toast('QUAD-MAP load failed: ' + err.message, 'error');
+    });
+  }
+
+  function renderQmap() {
+    var canvas = document.getElementById('qmap-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width;
+    var H = canvas.height;
+    var cellSize = ZOOM_CELL_SIZES[qmapZoom] || 16;
+    var showLabels = qmapZoom >= 5;
+
+    // Clear background
+    ctx.fillStyle = '#050505';
+    ctx.fillRect(0, 0, W, H);
+
+    if (qmapData.length === 0) {
+      ctx.fillStyle = 'rgba(255,176,0,0.3)';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('No quadrant data. Click Refresh.', W / 2, H / 2);
+      return;
+    }
+
+    // Compute bounds
+    var minQx = qmapData[0].qx, maxQx = qmapData[0].qx;
+    var minQy = qmapData[0].qy, maxQy = qmapData[0].qy;
+    for (var i = 0; i < qmapData.length; i++) {
+      var q = qmapData[i];
+      if (q.qx < minQx) minQx = q.qx;
+      if (q.qx > maxQx) maxQx = q.qx;
+      if (q.qy < minQy) minQy = q.qy;
+      if (q.qy > maxQy) maxQy = q.qy;
+    }
+
+    // Center origin
+    var totalW = (maxQx - minQx + 1) * cellSize;
+    var totalH = (maxQy - minQy + 1) * cellSize;
+    var originX = Math.floor((W - totalW) / 2) + qmapPan.x;
+    var originY = Math.floor((H - totalH) / 2) + qmapPan.y;
+
+    // Draw quadrant cells
+    for (var j = 0; j < qmapData.length; j++) {
+      var qd = qmapData[j];
+      var cx = originX + (qd.qx - minQx) * cellSize;
+      var cy = originY + (qd.qy - minQy) * cellSize;
+
+      // Fill
+      ctx.fillStyle = getFactionColor(qd.faction);
+      ctx.fillRect(cx, cy, cellSize, cellSize);
+
+      // Friction glow / warning border
+      if (qd.friction >= 71) {
+        ctx.strokeStyle = '#ff2222';
+        ctx.lineWidth = Math.max(1, cellSize * 0.1);
+        ctx.strokeRect(cx + ctx.lineWidth / 2, cy + ctx.lineWidth / 2, cellSize - ctx.lineWidth, cellSize - ctx.lineWidth);
+      } else if (qd.friction >= 50) {
+        ctx.strokeStyle = '#ff9900';
+        ctx.lineWidth = Math.max(1, cellSize * 0.1);
+        ctx.strokeRect(cx + ctx.lineWidth / 2, cy + ctx.lineWidth / 2, cellSize - ctx.lineWidth, cellSize - ctx.lineWidth);
+      }
+
+      // War icon
+      if (cellSize >= 12 && (qd.border_state === 'escalation' || qd.border_state === 'total_war')) {
+        ctx.fillStyle = '#ff4444';
+        ctx.font = Math.min(cellSize * 0.4, 10) + 'px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('\u2694', cx + 1, cy + 1);
+      }
+
+      // Fleet indicator
+      if (cellSize >= 8 && qd.fleet_count > 0) {
+        ctx.fillStyle = '#00ccff';
+        ctx.font = Math.min(cellSize * 0.35, 9) + 'px monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('\u25B6', cx + cellSize - 1, cy + 1);
+      }
+
+      // Name label at high zoom
+      if (showLabels && qd.name) {
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.font = Math.min(cellSize * 0.12, 11) + 'px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(qd.name, cx + cellSize / 2, cy + cellSize / 2);
+      }
+    }
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,176,0,0.1)';
+    ctx.lineWidth = 1;
+    for (var gx = minQx; gx <= maxQx + 1; gx++) {
+      var lx = originX + (gx - minQx) * cellSize;
+      ctx.beginPath();
+      ctx.moveTo(lx, originY);
+      ctx.lineTo(lx, originY + (maxQy - minQy + 1) * cellSize);
+      ctx.stroke();
+    }
+    for (var gy = minQy; gy <= maxQy + 1; gy++) {
+      var ly = originY + (gy - minQy) * cellSize;
+      ctx.beginPath();
+      ctx.moveTo(originX, ly);
+      ctx.lineTo(originX + (maxQx - minQx + 1) * cellSize, ly);
+      ctx.stroke();
+    }
+
+    // Legend
+    renderQmapLegend();
+  }
+
+  function renderQmapLegend() {
+    var legend = document.getElementById('qmap-legend');
+    if (!legend) return;
+    while (legend.firstChild) legend.removeChild(legend.firstChild);
+
+    // Collect factions present
+    var seenFactions = {};
+    for (var i = 0; i < qmapData.length; i++) {
+      var f = qmapData[i].faction || 'unclaimed';
+      seenFactions[f] = true;
+    }
+
+    var factionKeys = Object.keys(seenFactions);
+    for (var k = 0; k < factionKeys.length; k++) {
+      var fk = factionKeys[k];
+      var item = document.createElement('span');
+      item.style.display = 'inline-flex';
+      item.style.alignItems = 'center';
+      item.style.gap = '4px';
+
+      var swatch = document.createElement('span');
+      swatch.style.display = 'inline-block';
+      swatch.style.width = '10px';
+      swatch.style.height = '10px';
+      swatch.style.background = getFactionColor(fk === 'unclaimed' ? null : fk);
+      swatch.style.border = '1px solid rgba(255,176,0,0.3)';
+      item.appendChild(swatch);
+
+      var label = document.createElement('span');
+      label.textContent = fk.toUpperCase();
+      item.appendChild(label);
+
+      legend.appendChild(item);
+    }
+  }
+
+  function initQmapCanvas() {
+    var canvas = document.getElementById('qmap-canvas');
+    if (!canvas || canvas._qmapInited) return;
+    canvas._qmapInited = true;
+
+    canvas.addEventListener('mousedown', function(e) {
+      qmapDragging = true;
+      qmapDragStartX = e.clientX;
+      qmapDragStartY = e.clientY;
+      qmapPanStartX = qmapPan.x;
+      qmapPanStartY = qmapPan.y;
+      canvas.style.cursor = 'grabbing';
+    });
+
+    canvas.addEventListener('mousemove', function(e) {
+      if (!qmapDragging) return;
+      qmapPan.x = qmapPanStartX + (e.clientX - qmapDragStartX);
+      qmapPan.y = qmapPanStartY + (e.clientY - qmapDragStartY);
+      renderQmap();
+    });
+
+    canvas.addEventListener('mouseup', function() {
+      qmapDragging = false;
+      canvas.style.cursor = 'grab';
+    });
+
+    canvas.addEventListener('mouseleave', function() {
+      qmapDragging = false;
+      canvas.style.cursor = 'grab';
+    });
+  }
+
+  function updateQmapZoomButtons() {
+    document.querySelectorAll('.qmap-zoom-btn').forEach(function(btn) {
+      var idx = parseInt(btn.getAttribute('data-zoom'), 10);
+      if (idx === qmapZoom) {
+        btn.classList.add('primary');
+      } else {
+        btn.classList.remove('primary');
+      }
+    });
+  }
+
   // ── Auto-Refresh ───────────────────────────────────────────────
 
   function startRefresh() {
@@ -1982,6 +2246,21 @@ expiresDays: 14"></textarea>
 
   // Player search
   document.getElementById('player-search').addEventListener('input', filterPlayers);
+
+  // QUAD-MAP zoom buttons
+  document.querySelectorAll('.qmap-zoom-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      qmapZoom = parseInt(btn.getAttribute('data-zoom'), 10);
+      updateQmapZoomButtons();
+      renderQmap();
+    });
+  });
+
+  // QUAD-MAP refresh button
+  document.getElementById('qmap-refresh-btn').addEventListener('click', function() {
+    qmapPan = { x: 0, y: 0 };
+    fetchQmapData();
+  });
 
   // Check for existing session
   if (getToken()) {

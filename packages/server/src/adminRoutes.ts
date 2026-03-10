@@ -20,6 +20,7 @@ import {
   createAdminStory,
   getAdminStories,
   getAdminStoryById,
+  getAdminQuadrantMap,
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput, AdminStoryInput } from './db/adminQueries.js';
 import type { AdminPlayerUpdateEvent } from './adminBus.js';
@@ -397,6 +398,18 @@ adminRouter.get('/stories/:id', async (req: Request, res: Response) => {
   } catch (err) {
     logger.error({ err }, 'Admin get story error');
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Quadrant Map ─────────────────────────────────────────────────────
+
+adminRouter.get('/quadrant-map', async (_req: Request, res: Response) => {
+  try {
+    const data = await getAdminQuadrantMap();
+    res.json(data);
+  } catch (err) {
+    logger.error({ err }, 'Admin quadrant-map error');
+    res.status(500).json({ error: 'Internal error' });
   }
 });
 
