@@ -93,6 +93,8 @@ function getWsUrl(): string {
   if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
   const loc = window.location;
   const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+  // Always derive from window.location so LAN/tunnel access works.
+  // In dev mode, Vite proxies WS upgrade requests to the game server.
   return `${protocol}//${loc.host}`;
 }
 
