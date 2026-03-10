@@ -149,7 +149,7 @@ class GameNetwork {
         store.startShipMoveAnimation(oldPos.x, oldPos.y, x, y);
       }
       store.setPosition({ x, y });
-      store.resetPan();
+      setTimeout(() => useStore.getState().resetPan(), 600);
       store.addLogEntry(`Entered sector (${x}, ${y})`);
       return;
     }
