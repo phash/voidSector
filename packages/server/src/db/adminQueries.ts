@@ -838,6 +838,21 @@ function mapStoryRow(row: {
   };
 }
 
+// ── Faction Homes Query ──────────────────────────────────────────────
+
+export async function getActiveFactionHomes(): Promise<
+  Array<{ factionId: string; homeQx: number; homeQy: number }>
+> {
+  const { rows } = await query<{ faction_id: string; home_qx: number; home_qy: number }>(
+    `SELECT faction_id, home_qx, home_qy FROM faction_config WHERE active = true ORDER BY faction_id`,
+  );
+  return rows.map((r) => ({
+    factionId: r.faction_id,
+    homeQx: r.home_qx,
+    homeQy: r.home_qy,
+  }));
+}
+
 // ── Admin Quadrant Map Query ─────────────────────────────────────────
 
 export interface AdminQuadrantMapEntry {

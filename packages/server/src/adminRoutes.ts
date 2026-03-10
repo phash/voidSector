@@ -22,6 +22,7 @@ import {
   getAdminStories,
   getAdminStoryById,
   getAdminQuadrantMap,
+  getActiveFactionHomes,
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput, AdminStoryInput } from './db/adminQueries.js';
 import type { AdminPlayerUpdateEvent } from './adminBus.js';
@@ -424,6 +425,16 @@ adminRouter.get('/quadrant-map', async (_req: Request, res: Response) => {
     res.json(data);
   } catch (err) {
     logger.error({ err }, 'Admin quadrant-map error');
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+adminRouter.get('/faction-homes', async (_req: Request, res: Response) => {
+  try {
+    const homes = await getActiveFactionHomes();
+    res.json({ homes });
+  } catch (err) {
+    logger.error({ err }, 'Admin faction-homes error');
     res.status(500).json({ error: 'Internal error' });
   }
 });

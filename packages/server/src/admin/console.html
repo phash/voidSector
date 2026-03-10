@@ -869,11 +869,20 @@ expiresDays: 14"></textarea>
             <button class="qmap-zoom-btn" data-zoom="5" style="color:#ff9900">250×</button>
             <button class="qmap-zoom-btn" data-zoom="6" style="color:#ff9900">1000×</button>
           </div>
-          <button id="qmap-refresh-btn" style="margin-left:auto">&#8635; Refresh</button>
+          <button id="qmap-fullscreen-btn">&#10562; FULLSCREEN</button>
+          <button id="qmap-refresh-btn">&#8635; Refresh</button>
           <span id="qmap-status" style="font-size:10px;color:var(--amber-dim)"></span>
         </div>
-        <canvas id="qmap-canvas" width="900" height="600" style="border:1px solid var(--amber-dim);cursor:grab;display:block;max-width:100%"></canvas>
-        <div style="margin-top:8px;font-size:10px;color:var(--amber-dim);display:flex;gap:16px;flex-wrap:wrap" id="qmap-legend"></div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div id="qmap-canvas-col" style="flex:1;min-width:0">
+            <canvas id="qmap-canvas" style="border:1px solid var(--amber-dim);cursor:grab;display:block;width:100%;height:calc(100vh - 220px)"></canvas>
+            <div style="margin-top:8px;font-size:10px;color:var(--amber-dim);display:flex;gap:16px;flex-wrap:wrap" id="qmap-legend"></div>
+          </div>
+          <div id="qmap-bookmarks-sidebar" style="width:180px;flex-shrink:0;border:1px solid var(--border);padding:10px;background:var(--bg-raised)">
+            <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--amber-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">BOOKMARKS</div>
+            <div id="qmap-bookmarks" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2003,6 +2012,9 @@ expiresDays: 14"></textarea>
   var qmapDragStartY = 0;
   var qmapPanStartX = 0;
   var qmapPanStartY = 0;
+  var qmapFullscreen = false;
+  var qmapFsOverlay = null;
+  var AXIS_MARGIN = 20; // px reserved for axis labels
 
   // pixels per quadrant cell at each zoom index
   var ZOOM_CELL_SIZES = [4, 8, 16, 32, 64, 128, 512];
@@ -2025,13 +2037,28 @@ expiresDays: 14"></textarea>
     return FACTION_COLORS[key] || FACTION_COLORS.unknown;
   }
 
+  function syncCanvasSize(canvas) {
+    // Sync canvas pixel size to its CSS layout size
+    var rect = canvas.getBoundingClientRect();
+    var w = Math.max(1, Math.round(rect.width));
+    var h = Math.max(1, Math.round(rect.height));
+    if (canvas.width !== w) canvas.width = w;
+    if (canvas.height !== h) canvas.height = h;
+  }
+
   function fetchQmapData() {
     var statusEl = document.getElementById('qmap-status');
     statusEl.textContent = 'Loading...';
-    api('GET', '/quadrant-map').then(function(data) {
+    Promise.all([
+      api('GET', '/quadrant-map'),
+      api('GET', '/faction-homes').catch(function() { return { homes: [] }; })
+    ]).then(function(results) {
+      var data = results[0];
+      var homesData = results[1];
       qmapData = Array.isArray(data) ? data : [];
       statusEl.textContent = qmapData.length + ' quadrants';
       renderQmap();
+      renderQmapBookmarks(Array.isArray(homesData.homes) ? homesData.homes : []);
       setStatus(true);
     }).catch(function(err) {
       statusEl.textContent = 'Error';
@@ -2040,9 +2067,72 @@ expiresDays: 14"></textarea>
     });
   }
 
+  function centerOnQuadrant(qx, qy) {
+    var canvas = document.getElementById('qmap-canvas');
+    if (!canvas) return;
+    syncCanvasSize(canvas);
+    var cellSize = ZOOM_CELL_SIZES[qmapZoom] || 16;
+    // Data area is offset by AXIS_MARGIN; center in data area
+    var dataW = canvas.width - AXIS_MARGIN;
+    var dataH = canvas.height - AXIS_MARGIN;
+    qmapPan.x = dataW / 2 - qx * cellSize - cellSize / 2;
+    qmapPan.y = dataH / 2 - qy * cellSize - cellSize / 2;
+    renderQmap();
+  }
+
+  function renderQmapBookmarks(homes) {
+    var container = document.getElementById('qmap-bookmarks');
+    if (!container) return;
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    function makeBookmark(label, qx, qy) {
+      var btn = document.createElement('button');
+      btn.style.cssText = 'width:100%;text-align:left;padding:6px 8px;font-size:10px;letter-spacing:1px;border:1px solid rgba(255,176,0,0.2);background:transparent;color:rgba(255,176,0,0.7);cursor:pointer;white-space:pre-line;line-height:1.4;transition:all 0.2s';
+      btn.textContent = label;
+      btn.addEventListener('mouseenter', function() {
+        btn.style.background = 'rgba(255,176,0,0.08)';
+        btn.style.borderColor = 'rgba(255,176,0,0.6)';
+        btn.style.color = '#ffb000';
+      });
+      btn.addEventListener('mouseleave', function() {
+        if (!btn.classList.contains('qmap-bm-active')) {
+          btn.style.background = 'transparent';
+          btn.style.borderColor = 'rgba(255,176,0,0.2)';
+          btn.style.color = 'rgba(255,176,0,0.7)';
+        }
+      });
+      btn.addEventListener('click', function() {
+        container.querySelectorAll('button').forEach(function(b) {
+          b.classList.remove('qmap-bm-active');
+          b.style.background = 'transparent';
+          b.style.borderColor = 'rgba(255,176,0,0.2)';
+          b.style.color = 'rgba(255,176,0,0.7)';
+        });
+        btn.classList.add('qmap-bm-active');
+        btn.style.background = 'rgba(255,176,0,0.15)';
+        btn.style.borderColor = '#ffb000';
+        btn.style.color = '#ffb000';
+        centerOnQuadrant(qx, qy);
+      });
+      return btn;
+    }
+
+    // Human home always first
+    container.appendChild(makeBookmark('HUMAN — ZENTRUM\n(0, 0)', 0, 0));
+
+    // Alien faction homes from DB
+    for (var i = 0; i < homes.length; i++) {
+      var h = homes[i];
+      if (h.factionId === 'humans') continue; // skip if humans appear in DB too
+      var lbl = h.factionId.toUpperCase() + '\n(' + h.homeQx + ', ' + h.homeQy + ')';
+      container.appendChild(makeBookmark(lbl, h.homeQx, h.homeQy));
+    }
+  }
+
   function renderQmap() {
     var canvas = document.getElementById('qmap-canvas');
     if (!canvas) return;
+    syncCanvasSize(canvas);
     var ctx = canvas.getContext('2d');
     var W = canvas.width;
     var H = canvas.height;
@@ -2057,6 +2147,7 @@ expiresDays: 14"></textarea>
       ctx.fillStyle = 'rgba(255,176,0,0.3)';
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText('No quadrant data. Click Refresh.', W / 2, H / 2);
       return;
     }
@@ -2072,11 +2163,14 @@ expiresDays: 14"></textarea>
       if (q.qy > maxQy) maxQy = q.qy;
     }
 
-    // Center origin
+    // Data area starts at AXIS_MARGIN offset (left + top for axis labels)
+    var dataW = W - AXIS_MARGIN;
+    var dataH = H - AXIS_MARGIN;
     var totalW = (maxQx - minQx + 1) * cellSize;
     var totalH = (maxQy - minQy + 1) * cellSize;
-    var originX = Math.floor((W - totalW) / 2) + qmapPan.x;
-    var originY = Math.floor((H - totalH) / 2) + qmapPan.y;
+    // originX/originY relative to data area origin (AXIS_MARGIN, AXIS_MARGIN)
+    var originX = AXIS_MARGIN + Math.floor((dataW - totalW) / 2) + qmapPan.x;
+    var originY = AXIS_MARGIN + Math.floor((dataH - totalH) / 2) + qmapPan.y;
 
     // Draw quadrant cells
     for (var j = 0; j < qmapData.length; j++) {
@@ -2145,6 +2239,33 @@ expiresDays: 14"></textarea>
       ctx.stroke();
     }
 
+    // Axis labels — qx along the top, qy along the left
+    ctx.fillStyle = 'rgba(255,176,0,0.6)';
+    ctx.font = '9px monospace';
+
+    // Determine step so labels are at least ~20px apart
+    var minLabelSpacing = 20;
+    var stepX = Math.max(1, Math.ceil(minLabelSpacing / cellSize));
+    var stepY = Math.max(1, Math.ceil(minLabelSpacing / cellSize));
+
+    // Top axis (qx values)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (var ax = minQx; ax <= maxQx; ax += stepX) {
+      var axX = originX + (ax - minQx) * cellSize + cellSize / 2;
+      if (axX < AXIS_MARGIN || axX > W) continue;
+      ctx.fillText(String(ax), axX, 2);
+    }
+
+    // Left axis (qy values)
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (var ay = minQy; ay <= maxQy; ay += stepY) {
+      var ayY = originY + (ay - minQy) * cellSize + cellSize / 2;
+      if (ayY < AXIS_MARGIN || ayY > H) continue;
+      ctx.fillText(String(ay), AXIS_MARGIN - 3, ayY);
+    }
+
     // Legend
     renderQmapLegend();
   }
@@ -2183,6 +2304,59 @@ expiresDays: 14"></textarea>
 
       legend.appendChild(item);
     }
+  }
+
+  function enterQmapFullscreen() {
+    if (qmapFullscreen) return;
+    qmapFullscreen = true;
+    var canvas = document.getElementById('qmap-canvas');
+    if (!canvas) return;
+
+    // Create fullscreen overlay
+    qmapFsOverlay = document.createElement('div');
+    qmapFsOverlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:#050505;display:flex;flex-direction:column';
+
+    // Exit button
+    var exitBtn = document.createElement('button');
+    exitBtn.textContent = '\u2715 EXIT';
+    exitBtn.style.cssText = 'position:absolute;top:10px;right:10px;z-index:10001;padding:6px 14px;font-size:11px;letter-spacing:2px';
+    exitBtn.addEventListener('click', exitQmapFullscreen);
+    qmapFsOverlay.appendChild(exitBtn);
+
+    // Move canvas into overlay
+    qmapFsOverlay.appendChild(canvas);
+    document.body.appendChild(qmapFsOverlay);
+
+    // Resize canvas to full viewport
+    canvas.style.cssText = 'display:block;width:100vw;height:100vh;cursor:grab';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    renderQmap();
+  }
+
+  function exitQmapFullscreen() {
+    if (!qmapFullscreen) return;
+    qmapFullscreen = false;
+    var canvas = document.getElementById('qmap-canvas');
+    var col = document.getElementById('qmap-canvas-col');
+    if (!canvas || !col) return;
+
+    // Move canvas back to its column
+    col.insertBefore(canvas, col.firstChild);
+
+    // Remove overlay
+    if (qmapFsOverlay && qmapFsOverlay.parentNode) {
+      qmapFsOverlay.parentNode.removeChild(qmapFsOverlay);
+    }
+    qmapFsOverlay = null;
+
+    // Restore canvas CSS
+    canvas.style.cssText = 'border:1px solid var(--amber-dim);cursor:grab;display:block;width:100%;height:calc(100vh - 220px)';
+
+    // Re-sync pixel size and re-render
+    syncCanvasSize(canvas);
+    renderQmap();
   }
 
   function initQmapCanvas() {
@@ -2328,6 +2502,11 @@ expiresDays: 14"></textarea>
   document.getElementById('qmap-refresh-btn').addEventListener('click', function() {
     qmapPan = { x: 0, y: 0 };
     fetchQmapData();
+  });
+
+  // QUAD-MAP fullscreen button
+  document.getElementById('qmap-fullscreen-btn').addEventListener('click', function() {
+    enterQmapFullscreen();
   });
 
   // Check for existing session
