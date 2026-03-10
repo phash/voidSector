@@ -7,6 +7,7 @@ import type {
   AbandonQuestMessage,
   Quest,
   QuestObjective,
+  QuestRewards,
   PlayerReputation,
   PlayerUpgrade,
   ReputationTier,
@@ -35,6 +36,7 @@ import {
   getTrackedQuests,
   getAcceptedQuestTemplateIds,
   addWissen,
+  getQuestById,
 } from '../../db/queries.js';
 import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
 
@@ -180,6 +182,90 @@ export class QuestService {
       expiresAt: new Date(r.expires_at).getTime(),
     }));
     this.ctx.send(client, 'activeQuests', { quests });
+  }
+
+  async handleDeliverQuestResources(
+    client: Client,
+    data: { questId: string; sectorX: number; sectorY: number },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const row = await getQuestById(data.questId, auth.userId);
+
+    if (!row) {
+      this.ctx.send(client, 'actionError', 'Quest nicht gefunden');
+      return;
+    }
+    if (row.status !== 'active') {
+      this.ctx.send(client, 'actionError', 'Quest nicht aktiv');
+      return;
+    }
+    if (data.sectorX !== row.station_x || data.sectorY !== row.station_y) {
+      this.ctx.send(client, 'actionError', 'Nicht an der richtigen Station');
+      return;
+    }
+
+    const objectives = row.objectives as QuestObjective[];
+    const cargo = await getCargoState(auth.userId);
+    let anythingDelivered = false;
+
+    for (const obj of objectives) {
+      if (obj.type !== 'delivery' || !obj.resource || obj.amount == null || obj.fulfilled) continue;
+      const currentProgress = obj.progress ?? 0;
+      const remaining = obj.amount - currentProgress;
+      const available = (cargo as Record<string, number>)[obj.resource] ?? 0;
+      const toDeliver = Math.min(remaining, available);
+      if (toDeliver <= 0) continue;
+
+      await removeFromInventory(auth.userId, 'resource', obj.resource, toDeliver);
+      obj.progress = currentProgress + toDeliver;
+      if (obj.progress >= obj.amount) obj.fulfilled = true;
+      anythingDelivered = true;
+    }
+
+    if (!anythingDelivered) {
+      this.ctx.send(client, 'actionError', 'Keine Ressourcen zum Abliefern');
+      return;
+    }
+
+    await updateQuestObjectives(row.id, objectives);
+    this.ctx.send(client, 'questProgress', { questId: row.id, objectives });
+    this.ctx.send(client, 'cargoUpdate', await getCargoState(auth.userId));
+
+    if (objectives.every((o) => o.fulfilled)) {
+      await updateQuestStatus(row.id, 'completed');
+      const rewards = row.rewards as QuestRewards;
+
+      if (rewards.credits) {
+        await addCredits(auth.userId, rewards.credits);
+        this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+      }
+      if (rewards.xp) await this.applyXpGain(auth.userId, rewards.xp, client);
+      if (rewards.reputation) {
+        const factionId = row.template_id.split('_')[0] as string;
+        const validFactions = ['traders', 'scientists', 'pirates', 'ancients'];
+        if (validFactions.includes(factionId)) {
+          await this.applyReputationChange(
+            auth.userId,
+            factionId as NpcFactionId,
+            rewards.reputation,
+            client,
+          );
+        }
+      }
+      if (rewards.wissen) await addWissen(auth.userId, rewards.wissen);
+
+      this.ctx.send(client, 'questComplete', {
+        id: row.id,
+        title: row.title,
+        rewards,
+      });
+      this.ctx.send(
+        client,
+        'logEntry',
+        `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`,
+      );
+      await this.sendActiveQuests(client, auth.userId);
+    }
   }
 
   async sendReputationUpdate(client: Client, playerId: string): Promise<void> {

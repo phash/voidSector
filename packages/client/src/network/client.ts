@@ -891,6 +891,10 @@ class GameNetwork {
       if (!isMonitorVisible('QUESTS')) store.setAlert('QUESTS', true);
     });
 
+    room.onMessage('questComplete', (data: { id: string; title: string; rewards: any }) => {
+      useStore.getState().addQuestComplete({ id: data.id, title: data.title, rewards: data.rewards });
+    });
+
     room.onMessage('trackedQuestsUpdate', (data: { quests: TrackedQuest[] }) => {
       useStore.getState().setTrackedQuests(data.quests);
     });
@@ -1902,6 +1906,14 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('abandonQuest', { questId });
+  }
+
+  sendDeliverQuestResources(questId: string, sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('deliverQuestResources', { questId, sectorX, sectorY });
   }
 
   requestActiveQuests() {

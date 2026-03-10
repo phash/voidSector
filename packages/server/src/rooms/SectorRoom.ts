@@ -567,6 +567,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getTrackedQuests', async (client) => {
       await this.quests.handleGetTrackedQuests(client);
     });
+    this.onMessage(
+      'deliverQuestResources',
+      async (client, data: { questId: string; sectorX: number; sectorY: number }) => {
+        await this.quests.handleDeliverQuestResources(client, data);
+      },
+    );
 
     // ── Alien Interactions ──────────────────────────────────────────
     this.onMessage('alienInteract', async (client, data: AlienInteractMessage) => {
