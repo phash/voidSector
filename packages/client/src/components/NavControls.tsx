@@ -1,5 +1,6 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { btn, UI } from '../ui-strings';
 import {
   AP_COSTS,
   AP_COSTS_LOCAL_SCAN,
@@ -25,14 +26,14 @@ export function NavControls() {
         <div
           style={{ color: '#FFB000', fontSize: '0.9rem', letterSpacing: '0.15em', marginBottom: 8 }}
         >
-          AUTOPILOT AKTIV
+          {UI.status.AUTOPILOT_ACTIVE}
         </div>
         <div style={{ fontSize: '0.8rem', marginBottom: 8 }}>
-          Ziel: ({innerCoord(autopilot.targetX)}, {innerCoord(autopilot.targetY)}) | Verbleibend:{' '}
+          TARGET: ({innerCoord(autopilot.targetX)}, {innerCoord(autopilot.targetY)}) | REMAINING:{' '}
           {autopilot.remaining}
         </div>
         <button className="vs-btn" onClick={() => network.sendCancelAutopilot()}>
-          [ABBRECHEN]
+          {btn(UI.actions.CANCEL)}
         </button>
       </div>
     );
@@ -168,7 +169,7 @@ export function NavControls() {
             letterSpacing: '0.15em',
           }}
         >
-          ⚠ MINING ACTIVE — NAV LOCKED
+          {UI.status.MINING_LOCKED}
         </div>
       )}
       {fuel && fuel.current <= 0 && !isMining && (
@@ -190,13 +191,13 @@ export function NavControls() {
               marginBottom: 4,
             }}
           >
-            NOTWARP VERFÜGBAR
+            {UI.status.EMERGENCY_WARP}
           </div>
           <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginBottom: 6 }}>
-            Teleport zur Home Base —{' '}
+            Teleport to home base —{' '}
             {(() => {
               const dist = Math.abs(position.x) + Math.abs(position.y);
-              if (dist <= EMERGENCY_WARP_FREE_RADIUS) return 'GRATIS';
+              if (dist <= EMERGENCY_WARP_FREE_RADIUS) return 'FREE';
               const cost = (dist - EMERGENCY_WARP_FREE_RADIUS) * EMERGENCY_WARP_CREDIT_PER_SECTOR;
               return `${cost} Credits`;
             })()}
@@ -207,7 +208,7 @@ export function NavControls() {
             onClick={() => network.sendEmergencyWarp()}
             disabled={jumpPending}
           >
-            [NOTWARP AKTIVIEREN]
+            {btn('ACTIVATE EMERGENCY WARP')}
           </button>
         </div>
       )}
