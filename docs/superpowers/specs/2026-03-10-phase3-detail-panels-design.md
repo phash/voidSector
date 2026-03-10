@@ -24,11 +24,10 @@ Zwei States je nach Mitgliedsstatus:
 
 ┌─ Rang-Block ──────────────────────┐
 │ DEIN RANG                          │
-│ LEUTNANT                           │
-│ █████████░  920 · 80 bis KAPITÄN   │
+│ OFFICER                            │
+│ (Rang-Badge — leader / officer /   │
+│  member, je nach FactionRank)      │
 └────────────────────────────────────┘
-
-BASIS-LEVEL: STUFE 3 — TRADING POST aktiv
 
 AKTIVE UPGRADES
 ✓ Cargo +20%  ✓ Scan +2  ✓ Mining +15%
@@ -39,9 +38,9 @@ NÄCHSTER UPGRADE
 [MEMBERS →]  [UPGRADES →]
 ```
 
-- Rang-Block: eigener Rang + XP-Fortschrittsbalken + XP bis nächstem Rang
-- Fraktions-Block: Basis-Level, aktive Upgrades (kompakt, kommasepariert), nächster Upgrade mit Kosten
-- Buttons navigieren per `programTabTarget` zu den jeweiligen Tabs in FactionScreen
+- **Rang-Block**: eigener `FactionRank` (`leader` / `officer` / `member`) — kein XP-Balken, da kein Rang-XP-System im Spiel existiert. Rang wird aus `factionData.members` gelesen (der eigene Eintrag).
+- **Upgrade-Block**: aktive Upgrades (kompakt, kommasepariert aus `FactionUpgradeState`) + nächster Upgrade mit Kosten. Wenn keine Upgrade-Daten vorhanden: Block ausgeblendet.
+- **Buttons** navigieren per `setMonitorMode(MONITORS.FACTION, 'members')` resp. `setMonitorMode(MONITORS.FACTION, 'upgrades')` — identisches Pattern wie ShipSysScreen.
 
 #### State B: Spieler hat keine Fraktion
 
@@ -54,7 +53,7 @@ NÄCHSTER UPGRADE
 │ "We mine together, we profit       │
 │  together. Experienced pilots      │
 │  welcome."                         │
-│ 7 Mitglieder · Stufe 3             │
+│ 7 Mitglieder                        │
 └───────────────────────────────────┘
 █░░  (Fortschritts-Dots, 1 von 3)
 
@@ -62,10 +61,10 @@ NÄCHSTER UPGRADE
 (wechselt alle 5s automatisch)
 ```
 
-- Humanity Rep: Tier-Label + numerischer Wert
-- Rotating Recruitment Cards: eine Fraktion auf einmal, auto-rotierend alle 5000ms
-- Fortschritts-Dots zeigen Position (1/2/3)
-- `[FRAKTIONSNAME →]` navigiert per `programTabTarget` zu dieser Fraktion in FactionScreen (vorselektiert)
+- **Humanity Rep**: Tier-Label + numerischer Gesamtwert. Quelle: `humanityReps` (Record aus gameSlice, per-alien-Fraktion). Aggregat: `Object.values(humanityReps).reduce((sum, e) => sum + e.repValue, 0)` → Tier via `getHumanityRepTier(total)` aus shared. Panel ruft `network.requestHumanityReps()` on mount (analog zu `AlienRepTab` in QuestsScreen). Wenn `humanityReps` leer: zeige `HUMANITY REP: LOADING...`
+- **Rotating Recruitment Cards**: eine Fraktion auf einmal, auto-rotierend alle 5000ms
+- **Fortschritts-Dots** zeigen Position — bei count=1: keine Dots, keine Rotation (statisch)
+- **`[FRAKTIONSNAME →]`** setzt `selectedFactionId` im lokalen FactionScreen-State und navigiert per `setMonitorMode(MONITORS.FACTION, 'info')` (Tab muss in FactionScreen existieren)
 - Wenn keine Fraktion `is_recruiting = true`: statische Meldung `NO CONNECTION TO NETWORK...`
 
 ---
@@ -91,32 +90,56 @@ Mining Laser · Cargo Exp. · Shield
 [ACEP →]  [MODULES →]
 ```
 
-- ACEP-Block: 4 Pfade mit kompakten Balken (4-Zeichen-Label, ASCII-Balken, XP-Zahl) + aktive Trait-Namen namentlich
-- Modul-Block: installierte Module (Namen, kommasepariert) + "N slots free"
-- Buttons navigieren zu ACEP- bzw. MODULES-Tab in ShipSysScreen
+**Empty State** (wenn alle ACEP-XP = 0 oder `acepXp` fehlt):
+```
+⬡ NIGHTFALL
+
+ACEP PATHS
+CNST  ░░░░░░░░░░  0
+INTL  ░░░░░░░░░░  0
+CMBT  ░░░░░░░░░░  0
+EXPL  ░░░░░░░░░░  0
+
+NO TRAITS ACTIVE YET
+
+MODULES · 2/3 SLOTS
+...
+```
+
+- **ACEP-Block**: 4 Pfade mit kompakten Balken (4-Zeichen-Label, ASCII-Balken, XP-Zahl). XP-Skala 0–50 (cap). Traits aus `ship.acepTraits` (neu, siehe unten).
+- **Modul-Block**: installierte Module (Namen, kommasepariert aus `ship.modules`) + "N slots free"
+- **`[MODULES →]`** navigiert per `setMonitorMode(MONITORS.SHIP_SYS, 'modules')` — Tab existiert bereits in ShipSysScreen.
+- **`[ACEP →]`** navigiert per `setMonitorMode(MONITORS.SHIP_SYS, 'acep')` — dieser Tab existiert noch **nicht** in ShipSysScreen (ACEP UI Panel ist noch open). Als Teil dieser Aufgabe wird in `GameScreen.tsx` ein leerer `acep`-Branch eingefügt (`view === 'acep'` → Placeholder `<div>ACEP — COMING SOON</div>`), damit der Button nicht ins Leere führt. Das vollständige ACEP-Panel folgt in einem separaten Feature.
 
 ---
 
 ## Neues Feature: Fraktion-Recruiting
 
-### DB — Migration 049
+### DB — Migration 051
 
 ```sql
 ALTER TABLE factions
   ADD COLUMN is_recruiting BOOLEAN NOT NULL DEFAULT FALSE,
-  ADD COLUMN slogan        VARCHAR(160);
+  ADD COLUMN slogan        VARCHAR(160),
+  ADD COLUMN color         VARCHAR(7);
 ```
+
+`color` ist ein optionaler Hex-Farbcode (`#rrggbb`) — kann von Fraktionsgründern gesetzt werden (in einem späteren PR), hier wird er nur für die Darstellung in `FactionDetailPanel` State B genutzt.
 
 ### Server — FactionService
 
-- Neues State-Feld `recruitingFactions: RecruitingFaction[]` im Room-State (für alle Spieler sichtbar, nicht nur Fraktionsmitglieder)
-- `RecruitingFaction`: `{ factionId, name, color, slogan, memberCount, baseLevel }`
-- Wird bei Join und bei Faction-Updates gepusht
-- FactionService: neue Methode `setRecruiting(factionId, isRecruiting, slogan)` — nur Gründer darf aufrufen
+- Neue Methode `setRecruiting(factionId, isRecruiting, slogan)` — nur Gründer darf aufrufen, prüft `rank === 'leader'`
+- Nach Änderung: `broadcastRecruitingFactions()` baut die `recruitingFactions`-Liste aus der DB und sendet sie per **Room-Broadcast** (`this.ctx.broadcast('recruitingFactionsUpdate', data)`) an alle Spieler im Room — kein per-client `send()`, sondern echter Room-Broadcast
+- `RecruitingFaction`: `{ factionId: string; name: string; color: string | null; slogan: string | null; memberCount: number }` — kein `baseLevel` (keine DB-Spalte vorhanden)
+- Wird bei Join (via `onJoin`-Handler) und nach `setRecruiting`-Aufrufen gepusht
 
 ### Client — FactionScreen Management-Tab
 
-Neues UI-Element im Management-Tab (nur für Fraktionsgründer sichtbar):
+FactionScreen braucht ein **Tab-System** (wird von scratch gebaut — aktuell hat FactionScreen keine Tabs, nur ein flaches Layout). Tabs: `info` | `members` | `upgrades` | `management`.
+
+Tab-Navigation via `monitorModes[MONITORS.FACTION]` (default: `'info'`).
+
+Neues UI-Element im **Management-Tab** (nur für Fraktionsgründer sichtbar):
 
 ```
 RECRUITING
@@ -137,21 +160,39 @@ Slogan (max 160 Zeichen):
 
 ### Client — gameSlice
 
-`recruitingFactions: RecruitingFaction[]` zum gameState hinzufügen, wird von `FactionDetailPanel` (State B) gelesen.
+`recruitingFactions: RecruitingFaction[]` zum gameState hinzufügen.
+
+Wird aus `recruitingFactionsUpdate`-Message befüllt (im `client.ts` via `room.onMessage('recruitingFactionsUpdate', ...)` registrieren — analog zu `humanityReps`-Handler in Zeile 1593), von `FactionDetailPanel` (State B) gelesen.
 
 ---
 
-## Tab-Navigation: `programTabTarget`
+## Tab-Navigation: `monitorModes`-Pattern
 
-`uiSlice` bekommt:
+Beide Panels nutzen das **bestehende** `monitorModes`/`setMonitorMode`-System aus `uiSlice`:
 
 ```ts
-programTabTarget: { program: string; tab: string } | null
+// Detail-Panel-Button-Klick:
+setMonitorMode(MONITORS.FACTION, 'members');
+
+// FactionScreen liest:
+const tab = monitorModes[MONITORS.FACTION] ?? 'info';
 ```
 
-- Detail-Panel-Buttons rufen `setProgramTabTarget({ program: 'FACTION', tab: 'members' })` auf
-- FactionScreen und ShipSysScreen lesen diesen Wert via `useEffect` und wechseln zum Tab
-- Nach dem Tab-Wechsel: `setProgramTabTarget(null)` (reset)
+- **Kein neues Slice-Feld** (`programTabTarget` entfällt) — `setMonitorMode` ist bereits vorhanden und korrekt
+- FactionScreen: `useEffect(() => { /* sync active tab with monitorModes value */ }, [monitorModes[MONITORS.FACTION]])`
+- ShipSysScreen: bereits bestehende Tabs werden über `setMonitorMode(MONITORS.SHIP_SYS, ...)` gesteuert — Detail-Panel-Buttons nutzen denselben Mechanismus
+
+---
+
+## ClientShipData: Traits hinzufügen
+
+`ClientShipData` in `packages/client/src/state/gameSlice.ts` bekommt ein neues optionales Feld:
+
+```ts
+acepTraits?: string[];  // z.B. ['reckless', 'veteran']
+```
+
+Der Server befüllt dieses Feld im `shipList`-Handler aus der DB-Spalte `acep_traits` (JSONB-Array in der `ships`-Tabelle, bereits vorhanden via Migration 039).
 
 ---
 
@@ -163,13 +204,16 @@ programTabTarget: { program: string; tab: string } | null
 
 **Modifizieren:**
 - `packages/client/src/components/CockpitLayout.tsx` — `getDetailForProgram()`: FACTION → `<FactionDetailPanel />`, SHIP-SYS → `<ShipDetailPanel />`
-- `packages/client/src/state/uiSlice.ts` — `programTabTarget` hinzufügen
-- `packages/client/src/state/gameSlice.ts` — `recruitingFactions` hinzufügen
-- `packages/client/src/components/FactionScreen.tsx` — Tab-Navigation lesen + Management-UI für Recruiting
-- `packages/client/src/components/ShipSysScreen.tsx` (oder äquivalent) — Tab-Navigation lesen
-- `packages/server/src/services/FactionService.ts` — `setRecruiting()` + `recruitingFactions` State-Push
-- `packages/server/src/db/migrations/049_faction_recruiting.ts` — Migration
+- `packages/client/src/state/gameSlice.ts` — `recruitingFactions: RecruitingFaction[]` + `acepTraits?: string[]` in `ClientShipData`
+- `packages/client/src/components/FactionScreen.tsx` — Tab-System von scratch + Management-UI für Recruiting + `monitorModes`-Lesen
+- `packages/client/src/network/client.ts` — `recruitingFactionsUpdate`-Handler registrieren (`room.onMessage('recruitingFactionsUpdate', ...)`, analog zu `humanityReps` Handler)
+- `packages/client/src/components/GameScreen.tsx` — `'acep'`-Branch in ShipSysScreen-View-Switch einfügen (Placeholder, bis ACEP UI Panel implementiert ist)
+- `packages/server/src/services/FactionService.ts` — `setRecruiting()` + `broadcastRecruitingFactions()` + Join-Push
+- `packages/server/src/db/migrations/051_faction_recruiting.ts` — Migration (is_recruiting, slogan, color) — **051**, da 049 (`civ_ships`) und 050 (`construction_sites`) bereits existieren
+- `packages/server/src/rooms/handlers/` — `setRecruiting`-Message-Handler registrieren
+- `packages/server/src/rooms/SectorRoom.ts` (oder Handler-Datei) — `shipList`-Response um `acepTraits` erweitern
 
 **Nicht in Scope:**
 - Request/Accept-System für Beitrittsanfragen (separates Feature, später)
 - Faction-Farben/Icons in der Karte (bestehende Darstellung beibehalten)
+- Fraktions-Farbe setzen (Farb-Picker UI) — color-Spalte wird angelegt, aber UI folgt später
