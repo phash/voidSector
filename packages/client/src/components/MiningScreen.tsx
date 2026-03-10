@@ -82,7 +82,8 @@ export function MiningScreen() {
         {mining?.active ? (
           <>
             <div style={{ marginBottom: '6px' }}>
-              STATUS: MINING {mining.resource?.toUpperCase()} — {mining.rate}u/s
+              MINING {mining.resource?.toUpperCase()} — RATE: {mining.rate}u/s |{' '}
+              AUSBEUTE: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <div
@@ -102,9 +103,6 @@ export function MiningScreen() {
                   }}
                 />
               </div>
-              <span style={{ fontSize: '0.75rem', minWidth: '60px', textAlign: 'right' }}>
-                {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
-              </span>
             </div>
           </>
         ) : (
