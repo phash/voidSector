@@ -1,187 +1,196 @@
+import { useState } from 'react';
 import { useStore } from '../state/store';
-import { HULLS, MODULES } from '@void-sector/shared';
-import type { ShipModule, ModuleCategory } from '@void-sector/shared';
+import { network } from '../network/client';
+import { HULLS } from '@void-sector/shared';
 
-const linkBtn: React.CSSProperties = {
-  background: 'transparent',
-  border: 'none',
-  color: 'var(--color-primary)',
-  fontFamily: 'var(--font-mono)',
-  fontSize: '0.55rem',
-  cursor: 'pointer',
-  padding: '2px 0',
-  textDecoration: 'underline',
-  textAlign: 'left' as const,
-};
+const ACEP_PATHS = [
+  { key: 'ausbau',   label: 'AUSBAU',   color: '#ffaa00', max: 50 },
+  { key: 'intel',    label: 'INTEL',    color: '#00ffcc', max: 50 },
+  { key: 'kampf',    label: 'KAMPF',    color: '#ff4444', max: 50 },
+  { key: 'explorer', label: 'EXPLORER', color: '#8888ff', max: 50 },
+] as const;
 
-const DISPLAY_CATEGORIES: ModuleCategory[] = ['drive', 'scanner', 'cargo', 'armor', 'mining'];
+const mono = { fontFamily: 'var(--font-mono)', fontSize: '0.55rem' };
+const dim  = { ...mono, color: 'var(--color-dim)' };
+const pri  = { ...mono, fontSize: '0.6rem', color: 'var(--color-primary)' };
+const row  = { display: 'flex', justifyContent: 'space-between', padding: '1px 0' };
+const hdr  = { ...dim, borderBottom: '1px solid var(--color-dim)', paddingBottom: 2, marginTop: 8, marginBottom: 4, letterSpacing: '0.15em' };
+const linkBtn = { background: 'transparent', border: 'none', color: 'var(--color-primary)', ...mono, cursor: 'pointer', textDecoration: 'underline', padding: '2px 0' } as React.CSSProperties;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  drive: 'DRIVE',
-  scanner: 'SCANNER',
-  cargo: 'CARGO',
-  armor: 'ARMOR',
-  mining: 'MINING',
-};
-
-const sectionHeader: React.CSSProperties = {
-  borderBottom: '1px solid var(--color-dim)',
-  paddingBottom: 2,
-  marginBottom: 4,
-  marginTop: 8,
-  fontSize: '0.55rem',
-  letterSpacing: '0.15em',
-  color: 'var(--color-dim)',
-};
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: '0.55rem',
-  color: 'var(--color-dim)',
-};
-
-const valueStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: '0.6rem',
-  color: 'var(--color-primary)',
-};
-
-const statRow: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '1px 0',
-};
-
-function getModuleForCategory(modules: ShipModule[], category: ModuleCategory): string | null {
-  for (const mod of modules) {
-    const def = MODULES[mod.moduleId];
-    if (def && def.category === category) {
-      return def.displayName;
-    }
-  }
-  return null;
-}
+type Tab = 'cargo' | 'mining' | 'stats';
 
 export function ShipStatusPanel() {
-  const ship = useStore((s) => s.ship);
-  const fuel = useStore((s) => s.fuel);
+  const ship             = useStore((s) => s.ship);
+  const fuel             = useStore((s) => s.fuel);
+  const cargo            = useStore((s) => s.cargo);
+  const mining           = useStore((s) => s.mining);
+  const hyperdriveState  = useStore((s) => s.hyperdriveState);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
 
+  const [tab, setTab]             = useState<Tab>('cargo');
+  const [renaming, setRenaming]   = useState(false);
+  const [nameInput, setNameInput] = useState('');
+
   if (!ship) {
-    return (
-      <div
-        style={{
-          padding: '4px 8px',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.6rem',
-          color: 'var(--color-dim)',
-          opacity: 0.5,
-        }}
-      >
-        NO SHIP DATA
-      </div>
-    );
+    return <div style={{ padding: '4px 8px', ...dim, opacity: 0.5 }}>NO SHIP DATA</div>;
   }
 
   const hull = HULLS[ship.hullType];
-  const { stats } = ship;
+  const xp   = ship.acepXp;
+
+  function startRename() {
+    setNameInput(ship!.name);
+    setRenaming(true);
+  }
+  function commitRename() {
+    const trimmed = nameInput.trim();
+    if (trimmed && trimmed !== ship!.name) {
+      network.sendRenameShip(ship!.id, trimmed);
+    }
+    setRenaming(false);
+  }
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter')  commitRename();
+    if (e.key === 'Escape') setRenaming(false);
+  }
+
+  const hasHyperdrive = hyperdriveState && hyperdriveState.maxCharge > 0;
+  const chargePercent = hasHyperdrive
+    ? Math.round((hyperdriveState!.charge / hyperdriveState!.maxCharge) * 100)
+    : 0;
 
   return (
-    <div
-      style={{
-        padding: '4px 8px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '0.6rem',
-        color: 'var(--color-primary)',
-      }}
-    >
-      {/* Ship name and hull */}
-      <div
-        style={{
-          fontSize: '0.6rem',
-          letterSpacing: '0.15em',
-          borderBottom: '1px solid var(--color-dim)',
-          paddingBottom: 2,
-          marginBottom: 4,
-        }}
-      >
-        {ship.name}
-      </div>
-      <div
-        style={{
-          fontSize: '0.55rem',
-          color: 'var(--color-dim)',
-          marginBottom: 6,
-        }}
-      >
-        {hull?.name ?? ship.hullType.toUpperCase()}
+    <div style={{ padding: '4px 8px', ...mono, color: 'var(--color-primary)' }}>
+
+      {/* Ship name — click to rename */}
+      {renaming ? (
+        <input
+          autoFocus
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={onKeyDown}
+          style={{ ...mono, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', width: '100%', marginBottom: 2 }}
+        />
+      ) : (
+        <div
+          onClick={startRename}
+          title="Klicken zum Umbenennen"
+          style={{ fontSize: '0.6rem', letterSpacing: '0.15em', borderBottom: '1px solid var(--color-dim)', paddingBottom: 2, marginBottom: 2, cursor: 'text' }}
+        >
+          {ship.name}
+        </div>
+      )}
+      <div style={{ ...dim, marginBottom: 6 }}>{hull?.name ?? ship.hullType.toUpperCase()}</div>
+
+      {/* ACEP bars */}
+      {xp && (
+        <>
+          <div style={hdr}>ACEP</div>
+          {ACEP_PATHS.map(({ key, label, color, max }) => {
+            const val = xp[key] ?? 0;
+            const pct = Math.min(100, (val / max) * 100);
+            return (
+              <div key={key} style={{ marginBottom: 3 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', ...dim }}>
+                  <span style={{ color }}>{label}</span>
+                  <span>{val}/{max}</span>
+                </div>
+                <div style={{ height: 2, background: 'rgba(255,255,255,0.08)' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: color, transition: 'width 0.3s' }} />
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ ...dim, marginTop: 2 }}>BUDGET: {xp.total ?? 0}/100</div>
+        </>
+      )}
+
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+        {(['cargo', 'mining', 'stats'] as Tab[]).map((t) => (
+          <button key={t} onClick={() => setTab(t)} style={{
+            ...linkBtn,
+            color: tab === t ? 'var(--color-primary)' : 'var(--color-dim)',
+            fontWeight: tab === t ? 'bold' : 'normal',
+          }}>
+            [{t.toUpperCase()}]
+          </button>
+        ))}
       </div>
 
-      {/* Modules */}
-      <div style={sectionHeader}>MODULES</div>
-      {DISPLAY_CATEGORIES.map((cat) => {
-        const moduleName = getModuleForCategory(ship.modules, cat);
-        return (
-          <div key={cat} style={statRow}>
-            <span style={labelStyle}>{CATEGORY_LABELS[cat]}</span>
-            <span
-              style={{
-                ...valueStyle,
-                opacity: moduleName ? 1 : 0.4,
-              }}
-            >
-              {moduleName ?? '---'}
-            </span>
+      {/* Cargo tab */}
+      {tab === 'cargo' && cargo && (
+        <div style={{ marginTop: 4 }}>
+          {([
+            ['ORE',      cargo.ore],
+            ['GAS',      cargo.gas],
+            ['CRYSTAL',  cargo.crystal],
+            ['ARTEFAKT', cargo.artefact],
+          ] as [string, number][]).map(([label, val]) => (
+            <div key={label} style={row}>
+              <span style={dim}>{label}</span>
+              <span style={pri}>{val}</span>
+            </div>
+          ))}
+          <div style={row}>
+            <span style={dim}>KAPAZITÄT</span>
+            <span style={pri}>{ship.stats.cargoCap}</span>
           </div>
-        );
-      })}
+        </div>
+      )}
 
-      {/* Stats */}
-      <div style={sectionHeader}>STATS</div>
-      <div key="hp" style={statRow}>
-        <span style={labelStyle}>HP</span>
-        <span style={valueStyle}>{stats.hp}</span>
-      </div>
-      <div key="cargo" style={statRow}>
-        <span style={labelStyle}>CARGO CAP</span>
-        <span style={valueStyle}>{stats.cargoCap}</span>
-      </div>
-      <div key="speed" style={statRow}>
-        <span style={labelStyle}>SPEED</span>
-        <span style={valueStyle}>{stats.engineSpeed}</span>
-      </div>
-      <div key="scanner" style={statRow}>
-        <span style={labelStyle}>SCANNER LVL</span>
-        <span style={valueStyle}>{stats.scannerLevel}</span>
-      </div>
-      <div key="fuel" style={statRow}>
-        <span style={labelStyle}>FUEL</span>
-        <span style={valueStyle}>
-          {fuel ? `${fuel.current}/${fuel.max}` : `—/${stats.fuelMax}`}
-        </span>
-      </div>
-      <div key="jump" style={statRow}>
-        <span style={labelStyle}>JUMP RANGE</span>
-        <span style={valueStyle}>{stats.jumpRange}</span>
-      </div>
+      {/* Mining tab */}
+      {tab === 'mining' && (
+        <div style={{ marginTop: 4 }}>
+          {mining?.active ? (
+            <>
+              <div style={row}><span style={dim}>RESSOURCE</span><span style={pri}>{mining.resource?.toUpperCase() ?? '—'}</span></div>
+              <div style={row}><span style={dim}>RATE</span><span style={pri}>{mining.rate}/tick</span></div>
+              <div style={row}><span style={dim}>YIELD</span><span style={pri}>{mining.sectorYield}</span></div>
+            </>
+          ) : (
+            <div style={{ ...dim, marginTop: 4, opacity: 0.5 }}>INAKTIV</div>
+          )}
+        </div>
+      )}
 
-      {/* Quick-access to module/hangar screens */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          marginTop: 6,
-          borderTop: '1px solid var(--color-dim)',
-          paddingTop: 4,
-        }}
-      >
-        <button style={linkBtn} onClick={() => setActiveProgram('MODULES')}>
-          [MODULES]
-        </button>
-        <button style={linkBtn} onClick={() => setActiveProgram('HANGAR')}>
-          [HANGAR]
-        </button>
+      {/* Stats tab */}
+      {tab === 'stats' && (
+        <div style={{ marginTop: 4 }}>
+          {([
+            ['HP',         ship.stats.hp],
+            ['SPEED',      ship.stats.engineSpeed],
+            ['SCANNER',    ship.stats.scannerLevel],
+            ['JUMP RANGE', ship.stats.jumpRange],
+            ['FUEL',       fuel ? `${fuel.current}/${fuel.max}` : `—/${ship.stats.fuelMax}`],
+          ] as [string, string | number][]).map(([label, val]) => (
+            <div key={label} style={row}>
+              <span style={dim}>{label}</span>
+              <span style={pri}>{val}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Hyperdrive charge */}
+      {hasHyperdrive && (
+        <>
+          <div style={hdr}>HYPERDRIVE</div>
+          <div style={row}>
+            <span style={dim}>LADUNG</span>
+            <span style={pri}>{chargePercent}%</span>
+          </div>
+          <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', marginTop: 2 }}>
+            <div style={{ height: '100%', width: `${chargePercent}%`, background: '#8888ff', transition: 'width 0.3s' }} />
+          </div>
+        </>
+      )}
+
+      {/* Quick nav */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 6, borderTop: '1px solid var(--color-dim)', paddingTop: 4 }}>
+        <button style={linkBtn} onClick={() => setActiveProgram('MODULES')}>[MODULES]</button>
+        <button style={linkBtn} onClick={() => setActiveProgram('HANGAR')}>[HANGAR]</button>
       </div>
     </div>
   );
