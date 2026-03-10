@@ -4,6 +4,8 @@ import { network } from '../network/client';
 import { RESOURCE_TYPES } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
+import { btn, btnDisabled, UI } from '../ui-strings';
+import { useConfirm } from '../hooks/useConfirm';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
@@ -63,6 +65,8 @@ export function CargoScreen() {
   const cargoCap = ship?.stats?.cargoCap ?? 5;
   const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
+  const { confirm, isArmed } = useConfirm();
+
   const [activeTab, setActiveTab] = useState<'resource' | 'module' | 'blueprint'>('resource');
 
   const resources = inventory.filter((i) => i.itemType === 'resource');
@@ -119,20 +123,20 @@ export function CargoScreen() {
           style={tabBtnStyle(activeTab === 'resource')}
           onClick={() => setActiveTab('resource')}
         >
-          RESSOURCEN
+          {UI.tabs.RESOURCES}
         </button>
         <button style={tabBtnStyle(activeTab === 'module')} onClick={() => setActiveTab('module')}>
-          MODULE
+          {UI.tabs.MODULES}
         </button>
         <button
           style={tabBtnStyle(activeTab === 'blueprint')}
           onClick={() => setActiveTab('blueprint')}
         >
-          BLAUPAUSEN
+          {UI.tabs.BLUEPRINTS}
         </button>
       </div>
 
-      {/* RESSOURCEN tab */}
+      {/* RESOURCES tab */}
       {activeTab === 'resource' && (
         <>
           <div style={{ marginBottom: '16px' }}>
@@ -163,7 +167,7 @@ export function CargoScreen() {
                 fontSize: '0.8rem',
               }}
             >
-              <div style={{ opacity: 0.6, marginBottom: 4 }}>INVENTAR RESSOURCEN:</div>
+              <div style={{ opacity: 0.6, marginBottom: 4 }}>INVENTORY RESOURCES:</div>
               {resources.map((item) => (
                 <div key={item.itemId} style={{ marginBottom: 2 }}>
                   {item.itemId.toUpperCase()} x{item.quantity}
@@ -206,14 +210,14 @@ export function CargoScreen() {
                     style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                     onClick={() => network.sendActivateSlate(slate.id)}
                   >
-                    [AKTIVIEREN]
+                    {btn(UI.actions.ACTIVATE)}
                   </button>
                   <button
                     className="vs-btn"
                     style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                     onClick={() => network.sendNpcBuyback(slate.id)}
                   >
-                    [NPC VERKAUF]
+                    {btn('NPC SELL')}
                   </button>
                 </div>
               ))}
@@ -221,23 +225,31 @@ export function CargoScreen() {
           )}
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {RESOURCE_TYPES.map((res) => (
-              <button
-                key={res}
-                className="vs-btn"
-                disabled={cargo[res] <= 0}
-                onClick={() => network.sendJettison(res)}
-              >
-                [ABWERFEN {res.toUpperCase()}]
-              </button>
-            ))}
+            {RESOURCE_TYPES.map((res) => {
+              const key = `jettison-${res}`;
+              return (
+                <button
+                  key={res}
+                  className="vs-btn"
+                  disabled={cargo[res] <= 0}
+                  onClick={() => confirm(key, () => network.sendJettison(res))}
+                  style={isArmed(key) ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
+                >
+                  {isArmed(key)
+                    ? btnDisabled(`JETTISON ${res.toUpperCase()}`, 'SURE?')
+                    : btn(`JETTISON ${res.toUpperCase()}`)}
+                </button>
+              );
+            })}
             <button
-              key="artefact"
               className="vs-btn"
               disabled={cargo.artefact <= 0}
-              onClick={() => network.sendJettison('artefact')}
+              onClick={() => confirm('jettison-artefact', () => network.sendJettison('artefact'))}
+              style={isArmed('jettison-artefact') ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
             >
-              [ABWERFEN ARTEFAKT]
+              {isArmed('jettison-artefact')
+                ? btnDisabled('JETTISON ARTEFACT', 'SURE?')
+                : btn('JETTISON ARTEFACT')}
             </button>
           </div>
         </>
@@ -247,7 +259,7 @@ export function CargoScreen() {
       {activeTab === 'module' && (
         <div style={{ fontSize: '0.85rem' }}>
           {modules.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>KEINE MODULE IM INVENTAR</div>
+            <div style={{ opacity: 0.4 }}>{UI.empty.NO_MODULES}</div>
           ) : (
             modules.map((item) => (
               <div
@@ -268,7 +280,7 @@ export function CargoScreen() {
                   style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                   onClick={() => network.sendInstallModule('', item.itemId, 0)}
                 >
-                  [INSTALLIEREN]
+                  {btn(UI.actions.INSTALL)}
                 </button>
               </div>
             ))
@@ -276,11 +288,11 @@ export function CargoScreen() {
         </div>
       )}
 
-      {/* BLAUPAUSEN tab */}
+      {/* BLUEPRINTS tab */}
       {activeTab === 'blueprint' && (
         <div style={{ fontSize: '0.85rem' }}>
           {blueprints.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>KEINE BLAUPAUSEN IM INVENTAR</div>
+            <div style={{ opacity: 0.4 }}>{UI.empty.NO_BLUEPRINTS}</div>
           ) : (
             blueprints.map((item) => (
               <div
@@ -298,12 +310,12 @@ export function CargoScreen() {
                   {item.itemId.toUpperCase()} x{item.quantity}
                 </span>
                 <button
-                    className="vs-btn"
-                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-                    onClick={() => network.sendActivateBlueprint(item.itemId)}
-                  >
-                    [AKTIVIEREN]
-                  </button>
+                  className="vs-btn"
+                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                  onClick={() => network.sendActivateBlueprint(item.itemId)}
+                >
+                  {btn(UI.actions.ACTIVATE)}
+                </button>
               </div>
             ))
           )}

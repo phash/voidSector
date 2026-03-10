@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../../state/store';
 import { network } from '../../network/client';
+import { UI } from '../../ui-strings';
 
 const FACTION_COLORS: Record<string, string> = {
   archivists: '#88ffcc',
@@ -107,7 +108,7 @@ export function AlienEncounterToast() {
               cursor: 'pointer',
             }}
           >
-            {encounter.acceptLabel ?? 'ANNEHMEN'}
+            {encounter.acceptLabel ?? UI.actions.ACCEPT}
           </button>
         </div>
       )}

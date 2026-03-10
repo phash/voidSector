@@ -33,7 +33,7 @@ describe('QuestsScreen', () => {
     render(<QuestsScreen />);
     // JOURNAL tab button exists (may appear multiple times with header label)
     expect(screen.getAllByText(/JOURNAL/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/KEINE AKTIVEN AUFTRÄGE/)).toBeDefined();
+    expect(screen.getByText(/NO ACTIVE QUESTS/)).toBeDefined();
   });
 
   it('shows active quest title in collapsed mode', () => {
@@ -134,11 +134,11 @@ describe('QuestsScreen', () => {
     });
     render(<QuestsScreen />);
     await userEvent.click(screen.getByText('ALIEN REP'));
-    expect(screen.getByText('MEINE ALIEN-REPUTATIONEN')).toBeDefined();
-    expect(screen.getByText('GALAKTISCHE MENSCHHEITS-REP')).toBeDefined();
+    expect(screen.getByText('MY ALIEN REPUTATIONS')).toBeDefined();
+    expect(screen.getByText('GALACTIC HUMANITY REP')).toBeDefined();
   });
 
-  it('shows abandon button for active quest when expanded', async () => {
+  it('shows abandon button for active quest when expanded (two-click confirm)', async () => {
     mockStoreState({
       activeQuests: [
         {
@@ -170,7 +170,11 @@ describe('QuestsScreen', () => {
     render(<QuestsScreen />);
     // Quest must be expanded first to see the abandon button
     await userEvent.click(screen.getByText(/Test Quest/));
-    await userEvent.click(screen.getByText('[ABBRECHEN]'));
+    // First click: arm the button (shows SURE? state)
+    await userEvent.click(screen.getByText('[ABANDON]'));
+    expect(network.sendAbandonQuest).not.toHaveBeenCalled();
+    // Second click: confirm and execute
+    await userEvent.click(screen.getByText('[ABANDON — SURE?]'));
     expect(network.sendAbandonQuest).toHaveBeenCalledWith('q1');
   });
 });

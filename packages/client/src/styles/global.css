@@ -94,3 +94,15 @@ select option {
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 176, 0, 0.5); }
 ::-webkit-scrollbar-corner { background: #0a0a0a; }
 * { scrollbar-width: thin; scrollbar-color: rgba(255, 176, 0, 0.3) #0a0a0a; }
+
+/* AP depletion pulse */
+@keyframes ap-pulse {
+  0%   { color: inherit; border-color: inherit; }
+  25%  { color: #ff4444; border-color: #ff4444; }
+  75%  { color: #ff4444; border-color: #ff4444; }
+  100% { color: inherit; border-color: inherit; }
+}
+
+.ap-pulse {
+  animation: ap-pulse 1.5s ease-in-out;
+}

@@ -91,9 +91,9 @@ describe('NavControls', () => {
       autopilot: { targetX: 5, targetY: 3, remaining: 8, active: true },
     });
     render(<NavControls />);
-    expect(screen.getByText(/AUTOPILOT AKTIV/)).toBeInTheDocument();
+    expect(screen.getByText(/AUTOPILOT ACTIVE/)).toBeInTheDocument();
     expect(screen.getByText(/5, 3/)).toBeInTheDocument();
-    expect(screen.getByText(/ABBRECHEN/)).toBeInTheDocument();
+    expect(screen.getByText(/CANCEL/)).toBeInTheDocument();
   });
 
   it('shows remaining jump count during autopilot', () => {
@@ -101,7 +101,7 @@ describe('NavControls', () => {
       autopilot: { targetX: 10, targetY: 20, remaining: 3, active: true },
     });
     render(<NavControls />);
-    expect(screen.getByText(/Verbleibend: 3/)).toBeInTheDocument();
+    expect(screen.getByText(/REMAINING: 3/)).toBeInTheDocument();
   });
 
   it('hides nav buttons during autopilot', () => {
@@ -126,12 +126,12 @@ describe('NavControls', () => {
     expect(screen.queryByText('[BUILD RELAY]')).toBeNull();
   });
 
-  it('calls sendCancelAutopilot on ABBRECHEN click', async () => {
+  it('calls sendCancelAutopilot on CANCEL click', async () => {
     mockStoreState({
       autopilot: { targetX: 5, targetY: -3, remaining: 8, active: true },
     });
     render(<NavControls />);
-    await userEvent.click(screen.getByText('[ABBRECHEN]'));
+    await userEvent.click(screen.getByText('[CANCEL]'));
     expect(network.sendCancelAutopilot).toHaveBeenCalled();
   });
 
@@ -139,7 +139,7 @@ describe('NavControls', () => {
     mockStoreState({ autopilot: null });
     render(<NavControls />);
     expect(screen.getByText('↑')).toBeInTheDocument();
-    expect(screen.queryByText(/AUTOPILOT AKTIV/)).toBeNull();
+    expect(screen.queryByText(/AUTOPILOT ACTIVE/)).toBeNull();
   });
 
   it('shows normal controls when autopilot is inactive', () => {
@@ -148,7 +148,7 @@ describe('NavControls', () => {
     });
     render(<NavControls />);
     expect(screen.getByText('↑')).toBeInTheDocument();
-    expect(screen.queryByText(/AUTOPILOT AKTIV/)).toBeNull();
+    expect(screen.queryByText(/AUTOPILOT ACTIVE/)).toBeNull();
   });
 
   // --- Hyperdrive charge display ---

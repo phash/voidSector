@@ -23,7 +23,7 @@ export function QuestDetailPanel() {
           marginTop: 24,
         }}
       >
-        AUSWAHL TREFFEN
+        SELECT A QUEST
       </div>
     );
   }
@@ -39,7 +39,7 @@ export function QuestDetailPanel() {
           marginTop: 24,
         }}
       >
-        AUFTRAG NICHT GEFUNDEN
+        QUEST NOT FOUND
       </div>
     );
   }
@@ -68,7 +68,7 @@ export function QuestDetailPanel() {
           marginBottom: 4,
         }}
       >
-        ZIELE
+        OBJECTIVES
       </div>
 
       {quest.objectives.map((obj, i) => (
@@ -100,12 +100,12 @@ export function QuestDetailPanel() {
           marginBottom: 4,
         }}
       >
-        BELOHNUNG
+        REWARD
       </div>
 
       <div>{quest.rewards.credits} CR</div>
       <div>{quest.rewards.xp} XP</div>
-      {quest.rewards.reputation > 0 && <div>+{quest.rewards.reputation} RUF</div>}
+      {quest.rewards.reputation > 0 && <div>+{quest.rewards.reputation} REP</div>}
 
       <button
         className="vs-btn"
@@ -119,7 +119,7 @@ export function QuestDetailPanel() {
         }}
         disabled
       >
-        [VERLASSEN]
+        [ABANDON]
       </button>
     </div>
   );

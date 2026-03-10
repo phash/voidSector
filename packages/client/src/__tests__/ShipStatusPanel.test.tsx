@@ -164,9 +164,9 @@ describe('ShipStatusPanel', () => {
     render(<ShipStatusPanel />);
 
     expect(screen.getByText('ACEP')).toBeInTheDocument();
-    expect(screen.getByText('AUSBAU')).toBeInTheDocument();
+    expect(screen.getByText('CONSTRUCTION')).toBeInTheDocument();
     expect(screen.getByText('INTEL')).toBeInTheDocument();
-    expect(screen.getByText('KAMPF')).toBeInTheDocument();
+    expect(screen.getByText('COMBAT')).toBeInTheDocument();
     expect(screen.getByText('EXPLORER')).toBeInTheDocument();
     expect(screen.getByText('BUDGET: 65/100')).toBeInTheDocument();
   });
@@ -202,7 +202,7 @@ describe('ShipStatusPanel', () => {
     expect(screen.getByText('ORE')).toBeInTheDocument();
     expect(screen.getByText('GAS')).toBeInTheDocument();
     expect(screen.getByText('CRYSTAL')).toBeInTheDocument();
-    expect(screen.getByText('KAPAZITÄT')).toBeInTheDocument();
+    expect(screen.getByText('CAPACITY')).toBeInTheDocument();
   });
 
   it('switching to MINING tab shows mining content', async () => {
@@ -223,7 +223,7 @@ describe('ShipStatusPanel', () => {
 
     await user.click(screen.getByText('[MINING]'));
 
-    expect(screen.getByText('RESSOURCE')).toBeInTheDocument();
+    expect(screen.getByText('RESOURCE')).toBeInTheDocument();
     expect(screen.getByText('ORE')).toBeInTheDocument();
     expect(screen.getByText('RATE')).toBeInTheDocument();
     expect(screen.getByText('2/tick')).toBeInTheDocument();
@@ -236,7 +236,7 @@ describe('ShipStatusPanel', () => {
 
     await user.click(screen.getByText('[MINING]'));
 
-    expect(screen.getByText('INAKTIV')).toBeInTheDocument();
+    expect(screen.getByText('INACTIVE')).toBeInTheDocument();
   });
 
   it('switching to STATS tab shows ship stats', async () => {
@@ -260,7 +260,7 @@ describe('ShipStatusPanel', () => {
     render(<ShipStatusPanel />);
 
     expect(screen.getByText('HYPERDRIVE')).toBeInTheDocument();
-    expect(screen.getByText('LADUNG')).toBeInTheDocument();
+    expect(screen.getByText('CHARGE')).toBeInTheDocument();
     expect(screen.getByText('75%')).toBeInTheDocument();
   });
 
@@ -281,11 +281,10 @@ describe('ShipStatusPanel', () => {
     expect(screen.queryByText('HYPERDRIVE')).not.toBeInTheDocument();
   });
 
-  it('renders [MODULES] and [HANGAR] quick links', () => {
+  it('renders [MODULES] quick link', () => {
     render(<ShipStatusPanel />);
 
     expect(screen.getByText('[MODULES]')).toBeInTheDocument();
-    expect(screen.getByText('[HANGAR]')).toBeInTheDocument();
   });
 
   it('clicking [MODULES] calls setActiveProgram with MODULES', async () => {
@@ -299,14 +298,4 @@ describe('ShipStatusPanel', () => {
     expect(setActiveProgram).toHaveBeenCalledWith('MODULES');
   });
 
-  it('clicking [HANGAR] calls setActiveProgram with HANGAR', async () => {
-    const user = userEvent.setup();
-    const setActiveProgram = vi.fn();
-    mockStoreState({ ship: baseShip, setActiveProgram });
-    render(<ShipStatusPanel />);
-
-    await user.click(screen.getByText('[HANGAR]'));
-
-    expect(setActiveProgram).toHaveBeenCalledWith('HANGAR');
-  });
 });

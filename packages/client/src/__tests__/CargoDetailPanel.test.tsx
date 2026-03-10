@@ -21,21 +21,21 @@ describe('CargoDetailPanel', () => {
   it('renders nothing selected when selectedCargoItem is null', () => {
     mockStoreState({ selectedCargoItem: null });
     render(<CargoDetailPanel />);
-    expect(screen.getByText('AUSWAHL TREFFEN')).toBeTruthy();
+    expect(screen.getByText('SELECT AN ITEM')).toBeTruthy();
   });
 
-  it('calls sendJettison when ABWERFEN button clicked', async () => {
+  it('calls sendJettison when JETTISON button clicked', async () => {
     mockStoreState({ selectedCargoItem: 'ore', cargo: { ore: 5 } as any });
     render(<CargoDetailPanel />);
-    const btn = screen.getByText('[ABWERFEN]');
+    const btn = screen.getByText('[JETTISON]');
     await userEvent.click(btn);
     expect(network.sendJettison).toHaveBeenCalledWith('ore');
   });
 
-  it('ABWERFEN button is not disabled', () => {
+  it('JETTISON button is not disabled', () => {
     mockStoreState({ selectedCargoItem: 'ore', cargo: { ore: 3 } as any });
     render(<CargoDetailPanel />);
-    const btn = screen.getByText('[ABWERFEN]') as HTMLButtonElement;
+    const btn = screen.getByText('[JETTISON]') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
   });
 });

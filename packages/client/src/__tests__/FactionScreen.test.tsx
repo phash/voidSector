@@ -25,9 +25,9 @@ describe('FactionScreen', () => {
 
   it('shows create/join when not in faction', () => {
     render(<FactionScreen />);
-    expect(screen.getByText(/Keine Fraktion/)).toBeDefined();
-    expect(screen.getByText('[GRÜNDEN]')).toBeDefined();
-    expect(screen.getByText('[BEITRETEN]')).toBeDefined();
+    expect(screen.getByText(/No Faction/)).toBeDefined();
+    expect(screen.getByText('[FOUND]')).toBeDefined();
+    expect(screen.getByText('[JOIN]')).toBeDefined();
   });
 
   it('shows faction info when in faction', () => {
@@ -71,8 +71,8 @@ describe('FactionScreen', () => {
     render(<FactionScreen />);
     expect(screen.getByText(/COOL/)).toBeDefined();
     expect(screen.getByText(/Cool Faction/)).toBeDefined();
-    expect(screen.getByText(/JA/)).toBeDefined();
-    expect(screen.getByText(/NEIN/)).toBeDefined();
+    expect(screen.getByText(/YES/)).toBeDefined();
+    expect(screen.getByText(/NO/)).toBeDefined();
   });
 
   it('shows management buttons for leader', () => {
@@ -94,9 +94,9 @@ describe('FactionScreen', () => {
       playerId: 'p1',
     } as any);
     render(<FactionScreen />);
-    expect(screen.getByText(/EINLADEN/)).toBeDefined();
+    expect(screen.getByText(/INVITE/)).toBeDefined();
     expect(screen.getByText(/MODUS/)).toBeDefined();
-    expect(screen.getByText(/AUFLÖSEN/)).toBeDefined();
+    expect(screen.getByText('[DISBAND]')).toBeDefined();
     expect(screen.getByText(/ABC123/)).toBeDefined();
   });
 });

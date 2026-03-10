@@ -29,82 +29,82 @@ describe('CargoScreen inventory tabs', () => {
     });
   });
 
-  it('renders RESSOURCEN, MODULE, BLAUPAUSEN tabs', () => {
+  it('renders RESOURCES, MODULES, BLUEPRINTS tabs', () => {
     render(<CargoScreen />);
-    expect(screen.getByText('RESSOURCEN')).toBeDefined();
-    expect(screen.getByText('MODULE')).toBeDefined();
-    expect(screen.getByText('BLAUPAUSEN')).toBeDefined();
+    expect(screen.getByText('RESOURCES')).toBeDefined();
+    expect(screen.getByText('MODULES')).toBeDefined();
+    expect(screen.getByText('BLUEPRINTS')).toBeDefined();
   });
 
-  it('defaults to RESSOURCEN tab showing cargo bars', () => {
+  it('defaults to RESOURCES tab showing cargo bars', () => {
     render(<CargoScreen />);
     expect(screen.getAllByText(/ORE/).length).toBeGreaterThanOrEqual(1);
   });
 
-  it('MODULE tab shows empty state when no modules', async () => {
+  it('MODULES tab shows empty state when no modules', async () => {
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('MODULE'));
-    expect(screen.getByText(/KEINE MODULE IM INVENTAR/)).toBeDefined();
+    await userEvent.click(screen.getByText('MODULES'));
+    expect(screen.getByText(/NO MODULES/)).toBeDefined();
   });
 
-  it('BLAUPAUSEN tab shows empty state when no blueprints', async () => {
+  it('BLUEPRINTS tab shows empty state when no blueprints', async () => {
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('BLAUPAUSEN'));
-    expect(screen.getByText(/KEINE BLAUPAUSEN IM INVENTAR/)).toBeDefined();
+    await userEvent.click(screen.getByText('BLUEPRINTS'));
+    expect(screen.getByText(/NO BLUEPRINTS/)).toBeDefined();
   });
 
-  it('MODULE tab shows module with INSTALLIEREN button', async () => {
+  it('MODULES tab shows module with INSTALL button', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'module', itemId: 'drive_mk2', quantity: 1 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('MODULE'));
+    await userEvent.click(screen.getByText('MODULES'));
     expect(screen.getByText(/DRIVE_MK2/)).toBeDefined();
-    expect(screen.getByText('[INSTALLIEREN]')).toBeDefined();
+    expect(screen.getByText('[INSTALL]')).toBeDefined();
   });
 
-  it('BLAUPAUSEN tab shows blueprint with AKTIVIEREN button (HERSTELLEN moved to FabrikPanel)', async () => {
+  it('BLUEPRINTS tab shows blueprint with ACTIVATE button (CRAFT moved to FabrikPanel)', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'blueprint', itemId: 'shield_mk1', quantity: 2 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('BLAUPAUSEN'));
+    await userEvent.click(screen.getByText('BLUEPRINTS'));
     expect(screen.getByText(/SHIELD_MK1/)).toBeDefined();
-    expect(screen.getByText('[AKTIVIEREN]')).toBeDefined();
-    expect(screen.queryByText('[HERSTELLEN]')).toBeNull();
+    expect(screen.getByText('[ACTIVATE]')).toBeDefined();
+    expect(screen.queryByText('[CRAFT]')).toBeNull();
   });
 
-  it('INSTALLIEREN calls sendInstallModule', async () => {
+  it('INSTALL calls sendInstallModule', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'module', itemId: 'laser_mk1', quantity: 1 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('MODULE'));
-    await userEvent.click(screen.getByText('[INSTALLIEREN]'));
+    await userEvent.click(screen.getByText('MODULES'));
+    await userEvent.click(screen.getByText('[INSTALL]'));
     expect(network.sendInstallModule).toHaveBeenCalled();
   });
 
-  it('HERSTELLEN moved to FabrikPanel — sendCraftModule not in CargoScreen', async () => {
+  it('CRAFT moved to FabrikPanel — sendCraftModule not in CargoScreen', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'blueprint', itemId: 'engine_blueprint', quantity: 1 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('BLAUPAUSEN'));
-    expect(screen.queryByText('[HERSTELLEN]')).toBeNull();
+    await userEvent.click(screen.getByText('BLUEPRINTS'));
+    expect(screen.queryByText('[CRAFT]')).toBeNull();
   });
 
-  it('AKTIVIEREN on blueprint calls sendActivateBlueprint', async () => {
+  it('ACTIVATE on blueprint calls sendActivateBlueprint', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
       inventory: [{ itemType: 'blueprint', itemId: 'cannon_blueprint', quantity: 1 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('BLAUPAUSEN'));
-    await userEvent.click(screen.getByText('[AKTIVIEREN]'));
+    await userEvent.click(screen.getByText('BLUEPRINTS'));
+    await userEvent.click(screen.getByText('[ACTIVATE]'));
     expect(network.sendActivateBlueprint).toHaveBeenCalledWith('cannon_blueprint');
   });
 

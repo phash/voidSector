@@ -5,15 +5,15 @@ import { MODULES, isModuleFreelyAvailable } from '@void-sector/shared';
 import type { ModuleDefinition, ResearchState, ModuleCategory } from '@void-sector/shared';
 
 const CATEGORY_LABELS: Record<ModuleCategory, string> = {
-  drive: 'ANTRIEB',
-  cargo: 'FRACHT',
+  drive: 'DRIVE',
+  cargo: 'CARGO',
   scanner: 'SCANNER',
-  armor: 'PANZERUNG',
-  weapon: 'WAFFEN',
-  shield: 'SCHILD',
-  defense: 'VERTEIDIGUNG',
-  special: 'SPEZIAL',
-  mining: 'BERGBAU',
+  armor: 'ARMOR',
+  weapon: 'WEAPONS',
+  shield: 'SHIELD',
+  defense: 'DEFENSE',
+  special: 'SPECIAL',
+  mining: 'MINING',
 };
 
 const CATEGORY_ORDER: ModuleCategory[] = [
@@ -49,7 +49,7 @@ function getModuleStatus(
 }
 
 function formatCountdown(ms: number): string {
-  if (ms <= 0) return 'FERTIG';
+  if (ms <= 0) return 'DONE';
   const totalSec = Math.ceil(ms / 1000);
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
@@ -104,7 +104,7 @@ export function TechTreePanel() {
           alignItems: 'baseline',
         }}
       >
-        <span>TECH-BAUM / FORSCHUNG</span>
+        <span>TECH TREE / RESEARCH</span>
         <span style={{ color: '#FFB000', fontSize: '0.6rem', letterSpacing: '0.08em' }}>
           ◈ WISSEN: {wissen}
         </span>
@@ -122,7 +122,7 @@ export function TechTreePanel() {
           onClick={() => setSelectedTechModule(activeMod.id)}
         >
           <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em' }}>
-            AKTIVE FORSCHUNG
+            ACTIVE RESEARCH
           </div>
           <div style={{ marginTop: 2 }}>
             {activeMod.name}
@@ -130,7 +130,7 @@ export function TechTreePanel() {
           </div>
           <div style={{ marginTop: 2, fontSize: '0.55rem' }}>
             {isComplete ? (
-              <span style={{ color: '#00FF88' }}>ABGESCHLOSSEN</span>
+              <span style={{ color: '#00FF88' }}>COMPLETED</span>
             ) : (
               <span style={{ color: '#FFB000' }}>{formatCountdown(remaining)}</span>
             )}
@@ -185,7 +185,7 @@ export function TechTreePanel() {
                     </span>
                   </span>
                   <span style={{ flexShrink: 0, marginLeft: 4, fontSize: '0.5rem' }}>
-                    {status === 'free' && <span style={{ color: '#00FF88' }}>FREI</span>}
+                    {status === 'free' && <span style={{ color: '#00FF88' }}>FREE</span>}
                     {status === 'unlocked' && <span style={{ color: '#00FF88' }}>&#x2713;</span>}
                     {status === 'blueprint' && <span style={{ color: '#00BFFF' }}>BP</span>}
                     {status === 'researching' && <span style={{ color: '#FFB000' }}>&#x21BB;</span>}

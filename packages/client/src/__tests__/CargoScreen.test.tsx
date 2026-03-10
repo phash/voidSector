@@ -53,30 +53,34 @@ describe('CargoScreen', () => {
 
   it('shows jettison buttons', () => {
     render(<CargoScreen />);
-    expect(screen.getByText('[ABWERFEN ORE]')).toBeInTheDocument();
-    expect(screen.getByText('[ABWERFEN GAS]')).toBeInTheDocument();
-    expect(screen.getByText('[ABWERFEN CRYSTAL]')).toBeInTheDocument();
+    expect(screen.getByText('[JETTISON ORE]')).toBeInTheDocument();
+    expect(screen.getByText('[JETTISON GAS]')).toBeInTheDocument();
+    expect(screen.getByText('[JETTISON CRYSTAL]')).toBeInTheDocument();
   });
 
   it('disables jettison when resource is 0', () => {
     render(<CargoScreen />);
     // Gas is 0
-    const gasBtn = screen.getByText('[ABWERFEN GAS]').closest('button');
+    const gasBtn = screen.getByText('[JETTISON GAS]').closest('button');
     expect(gasBtn).toBeDisabled();
   });
 
   it('enables jettison when resource > 0', () => {
     render(<CargoScreen />);
-    const oreBtn = screen.getByText('[ABWERFEN ORE]').closest('button');
+    const oreBtn = screen.getByText('[JETTISON ORE]').closest('button');
     expect(oreBtn).not.toBeDisabled();
 
-    const crystalBtn = screen.getByText('[ABWERFEN CRYSTAL]').closest('button');
+    const crystalBtn = screen.getByText('[JETTISON CRYSTAL]').closest('button');
     expect(crystalBtn).not.toBeDisabled();
   });
 
-  it('calls sendJettison on click', async () => {
+  it('calls sendJettison on double-click (two-click confirm)', async () => {
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('[ABWERFEN ORE]'));
+    // First click arms the button (shows SURE?)
+    await userEvent.click(screen.getByText('[JETTISON ORE]'));
+    expect(network.sendJettison).not.toHaveBeenCalled();
+    // Second click confirms
+    await userEvent.click(screen.getByText('[JETTISON ORE — SURE?]'));
     expect(network.sendJettison).toHaveBeenCalledWith('ore');
   });
 
@@ -158,7 +162,7 @@ describe('CargoScreen', () => {
     });
     render(<CargoScreen />);
     expect(screen.getByText(/DATA SLATES: 2/)).toBeDefined();
-    expect(screen.getByText(/AKTIVIEREN/)).toBeDefined();
+    expect(screen.getByText(/\[ACTIVATE\]/)).toBeDefined();
   });
 
   it('does not show create slate buttons (moved to SlateControls)', () => {
@@ -217,7 +221,7 @@ describe('CargoScreen', () => {
       },
     });
     render(<CargoScreen />);
-    expect(screen.queryByText(/SEKTOR-SLATE/)).toBeNull();
-    expect(screen.queryByText(/GEBIETS-SLATE/)).toBeNull();
+    expect(screen.queryByText(/SECTOR-SLATE/)).toBeNull();
+    expect(screen.queryByText(/AREA-SLATE/)).toBeNull();
   });
 });

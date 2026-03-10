@@ -3,6 +3,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES, innerCoord } from '@void-sector/shared';
 import type { MineableResourceType } from '@void-sector/shared';
+import { btn, btnDisabled, UI } from '../ui-strings';
 import { InlineError } from './InlineError';
 
 function ResourceBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -22,6 +23,7 @@ export function MiningScreen() {
   const position = useStore((s) => s.position);
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
+  const ap = useStore((s) => s.ap);
 
   const [miningProgress, setMiningProgress] = useState(0);
 
@@ -45,6 +47,8 @@ export function MiningScreen() {
   const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
   const cargoCap = ship?.stats?.cargoCap ?? 5;
   const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const cargoFull = cargoTotal >= cargoCap;
+  const apCurrent = ap?.current ?? 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
@@ -61,7 +65,7 @@ export function MiningScreen() {
 
       {!hasResources && !mining?.active && (
         <div style={{ fontSize: '0.8rem', color: 'var(--color-dim)', marginBottom: '12px' }}>
-          KEINE RESSOURCEN IN DIESEM SEKTOR. NAVIGIERE ZU EINEM ASTEROIDENFELD ODER NEBEL.
+          {UI.empty.NO_RESOURCES}
         </div>
       )}
 
@@ -83,7 +87,7 @@ export function MiningScreen() {
           <>
             <div style={{ marginBottom: '6px' }}>
               MINING {mining.resource?.toUpperCase()} — RATE: {mining.rate}u/s |{' '}
-              AUSBEUTE: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
+              {UI.status.YIELD}: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <div
@@ -106,10 +110,10 @@ export function MiningScreen() {
             </div>
           </>
         ) : (
-          <div>STATUS: IDLE</div>
+          <div>STATUS: {UI.status.IDLE}</div>
         )}
         <div style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '4px' }}>
-          CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} KRISTALL:{cargo.crystal}
+          CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
         </div>
       </div>
 
@@ -118,10 +122,16 @@ export function MiningScreen() {
           <button
             key={res}
             className="vs-btn"
-            disabled={mining?.active === true || resources[res] <= 0}
+            disabled={mining?.active === true || resources[res] <= 0 || cargoFull || apCurrent < 1}
             onClick={() => network.sendMine(res)}
           >
-            [MINE {res.toUpperCase()}]
+            {mining?.active === true || resources[res] <= 0
+              ? btn(`MINE ${res.toUpperCase()}`)
+              : cargoFull
+                ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.CARGO_FULL)
+                : apCurrent < 1
+                  ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.NO_AP)
+                  : btn(`MINE ${res.toUpperCase()}`)}
           </button>
         ))}
         <button
@@ -129,7 +139,7 @@ export function MiningScreen() {
           disabled={!mining?.active}
           onClick={() => network.sendStopMine()}
         >
-          [STOP]
+          {btn(UI.actions.STOP)}
         </button>
       </div>
       <InlineError codes={['NO_RESOURCES', 'MINE_FAILED', 'RATE_LIMIT', 'INVALID_INPUT']} />

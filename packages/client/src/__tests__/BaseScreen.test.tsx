@@ -55,7 +55,7 @@ describe('BaseScreen', () => {
 
   it('shows structures list', () => {
     render(<BaseScreen />);
-    expect(screen.getByText(/KOMMANDO-KERN/i)).toBeTruthy();
+    expect(screen.getByText(/COMMAND CENTER/i)).toBeTruthy();
     expect(screen.getByText(/COMM RELAY/i)).toBeTruthy();
   });
 
@@ -84,8 +84,8 @@ describe('BaseScreen', () => {
       credits: 0,
     });
     render(<BaseScreen />);
-    expect(screen.getAllByText(/LAGER/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/ERZ: 10/)).toBeTruthy();
+    expect(screen.getAllByText(/STORAGE/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/ORE: 10/)).toBeTruthy();
   });
 
   it('shows structure list with labels', () => {
@@ -97,7 +97,7 @@ describe('BaseScreen', () => {
       credits: 0,
     });
     render(<BaseScreen />);
-    expect(screen.getByText('KOMMANDO-KERN')).toBeTruthy();
+    expect(screen.getByText('COMMAND CENTER')).toBeTruthy();
     expect(screen.getByText('COMM RELAY')).toBeTruthy();
   });
 

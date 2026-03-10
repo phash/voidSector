@@ -5,7 +5,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:strings": "grep -rni --include=*.tsx -E \"(Annehmen|Abdocken|Aufträge|KONTOR|HANDELSPLATZ|FABRIK|Lager )\" src/components/ && echo 'German strings found!' || echo 'No German UI strings found'"
   },
   "dependencies": {
     "@void-sector/shared": "*",

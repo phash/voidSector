@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useStore } from '../state/store';
+import { btn } from '../ui-strings';
 import { ProgramSelector } from './ProgramSelector';
 import { SettingsPanel } from './SettingsPanel';
 import { HardwareControls } from './HardwareControls';
@@ -135,14 +136,14 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
               onClick={() => setMonitorMode('DETAIL', 'detail')}
               title="Detail-Modus"
             >
-              1
+              {btn('DET')}
             </button>
             <button
               className={`hw-channel-btn${detailMonitorMode === 'tv' ? ' active' : ''}`}
               onClick={() => setMonitorMode('DETAIL', 'tv')}
               title="TV-Modus"
             >
-              2
+              {btn('TV')}
             </button>
           </div>
         </div>

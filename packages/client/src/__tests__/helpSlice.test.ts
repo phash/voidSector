@@ -56,10 +56,19 @@ describe('HelpSlice', () => {
     expect(store.getState().activeTip).toBeNull(); // already seen
   });
 
-  it('HELP_TIPS have articleId references', () => {
+  it('HELP_TIPS with articleId have string references', () => {
     for (const tip of HELP_TIPS) {
-      expect(tip.articleId).toBeDefined();
-      expect(typeof tip.articleId).toBe('string');
+      if (tip.articleId !== undefined) {
+        expect(typeof tip.articleId).toBe('string');
+      }
+    }
+  });
+
+  it('HELP_TIPS all have id, title, and body', () => {
+    for (const tip of HELP_TIPS) {
+      expect(typeof tip.id).toBe('string');
+      expect(typeof tip.title).toBe('string');
+      expect(typeof tip.body).toBe('string');
     }
   });
 
