@@ -6,6 +6,7 @@ import {
   HULL_RADAR_PATTERNS,
   innerCoord,
   getAcepRadarPattern,
+  COSMIC_FACTION_COLORS,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -16,6 +17,7 @@ import type {
   HullType,
   Bookmark,
   Quest,
+  CivShip,
 } from '@void-sector/shared';
 import type { PlayerPresence, TrackedQuest } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
@@ -95,6 +97,7 @@ interface RadarState {
   activeQuests?: Quest[];
   trackedQuests?: TrackedQuest[];
   miningActive?: boolean;
+  civShips?: CivShip[];
 }
 
 function easeInOutCubic(t: number): number {
@@ -622,6 +625,50 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           }
         }
       }
+    }
+  }
+
+  // Draw NPC civ ships — visible at all zoom levels
+  {
+    const civShipList = state.civShips ?? [];
+    for (const ship of civShipList) {
+      const dx = ship.x - viewX;
+      const dy = ship.y - viewY;
+      if (Math.abs(dx) > radiusX || Math.abs(dy) > radiusY) continue;
+
+      const px = gridCenterX + dx * CELL_W;
+      const py = gridCenterY + dy * CELL_H;
+      const factionColor =
+        (COSMIC_FACTION_COLORS as Record<string, string>)[ship.faction] ?? '#AAAAAA';
+
+      ctx.save();
+      ctx.strokeStyle = factionColor;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.85;
+
+      if (ship.ship_type === 'mining_drone') {
+        // Hollow circle ○ — slightly larger than player pixels
+        const radius = 3 + state.zoomLevel;
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (ship.ship_type === 'station_builder') {
+        // Small square □
+        const half = 3 + state.zoomLevel;
+        ctx.strokeRect(px - half, py - half, half * 2, half * 2);
+      } else {
+        // Combat — diamond ◇
+        const s = 3 + state.zoomLevel;
+        ctx.beginPath();
+        ctx.moveTo(px, py - s);
+        ctx.lineTo(px + s, py);
+        ctx.lineTo(px, py + s);
+        ctx.lineTo(px - s, py);
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      ctx.restore();
     }
   }
 

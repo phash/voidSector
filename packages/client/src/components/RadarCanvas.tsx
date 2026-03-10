@@ -79,6 +79,7 @@ export function RadarCanvas() {
       activeQuests: state.activeQuests,
       trackedQuests: state.trackedQuests,
       miningActive: !!state.mining?.active,
+      civShips: state.civShips,
     };
 
     drawRadar(ctx, radarState);
