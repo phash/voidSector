@@ -69,9 +69,10 @@ function makeQuadrant(overrides: Partial<QuadrantData> = {}): QuadrantData {
 // ---------------------------------------------------------------------------
 describe('first-contact detection logic', () => {
   it('detects new quadrant when sector coordinates cross quadrant boundary', () => {
-    // Sector 9999 is in quadrant 0, sector 10000 is in quadrant 1
-    const origin = sectorToQuadrant(9999, 0);
-    const target = sectorToQuadrant(10000, 0);
+    // Centered layout: last sector of q0 is half-1, first of q1 is half
+    const half = Math.floor(QUADRANT_SIZE / 2);
+    const origin = sectorToQuadrant(half - 1, 0);
+    const target = sectorToQuadrant(half, 0);
     expect(origin.qx).toBe(0);
     expect(target.qx).toBe(1);
     // Different quadrants -> first contact should trigger
@@ -90,8 +91,10 @@ describe('first-contact detection logic', () => {
   });
 
   it('detects quadrant change on negative boundary crossing', () => {
-    const origin = sectorToQuadrant(0, 0);
-    const target = sectorToQuadrant(-1, 0);
+    // Centered layout: q0 left boundary is -half; -(half+1) is in q-1
+    const half = Math.floor(QUADRANT_SIZE / 2);
+    const origin = sectorToQuadrant(-half, 0);
+    const target = sectorToQuadrant(-(half + 1), 0);
     expect(origin.qx).toBe(0);
     expect(target.qx).toBe(-1);
     expect(origin.qx !== target.qx).toBe(true);
@@ -322,28 +325,34 @@ describe('syncQuadrants logic', () => {
 // Quadrant boundary edge cases
 // ---------------------------------------------------------------------------
 describe('quadrant boundary edge cases', () => {
+  const half = Math.floor(QUADRANT_SIZE / 2);
+
   it('large positive coordinates map to correct quadrant', () => {
-    const result = sectorToQuadrant(50000, 30000);
-    expect(result.qx).toBe(5);
-    expect(result.qy).toBe(3);
+    // 100 * QS sectors from origin → quadrant 100
+    const result = sectorToQuadrant(100 * QUADRANT_SIZE, 60 * QUADRANT_SIZE);
+    expect(result.qx).toBe(100);
+    expect(result.qy).toBe(60);
   });
 
   it('large negative coordinates map to correct quadrant', () => {
-    const result = sectorToQuadrant(-50001, -30001);
-    expect(result.qx).toBe(-6);
-    expect(result.qy).toBe(-4);
+    // -(100 * QS + 1) → quadrant -100 (floor((-100*QS-1+half)/QS) = -100)
+    const result = sectorToQuadrant(-(100 * QUADRANT_SIZE + 1), -(60 * QUADRANT_SIZE + 1));
+    expect(result.qx).toBe(-100);
+    expect(result.qy).toBe(-60);
   });
 
   it('exactly at QUADRANT_SIZE boundary', () => {
+    // QS is the first sector of q1 for centered formula (floor((QS+half)/QS)=1)
     const result = sectorToQuadrant(QUADRANT_SIZE, QUADRANT_SIZE);
     expect(result.qx).toBe(1);
     expect(result.qy).toBe(1);
   });
 
-  it('one less than QUADRANT_SIZE', () => {
+  it('QUADRANT_SIZE-1 is in quadrant 1 with centered layout', () => {
+    // Centered q1 spans [half, QS+half-1]. QS-1 >= half for any QS>1.
     const result = sectorToQuadrant(QUADRANT_SIZE - 1, QUADRANT_SIZE - 1);
-    expect(result.qx).toBe(0);
-    expect(result.qy).toBe(0);
+    expect(result.qx).toBe(1);
+    expect(result.qy).toBe(1);
   });
 
   it('origin sector is in quadrant (0,0)', () => {
@@ -352,9 +361,10 @@ describe('quadrant boundary edge cases', () => {
     expect(result.qy).toBe(0);
   });
 
-  it('sector (-1, -1) is in quadrant (-1, -1)', () => {
+  it('sector (-1, -1) is in quadrant (0,0) with centered layout', () => {
+    // Centered q0 spans [-half, half-1]; -1 is within q0 (half >= 1)
     const result = sectorToQuadrant(-1, -1);
-    expect(result.qx).toBe(-1);
-    expect(result.qy).toBe(-1);
+    expect(result.qx).toBe(0);
+    expect(result.qy).toBe(0);
   });
 });

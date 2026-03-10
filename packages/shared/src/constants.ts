@@ -1713,11 +1713,15 @@ export const AUTOPILOT_STEP_MS = 100; // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24; // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7; // coords-only after 7 days
 
-export const QUADRANT_SIZE = 10_000;
+export const QUADRANT_SIZE = 500;
 
-/** Convert absolute coordinate to inner sector coordinate (0..QUADRANT_SIZE-1) */
+/**
+ * Convert absolute coordinate to inner sector coordinate (-half..half-1).
+ * Origin (0) is at center of quadrant (0,0). Range: [-250, 249].
+ */
 export function innerCoord(abs: number): number {
-  return ((abs % QUADRANT_SIZE) + QUADRANT_SIZE) % QUADRANT_SIZE;
+  const half = Math.floor(QUADRANT_SIZE / 2);
+  return abs - Math.floor((abs + half) / QUADRANT_SIZE) * QUADRANT_SIZE;
 }
 export const SPAWN_QUADRANT_DISTANCE = 10_000_000;
 export const SPAWN_QUADRANT_BAND = 10;

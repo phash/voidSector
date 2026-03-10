@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { QUADRANT_SIZE } from '@void-sector/shared';
 import {
   QUAD_CELL_SIZES,
   QUAD_FRAME_LEFT,
@@ -126,26 +127,36 @@ describe('QuadrantMapRenderer', () => {
   });
 
   describe('sectorToQuadrantCoords', () => {
+    // Centered layout: half = floor(QS/2); q0 spans [-half, half-1]
+    const half = Math.floor(QUADRANT_SIZE / 2);
+
     it('converts origin correctly', () => {
       expect(sectorToQuadrantCoords(0, 0)).toEqual({ qx: 0, qy: 0 });
     });
 
     it('converts positive sectors', () => {
-      // QUADRANT_SIZE is 10000
-      expect(sectorToQuadrantCoords(10000, 20000)).toEqual({ qx: 1, qy: 2 });
+      // half is the first sector of q1; QS+half is first of q2
+      expect(sectorToQuadrantCoords(half, 0)).toEqual({ qx: 1, qy: 0 });
+      expect(sectorToQuadrantCoords(QUADRANT_SIZE + half, 0)).toEqual({ qx: 2, qy: 0 });
     });
 
     it('converts negative sectors', () => {
-      expect(sectorToQuadrantCoords(-1, -1)).toEqual({ qx: -1, qy: -1 });
+      // -(half+1) is the first sector of q-1
+      expect(sectorToQuadrantCoords(-(half + 1), -(half + 1))).toEqual({ qx: -1, qy: -1 });
     });
 
     it('converts sectors within a quadrant', () => {
-      expect(sectorToQuadrantCoords(5000, 5000)).toEqual({ qx: 0, qy: 0 });
-      expect(sectorToQuadrantCoords(9999, 9999)).toEqual({ qx: 0, qy: 0 });
+      // -1 and half-1 are both within q0
+      expect(sectorToQuadrantCoords(-1, -1)).toEqual({ qx: 0, qy: 0 });
+      expect(sectorToQuadrantCoords(half - 1, half - 1)).toEqual({ qx: 0, qy: 0 });
     });
 
     it('handles large coordinates', () => {
-      expect(sectorToQuadrantCoords(10_000_000, 10_000_000)).toEqual({ qx: 1000, qy: 1000 });
+      // 1000 * QS sectors from origin → quadrant 1000
+      expect(sectorToQuadrantCoords(1000 * QUADRANT_SIZE, 1000 * QUADRANT_SIZE)).toEqual({
+        qx: 1000,
+        qy: 1000,
+      });
     });
   });
 

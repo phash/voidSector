@@ -97,7 +97,8 @@ function getWsUrl(): string {
 }
 
 function sectorToQuadrant(x: number, y: number): { qx: number; qy: number } {
-  return { qx: Math.floor(x / QUADRANT_SIZE), qy: Math.floor(y / QUADRANT_SIZE) };
+  const half = Math.floor(QUADRANT_SIZE / 2);
+  return { qx: Math.floor((x + half) / QUADRANT_SIZE), qy: Math.floor((y + half) / QUADRANT_SIZE) };
 }
 
 /** Check if a monitor is currently visible (desktop activeProgram or mobile activeMonitor).

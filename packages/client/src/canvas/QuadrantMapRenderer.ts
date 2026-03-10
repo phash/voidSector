@@ -360,8 +360,9 @@ export function quadrantAtPoint(
  * Convert sector coordinates to quadrant coordinates.
  */
 export function sectorToQuadrantCoords(x: number, y: number): { qx: number; qy: number } {
+  const half = Math.floor(QUADRANT_SIZE / 2);
   return {
-    qx: Math.floor(x / QUADRANT_SIZE),
-    qy: Math.floor(y / QUADRANT_SIZE),
+    qx: Math.floor((x + half) / QUADRANT_SIZE),
+    qy: Math.floor((y + half) / QUADRANT_SIZE),
   };
 }
