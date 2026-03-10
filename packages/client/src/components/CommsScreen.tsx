@@ -50,6 +50,19 @@ export function CommsScreen() {
     logRef.current?.scrollTo(0, logRef.current.scrollHeight);
   }, [messages]);
 
+  // Keyboard shortcuts: q=quadrant, s=system, f=faction, d=direct
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'q') setChatChannel('quadrant');
+      else if (e.key === 'f') setChatChannel('faction');
+      else if (e.key === 'd') setChatChannel('direct');
+      else if (e.key === 's') setChatChannel('system');
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [setChatChannel]);
+
   const filtered = messages.filter((m) => m.channel === channel);
 
   const send = () => {
