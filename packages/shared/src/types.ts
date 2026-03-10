@@ -307,6 +307,28 @@ export interface BuildResultMessage {
   structure?: Structure;
 }
 
+export interface ConstructionSiteState {
+  id: string;
+  type: StructureType;
+  sectorX: number;
+  sectorY: number;
+  progress: number;
+  neededOre: number;
+  neededGas: number;
+  neededCrystal: number;
+  depositedOre: number;
+  depositedGas: number;
+  depositedCrystal: number;
+  paused: boolean;
+}
+
+export interface DepositConstructionMessage {
+  siteId: string;
+  ore: number;
+  gas: number;
+  crystal: number;
+}
+
 // Communication
 export type ChatChannel = 'direct' | 'faction' | 'sector' | 'quadrant';
 

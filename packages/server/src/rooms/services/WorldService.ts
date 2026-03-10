@@ -3,6 +3,8 @@ import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import type {
   BuildMessage,
+  DepositConstructionMessage,
+  ConstructionSiteState,
   CreateSlateMessage,
   ActivateSlateMessage,
   NpcBuybackMessage,
@@ -50,6 +52,7 @@ import {
   JUMPGATE_DISTANCE_LIMITS,
   JUMPGATE_CONNECTION_LIMITS,
   STRUCTURE_AP_COSTS,
+  STRUCTURE_COSTS,
   RESCUE_AP_COST,
   RESCUE_EXPIRY_MINUTES,
   NPC_PRICES,
@@ -136,6 +139,30 @@ import {
 } from '../../db/quadrantQueries.js';
 import { isInt, rejectGuest } from './utils.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
+import {
+  createConstructionSite,
+  getConstructionSite,
+  getConstructionSiteById,
+  depositResources,
+} from '../../db/constructionQueries.js';
+import type { ConstructionSite } from '../../db/constructionQueries.js';
+
+function toConstructionSiteState(site: ConstructionSite): ConstructionSiteState {
+  return {
+    id: site.id,
+    type: site.type as import('@void-sector/shared').StructureType,
+    sectorX: site.sector_x,
+    sectorY: site.sector_y,
+    progress: site.progress,
+    neededOre: site.needed_ore,
+    neededGas: site.needed_gas,
+    neededCrystal: site.needed_crystal,
+    depositedOre: site.deposited_ore,
+    depositedGas: site.deposited_gas,
+    depositedCrystal: site.deposited_crystal,
+    paused: site.paused,
+  };
+}
 
 const VALID_STRUCTURE_TYPES = [
   'comm_relay',
@@ -272,6 +299,63 @@ export class WorldService {
 
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
+
+    // mining_station uses the construction site path — no upfront resource cost
+    if (data.type === 'mining_station') {
+      const apCost = STRUCTURE_AP_COSTS['mining_station'];
+      const newAP = spendAP(currentAP, apCost, Date.now());
+      if (!newAP) {
+        client.send('error', { code: 'BUILD_FAIL', message: `Insufficient AP: need ${apCost}` });
+        return;
+      }
+
+      const sx = this.ctx._px(client.sessionId);
+      const sy = this.ctx._py(client.sessionId);
+
+      const existing = await getConstructionSite(sx, sy);
+      if (existing) {
+        client.send('buildResult', {
+          success: false,
+          error: 'Construction site already exists in this sector',
+        });
+        return;
+      }
+
+      await saveAPState(auth.userId, newAP);
+
+      const costs = STRUCTURE_COSTS['mining_station'];
+      let siteId: string;
+      try {
+        siteId = await createConstructionSite(
+          auth.userId,
+          'mining_station',
+          sx,
+          sy,
+          costs.ore,
+          costs.gas,
+          costs.crystal,
+        );
+      } catch (err: any) {
+        if (err.code === '23505') {
+          client.send('buildResult', {
+            success: false,
+            error: 'Construction site already exists in this sector',
+          });
+          return;
+        }
+        client.send('buildResult', { success: false, error: 'Build failed — try again' });
+        return;
+      }
+
+      const site = await getConstructionSiteById(siteId);
+      const constructionSite = toConstructionSiteState(site!);
+      client.send('buildResult', { success: true, constructionSite });
+      client.send('apUpdate', newAP);
+      this.ctx.broadcast('constructionSiteCreated', { constructionSite });
+      addAcepXpForPlayer(auth.userId, 'ausbau', 10).catch(() => {});
+      return;
+    }
+
     const cargo = await getCargoState(auth.userId);
 
     const result = validateBuild(currentAP, cargo, data.type);
@@ -327,6 +411,49 @@ export class WorldService {
     });
     // ACEP: AUSBAU-XP for building a structure (spec: station +20, base +15 — using +10 flat here)
     addAcepXpForPlayer(auth.userId, 'ausbau', 10).catch(() => {});
+  }
+
+  // ── Construction Site Deposit ───────────────────────────────────────
+
+  async handleDepositConstruction(client: Client, data: DepositConstructionMessage): Promise<void> {
+    if (rejectGuest(client, 'Ressourcen liefern')) return;
+    const auth = client.auth as AuthPayload;
+
+    const site = await getConstructionSiteById(data.siteId);
+    if (!site) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Construction site not found' });
+      return;
+    }
+
+    const cargo = await getCargoState(auth.userId);
+
+    // Cap what player can actually deposit (can't deposit more than they have)
+    const ore     = Math.max(0, Math.min(data.ore     ?? 0, cargo.ore));
+    const gas     = Math.max(0, Math.min(data.gas     ?? 0, cargo.gas));
+    const crystal = Math.max(0, Math.min(data.crystal ?? 0, cargo.crystal));
+
+    // Cap at what's still needed
+    const capOre     = Math.min(ore,     Math.max(0, site.needed_ore     - site.deposited_ore));
+    const capGas     = Math.min(gas,     Math.max(0, site.needed_gas     - site.deposited_gas));
+    const capCrystal = Math.min(crystal, Math.max(0, site.needed_crystal - site.deposited_crystal));
+
+    if (capOre + capGas + capCrystal === 0) {
+      client.send('depositResult', { success: false, error: 'No resources needed or available' });
+      return;
+    }
+
+    if (capOre     > 0) await removeFromInventory(auth.userId, 'resource', 'ore',     capOre);
+    if (capGas     > 0) await removeFromInventory(auth.userId, 'resource', 'gas',     capGas);
+    if (capCrystal > 0) await removeFromInventory(auth.userId, 'resource', 'crystal', capCrystal);
+
+    await depositResources(data.siteId, capOre, capGas, capCrystal);
+
+    const updatedSite = await getConstructionSiteById(data.siteId);
+    const siteState = toConstructionSiteState(updatedSite!);
+    client.send('constructionSiteUpdate', siteState);
+
+    const updatedCargo = await getCargoState(auth.userId);
+    client.send('cargoUpdate', updatedCargo);
   }
 
   // ── Research Lab Upgrade ────────────────────────────────────────────
