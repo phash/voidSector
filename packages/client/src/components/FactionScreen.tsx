@@ -201,6 +201,7 @@ function NoFactionView({ invites }: { invites: any[] }) {
   const [tag, setTag] = useState('');
   const [joinMode, setJoinMode] = useState<FactionJoinMode>('invite');
   const [code, setCode] = useState('');
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
@@ -209,7 +210,13 @@ function NoFactionView({ invites }: { invites: any[] }) {
       >
         FRAKTION
       </div>
-      <div style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '12px' }}>Keine Fraktion</div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', fontFamily: 'monospace', color: '#555', marginBottom: '12px' }}>
+        <div>NOT IN A FACTION</div>
+        <div style={{ fontSize: '0.7rem' }}>Open QUESTS to find faction recruitment missions.</div>
+        <button onClick={() => setActiveProgram('QUESTS')} style={{ border: '1px solid #333', background: 'none', color: '#888', fontFamily: 'monospace', cursor: 'pointer', padding: '3px 8px', fontSize: '0.75rem' }}>
+          [OPEN QUESTS]
+        </button>
+      </div>
 
       {invites.length > 0 && (
         <div style={{ marginBottom: '12px' }}>

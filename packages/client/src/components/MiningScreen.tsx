@@ -22,6 +22,7 @@ export function MiningScreen() {
   const position = useStore((s) => s.position);
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
 
   const [miningProgress, setMiningProgress] = useState(0);
 
@@ -60,8 +61,12 @@ export function MiningScreen() {
       </div>
 
       {!hasResources && !mining?.active && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--color-dim)', marginBottom: '12px' }}>
-          KEINE RESSOURCEN IN DIESEM SEKTOR. NAVIGIERE ZU EINEM ASTEROIDENFELD ODER NEBEL.
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', fontFamily: 'monospace', color: '#555', marginBottom: '12px' }}>
+          <div>NO RESOURCES IN THIS SECTOR</div>
+          <div style={{ fontSize: '0.7rem' }}>Navigate to ASTEROID or NEBULA</div>
+          <button onClick={() => setActiveProgram('NAV-COM')} style={{ border: '1px solid #333', background: 'none', color: '#888', fontFamily: 'monospace', cursor: 'pointer', padding: '3px 8px', fontSize: '0.75rem' }}>
+            [OPEN RADAR]
+          </button>
         </div>
       )}
 

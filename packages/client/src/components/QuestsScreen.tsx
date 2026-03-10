@@ -2,8 +2,23 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
-import type { AvailableQuest, StationNpc } from '@void-sector/shared';
+import type { AvailableQuest, StationNpc, SectorData } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
+
+function findNearestStation(
+  position: { x: number; y: number },
+  discoveries: Record<string, SectorData>,
+): SectorData | null {
+  return (
+    Object.values(discoveries)
+      .filter((s) => s.type === 'station')
+      .sort((a, b) => {
+        const distA = Math.abs(a.x - position.x) + Math.abs(a.y - position.y);
+        const distB = Math.abs(b.x - position.x) + Math.abs(b.y - position.y);
+        return distA - distB;
+      })[0] ?? null
+  );
+}
 
 const MAX_TRACKED = 5;
 
@@ -447,6 +462,7 @@ export function QuestsScreen() {
   const scanEvents = useStore((s) => s.scanEvents);
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
+  const discoveries = useStore((s) => s.discoveries);
   const distressCalls = useStore((s) => s.distressCalls);
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
   const navReturnProgram = useStore((s) => s.navReturnProgram);
@@ -765,9 +781,16 @@ export function QuestsScreen() {
         <div>
           {/* Station quests */}
           <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- STATION ---</div>
-          {!isAtStation && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>Nicht an einer Station</div>
-          )}
+          {!isAtStation && (() => {
+            const nearest = findNearestStation(position, discoveries);
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', fontFamily: 'monospace', color: '#555', marginBottom: '8px' }}>
+                <div>NO QUESTS AVAILABLE</div>
+                <div style={{ fontSize: '0.7rem' }}>Dock at a station to find missions.</div>
+                {nearest && <div style={{ fontSize: '0.7rem' }}>Nearest: ({nearest.x}, {nearest.y})</div>}
+              </div>
+            );
+          })()}
           {isAtStation && stationNpcs.length === 0 && (
             <div style={{ color: 'rgba(255,176,0,0.5)' }}>Lade NPCs...</div>
           )}

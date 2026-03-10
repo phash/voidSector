@@ -25,7 +25,7 @@ describe('FactionScreen', () => {
 
   it('shows create/join when not in faction', () => {
     render(<FactionScreen />);
-    expect(screen.getByText(/Keine Fraktion/)).toBeDefined();
+    expect(screen.getByText(/NOT IN A FACTION/)).toBeDefined();
     expect(screen.getByText('[GRÜNDEN]')).toBeDefined();
     expect(screen.getByText('[BEITRETEN]')).toBeDefined();
   });

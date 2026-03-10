@@ -9,7 +9,7 @@ import {
   TRADE_ROUTE_MIN_CYCLE,
   TRADE_ROUTE_MAX_CYCLE,
 } from '@void-sector/shared';
-import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
+import type { ResourceType, DataSlate, ConfigureRouteMessage, SectorData } from '@void-sector/shared';
 import { InlineError } from './InlineError';
 
 const btnStyle: React.CSSProperties = {
@@ -24,6 +24,21 @@ const btnStyle: React.CSSProperties = {
 
 const NPC_COLUMN_MAX_HEIGHT = 240;
 
+function findNearestStation(
+  position: { x: number; y: number },
+  discoveries: Record<string, SectorData>,
+): SectorData | null {
+  return (
+    Object.values(discoveries)
+      .filter((s) => s.type === 'station')
+      .sort((a, b) => {
+        const distA = Math.abs(a.x - position.x) + Math.abs(a.y - position.y);
+        const distB = Math.abs(b.x - position.x) + Math.abs(b.y - position.y);
+        return distA - distB;
+      })[0] ?? null
+  );
+}
+
 export function TradeScreen() {
   const credits = useStore((s) => s.credits);
   const storage = useStore((s) => s.storage);
@@ -36,6 +51,7 @@ export function TradeScreen() {
   const tradeRoutes = useStore((s) => s.tradeRoutes);
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
+  const discoveries = useStore((s) => s.discoveries);
   const ship = useStore((s) => s.ship);
   const homeBase = useStore((s) => s.homeBase);
   const npcStationData = useStore((s) => s.npcStationData);
@@ -71,10 +87,21 @@ export function TradeScreen() {
   }, [tier, isStation]);
 
   if (!canTrade) {
+    const nearest = findNearestStation(position, discoveries);
     return (
-      <div style={{ padding: 16, textAlign: 'center', opacity: 0.4, fontSize: '0.8rem' }}>
-        <div style={{ marginBottom: 8 }}>KEIN HANDEL VERFÜGBAR</div>
-        <div style={{ fontSize: '0.7rem' }}>Navigate to a station or your home base to trade.</div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', fontFamily: 'monospace', color: '#555' }}>
+        <div>NO TRADING AVAILABLE</div>
+        {nearest && (
+          <div style={{ fontSize: '0.7rem' }}>
+            Nearest station: ({nearest.x}, {nearest.y})
+          </div>
+        )}
+        <button
+          onClick={() => setActiveProgram('NAV-COM')}
+          style={{ border: '1px solid #333', background: 'none', color: '#888', fontFamily: 'monospace', cursor: 'pointer', padding: '3px 8px', fontSize: '0.75rem' }}
+        >
+          [NAVIGATE]
+        </button>
       </div>
     );
   }
