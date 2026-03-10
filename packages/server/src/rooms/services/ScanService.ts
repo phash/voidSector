@@ -68,6 +68,11 @@ export async function addWissenCapped(
   return actual;
 }
 
+function wissenForSector(sectorType: string): number {
+  const special = ['anomaly', 'asteroid_field', 'nebula'].includes(sectorType);
+  return special ? 25 : 10;
+}
+
 export class ScanService {
   constructor(private ctx: ServiceContext) {}
 
@@ -130,6 +135,17 @@ export class ScanService {
     // ACEP: INTEL-XP + personality comment for scanning (spec: +3 per scan)
     addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
     this._emitPersonalityComment(client, auth.userId, 'scan').catch(() => {});
+
+    // Wissen: +10 for normal sectors, +25 for special sectors (daily cap)
+    {
+      const isFrontier =
+        Math.max(Math.abs(this.ctx.quadrantX), Math.abs(this.ctx.quadrantY)) > 3;
+      const wissenBase = wissenForSector(sectorData?.type ?? 'empty');
+      const wissenGained = await addWissenCapped(redis, auth.userId, wissenBase, isFrontier);
+      if (wissenGained > 0) {
+        await addWissen(auth.userId, wissenGained);
+      }
+    }
 
     // Ancient ruin scan: reveal lore fragment + artefact chance
     if (sectorData?.contents?.includes('ruin')) {
