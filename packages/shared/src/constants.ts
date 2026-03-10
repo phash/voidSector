@@ -2042,6 +2042,19 @@ export function getAcepRadarPattern(xp: {
 // Universe Tick Engine constants
 export const UNIVERSE_TICK_MS = 5_000; // 5 seconds per tick
 export const FACTION_EXPANSION_INTERVAL_TICKS = 360; // 30 min (360 × 5s)
+
+/** Radar render radius for NPC mining drones (hollow circle, px at zoom 2) */
+export const CIV_DRONE_RADIUS = 5;
+
+/** Max mining drones per NPC station */
+export const CIV_MAX_DRONES_PER_STATION = 3;
+
+/** Mining drone fills up after this many ticks */
+export const CIV_MINING_TICKS_TO_FULL = 20;
+
+/** Max Ulam spiral steps before drone gives up and idles */
+export const CIV_SPIRAL_MAX_STEPS = 200;
+
 export const FACTION_MAX_STATIONS_PER_QUADRANT = 5;
 export const HUMAN_CIVILIZATION_METER_MAX = 10_000; // max civ level
 
