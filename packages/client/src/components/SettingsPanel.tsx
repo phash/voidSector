@@ -77,7 +77,7 @@ export const SettingsPanel: React.FC = () => {
 
       <div className="settings-row">
         <button className="vs-btn-sm vs-btn-danger" onClick={handleLogout}>
-          VERLASSEN
+          LOGOUT
         </button>
       </div>
     </div>

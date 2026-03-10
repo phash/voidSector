@@ -28,7 +28,7 @@ export function MiningDetailPanel() {
           marginTop: 24,
         }}
       >
-        KEINE RESSOURCEN
+        NO RESOURCES
       </div>
     );
   }
@@ -44,12 +44,12 @@ export function MiningDetailPanel() {
           letterSpacing: '0.1em',
         }}
       >
-        SEKTOR-RESSOURCEN
+        SECTOR RESOURCES
       </div>
 
       {resources.ore > 0 && (
         <div>
-          <span style={{ color: 'var(--color-dim)' }}>ERZ: </span>
+          <span style={{ color: 'var(--color-dim)' }}>ORE: </span>
           <span>{resources.ore}</span>
         </div>
       )}
@@ -61,7 +61,7 @@ export function MiningDetailPanel() {
       )}
       {resources.crystal > 0 && (
         <div>
-          <span style={{ color: 'var(--color-dim)' }}>KRISTALL: </span>
+          <span style={{ color: 'var(--color-dim)' }}>CRYSTAL: </span>
           <span>{resources.crystal}</span>
         </div>
       )}
@@ -75,7 +75,7 @@ export function MiningDetailPanel() {
             fontSize: '0.65rem',
           }}
         >
-          <div>ABBAU AKTIV: {mining.resource?.toUpperCase()}</div>
+          <div>MINING ACTIVE: {mining.resource?.toUpperCase()}</div>
           <div style={{ color: 'var(--color-dim)' }}>RATE: {mining.rate}u/s</div>
         </div>
       )}

@@ -33,7 +33,7 @@ describe('FactionUpgradeTree', () => {
     vi.clearAllMocks();
   });
 
-  it('shows VERBESSERUNGSBAUM section header', () => {
+  it('shows UPGRADE TREE section header', () => {
     mockStoreState({
       faction: baseFaction,
       factionMembers: baseMembers,
@@ -41,7 +41,7 @@ describe('FactionUpgradeTree', () => {
       player: { id: 'p1', username: 'TestPlayer' },
     } as any);
     render(<FactionScreen />);
-    expect(screen.getByText('VERBESSERUNGSBAUM')).toBeDefined();
+    expect(screen.getByText('UPGRADE TREE')).toBeDefined();
   });
 
   it('shows tier labels with cost', () => {

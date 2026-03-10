@@ -14,7 +14,7 @@ describe('CargoDetailPanel', () => {
   it('shows prompt when nothing selected', () => {
     mockStoreState({ selectedCargoItem: null });
     render(<CargoDetailPanel />);
-    expect(screen.getByText('AUSWAHL TREFFEN')).toBeInTheDocument();
+    expect(screen.getByText('SELECT AN ITEM')).toBeInTheDocument();
   });
 
   it('shows item details when selectedCargoItem is set', () => {
@@ -38,9 +38,9 @@ describe('CargoDetailPanel', () => {
       },
     });
     render(<CargoDetailPanel />);
-    expect(screen.getByText('ERZ')).toBeInTheDocument();
+    expect(screen.getByText('ORE')).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
-    expect(screen.getByText('[ABWERFEN]')).toBeInTheDocument();
+    expect(screen.getByText('[JETTISON]')).toBeInTheDocument();
   });
 
   it('shows zero quantity for empty cargo item', () => {
@@ -85,7 +85,7 @@ describe('MiningDetailPanel', () => {
       },
     });
     render(<MiningDetailPanel />);
-    expect(screen.getByText('KEINE RESSOURCEN')).toBeInTheDocument();
+    expect(screen.getByText('NO RESOURCES')).toBeInTheDocument();
   });
 
   it('shows resource info when sectorData has resources', () => {
@@ -104,7 +104,7 @@ describe('MiningDetailPanel', () => {
       },
     });
     render(<MiningDetailPanel />);
-    expect(screen.getByText('SEKTOR-RESSOURCEN')).toBeInTheDocument();
+    expect(screen.getByText('SECTOR RESOURCES')).toBeInTheDocument();
     expect(screen.getByText('150')).toBeInTheDocument();
     expect(screen.getByText('30')).toBeInTheDocument();
   });
@@ -134,8 +134,8 @@ describe('MiningDetailPanel', () => {
       },
     });
     render(<MiningDetailPanel />);
-    expect(screen.getByText(/ABBAU AKTIV/)).toBeInTheDocument();
-    expect(screen.getByText(/ORE/)).toBeInTheDocument();
+    expect(screen.getByText(/MINING ACTIVE/)).toBeInTheDocument();
+    expect(screen.getAllByText(/ORE/).length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -209,16 +209,16 @@ describe('QuestDetailPanel', () => {
   it('shows prompt when nothing selected', () => {
     mockStoreState({ selectedQuest: null });
     render(<QuestDetailPanel />);
-    expect(screen.getByText('AUSWAHL TREFFEN')).toBeInTheDocument();
+    expect(screen.getByText('SELECT A QUEST')).toBeInTheDocument();
   });
 
-  it('shows AUFTRAG NICHT GEFUNDEN when quest id does not match', () => {
+  it('shows QUEST NOT FOUND when quest id does not match', () => {
     mockStoreState({
       selectedQuest: 'nonexistent',
       activeQuests: [],
     });
     render(<QuestDetailPanel />);
-    expect(screen.getByText('AUFTRAG NICHT GEFUNDEN')).toBeInTheDocument();
+    expect(screen.getByText('QUEST NOT FOUND')).toBeInTheDocument();
   });
 
   it('shows quest details when selectedQuest matches', () => {
@@ -257,7 +257,7 @@ describe('QuestDetailPanel', () => {
     expect(screen.getByText('(20/50)')).toBeInTheDocument();
     expect(screen.getByText('100 CR')).toBeInTheDocument();
     expect(screen.getByText('50 XP')).toBeInTheDocument();
-    expect(screen.getByText('+10 RUF')).toBeInTheDocument();
-    expect(screen.getByText('[VERLASSEN]')).toBeInTheDocument();
+    expect(screen.getByText('+10 REP')).toBeInTheDocument();
+    expect(screen.getByText('[ABANDON]')).toBeInTheDocument();
   });
 });

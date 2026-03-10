@@ -15,14 +15,14 @@ const inputStyle: React.CSSProperties = {
 };
 
 const STRUCTURE_LABELS: Record<string, string> = {
-  base: 'KOMMANDO-KERN',
+  base: 'COMMAND CENTER',
   comm_relay: 'COMM RELAY',
   mining_station: 'MINING STATION',
-  storage: 'LAGER',
-  trading_post: 'HANDELSPLATZ',
-  factory: 'FABRIK',
+  storage: 'STORAGE',
+  trading_post: 'TRADING POST',
+  factory: 'FACTORY',
   kontor: 'KONTOR',
-  research_lab: 'FORSCHUNGSLABOR',
+  research_lab: 'RESEARCH LAB',
 };
 
 const btnStyle: React.CSSProperties = {
@@ -103,7 +103,7 @@ export function BaseScreen() {
                 onKeyDown={(e) => e.key === 'Enter' && handleRenameBase()}
                 maxLength={20}
                 autoFocus
-                placeholder="Basisname..."
+                placeholder="Base name..."
               />
               <button style={btnStyle} onClick={handleRenameBase}>
                 OK
@@ -115,7 +115,7 @@ export function BaseScreen() {
           ) : (
             <>
               <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>
-                {baseName || 'HEIMATBASIS'}
+                {baseName || 'HOME BASE'}
               </span>
               <button
                 style={btnStyle}
@@ -124,7 +124,7 @@ export function BaseScreen() {
                   setRenameValue(baseName || '');
                 }}
               >
-                UMBENENNEN
+                RENAME
               </button>
             </>
           )}
@@ -173,15 +173,15 @@ export function BaseScreen() {
                   marginTop: '16px',
                 }}
               >
-                LAGER ({storageTotal}/{storageCap})
+                STORAGE ({storageTotal}/{storageCap})
               </div>
               <div>
-                ERZ: {storage.ore} &nbsp; GAS: {storage.gas} &nbsp; KRISTALL: {storage.crystal}{' '}
-                &nbsp; ARTEFAKT: {storage.artefact}
+                ORE: {storage.ore} &nbsp; GAS: {storage.gas} &nbsp; CRYSTAL: {storage.crystal}{' '}
+                &nbsp; ARTEFACT: {storage.artefact}
               </div>
 
               <div style={{ marginTop: 8, fontSize: '0.7rem' }}>
-                <label>MENGE: </label>
+                <label>AMOUNT: </label>
                 <input
                   type="number"
                   min={1}
@@ -204,13 +204,13 @@ export function BaseScreen() {
                       style={btnStyle}
                       onClick={() => network.sendTransfer(res, transferAmount, 'toStorage')}
                     >
-                      {res.toUpperCase()} → LAGER
+                      {res.toUpperCase()} → STORAGE
                     </button>
                     <button
                       style={btnStyle}
                       onClick={() => network.sendTransfer(res, transferAmount, 'fromStorage')}
                     >
-                      LAGER → {res.toUpperCase()}
+                      STORAGE → {res.toUpperCase()}
                     </button>
                   </div>
                 ))}
@@ -221,7 +221,7 @@ export function BaseScreen() {
                   style={{ ...btnStyle, marginTop: 8 }}
                   onClick={() => network.sendUpgradeStructure(storageStruct.id)}
                 >
-                  UPGRADE LAGER T{storageTier + 1} ({STORAGE_TIERS[storageTier + 1]?.upgradeCost}{' '}
+                  UPGRADE STORAGE T{storageTier + 1} ({STORAGE_TIERS[storageTier + 1]?.upgradeCost}{' '}
                   CR)
                 </button>
               )}
@@ -233,7 +233,7 @@ export function BaseScreen() {
               style={{ ...btnStyle, marginTop: 8 }}
               onClick={() => network.sendUpgradeStructure(tradingPostStruct.id)}
             >
-              UPGRADE HANDELSPLATZ T{(tradingPostStruct.tier ?? 1) + 1} (
+              UPGRADE TRADING POST T{(tradingPostStruct.tier ?? 1) + 1} (
               {TRADING_POST_TIERS[(tradingPostStruct.tier ?? 1) + 1]?.upgradeCost} CR)
             </button>
           )}
@@ -519,8 +519,8 @@ export function BaseScreen() {
             CARGO ON SHIP
           </div>
           <div>
-            ERZ: {cargo.ore} &nbsp; GAS: {cargo.gas} &nbsp; KRISTALL: {cargo.crystal} &nbsp;
-            ARTEFAKT: {cargo.artefact}
+            ORE: {cargo.ore} &nbsp; GAS: {cargo.gas} &nbsp; CRYSTAL: {cargo.crystal} &nbsp;
+            ARTEFACT: {cargo.artefact}
           </div>
         </>
       )}

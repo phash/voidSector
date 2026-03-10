@@ -11,11 +11,11 @@ const panelStyle: React.CSSProperties = {
 };
 
 const RESOURCE_LABELS: Record<string, string> = {
-  ore: 'ERZ',
+  ore: 'ORE',
   gas: 'GAS',
-  crystal: 'KRISTALL',
-  slates: 'DATENPLATTE',
-  artefact: 'ARTEFAKT',
+  crystal: 'CRYSTAL',
+  slates: 'DATA SLATE',
+  artefact: 'ARTEFACT',
 };
 
 export function CargoDetailPanel() {
@@ -32,7 +32,7 @@ export function CargoDetailPanel() {
           marginTop: 24,
         }}
       >
-        AUSWAHL TREFFEN
+        SELECT AN ITEM
       </div>
     );
   }
@@ -54,7 +54,7 @@ export function CargoDetailPanel() {
       </div>
 
       <div style={{ marginTop: 8 }}>
-        <span style={{ color: 'var(--color-dim)' }}>MENGE: </span>
+        <span style={{ color: 'var(--color-dim)' }}>AMOUNT: </span>
         <span>{quantity}</span>
       </div>
 
@@ -68,7 +68,7 @@ export function CargoDetailPanel() {
         }}
         onClick={() => network.sendJettison(selectedCargoItem)}
       >
-        [ABWERFEN]
+        [JETTISON]
       </button>
     </div>
   );

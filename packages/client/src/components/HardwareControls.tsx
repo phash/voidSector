@@ -1,8 +1,8 @@
 const CHANNEL_LABELS: Record<string, string> = {
   quadrant: 'QUADRANT',
-  sector: 'SEKTOR',
-  faction: 'FRAKTION',
-  direct: 'DIREKT',
+  sector: 'SECTOR',
+  faction: 'FACTION',
+  direct: 'DIRECT',
 };
 
 interface HardwareControlsProps {
@@ -116,7 +116,7 @@ export function HardwareControls(props: HardwareControlsProps) {
           className={`hw-power-btn${followActive ? ' on' : ''}`}
           data-testid="hw-follow"
           onClick={() => onFollow?.()}
-          title="Auto-Follow: Detail-Monitor folgt Schiff"
+          title="Auto-Follow: Detail-Monitor follows ship"
         >
           <span className={`hw-power-led${followActive ? ' green' : ' orange'}`} />
           FOL

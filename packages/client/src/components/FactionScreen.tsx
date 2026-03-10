@@ -31,23 +31,23 @@ export function FactionScreen() {
       <div
         style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '8px' }}
       >
-        FRAKTION
+        {UI.programs.FACTION}
       </div>
 
       <div style={{ fontSize: '1rem', marginBottom: '4px' }}>
         [{faction.tag}] {faction.name}
       </div>
       <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '12px' }}>
-        Modus: {faction.joinMode.toUpperCase()}
+        Mode: {faction.joinMode.toUpperCase()}
         {faction.joinMode === 'code' && faction.inviteCode && isLeader && (
           <span> | Code: {faction.inviteCode}</span>
         )}
         {' | '}
-        {faction.memberCount} Mitglieder
+        {faction.memberCount} Members
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', marginBottom: '8px' }}>
-        <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>MITGLIEDER</div>
+        <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>{UI.tabs.MEMBERS}</div>
         {members.map((m) => (
           <div
             key={m.playerId}
@@ -120,7 +120,7 @@ export function FactionScreen() {
         <div
           style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '6px', letterSpacing: '0.1em' }}
         >
-          VERBESSERUNGSBAUM
+          {UI.status.UPGRADE_TREE}
         </div>
         {[1, 2, 3].map((tier) => {
           const tierDef = FACTION_UPGRADE_TIERS[tier];
@@ -191,7 +191,7 @@ export function FactionScreen() {
         )}
         {!isLeader && (
           <button className="vs-btn" onClick={() => network.sendFactionAction('leave')}>
-            [VERLASSEN]
+            {btn('LEAVE')}
           </button>
         )}
       </div>
@@ -211,13 +211,13 @@ function NoFactionView({ invites }: { invites: any[] }) {
       <div
         style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '8px' }}
       >
-        FRAKTION
+        {UI.programs.FACTION}
       </div>
-      <div style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '12px' }}>Keine Fraktion</div>
+      <div style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '12px' }}>No Faction</div>
 
       {invites.length > 0 && (
         <div style={{ marginBottom: '12px' }}>
-          <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>EINLADUNGEN</div>
+          <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>INVITATIONS</div>
           {invites.map((inv: any) => (
             <div
               key={inv.id}
@@ -233,20 +233,20 @@ function NoFactionView({ invites }: { invites: any[] }) {
               <span>
                 [{inv.factionTag}] {inv.factionName}
               </span>
-              <span style={{ opacity: 0.5 }}>von {inv.inviterName}</span>
+              <span style={{ opacity: 0.5 }}>from {inv.inviterName}</span>
               <button
                 className="vs-btn"
                 style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                 onClick={() => network.sendRespondInvite(inv.id, true)}
               >
-                [JA]
+                [YES]
               </button>
               <button
                 className="vs-btn"
                 style={{ fontSize: '0.75rem', padding: '2px 6px' }}
                 onClick={() => network.sendRespondInvite(inv.id, false)}
               >
-                [NEIN]
+                [NO]
               </button>
             </div>
           ))}
@@ -258,13 +258,13 @@ function NoFactionView({ invites }: { invites: any[] }) {
           className={`vs-btn ${tab === 'create' ? 'vs-btn-active' : ''}`}
           onClick={() => setTab('create')}
         >
-          [GRÜNDEN]
+          [FOUND]
         </button>
         <button
           className={`vs-btn ${tab === 'join' ? 'vs-btn-active' : ''}`}
           onClick={() => setTab('join')}
         >
-          [BEITRETEN]
+          [JOIN]
         </button>
       </div>
 
@@ -272,14 +272,14 @@ function NoFactionView({ invites }: { invites: any[] }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <input
             className="vs-input"
-            placeholder="Fraktionsname"
+            placeholder="Faction name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={64}
           />
           <input
             className="vs-input"
-            placeholder="Tag (3-5 Zeichen)"
+            placeholder="Tag (3-5 chars)"
             value={tag}
             onChange={(e) => setTag(e.target.value.toUpperCase())}
             maxLength={5}
@@ -289,23 +289,23 @@ function NoFactionView({ invites }: { invites: any[] }) {
             value={joinMode}
             onChange={(e) => setJoinMode(e.target.value as FactionJoinMode)}
           >
-            <option value="open">Offen</option>
-            <option value="code">Einladungscode</option>
-            <option value="invite">Nur Einladung</option>
+            <option value="open">Open</option>
+            <option value="code">Invite Code</option>
+            <option value="invite">Invite Only</option>
           </select>
           <button
             className="vs-btn"
             disabled={name.trim().length < 3 || tag.trim().length < 3}
             onClick={() => network.sendCreateFaction(name.trim(), tag.trim(), joinMode)}
           >
-            [FRAKTION GRÜNDEN]
+            [FOUND FACTION]
           </button>
         </div>
       )}
 
       {tab === 'join' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Einladungscode eingeben:</div>
+          <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Enter invite code:</div>
           <div style={{ display: 'flex', gap: '6px' }}>
             <input
               className="vs-input"
@@ -319,7 +319,7 @@ function NoFactionView({ invites }: { invites: any[] }) {
               disabled={code.length < 4}
               onClick={() => network.sendFactionAction('joinCode', { code })}
             >
-              [BEITRETEN]
+              [JOIN]
             </button>
           </div>
         </div>
@@ -335,7 +335,7 @@ function InviteButton() {
   if (!open) {
     return (
       <button className="vs-btn" onClick={() => setOpen(true)}>
-        [EINLADEN]
+        [INVITE]
       </button>
     );
   }
@@ -344,7 +344,7 @@ function InviteButton() {
     <div style={{ display: 'flex', gap: '4px' }}>
       <input
         className="vs-input"
-        placeholder="Spielername"
+        placeholder="Player name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         style={{ width: '120px' }}

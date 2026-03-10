@@ -3,6 +3,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
+import { UI } from '../ui-strings';
 
 const QUEST_TYPE_SHORT: Record<string, string> = {
   fetch: 'LFR',
@@ -49,7 +50,7 @@ function TrackedQuestTooltip({ quest, onClose }: { quest: TrackedQuest; onClose:
           fontSize: '0.6rem',
         }}
       >
-        [{quest.type.toUpperCase()}] VERFOLGT
+        [{quest.type.toUpperCase()}] {UI.status.TRACKED}
       </div>
       <div style={{ color: '#FFB000', marginBottom: 4 }}>{quest.title}</div>
       {quest.description && (
@@ -59,7 +60,7 @@ function TrackedQuestTooltip({ quest, onClose }: { quest: TrackedQuest; onClose:
       )}
       {quest.targetX != null && quest.targetY != null && (
         <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.6rem' }}>
-          ZIEL: ({innerCoord(quest.targetX)}, {innerCoord(quest.targetY)})
+          {UI.status.TARGET}: ({innerCoord(quest.targetX)}, {innerCoord(quest.targetY)})
         </div>
       )}
       <button
@@ -75,7 +76,7 @@ function TrackedQuestTooltip({ quest, onClose }: { quest: TrackedQuest; onClose:
           padding: 0,
         }}
       >
-        [SCHLIESSEN]
+        [{UI.actions.CLOSE}]
       </button>
     </div>
   );
@@ -153,7 +154,7 @@ export function BookmarkBar() {
               letterSpacing: '0.1em',
             }}
           >
-            VERFOLGT
+            {UI.status.TRACKED}
           </div>
           {trackedQuests.map((tq) => {
             const typeShort = QUEST_TYPE_SHORT[tq.type] ?? tq.type.slice(0, 3).toUpperCase();

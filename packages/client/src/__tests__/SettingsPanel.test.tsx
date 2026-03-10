@@ -94,13 +94,13 @@ describe('SettingsPanel', () => {
 
   it('renders logout button', () => {
     render(<SettingsPanel />);
-    expect(screen.getByText('VERLASSEN')).toBeInTheDocument();
+    expect(screen.getByText('LOGOUT')).toBeInTheDocument();
   });
 
   it('clicking logout clears vs_token from localStorage', async () => {
     storage['vs_token'] = 'some-token';
     render(<SettingsPanel />);
-    await userEvent.click(screen.getByText('VERLASSEN'));
+    await userEvent.click(screen.getByText('LOGOUT'));
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('vs_token');
     expect(reloadMock).toHaveBeenCalled();
   });
