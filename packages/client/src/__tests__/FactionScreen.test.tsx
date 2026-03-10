@@ -96,7 +96,7 @@ describe('FactionScreen', () => {
     render(<FactionScreen />);
     expect(screen.getByText(/EINLADEN/)).toBeDefined();
     expect(screen.getByText(/MODUS/)).toBeDefined();
-    expect(screen.getByText(/AUFLÖSEN/)).toBeDefined();
+    expect(screen.getByText('[DISBAND]')).toBeDefined();
     expect(screen.getByText(/ABC123/)).toBeDefined();
   });
 });

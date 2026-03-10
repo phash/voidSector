@@ -4,6 +4,8 @@ import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
+import { btn, btnDisabled, UI } from '../ui-strings';
+import { useConfirm } from '../hooks/useConfirm';
 
 const MAX_TRACKED = 5;
 
@@ -452,6 +454,7 @@ export function QuestsScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
+  const { confirm, isArmed } = useConfirm();
 
   const [tab, setTab] = useState<
     | 'active'
@@ -650,19 +653,13 @@ export function QuestsScreen() {
                       {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
                     </div>
                     <button
-                      onClick={() => network.sendAbandonQuest(q.id)}
-                      style={{
-                        background: 'none',
-                        color: '#FF3333',
-                        border: '1px solid #FF3333',
-                        padding: '1px 4px',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        fontSize: '9px',
-                        marginTop: '3px',
-                      }}
+                      className="vs-btn"
+                      onClick={() => confirm(`abandon-${q.id}`, () => network.sendAbandonQuest(q.id))}
+                      style={isArmed(`abandon-${q.id}`) ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
                     >
-                      [ABBRECHEN]
+                      {isArmed(`abandon-${q.id}`)
+                        ? btnDisabled(UI.actions.ABANDON, 'SURE?')
+                        : btn(UI.actions.ABANDON)}
                     </button>
                   </div>
                 )}

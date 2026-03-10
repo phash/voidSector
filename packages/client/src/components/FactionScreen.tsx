@@ -3,6 +3,8 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { FACTION_UPGRADE_TIERS } from '@void-sector/shared';
 import type { FactionJoinMode, FactionUpgradeChoice } from '@void-sector/shared';
+import { btn, btnDisabled, UI } from '../ui-strings';
+import { useConfirm } from '../hooks/useConfirm';
 
 export function FactionScreen() {
   const faction = useStore((s) => s.faction);
@@ -10,6 +12,7 @@ export function FactionScreen() {
   const invites = useStore((s) => s.factionInvites);
   const playerId = useStore((s) => s.playerId);
   const factionUpgrades = useStore((s) => s.factionUpgrades);
+  const { confirm, isArmed } = useConfirm();
 
   useEffect(() => {
     network.requestFaction();
@@ -177,11 +180,12 @@ export function FactionScreen() {
             <JoinModeSelector currentMode={faction.joinMode} />
             <button
               className="vs-btn"
-              onClick={() => {
-                if (confirm('Fraktion auflösen?')) network.sendFactionAction('disband');
-              }}
+              onClick={() => confirm('disband-faction', () => network.sendFactionAction('disband'))}
+              style={isArmed('disband-faction') ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
             >
-              [AUFLÖSEN]
+              {isArmed('disband-faction')
+                ? btnDisabled(UI.actions.DISBAND, 'SURE?')
+                : btn(UI.actions.DISBAND)}
             </button>
           </>
         )}
