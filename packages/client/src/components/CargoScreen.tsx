@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import {
-  RESOURCE_TYPES,
   SLATE_AP_COST_SECTOR,
   CUSTOM_SLATE_AP_COST,
   CUSTOM_SLATE_CREDIT_COST,
@@ -11,6 +10,8 @@ import {
 } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
+import { btn, btnDisabled } from '../ui-strings';
+import { useConfirm } from '../hooks/useConfirm';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
@@ -69,6 +70,8 @@ export function CargoScreen() {
   const inventory = useStore((s) => s.inventory);
   const cargoCap = ship?.stats?.cargoCap ?? 5;
   const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+
+  const { confirm, isArmed } = useConfirm();
 
   const [activeTab, setActiveTab] = useState<'resource' | 'module' | 'blueprint'>('resource');
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -315,23 +318,45 @@ export function CargoScreen() {
           )}
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {RESOURCE_TYPES.map((res) => (
-              <button
-                key={res}
-                className="vs-btn"
-                disabled={cargo[res] <= 0}
-                onClick={() => network.sendJettison(res)}
-              >
-                [ABWERFEN {res.toUpperCase()}]
-              </button>
-            ))}
             <button
-              key="artefact"
+              className="vs-btn"
+              disabled={cargo.ore <= 0}
+              onClick={() => confirm('jettison-ore', () => network.sendJettison('ore'))}
+              style={isArmed('jettison-ore') ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
+            >
+              {isArmed('jettison-ore')
+                ? btnDisabled('JETTISON ORE', 'SURE?')
+                : btn('JETTISON ORE')}
+            </button>
+            <button
+              className="vs-btn"
+              disabled={cargo.gas <= 0}
+              onClick={() => confirm('jettison-gas', () => network.sendJettison('gas'))}
+              style={isArmed('jettison-gas') ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
+            >
+              {isArmed('jettison-gas')
+                ? btnDisabled('JETTISON GAS', 'SURE?')
+                : btn('JETTISON GAS')}
+            </button>
+            <button
+              className="vs-btn"
+              disabled={cargo.crystal <= 0}
+              onClick={() => confirm('jettison-crystal', () => network.sendJettison('crystal'))}
+              style={isArmed('jettison-crystal') ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
+            >
+              {isArmed('jettison-crystal')
+                ? btnDisabled('JETTISON CRYSTAL', 'SURE?')
+                : btn('JETTISON CRYSTAL')}
+            </button>
+            <button
               className="vs-btn"
               disabled={cargo.artefact <= 0}
-              onClick={() => network.sendJettison('artefact')}
+              onClick={() => confirm('jettison-artefact', () => network.sendJettison('artefact'))}
+              style={isArmed('jettison-artefact') ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
             >
-              [ABWERFEN ARTEFAKT]
+              {isArmed('jettison-artefact')
+                ? btnDisabled('JETTISON ARTEFACT', 'SURE?')
+                : btn('JETTISON ARTEFACT')}
             </button>
           </div>
         </>
