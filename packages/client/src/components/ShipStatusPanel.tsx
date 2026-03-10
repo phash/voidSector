@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { HULLS } from '@void-sector/shared';
@@ -30,28 +30,42 @@ export function ShipStatusPanel() {
   const [tab, setTab]             = useState<Tab>('cargo');
   const [renaming, setRenaming]   = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const escapeRef                 = useRef(false);
 
   if (!ship) {
     return <div style={{ padding: '4px 8px', ...dim, opacity: 0.5 }}>NO SHIP DATA</div>;
   }
 
-  const hull = HULLS[ship.hullType];
-  const xp   = ship.acepXp;
+  const { id: shipId, name: shipName, hullType, modules, stats, acepXp: xp } = ship;
+  const hull = HULLS[hullType];
 
   function startRename() {
-    setNameInput(ship!.name);
+    setNameInput(shipName);
     setRenaming(true);
   }
   function commitRename() {
     const trimmed = nameInput.trim();
-    if (trimmed && trimmed !== ship!.name) {
-      network.sendRenameShip(ship!.id, trimmed);
+    if (trimmed && trimmed !== shipName) {
+      network.sendRenameShip(shipId, trimmed);
     }
     setRenaming(false);
   }
+  function handleBlur() {
+    if (escapeRef.current) {
+      escapeRef.current = false;
+      return;
+    }
+    commitRename();
+  }
   function onKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter')  commitRename();
-    if (e.key === 'Escape') setRenaming(false);
+    if (e.key === 'Enter') {
+      escapeRef.current = false;
+      commitRename();
+    }
+    if (e.key === 'Escape') {
+      escapeRef.current = true;
+      setRenaming(false);
+    }
   }
 
   const hasHyperdrive = hyperdriveState && hyperdriveState.maxCharge > 0;
@@ -68,7 +82,7 @@ export function ShipStatusPanel() {
           autoFocus
           value={nameInput}
           onChange={(e) => setNameInput(e.target.value)}
-          onBlur={commitRename}
+          onBlur={handleBlur}
           onKeyDown={onKeyDown}
           style={{ ...mono, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', width: '100%', marginBottom: 2 }}
         />
@@ -78,10 +92,10 @@ export function ShipStatusPanel() {
           title="Klicken zum Umbenennen"
           style={{ fontSize: '0.6rem', letterSpacing: '0.15em', borderBottom: '1px solid var(--color-dim)', paddingBottom: 2, marginBottom: 2, cursor: 'text' }}
         >
-          {ship.name}
+          {shipName}
         </div>
       )}
-      <div style={{ ...dim, marginBottom: 6 }}>{hull?.name ?? ship.hullType.toUpperCase()}</div>
+      <div style={{ ...dim, marginBottom: 6 }}>{hull?.name ?? hullType.toUpperCase()}</div>
 
       {/* ACEP bars */}
       {xp && (
@@ -135,7 +149,7 @@ export function ShipStatusPanel() {
           ))}
           <div style={row}>
             <span style={dim}>KAPAZITÄT</span>
-            <span style={pri}>{ship.stats.cargoCap}</span>
+            <span style={pri}>{stats.cargoCap}</span>
           </div>
         </div>
       )}
@@ -159,11 +173,11 @@ export function ShipStatusPanel() {
       {tab === 'stats' && (
         <div style={{ marginTop: 4 }}>
           {([
-            ['HP',         ship.stats.hp],
-            ['SPEED',      ship.stats.engineSpeed],
-            ['SCANNER',    ship.stats.scannerLevel],
-            ['JUMP RANGE', ship.stats.jumpRange],
-            ['FUEL',       fuel ? `${fuel.current}/${fuel.max}` : `—/${ship.stats.fuelMax}`],
+            ['HP',         stats.hp],
+            ['SPEED',      stats.engineSpeed],
+            ['SCANNER',    stats.scannerLevel],
+            ['JUMP RANGE', stats.jumpRange],
+            ['FUEL',       fuel ? `${fuel.current}/${fuel.max}` : `—/${stats.fuelMax}`],
           ] as [string, string | number][]).map(([label, val]) => (
             <div key={label} style={row}>
               <span style={dim}>{label}</span>

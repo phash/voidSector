@@ -109,6 +109,26 @@ describe('ShipStatusPanel', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
+  it('commits rename on blur', async () => {
+    const user = userEvent.setup();
+    render(<ShipStatusPanel />);
+    await user.click(screen.getByText('Astral Hawk'));
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'BLUR NAME');
+    await user.tab(); // triggers blur
+    expect(network.sendRenameShip).toHaveBeenCalledWith('ship-1', 'BLUR NAME');
+  });
+
+  it('Escape cancels without calling sendRenameShip', async () => {
+    const user = userEvent.setup();
+    render(<ShipStatusPanel />);
+    await user.click(screen.getByText('Astral Hawk'));
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'CHANGED');
+    await user.keyboard('{Escape}');
+    expect(network.sendRenameShip).not.toHaveBeenCalled();
+  });
+
   it('does not call sendRenameShip when name is unchanged', async () => {
     const user = userEvent.setup();
     render(<ShipStatusPanel />);
