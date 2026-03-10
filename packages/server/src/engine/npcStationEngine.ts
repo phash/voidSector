@@ -225,22 +225,24 @@ export async function canSellToStation(
   y: number,
   itemType: string,
   amount: number,
-): Promise<{ ok: boolean; capacity: number; price: number }> {
+): Promise<{ ok: boolean; capacity: number; price: number; effectiveAmount: number }> {
   await getOrInitStation(x, y);
   const item = await getStationInventoryItem(x, y, itemType);
-  if (!item) return { ok: false, capacity: 0, price: 0 };
+  if (!item) return { ok: false, capacity: 0, price: 0, effectiveAmount: 0 };
 
   const currentStock = calculateCurrentStock(item);
   const remainingCapacity = item.maxStock - currentStock;
+  const effectiveAmount = Math.min(amount, remainingCapacity);
   const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
   const basePrice = NPC_PRICES[itemType as MineableResourceType] ?? 0;
   const dynamicPrice = calculatePrice(basePrice, stockRatio);
   const unitPrice = Math.round(dynamicPrice * NPC_SELL_SPREAD);
-  const totalPrice = unitPrice * amount;
+  const totalPrice = unitPrice * effectiveAmount;
 
   return {
-    ok: remainingCapacity >= amount,
+    ok: effectiveAmount > 0,
     capacity: remainingCapacity,
     price: totalPrice,
+    effectiveAmount,
   };
 }

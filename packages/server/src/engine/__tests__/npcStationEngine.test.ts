@@ -454,4 +454,85 @@ describe('canSellToStation', () => {
     expect(result.ok).toBe(false);
     expect(result.capacity).toBe(0);
   });
+
+  it('returns effectiveAmount = remainingCapacity when amount exceeds station capacity', async () => {
+    const station: NpcStationData = {
+      stationX: 5,
+      stationY: 10,
+      level: 1,
+      xp: 0,
+      visitCount: 0,
+      tradeVolume: 0,
+      lastXpDecay: new Date().toISOString(),
+    };
+    const item: NpcStationInventoryItem = {
+      stationX: 5,
+      stationY: 10,
+      itemType: 'ore',
+      stock: 9,
+      maxStock: 10,
+      restockRate: 0,
+      consumptionRate: 0,
+      lastUpdated: new Date().toISOString(),
+    };
+    mockGetStationData.mockResolvedValueOnce(station);
+    mockGetStationInventoryItem.mockResolvedValueOnce(item);
+    const result = await canSellToStation(5, 10, 'ore', 5);
+    expect(result.ok).toBe(true);
+    expect(result.effectiveAmount).toBe(1);
+  });
+
+  it('returns effectiveAmount = amount when station has sufficient capacity', async () => {
+    const station: NpcStationData = {
+      stationX: 5,
+      stationY: 10,
+      level: 1,
+      xp: 0,
+      visitCount: 0,
+      tradeVolume: 0,
+      lastXpDecay: new Date().toISOString(),
+    };
+    const item: NpcStationInventoryItem = {
+      stationX: 5,
+      stationY: 10,
+      itemType: 'ore',
+      stock: 5,
+      maxStock: 10,
+      restockRate: 0,
+      consumptionRate: 0,
+      lastUpdated: new Date().toISOString(),
+    };
+    mockGetStationData.mockResolvedValueOnce(station);
+    mockGetStationInventoryItem.mockResolvedValueOnce(item);
+    const result = await canSellToStation(5, 10, 'ore', 3);
+    expect(result.ok).toBe(true);
+    expect(result.effectiveAmount).toBe(3);
+  });
+
+  it('returns ok=false and effectiveAmount=0 when station is full', async () => {
+    const station: NpcStationData = {
+      stationX: 5,
+      stationY: 10,
+      level: 1,
+      xp: 0,
+      visitCount: 0,
+      tradeVolume: 0,
+      lastXpDecay: new Date().toISOString(),
+    };
+    const item: NpcStationInventoryItem = {
+      stationX: 5,
+      stationY: 10,
+      itemType: 'ore',
+      stock: 10,
+      maxStock: 10,
+      restockRate: 0,
+      consumptionRate: 0,
+      lastUpdated: new Date().toISOString(),
+    };
+    mockGetStationData.mockResolvedValueOnce(station);
+    mockGetStationInventoryItem.mockResolvedValueOnce(item);
+    const result = await canSellToStation(5, 10, 'ore', 1);
+    expect(result.ok).toBe(false);
+    expect(result.effectiveAmount).toBe(0);
+  });
 });
