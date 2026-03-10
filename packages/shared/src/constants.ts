@@ -21,6 +21,7 @@ export const SECTOR_TYPES: SectorType[] = [
   'pirate',
 ];
 
+/** @deprecated Not used in worldgen. See CONTENT_WEIGHTS + ENVIRONMENT_WEIGHTS in packages/server/src/engine/worldgen.ts. */
 export const SECTOR_WEIGHTS: Record<SectorType, number> = {
   empty: 0.55,
   asteroid_field: 0.15,
