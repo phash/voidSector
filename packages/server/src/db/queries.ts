@@ -1386,6 +1386,36 @@ export async function setFactionUpgrade(
   );
 }
 
+export interface RecruitingFactionRow {
+  id: string;
+  name: string;
+  color: string | null;
+  slogan: string | null;
+  member_count: string;
+}
+
+export async function getRecruitingFactions(): Promise<RecruitingFactionRow[]> {
+  const { rows } = await query<RecruitingFactionRow>(
+    `SELECT f.id, f.name, f.color, f.slogan, COUNT(fm.player_id)::text AS member_count
+     FROM factions f
+     LEFT JOIN faction_members fm ON fm.faction_id = f.id
+     WHERE f.is_recruiting = TRUE
+     GROUP BY f.id, f.name, f.color, f.slogan`,
+  );
+  return rows;
+}
+
+export async function setFactionRecruiting(
+  factionId: string,
+  isRecruiting: boolean,
+  slogan: string | null,
+): Promise<void> {
+  await query(
+    `UPDATE factions SET is_recruiting = $2, slogan = $3 WHERE id = $1`,
+    [factionId, isRecruiting, slogan],
+  );
+}
+
 // --- Phase 5: JumpGates ---
 
 export async function getJumpGate(sectorX: number, sectorY: number): Promise<any | null> {
