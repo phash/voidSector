@@ -255,7 +255,7 @@ AP wird in Sektion 5 (Navigation) als Balken angezeigt. Gelb = genug, Orange = n
 
 **ACEP im Interface:**
 SHIP-SYS → Einstellungen: Zeigt alle 4 Pfade als Balken mit aktuellem Stand.`,
-    seeAlso: ['acep-pfade', 'acep-traits', 'radar-evolution', 'permadeath'],
+    seeAlso: ['acep-pfade', 'acep-traits', 'radar-evolution', 'permadeath', 'acep-handbuch'],
     tags: ['acep', 'spezialisierung', 'xp', 'pfade', 'evolution'],
   },
 
@@ -1651,44 +1651,43 @@ Sektoren mit Ancient-Ruinen geben beim Lokalscan Lore-Fragmente und möglicherwe
 
 | Aktion | XP |
 |---|---|
-| Mining-Stopp mit Ertrag | +1 |
-| Struktur bauen | +5 |
+| Ressourcen abbauen (Mining-Tick) | +2 |
+| Station bauen | +10 |
+| Basis bauen | +10 |
 
-Schwellwerte: 5, 10, 20, 30, 50 XP. Freischaltung: Baumeister-Traits, erhöhte Mining-Effizienz.
+Effekte: +1 Modul-Slot ab 10 XP, +2 ab 25, +3 ab 40, +4 ab 50. Cargo-Multiplikator +1% pro XP (max +50%). Mining-Bonus +0,6% pro XP (max +30%).
 
 **INTEL (Erkundung & Scan):**
 
 | Aktion | XP |
 |---|---|
-| Lokalscan | +1 |
-| Bereichsscan (neue Sektoren) | +2 |
-| Scan-Event abschließen | +1 |
+| Sektor scannen | +3 |
+| Neuen Quadranten entdecken | +20 |
 
-Schwellwerte: 5, 10, 20, 30, 50 XP. Freischaltung: Neugier-Traits, Persönlichkeits-Kommentare.
+Effekte: +1 Scan-Radius ab 20 XP, +2 ab 40, +3 ab 50. Sektoren bleiben bis zu 2× länger frisch im Gedächtnis (linear mit XP).
 
 **KAMPF (Kampferfahrung):**
 
 | Aktion | XP |
 |---|---|
-| Kampf gewonnen | +3 |
-| Territory-Angriff erfolgreich | +5 |
-| Territory verteidigt (Angreifer verloren) | +2 |
+| Pirat besiegt | +5 |
+| Kampf gewonnen | +5 |
+| Territory-Konflikt | +2–5 |
 
-Schwellwerte: 10, 20, 30, 50 XP. Freischaltung: Veteran-Traits, Kampf-Persönlichkeit.
+Effekte: Schaden-Bonus +0,4% pro XP (max +20%). Schild-Regen-Bonus +0,6% pro XP (max +30%).
 
 **EXPLORER (Weite Reisen & Entdeckungen):**
 
 | Aktion | XP |
 |---|---|
-| Cross-Quadrant-Sprung | +2 |
-| Ruinen-Scan (erstmalig) | +10 |
-| Rettungsmission abschließen | +25 |
+| Neuen Sektor entdecken (Bewegung) | +2 |
+| Ancient-Ruine scannen | +15 |
 
-Schwellwerte: 5, 10, 20, 30, 50 XP. Freischaltung: Entdecker-Traits, Abenteurer-Persönlichkeit.
+Effekte: Ancient-Ruinen auf Radar sichtbar ab 25 XP. Helion-Decoder ohne Modul ab 50 XP. Anomalie-Chance +0,2% pro XP (max +10%).
 
 **Budget:**
 Summe aller Pfade ≤ 100. Maximaler Wert pro Pfad: 50.`,
-    seeAlso: ['acep-intro', 'acep-traits', 'radar-evolution'],
+    seeAlso: ['acep-intro', 'acep-traits', 'radar-evolution', 'acep-handbuch'],
     tags: ['acep', 'ausbau', 'intel', 'kampf', 'explorer', 'xp', 'pfad'],
   },
 
@@ -1724,7 +1723,7 @@ Traits schließen sich nicht gegenseitig aus. Ein "VETERAN + NEUGIERIG"-Schiff k
 
 **Trait-Anzeige:**
 SHIP-SYS → EINSTELLUNGEN → ACEP-Panel zeigt aktive Traits unter den XP-Balken.`,
-    seeAlso: ['acep-pfade', 'acep-intro', 'radar-evolution'],
+    seeAlso: ['acep-pfade', 'acep-intro', 'radar-evolution', 'acep-handbuch'],
     tags: ['traits', 'persönlichkeit', 'veteran', 'neugierig', 'charakter'],
   },
 
@@ -1758,8 +1757,109 @@ Permadeath hinterlässt ein Wrack-POI-Icon im Radar — gedimmt, mit Spieler-spe
 
 **Andere Spieler:**
 Im Radar siehst du andere Spieler als ihre entsprechenden Icons. Erfahrene Spieler erkennst du an komplexeren Mustern.`,
-    seeAlso: ['acep-intro', 'acep-pfade', 'permadeath'],
+    seeAlso: ['acep-intro', 'acep-pfade', 'permadeath', 'acep-handbuch'],
     tags: ['radar', 'icon', 'evolution', 'acep', 'visual', 'pixel'],
+  },
+
+  {
+    id: 'acep-handbuch',
+    title: 'PILOTENHANDBUCH: ACEP',
+    category: 'fortgeschritten',
+    icon: '◇',
+    summary: 'Inoffizielles Überlebenshandbuch für neue Piloten — Was ACEP ist, was es nicht ist, und wie man damit nicht stirbt.',
+    body: `Herausgegeben von der Void-Sektor-Zertifizierungsbehörde für Überlebensfähigkeit (VSZÜ).
+Auflage 7 — Auflage 1–6 wurden von ihren Autoren nicht überlebt.
+
+---
+
+**Was ist ACEP?**
+
+Du hast gerade ein Schiff. Es kennt dich nicht. Es mag dich nicht.
+Das ändert sich. ACEP ist der Prozess, durch den dein Schiff zu *deinem* Schiff wird.
+Nicht weil du ein Menü geöffnet hast. Sondern weil du Dinge getan hast.
+
+---
+
+**Das Budget-Problem**
+
+Du hast 100 XP total. Maximal 50 pro Pfad.
+
+Das klingt viel. Es ist nicht viel.
+
+Wenn du 50 in KAMPF steckst, hast du noch 50 übrig. 4×50 = 200 stimmt mathematisch.
+Dein Budget erlaubt es trotzdem nicht.
+
+> *Pilot Vera Sondrak rief 47 Mal beim Support an, um das zu klären.
+> Es gibt keinen Support. Vera lebt noch, ist aber sehr frustriert.*
+
+---
+
+**Die 4 Pfade — Wer bist du eigentlich?**
+
+**AUSBAU:** Mehr Cargo. Mehr Slots. Mehr Mining-Effizienz.
+XP durch: Mining, Stationen bauen, Basen errichten.
+Typisch: Hat seine Base sehr schön eingerichtet. Fragt sich, warum nicht alle einfach Fracht transportieren.
+
+**INTEL:** Größerer Scan-Radius. Sektoren bleiben länger frisch.
+XP durch: Scannen, neue Quadranten entdecken.
+Typisch: Hat die meisten Sektoren kartiert. Hat eine Meinung zu Sektor-Klassifikationen.
+
+**KAMPF:** Mehr Schaden. Bessere Schildregeneration.
+XP durch: Piraten besiegen, Kämpfe gewinnen, Territory-Konflikte.
+Typisch: Hat 847 Piraten besiegt. Erinnert sich an die Namen von zweien.
+
+**EXPLORER:** Ancient-Ruinen sichtbar auf Radar (ab 25 XP). Helion-Decoder ohne Modul (ab 50 XP).
+XP durch: Neue Sektoren entdecken, Ancient-Ruinen scannen.
+Typisch: War schon überall. Sein Schiff redet über vergangene Zivilisationen.
+
+---
+
+**Was passiert, wenn man ACEP falsch bedient**
+
+*Fallstudie 1 — Der Gleichmäßige:*
+Pilot Harkon Breis wollte "in allem gut sein". Er verteilte gleichmäßig: 25/25/25/25.
+Ergebnis: Überall ein kleiner Bonus. Nirgendwo gut genug. Besiegt von einem Piraten mit +5%-Schadensbonus.
+Sein Wrack treibt bei [00F2:0179]. Es ist gut beschriftet.
+
+*Fallstudie 2 — Der Kampfspezialist ohne Treibstoff:*
+Korbin Vex: 50 KAMPF-XP. Maximaler Schaden. Dann — kein Treibstoff im Nebula-Sektor.
+[SYSTEM]: Feinde erkannt. Kein Treibstoff. Das ist ungünstig.
+Korbin blieb vier Tage in jenem Sektor.
+
+*Fallstudie 3 — Die EXPLORER-Pilotin mit zu vielen Ruinen:*
+Yara Finn: 25 EXPLORER-XP → alle Ancient-Ruinen auf dem Radar sichtbar.
+Es waren sehr viele. Sie flog zur nächsten. Dort wartete eine Ancient-Wächterin.
+Yara hatte null Kampf-XP.
+[SYSTEM]: Flucht erfolgreich. ...ich empfehle zukünftig weniger Neugier.
+
+---
+
+**Das Schiff entwickelt eine Persönlichkeit**
+
+Nach einer Weile beginnt dein Schiff, Dinge zu sagen. Das ist normal. Bitte erschrick nicht.
+
+Junges Schiff: *[Schweigen]*
+Veteran (kampf ≥ 20): "Piratensignal. Bekannte Taktik. Routine."
+Neugierig (intel ≥ 20): "Interessante Energiemuster. Weitere Daten erforderlich."
+Ancient-Berührt (explorer ≥ 15): "Diese Leere... wir waren schon hier. In einer anderen Form."
+Rücksichtslos (kampf ≥ 15, ausbau ≤ 5): "Scan durch. Kein Kontakt. Schade."
+
+Wenn dein Schiff sagt "Sie sind nicht weg. Nur woanders." — das ist ein Ancient-Touched-Trait.
+Das Schiff hat zu viele Ruinen gescannt. Es geht ihm gut. Wahrscheinlich.
+
+---
+
+**Permadeath & Legacy**
+
+Dein Schiff kann sterben. Das ist kein Bug. Das ist ein Feature.
+
+Was passiert: Das Wrack existiert irgendwo im Void als POI.
+Dein Nachfolger-Schiff erbt 30% deines ACEP-XP und 1 Trait des Vorgängers.
+
+> *"Das Schiff lernt. Der Pilot lebt."*
+> — ACEP §1`,
+    seeAlso: ['acep-intro', 'acep-pfade', 'acep-traits', 'radar-evolution', 'permadeath'],
+    tags: ['acep', 'handbuch', 'einführung', 'witz', 'tipps', 'piloten', 'überblick'],
   },
 
   {
