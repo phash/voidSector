@@ -35,8 +35,8 @@ export function useCanvas(draw: DrawFn) {
     const render = () => {
       try {
         draw(ctx);
-      } catch {
-        /* prevent render loop death */
+      } catch (e) {
+        console.error('[radar] render exception:', e);
       }
       frameId = requestAnimationFrame(render);
     };

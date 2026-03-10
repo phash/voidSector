@@ -153,12 +153,15 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   const animActive = anim && anim.active;
 
   // Apply slide translate during slide phase
-  if (animActive && anim.phase === 'slide') {
+  const slideActive = animActive && anim.phase === 'slide';
+  if (slideActive) {
     ctx.save();
     const slideX = anim.direction.dx * anim.progress * CELL_W;
     const slideY = anim.direction.dy * anim.progress * CELL_H;
     ctx.translate(-slideX, -slideY);
   }
+
+  try {
 
   for (let dx = -radiusX; dx <= radiusX; dx++) {
     for (let dy = -radiusY; dy <= radiusY; dy++) {
@@ -622,9 +625,11 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
-  // Restore translate after slide phase drawing
-  if (animActive && anim.phase === 'slide') {
-    ctx.restore();
+  } finally {
+    // Guarantee ctx.restore() is called if ctx.save() was called, even on exception
+    if (slideActive) {
+      ctx.restore();
+    }
   }
 
   // === Trail line ===
