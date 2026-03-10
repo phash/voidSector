@@ -492,6 +492,12 @@ export class ShipService {
     client: Client,
     data: { path: AcepPath },
   ): Promise<void> {
+    const VALID_ACEP_PATHS: AcepPath[] = ['ausbau', 'intel', 'kampf', 'explorer'];
+    if (!VALID_ACEP_PATHS.includes(data.path)) {
+      this.ctx.send(client, 'actionError', 'Ungültiger Pfad');
+      return;
+    }
+
     const auth = client.auth as AuthPayload;
     const ship = await getActiveShip(auth.userId);
     if (!ship) {
