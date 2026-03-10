@@ -234,6 +234,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     addWarTickerEvent: vi.fn(),
     inventory: [],
     setInventory: vi.fn(),
+    trackedQuests: [],
+    setTrackedQuests: vi.fn(),
     ...overrides,
   };
   useStore.setState(state as StoreState);

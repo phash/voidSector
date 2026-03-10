@@ -17,7 +17,7 @@ import type {
   Bookmark,
   Quest,
 } from '@void-sector/shared';
-import type { PlayerPresence } from '../state/gameSlice';
+import type { PlayerPresence, TrackedQuest } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
 import { drawLongJumpCRTEffect } from './JumpAnimation';
 import { drawJumpGateLines, drawJumpGateIcons } from './jumpGateOverlay';
@@ -91,6 +91,7 @@ interface RadarState {
     duration: number;
   } | null;
   activeQuests?: Quest[];
+  trackedQuests?: TrackedQuest[];
   miningActive?: boolean;
 }
 
@@ -247,6 +248,20 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.strokeStyle = `rgba(255,176,0,${0.4 + pulse * 0.4})`;
           ctx.lineWidth = 1.5;
           ctx.strokeRect(cellX - CELL_W / 2 + 2, cellY - CELL_H / 2 + 2, CELL_W - 4, CELL_H - 4);
+        }
+      }
+
+      // Tracked quest target marker (#214): blue pulsing border for tracked quest target sectors
+      if (state.trackedQuests && state.trackedQuests.length > 0 && !isPlayer) {
+        const isTrackedTarget = state.trackedQuests.some(
+          (tq) => tq.targetX === sx && tq.targetY === sy,
+        );
+        if (isTrackedTarget) {
+          const t = state.animTime ?? 0;
+          const alpha = 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(t / 600));
+          ctx.strokeStyle = `rgba(0,120,255,${alpha})`;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(cellX - CELL_W / 2 + 3, cellY - CELL_H / 2 + 3, CELL_W - 6, CELL_H - 6);
         }
       }
 

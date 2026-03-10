@@ -1205,6 +1205,43 @@ export async function getQuestById(questId: string, playerId: string): Promise<a
   return rows[0] ?? null;
 }
 
+export async function trackQuest(
+  playerId: string,
+  questId: string,
+  tracked: boolean,
+): Promise<void> {
+  await query(`UPDATE player_quests SET tracked = $3 WHERE player_id = $1 AND id = $2`, [
+    playerId,
+    questId,
+    tracked,
+  ]);
+}
+
+export async function getTrackedQuests(
+  playerId: string,
+): Promise<Array<{ questId: string; title: string; type: string; targetX?: number; targetY?: number }>> {
+  const { rows } = await query(
+    `SELECT id, title, template_id, objectives
+     FROM player_quests
+     WHERE player_id = $1 AND tracked = TRUE AND status = 'active'
+     ORDER BY accepted_at DESC`,
+    [playerId],
+  );
+  return rows.map((r: any) => {
+    const objectives: any[] = r.objectives ?? [];
+    const firstTarget = objectives.find(
+      (o: any) => o.targetX != null && o.targetY != null && !o.fulfilled,
+    );
+    return {
+      questId: r.id,
+      title: r.title ?? r.template_id,
+      type: (r.template_id as string).split('_')[0] ?? 'quest',
+      targetX: firstTarget?.targetX,
+      targetY: firstTarget?.targetY,
+    };
+  });
+}
+
 // --- Phase 4: Scan Events ---
 
 export async function insertScanEvent(

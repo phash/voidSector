@@ -77,6 +77,7 @@ export function RadarCanvas() {
       visitedTrail: state.visitedTrail,
       shipMoveAnimation,
       activeQuests: state.activeQuests,
+      trackedQuests: state.trackedQuests,
       miningActive: !!state.mining?.active,
     };
 

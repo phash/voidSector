@@ -109,6 +109,14 @@ export interface StoryProgressPayload {
   chapters: Array<{ id: number; title: string; minQDist: number; hasBranch: boolean }>;
 }
 
+export interface TrackedQuest {
+  questId: string;
+  title: string;
+  type: string;
+  targetX?: number;
+  targetY?: number;
+}
+
 export interface CommunityQuestPayload {
   id: number;
   title: string;
@@ -428,6 +436,9 @@ export interface GameSlice {
   // Unified Inventory
   inventory: InventoryItem[];
 
+  // Tracked quests
+  trackedQuests: TrackedQuest[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -533,6 +544,7 @@ export interface GameSlice {
   setNpcFleets: (fleets: NpcFleetState[]) => void;
   addWarTickerEvent: (event: WarTickerEvent) => void;
   setInventory: (items: InventoryItem[]) => void;
+  setTrackedQuests: (quests: TrackedQuest[]) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -650,6 +662,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   npcFleets: [],
   warTicker: [],
   inventory: [],
+  trackedQuests: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -863,4 +876,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   addWarTickerEvent: (event) =>
     set((state) => ({ warTicker: [event, ...state.warTicker].slice(0, 10) })),
   setInventory: (inventory) => set({ inventory }),
+  setTrackedQuests: (trackedQuests) => set({ trackedQuests }),
 });

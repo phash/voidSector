@@ -555,6 +555,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getReputation', async (client) => {
       await this.quests.handleGetReputation(client);
     });
+    this.onMessage('trackQuest', async (client, data: { questId: string; tracked: boolean }) => {
+      await this.quests.handleTrackQuest(client, data);
+    });
+    this.onMessage('getTrackedQuests', async (client) => {
+      await this.quests.handleGetTrackedQuests(client);
+    });
 
     // ── Alien Interactions ──────────────────────────────────────────
     this.onMessage('alienInteract', async (client, data: AlienInteractMessage) => {
@@ -1186,6 +1192,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Phase 4: Send reputation + active quests
       await this.quests.sendReputationUpdate(client, auth.userId);
       await this.quests.sendActiveQuests(client, auth.userId);
+      await this.quests.handleGetTrackedQuests(client);
 
       // Send research state
       const researchData = await getPlayerResearch(auth.userId);

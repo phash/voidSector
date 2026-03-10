@@ -31,6 +31,8 @@ import {
   setPlayerLevel,
   addCredits,
   getPlayerCredits,
+  trackQuest,
+  getTrackedQuests,
 } from '../../db/queries.js';
 import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
 
@@ -119,6 +121,34 @@ export class QuestService {
   async handleGetActiveQuests(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
     await this.sendActiveQuests(client, auth.userId);
+  }
+
+  async handleTrackQuest(
+    client: Client,
+    data: { questId: string; tracked: boolean },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    // Enforce max 5 tracked quests
+    if (data.tracked) {
+      const currentTracked = await getTrackedQuests(auth.userId);
+      if (currentTracked.length >= 5) {
+        this.ctx.send(client, 'trackQuestResult', {
+          success: false,
+          error: 'MAX_TRACKED_REACHED',
+        });
+        return;
+      }
+    }
+    await trackQuest(auth.userId, data.questId, data.tracked);
+    const trackedQuests = await getTrackedQuests(auth.userId);
+    this.ctx.send(client, 'trackedQuestsUpdate', { quests: trackedQuests });
+    this.ctx.send(client, 'trackQuestResult', { success: true });
+  }
+
+  async handleGetTrackedQuests(client: Client): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const trackedQuests = await getTrackedQuests(auth.userId);
+    this.ctx.send(client, 'trackedQuestsUpdate', { quests: trackedQuests });
   }
 
   async handleGetReputation(client: Client): Promise<void> {

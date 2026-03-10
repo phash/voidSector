@@ -15,6 +15,8 @@ vi.mock('../network/client', () => ({
     requestStoryProgress: vi.fn(),
     requestActiveCommunityQuest: vi.fn(),
     requestHumanityReps: vi.fn(),
+    requestTrackedQuests: vi.fn(),
+    sendTrackQuest: vi.fn(),
   },
 }));
 
@@ -29,7 +31,8 @@ describe('QuestsScreen', () => {
   it('shows empty state with no active quests', () => {
     mockStoreState({ activeQuests: [] });
     render(<QuestsScreen />);
-    expect(screen.getByText(/JOURNAL/)).toBeDefined();
+    // JOURNAL tab button exists (may appear multiple times with header label)
+    expect(screen.getAllByText(/JOURNAL/).length).toBeGreaterThan(0);
     expect(screen.getByText(/KEINE AKTIVEN AUFTRÄGE/)).toBeDefined();
   });
 

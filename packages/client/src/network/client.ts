@@ -53,6 +53,7 @@ import type {
   AlienEncounterEventPayload,
   StoryProgressPayload,
   CommunityQuestPayload,
+  TrackedQuest,
 } from '../state/gameSlice';
 
 /** Schema-level player object from Colyseus room state. */
@@ -873,6 +874,10 @@ class GameNetwork {
       store.setActiveQuests(quests);
       store.addLogEntry('Quest-Fortschritt aktualisiert');
       if (!isMonitorVisible('QUESTS')) store.setAlert('QUESTS', true);
+    });
+
+    room.onMessage('trackedQuestsUpdate', (data: { quests: TrackedQuest[] }) => {
+      useStore.getState().setTrackedQuests(data.quests);
     });
 
     room.onMessage('reputationUpdate', (data) => {
@@ -1863,6 +1868,19 @@ class GameNetwork {
   requestActiveQuests() {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('getActiveQuests', {});
+  }
+
+  sendTrackQuest(questId: string, tracked: boolean) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('trackQuest', { questId, tracked });
+  }
+
+  requestTrackedQuests() {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('getTrackedQuests', {});
   }
 
   sendBattleAction(action: string, sectorX: number, sectorY: number) {

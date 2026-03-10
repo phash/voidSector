@@ -3,6 +3,253 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc } from '@void-sector/shared';
+import type { TrackedQuest } from '../state/gameSlice';
+
+const MAX_TRACKED = 5;
+
+const QUEST_TYPE_LABELS: Record<string, string> = {
+  fetch: 'LIEFERUNG',
+  scan: 'SCAN',
+  delivery: 'LIEFERUNG',
+  bounty: 'KOPFGELD',
+  story: 'STORY',
+  community: 'COMMUNITY',
+  traders: 'HÄNDLER',
+  scientists: 'WISS.',
+  pirates: 'PIRATEN',
+  ancients: 'ANCIENTS',
+  diplomacy: 'DIPLOMATIE',
+  war_support: 'KRIEG',
+};
+
+function JournalTab() {
+  const activeQuests = useStore((s) => s.activeQuests);
+  const trackedQuests = useStore((s) => s.trackedQuests);
+  const position = useStore((s) => s.position);
+
+  const [filterNearby, setFilterNearby] = useState(false);
+  const [filterFaction, setFilterFaction] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [nearbyRadius, setNearbyRadius] = useState(10);
+
+  useEffect(() => {
+    network.requestTrackedQuests();
+  }, []);
+
+  const trackedIds = new Set(trackedQuests.map((t) => t.questId));
+
+  // Gather available faction IDs from active quests
+  const factionIds = Array.from(
+    new Set(activeQuests.map((q) => (q.npcFactionId as string) || '').filter(Boolean)),
+  );
+  // Gather quest types from template_id prefix
+  const questTypes = Array.from(
+    new Set(
+      activeQuests.map((q) => {
+        const prefix = (q.templateId as string)?.split('_')[0] ?? '';
+        return prefix;
+      }),
+    ).values(),
+  ).filter(Boolean);
+
+  // Filter logic
+  const filtered = activeQuests.filter((q) => {
+    if (filterFaction && q.npcFactionId !== filterFaction) return false;
+    if (filterType) {
+      const prefix = (q.templateId as string)?.split('_')[0] ?? '';
+      if (prefix !== filterType) return false;
+    }
+    if (filterNearby) {
+      const hasNearTarget = q.objectives.some((o) => {
+        if (o.targetX == null || o.targetY == null) return false;
+        const dist = Math.abs(o.targetX - position.x) + Math.abs(o.targetY - position.y);
+        return dist <= nearbyRadius;
+      });
+      const hasStationNear =
+        Math.abs(q.stationX - position.x) + Math.abs(q.stationY - position.y) <= nearbyRadius;
+      if (!hasNearTarget && !hasStationNear) return false;
+    }
+    return true;
+  });
+
+  function toggleTrack(questId: string) {
+    const isTracked = trackedIds.has(questId);
+    if (!isTracked && trackedQuests.length >= MAX_TRACKED) return;
+    network.sendTrackQuest(questId, !isTracked);
+  }
+
+  return (
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+      {/* Filter bar */}
+      <div
+        style={{
+          padding: '4px 0',
+          marginBottom: 6,
+          borderBottom: '1px solid rgba(255,176,0,0.2)',
+        }}
+      >
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
+          <button
+            onClick={() => setFilterNearby((v) => !v)}
+            style={{
+              background: filterNearby ? '#FFB000' : '#1a1a1a',
+              color: filterNearby ? '#000' : '#FFB000',
+              border: '1px solid #FFB000',
+              padding: '1px 5px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: '0.65rem',
+            }}
+          >
+            {filterNearby ? '[✓] IN DER NÄHE' : '[ ] IN DER NÄHE'}
+          </button>
+          {filterNearby && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.6rem' }}>R≤</span>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={nearbyRadius}
+                onChange={(e) => setNearbyRadius(Math.max(1, parseInt(e.target.value) || 1))}
+                style={{
+                  width: 36,
+                  background: '#0a0a0a',
+                  color: '#FFB000',
+                  border: '1px solid rgba(255,176,0,0.4)',
+                  fontFamily: 'inherit',
+                  fontSize: '0.65rem',
+                  padding: '1px 3px',
+                }}
+              />
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {factionIds.length > 0 && (
+            <select
+              value={filterFaction}
+              onChange={(e) => setFilterFaction(e.target.value)}
+              style={{
+                background: '#0a0a0a',
+                color: '#FFB000',
+                border: '1px solid rgba(255,176,0,0.4)',
+                fontFamily: 'inherit',
+                fontSize: '0.65rem',
+                padding: '1px 3px',
+              }}
+            >
+              <option value="">ALLE FRAKTIONEN</option>
+              {factionIds.map((f) => (
+                <option key={f} value={f}>
+                  {f.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          )}
+          {questTypes.length > 0 && (
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              style={{
+                background: '#0a0a0a',
+                color: '#FFB000',
+                border: '1px solid rgba(255,176,0,0.4)',
+                fontFamily: 'inherit',
+                fontSize: '0.65rem',
+                padding: '1px 3px',
+              }}
+            >
+              <option value="">ALLE ARTEN</option>
+              {questTypes.map((t) => (
+                <option key={t} value={t}>
+                  {QUEST_TYPE_LABELS[t] ?? t.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
+
+      {/* Tracked counter */}
+      <div
+        style={{
+          color: trackedQuests.length >= MAX_TRACKED ? '#FF3333' : 'rgba(255,176,0,0.5)',
+          fontSize: '0.6rem',
+          marginBottom: 4,
+          letterSpacing: '0.05em',
+        }}
+      >
+        VERFOLGT: {trackedQuests.length}/{MAX_TRACKED}
+      </div>
+
+      {/* Quest list */}
+      {filtered.length === 0 && (
+        <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
+          KEINE AUFTRÄGE (FILTER AKTIV)
+        </div>
+      )}
+      {filtered.map((q) => {
+        const isTracked = trackedIds.has(q.id);
+        const doneCount = q.objectives.filter((o) => o.fulfilled).length;
+        const allDone = doneCount === q.objectives.length;
+        const typePrefix = (q.templateId as string)?.split('_')[0] ?? '';
+        const typeLabel = QUEST_TYPE_LABELS[typePrefix] ?? typePrefix.toUpperCase();
+        const canTrack = isTracked || trackedQuests.length < MAX_TRACKED;
+        return (
+          <div
+            key={q.id}
+            style={{
+              border: `1px solid ${isTracked ? 'rgba(0,120,255,0.6)' : 'rgba(255,176,0,0.25)'}`,
+              marginBottom: 4,
+              padding: '4px 6px',
+              background: isTracked ? 'rgba(0,60,180,0.06)' : 'transparent',
+            }}
+          >
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '0.6rem', marginRight: 4 }}>
+                  [{typeLabel}]
+                </span>
+                <span style={{ color: allDone ? '#00FF88' : '#FFB000' }}>{q.title}</span>
+              </div>
+              <button
+                onClick={() => toggleTrack(q.id)}
+                disabled={!canTrack}
+                title={isTracked ? 'Verfolgen beenden' : 'Verfolgen (max 5)'}
+                style={{
+                  background: isTracked ? 'rgba(0,120,255,0.3)' : 'none',
+                  color: isTracked ? '#4488FF' : canTrack ? 'rgba(255,176,0,0.5)' : '#333',
+                  border: `1px solid ${isTracked ? '#4488FF' : canTrack ? 'rgba(255,176,0,0.4)' : '#333'}`,
+                  padding: '0px 4px',
+                  cursor: canTrack ? 'pointer' : 'not-allowed',
+                  fontFamily: 'inherit',
+                  fontSize: '0.6rem',
+                  marginLeft: 4,
+                  flexShrink: 0,
+                }}
+              >
+                {isTracked ? '[T✓]' : '[T]'}
+              </button>
+            </div>
+            <div
+              style={{ color: 'rgba(255,176,0,0.45)', fontSize: '0.6rem', marginTop: 2 }}
+            >
+              {doneCount}/{q.objectives.length} ZIELE
+              {q.npcFactionId && (
+                <span style={{ marginLeft: 6, opacity: 0.7 }}>
+                  [{(q.npcFactionId as string).toUpperCase()}]
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function StoryTab() {
   const progress = useStore((s) => s.storyProgress);
@@ -207,7 +454,15 @@ export function QuestsScreen() {
   const clearNavReturn = useStore((s) => s.clearNavReturn);
 
   const [tab, setTab] = useState<
-    'active' | 'station' | 'rep' | 'events' | 'rescue' | 'story' | 'community' | 'alien_rep'
+    | 'active'
+    | 'station'
+    | 'rep'
+    | 'events'
+    | 'rescue'
+    | 'story'
+    | 'community'
+    | 'alien_rep'
+    | 'journal'
   >('active');
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
   const [stationNpcs, setStationNpcs] = useState<StationNpc[]>([]);
@@ -247,6 +502,7 @@ export function QuestsScreen() {
     story: 'STORY',
     community: 'COMMUNITY',
     alien_rep: 'ALIEN REP',
+    journal: 'JOURNAL',
   };
 
   return (
@@ -275,6 +531,7 @@ export function QuestsScreen() {
             'story',
             'community',
             'alien_rep',
+            'journal',
           ] as const
         ).map((t) => (
           <button
@@ -577,6 +834,9 @@ export function QuestsScreen() {
 
       {/* Alien rep tab */}
       {tab === 'alien_rep' && <AlienRepTab />}
+
+      {/* Journal tab */}
+      {tab === 'journal' && <JournalTab />}
 
       {/* Rescue tab */}
       {tab === 'rescue' && (
