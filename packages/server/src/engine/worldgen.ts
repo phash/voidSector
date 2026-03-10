@@ -218,7 +218,7 @@ function generateResources(type: SectorType, seed: number): SectorResources {
   return resources;
 }
 
-export function generateSector(x: number, y: number, discoveredBy: string | null): SectorData {
+export function generateSector(x: number, y: number, discoveredBy: string | null, isFrontier = true): SectorData {
   const seed = hashCoords(x, y, WORLD_SEED);
 
   // Stage 1: Roll environment
@@ -242,7 +242,13 @@ export function generateSector(x: number, y: number, discoveredBy: string | null
   }
 
   // Stage 2: Roll content
-  const contents = rollContent(seed, environment);
+  let contents = rollContent(seed, environment);
+
+  // Frontier rule: pirates only spawn in frontier quadrants.
+  // Strip pirate_zone but preserve asteroid_field (the rocks remain).
+  if (!isFrontier && contents.includes('pirate_zone')) {
+    contents = contents.filter((c) => c !== 'pirate_zone');
+  }
 
   // Derive legacy type from environment + contents
   const type = legacySectorType(environment, contents);

@@ -318,6 +318,41 @@ describe('worldgen', () => {
     expect(envContentPairs['empty'].has('asteroid_field')).toBe(true);
     expect(envContentPairs['empty'].has('station')).toBe(true);
   });
+
+  it('strips pirate_zone content when isFrontier=false, keeps asteroid_field', () => {
+    // Suche einen Sektor der normalerweise pirate_zone generiert
+    let pirateCoords: { x: number; y: number } | null = null;
+    for (let x = 0; x < 500 && !pirateCoords; x++) {
+      for (let y = 0; y < 100 && !pirateCoords; y++) {
+        const s = generateSector(x, y, null);
+        if (s.contents.includes('pirate_zone')) {
+          pirateCoords = { x, y };
+        }
+      }
+    }
+    expect(pirateCoords).not.toBeNull();
+
+    const settled = generateSector(pirateCoords!.x, pirateCoords!.y, null, false);
+    expect(settled.contents).not.toContain('pirate_zone');
+    expect(settled.contents).toContain('asteroid_field');
+    expect(settled.type).toBe('asteroid_field');
+  });
+
+  it('keeps pirate_zone content when isFrontier=true (default)', () => {
+    let pirateCoords: { x: number; y: number } | null = null;
+    for (let x = 0; x < 500 && !pirateCoords; x++) {
+      for (let y = 0; y < 100 && !pirateCoords; y++) {
+        const s = generateSector(x, y, null);
+        if (s.contents.includes('pirate_zone')) {
+          pirateCoords = { x, y };
+        }
+      }
+    }
+    expect(pirateCoords).not.toBeNull();
+
+    const frontier = generateSector(pirateCoords!.x, pirateCoords!.y, null, true);
+    expect(frontier.contents).toContain('pirate_zone');
+  });
 });
 
 describe('hashCoords', () => {
