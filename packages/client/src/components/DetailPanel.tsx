@@ -653,25 +653,6 @@ export function DetailPanel() {
 
           {isPlayerHere && <InlineError codes={['BUILD_FAIL', 'INSUFFICIENT']} />}
 
-          {/* Bookmark button */}
-          <button
-            className="vs-btn"
-            style={{ fontSize: '0.7rem', marginTop: 4 }}
-            onClick={() => {
-              const freeSlot = [1, 2, 3, 4, 5].find((s) => !bookmarks.find((b) => b.slot === s));
-              if (freeSlot && selectedSector) {
-                network.sendSetBookmark(
-                  freeSlot,
-                  selectedSector.x,
-                  selectedSector.y,
-                  sector?.type || '',
-                );
-              }
-            }}
-          >
-            [BOOKMARK]
-          </button>
-
           {/* Hyperjump button */}
           {(() => {
             const distance =
@@ -699,6 +680,41 @@ export function DetailPanel() {
       ) : (
         <div style={{ opacity: 0.4 }}>UNEXPLORED</div>
       )}
+
+      {/* Bookmark button — always visible when a sector is selected */}
+      {(() => {
+        const freeSlot = [1, 2, 3, 4, 5].find((s) => !bookmarks.find((b) => b.slot === s));
+        const alreadyBookmarked = bookmarks.some(
+          (b) => b.sectorX === selectedSector.x && b.sectorY === selectedSector.y,
+        );
+        if (alreadyBookmarked) {
+          return (
+            <button className="vs-btn" style={{ fontSize: '0.7rem', marginTop: 4 }} disabled>
+              [BOOKMARKED]
+            </button>
+          );
+        }
+        return (
+          <button
+            className="vs-btn"
+            style={{ fontSize: '0.7rem', marginTop: 4, opacity: freeSlot ? 1 : 0.4 }}
+            onClick={() => {
+              if (freeSlot) {
+                network.sendSetBookmark(
+                  freeSlot,
+                  selectedSector.x,
+                  selectedSector.y,
+                  sector?.type || '',
+                );
+              }
+            }}
+            disabled={!freeSlot}
+            title={freeSlot ? 'Sektor speichern' : 'Alle 5 Bookmark-Slots belegt'}
+          >
+            [BOOKMARK]
+          </button>
+        );
+      })()}
     </div>
   );
 }

@@ -198,6 +198,8 @@ export async function nameQuadrant(
   name: string,
   playerId: string,
 ): Promise<{ success: boolean; error?: string }> {
+  if (qx === 0 && qy === 0) return { success: false, error: '"Zentrum" is protected' };
+
   const validation = validateQuadrantName(name);
   if (!validation.valid) return { success: false, error: validation.error };
 

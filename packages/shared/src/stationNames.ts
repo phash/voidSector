@@ -38,6 +38,7 @@ function hashStationCoords(x: number, y: number): number {
 }
 
 export function generateStationName(x: number, y: number): string {
+  if (x === 0 && y === 0) return 'Zuhause';
   const hash = hashStationCoords(x, y);
   const prefix = STATION_PREFIXES[hash % STATION_PREFIXES.length];
   const suffix = STATION_SUFFIXES[(hash >>> 8) % STATION_SUFFIXES.length];

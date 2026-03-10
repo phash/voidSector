@@ -98,9 +98,10 @@ describe('adminQueries', () => {
       expect(player).not.toBeNull();
       expect(player!.username).toBe('bob');
       expect(player!.factionId).toBe('f1');
-      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE p.username = $1'), [
-        'bob',
-      ]);
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('WHERE LOWER(p.username) = LOWER($1)'),
+        ['bob'],
+      );
     });
 
     it('returns null when username not found', async () => {
