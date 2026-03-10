@@ -14,6 +14,8 @@ import { CargoDetailPanel } from './CargoDetailPanel';
 import { TradeDetailPanel } from './TradeDetailPanel';
 import { MiningDetailPanel } from './MiningDetailPanel';
 import { QuestDetailPanel } from './QuestDetailPanel';
+import { FactionDetailPanel } from './FactionDetailPanel';
+import { ShipDetailPanel } from './ShipDetailPanel';
 import { SectorInfo, StatusBar } from './HUD';
 import { NavControls } from './NavControls';
 import { ShipStatusPanel } from './ShipStatusPanel';
@@ -45,6 +47,10 @@ function getDetailForProgram(programId: string): ReactNode | null {
       return <MiningDetailPanel />;
     case 'QUESTS':
       return <QuestDetailPanel />;
+    case 'FACTION':
+      return <FactionDetailPanel />;
+    case 'SHIP-SYS':
+      return <ShipDetailPanel />;
     default:
       return null;
   }
