@@ -33,6 +33,7 @@ import {
   getPlayerCredits,
   trackQuest,
   getTrackedQuests,
+  getAcceptedQuestTemplateIds,
 } from '../../db/queries.js';
 import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
 
@@ -47,7 +48,10 @@ export class QuestService {
     const factionRep = reps.find((r) => r.faction_id === faction)?.reputation ?? 0;
     const tier = getReputationTier(factionRep) as ReputationTier;
     const dayOfYear = Math.floor(Date.now() / 86400000);
-    const quests = generateStationQuests(data.sectorX, data.sectorY, dayOfYear, tier);
+    const allQuests = generateStationQuests(data.sectorX, data.sectorY, dayOfYear, tier);
+    const acceptedIds = await getAcceptedQuestTemplateIds(auth.userId, data.sectorX, data.sectorY);
+    const quests =
+      acceptedIds.length > 0 ? allQuests.filter((q) => !acceptedIds.includes(q.templateId)) : allQuests;
     this.ctx.send(client, 'stationNpcsResult', { npcs, quests });
   }
 

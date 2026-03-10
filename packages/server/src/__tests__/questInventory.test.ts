@@ -47,6 +47,9 @@ vi.mock('../db/queries.js', () => ({
   getCargoCapForPlayer: vi.fn().mockResolvedValue(50),
   transferInventoryItem: vi.fn().mockResolvedValue(undefined),
   getInventoryItem: vi.fn().mockResolvedValue(null),
+  getAcceptedQuestTemplateIds: vi.fn().mockResolvedValue([]),
+  trackQuest: vi.fn().mockResolvedValue(undefined),
+  getTrackedQuests: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('../engine/npcgen.js', () => ({
@@ -65,8 +68,9 @@ vi.mock('../engine/commands.js', () => ({
 }));
 
 import { QuestService } from '../rooms/services/QuestService.js';
-import { getPlayerCargo, deductCargo } from '../db/queries.js';
+import { getPlayerCargo, deductCargo, getAcceptedQuestTemplateIds } from '../db/queries.js';
 import { getCargoState, removeFromInventory } from '../engine/inventoryService.js';
+import { generateStationQuests } from '../engine/questgen.js';
 
 function makeClient(userId = 'user-123', sessionId = 'session-abc'): Client {
   return {
@@ -215,5 +219,49 @@ describe('getAcceptedQuestTemplateIds', () => {
     const result = await getAcceptedQuestTemplateIds('player-1', 5, 10);
 
     expect(result).toEqual([]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// handleGetStationNpcs — quest filtering
+// ──────────────────────────────────────────────────────────────────────────────
+describe('handleGetStationNpcs — quest filtering', () => {
+  it('filters out quests the player already has active at this station', async () => {
+    const client = makeClient();
+    const ctx = makeCtx();
+    const svc = new QuestService(ctx);
+
+    // Mock: player has 'delivery_ore_basic' active already
+    vi.mocked(getAcceptedQuestTemplateIds).mockResolvedValueOnce(['delivery_ore_basic']);
+    // Mock: station offers 2 quests
+    vi.mocked(generateStationQuests).mockReturnValueOnce([
+      {
+        templateId: 'delivery_ore_basic',
+        title: 'Lieferquest',
+        npcName: 'NPC1',
+        npcFactionId: 'terran',
+        description: '',
+        objectives: [],
+        rewards: {},
+      },
+      {
+        templateId: 'scan_sector',
+        title: 'Scan-Quest',
+        npcName: 'NPC2',
+        npcFactionId: 'terran',
+        description: '',
+        objectives: [],
+        rewards: {},
+      },
+    ] as any);
+
+    await svc.handleGetStationNpcs(client, { sectorX: 5, sectorY: 10 });
+
+    const sentQuests = ctx.send.mock.calls.find(
+      ([, msg]: [unknown, string]) => msg === 'stationNpcsResult',
+    )?.[2]?.quests as Array<{ templateId: string }>;
+    expect(sentQuests).toBeDefined();
+    expect(sentQuests.map((q) => q.templateId)).not.toContain('delivery_ore_basic');
+    expect(sentQuests.map((q) => q.templateId)).toContain('scan_sector');
   });
 });
