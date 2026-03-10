@@ -644,9 +644,11 @@ export interface ServerStats {
   playerCount: number;
   structureCount: number;
   discoveredSectorCount: number;
+  tickCount: number;
+  humanStationCount: number;
 }
 
-export async function getServerStats(): Promise<ServerStats> {
+export async function getServerStats(tickCount = 0): Promise<ServerStats> {
   const safeCount = async (sql: string): Promise<number> => {
     try {
       const res = await query<{ count: string }>(sql);
@@ -655,12 +657,61 @@ export async function getServerStats(): Promise<ServerStats> {
       return 0;
     }
   };
-  const [playerCount, structureCount, discoveredSectorCount] = await Promise.all([
-    safeCount('SELECT COUNT(*) AS count FROM players'),
-    safeCount('SELECT COUNT(*) AS count FROM structures'),
-    safeCount('SELECT COUNT(*) AS count FROM player_discoveries'),
-  ]);
-  return { playerCount, structureCount, discoveredSectorCount };
+  const [playerCount, structureCount, discoveredSectorCount, npcStationCount, playerStructureCount] =
+    await Promise.all([
+      safeCount('SELECT COUNT(*) AS count FROM players'),
+      safeCount('SELECT COUNT(*) AS count FROM structures'),
+      safeCount('SELECT COUNT(*) AS count FROM player_discoveries'),
+      safeCount('SELECT COUNT(*) AS count FROM npc_station_data'),
+      safeCount(`SELECT COUNT(*) AS count FROM structures WHERE type IN ('base', 'station')`),
+    ]);
+  return {
+    playerCount,
+    structureCount,
+    discoveredSectorCount,
+    tickCount,
+    humanStationCount: npcStationCount + playerStructureCount,
+  };
+}
+
+// ── Expansion Log ────────────────────────────────────────────────────
+
+export interface ExpansionLogEntry {
+  id: number;
+  ts: string;
+  faction: string;
+  qx: number;
+  qy: number;
+  event: string;
+}
+
+export async function getRecentExpansionLog(limit = 50): Promise<ExpansionLogEntry[]> {
+  try {
+    const result = await query<{
+      id: number;
+      ts: string;
+      faction: string;
+      qx: number;
+      qy: number;
+      event: string;
+    }>(
+      `SELECT id, ts, faction, qx, qy, event
+       FROM expansion_log
+       ORDER BY ts DESC
+       LIMIT $1`,
+      [limit],
+    );
+    return result.rows.map((row) => ({
+      id: row.id,
+      ts: row.ts,
+      faction: row.faction,
+      qx: row.qx,
+      qy: row.qy,
+      event: row.event,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 // ── Admin Story Queries ─────────────────────────────────────────────

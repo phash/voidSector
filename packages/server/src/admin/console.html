@@ -812,9 +812,35 @@ expiresDays: 14"></textarea>
           <div class="stat-value" id="stat-structures">--</div>
           <div class="stat-label">Structures</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-ticks">--</div>
+          <div class="stat-label">Universe Ticks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-human-stations">--</div>
+          <div class="stat-label">Human Stations</div>
+        </div>
       </div>
       <div style="text-align:center;color:var(--amber-dim);font-size:10px;letter-spacing:1px" id="stats-updated">
         Last updated: --
+      </div>
+      <!-- ── Alien Activity ───────────────────────────────────── -->
+      <div class="section-title" style="margin-top:24px">ALIEN AKTIVITÄT — letzte 50 Events</div>
+      <div id="expansion-log-container">
+        <table class="data-table" id="expansion-log-table">
+          <thead>
+            <tr>
+              <th>TIME</th>
+              <th>FACTION</th>
+              <th>QX</th>
+              <th>QY</th>
+              <th>EVENT</th>
+            </tr>
+          </thead>
+          <tbody id="expansion-log-body">
+            <tr><td colspan="5" style="color:var(--amber-dim);text-align:center">Loading...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -1774,17 +1800,59 @@ expiresDays: 14"></textarea>
 
   // ── STATS ──────────────────────────────────────────────────────
 
+  function renderExpansionLog(log) {
+    var tbody = document.getElementById('expansion-log-body');
+    if (!tbody) return;
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    if (!log || log.length === 0) {
+      var emptyRow = document.createElement('tr');
+      var emptyCell = document.createElement('td');
+      emptyCell.setAttribute('colspan', '5');
+      emptyCell.style.color = 'var(--amber-dim)';
+      emptyCell.style.textAlign = 'center';
+      emptyCell.textContent = 'Keine Events vorhanden';
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+      return;
+    }
+    log.forEach(function(entry) {
+      var color;
+      if (entry.event === 'colonized') color = 'var(--amber)';
+      else if (entry.event === 'conquered') color = 'var(--red)';
+      else if (entry.event === 'lost') color = 'var(--amber-dim)';
+      else if (entry.event === 'discovered') color = 'var(--cyan)';
+      else color = 'var(--amber)';
+      var ts = entry.ts ? new Date(entry.ts).toLocaleString() : '--';
+      var tr = document.createElement('tr');
+      tr.style.color = color;
+      [ts, entry.faction || '--', String(entry.qx), String(entry.qy), entry.event || '--'].forEach(function(val) {
+        var td = document.createElement('td');
+        td.textContent = val;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
   function loadStats() {
     api('GET', '/stats').then(function(data) {
       var s = data.stats || {};
       document.getElementById('stat-players').textContent = s.playerCount !== undefined ? String(s.playerCount) : '--';
       document.getElementById('stat-sectors').textContent = s.discoveredSectorCount !== undefined ? String(s.discoveredSectorCount) : '--';
       document.getElementById('stat-structures').textContent = s.structureCount !== undefined ? String(s.structureCount) : '--';
+      document.getElementById('stat-ticks').textContent = s.tickCount !== undefined ? String(s.tickCount) : '--';
+      document.getElementById('stat-human-stations').textContent = s.humanStationCount !== undefined ? String(s.humanStationCount) : '--';
       document.getElementById('stats-updated').textContent = 'Last updated: ' + new Date().toLocaleString();
       setStatus(true);
     }).catch(function(err) {
       setStatus(false);
       if (err.message !== 'Unauthorized') toast('Failed to load stats: ' + err.message, 'error');
+    });
+
+    api('GET', '/universe-activity').then(function(data) {
+      renderExpansionLog(data.log || []);
+    }).catch(function() {
+      renderExpansionLog([]);
     });
   }
 

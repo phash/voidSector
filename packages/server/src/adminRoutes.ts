@@ -17,6 +17,7 @@ import {
   logAdminEvent,
   getAdminEvents,
   getServerStats,
+  getRecentExpansionLog,
   createAdminStory,
   getAdminStories,
   getAdminStoryById,
@@ -27,6 +28,7 @@ import type { AdminPlayerUpdateEvent } from './adminBus.js';
 import { getPlayerPosition, savePlayerPosition } from './rooms/services/RedisAPStore.js';
 import { adminBus } from './adminBus.js';
 import { logger } from './utils/logger.js';
+import { getUniverseTickCount } from './engine/universeBootstrap.js';
 
 export const adminRouter = Router();
 
@@ -338,11 +340,24 @@ adminRouter.get('/events', async (req: Request, res: Response) => {
 
 adminRouter.get('/stats', async (_req: Request, res: Response) => {
   try {
-    const stats = await getServerStats();
+    const tickCount = getUniverseTickCount();
+    const stats = await getServerStats(tickCount);
     await logAdminEvent('get_stats');
     res.json({ stats });
   } catch (err) {
     logger.error({ err }, 'Admin get stats error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Universe Activity ────────────────────────────────────────────────
+
+adminRouter.get('/universe-activity', async (_req: Request, res: Response) => {
+  try {
+    const log = await getRecentExpansionLog(50);
+    res.json({ log });
+  } catch (err) {
+    logger.error({ err }, 'Admin universe-activity error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -565,34 +565,43 @@ describe('adminQueries', () => {
   // ── Server Stats ──────────────────────────────────────────────
 
   describe('getServerStats', () => {
-    it('returns combined counts from three tables', async () => {
+    it('returns combined counts from five tables', async () => {
       mockQuery
         .mockResolvedValueOnce(mockQueryResult([{ count: '42' }]))
         .mockResolvedValueOnce(mockQueryResult([{ count: '15' }]))
-        .mockResolvedValueOnce(mockQueryResult([{ count: '200' }]));
+        .mockResolvedValueOnce(mockQueryResult([{ count: '200' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '3' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '2' }]));
 
-      const stats = await getServerStats();
+      const stats = await getServerStats(7);
       expect(stats).toEqual({
         playerCount: 42,
         structureCount: 15,
         discoveredSectorCount: 200,
+        tickCount: 7,
+        humanStationCount: 5,
       });
-      expect(mockQuery).toHaveBeenCalledTimes(3);
+      expect(mockQuery).toHaveBeenCalledTimes(5);
       expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM players'));
       expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM structures'));
       expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM player_discoveries'));
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('FROM npc_station_data'));
     });
 
     it('returns zero counts for empty tables', async () => {
       mockQuery
         .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]))
         .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]))
         .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]));
 
-      const stats = await getServerStats();
+      const stats = await getServerStats(0);
       expect(stats.playerCount).toBe(0);
       expect(stats.structureCount).toBe(0);
       expect(stats.discoveredSectorCount).toBe(0);
+      expect(stats.tickCount).toBe(0);
+      expect(stats.humanStationCount).toBe(0);
     });
   });
 

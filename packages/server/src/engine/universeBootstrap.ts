@@ -11,6 +11,14 @@ dotenv.config();
 // Strategic tick fires every 12 universe ticks (12 × 5s = 60s)
 const STRATEGIC_TICK_INTERVAL = 12;
 
+/** Singleton engine instance — set after startUniverseEngine() is called */
+let _engine: UniverseTickEngine | null = null;
+
+/** Returns the current universe tick count, or 0 if engine not started yet */
+export function getUniverseTickCount(): number {
+  return _engine?.getState().tickCount ?? 0;
+}
+
 /**
  * Wire up UniverseTickEngine + StrategicTickService and start the tick loop.
  * Call once from app.config.ts beforeListen.
@@ -37,6 +45,7 @@ export async function startUniverseEngine(): Promise<void> {
     );
   });
 
+  _engine = engine;
   engine.start();
   logger.info('UniverseTickEngine started');
 }
