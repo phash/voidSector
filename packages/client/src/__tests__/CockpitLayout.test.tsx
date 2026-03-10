@@ -226,11 +226,9 @@ describe('CockpitLayout', () => {
     expect(offTexts.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders channel buttons in section 6 hardware strip', () => {
+  it('renders channel switcher inside CommsScreen (not in hw strip)', () => {
     render(<CockpitLayout renderScreen={mockRenderScreen} />);
-    expect(screen.getByTestId('hw-channels')).toBeInTheDocument();
-    expect(screen.getByTestId('hw-channel-direct')).toBeInTheDocument();
-    expect(screen.getByTestId('hw-channel-quadrant')).toBeInTheDocument();
+    expect(screen.queryByTestId('hw-channels')).not.toBeInTheDocument();
   });
 
   it('renders D-Pad in section 2 hardware strip', () => {

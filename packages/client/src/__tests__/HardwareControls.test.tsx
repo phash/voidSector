@@ -112,36 +112,8 @@ describe('HardwareControls', () => {
     });
   });
 
-  describe('Channel buttons', () => {
-    it('renders channel buttons', () => {
-      render(<HardwareControls channels={['nav', 'comm', 'scan']} />);
-      expect(screen.getByTestId('hw-channels')).toBeInTheDocument();
-      expect(screen.getByTestId('hw-channel-nav')).toHaveTextContent('NAV');
-      expect(screen.getByTestId('hw-channel-comm')).toHaveTextContent('COMM');
-      expect(screen.getByTestId('hw-channel-scan')).toHaveTextContent('SCAN');
-    });
-
-    it('truncates channel labels to 4 characters', () => {
-      render(<HardwareControls channels={['navigation']} />);
-      expect(screen.getByTestId('hw-channel-navigation')).toHaveTextContent('NAVI');
-    });
-
-    it('marks active channel with .active class', () => {
-      render(<HardwareControls channels={['nav', 'comm']} activeChannel="comm" />);
-      expect(screen.getByTestId('hw-channel-nav')).not.toHaveClass('active');
-      expect(screen.getByTestId('hw-channel-comm')).toHaveClass('active');
-    });
-
-    it('fires onChannel when a channel button is clicked', () => {
-      const onChannel = vi.fn();
-      render(<HardwareControls channels={['nav', 'comm']} onChannel={onChannel} />);
-      fireEvent.click(screen.getByTestId('hw-channel-comm'));
-      expect(onChannel).toHaveBeenCalledWith('comm');
-    });
-
-    it('does not render channel strip when channels is empty', () => {
-      render(<HardwareControls channels={[]} />);
-      expect(screen.queryByTestId('hw-channels')).not.toBeInTheDocument();
-    });
+  it('does not render channel strip (channels moved to CommsScreen)', () => {
+    render(<HardwareControls />);
+    expect(screen.queryByTestId('hw-channels')).not.toBeInTheDocument();
   });
 });

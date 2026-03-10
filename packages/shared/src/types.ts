@@ -330,7 +330,7 @@ export interface DepositConstructionMessage {
 }
 
 // Communication
-export type ChatChannel = 'direct' | 'faction' | 'sector' | 'quadrant';
+export type ChatChannel = 'direct' | 'faction' | 'quadrant' | 'system';
 
 export interface ChatMessage {
   id: string;

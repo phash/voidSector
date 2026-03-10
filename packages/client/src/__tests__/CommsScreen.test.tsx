@@ -35,10 +35,12 @@ describe('CommsScreen', () => {
     });
   });
 
-  it('displays channel indicator from store', () => {
+  it('displays channel switcher buttons', () => {
     render(<CommsScreen />);
-    expect(screen.getByText('QUADRANT')).toBeInTheDocument();
-    expect(screen.getByText(/CHANNEL:/)).toBeInTheDocument();
+    expect(screen.getByText('QUAD')).toBeInTheDocument();
+    expect(screen.getByText('FACT')).toBeInTheDocument();
+    expect(screen.getByText('DIRE')).toBeInTheDocument();
+    expect(screen.getByText('SYST')).toBeInTheDocument();
   });
 
   it('displays messages for active channel', () => {
@@ -142,35 +144,35 @@ describe('CommsScreen', () => {
 
   // --- New channel tests ---
 
-  it('displays SECTOR channel indicator', () => {
+  it('displays SYSTEM channel button', () => {
     mockStoreState({
       chatMessages: [],
-      chatChannel: 'sector' as const,
+      chatChannel: 'system' as const,
       alerts: {},
     });
     render(<CommsScreen />);
-    expect(screen.getByText('SECTOR')).toBeInTheDocument();
+    expect(screen.getByText('SYST')).toBeInTheDocument();
   });
 
-  it('displays QUADRANT channel indicator', () => {
+  it('displays QUADRANT channel button', () => {
     mockStoreState({
       chatMessages: [],
       chatChannel: 'quadrant' as const,
       alerts: {},
     });
     render(<CommsScreen />);
-    expect(screen.getByText('QUADRANT')).toBeInTheDocument();
+    expect(screen.getByText('QUAD')).toBeInTheDocument();
   });
 
-  it('filters sector channel messages', () => {
+  it('filters system channel messages', () => {
     mockStoreState({
       chatMessages: [
         {
           id: '1',
           senderId: 's1',
           senderName: 'Player1',
-          channel: 'sector' as const,
-          content: 'Sector hello',
+          channel: 'system' as const,
+          content: 'System hello',
           sentAt: Date.now(),
           delayed: false,
         },
@@ -184,11 +186,11 @@ describe('CommsScreen', () => {
           delayed: false,
         },
       ],
-      chatChannel: 'sector' as const,
+      chatChannel: 'system' as const,
       alerts: {},
     });
     render(<CommsScreen />);
-    expect(screen.getByText(/Sector hello/)).toBeInTheDocument();
+    expect(screen.getByText(/System hello/)).toBeInTheDocument();
     expect(screen.queryByText(/Quadrant hello/)).not.toBeInTheDocument();
   });
 
@@ -208,8 +210,8 @@ describe('CommsScreen', () => {
           id: '2',
           senderId: 's2',
           senderName: 'Player2',
-          channel: 'sector' as const,
-          content: 'Sector hello',
+          channel: 'system' as const,
+          content: 'System hello',
           sentAt: Date.now(),
           delayed: false,
         },
@@ -219,7 +221,7 @@ describe('CommsScreen', () => {
     });
     render(<CommsScreen />);
     expect(screen.getByText(/Quadrant hello/)).toBeInTheDocument();
-    expect(screen.queryByText(/Sector hello/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/System hello/)).not.toBeInTheDocument();
   });
 
   // --- Address book tests ---

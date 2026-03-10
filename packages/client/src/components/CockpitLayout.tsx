@@ -22,7 +22,6 @@ import { PlayerContextMenu } from './PlayerContextMenu';
 import { StoryEventOverlay } from './overlays/StoryEventOverlay';
 import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
-import type { ChatChannel } from '@void-sector/shared';
 
 interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
@@ -74,9 +73,6 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   const setZoomLevel = useStore((s) => s.setZoomLevel);
   const panOffset = useStore((s) => s.panOffset);
   const setPanOffset = useStore((s) => s.setPanOffset);
-  const chatChannel = useStore((s) => s.chatChannel);
-  const setChatChannel = useStore((s) => s.setChatChannel);
-  const channelAlerts = useStore((s) => s.channelAlerts);
   const detailPowerOn = useStore((s) => s.monitorPower['DETAIL'] ?? true);
   const setMonitorPower = useStore((s) => s.setMonitorPower);
   const autoFollow = useStore((s) => s.autoFollow);
@@ -190,12 +186,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
           <CommsScreen />
         </div>
         <div className="cockpit-hw-strip">
-          <HardwareControls
-            channels={['quadrant', 'sector', 'faction', 'direct']}
-            activeChannel={chatChannel}
-            onChannel={(ch) => setChatChannel(ch as ChatChannel)}
-            channelAlerts={channelAlerts}
-          />
+          <HardwareControls />
         </div>
       </div>
       <PlayerContextMenu />
