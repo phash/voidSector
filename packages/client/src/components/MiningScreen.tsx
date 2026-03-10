@@ -3,7 +3,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES, innerCoord } from '@void-sector/shared';
 import type { MineableResourceType } from '@void-sector/shared';
-import { btn, UI } from '../ui-strings';
+import { btn, btnDisabled, UI } from '../ui-strings';
 import { InlineError } from './InlineError';
 
 function ResourceBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -23,6 +23,7 @@ export function MiningScreen() {
   const position = useStore((s) => s.position);
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
+  const ap = useStore((s) => s.ap);
 
   const [miningProgress, setMiningProgress] = useState(0);
 
@@ -46,6 +47,8 @@ export function MiningScreen() {
   const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
   const cargoCap = ship?.stats?.cargoCap ?? 5;
   const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const cargoFull = cargoTotal >= cargoCap;
+  const apCurrent = ap?.current ?? 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
@@ -119,10 +122,16 @@ export function MiningScreen() {
           <button
             key={res}
             className="vs-btn"
-            disabled={mining?.active === true || resources[res] <= 0}
+            disabled={mining?.active === true || resources[res] <= 0 || cargoFull || apCurrent < 1}
             onClick={() => network.sendMine(res)}
           >
-            [MINE {res.toUpperCase()}]
+            {mining?.active === true || resources[res] <= 0
+              ? btn(`MINE ${res.toUpperCase()}`)
+              : cargoFull
+                ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.CARGO_FULL)
+                : apCurrent < 1
+                  ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.NO_AP)
+                  : btn(`MINE ${res.toUpperCase()}`)}
           </button>
         ))}
         <button
