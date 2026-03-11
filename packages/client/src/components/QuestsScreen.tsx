@@ -822,6 +822,11 @@ export function QuestsScreen() {
               ))}
             </>
           )}
+          {isAtStation && stationNpcs.length > 0 && availableQuests.length === 0 && (
+            <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.75rem', marginTop: '8px' }}>
+              NO QUESTS AVAILABLE FROM THIS STATION
+            </div>
+          )}
 
           {/* Community quest */}
           <div
