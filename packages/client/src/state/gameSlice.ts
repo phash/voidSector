@@ -255,6 +255,14 @@ export interface PlayerPresence {
   connected: boolean;
 }
 
+export interface BountyEncounterState {
+  questId: string;
+  targetName: string;
+  targetLevel: number;
+  sectorX: number;
+  sectorY: number;
+}
+
 export interface GameSlice {
   // Auth
   token: string | null;
@@ -359,6 +367,7 @@ export interface GameSlice {
   reputations: PlayerReputation[];
   playerUpgrades: PlayerUpgrade[];
   activeBattle: PirateEncounter | null;
+  bountyEncounter: BountyEncounterState | null;
   lastBattleResult: { encounter: PirateEncounter; result: BattleResult } | null;
   activeCombatV2: CombatV2State | null;
   stationDefenses: StationDefense[];
@@ -579,6 +588,7 @@ export interface GameSlice {
   setReputations: (reps: PlayerReputation[]) => void;
   setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
   setActiveBattle: (encounter: PirateEncounter | null) => void;
+  setBountyEncounter: (encounter: BountyEncounterState | null) => void;
   setLastBattleResult: (
     result: { encounter: PirateEncounter; result: BattleResult } | null,
   ) => void;
@@ -714,6 +724,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   reputations: [],
   playerUpgrades: [],
   activeBattle: null,
+  bountyEncounter: null,
   lastBattleResult: null,
   activeCombatV2: null,
   activeCombat: null,
@@ -904,6 +915,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setReputations: (reputations) => set({ reputations }),
   setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
   setActiveBattle: (activeBattle) => set({ activeBattle }),
+  setBountyEncounter: (bountyEncounter) => set({ bountyEncounter }),
   setLastBattleResult: (lastBattleResult) => set({ lastBattleResult }),
   setActiveCombatV2: (activeCombatV2) => set({ activeCombatV2 }),
   setActiveCombat: (activeCombat) => set({ activeCombat }),
