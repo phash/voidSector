@@ -1158,6 +1158,7 @@ export interface ShipStats {
   hyperdriveFuelEfficiency: number;
   miningBonus: number;
   generatorEpPerRound: number;
+  apRegenPerSecond?: number;
   repairHpPerRound: number;
   repairHpPerSecond: number;
 }

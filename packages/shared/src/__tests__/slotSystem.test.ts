@@ -10,16 +10,20 @@ import {
 } from '../constants.js';
 
 describe('specialized slot system', () => {
-  it('has 7 specialized slot categories', () => {
-    expect(SPECIALIZED_SLOT_CATEGORIES).toHaveLength(7);
+  it('has 8 specialized slot categories', () => {
+    expect(SPECIALIZED_SLOT_CATEGORIES).toHaveLength(8);
   });
 
-  it('drive is slot 0', () => {
-    expect(SPECIALIZED_SLOT_INDEX['drive']).toBe(0);
+  it('generator is slot 0', () => {
+    expect(SPECIALIZED_SLOT_INDEX['generator']).toBe(0);
   });
 
-  it('cargo is slot 6', () => {
-    expect(SPECIALIZED_SLOT_INDEX['cargo']).toBe(6);
+  it('drive is slot 1', () => {
+    expect(SPECIALIZED_SLOT_INDEX['drive']).toBe(1);
+  });
+
+  it('cargo is slot 7', () => {
+    expect(SPECIALIZED_SLOT_INDEX['cargo']).toBe(7);
   });
 
   it('shield and scanner are unique', () => {

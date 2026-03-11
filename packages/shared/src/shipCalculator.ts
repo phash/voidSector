@@ -122,10 +122,11 @@ export function validateModuleInstall(
   if (!moduleDef) return { valid: false, error: 'Unbekanntes Modul' };
 
   const category = moduleDef.category;
-  const isSpecializedSlot = slotIndex < 7;
-  const isExtraSlot = slotIndex >= 7;
+  const specializedSlotCount = SPECIALIZED_SLOT_CATEGORIES.length; // 8
+  const isSpecializedSlot = slotIndex < specializedSlotCount;
+  const isExtraSlot = slotIndex >= specializedSlotCount;
   const extraSlotCount = getExtraSlotCount(acepXp.ausbau);
-  const maxAllowedSlotIndex = 7 + extraSlotCount - 1; // z.B. bei 1 extra slot = max index 7
+  const maxAllowedSlotIndex = specializedSlotCount + extraSlotCount - 1; // z.B. bei 1 extra slot = max index 8
 
   // defense/special nur in Extra-Slots
   if (DEFENSE_ONLY_CATEGORIES.includes(category) && isSpecializedSlot) {
