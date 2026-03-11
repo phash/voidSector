@@ -74,6 +74,7 @@ export function CargoScreen() {
   };
 
   const [activeTab, setActiveTab] = useState<'resource' | 'module' | 'blueprint'>('resource');
+  const [selectedSlateId, setSelectedSlateId] = useState<string | null>(null);
 
   const resources = inventory.filter((i) => i.itemType === 'resource');
   const modules = inventory.filter((i) => i.itemType === 'module');
@@ -212,13 +213,17 @@ export function CargoScreen() {
                     gap: '4px',
                     alignItems: 'center',
                     flexWrap: 'wrap',
+                    cursor: 'pointer',
                   }}
+                  onClick={() => setSelectedSlateId(selectedSlateId === slate.id ? null : slate.id)}
                 >
                   <span style={{ opacity: 0.7 }}>
-                    [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : 'C'}]
+                    [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : slate.slateType === 'scan' ? 'SC' : 'C'}]
                     {slate.slateType === 'custom' && slate.customData
                       ? ` ${slate.customData.label}`
-                      : ` ${slate.sectorData?.length ?? 0} Sektoren`}
+                      : slate.slateType === 'scan'
+                        ? ` Scan Q${(slate.sectorData?.[0] as any)?.quadrantX ?? '?'}:${(slate.sectorData?.[0] as any)?.quadrantY ?? '?'} (${slate.sectorData?.[0]?.x ?? '?'},${slate.sectorData?.[0]?.y ?? '?'})`
+                        : ` ${slate.sectorData?.length ?? 0} Sektoren`}
                   </span>
                   <button
                     className="vs-btn"
@@ -234,6 +239,28 @@ export function CargoScreen() {
                   >
                     {btn('NPC SELL')}
                   </button>
+                  {slate.slateType === 'scan' && selectedSlateId === slate.id && slate.sectorData?.[0] && (
+                    <div style={{
+                      padding: '6px 8px',
+                      border: '1px solid rgba(255,176,0,0.15)',
+                      marginTop: '4px',
+                      fontSize: '0.7rem',
+                      width: '100%',
+                    }}>
+                      <div style={{ color: 'var(--color-dim)', marginBottom: 4 }}>
+                        SCAN · TICK {(slate.sectorData[0] as any).scannedAtTick ?? '?'}
+                      </div>
+                      <div>Q {(slate.sectorData[0] as any).quadrantX}:{(slate.sectorData[0] as any).quadrantY} — ({slate.sectorData[0].x}, {slate.sectorData[0].y})</div>
+                      <div>Typ: {slate.sectorData[0].type?.toUpperCase()}</div>
+                      <div>Ore: {slate.sectorData[0].ore} | Gas: {slate.sectorData[0].gas} | Crystal: {slate.sectorData[0].crystal}</div>
+                      {(slate.sectorData[0] as any).structures?.length > 0 && (
+                        <div>Strukturen: {(slate.sectorData[0] as any).structures.join(', ')}</div>
+                      )}
+                      {(slate.sectorData[0] as any).wrecks?.length > 0 && (
+                        <div>Wracks: {(slate.sectorData[0] as any).wrecks.map((w: any) => `${w.playerName} (T${w.tier})`).join(', ')}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
