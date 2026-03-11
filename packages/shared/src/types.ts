@@ -80,6 +80,9 @@ export interface SectorResources {
   ore: number;
   gas: number;
   crystal: number;
+  maxOre?: number;
+  maxGas?: number;
+  maxCrystal?: number;
 }
 
 export interface Coords {
@@ -225,6 +228,7 @@ export interface MiningState {
   startedAt: number | null;
   rate: number;
   sectorYield: number;
+  mineAll: boolean;
 }
 
 export interface CargoState {
@@ -252,6 +256,7 @@ export interface CargoState {
 
 export interface MineMessage {
   resource: ResourceType;
+  mineAll?: boolean;
 }
 
 export interface JettisonMessage {
