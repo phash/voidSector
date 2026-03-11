@@ -102,7 +102,7 @@ export class ShipService {
     // Install
     const newModules: ShipModule[] = [
       ...ship.modules,
-      { moduleId: data.moduleId, slotIndex: data.slotIndex },
+      { moduleId: data.moduleId, slotIndex: data.slotIndex, source: 'standard' as const },
     ];
     await updateShipModules(ship.id, newModules);
     // Recalculate and send
