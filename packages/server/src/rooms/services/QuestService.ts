@@ -39,7 +39,12 @@ import {
   addWissen,
   getQuestById,
 } from '../../db/queries.js';
-import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
+import {
+  getCargoState,
+  addToInventory,
+  removeFromInventory,
+  getInventoryItem,
+} from '../../engine/inventoryService.js';
 import { generateBountyTrail } from '../../engine/bountyQuestGen.js';
 import { hashCoords } from '../../engine/worldgen.js';
 import { QUEST_TEMPLATES } from '../../engine/questTemplates.js';
@@ -447,6 +452,61 @@ export class QuestService {
         ) {
           obj.fulfilled = true;
           updated = true;
+        }
+
+        // bounty_trail: advance trail step on matching scan
+        if (
+          obj.type === 'bounty_trail' &&
+          action === 'scan' &&
+          Array.isArray(obj.trail) &&
+          obj.currentStep !== undefined
+        ) {
+          const currentTrailStep = obj.trail[obj.currentStep];
+          if (
+            currentTrailStep &&
+            currentTrailStep.x === context.sectorX &&
+            currentTrailStep.y === context.sectorY
+          ) {
+            obj.currentStep += 1;
+            const nextStep = obj.trail[obj.currentStep];
+            obj.currentHint = nextStep?.hint ?? `Das Ziel wartet auf dich!`;
+            if (obj.currentStep >= obj.trail.length) {
+              obj.fulfilled = true;
+            }
+            updated = true;
+            this.ctx.send(client, 'questProgress', {
+              questId: row.id,
+              objectives,
+              hint: obj.currentHint,
+            });
+          }
+        }
+
+        // bounty_combat: add prisoner to inventory on battle_won at combat sector
+        if (
+          obj.type === 'bounty_combat' &&
+          action === 'battle_won' &&
+          obj.sectorX === context.sectorX &&
+          obj.sectorY === context.sectorY
+        ) {
+          obj.fulfilled = true;
+          updated = true;
+          await addToInventory(playerId, 'prisoner', row.id, 1);
+        }
+
+        // bounty_deliver: check prisoner in inventory on arrive at station
+        if (
+          obj.type === 'bounty_deliver' &&
+          action === 'arrive' &&
+          obj.stationX === context.sectorX &&
+          obj.stationY === context.sectorY
+        ) {
+          const hasPrisoner = await getInventoryItem(playerId, 'prisoner', row.id);
+          if (hasPrisoner > 0) {
+            await removeFromInventory(playerId, 'prisoner', row.id, 1);
+            obj.fulfilled = true;
+            updated = true;
+          }
         }
       }
 
