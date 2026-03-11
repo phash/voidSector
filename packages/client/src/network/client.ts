@@ -954,6 +954,24 @@ class GameNetwork {
       store.addLogEntry(`PIRATEN-HINTERHALT bei (${data.sectorX}, ${data.sectorY})!`);
     });
 
+    room.onMessage('bountyAmbush', (data: {
+      questId: string;
+      targetName: string;
+      targetLevel: number;
+      sectorX: number;
+      sectorY: number;
+    }) => {
+      const store = useStore.getState();
+      store.setBountyEncounter({
+        questId: data.questId,
+        targetName: data.targetName,
+        targetLevel: data.targetLevel,
+        sectorX: data.sectorX,
+        sectorY: data.sectorY,
+      });
+      store.addLogEntry(`KOPFGELD: ${data.targetName} bei (${data.sectorX}, ${data.sectorY}) entdeckt!`);
+    });
+
     room.onMessage('ancientRuinScan', (data) => {
       const store = useStore.getState();
       store.setActiveAncientRuinScan(data);

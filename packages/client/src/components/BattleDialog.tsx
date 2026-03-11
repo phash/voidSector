@@ -26,6 +26,8 @@ const ANCIENT_ART = [
 export function BattleDialog() {
   const activeBattle = useStore((s) => s.activeBattle);
   const activeCombatV2 = useStore((s) => s.activeCombatV2);
+  const bountyEncounter = useStore((s) => s.bountyEncounter);
+  const setBountyEncounter = useStore((s) => s.setBountyEncounter);
 
   useEffect(() => {
     if (!activeBattle) return;
@@ -37,6 +39,40 @@ export function BattleDialog() {
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [activeBattle]);
+
+  if (bountyEncounter && !activeCombatV2) {
+    const handleAttack = () => {
+      setBountyEncounter(null);
+      network.sendCombatInit(
+        'pirate',
+        bountyEncounter.targetLevel,
+        bountyEncounter.sectorX,
+        bountyEncounter.sectorY,
+      );
+    };
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000,
+        }}
+      >
+        <div style={{ border: '2px solid #c8a020', background: '#0a0800', padding: '20px', textAlign: 'center', maxWidth: '300px' }}>
+          <div style={{ color: '#c8a020', fontSize: '12px', letterSpacing: '2px', marginBottom: '8px' }}>KOPFGELD-ZIEL</div>
+          <div style={{ color: '#e8c040', fontWeight: 'bold', marginBottom: '4px' }}>{bountyEncounter.targetName}</div>
+          <div style={{ color: '#aaa', fontSize: '11px', marginBottom: '12px' }}>Stufe {bountyEncounter.targetLevel} Pirat</div>
+          <button className="vs-btn" onClick={handleAttack} style={{ width: '100%' }}>
+            [ANGREIFEN]
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // If combat v2 is active, don't render v1 dialog
   if (activeCombatV2) return null;
