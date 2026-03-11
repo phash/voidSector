@@ -7,6 +7,7 @@ import type {
   CargoState,
   MineableResourceType,
 } from '@void-sector/shared';
+import { MINING_RATE_PER_SECOND } from '@void-sector/shared';
 
 import { validateMine, validateJettison } from '../../engine/commands.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
@@ -65,9 +66,11 @@ export class MiningService {
       return;
     }
 
-    // Apply faction mining bonus
+    // Apply ship module bonus and faction mining bonus
     const bonuses = await this.ctx.getPlayerBonuses(auth.userId);
-    result.state!.rate *= bonuses.miningRateMultiplier;
+    result.state!.rate = MINING_RATE_PER_SECOND
+      * (1 + (ship.miningBonus ?? 0))
+      * bonuses.miningRateMultiplier;
 
     await saveMiningState(auth.userId, result.state!);
     client.send('miningUpdate', result.state!);
