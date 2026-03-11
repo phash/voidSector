@@ -72,10 +72,6 @@ export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceT
 
 export const MINING_RATE_PER_SECOND = 1;
 
-export const RESOURCE_REGEN_PER_MINUTE = 1;
-export const CRYSTAL_REGEN_PER_MINUTE = 1 / 3;
-export const RESOURCE_REGEN_DELAY_MINUTES = 5;
-
 export const RESOURCE_REGEN_DELAY_TICKS = 50;
 export const RESOURCE_REGEN_INTERVAL_TICKS = 12; // 1 unit per 12 ticks (60s)
 
