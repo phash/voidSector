@@ -40,12 +40,19 @@ export function AcepDetailPanel() {
   if (activeTab === 'acep') {
     const traits = ship.acepTraits ?? [];
     if (traits.length === 0) {
+      const xp = ship.acepXp ?? { ausbau: 0, intel: 0, kampf: 0, explorer: 0, total: 0 };
       return (
         <div style={{ padding: 14, fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
           <div style={hdrStyle}>TRAITS</div>
           <div style={{ color: '#555' }}>Noch keine Traits</div>
           <div style={{ color: '#444', fontSize: '0.8rem', marginTop: 8 }}>
             Traits entstehen durch XP-Verteilung auf die 4 Pfade.
+          </div>
+          <div style={{ color: '#888', fontSize: '0.85rem', marginTop: 12 }}>
+            BUDGET: {xp.total}/100 XP
+          </div>
+          <div style={{ color: '#666', fontSize: '0.8rem', marginTop: 6 }}>
+            AUSBAU: {xp.ausbau} · INTEL: {xp.intel} · KAMPF: {xp.kampf} · EXPLR: {xp.explorer}
           </div>
         </div>
       );
@@ -121,11 +128,23 @@ export function AcepDetailPanel() {
       <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: 12 }}>[{def.category.toUpperCase()}]</div>
 
       {activeTab === 'shop' && (
-        <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: 10 }}>
-          {replacedModule
-            ? `Ersetzt: ${MODULES[replacedModule.moduleId]?.name ?? replacedModule.moduleId}`
-            : `Installiert in: [${(MODULES[hoveredId]?.category ?? '?').toUpperCase().slice(0, 3)}]-Slot`}
-        </div>
+        <>
+          <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: 6 }}>
+            {replacedModule
+              ? `Ersetzt: ${MODULES[replacedModule.moduleId]?.name ?? replacedModule.moduleId}`
+              : `Installiert in: [${(MODULES[hoveredId]?.category ?? '?').toUpperCase().slice(0, 3)}]-Slot`}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#4a9', marginBottom: 10 }}>
+            {(() => {
+              const parts: string[] = [`${def.cost.credits} CR`];
+              if (def.cost.ore !== undefined) parts.push(`${def.cost.ore} Erz`);
+              if (def.cost.gas !== undefined) parts.push(`${def.cost.gas} Gas`);
+              if (def.cost.crystal !== undefined) parts.push(`${def.cost.crystal} Kristall`);
+              if (def.cost.artefact !== undefined) parts.push(`${def.cost.artefact} Artefakt`);
+              return parts.join(' + ');
+            })()}
+          </div>
+        </>
       )}
 
       <div style={hdrStyle}>AUSWIRKUNG AUF SCHIFF</div>
@@ -146,15 +165,19 @@ export function AcepDetailPanel() {
 
       {activeTab === 'module' && (
         <>
-          <div style={{ ...hdrStyle, marginTop: 12 }}>HP</div>
-          <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
-            {(() => {
-              const installed = ship.modules.find((m) => m.moduleId === hoveredId);
-              if (!installed) return '—';
-              const maxHp = MODULES[hoveredId]?.maxHp ?? 20;
-              return `${installed.currentHp ?? maxHp} / ${maxHp}`;
-            })()}
-          </div>
+          {(() => {
+            const installed = ship.modules.find((m) => m.moduleId === hoveredId);
+            if (!installed) return null;
+            const maxHp = MODULES[hoveredId]?.maxHp ?? 20;
+            const currentHp = installed.currentHp ?? maxHp;
+            const filled = maxHp > 0 ? Math.round((currentHp / maxHp) * 6) : 6;
+            const bar = '█'.repeat(filled) + '░'.repeat(6 - filled);
+            return (
+              <div style={{ marginTop: 12, color: '#ccc', fontSize: '0.9rem' }}>
+                HP: {currentHp}/{maxHp} {bar}
+              </div>
+            );
+          })()}
         </>
       )}
     </div>

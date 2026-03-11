@@ -13,6 +13,12 @@ const mockShip = {
   armor: 0, damage: 10, scanRadius: 3, miningPower: 0, cargoCap: 10,
 };
 
+const mockShipNoTraits = {
+  ...mockShip,
+  acepTraits: [],
+  acepXp: { ausbau: 20, intel: 0, kampf: 0, explorer: 0, total: 20 },
+};
+
 beforeEach(() => {
   mockStoreState({
     ship: mockShip as any,
@@ -44,5 +50,38 @@ describe('AcepDetailPanel', () => {
     mockStoreState({ ship: mockShip as any, acepActiveTab: 'shop' as const, acepHoveredModuleId: null });
     render(<AcepDetailPanel />);
     expect(screen.getByText(/hovern/i)).toBeInTheDocument();
+  });
+
+  it('ACEP tab no-traits fallback shows budget info', () => {
+    mockStoreState({ ship: mockShipNoTraits as any, acepActiveTab: 'acep' as const, acepHoveredModuleId: null });
+    render(<AcepDetailPanel />);
+    expect(screen.getByText(/BUDGET: 20\/100 XP/)).toBeInTheDocument();
+    expect(screen.getByText(/AUSBAU: 20/)).toBeInTheDocument();
+    expect(screen.getByText(/INTEL: 0/)).toBeInTheDocument();
+    expect(screen.getByText(/KAMPF: 0/)).toBeInTheDocument();
+    expect(screen.getByText(/EXPLR: 0/)).toBeInTheDocument();
+  });
+
+  it('MODULE tab with hover shows HP line', () => {
+    const shipWithModule = {
+      ...mockShip,
+      modules: [{ moduleId: 'drive_mk1', slotIndex: 0, currentHp: 6, maxHp: 10, source: 'standard' as const }],
+    };
+    mockStoreState({ ship: shipWithModule as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'drive_mk1' });
+    render(<AcepDetailPanel />);
+    expect(screen.getByText(/HP: 6\/\d+/)).toBeInTheDocument();
+  });
+
+  it('SHOP tab with hover shows price', () => {
+    mockStoreState({
+      ship: mockShip as any,
+      acepActiveTab: 'shop' as const,
+      acepHoveredModuleId: 'drive_mk1',
+      currentSector: { type: 'station' } as any,
+    });
+    render(<AcepDetailPanel />);
+    // drive_mk1 costs 100 CR + 10 Erz
+    expect(screen.getByText(/100 CR/)).toBeInTheDocument();
+    expect(screen.getByText(/Erz/)).toBeInTheDocument();
   });
 });
