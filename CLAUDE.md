@@ -29,6 +29,19 @@ cd packages/shared && npm run build
 
 ---
 
+## Development Workflow
+
+**Always develop in a feature branch — never commit directly to `master`.**
+
+```bash
+git checkout -b feat/<feature-name>   # start every feature here
+# ... implement, test, commit ...
+git push origin feat/<feature-name>
+# then PR or merge back to master
+```
+
+---
+
 ## Code Style
 
 - TypeScript strict mode · 2-space indent · single quotes · semicolons
@@ -82,7 +95,7 @@ Next: **045**.
 
 ---
 
-## Current State (2026-03-09)
+## Current State (2026-03-11)
 
 **Branch:** `master`
 
@@ -94,11 +107,10 @@ Next: **045**.
 - All Quality Sprints (S0–S4), Phase 2, Phase LU, Phase D, Phase AQ (#170–175)
 - **Humanity Rep System** ✅: server-wide aggregate alien rep, encounter chance modifier, ALIEN REP tab, AlienEncounterToast tier display
 - **Phase EW** ✅ (#206): frictionEngine, expansionEngine, warfareEngine, StrategicTickService, universeBootstrap
-- **ACEP** ✅ (partial): XP engine, 4 paths, traits, personality, permadeath, radar icon — UI panel still open
+- **ACEP** ✅: XP engine, 4 paths, traits, personality, permadeath, radar icon, 3-tab UI (ACEP · MODULE · SHOP) with Sec 3 detail panel (#265)
 - **Forschung & Wissen** ✅: Wissen-Ressource, typisierte Artefakte (9 Typen), Lab-Stufen 1–5, TechTreeCanvas, Migration 044
 
 ### Upcoming (in order)
-1. ACEP UI panel (HANGAR/ACEP-Tab mit XP-Balken, Trait-Übersicht)
-2. Wreck-POIs auf dem Radar
+1. Wreck-POIs auf dem Radar
 
 Full roadmap: `docs/plans/2026-03-09-master-roadmap.md`
