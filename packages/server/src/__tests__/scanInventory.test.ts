@@ -51,6 +51,7 @@ vi.mock('../db/queries.js', () => ({
   getCargoCapForPlayer: vi.fn().mockResolvedValue(50),
   transferInventoryItem: vi.fn().mockResolvedValue(undefined),
   getInventoryItem: vi.fn().mockResolvedValue(null),
+  addWissen: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../engine/ap.js', () => ({
@@ -112,6 +113,7 @@ vi.mock('../engine/personalityMessages.js', () => ({
 vi.mock('../rooms/services/RedisAPStore.js', () => ({
   getAPState: vi.fn().mockResolvedValue({ current: 100, max: 100, lastTick: Date.now() }),
   saveAPState: vi.fn().mockResolvedValue(undefined),
+  redis: { get: vi.fn().mockResolvedValue(null), set: vi.fn().mockResolvedValue('OK') },
 }));
 
 import { ScanService } from '../rooms/services/ScanService.js';
