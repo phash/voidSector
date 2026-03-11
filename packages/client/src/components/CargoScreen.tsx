@@ -4,8 +4,7 @@ import { network } from '../network/client';
 import { RESOURCE_TYPES } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
-import { btn, btnDisabled, UI } from '../ui-strings';
-import { useConfirm } from '../hooks/useConfirm';
+import { btn, UI } from '../ui-strings';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
@@ -65,7 +64,14 @@ export function CargoScreen() {
   const cargoCap = ship?.stats?.cargoCap ?? 5;
   const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
-  const { confirm, isArmed } = useConfirm();
+  const [jettisoning, setJettisoning] = useState<string | null>(null);
+
+  const doJettison = (resource: string) => {
+    if (jettisoning) return;
+    setJettisoning(resource);
+    network.sendJettison(resource);
+    setTimeout(() => setJettisoning(null), 1000);
+  };
 
   const [activeTab, setActiveTab] = useState<'resource' | 'module' | 'blueprint'>('resource');
 
@@ -234,31 +240,22 @@ export function CargoScreen() {
           )}
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {RESOURCE_TYPES.map((res) => {
-              const key = `jettison-${res}`;
-              return (
+            {RESOURCE_TYPES.map((res) => (
                 <button
                   key={res}
                   className="vs-btn"
-                  disabled={cargo[res] <= 0}
-                  onClick={() => confirm(key, () => network.sendJettison(res))}
-                  style={isArmed(key) ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
+                  disabled={cargo[res] <= 0 || jettisoning === res}
+                  onClick={() => doJettison(res)}
                 >
-                  {isArmed(key)
-                    ? btnDisabled(`JETTISON ${res.toUpperCase()}`, 'SURE?')
-                    : btn(`JETTISON ${res.toUpperCase()}`)}
+                  {btn(`JETTISON ${res.toUpperCase()}`)}
                 </button>
-              );
-            })}
+              ))}
             <button
               className="vs-btn"
-              disabled={cargo.artefact <= 0}
-              onClick={() => confirm('jettison-artefact', () => network.sendJettison('artefact'))}
-              style={isArmed('jettison-artefact') ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
+              disabled={cargo.artefact <= 0 || jettisoning === 'artefact'}
+              onClick={() => doJettison('artefact')}
             >
-              {isArmed('jettison-artefact')
-                ? btnDisabled('JETTISON ARTEFACT', 'SURE?')
-                : btn('JETTISON ARTEFACT')}
+              {btn('JETTISON ARTEFACT')}
             </button>
           </div>
         </>

@@ -74,13 +74,9 @@ describe('CargoScreen', () => {
     expect(crystalBtn).not.toBeDisabled();
   });
 
-  it('calls sendJettison on double-click (two-click confirm)', async () => {
+  it('calls sendJettison on single click', async () => {
     render(<CargoScreen />);
-    // First click arms the button (shows SURE?)
     await userEvent.click(screen.getByText('[JETTISON ORE]'));
-    expect(network.sendJettison).not.toHaveBeenCalled();
-    // Second click confirms
-    await userEvent.click(screen.getByText('[JETTISON ORE — SURE?]'));
     expect(network.sendJettison).toHaveBeenCalledWith('ore');
   });
 
