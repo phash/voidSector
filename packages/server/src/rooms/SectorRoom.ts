@@ -482,6 +482,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('stopMine', async (client) => {
       await this.mining.handleStopMine(client);
     });
+    this.onMessage('toggleMineAll', async (client, data: { mineAll: boolean }) => {
+      await this.mining.handleToggleMineAll(client, data);
+    });
     this.onMessage('jettison', async (client, data: JettisonMessage) => {
       await this.mining.handleJettison(client, data);
     });
@@ -1471,6 +1474,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   async onDispose() {
+    this.mining.clearAllTimers();
     for (const cb of this.disposeCallbacks) {
       cb();
     }

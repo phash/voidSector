@@ -13,7 +13,7 @@ import { validateMine, validateJettison } from '../../engine/commands.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { stopMining } from '../../engine/mining.js';
 import { getMiningState, saveMiningState } from './RedisAPStore.js';
-import { getSector } from '../../db/queries.js';
+import { getSector, updateSectorResources } from '../../db/queries.js';
 import {
   addToInventory,
   removeFromInventory,
@@ -23,9 +23,137 @@ import {
 import { rejectGuest } from './utils.js';
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
+const MINE_ALL_ORDER: MineableResourceType[] = ['ore', 'gas', 'crystal'];
 
 export class MiningService {
+  private autoStopTimers = new Map<string, NodeJS.Timeout>();
+
   constructor(private ctx: ServiceContext) {}
+
+  hasTimer(playerId: string): boolean {
+    return this.autoStopTimers.has(playerId);
+  }
+
+  setTimerForTest(playerId: string, timer: NodeJS.Timeout): void {
+    this.autoStopTimers.set(playerId, timer);
+  }
+
+  private clearTimer(playerId: string): void {
+    const timer = this.autoStopTimers.get(playerId);
+    if (timer) {
+      clearTimeout(timer);
+      this.autoStopTimers.delete(playerId);
+    }
+  }
+
+  clearAllTimers(): void {
+    for (const timer of this.autoStopTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.autoStopTimers.clear();
+  }
+
+  private setAutoStopTimer(
+    client: Client,
+    playerId: string,
+    sectorYield: number,
+    rate: number,
+    cargoSpace: number,
+  ): void {
+    this.clearTimer(playerId);
+
+    const resourceTimeout = Math.ceil(sectorYield / rate) * 1000;
+    const cargoTimeout = Math.ceil(cargoSpace / rate) * 1000;
+    const timeout = Math.min(resourceTimeout, cargoTimeout);
+
+    const timer = setTimeout(async () => {
+      this.autoStopTimers.delete(playerId);
+      await this.handleAutoStop(client, playerId);
+    }, timeout);
+
+    this.autoStopTimers.set(playerId, timer);
+  }
+
+  private async handleAutoStop(client: Client, playerId: string): Promise<void> {
+    const mining = await getMiningState(playerId);
+    if (!mining.active) return;
+
+    const cargoTotal = await getResourceTotal(playerId);
+    const ship = this.ctx.getShipForClient(client.sessionId);
+    const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
+    const result = stopMining(mining, cargoSpace);
+
+    if (result.mined > 0 && result.resource) {
+      await addToInventory(playerId, 'resource', result.resource, result.mined);
+      await this.depleteResource(
+        mining.sectorX, mining.sectorY,
+        result.resource as MineableResourceType, result.mined,
+      );
+      const miningXp = Math.floor(result.mined / 5);
+      if (miningXp > 0) {
+        addAcepXpForPlayer(playerId, 'ausbau', miningXp).catch(() => {});
+      }
+    }
+
+    await saveMiningState(playerId, result.newState);
+
+    // Mine-all chaining
+    if (mining.mineAll) {
+      const newCargoTotal = await getResourceTotal(playerId);
+      const newCargoSpace = Math.max(0, ship.cargoCap - newCargoTotal);
+      if (newCargoSpace > 0) {
+        const sectorData = await getSector(mining.sectorX, mining.sectorY);
+        if (sectorData?.resources) {
+          for (const res of MINE_ALL_ORDER) {
+            if (sectorData.resources[res] > 0) {
+              const nextResult = validateMine(
+                res, sectorData.resources, result.newState,
+                newCargoTotal, ship.cargoCap,
+                mining.sectorX, mining.sectorY, true,
+              );
+              if (nextResult.valid && nextResult.state) {
+                const bonuses = await this.ctx.getPlayerBonuses(playerId);
+                nextResult.state.rate = MINING_RATE_PER_SECOND
+                  * (1 + (ship.miningBonus ?? 0))
+                  * bonuses.miningRateMultiplier;
+
+                await saveMiningState(playerId, nextResult.state);
+                client.send('miningUpdate', nextResult.state);
+                this.setAutoStopTimer(
+                  client, playerId,
+                  nextResult.state.sectorYield,
+                  nextResult.state.rate,
+                  newCargoSpace,
+                );
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const cargo = await getCargoState(playerId);
+    client.send('miningUpdate', result.newState);
+    client.send('cargoUpdate', cargo);
+  }
+
+  private async depleteResource(
+    sectorX: number,
+    sectorY: number,
+    resource: MineableResourceType,
+    amount: number,
+  ): Promise<void> {
+    const sectorData = await getSector(sectorX, sectorY);
+    if (!sectorData?.resources) return;
+    const resources = {
+      ore: sectorData.resources.ore,
+      gas: sectorData.resources.gas,
+      crystal: sectorData.resources.crystal,
+    };
+    resources[resource] = Math.max(0, resources[resource] - amount);
+    await updateSectorResources(sectorX, sectorY, resources, resource);
+  }
 
   async handleMine(client: Client, data: MineMessage): Promise<void> {
     if (!this.ctx.checkRate(client.sessionId, 'mine', 500)) {
@@ -38,6 +166,7 @@ export class MiningService {
     }
     const auth = client.auth as AuthPayload;
     const { resource } = data;
+    const mineAll = data.mineAll ?? false;
 
     const sectorData = await getSector(
       this.ctx._px(client.sessionId),
@@ -53,13 +182,11 @@ export class MiningService {
     const ship = this.ctx.getShipForClient(client.sessionId);
 
     const result = validateMine(
-      resource,
-      sectorData.resources,
-      current,
-      cargoTotal,
-      ship.cargoCap,
+      resource, sectorData.resources, current,
+      cargoTotal, ship.cargoCap,
       this.ctx._px(client.sessionId),
       this.ctx._py(client.sessionId),
+      mineAll,
     );
     if (!result.valid) {
       client.send('error', { code: 'MINE_FAILED', message: result.error! });
@@ -74,10 +201,21 @@ export class MiningService {
 
     await saveMiningState(auth.userId, result.state!);
     client.send('miningUpdate', result.state!);
+
+    // Set auto-stop timer
+    const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
+    this.setAutoStopTimer(
+      client, auth.userId,
+      result.state!.sectorYield,
+      result.state!.rate,
+      cargoSpace,
+    );
   }
 
   async handleStopMine(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
+
+    this.clearTimer(auth.userId);
 
     const mining = await getMiningState(auth.userId);
     if (!mining.active) {
@@ -92,7 +230,10 @@ export class MiningService {
 
     if (result.mined > 0 && result.resource) {
       await addToInventory(auth.userId, 'resource', result.resource, result.mined);
-      // ACEP: AUSBAU-XP for mining/resource collection (spec: +1 per 5 units mined)
+      await this.depleteResource(
+        mining.sectorX, mining.sectorY,
+        result.resource as MineableResourceType, result.mined,
+      );
       const miningXp = Math.floor(result.mined / 5);
       if (miningXp > 0) {
         addAcepXpForPlayer(auth.userId, 'ausbau', miningXp).catch(() => {});
@@ -104,6 +245,15 @@ export class MiningService {
     const cargo = await getCargoState(auth.userId);
     client.send('miningUpdate', result.newState);
     client.send('cargoUpdate', cargo);
+  }
+
+  async handleToggleMineAll(client: Client, data: { mineAll: boolean }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const mining = await getMiningState(auth.userId);
+    if (!mining.active) return;
+    mining.mineAll = data.mineAll;
+    await saveMiningState(auth.userId, mining);
+    client.send('miningUpdate', mining);
   }
 
   async handleJettison(client: Client, data: JettisonMessage): Promise<void> {
