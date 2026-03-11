@@ -13,8 +13,8 @@ export function SlateControls() {
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const mySlates = useStore((s) => s.mySlates);
-  const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const memory = ship?.stats?.memory ?? 2;
+  const memoryFull = cargo.slates >= memory;
 
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
@@ -36,7 +36,10 @@ export function SlateControls() {
         fontSize: '0.6rem',
       }}
     >
-      <div style={{ opacity: 0.6, letterSpacing: '0.1em', marginBottom: 3 }}>── KARTEN ──</div>
+      <div style={{ opacity: 0.6, letterSpacing: '0.1em', marginBottom: 3 }}>
+        ── KARTEN ── {cargo.slates}/{memory}
+        {cargo.slates > memory && <span style={{ color: '#FF3333' }}> !</span>}
+      </div>
 
       {cargo.slates > 0 && (
         <div style={{ marginBottom: 4 }}>
@@ -53,7 +56,11 @@ export function SlateControls() {
               }}
             >
               <span style={{ opacity: 0.7 }}>
-                [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : 'C'}]
+                [{slate.slateType === 'sector' ? 'S'
+                  : slate.slateType === 'area' ? 'A'
+                  : slate.slateType === 'scan' ? 'SC'
+                  : slate.slateType === 'jumpgate' ? 'JG'
+                  : 'C'}]
                 {slate.slateType === 'custom' && slate.customData
                   ? ` ${slate.customData.label}`
                   : ` ${slate.sectorData?.length ?? 0} Sektoren`}
@@ -81,7 +88,7 @@ export function SlateControls() {
         <button
           className="vs-btn"
           style={{ fontSize: '0.55rem', padding: '4px 8px' }}
-          disabled={total >= cargoCap}
+          disabled={memoryFull}
           onClick={() => network.sendCreateSlate('sector')}
         >
           [SEKTOR {SLATE_AP_COST_SECTOR}AP]
@@ -89,7 +96,7 @@ export function SlateControls() {
         <button
           className="vs-btn"
           style={{ fontSize: '0.55rem', padding: '4px 8px' }}
-          disabled={total >= cargoCap}
+          disabled={memoryFull}
           onClick={() => network.sendCreateSlate('area')}
         >
           [GEBIET]
@@ -97,7 +104,7 @@ export function SlateControls() {
         <button
           className="vs-btn"
           style={{ fontSize: '0.55rem', padding: '4px 8px' }}
-          disabled={total >= cargoCap}
+          disabled={memoryFull}
           onClick={() => setShowCustomForm(!showCustomForm)}
         >
           [DISK {CUSTOM_SLATE_AP_COST}AP/{CUSTOM_SLATE_CREDIT_COST}CR]

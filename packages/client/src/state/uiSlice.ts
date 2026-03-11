@@ -59,6 +59,9 @@ export interface UISlice {
   setAcepActiveTab: (tab: 'acep' | 'module' | 'shop') => void;
   setAcepHoveredModuleId: (id: string | null) => void;
 
+  selectedSlateId: string | null;
+  setSelectedSlateId: (id: string | null) => void;
+
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
   setJumpPending: (pending: boolean) => void;
@@ -116,6 +119,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   contextMenu: null,
   acepActiveTab: 'acep',
   acepHoveredModuleId: null,
+  selectedSlateId: null,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -198,6 +202,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   closeContextMenu: () => set({ contextMenu: null }),
   setAcepActiveTab: (tab) => set({ acepActiveTab: tab }),
   setAcepHoveredModuleId: (id) => set({ acepHoveredModuleId: id }),
+  setSelectedSlateId: (id) => set({ selectedSlateId: id }),
 
   stationTerminalOpen: false,
   openStationTerminal: () => set({ stationTerminalOpen: true }),
