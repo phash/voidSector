@@ -49,7 +49,7 @@ Zwei Änderungen:
 - Pro Slot: `[KAT] moduleName  HP-Bar` — bei leer: `[KAT] —  ───`
 - HP-Bar: 3 Zeichen aus `█░` (currentHp / maxHp)
 - Klick auf belegten Slot: Uninstall-Button
-- Klick auf leeren Slot: Filtert ModulePanel auf passende Kategorie (via `setActiveProgram('SHIP-SYS')`)
+- Klick auf leeren Slot: navigiert zu `setActiveProgram('MODULES')` (nutzt den bestehenden `case 'MODULES'` in `renderScreen`)
 - Modul-Farbkodierung: standard=grün, found=amber, researched=blau (wie ModulePanel)
 
 **Rechte Spalte — Entwicklungspfade:**
@@ -61,7 +61,7 @@ Zwei Änderungen:
 ### Dateien
 
 - **Create:** `packages/client/src/components/AcepProgram.tsx`
-- **Modify:** `packages/shared/src/constants.ts` — `MONITORS.ACEP`, `COCKPIT_PROGRAMS`
+- **Modify:** `packages/shared/src/constants.ts` — `MONITORS.ACEP`, `COCKPIT_PROGRAMS`, `COCKPIT_PROGRAM_LABELS` (Eintrag `'ACEP': 'ACEP'`)
 - **Modify:** `packages/client/src/components/GameScreen.tsx` — case + detail-case für ACEP
 - **Modify:** `packages/client/src/components/GameScreen.tsx` — `COMING SOON`-Placeholder entfernen
 
@@ -99,31 +99,34 @@ In `ShipService.handleStartResearch`:
 const labTier = await getResearchLabTier(auth.userId);
 
 // NEU:
-const ship = await getActiveShip(auth.userId);
-const ausbauXp = ship?.acep_ausbau_xp ?? 0;
-const labTier = getAcepLevel(ausbauXp);   // 1–5
+const acepXp = await getAcepXpSummary(auth.userId);   // bereits in ShipService vorhanden
+const labTier = getAcepLevel(acepXp.ausbau);           // 1–5
 ```
 
-`getResearchLabTier`-Aufruf entfällt. `getAcepLevel` kommt aus `@void-sector/shared`.
+`getResearchLabTier`-Aufruf entfällt. `getAcepLevel` + `getAcepXpSummary` kommen aus bestehenden Imports.
+
+**Hinweis `RESEARCH_LAB_NAMES`:** Fehlermeldungen in `canStartResearch` (z.B. "Requires ANALYSESTATION") referenzieren Lab-Gebäude-Namen. Diese Strings in `research.ts` durch AUSBAU-Level-Namen ersetzen (`AUSBAU Level 1`, `AUSBAU Level 2` etc.) damit sie nach der Umstellung passen.
 
 ### Fabrik-Gating
 
-In `SectorRoom`/`ShipService` wo Fabrik-Start geprüft wird (`handleStartProduction` o.ä.):
+In `EconomyService.handleFactorySetRecipe` (setzt Rezept = startet Produktion):
 ```typescript
-const ausbauLevel = getAcepLevel(ship.acep_ausbau_xp ?? 0);
+const acepXp = await getAcepXpSummary(auth.userId);
+const ausbauLevel = getAcepLevel(acepXp.ausbau);
 if (ausbauLevel < 2) {
   client.send('error', { code: 'FACTORY_LOCKED', message: 'Fabrik erfordert AUSBAU Level 2' });
   return;
 }
 ```
 
-Client: `TechTreePanel.tsx` oder `BASE-LINK` zeigt Hinweis wenn Level zu niedrig.
+Client: `BASE-LINK`-Program zeigt Hinweis wenn Level zu niedrig (über den bestehenden Factory-State-Screen).
 
 ### Dateien
 
 - **Modify:** `packages/server/src/rooms/services/ShipService.ts` — `getResearchLabTier` durch AUSBAU-Level ersetzen
 - **Modify:** `packages/server/src/rooms/SectorRoom.ts` — `getResearchLabTier`-Aufruf für `labTier` im Research-State ersetzen
-- **Modify:** `packages/client/src/components/TechTreePanel.tsx` — Hinweis wenn AUSBAU-Level zu niedrig
+- **Modify:** `packages/server/src/rooms/services/EconomyService.ts` — AUSBAU-Level-Gate in `handleFactorySetRecipe`
+- **Modify:** `packages/shared/src/constants.ts` — `RESEARCH_LAB_NAMES` durch AUSBAU-Level-Strings ersetzen (`AUSBAU Level 1` … `AUSBAU Level 5`)
 
 ---
 
