@@ -174,7 +174,15 @@ export function TradeScreen() {
         />
       </div>
       {tab === 'npc' && tradeMessage && (
-        <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', opacity: 0.7, marginTop: 4 }}>
+        <div style={{
+          color: '#FFB000',
+          background: 'rgba(255,176,0,0.08)',
+          border: '1px solid rgba(255,176,0,0.4)',
+          padding: '4px 8px',
+          fontSize: '0.8rem',
+          marginBottom: '8px',
+          fontFamily: 'monospace',
+        }}>
           {tradeMessage}
         </div>
       )}
