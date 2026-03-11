@@ -1974,6 +1974,64 @@ Das Universum hat keine Rückgaberichtlinie.
     seeAlso: ['acep-slots', 'acep-intro', 'acep-handbuch'],
     tags: ['acep', 'monitor', 'programme', 'module', 'slots'],
   },
+
+  {
+    id: 'acep-slots',
+    title: 'MODUL-SLOTS & AUSBAU-GATING',
+    category: 'acep',
+    icon: '⬟',
+    summary: '8 Spezialisierte Slots plus Extra-Slots durch AUSBAU-XP. Forschungsslot 2 ab Level 3. Fabrik ab Level 2.',
+    body: `Dein Schiff hat Slots. Slots nehmen Module auf. Module tun Dinge.
+Das ist die vollständige Zusammenfassung. Die Details folgen, weil sie relevant sind.
+
+**Die 8 Spezialisierten Slots:**
+
+| Kürzel | Kategorie | Funktion |
+|---|---|---|
+| GEN | Generator | Energie-Output, AP-Regen-Bonus |
+| DRV | Antrieb | Sprungreichweite, Geschwindigkeit |
+| WPN | Waffe | Kampfschaden |
+| ARM | Panzerung | Schadensreduktion |
+| SHD | Schild | Schild-HP und Regenerationsrate |
+| SCN | Scanner | Scan-Radius, Tarn-Erkennung |
+| MIN | Mining | Abbaurate, Ressourcen-Bonus |
+| CGO | Fracht | Laderaum-Kapazität |
+
+Jeder Slot akzeptiert genau ein Modul seiner Kategorie.
+Das System ist in dieser Hinsicht unnachgiebig. Es hat gute Gründe dafür.
+Ob es diese Gründe jemals erklären wird: unwahrscheinlich.
+
+**Extra-Slots durch AUSBAU-XP:**
+
+| AUSBAU-XP | Extra-Slots |
+|---|---|
+| 0–9 | +0 |
+| 10–24 | +1 |
+| 25–39 | +2 |
+| 40–49 | +3 |
+| 50 | +4 |
+
+Extra-Slots akzeptieren Module jeder Kategorie — du entscheidest.
+Das Universum hat hierzu keine Präferenz. Jedenfalls keine geäußerte.
+
+**AUSBAU-Level und was er freischaltet:**
+
+| Level | AUSBAU-XP | Forschungsslot 2 | Fabrik |
+|---|---|---|---|
+| 1 | 0–7 | — | — |
+| 2 | 8–17 | — | freigeschaltet |
+| 3 | 18–31 | freigeschaltet | freigeschaltet |
+| 4 | 32–49 | freigeschaltet | freigeschaltet |
+| 5 | 50 | freigeschaltet | freigeschaltet |
+
+Die Fabrik war früher an ein stationäres Gebäude gebunden.
+Jetzt ist sie an AUSBAU-Level gebunden. Das ist flexibler.
+Außer wenn dein AUSBAU-Level 1 ist. Dann ist es identisch frustrierend, nur anders begründet.
+
+![Schema: 8 Spezialisierte Slots plus Extra-Slots. Mehrere davon leer mit ??? beschriftet.](img:acep/acep-slots-diagram)`,
+    seeAlso: ['acep-monitor', 'acep-pfade', 'acep-intro'],
+    tags: ['acep', 'slots', 'module', 'ausbau', 'gating', 'fabrik'],
+  },
 ];
 
 // ---------------------------------------------------------------------------

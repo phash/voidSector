@@ -265,6 +265,13 @@ describe('Compendium Data', () => {
       expect(a?.category).toBe('acep');
       expect(a?.body.length).toBeGreaterThan(100);
     });
+
+    it("has article 'acep-slots'", () => {
+      const a = getArticle('acep-slots');
+      expect(a).toBeDefined();
+      expect(a?.category).toBe('acep');
+      expect(a?.body).toContain('AUSBAU-Level');
+    });
   });
 
   // -------------------------------------------------------------------------
