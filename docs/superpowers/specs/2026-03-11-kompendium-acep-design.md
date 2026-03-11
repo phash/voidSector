@@ -112,9 +112,10 @@ Ergänzen unter AUSBAU:
 
 ### monitore
 
-- Programm-Tabelle: 11 → 12 Programme (ACEP hinzufügen)
-- SHIP-SYS Beschreibung: "ACEP-Tab entfernt (eigenes Programm)" → "Tabs: EINSTELLUNGEN, MODULE, HANGAR"
+- Programm-Tabelle im `body`: 11 → 12 Programme (ACEP-Zeile hinzufügen)
+- SHIP-SYS Beschreibung im `body`: "ACEP-Tab entfernt (eigenes Programm)" → "Tabs: EINSTELLUNGEN, MODULE, HANGAR"
 - `summary` string: "Die 11 Programme" → "Die 12 Programme"
+- `body` string: alle Vorkommen von "11 Programme" → "12 Programme"
 
 ### grundlagen-start
 
@@ -180,7 +181,7 @@ Neuer Marker in `renderBody`:
 **Parser-Logik** (paragraph-level, wie Tables):
 - Der bestehende `renderBody`-Parser iteriert über Paragraphen (durch `\n\n` getrennt).
 - Ein Paragraph, der mit `![` beginnt und dem Muster `![caption](img:path)` entspricht, wird als Image-Block erkannt.
-- `hasBlockContent` wird um den Typ `'image'` erweitert, damit gemischte Paragraphen korrekt klassifiziert werden.
+- Der Image-Branch ist ein vollständiger `early-return/continue` aus der Paragraph-Schleife — analog zum Table-Branch. `hasBlockContent` ist **nicht** involviert und muss **nicht** erweitert werden.
 - Render-Ausgabe für einen Image-Block:
 
 ```tsx
@@ -206,7 +207,6 @@ Bilder liegen in `packages/client/public/compendium/acep/`.
 ### Modifizieren
 - `packages/client/src/data/compendium.ts` — neue Kategorie, 2 neue Artikel, 4 Updates (acep-intro, acep-pfade, monitore, grundlagen-start), 2 neue Fallstudien
 - `packages/client/src/components/CompendiumOverlay.tsx` — `img:`-Marker in `renderBody` unterstützen
-- `packages/client/src/data/compendium.ts` (grundlagen-start) — 11 → 12 Buttons, ACEP-Programm-Beschreibung
 
 ---
 
@@ -234,7 +234,7 @@ Generierung läuft vor der Implementierung, Bilder werden in `public/compendium/
 | `img:`-Marker rendert `<img>` | `CompendiumOverlay.test.tsx`: Mock-Artikel mit `body: '![Test Bild](img:acep/test)'` durch `<CompendiumOverlay>` rendern → `<img>` mit `src="/compendium/acep/test.png"` und `<div className="compendium-img-block">` im DOM |
 | `img:` caption | Gleicher Test: `<div className="compendium-img-caption">[ Test Bild ]</div>` im DOM |
 | Keine broken seeAlso-Links | `compendium-data.test.ts`: alle seeAlso-IDs in `COMPENDIUM_ARTICLES.map(a => a.id)` vorhanden |
-| monitore hat 12 Programme | `compendium-data.test.ts`: Artikel `'monitore'` body enthält "12 Programme" |
+| monitore hat 12 Programme | `compendium-data.test.ts`: Artikel `'monitore'` `summary` enthält "12 Programme" UND `body` enthält "12 Programme" |
 
 ---
 
