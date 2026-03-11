@@ -2,6 +2,8 @@
 
 Multiplayer 2D space-exploration idle MMO · CRT terminal aesthetics · TypeScript monorepo
 
+> **Programmierrichtlinien** → [`docs/programming-guidelines.md`](docs/programming-guidelines.md) — verbindlich für alle Implementierungen (Spec-Driven, TDD, Clean Code, UX, Fehlerbehandlung, Workflow)
+
 > **Memory files** (in `~/.claude/projects/E--claude-voidSector/memory/`):
 > - Architecture, services, patterns → read **architecture.md** before touching server/client code
 > - DB schema, migrations, Redis → read **database-schema.md** before DB work
