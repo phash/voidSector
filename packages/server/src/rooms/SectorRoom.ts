@@ -462,6 +462,13 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('repairStation', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleRepairStation(client, data);
     });
+    // Kampfsystem v1 — energy-based round combat
+    this.onMessage('combatInit', async (client, data) => {
+      await this.combat.handleCombatInit(client, data);
+    });
+    this.onMessage('combatRound', async (client, data) => {
+      await this.combat.handleCombatRound(client, data);
+    });
 
     // ── Mining ──────────────────────────────────────────────────────
     this.onMessage('mine', async (client, data: MineMessage) => {

@@ -3427,3 +3427,42 @@ export async function getVisitedQuadrantSet(playerId: string): Promise<Set<strin
   );
   return new Set(rows.map((r) => `${r.qx}:${r.qy}`));
 }
+
+// --- Kampfsystem v1: combat_log ---
+
+export async function insertCombatLog(params: {
+  playerId: string;
+  quadrantX: number;
+  quadrantY: number;
+  sectorX: number;
+  sectorY: number;
+  enemyType: string;
+  enemyLevel: number;
+  outcome: string;
+  rounds: number;
+  playerHpEnd: number;
+  modulesDamaged: Array<{ moduleId: string; hpBefore: number; hpAfter: number }>;
+  loot: { credits?: number; ore?: number; crystal?: number };
+}): Promise<void> {
+  await query(
+    `INSERT INTO combat_log
+       (player_id, quadrant_x, quadrant_y, sector_x, sector_y,
+        enemy_type, enemy_level, outcome, rounds, player_hp_end,
+        modules_damaged, loot)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    [
+      params.playerId,
+      params.quadrantX,
+      params.quadrantY,
+      params.sectorX,
+      params.sectorY,
+      params.enemyType,
+      params.enemyLevel,
+      params.outcome,
+      params.rounds,
+      params.playerHpEnd,
+      JSON.stringify(params.modulesDamaged),
+      JSON.stringify(params.loot),
+    ],
+  );
+}
