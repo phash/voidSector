@@ -341,6 +341,7 @@ export function TradeScreen() {
                           </div>
                           {effectiveMax > 0 && (
                             <button
+                              data-testid={`sell-all-${item.itemType}`}
                               style={{ ...btnStyle, fontSize: '0.55rem', opacity: 0.8, marginTop: 3 }}
                               onClick={() => network.sendNpcTrade(item.itemType, effectiveMax, 'sell')}
                             >

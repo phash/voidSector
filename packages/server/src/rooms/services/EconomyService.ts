@@ -96,8 +96,9 @@ export class EconomyService {
     const station = await getOrInitStation(sx, sy);
     const inventory = await getStationInventory(sx, sy);
     const level = getStationLevel(station.xp);
+    const now = new Date();
     const items = inventory.map((item) => {
-      const currentStock = calculateCurrentStock(item);
+      const currentStock = calculateCurrentStock(item, now);
       const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
       const basePrice = NPC_PRICES[item.itemType as MineableResourceType] || 0;
       return {
@@ -108,6 +109,17 @@ export class EconomyService {
         sellPrice: Math.floor(calculatePrice(basePrice, stockRatio) * NPC_SELL_SPREAD),
       };
     });
+    // Snapshot calculated stock to DB so subsequent canSellToStation/canBuyFromStation
+    // calls don't drift due to time-based restock between display and trade (#237)
+    for (let i = 0; i < inventory.length; i++) {
+      const item = inventory[i];
+      const snapshotStock = items[i].stock;
+      if (item.stock !== snapshotStock) {
+        item.stock = snapshotStock;
+        item.lastUpdated = now.toISOString();
+        await upsertInventoryItem(item);
+      }
+    }
     const nextLevel = NPC_STATION_LEVELS.find((l) => l.xpThreshold > station.xp);
     client.send('npcStationUpdate', {
       level: level.level,
@@ -193,10 +205,11 @@ export class EconomyService {
           client.send('npcTradeResult', { success: false, error: 'Cargo changed' });
           return;
         }
-        // Update station stock
+        // Update station stock — use calculated stock, not raw DB stock (#237)
         const invItem = await getStationInventoryItem(sx, sy, resource);
         if (invItem) {
-          invItem.stock = Math.min(invItem.stock + effectiveAmount, invItem.maxStock);
+          const currentStationStock = calculateCurrentStock(invItem);
+          invItem.stock = Math.min(currentStationStock + effectiveAmount, invItem.maxStock);
           invItem.lastUpdated = new Date().toISOString();
           await upsertInventoryItem(invItem);
         }
@@ -251,10 +264,11 @@ export class EconomyService {
           return;
         }
         await addToInventory(auth.userId, 'resource', resource, amount);
-        // Update station stock
+        // Update station stock — use calculated stock, not raw DB stock (#237)
         const invItem = await getStationInventoryItem(sx, sy, resource);
         if (invItem) {
-          invItem.stock = Math.max(invItem.stock - amount, 0);
+          const currentStationStock = calculateCurrentStock(invItem);
+          invItem.stock = Math.max(currentStationStock - amount, 0);
           invItem.lastUpdated = new Date().toISOString();
           await upsertInventoryItem(invItem);
         }
