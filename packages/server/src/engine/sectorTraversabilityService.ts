@@ -137,3 +137,27 @@ export function validateJumpTarget(targetEnvironment: SectorEnvironment): {
   }
   return { valid: true };
 }
+
+/**
+ * Returns true if (x, y) is a void-blocked sector and the player has no void_shield.
+ * Check order:
+ *  1. Is the sector's quadrant fully void (controlling_faction='voids')? → blocked
+ *  2. Is (x, y) in the frontier set? → blocked
+ *  3. Otherwise → not blocked
+ */
+export function isVoidBlocked(
+  x: number,
+  y: number,
+  quadrantControls: Array<{ qx: number; qy: number; controlling_faction: string }>,
+  voidFrontierSet: Set<string>,
+  playerModules: string[],
+): boolean {
+  if (playerModules.includes('void_shield')) return false;
+
+  const qx = Math.floor(x / 10_000);
+  const qy = Math.floor(y / 10_000);
+  const ctrl = quadrantControls.find((c) => c.qx === qx && c.qy === qy);
+  if (ctrl?.controlling_faction === 'voids') return true;
+
+  return voidFrontierSet.has(`${x},${y}`);
+}
