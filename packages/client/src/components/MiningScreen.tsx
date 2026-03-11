@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { RESOURCE_TYPES, innerCoord } from '@void-sector/shared';
+import { RESOURCE_TYPES, innerCoord, getPhysicalCargoTotal } from '@void-sector/shared';
 import type { MineableResourceType } from '@void-sector/shared';
 import { btn, btnDisabled, UI } from '../ui-strings';
 import { InlineError } from './InlineError';
@@ -47,7 +47,7 @@ export function MiningScreen() {
   const maxYield = Math.max(resources.ore, resources.gas, resources.crystal, 1);
   const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const cargoTotal = getPhysicalCargoTotal(cargo);
   const cargoFull = cargoTotal >= cargoCap;
   const cargoPercent = cargoCap > 0 ? cargoTotal / cargoCap : 0;
   const cargoBarColor = cargoPercent >= 1 ? '#ff4444' : cargoPercent >= 0.8 ? '#FFB000' : '#4a9';

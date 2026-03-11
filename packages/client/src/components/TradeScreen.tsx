@@ -8,6 +8,7 @@ import {
   MAX_TRADE_ROUTES,
   TRADE_ROUTE_MIN_CYCLE,
   TRADE_ROUTE_MAX_CYCLE,
+  getPhysicalCargoTotal,
 } from '@void-sector/shared';
 import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
 import { btn, UI } from '../ui-strings';
@@ -108,7 +109,7 @@ export function TradeScreen() {
   // At stations: cargo-based trading, NPC tab only
   // At home base: storage-based trading, all tabs based on trading post tier
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const cargoTotal = getPhysicalCargoTotal(cargo);
 
   return (
     <div

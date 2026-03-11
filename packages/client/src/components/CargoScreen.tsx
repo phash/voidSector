@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { RESOURCE_TYPES } from '@void-sector/shared';
+import { RESOURCE_TYPES, getPhysicalCargoTotal } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
 import { btn, UI } from '../ui-strings';
@@ -62,7 +62,7 @@ export function CargoScreen() {
   const alienCredits = useStore((s) => s.alienCredits);
   const inventory = useStore((s) => s.inventory);
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const total = getPhysicalCargoTotal(cargo);
 
   const [jettisoning, setJettisoning] = useState<string | null>(null);
 

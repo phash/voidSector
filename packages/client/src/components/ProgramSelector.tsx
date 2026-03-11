@@ -1,5 +1,5 @@
 import { useStore } from '../state/store';
-import { COCKPIT_PROGRAMS, COCKPIT_PROGRAM_LABELS, MONITORS } from '@void-sector/shared';
+import { COCKPIT_PROGRAMS, COCKPIT_PROGRAM_LABELS, MONITORS, getPhysicalCargoTotal } from '@void-sector/shared';
 
 const PULSE_PROGRAMS = ['NAV-COM', 'MINING', 'CARGO'] as const;
 
@@ -23,7 +23,7 @@ export function ProgramSelector() {
   const ship = useStore((s) => s.ship);
 
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const cargoTotal = getPhysicalCargoTotal(cargo);
   const cargoPercent = cargoCap > 0 ? cargoTotal / cargoCap : 0;
 
   const allPrograms = COCKPIT_PROGRAMS;

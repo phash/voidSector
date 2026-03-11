@@ -28,6 +28,7 @@ import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
 import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
 import { LocalScanResultOverlay } from './overlays/LocalScanResultOverlay';
+import { getPhysicalCargoTotal } from '@void-sector/shared';
 
 interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
@@ -68,7 +69,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   const cargoFullToastShown = useRef(false);
 
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const cargoTotal = getPhysicalCargoTotal(cargo);
 
   useEffect(() => {
     if (miningActive && cargoTotal >= cargoCap && !cargoFullToastShown.current) {

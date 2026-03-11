@@ -15,14 +15,12 @@ export function LocalScanResultOverlay() {
   const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
   const hasWrecks = wrecks && wrecks.length > 0;
 
-  // Cargo check for slate button
-  const cargoTotal = (cargo.ore ?? 0) + (cargo.gas ?? 0) + (cargo.crystal ?? 0)
-    + (cargo.slates ?? 0) + (cargo.artefact ?? 0);
-  const cargoCap = ship?.stats?.cargoCap ?? 0;
-  const cargoFull = cargoCap > 0 && cargoTotal >= cargoCap;
+  // Memory check for slate button
+  const memory = ship?.stats?.memory ?? 2;
+  const memoryFull = cargo.slates >= memory;
 
   const handleSaveSlate = () => {
-    if (slateSaved || cargoFull) return;
+    if (slateSaved || memoryFull) return;
     network.sendCreateSlateFromScan();
     setSlateSaved(true);
   };
@@ -185,19 +183,19 @@ export function LocalScanResultOverlay() {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', gap: '8px' }}>
           <button
             onClick={handleSaveSlate}
-            disabled={slateSaved || cargoFull}
+            disabled={slateSaved || memoryFull}
             style={{
-              border: `1px solid ${slateSaved ? '#4a9' : cargoFull ? '#333' : '#00BFFF'}`,
+              border: `1px solid ${slateSaved ? '#4a9' : memoryFull ? '#333' : '#00BFFF'}`,
               background: 'none',
-              color: slateSaved ? '#4a9' : cargoFull ? '#666' : '#00BFFF',
+              color: slateSaved ? '#4a9' : memoryFull ? '#666' : '#00BFFF',
               fontFamily: 'var(--font-mono)',
               fontSize: '0.7rem',
-              cursor: slateSaved || cargoFull ? 'not-allowed' : 'pointer',
+              cursor: slateSaved || memoryFull ? 'not-allowed' : 'pointer',
               padding: '3px 12px',
               letterSpacing: '0.1em',
             }}
           >
-            {slateSaved ? '✓ SLATE GESPEICHERT' : cargoFull ? '[SLATE] CARGO VOLL' : '[SAVE TO SLATE]'}
+            {slateSaved ? '✓ SLATE GESPEICHERT' : memoryFull ? '[SLATE] MEMORY VOLL' : '[SAVE TO SLATE]'}
           </button>
           <button
             onClick={() => setLocalScanResult(null)}

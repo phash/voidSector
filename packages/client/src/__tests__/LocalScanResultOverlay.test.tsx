@@ -57,12 +57,12 @@ describe('LocalScanResultOverlay', () => {
     expect(screen.getByText(/SLATE GESPEICHERT/)).toBeTruthy();
   });
 
-  it('shows CARGO VOLL when cargo is full', () => {
+  it('shows MEMORY VOLL when memory is full', () => {
     useStore.setState({
-      cargo: { ore: 10, gas: 5, crystal: 3, slates: 2, artefact: 0 },
-      ship: { stats: { cargoCap: 20 } } as any,
+      cargo: { ore: 0, gas: 0, crystal: 0, slates: 2, artefact: 0 },
+      ship: { stats: { cargoCap: 20, memory: 2 } } as any,
     });
     render(<LocalScanResultOverlay />);
-    expect(screen.getByText(/CARGO VOLL/)).toBeTruthy();
+    expect(screen.getByText(/MEMORY VOLL/)).toBeTruthy();
   });
 });

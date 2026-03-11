@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import { QUADRANT_SIZE, MODULES } from '@void-sector/shared';
+import { QUADRANT_SIZE, MODULES, getPhysicalCargoTotal } from '@void-sector/shared';
 import type {
   APState,
   SectorData,
@@ -471,8 +471,7 @@ class GameNetwork {
       // Auto-stop mining when cargo is full
       const state = useStore.getState();
       if (state.mining?.active && state.ship) {
-        const cargoTotal = (data.ore ?? 0) + (data.gas ?? 0) + (data.crystal ?? 0)
-          + (data.slates ?? 0) + (data.artefact ?? 0);
+        const cargoTotal = getPhysicalCargoTotal(data);
         const cargoCap = state.ship.stats?.cargoCap ?? 0;
         if (cargoCap > 0 && cargoTotal >= cargoCap) {
           this.sendStopMine();
