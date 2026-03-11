@@ -7,6 +7,7 @@ import type {
   HullType,
   HullDefinition,
   ModuleDefinition,
+  ModuleCategory,
   SectorEnvironment,
   SectorContent,
   ProductionRecipe,
@@ -512,6 +513,52 @@ export const SHIP_CLASSES: Record<
     safeSlots: 3,
     commRange: 200,
   },
+};
+
+// ─── ACEP SLOT SYSTEM ────────────────────────────────────────────────────────
+
+export const SPECIALIZED_SLOT_CATEGORIES: ModuleCategory[] = [
+  'drive',    // slot 0
+  'weapon',   // slot 1
+  'armor',    // slot 2
+  'shield',   // slot 3
+  'scanner',  // slot 4
+  'mining',   // slot 5
+  'cargo',    // slot 6
+];
+
+export const SPECIALIZED_SLOT_INDEX: Partial<Record<ModuleCategory, number>> = {
+  drive:   0,
+  weapon:  1,
+  armor:   2,
+  shield:  3,
+  scanner: 4,
+  mining:  5,
+  cargo:   6,
+};
+
+export const UNIQUE_MODULE_CATEGORIES: ModuleCategory[] = ['shield', 'scanner'];
+export const DEFENSE_ONLY_CATEGORIES: ModuleCategory[] = ['defense', 'special'];
+
+/** ausbau-XP-Schwellwerte für Extra-Slot-Freischaltung */
+export const ACEP_EXTRA_SLOT_THRESHOLDS: number[] = [10, 25, 40, 50];
+
+// ─── ACEP LEVEL THRESHOLDS ───────────────────────────────────────────────────
+
+export const ACEP_LEVEL_THRESHOLDS: Record<number, number> = {
+  1: 0,
+  2: 8,
+  3: 18,
+  4: 32,
+  5: 50,
+};
+
+export const ACEP_LEVEL_MULTIPLIERS: Record<number, number> = {
+  1: 1.0,
+  2: 1.1,
+  3: 1.2,
+  4: 1.35,
+  5: 1.5,
 };
 
 // --- Phase 7: Ship Designer ---
