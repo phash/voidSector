@@ -49,7 +49,7 @@ describe('ModuleTab', () => {
 
   it('renders empty slots as leer', () => {
     render(<ModuleTab />);
-    const leer = screen.getAllByText(/leer/i);
+    const leer = screen.getAllByText(/] — leer/i);
     expect(leer.length).toBeGreaterThan(0);
   });
 
@@ -62,7 +62,7 @@ describe('ModuleTab', () => {
 
   it('shows LEER when inventory is empty', () => {
     render(<ModuleTab />);
-    expect(screen.getByText(/LEER/i)).toBeInTheDocument();
+    expect(screen.getByText('LEER')).toBeInTheDocument();
   });
 
   it('renders inventory item with install button', () => {
@@ -72,7 +72,7 @@ describe('ModuleTab', () => {
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<ModuleTab />);
-    expect(screen.getByText(/INST/i)).toBeInTheDocument();
+    expect(screen.getByText('[INST]')).toBeInTheDocument();
   });
 
   it('INST button calls sendInstallModule', () => {
@@ -82,7 +82,7 @@ describe('ModuleTab', () => {
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<ModuleTab />);
-    fireEvent.click(screen.getByText(/INST/i));
+    fireEvent.click(screen.getByText('[INST]'));
     expect(network.sendInstallModule).toHaveBeenCalled();
   });
 });

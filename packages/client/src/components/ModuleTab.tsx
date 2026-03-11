@@ -81,7 +81,7 @@ export function ModuleTab() {
 
   return (
     <div style={{ padding: '14px', fontFamily: 'var(--font-mono)', fontSize: '1rem', overflow: 'auto', height: '100%' }}>
-      <div style={sectionHdr}>VERBAUT — {installedCount}/{totalSlots} Slots</div>
+      <div style={sectionHdr}>INSTALLIERT ({installedCount}/{totalSlots} Slots)</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
         {slots.map(({ index, label, module }) => {
           const def = module ? MODULES[module.moduleId] : null;
@@ -116,7 +116,7 @@ export function ModuleTab() {
                   </button>
                 </>
               ) : (
-                <span style={{ color: '#444', fontSize: '0.9rem' }}>[{label}] —</span>
+                <span style={{ color: '#444', fontSize: '0.9rem' }}>[{label}] — leer</span>
               )}
             </div>
           );
