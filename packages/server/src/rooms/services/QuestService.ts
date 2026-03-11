@@ -13,7 +13,8 @@ import type {
   ReputationTier,
   NpcFactionId,
 } from '@void-sector/shared';
-import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES } from '@void-sector/shared';
+import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES, UNIVERSE_TICK_MS } from '@void-sector/shared';
+import { redis } from './RedisAPStore.js';
 import { generateStationNpcs, getStationFaction } from '../../engine/npcgen.js';
 import { generateStationQuests } from '../../engine/questgen.js';
 import { validateAcceptQuest, getReputationTier, calculateLevel } from '../../engine/commands.js';
@@ -53,8 +54,19 @@ export class QuestService {
     const dayOfYear = Math.floor(Date.now() / 86400000);
     const allQuests = generateStationQuests(data.sectorX, data.sectorY, dayOfYear, tier);
     const acceptedIds = await getAcceptedQuestTemplateIds(auth.userId, data.sectorX, data.sectorY);
-    const quests =
+    const afterAccepted =
       acceptedIds.length > 0 ? allQuests.filter((q) => !acceptedIds.includes(q.templateId)) : allQuests;
+
+    // Filter out quests with an active Redis cooldown
+    const cooldownFiltered = await Promise.all(
+      afterAccepted.map(async (q) => {
+        const key = `quest_cooldown:${auth.userId}:${data.sectorX}:${data.sectorY}:${q.templateId}`;
+        const exists = await redis.get(key);
+        return exists ? null : q;
+      }),
+    );
+    const quests = cooldownFiltered.filter(Boolean) as typeof afterAccepted;
+
     this.ctx.send(client, 'stationNpcsResult', { npcs, quests });
   }
 
@@ -109,6 +121,11 @@ export class QuestService {
       acceptedAt: Date.now(),
       expiresAt: expiresAt.getTime(),
     };
+
+    // Set Redis cooldown so this template won't reappear for 10 universe ticks
+    const cooldownKey = `quest_cooldown:${auth.userId}:${data.stationX}:${data.stationY}:${data.templateId}`;
+    const ttlSeconds = Math.ceil(UNIVERSE_TICK_MS * 10 / 1000);
+    redis.set(cooldownKey, '1', 'EX', ttlSeconds).catch(() => {});
 
     this.ctx.send(client, 'acceptQuestResult', { success: true, quest });
     this.ctx.send(client, 'logEntry', `Quest angenommen: ${quest.title}`);
