@@ -53,6 +53,7 @@ vi.mock('../db/queries.js', () => ({
   transferInventoryItem: vi.fn().mockResolvedValue(undefined),
   getInventoryItem: vi.fn().mockResolvedValue(null),
   addWissen: vi.fn().mockResolvedValue(undefined),
+  getActiveQuests: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('../engine/ap.js', () => ({

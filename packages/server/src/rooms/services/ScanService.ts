@@ -34,6 +34,7 @@ import {
   getAllQuadrantControls,
   addWissen,
   getPlayerJumpGate,
+  getActiveQuests,
 } from '../../db/queries.js';
 import { getUniverseTickCount } from '../../engine/universeBootstrap.js';
 import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
@@ -198,6 +199,28 @@ export class ScanService {
         addAcepXpForPlayer(auth.userId, 'explorer', 15).catch(() => {});
         this._emitPersonalityComment(client, auth.userId, 'scan_ruin').catch(() => {});
       }
+    }
+
+    // Bounty chase: exclusive spawn check (after normal scan events)
+    const bountyAmbushData = await checkBountyAmbush(
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
+    if (bountyAmbushData) {
+      const bx = this.ctx._px(client.sessionId);
+      const by = this.ctx._py(client.sessionId);
+      // Set Redis dedup key (1h TTL)
+      redis.set(`bounty_spawn:${auth.userId}:${bx}:${by}`, '1', 'EX', 3600).catch(() => {});
+
+      client.send('bountyAmbush', {
+        questId: bountyAmbushData.questId,
+        targetName: bountyAmbushData.targetName,
+        targetLevel: bountyAmbushData.targetLevel,
+        sectorX: bx,
+        sectorY: by,
+      });
+      client.send('logEntry', `WARNUNG: ${bountyAmbushData.targetName} entdeckt!`);
     }
   }
 
@@ -533,4 +556,41 @@ export class ScanService {
       client.send('logEntry', comment);
     }
   }
+}
+
+/**
+ * Check if a player has an active bounty_chase quest where:
+ * - bounty_trail is fulfilled
+ * - bounty_combat sector matches scanned sector
+ * - bounty_combat is NOT yet fulfilled
+ * - No Redis dedup key present
+ *
+ * Redis key: `bounty_spawn:{playerId}:{sectorX}:{sectorY}` (TTL 3600s)
+ * Returns ambush data or null.
+ */
+export async function checkBountyAmbush(
+  playerId: string,
+  sectorX: number,
+  sectorY: number,
+): Promise<{ questId: string; targetName: string; targetLevel: number } | null> {
+  const quests = await getActiveQuests(playerId);
+  for (const quest of quests) {
+    const objectives = quest.objectives as any[];
+    const trailObj = objectives.find((o: any) => o.type === 'bounty_trail');
+    const combatObj = objectives.find((o: any) => o.type === 'bounty_combat');
+    if (!trailObj?.fulfilled || !combatObj || combatObj.fulfilled) continue;
+    if (combatObj.sectorX !== sectorX || combatObj.sectorY !== sectorY) continue;
+
+    // Check Redis dedup key
+    const redisKey = `bounty_spawn:${playerId}:${sectorX}:${sectorY}`;
+    const exists = await redis.get(redisKey);
+    if (exists) continue;
+
+    return {
+      questId: quest.id,
+      targetName: combatObj.targetName,
+      targetLevel: combatObj.targetLevel,
+    };
+  }
+  return null;
 }
