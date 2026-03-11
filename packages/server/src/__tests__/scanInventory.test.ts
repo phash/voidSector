@@ -82,10 +82,6 @@ vi.mock('../engine/worldgen.js', () => ({
   }),
 }));
 
-vi.mock('../engine/combatV2.js', () => ({
-  initCombatV2: vi.fn().mockReturnValue({}),
-}));
-
 vi.mock('../engine/ancientRuinsService.js', () => ({
   resolveAncientRuinScan: vi.fn().mockReturnValue({
     fragmentIndex: 0,
@@ -145,7 +141,6 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
     checkQuestProgress: vi.fn().mockResolvedValue(undefined),
     applyXpGain: vi.fn().mockResolvedValue(undefined),
     applyReputationChange: vi.fn().mockResolvedValue(undefined),
-    combatV2States: { set: vi.fn() },
     sendToPlayer: vi.fn(),
     send: vi.fn(),
     ...overrides,

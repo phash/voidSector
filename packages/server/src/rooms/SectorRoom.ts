@@ -103,7 +103,6 @@ import type {
   GetStationNpcsMessage,
   AcceptQuestMessage,
   AbandonQuestMessage,
-  BattleActionMessage,
   CompleteScanEventMessage,
   RefuelMessage,
   SetBookmarkMessage,
@@ -111,9 +110,6 @@ import type {
   HyperJumpMessage,
   HullType,
   ShipStats,
-  CombatV2State,
-  CombatV2ActionMessage,
-  CombatV2FleeMessage,
   ChatMessage,
   QuadrantControlState,
   NpcFleetState,
@@ -156,7 +152,6 @@ interface SectorRoomOptions {
 export class SectorRoom extends Room<SectorRoomState> {
   private clientShips = new Map<string, ShipStats>();
   private clientHullTypes = new Map<string, HullType>();
-  private combatV2States = new Map<string, CombatV2State>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
   private rateLimits = new Map<string, Map<string, number>>();
   private disposeCallbacks: Array<() => void> = [];
@@ -267,7 +262,6 @@ export class SectorRoom extends Room<SectorRoomState> {
       quadrantY: this.quadrantY,
       clientShips: this.clientShips,
       clientHullTypes: this.clientHullTypes,
-      combatV2States: this.combatV2States,
       autopilotTimers: this.autopilotTimers,
       playerSectorData: this.playerSectorData,
       checkRate: this.checkRate.bind(this),
@@ -448,15 +442,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     // ── Combat ──────────────────────────────────────────────────────
-    this.onMessage('battleAction', async (client, data: BattleActionMessage) => {
-      await this.combat.handleBattleAction(client, data);
-    });
-    this.onMessage('combatV2Action', async (client, data: CombatV2ActionMessage) => {
-      await this.combat.handleCombatV2Action(client, data);
-    });
-    this.onMessage('combatV2Flee', async (client, data: CombatV2FleeMessage) => {
-      await this.combat.handleCombatV2Flee(client, data);
-    });
     this.onMessage('ejectPod', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleEjectPod(client, data);
     });

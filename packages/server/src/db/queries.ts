@@ -1331,24 +1331,6 @@ export async function completeScanEvent(eventId: string, playerId: string): Prom
   return (result.rowCount ?? 0) > 0;
 }
 
-// --- Phase 4: Battle Log ---
-
-export async function insertBattleLog(
-  playerId: string,
-  pirateLevel: number,
-  sectorX: number,
-  sectorY: number,
-  action: string,
-  outcome: string,
-  loot: Record<string, unknown> | null,
-): Promise<void> {
-  await query(
-    `INSERT INTO battle_log (player_id, pirate_level, sector_x, sector_y, action, outcome, loot)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [playerId, pirateLevel, sectorX, sectorY, action, outcome, loot ? JSON.stringify(loot) : null],
-  );
-}
-
 // --- Phase 4: XP / Level ---
 
 export async function addPlayerXp(
@@ -2129,36 +2111,6 @@ export async function insertStationBattleLog(
     `INSERT INTO station_battle_log (user_id, sector_x, sector_y, attacker_level, outcome, hp_lost)
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [userId, sectorX, sectorY, attackerLevel, outcome, hpLost],
-  );
-}
-
-export async function insertBattleLogV2(
-  playerId: string,
-  pirateLevel: number,
-  sectorX: number,
-  sectorY: number,
-  action: string,
-  outcome: string,
-  loot: Record<string, unknown> | null,
-  roundsPlayed: number,
-  roundDetails: unknown[],
-  playerHpEnd: number,
-): Promise<void> {
-  await query(
-    `INSERT INTO battle_log (player_id, pirate_level, sector_x, sector_y, action, outcome, loot, rounds_played, round_details, player_hp_end)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [
-      playerId,
-      pirateLevel,
-      sectorX,
-      sectorY,
-      action,
-      outcome,
-      loot ? JSON.stringify(loot) : null,
-      roundsPlayed,
-      JSON.stringify(roundDetails),
-      playerHpEnd,
-    ],
   );
 }
 

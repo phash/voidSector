@@ -10,7 +10,6 @@ import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
 import { checkScanEvent } from '../../engine/scanEvents.js';
 import { generateSector } from '../../engine/worldgen.js';
-import { initCombatV2 } from '../../engine/combatV2.js';
 import { createPirateEncounter } from '../../engine/commands.js';
 import { getAPState, saveAPState } from './RedisAPStore.js';
 import {
@@ -43,7 +42,7 @@ import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathSe
 import { redis } from './RedisAPStore.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
-import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
+import { AP_COSTS_LOCAL_SCAN, MODULES } from '@void-sector/shared';
 
 export const WISSEN_DAILY_CAP_BASE = 200;
 export const WISSEN_DAILY_CAP_FRONTIER = 300;
@@ -334,13 +333,6 @@ export class ScanService {
           continue;
         }
         client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
-        // Init combat v2 state
-        if (FEATURE_COMBAT_V2) {
-          const combatShip = this.ctx.getShipForClient(client.sessionId);
-          const combatState = initCombatV2(encounter, combatShip);
-          this.ctx.combatV2States.set(client.sessionId, combatState);
-          client.send('combatV2Init', { state: combatState });
-        }
         client.send('logEntry', `WARNUNG: Piraten-Hinterhalt bei (${sector.x}, ${sector.y})!`);
       } else {
         const eventId = await insertScanEvent(

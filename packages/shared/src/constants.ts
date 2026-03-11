@@ -381,9 +381,6 @@ export const PIRATE_HP_PER_LEVEL = 10;
 export const PIRATE_BASE_DAMAGE = 5;
 export const PIRATE_DAMAGE_PER_LEVEL = 3;
 
-// Combat v2 — Feature flag
-export const FEATURE_COMBAT_V2 = true;
-
 // Hyperdrive v2 — Feature flag (charge-based hyperdrive system)
 export const FEATURE_HYPERDRIVE_V2 = false;
 

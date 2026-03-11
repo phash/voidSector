@@ -30,7 +30,6 @@ function makeCtx(): any {
     quadrantY: 0,
     clientShips: new Map(),
     clientHullTypes: new Map(),
-    combatV2States: new Map(),
     autopilotTimers: new Map(),
     playerSectorData: new Map(),
     checkRate: () => true,
