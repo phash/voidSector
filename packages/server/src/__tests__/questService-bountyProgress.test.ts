@@ -25,7 +25,7 @@ vi.mock('../engine/inventoryService.js', () => ({
 }));
 
 import { QuestService } from '../rooms/services/QuestService.js';
-import { getActiveQuests, updateQuestObjectives } from '../db/queries.js';
+import { getActiveQuests, updateQuestObjectives, updateQuestStatus, getQuestById } from '../db/queries.js';
 import { addToInventory, removeFromInventory, getInventoryItem } from '../engine/inventoryService.js';
 
 const BOUNTY_QUEST_ROW = {
@@ -208,5 +208,49 @@ describe('checkQuestProgress — bounty_deliver', () => {
     });
 
     expect(updateQuestObjectives).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleAbandonQuest — bounty_chase prisoner cleanup', () => {
+  it('removes prisoner from inventory when bounty_combat is fulfilled', async () => {
+    const questWithPrisoner = {
+      id: 'quest-1',
+      template_id: 'pirates_bounty_chase',
+      objectives: [
+        { type: 'bounty_trail', fulfilled: true, trail: [], currentStep: 0, targetName: 'X', targetLevel: 2 },
+        { type: 'bounty_combat', fulfilled: true, sectorX: 20, sectorY: 20, targetName: 'X', targetLevel: 2 },
+        { type: 'bounty_deliver', fulfilled: false, stationX: 10, stationY: 10 },
+      ],
+    };
+    vi.clearAllMocks();
+    (getQuestById as any).mockResolvedValue(questWithPrisoner);
+    (updateQuestStatus as any).mockResolvedValue(true);
+    (getActiveQuests as any).mockResolvedValue([]);
+
+    const service = new QuestService(makeCtx() as any);
+    await service.handleAbandonQuest(makeClient() as any, { questId: 'quest-1' });
+
+    expect(removeFromInventory).toHaveBeenCalledWith('player-1', 'prisoner', 'quest-1', 1);
+  });
+
+  it('does NOT remove prisoner if bounty_combat not yet fulfilled', async () => {
+    const questWithoutPrisoner = {
+      id: 'quest-1',
+      template_id: 'pirates_bounty_chase',
+      objectives: [
+        { type: 'bounty_trail', fulfilled: false, trail: [], currentStep: 0, targetName: 'X', targetLevel: 2 },
+        { type: 'bounty_combat', fulfilled: false, sectorX: 20, sectorY: 20 },
+        { type: 'bounty_deliver', fulfilled: false, stationX: 10, stationY: 10 },
+      ],
+    };
+    vi.clearAllMocks();
+    (getQuestById as any).mockResolvedValue(questWithoutPrisoner);
+    (updateQuestStatus as any).mockResolvedValue(true);
+    (getActiveQuests as any).mockResolvedValue([]);
+
+    const service = new QuestService(makeCtx() as any);
+    await service.handleAbandonQuest(makeClient() as any, { questId: 'quest-1' });
+
+    expect(removeFromInventory).not.toHaveBeenCalled();
   });
 });

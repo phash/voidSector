@@ -192,6 +192,17 @@ export class QuestService {
 
   async handleAbandonQuest(client: Client, data: AbandonQuestMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
+
+    // Bounty chase cleanup: remove prisoner if combat objective was fulfilled
+    const quest = await getQuestById(data.questId, auth.userId);
+    if (quest) {
+      const objectives = quest.objectives as any[];
+      const combatObj = objectives?.find((o: any) => o.type === 'bounty_combat');
+      if (combatObj?.fulfilled) {
+        await removeFromInventory(auth.userId, 'prisoner', quest.id, 1);
+      }
+    }
+
     const updated = await updateQuestStatus(data.questId, 'abandoned');
     this.ctx.send(client, 'abandonQuestResult', {
       success: updated,
