@@ -74,14 +74,14 @@ export function BattleDialog() {
           padding: '16px',
           maxWidth: '380px',
           fontFamily: 'monospace',
-          fontSize: '12px',
+          fontSize: '0.65rem',
         }}
       >
         <div
           id="battle-title"
           style={{
             color: contactColor,
-            fontSize: '14px',
+            fontSize: '0.75rem',
             marginBottom: '8px',
             textAlign: 'center',
           }}
@@ -122,7 +122,7 @@ export function BattleDialog() {
               padding: '6px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '12px',
+              fontSize: '0.65rem',
             }}
           >
             [KAMPF] -- Auto-Resolve
@@ -137,7 +137,7 @@ export function BattleDialog() {
               padding: '6px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '12px',
+              fontSize: '0.65rem',
             }}
           >
             [FLUCHT] -- 2 AP, 60% Chance
@@ -153,7 +153,7 @@ export function BattleDialog() {
                 padding: '6px',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
-                fontSize: '12px',
+                fontSize: '0.65rem',
               }}
             >
               [VERHANDELN] -- {negotiateCost} CR
@@ -161,7 +161,7 @@ export function BattleDialog() {
           )}
 
           {!canNegotiate && (
-            <div style={{ color: 'rgba(255,176,0,0.3)', fontSize: '10px', textAlign: 'center' }}>
+            <div style={{ color: 'rgba(255,176,0,0.3)', fontSize: '0.55rem', textAlign: 'center' }}>
               Verhandlung erfordert Piraten-Rep &gt;= Friendly
             </div>
           )}

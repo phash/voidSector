@@ -19,7 +19,7 @@ const btnStyle: React.CSSProperties = {
   border: '1px solid var(--color-primary)',
   color: 'var(--color-primary)',
   fontFamily: 'var(--font-mono)',
-  fontSize: '0.65rem',
+  fontSize: '0.75rem',
   padding: '3px 8px',
   cursor: 'pointer',
 };
@@ -342,7 +342,7 @@ export function TradeScreen() {
                           {effectiveMax > 0 && (
                             <button
                               data-testid={`sell-all-${item.itemType}`}
-                              style={{ ...btnStyle, fontSize: '0.55rem', opacity: 0.8, marginTop: 3 }}
+                              style={{ ...btnStyle, fontSize: '0.65rem', opacity: 0.8, marginTop: 3 }}
                               onClick={() => network.sendNpcTrade(item.itemType, effectiveMax, 'sell')}
                             >
                               {allLabel}
@@ -417,7 +417,7 @@ export function TradeScreen() {
                             </button>
                             {playerAmount > 0 && (
                               <button
-                                style={{ ...btnStyle, fontSize: '0.55rem', opacity: 0.8 }}
+                                style={{ ...btnStyle, fontSize: '0.65rem', opacity: 0.8 }}
                                 onClick={() => network.sendNpcTrade(res, playerAmount, 'sell')}
                               >
                                 ALL ({playerAmount})
@@ -574,7 +574,7 @@ export function TradeScreen() {
                   />
                   <button
                     className="vs-btn"
-                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                    style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                     onClick={() => {
                       const input = document.getElementById(
                         `slate-price-${slate.id}`,
@@ -609,7 +609,7 @@ export function TradeScreen() {
                 </span>
                 <button
                   className="vs-btn"
-                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   disabled={order.playerId === playerId}
                   onClick={() => network.sendAcceptSlateOrder(order.id)}
                 >

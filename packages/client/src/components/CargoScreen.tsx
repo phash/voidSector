@@ -49,7 +49,7 @@ const tabBtnStyle = (active: boolean): React.CSSProperties => ({
   border: '1px solid var(--color-primary)',
   color: active ? '#050505' : 'var(--color-primary)',
   fontFamily: 'var(--font-mono)',
-  fontSize: '0.65rem',
+  fontSize: '0.75rem',
   padding: '3px 8px',
   cursor: 'pointer',
 });
@@ -227,14 +227,14 @@ export function CargoScreen() {
                   </span>
                   <button
                     className="vs-btn"
-                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                    style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                     onClick={() => network.sendActivateSlate(slate.id)}
                   >
                     {btn(UI.actions.ACTIVATE)}
                   </button>
                   <button
                     className="vs-btn"
-                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                    style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                     onClick={() => network.sendNpcBuyback(slate.id)}
                   >
                     {btn('NPC SELL')}
@@ -310,7 +310,7 @@ export function CargoScreen() {
                 </span>
                 <button
                   className="vs-btn"
-                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   onClick={() => network.sendInstallModule('', item.itemId, 0)}
                 >
                   {btn(UI.actions.INSTALL)}
@@ -344,7 +344,7 @@ export function CargoScreen() {
                 </span>
                 <button
                   className="vs-btn"
-                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   onClick={() => network.sendActivateBlueprint(item.itemId)}
                 >
                   {btn(UI.actions.ACTIVATE)}

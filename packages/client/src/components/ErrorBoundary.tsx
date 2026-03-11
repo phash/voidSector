@@ -36,20 +36,20 @@ export class ErrorBoundary extends Component<Props, State> {
             background: '#050505',
             color: '#FF3333',
             fontFamily: 'monospace',
-            fontSize: '14px',
+            fontSize: '0.75rem',
             textAlign: 'center',
             padding: '24px',
           }}
         >
           <div>
-            <div style={{ fontSize: '18px', marginBottom: '16px', letterSpacing: '0.2em' }}>
+            <div style={{ fontSize: '0.95rem', marginBottom: '16px', letterSpacing: '0.2em' }}>
               SYSTEM FEHLER
             </div>
             <div
               style={{
                 color: '#FFB000',
                 marginBottom: '16px',
-                fontSize: '12px',
+                fontSize: '0.65rem',
                 maxWidth: '400px',
               }}
             >
@@ -62,7 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 border: '1px solid #FFB000',
                 color: '#FFB000',
                 fontFamily: 'inherit',
-                fontSize: '12px',
+                fontSize: '0.65rem',
                 padding: '8px 16px',
                 cursor: 'pointer',
                 letterSpacing: '0.1em',

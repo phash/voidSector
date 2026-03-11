@@ -98,10 +98,10 @@ function JournalTab() {
               background: filterNearby ? '#FFB000' : '#1a1a1a',
               color: filterNearby ? '#000' : '#FFB000',
               border: '1px solid #FFB000',
-              padding: '1px 5px',
+              padding: '3px 6px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '0.65rem',
+              fontSize: '0.75rem',
             }}
           >
             {filterNearby ? `[✓] ${UI.status.NEARBY}` : `[ ] ${UI.status.NEARBY}`}
@@ -121,8 +121,8 @@ function JournalTab() {
                   color: '#FFB000',
                   border: '1px solid rgba(255,176,0,0.4)',
                   fontFamily: 'inherit',
-                  fontSize: '0.65rem',
-                  padding: '1px 3px',
+                  fontSize: '0.75rem',
+                  padding: '3px 6px',
                 }}
               />
             </div>
@@ -138,8 +138,8 @@ function JournalTab() {
                 color: '#FFB000',
                 border: '1px solid rgba(255,176,0,0.4)',
                 fontFamily: 'inherit',
-                fontSize: '0.65rem',
-                padding: '1px 3px',
+                fontSize: '0.75rem',
+                padding: '3px 6px',
               }}
             >
               <option value="">{UI.status.ALL_FACTIONS}</option>
@@ -159,8 +159,8 @@ function JournalTab() {
                 color: '#FFB000',
                 border: '1px solid rgba(255,176,0,0.4)',
                 fontFamily: 'inherit',
-                fontSize: '0.65rem',
-                padding: '1px 3px',
+                fontSize: '0.75rem',
+                padding: '3px 6px',
               }}
             >
               <option value="">{UI.status.ALL_TYPES}</option>
@@ -188,7 +188,7 @@ function JournalTab() {
 
       {/* Quest list */}
       {filtered.length === 0 && (
-        <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
+        <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
           {UI.empty.NO_QUESTS_FILTERED}
         </div>
       )}
@@ -415,7 +415,7 @@ function CommunityTab() {
           color: 'var(--color-dim)',
           marginBottom: 12,
           lineHeight: 1.5,
-          fontSize: '0.65rem',
+          fontSize: '0.75rem',
         }}
       >
         {quest.description}
@@ -426,7 +426,7 @@ function CommunityTab() {
             display: 'flex',
             justifyContent: 'space-between',
             marginBottom: 4,
-            fontSize: '0.65rem',
+            fontSize: '0.75rem',
           }}
         >
           <span style={{ color: 'var(--color-dim)' }}>{UI.status.PROGRESS}</span>
@@ -503,7 +503,7 @@ export function QuestsScreen() {
   };
 
   return (
-    <div style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
+    <div style={{ padding: '8px', fontFamily: 'monospace', fontSize: '0.6rem' }}>
       {navReturnProgram && (
         <button
           className="vs-btn"
@@ -585,7 +585,7 @@ export function QuestsScreen() {
                 ─── JOURNAL ({activeQuests.length}/3) ───
               </div>
               {activeQuests.length === 0 && (
-                <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
+                <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
                   KEINE AKTIVEN AUFTRÄGE
                 </div>
               )}
@@ -619,10 +619,10 @@ export function QuestsScreen() {
                         {allDone ? '[✓] ' : `[${doneCount}/${q.objectives.length}] `}
                         {q.title}
                         {hasTarget && (
-                          <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '9px' }}> ◎</span>
+                          <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '0.5rem' }}> ◎</span>
                         )}
                       </span>
-                      <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px' }}>
+                      <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.5rem' }}>
                         {isExpanded ? '▲' : '▼'}
                       </span>
                     </div>
@@ -635,7 +635,7 @@ export function QuestsScreen() {
                         <div
                           style={{
                             color: 'rgba(255,176,0,0.6)',
-                            fontSize: '10px',
+                            fontSize: '0.55rem',
                             marginBottom: '4px',
                           }}
                         >
@@ -647,7 +647,7 @@ export function QuestsScreen() {
                             style={{
                               color: obj.fulfilled ? '#00FF88' : 'rgba(255,176,0,0.7)',
                               paddingLeft: '6px',
-                              fontSize: '10px',
+                              fontSize: '0.55rem',
                               marginBottom: '2px',
                             }}
                           >
@@ -669,7 +669,7 @@ export function QuestsScreen() {
                         <div
                           style={{
                             color: 'rgba(255,176,0,0.4)',
-                            fontSize: '9px',
+                            fontSize: '0.5rem',
                             marginTop: '4px',
                           }}
                         >
@@ -723,7 +723,7 @@ export function QuestsScreen() {
                         <div style={{ color: '#FF3333' }}>DISTRESS SIGNAL</div>
                         <div>RICHTUNG: {call.direction}</div>
                         <div>ENTFERNUNG: ~{call.estimatedDistance} SEKTOREN</div>
-                        <div style={{ fontSize: '10px', opacity: 0.5 }}>
+                        <div style={{ fontSize: '0.55rem', opacity: 0.5 }}>
                           Verfällt in {minutesLeft} min
                         </div>
                       </div>
@@ -750,12 +750,12 @@ export function QuestsScreen() {
                       }}
                     >
                       <div>{s.survivorCount} Überlebende</div>
-                      <div style={{ fontSize: '10px', opacity: 0.5 }}>
+                      <div style={{ fontSize: '0.55rem', opacity: 0.5 }}>
                         Geborgen bei ({innerCoord(s.sectorX)}, {innerCoord(s.sectorY)})
                       </div>
                     </div>
                   ))}
-                  <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px' }}>
+                  <div style={{ fontSize: '0.55rem', opacity: 0.6, marginTop: '4px' }}>
                     An einer Station abliefern für Belohnung
                   </div>
                 </div>
@@ -803,10 +803,10 @@ export function QuestsScreen() {
                   }}
                 >
                   <div style={{ color: '#FFB000' }}>{q.title}</div>
-                  <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
+                  <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                     {q.description}
                   </div>
-                  <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
+                  <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
                     +{q.rewards.credits} CR | +{q.rewards.xp} XP | +{q.rewards.reputation} REP
                   </div>
                   <button
@@ -815,10 +815,10 @@ export function QuestsScreen() {
                       background: '#1a1a1a',
                       color: '#00FF88',
                       border: '1px solid #00FF88',
-                      padding: '1px 4px',
+                      padding: '3px 6px',
                       cursor: 'pointer',
                       fontFamily: 'inherit',
-                      fontSize: '10px',
+                      fontSize: '0.55rem',
                       marginTop: '2px',
                     }}
                   >
@@ -875,7 +875,7 @@ export function QuestsScreen() {
                     }}
                   >
                     <div style={{ color: '#FF00FF' }}>{typeLabels[e.eventType] ?? e.eventType}</div>
-                    <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
+                    <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                       Sektor ({innerCoord(e.sectorX)}, {innerCoord(e.sectorY)})
                     </div>
                     <button
@@ -884,10 +884,10 @@ export function QuestsScreen() {
                         background: '#1a1a1a',
                         color: '#00FF88',
                         border: '1px solid #00FF88',
-                        padding: '1px 4px',
+                        padding: '3px 6px',
                         cursor: 'pointer',
                         fontFamily: 'inherit',
-                        fontSize: '10px',
+                        fontSize: '0.55rem',
                         marginTop: '2px',
                       }}
                     >
@@ -926,7 +926,7 @@ export function QuestsScreen() {
                     }}
                   />
                 </div>
-                <span style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
+                <span style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                   {r.reputation}
                 </span>
               </div>

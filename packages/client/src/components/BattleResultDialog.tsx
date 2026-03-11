@@ -44,14 +44,14 @@ export function BattleResultDialog() {
           padding: '16px',
           maxWidth: '350px',
           fontFamily: 'monospace',
-          fontSize: '12px',
+          fontSize: '0.65rem',
           minWidth: '280px',
         }}
       >
         <div
           style={{
             color,
-            fontSize: '14px',
+            fontSize: '0.75rem',
             marginBottom: '12px',
             textAlign: 'center',
             letterSpacing: '0.15em',
@@ -76,7 +76,7 @@ export function BattleResultDialog() {
         {result.lootResources &&
           Object.entries(result.lootResources).some(([, v]) => v && v > 0) && (
             <div style={{ marginBottom: '4px' }}>
-              <div style={{ color: '#00FF88', opacity: 0.7, fontSize: '10px' }}>BEUTE:</div>
+              <div style={{ color: '#00FF88', opacity: 0.7, fontSize: '0.55rem' }}>BEUTE:</div>
               {Object.entries(result.lootResources).map(([res, amount]) =>
                 amount && amount > 0 ? (
                   <div key={res} style={{ color: '#00FF88' }}>
@@ -89,7 +89,7 @@ export function BattleResultDialog() {
 
         {result.cargoLost && Object.entries(result.cargoLost).some(([, v]) => v && v > 0) && (
           <div style={{ marginBottom: '4px' }}>
-            <div style={{ color: '#FF3333', opacity: 0.7, fontSize: '10px' }}>VERLUSTE:</div>
+            <div style={{ color: '#FF3333', opacity: 0.7, fontSize: '0.55rem' }}>VERLUSTE:</div>
             {Object.entries(result.cargoLost).map(([res, amount]) =>
               amount && amount > 0 ? (
                 <div key={res} style={{ color: '#FF3333' }}>
@@ -122,7 +122,7 @@ export function BattleResultDialog() {
             padding: '8px',
             cursor: 'pointer',
             fontFamily: 'inherit',
-            fontSize: '12px',
+            fontSize: '0.65rem',
             letterSpacing: '0.1em',
           }}
         >

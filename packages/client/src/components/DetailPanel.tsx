@@ -212,7 +212,7 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
                 />
                 <button
                   className="vs-btn"
-                  style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+                  style={{ fontSize: '0.55rem', padding: '3px 6px' }}
                   onClick={() => setAmt(key, max, max)}
                 >
                   MAX
@@ -492,7 +492,7 @@ export function DetailPanel() {
                     style={{
                       fontSize: '0.6rem',
                       letterSpacing: '0.1em',
-                      padding: '1px 5px',
+                      padding: '3px 6px',
                       border: '1px solid var(--color-primary)',
                       color: 'var(--color-primary)',
                       background: 'none',
@@ -509,7 +509,7 @@ export function DetailPanel() {
                     style={{
                       fontSize: '0.6rem',
                       letterSpacing: '0.1em',
-                      padding: '1px 5px',
+                      padding: '3px 6px',
                       border: '1px solid var(--color-dim)',
                       color: 'var(--color-dim)',
                       opacity: 0.8,

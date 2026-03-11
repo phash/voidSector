@@ -127,14 +127,14 @@ export function BookmarkBar() {
     >
       <button
         className="vs-btn"
-        style={{ fontSize: '0.75rem', padding: '2px 4px' }}
+        style={{ fontSize: '0.75rem', padding: '4px 8px' }}
         onClick={() => jumpTo(0, 0)}
       >
         HOME
       </button>
       <button
         className="vs-btn"
-        style={{ fontSize: '0.75rem', padding: '2px 4px' }}
+        style={{ fontSize: '0.75rem', padding: '4px 8px' }}
         onClick={() => jumpTo(position.x, position.y)}
       >
         SHIP
@@ -153,7 +153,7 @@ export function BookmarkBar() {
               className="vs-btn"
               style={{
                 fontSize: '0.75rem',
-                padding: '2px 4px',
+                padding: '4px 8px',
                 opacity: bm ? 1 : 0.3,
                 width: '100%',
                 paddingRight: hoveredSlot === slotId && bm ? '18px' : '4px',
@@ -230,7 +230,7 @@ export function BookmarkBar() {
                   }}
                   style={{
                     fontSize: '0.75rem',
-                    padding: '2px 4px',
+                    padding: '4px 8px',
                     borderColor: '#4488FF',
                     color: '#4488FF',
                     flex: 1,

@@ -54,14 +54,14 @@ export function SlateControls() {
               </span>
               <button
                 className="vs-btn"
-                style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+                style={{ fontSize: '0.55rem', padding: '4px 8px' }}
                 onClick={() => network.sendActivateSlate(slate.id)}
               >
                 [AKT]
               </button>
               <button
                 className="vs-btn"
-                style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+                style={{ fontSize: '0.55rem', padding: '4px 8px' }}
                 onClick={() => network.sendNpcBuyback(slate.id)}
               >
                 [NPC]
@@ -74,7 +74,7 @@ export function SlateControls() {
       <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', marginBottom: 3 }}>
         <button
           className="vs-btn"
-          style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+          style={{ fontSize: '0.55rem', padding: '4px 8px' }}
           disabled={total >= cargoCap}
           onClick={() => network.sendCreateSlate('sector')}
         >
@@ -82,7 +82,7 @@ export function SlateControls() {
         </button>
         <button
           className="vs-btn"
-          style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+          style={{ fontSize: '0.55rem', padding: '4px 8px' }}
           disabled={total >= cargoCap}
           onClick={() => network.sendCreateSlate('area')}
         >
@@ -90,7 +90,7 @@ export function SlateControls() {
         </button>
         <button
           className="vs-btn"
-          style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+          style={{ fontSize: '0.55rem', padding: '4px 8px' }}
           disabled={total >= cargoCap}
           onClick={() => setShowCustomForm(!showCustomForm)}
         >
@@ -124,7 +124,7 @@ export function SlateControls() {
           <div style={{ display: 'flex', gap: 4 }}>
             <button
               className="vs-btn"
-              style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+              style={{ fontSize: '0.55rem', padding: '4px 8px' }}
               disabled={!customLabel.trim()}
               onClick={() => {
                 network.sendCreateCustomSlate({
@@ -140,7 +140,7 @@ export function SlateControls() {
             </button>
             <button
               className="vs-btn"
-              style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+              style={{ fontSize: '0.55rem', padding: '4px 8px' }}
               onClick={() => setShowCustomForm(false)}
             >
               [ABB]
