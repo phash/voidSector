@@ -5,10 +5,10 @@ import type { AcepPath } from '@void-sector/shared';
 import { getAcepBoostCost } from '@void-sector/shared';
 
 const PATHS: Array<{ key: AcepPath; label: string; color: string }> = [
-  { key: 'ausbau',   label: 'AUSBAU',   color: '#FFB000' },
-  { key: 'intel',    label: 'INTEL',    color: '#00CFFF' },
-  { key: 'kampf',    label: 'KAMPF',    color: '#FF4444' },
-  { key: 'explorer', label: 'EXPLORER', color: '#00FF88' },
+  { key: 'ausbau',   label: 'AUSBAU', color: '#FFB000' },
+  { key: 'intel',    label: 'INTEL',  color: '#4af' },
+  { key: 'kampf',    label: 'KAMPF',  color: '#FF4444' },
+  { key: 'explorer', label: 'EXPLR',  color: '#4fa' },
 ];
 
 const TRAIT_LABELS: Record<string, string> = {
@@ -121,7 +121,12 @@ export function AcepTab() {
       </div>
 
       {/* XP paths */}
-      <div style={sectionHdr}>ENTWICKLUNGSPFADE</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div style={sectionHdr}>ENTWICKLUNGSPFADE</div>
+        <div style={{ color: '#555', fontSize: '0.85rem' }}>
+          GESAMT: {xp.total}/100
+        </div>
+      </div>
       {PATHS.map(({ key, label, color }) => {
         const pathXp = xp[key] ?? 0;
         const cost = getAcepBoostCost(pathXp);
@@ -143,7 +148,7 @@ export function AcepTab() {
                   title={`+5 XP kostet ${cost.credits} CR · ${cost.wissen} W`}
                   onClick={() => network.sendAcepBoost(key)}
                 >
-                  +5 XP
+                  [+5]
                 </button>
               ) : (
                 <span style={{ color: '#00FF88', fontSize: '0.8rem' }}>MAX</span>
@@ -157,26 +162,22 @@ export function AcepTab() {
           </div>
         );
       })}
-      <div style={{ color: '#555', fontSize: '0.85rem', marginBottom: 8 }}>
-        GESAMT: {xp.total}/100
-      </div>
-
       {/* Active effects */}
-      {activeEffects.length > 0 && (
-        <>
-          <div style={{ borderTop: '1px solid #333', paddingTop: 12, ...sectionHdr }}>
-            AKTIVE EFFEKTE
-          </div>
+      <>
+        <div style={{ borderTop: '1px solid #333', paddingTop: 12, ...sectionHdr }}>
+          AKTIVE EFFEKTE
+        </div>
+        {activeEffects.length > 0 && (
           <div style={{ fontSize: '0.9rem', color: '#ccc', lineHeight: 1.9, marginBottom: 12 }}>
             {activeEffects.map((e) => <div key={e}>{e}</div>)}
           </div>
-        </>
-      )}
+        )}
+      </>
 
       {/* Traits */}
-      {traits.length > 0 && (
-        <>
-          <div style={{ borderTop: '1px solid #333', paddingTop: 12, ...sectionHdr }}>TRAITS</div>
+      <>
+        <div style={{ borderTop: '1px solid #333', paddingTop: 12, ...sectionHdr }}>TRAITS</div>
+        {traits.length > 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {traits.map((t) => (
               <span
@@ -187,8 +188,8 @@ export function AcepTab() {
               </span>
             ))}
           </div>
-        </>
-      )}
+        )}
+      </>
     </div>
   );
 }

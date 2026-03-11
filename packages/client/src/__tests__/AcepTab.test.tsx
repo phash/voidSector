@@ -44,7 +44,7 @@ describe('AcepTab', () => {
     expect(screen.getByText('AUSBAU')).toBeInTheDocument();
     expect(screen.getByText('INTEL')).toBeInTheDocument();
     expect(screen.getByText('KAMPF')).toBeInTheDocument();
-    expect(screen.getByText('EXPLORER')).toBeInTheDocument();
+    expect(screen.getByText('EXPLR')).toBeInTheDocument();
   });
 
   it('renders total XP budget', () => {
@@ -72,8 +72,15 @@ describe('AcepTab', () => {
 
   it('boost button calls sendAcepBoost when enabled', () => {
     render(<AcepTab />);
-    const boostBtns = screen.getAllByText(/\+5 XP/i);
+    const boostBtns = screen.getAllByText(/\[\+5\]/i);
     expect(boostBtns.length).toBeGreaterThan(0);
+  });
+
+  it('[+5] button is disabled when credits are insufficient', () => {
+    mockStoreState({ ship: mockShip as any, credits: 0, research: { wissen: 10 } as any });
+    render(<AcepTab />);
+    const boostBtns = screen.getAllByText(/\[\+5\]/i) as HTMLButtonElement[];
+    expect(boostBtns.every((btn) => btn.disabled)).toBe(true);
   });
 
   it('renders fallback when no ship', () => {
