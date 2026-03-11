@@ -932,6 +932,33 @@ class GameNetwork {
       store.addLogEntry(`ANCIENT RUIN — ${data.fragmentText.split('\n')[0]}`);
     });
 
+    // ── Kampfsystem v1 — energy-based round combat ──────────────────────────
+    room.onMessage('combatInitResult', (data: { success: boolean; state?: any; error?: string }) => {
+      if (data.success && data.state) {
+        useStore.getState().setActiveCombat(data.state);
+      }
+    });
+
+    room.onMessage(
+      'combatRoundResult',
+      (data: { success: boolean; round?: any; state?: any; outcome?: string; loot?: any; error?: string }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`KAMPF FEHLER: ${data.error}`);
+          return;
+        }
+        if (data.state) {
+          const newState = { ...data.state };
+          if (data.outcome && data.outcome !== 'ongoing') {
+            newState.outcome = data.outcome;
+            newState.loot = data.loot;
+          }
+          store.setActiveCombat(newState);
+        }
+      },
+    );
+    // ─────────────────────────────────────────────────────────────────────────
+
     room.onMessage('combatV2Init', (data: { state: CombatV2State }) => {
       useStore.getState().setActiveCombatV2(data.state);
     });
@@ -1949,6 +1976,31 @@ class GameNetwork {
     }
     this.sectorRoom.send('battleAction', { action, sectorX, sectorY });
   }
+
+  // ── Kampfsystem v1 send methods ──────────────────────────────────────────
+
+  sendCombatInit(enemyType: string, enemyLevel: number, sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('combatInit', { enemyType, enemyLevel, sectorX, sectorY });
+  }
+
+  sendCombatRound(input: {
+    energyAllocations: Array<{ moduleId: string; category: string; powerLevel: 'off' | 'low' | 'mid' | 'high' }>;
+    primaryAction: { type: string; targetModuleId?: string; targetModuleCategory?: string };
+    reactionChoice?: { type: string };
+    ancientAbility?: { type: string };
+  }, sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('combatRound', { input, sectorX, sectorY });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   sendCombatV2Action(tactic: string, specialAction: string, sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {

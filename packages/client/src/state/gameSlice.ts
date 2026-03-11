@@ -173,6 +173,47 @@ function safeRemoveItem(key: string): void {
   }
 }
 
+// ─── Kampfsystem v1 client types ────────────────────────────────────────────
+
+export interface ClientModule {
+  moduleId: string;
+  category: string;
+  tier: number;
+  currentHp: number;
+  maxHp: number;
+  powerLevel: 'off' | 'low' | 'mid' | 'high';
+}
+
+export interface ClientEnemyModule {
+  category: string;
+  tier: number;
+  currentHp: number;
+  maxHp: number;
+  powerLevel: 'off' | 'low' | 'mid' | 'high';
+  revealed: boolean;
+}
+
+export interface ClientCombatState {
+  playerHp: number;
+  playerMaxHp: number;
+  playerModules: ClientModule[];
+  epBuffer: number;
+  maxEpBuffer: number;
+  enemyType: string;
+  enemyLevel: number;
+  enemyHp: number;
+  enemyMaxHp: number;
+  enemyModules: ClientEnemyModule[];
+  round: number;
+  ancientChargeRounds: number;
+  ancientAbilityUsed: boolean;
+  log: string[];
+  outcome?: 'ongoing' | 'victory' | 'defeat' | 'fled' | 'draw' | 'ejected';
+  loot?: { credits?: number; ore?: number; crystal?: number };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface PlayerStats {
   sectorsScanned: number;
   quadrantsVisited: string[]; // "qx:qy" keys
@@ -303,6 +344,9 @@ export interface GameSlice {
   stationDefenses: StationDefense[];
   stationCombatEvent: StationCombatEvent | null;
   scanEvents: ScanEvent[];
+
+  // Kampfsystem v1 — energy-based round combat
+  activeCombat: ClientCombatState | null;
 
   // Phase 5: Deep Systems
   jumpGateInfo: JumpGateInfo | null;
@@ -518,6 +562,7 @@ export interface GameSlice {
     result: { encounter: PirateEncounter; result: BattleResult } | null,
   ) => void;
   setActiveCombatV2: (activeCombatV2: CombatV2State | null) => void;
+  setActiveCombat: (state: ClientCombatState | null) => void;
   setStationDefenses: (stationDefenses: StationDefense[]) => void;
   setStationCombatEvent: (stationCombatEvent: StationCombatEvent | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
@@ -649,6 +694,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   activeBattle: null,
   lastBattleResult: null,
   activeCombatV2: null,
+  activeCombat: null,
   stationDefenses: [],
   stationCombatEvent: null,
   scanEvents: [],
@@ -837,6 +883,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setActiveBattle: (activeBattle) => set({ activeBattle }),
   setLastBattleResult: (lastBattleResult) => set({ lastBattleResult }),
   setActiveCombatV2: (activeCombatV2) => set({ activeCombatV2 }),
+  setActiveCombat: (activeCombat) => set({ activeCombat }),
   setStationDefenses: (stationDefenses) => set({ stationDefenses }),
   setStationCombatEvent: (stationCombatEvent) => set({ stationCombatEvent }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
