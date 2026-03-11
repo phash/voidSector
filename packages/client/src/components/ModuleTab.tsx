@@ -5,7 +5,7 @@ import { SPECIALIZED_SLOT_CATEGORIES, MODULES, getExtraSlotCount } from '@void-s
 
 const CAT_LABELS: Record<string, string> = {
   generator: 'GEN', drive: 'DRV', weapon: 'WPN', armor: 'ARM',
-  shield: 'SHD', scanner: 'SCN', miner: 'MIN', cargo: 'CGO',
+  shield: 'SHD', scanner: 'SCN', mining: 'MIN', cargo: 'CGO',
 };
 
 function hpBar(current: number, max: number): string {
@@ -85,7 +85,7 @@ export function ModuleTab() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
         {slots.map(({ index, label, module }) => {
           const def = module ? MODULES[module.moduleId] : null;
-          const occupied = !!module;
+          const occupied = !!module && !!def;
           return (
             <div
               key={index}
@@ -96,16 +96,16 @@ export function ModuleTab() {
                 justifyContent: 'space-between',
                 alignItems: 'center',
               }}
-              onMouseEnter={() => occupied && def ? setHovered(module!.moduleId) : undefined}
+              onMouseEnter={() => occupied && module ? setHovered(module.moduleId) : undefined}
               onMouseLeave={() => setHovered(null)}
             >
-              {occupied && def ? (
+              {occupied && module && def ? (
                 <>
                   <div>
                     <span style={{ color: '#666', fontSize: '0.8rem' }}>[{label}]</span>
                     <span style={{ color: 'var(--color-primary)', marginLeft: 6 }}>{def.name}</span>
                     <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 2 }}>
-                      HP {hpBar(module!.currentHp ?? 0, def.maxHp ?? 20)}
+                      HP {hpBar(module.currentHp ?? 0, def.maxHp ?? 20)}
                     </div>
                   </div>
                   <button

@@ -83,6 +83,6 @@ describe('ModuleTab', () => {
     });
     render(<ModuleTab />);
     fireEvent.click(screen.getByText('[INST]'));
-    expect(network.sendInstallModule).toHaveBeenCalled();
+    expect(network.sendInstallModule).toHaveBeenCalledWith('ship-1', 'drive_mk1', expect.any(Number));
   });
 });
