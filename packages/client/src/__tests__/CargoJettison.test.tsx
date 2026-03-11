@@ -23,6 +23,9 @@ vi.mock('../state/store', () => ({
       credits: 100,
       alienCredits: 0,
       setActiveProgram: vi.fn(),
+      selectedSlateId: null,
+      setSelectedSlateId: vi.fn(),
+      activeProgram: 'CARGO',
     })
   ),
 }));

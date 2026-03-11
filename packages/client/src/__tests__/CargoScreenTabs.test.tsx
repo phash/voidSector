@@ -29,11 +29,12 @@ describe('CargoScreen inventory tabs', () => {
     });
   });
 
-  it('renders RESOURCES, MODULES, BLUEPRINTS tabs', () => {
+  it('renders RESOURCES, MODULES, BLUEPRINTS, SLATES tabs', () => {
     render(<CargoScreen />);
     expect(screen.getByText('RESOURCES')).toBeDefined();
     expect(screen.getByText('MODULES')).toBeDefined();
     expect(screen.getByText('BLUEPRINTS')).toBeDefined();
+    expect(screen.getByText('SLATES')).toBeDefined();
   });
 
   it('defaults to RESOURCES tab showing cargo bars', () => {

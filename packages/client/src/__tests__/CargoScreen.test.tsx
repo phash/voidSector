@@ -91,7 +91,7 @@ describe('CargoScreen', () => {
     expect(screen.getByText(/CAPACITY/)).toBeInTheDocument();
   });
 
-  it('shows slate count when player has slates', () => {
+  it('shows slate count when player has slates', async () => {
     mockStoreState({
       cargo: {
         ore: 1,
@@ -157,7 +157,9 @@ describe('CargoScreen', () => {
       },
     });
     render(<CargoScreen />);
-    expect(screen.getByText(/DATA SLATES: 2/)).toBeDefined();
+    // Slate content moved to SLATES tab — switch to it first
+    await userEvent.click(screen.getByText('SLATES'));
+    expect(screen.getByText(/MEMORY: 2/)).toBeDefined();
     expect(screen.getByText(/\[ACTIVATE\]/)).toBeDefined();
   });
 

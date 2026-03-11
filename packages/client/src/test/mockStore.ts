@@ -249,6 +249,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     setTrackedQuests: vi.fn(),
     recruitingFactions: [],
     setRecruitingFactions: vi.fn(),
+    selectedSlateId: null,
+    setSelectedSlateId: vi.fn(),
     ...overrides,
   };
   useStore.setState(state as StoreState);
