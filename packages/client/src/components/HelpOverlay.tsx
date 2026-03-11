@@ -2,11 +2,10 @@ import { useEffect } from 'react';
 import { useStore } from '../state/store';
 
 const ONBOARDING_STEPS = [
-  { text: 'RADAR — Dein Universum. Klicke auf Sektoren für Details.', spotlight: 'cockpit-sec2' },
-  { text: 'D-PAD — Steuere dein Schiff. 1 AP pro Sprung.', spotlight: 'cockpit-sec5' },
-  { text: 'AP — Action Points: die Kern-Ressource. Sie regenerieren automatisch.', spotlight: null },
-  { text: 'ZIEL: Finde einen Asteroiden-Sektor und starte MINING.', spotlight: null },
-  { text: 'Kompendium [◈] für alle Details. Viel Erfolg, Pilot.', spotlight: 'compendium-btn' },
+  { text: 'RADAR — Klicke Sektoren für Details. Doppelklick zentriert.', spotlight: 'cockpit-sec2' },
+  { text: 'D-PAD — Steuere dein Schiff. 1 AP pro Sprung. AP regeneriert automatisch.', spotlight: 'cockpit-sec5' },
+  { text: 'ZIEL: Asteroiden-Sektor finden → MINING starten.', spotlight: null },
+  { text: '[◈] Kompendium — alles über das Spiel. Viel Erfolg, Pilot.', spotlight: 'compendium-btn' },
 ];
 
 export function HelpOverlay() {
@@ -26,13 +25,6 @@ export function HelpOverlay() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [activeTip, dismissTip]);
-
-  // Auto-advance onboarding after 3s
-  useEffect(() => {
-    if (onboardingStep === null) return;
-    const timer = setTimeout(advanceOnboarding, 3000);
-    return () => clearTimeout(timer);
-  }, [onboardingStep, advanceOnboarding]);
 
   // Spotlight: box-shadow cutout on highlighted element
   useEffect(() => {

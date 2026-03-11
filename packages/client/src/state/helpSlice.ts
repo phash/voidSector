@@ -165,7 +165,7 @@ export const createHelpSlice: StateCreator<HelpSlice> = (set, get) => ({
   advanceOnboarding: () => {
     const current = get().onboardingStep;
     if (current === null) return;
-    if (current >= 4) {
+    if (current >= 3) {
       try { localStorage.setItem('vs_first_run', '1'); } catch {}
       set({ onboardingStep: null });
     } else {
