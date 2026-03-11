@@ -904,3 +904,63 @@ export async function getAdminQuadrantMap(): Promise<AdminQuadrantMapEntry[]> {
     fleet_count: r.fleet_count,
   }));
 }
+
+// ── Error Log Queries ────────────────────────────────────────────────
+
+export interface ErrorLog {
+  id: number;
+  fingerprint: string;
+  message: string;
+  location: string | null;
+  stack: string | null;
+  count: number;
+  first_seen: string;
+  last_seen: string;
+  status: 'new' | 'ignored' | 'resolved';
+  github_issue_url: string | null;
+}
+
+export async function upsertErrorLog(
+  fingerprint: string,
+  message: string,
+  location: string | null,
+  stack: string | null,
+): Promise<void> {
+  await query(
+    `INSERT INTO error_logs (fingerprint, message, location, stack)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (fingerprint)
+     DO UPDATE SET count = error_logs.count + 1, last_seen = NOW()`,
+    [fingerprint, message, location, stack],
+  );
+}
+
+export async function getErrorLogs(status?: string): Promise<ErrorLog[]> {
+  const filterByStatus = status && status !== 'all';
+  const res = await query<ErrorLog>(
+    filterByStatus
+      ? `SELECT * FROM error_logs WHERE status = $1 ORDER BY last_seen DESC LIMIT 200`
+      : `SELECT * FROM error_logs ORDER BY last_seen DESC LIMIT 200`,
+    filterByStatus ? [status] : [],
+  );
+  return res.rows;
+}
+
+export async function updateErrorLogStatus(
+  id: number,
+  status: 'new' | 'ignored' | 'resolved',
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE error_logs SET status = $1 WHERE id = $2 RETURNING id`,
+    [status, id],
+  );
+  return res.rows.length > 0;
+}
+
+export async function deleteErrorLog(id: number): Promise<boolean> {
+  const res = await query(
+    `DELETE FROM error_logs WHERE id = $1 RETURNING id`,
+    [id],
+  );
+  return res.rows.length > 0;
+}
