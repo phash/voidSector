@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import {
@@ -19,6 +19,12 @@ export function SlateControls() {
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [customNotes, setCustomNotes] = useState('');
+
+  useEffect(() => {
+    if (cargo.slates > 0 && mySlates.length === 0) {
+      network.requestMySlates();
+    }
+  }, [cargo.slates, mySlates.length]);
 
   return (
     <div

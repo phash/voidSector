@@ -1198,6 +1198,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       const cargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', cargo);
 
+      // Send initial slates
+      await this.world.handleGetMySlates(client);
+
       // Send unified inventory state
       const inventoryItems = await getInventory(auth.userId);
       client.send('inventoryState', { items: inventoryItems });
