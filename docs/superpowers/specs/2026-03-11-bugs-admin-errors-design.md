@@ -20,6 +20,11 @@ Fünf Gameplay-Bugs beheben + neues Admin-Fehlermonitoring-Feature implementiere
 
 **Lösung:** `useConfirm` in `CargoScreen` entfernen. Single-Click mit 1s `disabled`-State nach Auslösung (verhindert Doppelklick). Kein Modal nötig — Cargo-Update-Feedback aus Server reicht.
 
+**Wichtig:** Es gibt **zwei** Jettison-Codepfade in `CargoScreen.tsx`:
+1. `RESOURCE_TYPES.map` Loop (ore, gas, crystal)
+2. Eigenständiger `artefact`-Button (unter dem Loop)
+Beide müssen auf Single-Click umgestellt werden.
+
 **Dateien:** `packages/client/src/components/CargoScreen.tsx`
 
 ---
@@ -41,13 +46,13 @@ Fünf Gameplay-Bugs beheben + neues Admin-Fehlermonitoring-Feature implementiere
 
 **Problem:** `mining_mk1` gibt `miningBonus: 0.15` in Ship-Stats. `MiningService.handleMine` ruft `getPlayerBonuses()` auf, das nur ACEP- und Fraktions-Boni enthält — nicht den Ship-Modul-Bonus. Ergebnis: Mining-Module haben keinen Effekt auf die Rate.
 
-**Lösung:** In `MiningService.handleMine` nach `validateMine`:
-```
-const shipStats = this.ctx.getShipForClient(client.sessionId);
+**Lösung:** In `MiningService.handleMine` ist `ship` bereits vor `validateMine` als `const ship = this.ctx.getShipForClient(client.sessionId)` deklariert. Zeile 70 (`result.state!.rate *= bonuses.miningRateMultiplier`) **ersetzen** durch:
+```typescript
 result.state!.rate = MINING_RATE_PER_SECOND
-  * (1 + shipStats.miningBonus)
+  * (1 + (ship.miningBonus ?? 0))
   * bonuses.miningRateMultiplier;
 ```
+**Nicht** eine neue Zeile ergänzen — das würde den Fraktions-Multiplikator doppelt anwenden.
 
 **Dateien:** `packages/server/src/rooms/services/MiningService.ts`
 
@@ -83,9 +88,15 @@ Zusätzlich: Neue Quests erscheinen sofort nach Ablehnung/Reload statt erst nach
 
 **Lösung:**
 
-1. **Client:** In `QuestsScreen`, `acceptQuestResult`-Event-Listener (oder `useEffect` auf `activeQuests`): Filter `availableQuests` nach `templateId` der akzeptierten Quest.
+1. **Client:** In `QuestsScreen`: `useEffect` auf `activeQuests` (aus Store). Extrahiert alle `templateId`-Werte der aktiven Quests und filtert `availableQuests` so, dass kein Template doppelt erscheint:
+```typescript
+useEffect(() => {
+  const acceptedTemplateIds = new Set(activeQuests.map(q => q.templateId));
+  setAvailableQuests(prev => prev.filter(q => !acceptedTemplateIds.has(q.templateId)));
+}, [activeQuests]);
+```
 
-2. **Server-Cooldown:** In `QuestService.handleAcceptQuest` nach erfolgreichem Insert: Redis-Key `quest_cooldown:{playerId}:{stationX}:{stationY}:{templateId}` mit TTL = 10 * Tick-Intervall setzen. In `generateStationQuests`-Aufruf: akzeptierte Templates herausfiltern (Redis-Check).
+2. **Server-Cooldown:** Die tägliche Rotation (`dayOfYear`) verhindert bereits, dass Quests nach einem Tag erneut erscheinen. Zusätzlich: in `QuestService.handleAcceptQuest` nach erfolgreichem Insert eine Redis-Key `quest_cooldown:{playerId}:{stationKey}:{templateId}` mit TTL = `UNIVERSE_TICK_INTERVAL_MS * 10` (ms → s) setzen. In `generateStationQuests`-Aufruf: Redis-Check vor Rückgabe. `UNIVERSE_TICK_INTERVAL_MS` aus `engine/universeBootstrap.ts` verwenden.
 
 **Dateien:**
 - `packages/client/src/components/QuestsScreen.tsx`
@@ -124,26 +135,28 @@ Datei: `packages/server/src/utils/errorLogTransport.ts`
 export async function captureError(err: Error, context: string): Promise<void>
 ```
 
+- Nutzt den bestehenden `query`-Helper aus `../../db/queries.js` (gleicher Import wie im gesamten Server)
 - SHA-256 aus `err.message + location` (erste non-node_modules Stack-Zeile)
 - `INSERT ... ON CONFLICT (fingerprint) DO UPDATE SET count = count + 1, last_seen = NOW()`
-- Feuert fire-and-forget (kein await in kritischem Pfad)
+- Alle DB-Fehler intern silently catchen (`try/catch` innerhalb der Funktion) — darf nie nach außen werfen
+- Aufrufer nutzt fire-and-forget: `captureError(err, context).catch(() => {})` in SectorRoom-Handlern
 
 Bestehende `logger.error`-Aufrufe in SectorRoom erhalten zusätzlich `captureError(err, context)`.
 
 ### Admin-API
 
-4 neue Endpoints in `packages/server/src/adminRoutes.ts`:
+4 neue Endpoints in `packages/server/src/adminRoutes.ts`. Jeder Endpoint ruft wie alle bestehenden Routen `await logAdminEvent(...)` auf:
 
 ```
-GET  /admin/errors                 — { errors: ErrorLog[] }, Query-Param: ?status=new|all|ignored
-POST /admin/errors/:id/ignore      — status → 'ignored'
-POST /admin/errors/:id/resolve     — status → 'resolved'
-DELETE /admin/errors/:id           — hard delete
+GET  /admin/errors                 — { errors: ErrorLog[] }, Query-Param: ?status=new|all|ignored  → logAdminEvent('list_errors', { status })
+POST /admin/errors/:id/ignore      — status → 'ignored'   → logAdminEvent('ignore_error', { id })
+POST /admin/errors/:id/resolve     — status → 'resolved'  → logAdminEvent('resolve_error', { id })
+DELETE /admin/errors/:id           — hard delete           → logAdminEvent('delete_error', { id })
 ```
 
-GitHub-Issue-Link: clientseitig generiert via URL-Template:
-```
-https://github.com/phash/voidSector/issues/new?title=[ERROR] {message}&body={fingerprint}%0A{count}x%0A{stack}
+GitHub-Issue-Link: clientseitig generiert via URL-Template. Alle Parameter mit `encodeURIComponent` kodieren:
+```javascript
+const url = `https://github.com/phash/voidSector/issues/new?title=${encodeURIComponent('[ERROR] ' + message)}&body=${encodeURIComponent(body)}`;
 ```
 
 ### Admin-Tab "ERRORS"
@@ -155,6 +168,7 @@ Neuer Tab `ERRORS` in `packages/server/src/admin/console.html`:
 - Zeilenbuttons: `[IGNORE]` `[RESOLVED]` `[DELETE]` `[→ GITHUB]`
 - Filter-Bar oben: `[NEW]` `[ALL]` `[IGNORED]`
 - Badge im Tab-Header zeigt Anzahl `new`-Fehler
+- **Auth:** Alle fetch-Aufrufe des Tabs verwenden `Authorization: Bearer ${adminToken}` Header (gleich wie alle anderen Tabs in `console.html`)
 
 ---
 
@@ -174,7 +188,8 @@ Neuer Tab `ERRORS` in `packages/server/src/admin/console.html`:
 
 ## Migration
 
-Nächste freie Nummer: **055** (nach 054_combat_log.sql)
+Nächste freie Nummer: **055** (nach 054_combat_log.sql).
+**Hinweis:** Es existieren bereits zwei `051_*`-Dateien (`051_faction_recruiting.sql` + `051_quadrant_visits.sql`) — Pre-existing Conflict, nicht reproduzieren. Vor Erstellen der neuen Datei höchste vorhandene Nummer verifizieren.
 
 ---
 
