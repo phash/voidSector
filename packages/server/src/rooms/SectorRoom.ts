@@ -141,6 +141,7 @@ import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
 import { getDirectTradeService } from '../engine/directTradeService.js';
 import { logger } from '../utils/logger.js';
+import { captureError } from '../utils/errorLogTransport.js';
 
 interface SectorRoomOptions {
   quadrantX: number;
@@ -373,6 +374,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       } catch (err) {
         logger.error({ err }, 'moveSector error');
+        captureError(err as Error, 'moveSector').catch(() => {});
         client.send('error', { code: 'MOVE_FAILED', message: 'Failed to move sector' });
       }
     });
@@ -390,6 +392,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       } catch (err) {
         logger.error({ err }, 'Jump unhandled error');
+        captureError(err as Error, 'handleJump').catch(() => {});
         client.send('jumpResult', { success: false, error: 'Server error' });
       }
     });
@@ -415,6 +418,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         await this.scanning.handleLocalScan(client);
       } catch (err) {
         logger.error({ err }, 'localScan unhandled error');
+        captureError(err as Error, 'handleLocalScan').catch(() => {});
         client.send('localScanResult', { error: 'Server error' });
       }
     });
@@ -423,6 +427,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         await this.scanning.handleAreaScan(client);
       } catch (err) {
         logger.error({ err }, 'areaScan unhandled error');
+        captureError(err as Error, 'handleAreaScan').catch(() => {});
         client.send('scanResult', { sectors: [], error: 'Server error' });
       }
     });
@@ -431,6 +436,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         await this.scanning.handleAreaScan(client);
       } catch (err) {
         logger.error({ err }, 'scan unhandled error');
+        captureError(err as Error, 'handleAreaScan').catch(() => {});
         client.send('scanResult', { sectors: [], error: 'Server error' });
       }
     });
@@ -889,6 +895,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         })
         .catch((err) => {
           logger.error({ err }, 'tradeRequest error');
+          captureError(err as Error, 'initiateTrade').catch(() => {});
           client.send('error', { code: 'TRADE_FAILED', message: 'Failed to start trade' });
         });
     });
@@ -929,6 +936,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         })
         .catch((err) => {
           logger.error({ err }, 'tradeConfirm error');
+          captureError(err as Error, 'confirmTrade').catch(() => {});
           client.send('error', {
             code: 'TRADE_CONFIRM_FAILED',
             message: 'Failed to confirm trade',
@@ -943,6 +951,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         })
         .catch((err) => {
           logger.error({ err }, 'tradeCancel error');
+          captureError(err as Error, 'cancelTrade').catch(() => {});
         });
     });
 
@@ -950,7 +959,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.clock.setInterval(() => {
       this.world
         .processTradeRoutes()
-        .catch((err) => logger.error({ err }, 'Trade routes tick error'));
+        .catch((err) => {
+          logger.error({ err }, 'Trade routes tick error');
+          captureError(err as Error, 'processTradeRoutes').catch(() => {});
+        });
     }, 60000);
 
     // ── Community Quest Rotation — every hour ────────────────────────
@@ -1321,6 +1333,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       } catch (err) {
         logger.error({ err }, 'Join autopilot resume error');
+        captureError(err as Error, 'autopilotResume').catch(() => {});
       }
 
       // Broadcast initial expansion state (filtered by visited quadrants for Fog-of-War)
@@ -1379,9 +1392,11 @@ export class SectorRoom extends Room<SectorRoomState> {
         );
       } catch (err) {
         logger.error({ err }, 'Join expansion state broadcast error');
+        captureError(err as Error, 'broadcastExpansionState').catch(() => {});
       }
     } catch (err) {
       logger.error({ err }, 'Join error');
+      captureError(err as Error, 'onJoin').catch(() => {});
       client.send('error', { code: 'JOIN_FAILED', message: 'Failed to join sector' });
       client.leave();
     }
