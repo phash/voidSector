@@ -17,6 +17,7 @@ import { CombatV2Dialog } from './CombatV2Dialog';
 import { CombatDialog } from './CombatDialog';
 import { BattleResultDialog } from './BattleResultDialog';
 import { ModulePanel } from './ModulePanel';
+import { AcepProgram } from './AcepProgram';
 import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
@@ -38,7 +39,7 @@ import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 // --- SHIP-SYS: Settings + Modules ---
 
-type ShipSysView = 'settings' | 'modules' | 'acep';
+type ShipSysView = 'settings' | 'modules';
 
 const SHIP_SYS_MODES: ShipSysView[] = ['settings', 'modules'];
 
@@ -246,11 +247,6 @@ function ShipSysScreen() {
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         {view === 'settings' && <SettingsView />}
         {view === 'modules' && <ModulePanel />}
-        {view === 'acep' && (
-          <div style={{ padding: '12px', color: '#555', fontSize: '0.8rem' }}>
-            ACEP — COMING SOON
-          </div>
-        )}
       </div>
     </div>
   );
@@ -357,6 +353,8 @@ function renderScreen(monitorId: string) {
       return <NewsScreen />;
     case 'MODULES':
       return <ModulePanel />;
+    case MONITORS.ACEP:
+      return <AcepProgram />;
     default:
       return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
