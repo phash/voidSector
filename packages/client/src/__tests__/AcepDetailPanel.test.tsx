@@ -69,7 +69,7 @@ describe('AcepDetailPanel', () => {
     };
     mockStoreState({ ship: shipWithModule as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'drive_mk1' });
     render(<AcepDetailPanel />);
-    expect(screen.getByText(/HP: 6\/\d+/)).toBeInTheDocument();
+    expect(screen.getByText(/HP: 6\/10/)).toBeInTheDocument();
   });
 
   it('SHOP tab with hover shows price', () => {

@@ -168,7 +168,7 @@ export function AcepDetailPanel() {
           {(() => {
             const installed = ship.modules.find((m) => m.moduleId === hoveredId);
             if (!installed) return null;
-            const maxHp = MODULES[hoveredId]?.maxHp ?? 20;
+            const maxHp = installed.maxHp ?? MODULES[hoveredId]?.maxHp ?? 20;
             const currentHp = installed.currentHp ?? maxHp;
             const filled = maxHp > 0 ? Math.round((currentHp / maxHp) * 6) : 6;
             const bar = '█'.repeat(filled) + '░'.repeat(6 - filled);
