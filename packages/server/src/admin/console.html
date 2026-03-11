@@ -567,6 +567,7 @@ button.success:hover {
     <div class="tab" data-tab="stories">Stories</div>
     <div class="tab" data-tab="quadmap">QUAD-MAP</div>
     <div class="tab" data-tab="construction">BAUSTELLEN</div>
+    <div class="tab" data-tab="errors">ERRORS <span id="errors-badge" style="display:none;background:#ff4444;color:#fff;border-radius:10px;padding:0 5px;font-size:10px;margin-left:4px;vertical-align:middle"></span></div>
   </div>
 
   <div id="content">
@@ -904,6 +905,23 @@ expiresDays: 14"></textarea>
       </table>
     </div>
 
+    <div class="tab-panel" id="panel-errors">
+      <div style="margin-bottom:8px;display:flex;gap:6px;">
+        <button class="btn" onclick="loadErrors('new')">NEW</button>
+        <button class="btn" onclick="loadErrors('all')">ALL</button>
+        <button class="btn" onclick="loadErrors('ignored')">IGNORED</button>
+      </div>
+      <table class="data-table" id="errors-table">
+        <thead>
+          <tr>
+            <th>LAST SEEN</th><th>COUNT</th><th>MESSAGE</th>
+            <th>LOCATION</th><th>STATUS</th><th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="errors-tbody"></tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
@@ -1086,6 +1104,7 @@ expiresDays: 14"></textarea>
       if (qmapData.length === 0) fetchQmapData();
       else renderQmap();
     }
+    else if (name === 'errors') loadErrors('new');
   }
 
   function switchQuestSubTab(name) {
@@ -2635,6 +2654,129 @@ expiresDays: 14"></textarea>
     }).catch(function() {
       // Server might be down, show login
     });
+  }
+
+  // ── ERRORS ────────────────────────────────────────────────────────
+
+  var currentErrorFilter = 'new';
+
+  function loadErrors(status) {
+    currentErrorFilter = status || 'new';
+    api('GET', '/errors?status=' + encodeURIComponent(currentErrorFilter)).then(function(data) {
+      var tbody = document.getElementById('errors-tbody');
+      tbody.textContent = '';  // safe clear
+
+      var newCount = 0;
+      (data.errors || []).forEach(function(e) {
+        if (e.status === 'new') newCount++;
+
+        var tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+
+        var cells = [
+          new Date(e.last_seen).toLocaleString(),
+          String(e.count),
+          (e.message || '').substring(0, 60) + (e.message && e.message.length > 60 ? '\u2026' : ''),
+          e.location || '\u2014',
+        ];
+        cells.forEach(function(text) {
+          var td = document.createElement('td');
+          td.textContent = text;
+          tr.appendChild(td);
+        });
+
+        var statusTd = document.createElement('td');
+        var statusSpan = document.createElement('span');
+        statusSpan.textContent = e.status;
+        statusSpan.style.color = e.status === 'new' ? '#ff4444' : e.status === 'ignored' ? '#888' : '#4a9';
+        statusTd.appendChild(statusSpan);
+        tr.appendChild(statusTd);
+
+        var actionsTd = document.createElement('td');
+        actionsTd.style.whiteSpace = 'nowrap';
+
+        [
+          { label: 'IGNORE', fn: function() { ignoreError(e.id); } },
+          { label: 'RESOLVED', fn: function() { resolveError(e.id); } },
+          { label: 'DEL', fn: function() { deleteError(e.id); }, color: '#ff4444' },
+        ].forEach(function(action) {
+          var btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.textContent = action.label;
+          btn.style.cssText = 'font-size:9px;padding:2px 4px;margin:1px';
+          if (action.color) btn.style.color = action.color;
+          btn.onclick = action.fn;
+          actionsTd.appendChild(btn);
+        });
+
+        var ghTitle = encodeURIComponent('[ERROR] ' + (e.message || ''));
+        var ghBody = encodeURIComponent(
+          'Fingerprint: ' + (e.fingerprint || '') + '\nCount: ' + e.count +
+          '\n\n' + (e.stack || 'no stack')
+        );
+        var ghHref = 'https://github.com/phash/voidSector/issues/new?title=' + ghTitle + '&body=' + ghBody;
+        var ghLink = document.createElement('a');
+        ghLink.href = ghHref;
+        ghLink.target = '_blank';
+        var ghBtn = document.createElement('button');
+        ghBtn.className = 'btn';
+        ghBtn.textContent = '\u2192 GH';
+        ghBtn.style.cssText = 'font-size:9px;padding:2px 4px;margin:1px';
+        ghLink.appendChild(ghBtn);
+        actionsTd.appendChild(ghLink);
+
+        tr.appendChild(actionsTd);
+
+        tr.addEventListener('click', function(ev) {
+          if (ev.target.tagName === 'BUTTON' || ev.target.tagName === 'A') return;
+          var next = tr.nextSibling;
+          if (next && next.classList && next.classList.contains('stack-row')) {
+            next.remove(); return;
+          }
+          var stackRow = document.createElement('tr');
+          stackRow.className = 'stack-row';
+          var stackTd = document.createElement('td');
+          stackTd.colSpan = 6;
+          var pre = document.createElement('pre');
+          pre.style.cssText = 'font-size:9px;opacity:0.7;margin:4px;white-space:pre-wrap';
+          pre.textContent = e.stack || 'no stack';
+          stackTd.appendChild(pre);
+          stackRow.appendChild(stackTd);
+          tr.parentNode.insertBefore(stackRow, tr.nextSibling);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      var badge = document.getElementById('errors-badge');
+      if (newCount > 0) {
+        badge.textContent = String(newCount);
+        badge.style.display = 'inline';
+      } else {
+        badge.style.display = 'none';
+      }
+    }).catch(function(err) {
+      toast('Failed to load errors: ' + err.message, 'error');
+    });
+  }
+
+  function ignoreError(id) {
+    api('POST', '/errors/' + encodeURIComponent(id) + '/ignore').then(function() {
+      loadErrors(currentErrorFilter);
+    }).catch(function(err) { toast('Error: ' + err.message, 'error'); });
+  }
+
+  function resolveError(id) {
+    api('POST', '/errors/' + encodeURIComponent(id) + '/resolve').then(function() {
+      loadErrors(currentErrorFilter);
+    }).catch(function(err) { toast('Error: ' + err.message, 'error'); });
+  }
+
+  function deleteError(id) {
+    if (!confirm('Error löschen?')) return;
+    api('DELETE', '/errors/' + encodeURIComponent(id)).then(function() {
+      loadErrors(currentErrorFilter);
+    }).catch(function(err) { toast('Error: ' + err.message, 'error'); });
   }
 
 })();
