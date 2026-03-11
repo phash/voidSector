@@ -29,7 +29,6 @@ export function StatusBar() {
   const alienCredits = useStore((s) => s.alienCredits);
   const isGuest = useStore((s) => s.isGuest);
   const wissen = useStore((s) => s.research.wissen ?? 0);
-  const hyperdrive = useStore((s) => s.hyperdriveState);
   const seenTips = useStore((s) => s.seenTips);
   const showTip = useStore((s) => s.showTip);
 
