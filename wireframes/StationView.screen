@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model:Screen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:model="http://wireframesketcher.com/1.0/model.ecore">
+  <widgets xsi:type="model:Panel" id="1" x="32" y="48" width="1289" height="745" measuredWidth="1289" measuredHeight="745"/>
+  <widgets xsi:type="model:Panel" id="2" x="288" y="58" width="825" height="487" measuredWidth="825" measuredHeight="487"/>
+  <widgets xsi:type="model:Panel" id="3" x="42" y="552" width="239" height="231" measuredWidth="239" measuredHeight="231"/>
+  <widgets xsi:type="model:Panel" id="4" x="864" y="552" width="447" height="231" measuredWidth="447" measuredHeight="231"/>
+  <widgets xsi:type="model:Panel" id="5" x="288" y="552" width="561" height="231" measuredWidth="561" measuredHeight="231"/>
+  <widgets xsi:type="model:Label" id="6" x="1072" y="562" text="6" measuredWidth="17" measuredHeight="31">
+    <font size="20px"/>
+  </widgets>
+  <widgets xsi:type="model:Label" id="7" x="528" y="568" text="5" measuredWidth="17" measuredHeight="31">
+    <font size="20px"/>
+  </widgets>
+  <widgets xsi:type="model:Label" id="8" x="680" y="72" text="2" measuredWidth="17" measuredHeight="31">
+    <font size="20px"/>
+  </widgets>
+  <widgets xsi:type="model:Label" id="9" x="136" y="72" text="1" measuredWidth="17" measuredHeight="31">
+    <font size="20px"/>
+  </widgets>
+  <widgets xsi:type="model:Label" id="10" x="1216" y="72" text="3" measuredWidth="17" measuredHeight="31">
+    <font size="20px"/>
+  </widgets>
+  <widgets xsi:type="model:Label" id="11" x="153" y="568" text="4" measuredWidth="17" measuredHeight="31">
+    <font size="20px"/>
+  </widgets>
+  <hRuler/>
+  <vRuler/>
+  <font size="12px"/>
+</model:Screen>

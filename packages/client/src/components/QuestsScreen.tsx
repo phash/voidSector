@@ -777,6 +777,9 @@ export function QuestsScreen() {
                 <div>NO QUESTS AVAILABLE</div>
                 <div style={{ fontSize: '0.7rem' }}>Dock at a station to find missions.</div>
                 {nearest && <div style={{ fontSize: '0.7rem' }}>Nearest: ({nearest.x}, {nearest.y})</div>}
+                <div style={{ fontSize: '0.6rem', color: '#888', marginTop: '6px', textAlign: 'center' }}>
+                  Different factions appear at<br />different stations. Navigate to<br />discover PIRATES, TRADERS, etc.
+                </div>
               </div>
             );
           })()}

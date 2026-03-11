@@ -14,7 +14,7 @@ import {
   STRUCTURE_AP_COSTS,
   JUMPGATE_BUILD_COST,
 } from '@void-sector/shared';
-import type { ChatChannel, ConstructionSiteState } from '@void-sector/shared';
+import type { ChatChannel, ConstructionSiteState, DataSlate } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 import { PlayerGatePanel } from './PlayerGatePanel';
@@ -263,6 +263,9 @@ export function DetailPanel() {
   const constructionSites = useStore((s) => s.constructionSites);
   const openStationTerminal = useStore((s) => s.openStationTerminal);
   const breadcrumbStack = useStore((s) => s.breadcrumbStack);
+  const activeProgram = useStore((s) => s.activeProgram);
+  const selectedSlateId = useStore((s) => s.selectedSlateId);
+  const mySlates = useStore((s) => s.mySlates);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
 

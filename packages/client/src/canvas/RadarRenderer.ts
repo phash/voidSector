@@ -691,6 +691,11 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
+  } catch (error) {
+    // Log rendering error but don't crash
+    if (error instanceof Error) {
+      console.error('[radar] render exception:', error.message);
+    }
   } finally {
     // Guarantee ctx.restore() is called if ctx.save() was called, even on exception
     if (slideActive) {
@@ -919,29 +924,39 @@ export function drawGlitchOverlay(
   height: number,
   intensity: number,
 ) {
-  // Scanline displacement
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  for (let y = 0; y < height; y++) {
-    if (Math.random() < intensity * 0.3) {
-      const shift = Math.floor((Math.random() - 0.5) * intensity * 20);
-      const row = y * width * 4;
-      const temp = new Uint8ClampedArray(width * 4);
-      for (let x = 0; x < width; x++) {
-        const srcX = Math.max(0, Math.min(width - 1, x + shift));
-        temp.set(data.subarray(row + srcX * 4, row + srcX * 4 + 4), x * 4);
-      }
-      data.set(temp, row);
-    }
+  // Bounds check to prevent IndexSizeError
+  if (width <= 0 || height <= 0 || width > 32767 || height > 32767) {
+    return;
   }
-  ctx.putImageData(imageData, 0, 0);
 
-  // Static noise flash
-  if (intensity > 0.5) {
-    ctx.fillStyle = `rgba(255, 255, 255, ${(intensity - 0.5) * 0.1})`;
-    for (let i = 0; i < intensity * 50; i++) {
-      ctx.fillRect(Math.random() * width, Math.random() * height, 2, 1);
+  try {
+    // Scanline displacement
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    for (let y = 0; y < height; y++) {
+      if (Math.random() < intensity * 0.3) {
+        const shift = Math.floor((Math.random() - 0.5) * intensity * 20);
+        const row = y * width * 4;
+        const temp = new Uint8ClampedArray(width * 4);
+        for (let x = 0; x < width; x++) {
+          const srcX = Math.max(0, Math.min(width - 1, x + shift));
+          temp.set(data.subarray(row + srcX * 4, row + srcX * 4 + 4), x * 4);
+        }
+        data.set(temp, row);
+      }
     }
+    ctx.putImageData(imageData, 0, 0);
+
+    // Static noise flash
+    if (intensity > 0.5) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${(intensity - 0.5) * 0.1})`;
+      for (let i = 0; i < intensity * 50; i++) {
+        ctx.fillRect(Math.random() * width, Math.random() * height, 2, 1);
+      }
+    }
+  } catch (error) {
+    // Silently skip glitch overlay on error (prevents crash)
+    // This can happen with invalid canvas dimensions
   }
 }
 
