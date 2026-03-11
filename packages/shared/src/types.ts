@@ -43,7 +43,9 @@ export type ArtefactType =
   | 'shield'
   | 'defense'
   | 'special'
-  | 'mining';
+  | 'mining'
+  | 'generator'
+  | 'repair';
 
 export const ARTEFACT_TYPES: ArtefactType[] = [
   'drive',
@@ -55,6 +57,8 @@ export const ARTEFACT_TYPES: ArtefactType[] = [
   'defense',
   'special',
   'mining',
+  'generator',
+  'repair',
 ];
 
 /** Maps module category name to its matching ArtefactType (1:1) */
@@ -68,6 +72,8 @@ export const ARTEFACT_TYPE_FOR_CATEGORY: Record<ArtefactType, ArtefactType> = {
   defense: 'defense',
   special: 'special',
   mining: 'mining',
+  generator: 'generator',
+  repair: 'repair',
 };
 
 export interface SectorResources {
@@ -1113,12 +1119,15 @@ export interface ModuleDefinition {
   isFoundOnly?: boolean;
   drawbacks?: ModuleDrawback[];
   acepPaths?: AcepPath[];
+  maxHp?: number;
 }
 
 export interface ShipModule {
   moduleId: string;
   slotIndex: number;
   source: ModuleSource;
+  powerLevel?: 'off' | 'low' | 'mid' | 'high';
+  currentHp?: number;
 }
 
 export interface ShipStats {
@@ -1148,6 +1157,9 @@ export interface ShipStats {
   hyperdriveRegen: number;
   hyperdriveFuelEfficiency: number;
   miningBonus: number;
+  generatorEpPerRound: number;
+  repairHpPerRound: number;
+  repairHpPerSecond: number;
 }
 
 export interface ShipRecord {

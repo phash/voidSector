@@ -59,6 +59,9 @@ export function calculateShipStats(
     hyperdriveRegen: hull.baseHyperdriveRegen,
     hyperdriveFuelEfficiency: hull.baseHyperdriveFuelEfficiency,
     miningBonus: 0,
+    generatorEpPerRound: 0,
+    repairHpPerRound: 0,
+    repairHpPerSecond: 0,
   };
 
   // Pre-compute ACEP levels per path

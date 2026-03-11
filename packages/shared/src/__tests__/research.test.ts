@@ -262,15 +262,15 @@ describe('Module data validation', () => {
 });
 
 describe('ArtefactType', () => {
-  it('has exactly 9 types', () => {
-    expect(ARTEFACT_TYPES).toHaveLength(9);
+  it('has exactly 11 types', () => {
+    expect(ARTEFACT_TYPES).toHaveLength(11);
   });
   it('includes drive and mining', () => {
     expect(ARTEFACT_TYPES).toContain('drive');
     expect(ARTEFACT_TYPES).toContain('mining');
   });
-  it('ARTEFACT_TYPE_FOR_CATEGORY maps all 9 categories', () => {
-    expect(Object.keys(ARTEFACT_TYPE_FOR_CATEGORY)).toHaveLength(9);
+  it('ARTEFACT_TYPE_FOR_CATEGORY maps all 11 categories', () => {
+    expect(Object.keys(ARTEFACT_TYPE_FOR_CATEGORY)).toHaveLength(11);
     expect(ARTEFACT_TYPE_FOR_CATEGORY['drive']).toBe('drive');
     expect(ARTEFACT_TYPE_FOR_CATEGORY['mining']).toBe('mining');
   });
