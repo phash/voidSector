@@ -3,6 +3,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { HULLS, MODULES, isModuleUnlocked } from '@void-sector/shared';
 import type { ModuleDefinition } from '@void-sector/shared';
+import { getModuleSourceColor } from './moduleUtils';
 
 const MODULE_ICONS: Record<string, string> = {
   drive: '[>>>]',
@@ -103,7 +104,7 @@ export function ModulePanel() {
             <span>
               <span style={{ color: 'var(--color-dim)', marginRight: 4 }}>SLOT {i}:</span>
               {def ? (
-                <span style={{ color: 'var(--color-primary)' }}>{def.name}</span>
+                <span style={{ color: getModuleSourceColor(mod?.source) }}>{def.name}</span>
               ) : (
                 <span style={{ color: 'var(--color-dim)', opacity: 0.4 }}>--- EMPTY ---</span>
               )}

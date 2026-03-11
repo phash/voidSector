@@ -371,6 +371,12 @@ export class ScanService {
             'logEntry',
             `${eventNames[eventResult.eventType] ?? 'Event'} entdeckt bei (${sector.x}, ${sector.y})`,
           );
+          // ACEP: INTEL-XP for anomaly/artefact scan events on discovery
+          if (eventResult.eventType === 'anomaly_reading') {
+            addAcepXpForPlayer(auth.userId, 'intel', 8).catch(() => {});
+          } else if (eventResult.eventType === 'artifact_find') {
+            addAcepXpForPlayer(auth.userId, 'intel', 15).catch(() => {});
+          }
         }
       }
     }

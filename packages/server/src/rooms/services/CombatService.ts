@@ -179,8 +179,8 @@ export class CombatService {
         sectorX: data.sectorX,
         sectorY: data.sectorY,
       });
-      // ACEP: KAMPF-XP for combat victory (spec: pirat +5, general +10)
-      addAcepXpForPlayer(auth.userId, 'kampf', 5).catch(() => {});
+      // ACEP: KAMPF-XP for combat victory (spec: +10)
+      addAcepXpForPlayer(auth.userId, 'kampf', 10).catch(() => {});
       this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
     } else if (result.outcome === 'defeat') {
       this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});
@@ -221,6 +221,14 @@ export class CombatService {
 
     this.ctx.combatV2States.set(sessionId, result.state);
 
+    // ACEP: KAMPF-XP per round (spec: +2 for damage dealt, +1 for damage taken)
+    if (result.round.playerAttack > 0) {
+      addAcepXpForPlayer(auth.userId, 'kampf', 2).catch(() => {});
+    }
+    if (result.round.enemyAttack > 0) {
+      addAcepXpForPlayer(auth.userId, 'kampf', 1).catch(() => {});
+    }
+
     if (result.state.status !== 'active') {
       this.ctx.combatV2States.delete(sessionId);
       const finalResult = combatV2ToResult(result.state, seed);
@@ -243,9 +251,9 @@ export class CombatService {
         await this.ctx.applyReputationChange(auth.userId, 'pirates', finalResult.repChange, client);
       }
 
-      // ACEP: KAMPF-XP + personality comment for combat v2 (spec: pirat +5)
+      // ACEP: KAMPF-XP + personality comment for combat v2 (spec: +10 victory)
       if (result.state.status === 'victory') {
-        addAcepXpForPlayer(auth.userId, 'kampf', 5).catch(() => {});
+        addAcepXpForPlayer(auth.userId, 'kampf', 10).catch(() => {});
         this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
       } else if (result.state.status === 'defeat') {
         this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});

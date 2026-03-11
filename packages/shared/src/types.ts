@@ -1079,6 +1079,22 @@ export interface ResearchCost {
   artefacts?: Partial<Record<ArtefactType, number>>;
 }
 
+export type ModuleSource = 'standard' | 'found' | 'researched';
+
+export interface ModuleDrawback {
+  stat?: keyof ShipStats;
+  delta?: number;
+  runtimeEffect?: string;
+  description: string;
+}
+
+export interface AcepXpSnapshot {
+  ausbau: number;
+  intel: number;
+  kampf: number;
+  explorer: number;
+}
+
 export interface ModuleDefinition {
   id: string;
   category: ModuleCategory;
@@ -1093,11 +1109,16 @@ export interface ModuleDefinition {
   researchDurationMin?: number;
   prerequisite?: string;
   factionRequirement?: { factionId: string; minTier: string };
+  isUnique?: boolean;
+  isFoundOnly?: boolean;
+  drawbacks?: ModuleDrawback[];
+  acepPaths?: AcepPath[];
 }
 
 export interface ShipModule {
   moduleId: string;
   slotIndex: number;
+  source: ModuleSource;
 }
 
 export interface ShipStats {
