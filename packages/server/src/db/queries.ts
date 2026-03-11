@@ -194,12 +194,17 @@ export async function createShip(
     [playerId, hullType, name, initialFuel],
   );
   const row = rows[0];
+  // All new ships start with generator_mk1 in slot 0 (generator slot)
+  const initialModules: ShipModule[] = [
+    { moduleId: 'generator_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
+  ];
+  await query('UPDATE ships SET modules = $1 WHERE id = $2', [JSON.stringify(initialModules), row.id]);
   return {
     id: row.id,
     ownerId: row.owner_id,
     hullType: row.hull_type as HullType,
     name: row.name,
-    modules: row.modules,
+    modules: initialModules,
     active: row.active,
     createdAt: row.created_at,
   };
@@ -1326,24 +1331,6 @@ export async function completeScanEvent(eventId: string, playerId: string): Prom
   return (result.rowCount ?? 0) > 0;
 }
 
-// --- Phase 4: Battle Log ---
-
-export async function insertBattleLog(
-  playerId: string,
-  pirateLevel: number,
-  sectorX: number,
-  sectorY: number,
-  action: string,
-  outcome: string,
-  loot: Record<string, unknown> | null,
-): Promise<void> {
-  await query(
-    `INSERT INTO battle_log (player_id, pirate_level, sector_x, sector_y, action, outcome, loot)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [playerId, pirateLevel, sectorX, sectorY, action, outcome, loot ? JSON.stringify(loot) : null],
-  );
-}
-
 // --- Phase 4: XP / Level ---
 
 export async function addPlayerXp(
@@ -2124,36 +2111,6 @@ export async function insertStationBattleLog(
     `INSERT INTO station_battle_log (user_id, sector_x, sector_y, attacker_level, outcome, hp_lost)
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [userId, sectorX, sectorY, attackerLevel, outcome, hpLost],
-  );
-}
-
-export async function insertBattleLogV2(
-  playerId: string,
-  pirateLevel: number,
-  sectorX: number,
-  sectorY: number,
-  action: string,
-  outcome: string,
-  loot: Record<string, unknown> | null,
-  roundsPlayed: number,
-  roundDetails: unknown[],
-  playerHpEnd: number,
-): Promise<void> {
-  await query(
-    `INSERT INTO battle_log (player_id, pirate_level, sector_x, sector_y, action, outcome, loot, rounds_played, round_details, player_hp_end)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [
-      playerId,
-      pirateLevel,
-      sectorX,
-      sectorY,
-      action,
-      outcome,
-      loot ? JSON.stringify(loot) : null,
-      roundsPlayed,
-      JSON.stringify(roundDetails),
-      playerHpEnd,
-    ],
   );
 }
 
@@ -3426,4 +3383,43 @@ export async function getVisitedQuadrantSet(playerId: string): Promise<Set<strin
     [playerId],
   );
   return new Set(rows.map((r) => `${r.qx}:${r.qy}`));
+}
+
+// --- Kampfsystem v1: combat_log ---
+
+export async function insertCombatLog(params: {
+  playerId: string;
+  quadrantX: number;
+  quadrantY: number;
+  sectorX: number;
+  sectorY: number;
+  enemyType: string;
+  enemyLevel: number;
+  outcome: string;
+  rounds: number;
+  playerHpEnd: number;
+  modulesDamaged: Array<{ moduleId: string; hpBefore: number; hpAfter: number }>;
+  loot: { credits?: number; ore?: number; crystal?: number };
+}): Promise<void> {
+  await query(
+    `INSERT INTO combat_log
+       (player_id, quadrant_x, quadrant_y, sector_x, sector_y,
+        enemy_type, enemy_level, outcome, rounds, player_hp_end,
+        modules_damaged, loot)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    [
+      params.playerId,
+      params.quadrantX,
+      params.quadrantY,
+      params.sectorX,
+      params.sectorY,
+      params.enemyType,
+      params.enemyLevel,
+      params.outcome,
+      params.rounds,
+      params.playerHpEnd,
+      JSON.stringify(params.modulesDamaged),
+      JSON.stringify(params.loot),
+    ],
+  );
 }

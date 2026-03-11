@@ -72,7 +72,6 @@ vi.mock('@void-sector/shared', () => ({
   RESEARCH_TICK_MS: 60000,
   WORLD_SEED: 42,
   AP_COSTS_LOCAL_SCAN: 1,
-  FEATURE_COMBAT_V2: false,
 }));
 
 // ── Mock engine deps for ScanService ─────────────────────────────────────────
@@ -96,7 +95,6 @@ vi.mock('../engine/scanEvents.js', () => ({
   checkScanEvent: vi.fn().mockReturnValue(null),
 }));
 vi.mock('../engine/worldgen.js', () => ({ generateSector: vi.fn() }));
-vi.mock('../engine/combatV2.js', () => ({ initCombatV2: vi.fn() }));
 vi.mock('../rooms/services/RedisAPStore.js', () => ({
   getAPState: vi.fn().mockResolvedValue(null),
   saveAPState: vi.fn(),

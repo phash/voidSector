@@ -14,6 +14,7 @@ import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
 import { CombatV2Dialog } from './CombatV2Dialog';
+import { CombatDialog } from './CombatDialog';
 import { BattleResultDialog } from './BattleResultDialog';
 import { ModulePanel } from './ModulePanel';
 import { HelpOverlay } from './HelpOverlay';
@@ -458,6 +459,7 @@ export function GameScreen() {
       <MehrOverlay monitors={mehrMonitors} />
       <BattleDialog />
       <CombatV2Dialog />
+      <CombatDialog />
       <StationCombatOverlay />
       <BattleResultDialog />
       <BlueprintDialog />

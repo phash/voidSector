@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import { QUADRANT_SIZE } from '@void-sector/shared';
+import { QUADRANT_SIZE, MODULES } from '@void-sector/shared';
 import type {
   APState,
   SectorData,
@@ -32,8 +32,6 @@ import type {
   ConfigureRouteResultMessage,
   CreateCustomSlateMessage,
   Bookmark,
-  CombatV2State,
-  CombatV2RoundResult,
   StationCombatEvent,
   AdminMessage,
   AdminQuestNotification,
@@ -932,24 +930,87 @@ class GameNetwork {
       store.addLogEntry(`ANCIENT RUIN — ${data.fragmentText.split('\n')[0]}`);
     });
 
-    room.onMessage('combatV2Init', (data: { state: CombatV2State }) => {
-      useStore.getState().setActiveCombatV2(data.state);
+    // ── Kampfsystem v1 — energy-based round combat ──────────────────────────
+    room.onMessage('combatInitResult', (data: { success: boolean; state?: any; error?: string }) => {
+      if (data.success && data.state) {
+        useStore.getState().setActiveCombat(data.state);
+      }
     });
 
-    room.onMessage('combatV2Result', (data: CombatV2RoundResult) => {
-      const store = useStore.getState();
-      if (data.state) {
-        store.setActiveCombatV2(data.state.status === 'active' ? data.state : null);
-      }
-      if (data.finalResult) {
-        const encounter = store.activeBattle ?? store.activeCombatV2?.encounter;
-        if (encounter) {
-          store.setLastBattleResult({ encounter, result: data.finalResult as any });
+    room.onMessage(
+      'combatRoundResult',
+      (data: { success: boolean; round?: any; state?: any; outcome?: string; loot?: any; error?: string }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`KAMPF FEHLER: ${data.error}`);
+          return;
         }
-        store.setActiveCombatV2(null);
-        store.setActiveBattle(null);
-      }
-    });
+        if (data.state) {
+          const newState = { ...data.state };
+          if (data.outcome && data.outcome !== 'ongoing') {
+            newState.outcome = data.outcome;
+            newState.loot = data.loot;
+          }
+          store.setActiveCombat(newState);
+        }
+      },
+    );
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── RepairService — onboard module repair & station repair ───────────────
+    room.onMessage(
+      'repairModuleResult',
+      (data: {
+        success: boolean;
+        moduleId?: string;
+        newHp?: number;
+        maxHp?: number;
+        error?: string;
+      }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`REPAIR ERROR: ${data.error}`);
+          return;
+        }
+        // Update the module's currentHp in ship state
+        if (data.moduleId !== undefined && data.newHp !== undefined) {
+          const ship = store.ship;
+          if (ship) {
+            const updatedModules = ship.modules.map((m) =>
+              m.moduleId === data.moduleId ? { ...m, currentHp: data.newHp! } : m,
+            );
+            store.setShip({ ...ship, modules: updatedModules });
+          }
+        }
+      },
+    );
+
+    room.onMessage(
+      'stationRepairResult',
+      (data: {
+        success: boolean;
+        modulesRepaired?: number;
+        cost?: number;
+        error?: string;
+      }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`STATION REPAIR ERROR: ${data.error}`);
+          return;
+        }
+        // Restore all modules to full HP in ship state
+        const ship = store.ship;
+        if (ship) {
+          const updatedModules = ship.modules.map((m) => {
+            const def = MODULES[m.moduleId];
+            const maxHp = def?.maxHp ?? 20;
+            return { ...m, currentHp: maxHp };
+          });
+          store.setShip({ ...ship, modules: updatedModules });
+        }
+      },
+    );
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Permadeath: ship destroyed in combat → clear combat state, show notification
     room.onMessage(
@@ -1950,21 +2011,30 @@ class GameNetwork {
     this.sectorRoom.send('battleAction', { action, sectorX, sectorY });
   }
 
-  sendCombatV2Action(tactic: string, specialAction: string, sectorX: number, sectorY: number) {
+  // ── Kampfsystem v1 send methods ──────────────────────────────────────────
+
+  sendCombatInit(enemyType: string, enemyLevel: number, sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {
       useStore.getState().addLogEntry('NOT CONNECTED');
       return;
     }
-    this.sectorRoom.send('combatV2Action', { tactic, specialAction, sectorX, sectorY });
+    this.sectorRoom.send('combatInit', { enemyType, enemyLevel, sectorX, sectorY });
   }
 
-  sendCombatV2Flee(sectorX: number, sectorY: number) {
+  sendCombatRound(input: {
+    energyAllocations: Array<{ moduleId: string; category: string; powerLevel: 'off' | 'low' | 'mid' | 'high' }>;
+    primaryAction: { type: string; targetModuleId?: string; targetModuleCategory?: string };
+    reactionChoice?: { type: string };
+    ancientAbility?: { type: string };
+  }, sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {
       useStore.getState().addLogEntry('NOT CONNECTED');
       return;
     }
-    this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
+    this.sectorRoom.send('combatRound', { input, sectorX, sectorY });
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   sendEjectPod(sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {
@@ -2317,6 +2387,16 @@ class GameNetwork {
 
   sendCraftModule(blueprintId: string) {
     this.sectorRoom?.send('craftModule', { blueprintId });
+  }
+
+  // ── RepairService ──────────────────────────────────────────────────────────
+
+  sendRepairModule(moduleId: string) {
+    this.sectorRoom?.send('repairModule', { moduleId });
+  }
+
+  sendStationRepair() {
+    this.sectorRoom?.send('stationRepair', {});
   }
 }
 

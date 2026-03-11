@@ -75,6 +75,7 @@ import {
   RECONNECTION_TIMEOUT_S,
   FEATURE_HYPERDRIVE_V2,
   calculateShipStats,
+  calculateApRegen,
   createHyperdriveState,
   calculateCurrentCharge,
   HULLS,
@@ -102,7 +103,6 @@ import type {
   GetStationNpcsMessage,
   AcceptQuestMessage,
   AbandonQuestMessage,
-  BattleActionMessage,
   CompleteScanEventMessage,
   RefuelMessage,
   SetBookmarkMessage,
@@ -110,9 +110,6 @@ import type {
   HyperJumpMessage,
   HullType,
   ShipStats,
-  CombatV2State,
-  CombatV2ActionMessage,
-  CombatV2FleeMessage,
   ChatMessage,
   QuadrantControlState,
   NpcFleetState,
@@ -134,6 +131,7 @@ import type { AlienInteractMessage } from './services/AlienInteractionService.js
 import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
+import { RepairService } from './services/RepairService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -154,7 +152,6 @@ interface SectorRoomOptions {
 export class SectorRoom extends Room<SectorRoomState> {
   private clientShips = new Map<string, ShipStats>();
   private clientHullTypes = new Map<string, HullType>();
-  private combatV2States = new Map<string, CombatV2State>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
   private rateLimits = new Map<string, Map<string, number>>();
   private disposeCallbacks: Array<() => void> = [];
@@ -181,6 +178,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private territory!: TerritoryService;
   private storyChain!: StoryQuestChainService;
   private communityQuests!: CommunityQuestService;
+  private repair!: RepairService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
 
   /** Get a player's current sector X coordinate */
@@ -264,7 +262,6 @@ export class SectorRoom extends Room<SectorRoomState> {
       quadrantY: this.quadrantY,
       clientShips: this.clientShips,
       clientHullTypes: this.clientHullTypes,
-      combatV2States: this.combatV2States,
       autopilotTimers: this.autopilotTimers,
       playerSectorData: this.playerSectorData,
       checkRate: this.checkRate.bind(this),
@@ -317,6 +314,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.chat = new ChatService(this.serviceCtx);
     this.ships = new ShipService(this.serviceCtx);
     this.world = new WorldService(this.serviceCtx);
+    this.repair = new RepairService(this.serviceCtx);
     this.alienInteraction = new AlienInteractionService(this.serviceCtx);
     this.territory = new TerritoryService(this.serviceCtx);
     this.storyChain = new StoryQuestChainService();
@@ -444,15 +442,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     // ── Combat ──────────────────────────────────────────────────────
-    this.onMessage('battleAction', async (client, data: BattleActionMessage) => {
-      await this.combat.handleBattleAction(client, data);
-    });
-    this.onMessage('combatV2Action', async (client, data: CombatV2ActionMessage) => {
-      await this.combat.handleCombatV2Action(client, data);
-    });
-    this.onMessage('combatV2Flee', async (client, data: CombatV2FleeMessage) => {
-      await this.combat.handleCombatV2Flee(client, data);
-    });
     this.onMessage('ejectPod', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleEjectPod(client, data);
     });
@@ -461,6 +450,19 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('repairStation', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleRepairStation(client, data);
+    });
+    // Kampfsystem v1 — energy-based round combat
+    this.onMessage('combatInit', async (client, data) => {
+      await this.combat.handleCombatInit(client, data);
+    });
+    this.onMessage('combatRound', async (client, data) => {
+      await this.combat.handleCombatRound(client, data);
+    });
+    this.onMessage('repairModule', async (client, data: { moduleId: string }) => {
+      await this.repair.handleRepairModule(client, data);
+    });
+    this.onMessage('stationRepair', async (client, data) => {
+      await this.repair.handleStationRepair(client, data);
     });
 
     // ── Mining ──────────────────────────────────────────────────────
@@ -1166,9 +1168,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Record discovery
       await addDiscovery(auth.userId, sectorX, sectorY);
 
-      // Send initial AP state
+      // Send initial AP state — recalculate regenPerSecond from current modules
       const ap = await getAPState(auth.userId);
-      const updated = calculateCurrentAP(ap);
+      const regenFromModules = calculateApRegen(shipRecord.modules);
+      const updated = calculateCurrentAP({ ...ap, regenPerSecond: regenFromModules });
       await saveAPState(auth.userId, updated);
       client.send('apUpdate', updated);
 

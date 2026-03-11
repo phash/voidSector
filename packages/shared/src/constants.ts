@@ -381,9 +381,6 @@ export const PIRATE_HP_PER_LEVEL = 10;
 export const PIRATE_BASE_DAMAGE = 5;
 export const PIRATE_DAMAGE_PER_LEVEL = 3;
 
-// Combat v2 — Feature flag
-export const FEATURE_COMBAT_V2 = true;
-
 // Hyperdrive v2 — Feature flag (charge-based hyperdrive system)
 export const FEATURE_HYPERDRIVE_V2 = false;
 
@@ -518,23 +515,25 @@ export const SHIP_CLASSES: Record<
 // ─── ACEP SLOT SYSTEM ────────────────────────────────────────────────────────
 
 export const SPECIALIZED_SLOT_CATEGORIES: ModuleCategory[] = [
-  'drive',    // slot 0
-  'weapon',   // slot 1
-  'armor',    // slot 2
-  'shield',   // slot 3
-  'scanner',  // slot 4
-  'mining',   // slot 5
-  'cargo',    // slot 6
+  'generator', // slot 0
+  'drive',     // slot 1
+  'weapon',    // slot 2
+  'armor',     // slot 3
+  'shield',    // slot 4
+  'scanner',   // slot 5
+  'mining',    // slot 6
+  'cargo',     // slot 7
 ];
 
 export const SPECIALIZED_SLOT_INDEX: Partial<Record<ModuleCategory, number>> = {
-  drive:   0,
-  weapon:  1,
-  armor:   2,
-  shield:  3,
-  scanner: 4,
-  mining:  5,
-  cargo:   6,
+  generator: 0,
+  drive:     1,
+  weapon:    2,
+  armor:     3,
+  shield:    4,
+  scanner:   5,
+  mining:    6,
+  cargo:     7,
 };
 
 export const UNIQUE_MODULE_CATEGORIES: ModuleCategory[] = ['shield', 'scanner'];
@@ -559,6 +558,28 @@ export const ACEP_LEVEL_MULTIPLIERS: Record<number, number> = {
   3: 1.2,
   4: 1.35,
   5: 1.5,
+};
+
+/** Modul-HP pro Tier */
+export const MODULE_HP_BY_TIER: Record<number, number> = {
+  1: 20, 2: 35, 3: 55, 4: 80, 5: 110,
+};
+
+/** EP-Kosten pro Power-Level pro Modul-Kategorie (im Kampf) */
+export const MODULE_EP_COSTS: Partial<Record<ModuleCategory, Record<string, number>>> = {
+  weapon:  { off: 0, low: 2, mid: 4, high: 6 },
+  shield:  { off: 0, low: 1, mid: 2, high: 4 },
+  drive:   { off: 0, low: 2, mid: 4, high: 6 },
+  scanner: { off: 0, low: 1, mid: 2, high: 3 },
+  repair:  { off: 0, low: 1, mid: 2, high: 4 },
+};
+
+/** Basis AP/s des Schiffs ohne Generator */
+export const BASE_HULL_AP_REGEN = 0.08;
+
+/** Power-Level-Multiplikatoren für AP-Regen und EP-Output */
+export const POWER_LEVEL_MULTIPLIERS: Record<string, number> = {
+  off: 0.0, low: 0.4, mid: 0.7, high: 1.0,
 };
 
 // --- Phase 7: Ship Designer ---
@@ -666,6 +687,116 @@ export const HULLS: Record<HullType, HullDefinition> = {
 };
 
 export const MODULES: Record<string, ModuleDefinition> = {
+  // === GENERATOR ===
+  generator_mk1: {
+    id: 'generator_mk1', category: 'generator', tier: 1,
+    name: 'FUSION CELL MK.I', displayName: 'FUSION MK.I',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 6, label: 'EP/Runde +6' },
+    secondaryEffects: [],
+    effects: { generatorEpPerRound: 6, apRegenPerSecond: 0.20 } as any,
+    cost: { credits: 150, ore: 15 },
+    maxHp: 20, isUnique: true, acepPaths: ['ausbau'] as any,
+  },
+  generator_mk2: {
+    id: 'generator_mk2', category: 'generator', tier: 2,
+    name: 'FUSION CELL MK.II', displayName: 'FUSION MK.II',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 9, label: 'EP/Runde +9' },
+    secondaryEffects: [],
+    effects: { generatorEpPerRound: 9, apRegenPerSecond: 0.30 } as any,
+    cost: { credits: 400, ore: 30, crystal: 5 },
+    maxHp: 35, isUnique: true, acepPaths: ['ausbau'] as any,
+    prerequisite: 'generator_mk1',
+  },
+  generator_mk3: {
+    id: 'generator_mk3', category: 'generator', tier: 3,
+    name: 'FUSION CELL MK.III', displayName: 'FUSION MK.III',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 12, label: 'EP/Runde +12' },
+    secondaryEffects: [],
+    effects: { generatorEpPerRound: 12, apRegenPerSecond: 0.50 } as any,
+    cost: { credits: 900, ore: 50, crystal: 15 },
+    maxHp: 55, isUnique: true, acepPaths: ['ausbau'] as any,
+    prerequisite: 'generator_mk2',
+  },
+  generator_mk4: {
+    id: 'generator_mk4', category: 'generator', tier: 4,
+    name: 'FUSION CELL MK.IV', displayName: 'FUSION MK.IV',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 15, label: 'EP/Runde +15' },
+    secondaryEffects: [{ stat: 'apRegenPerSecond', delta: 0.70, label: 'AP/s +0.70' }],
+    effects: { generatorEpPerRound: 15, apRegenPerSecond: 0.70 } as any,
+    cost: { credits: 2000, ore: 80, crystal: 30, artefact: 1 },
+    maxHp: 80, isUnique: true, acepPaths: ['ausbau'] as any,
+    prerequisite: 'generator_mk3',
+    researchCost: { wissen: 800, artefacts: { generator: 1 } } as any,
+    researchDurationMin: 12,
+  },
+  generator_mk5: {
+    id: 'generator_mk5', category: 'generator', tier: 5,
+    name: 'FUSION CELL MK.V', displayName: 'FUSION MK.V',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 18, label: 'EP/Runde +18' },
+    secondaryEffects: [{ stat: 'apRegenPerSecond', delta: 1.00, label: 'AP/s +1.00' }],
+    effects: { generatorEpPerRound: 18, apRegenPerSecond: 1.00 } as any,
+    cost: { credits: 4500, ore: 120, crystal: 60, artefact: 2 },
+    maxHp: 110, isUnique: true, acepPaths: ['ausbau'] as any,
+    prerequisite: 'generator_mk4',
+    researchCost: { wissen: 1500, artefacts: { generator: 3 } } as any,
+    researchDurationMin: 20,
+  },
+
+  // === REPAIR ===
+  repair_mk1: {
+    id: 'repair_mk1', category: 'repair', tier: 1,
+    name: 'REPAIR DRONE MK.I', displayName: 'REPAIR MK.I',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 2, label: 'Reparatur +2 HP/Runde' },
+    secondaryEffects: [],
+    effects: { repairHpPerRound: 2, repairHpPerSecond: 0.5 } as any,
+    cost: { credits: 200, ore: 20 },
+    maxHp: 20, acepPaths: ['ausbau'] as any,
+  },
+  repair_mk2: {
+    id: 'repair_mk2', category: 'repair', tier: 2,
+    name: 'REPAIR DRONE MK.II', displayName: 'REPAIR MK.II',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 4, label: 'Reparatur +4 HP/Runde' },
+    secondaryEffects: [],
+    effects: { repairHpPerRound: 4, repairHpPerSecond: 1.0 } as any,
+    cost: { credits: 500, ore: 40, crystal: 5 },
+    maxHp: 35, acepPaths: ['ausbau'] as any,
+    prerequisite: 'repair_mk1',
+  },
+  repair_mk3: {
+    id: 'repair_mk3', category: 'repair', tier: 3,
+    name: 'REPAIR DRONE MK.III', displayName: 'REPAIR MK.III',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 7, label: 'Reparatur +7 HP/Runde' },
+    secondaryEffects: [],
+    effects: { repairHpPerRound: 7, repairHpPerSecond: 2.0 } as any,
+    cost: { credits: 1200, ore: 60, crystal: 20 },
+    maxHp: 55, acepPaths: ['ausbau'] as any,
+    prerequisite: 'repair_mk2',
+  },
+  repair_mk4: {
+    id: 'repair_mk4', category: 'repair', tier: 4,
+    name: 'REPAIR DRONE MK.IV', displayName: 'REPAIR MK.IV',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 11, label: 'Reparatur +11 HP/Runde' },
+    secondaryEffects: [{ stat: 'repairHpPerSecond', delta: 3.5, label: 'Reparatur +3.5 HP/s' }],
+    effects: { repairHpPerRound: 11, repairHpPerSecond: 3.5 } as any,
+    cost: { credits: 2500, ore: 90, crystal: 40, artefact: 1 },
+    maxHp: 80, acepPaths: ['ausbau'] as any,
+    prerequisite: 'repair_mk3',
+    researchCost: { wissen: 800, artefacts: { repair: 1 } } as any,
+    researchDurationMin: 12,
+  },
+  repair_mk5: {
+    id: 'repair_mk5', category: 'repair', tier: 5,
+    name: 'REPAIR DRONE MK.V', displayName: 'REPAIR MK.V',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 16, label: 'Reparatur +16 HP/Runde' },
+    secondaryEffects: [{ stat: 'repairHpPerSecond', delta: 5.0, label: 'Reparatur +5.0 HP/s' }],
+    effects: { repairHpPerRound: 16, repairHpPerSecond: 5.0 } as any,
+    cost: { credits: 5000, ore: 140, crystal: 70, artefact: 2 },
+    maxHp: 110, acepPaths: ['ausbau'] as any,
+    prerequisite: 'repair_mk4',
+    researchCost: { wissen: 1500, artefacts: { repair: 3 } } as any,
+    researchDurationMin: 20,
+  },
+
   // === DRIVE ===
   drive_mk1: {
     id: 'drive_mk1',
@@ -1842,6 +1973,13 @@ export const MODULES: Record<string, ModuleDefinition> = {
     drawbacks: [{ runtimeEffect: 'pirate_transponder_rep', description: 'Alle Fraktionen −30 Reputation sofort' }],
   },
 };
+
+// Backfill maxHp for all modules that don't have it set explicitly
+for (const mod of Object.values(MODULES)) {
+  if (mod.maxHp === undefined) {
+    (mod as any).maxHp = MODULE_HP_BY_TIER[mod.tier] ?? 20;
+  }
+}
 
 export const SECTOR_COLORS: Record<SectorType | 'home_base', string> = {
   empty: '#FFB000',

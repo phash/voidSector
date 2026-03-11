@@ -118,3 +118,13 @@ select option {
 .ap-pulse {
   animation: ap-pulse 1.5s ease-in-out;
 }
+
+/* Combat UI focus indicators */
+.combat-btn:focus-visible {
+  outline: 2px solid #00ff41;
+  outline-offset: 2px;
+}
+.repair-btn:focus-visible {
+  outline: 2px solid #00ff41;
+  outline-offset: 2px;
+}

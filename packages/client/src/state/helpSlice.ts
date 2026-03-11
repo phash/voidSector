@@ -109,7 +109,13 @@ export const createHelpSlice: StateCreator<HelpSlice> = (set, get) => ({
   compendiumOpen: false,
   compendiumArticleId: null,
   compendiumSearch: '',
-  onboardingStep: localStorage.getItem('vs_first_run') ? null : 0,
+  onboardingStep: (() => {
+    try {
+      return localStorage.getItem('vs_first_run') ? null : 0;
+    } catch {
+      return 0;
+    }
+  })(),
 
   showTip: (tipId) => {
     if (get().seenTips.has(tipId)) return;

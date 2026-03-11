@@ -7,6 +7,8 @@ import {
   DEFENSE_ONLY_CATEGORIES,
   SPECIALIZED_SLOT_CATEGORIES,
   UNIQUE_MODULE_CATEGORIES,
+  BASE_HULL_AP_REGEN,
+  POWER_LEVEL_MULTIPLIERS,
 } from './constants.js';
 import type { HullType, ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
 
@@ -59,6 +61,9 @@ export function calculateShipStats(
     hyperdriveRegen: hull.baseHyperdriveRegen,
     hyperdriveFuelEfficiency: hull.baseHyperdriveFuelEfficiency,
     miningBonus: 0,
+    generatorEpPerRound: 0,
+    repairHpPerRound: 0,
+    repairHpPerSecond: 0,
   };
 
   // Pre-compute ACEP levels per path
@@ -119,10 +124,11 @@ export function validateModuleInstall(
   if (!moduleDef) return { valid: false, error: 'Unbekanntes Modul' };
 
   const category = moduleDef.category;
-  const isSpecializedSlot = slotIndex < 7;
-  const isExtraSlot = slotIndex >= 7;
+  const specializedSlotCount = SPECIALIZED_SLOT_CATEGORIES.length; // 8
+  const isSpecializedSlot = slotIndex < specializedSlotCount;
+  const isExtraSlot = slotIndex >= specializedSlotCount;
   const extraSlotCount = getExtraSlotCount(acepXp.ausbau);
-  const maxAllowedSlotIndex = 7 + extraSlotCount - 1; // z.B. bei 1 extra slot = max index 7
+  const maxAllowedSlotIndex = specializedSlotCount + extraSlotCount - 1; // z.B. bei 1 extra slot = max index 8
 
   // defense/special nur in Extra-Slots
   if (DEFENSE_ONLY_CATEGORIES.includes(category) && isSpecializedSlot) {
@@ -176,4 +182,49 @@ export function getActiveDrawbacks(modules: ShipModule[]): string[] {
     }
   }
   return effects;
+}
+
+export type DamageState = 'intact' | 'light' | 'heavy' | 'destroyed';
+
+/** Derives damage state from currentHp/maxHp ratio */
+export function getDamageState(currentHp: number, maxHp: number): DamageState {
+  if (maxHp <= 0) return 'destroyed';
+  const ratio = currentHp / maxHp;
+  if (ratio > 0.75) return 'intact';
+  if (ratio > 0.50) return 'light';
+  if (ratio > 0.25) return 'heavy';
+  return 'destroyed';
+}
+
+/** Returns effective power level after applying damage state caps */
+export function getModuleEffectivePowerLevel(
+  mod: ShipModule,
+): 'off' | 'low' | 'mid' | 'high' {
+  const requested = mod.powerLevel ?? 'high';
+  const def = MODULES[mod.moduleId];
+  if (!def) return requested;
+  const maxHp = def.maxHp ?? 20;
+  const currentHp = mod.currentHp ?? maxHp;
+  const state = getDamageState(currentHp, maxHp);
+  if (state === 'destroyed') return 'off';
+  if (state === 'heavy' && (requested === 'high' || requested === 'mid')) return 'low';
+  if (state === 'light' && requested === 'high') return 'mid';
+  return requested;
+}
+
+/** Calculates AP/s based on installed generator module + base hull regen */
+export function calculateApRegen(modules: ShipModule[]): number {
+  let regen = BASE_HULL_AP_REGEN;
+  for (const mod of modules) {
+    const def = MODULES[mod.moduleId];
+    if (!def || def.category !== 'generator') continue;
+    const apPerSecond = (def.effects as any).apRegenPerSecond ?? 0;
+    const effectivePower = getModuleEffectivePowerLevel(mod);
+    const multiplier = POWER_LEVEL_MULTIPLIERS[effectivePower] ?? 0;
+    const maxHp = def.maxHp ?? 20;
+    const currentHp = mod.currentHp ?? maxHp;
+    const hpRatio = maxHp > 0 ? currentHp / maxHp : 0;
+    regen += apPerSecond * multiplier * hpRatio;
+  }
+  return regen;
 }
