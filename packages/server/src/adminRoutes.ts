@@ -23,6 +23,9 @@ import {
   getAdminStoryById,
   getAdminQuadrantMap,
   getActiveFactionHomes,
+  getErrorLogs,
+  updateErrorLogStatus,
+  deleteErrorLog,
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput, AdminStoryInput } from './db/adminQueries.js';
 import type { AdminPlayerUpdateEvent } from './adminBus.js';
@@ -486,6 +489,56 @@ adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: R
   } catch (err) {
     logger.error({ err }, 'Admin construction-sites POST complete error');
     res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+// ── Error Logs ──────────────────────────────────────────────────────
+
+adminRouter.get('/errors', async (req: Request, res: Response) => {
+  try {
+    const status = typeof req.query.status === 'string' ? req.query.status : 'new';
+    const errors = await getErrorLogs(status);
+    await logAdminEvent('list_errors', { status, count: errors.length });
+    res.json({ errors });
+  } catch (err) {
+    logger.error({ err }, 'Admin list errors');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.post('/errors/:id/ignore', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const ok = await updateErrorLogStatus(id, 'ignored');
+    await logAdminEvent('ignore_error', { id });
+    res.json({ success: ok });
+  } catch (err) {
+    logger.error({ err }, 'Admin ignore error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.post('/errors/:id/resolve', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const ok = await updateErrorLogStatus(id, 'resolved');
+    await logAdminEvent('resolve_error', { id });
+    res.json({ success: ok });
+  } catch (err) {
+    logger.error({ err }, 'Admin resolve error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.delete('/errors/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const ok = await deleteErrorLog(id);
+    await logAdminEvent('delete_error', { id });
+    res.json({ success: ok });
+  } catch (err) {
+    logger.error({ err }, 'Admin delete error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
