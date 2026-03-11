@@ -1,17 +1,30 @@
 // packages/client/src/components/ShipDetailPanel.tsx
 import { useStore } from '../state/store';
-import { MONITORS } from '@void-sector/shared';
+import { MONITORS, HULLS } from '@void-sector/shared';
 
 const ACEP_DETAIL_PATHS = [
-  { key: 'ausbau' as const, label: 'CNST', color: '#ffaa00' },
-  { key: 'intel'  as const, label: 'INTL', color: '#00ffcc' },
-  { key: 'kampf'  as const, label: 'CMBT', color: '#ff4444' },
+  { key: 'ausbau'   as const, label: 'CNST', color: '#ffaa00' },
+  { key: 'intel'    as const, label: 'INTL', color: '#00ffcc' },
+  { key: 'kampf'    as const, label: 'CMBT', color: '#ff4444' },
   { key: 'explorer' as const, label: 'EXPL', color: '#8888ff' },
 ];
+
+const TRAIT_COLORS: Record<string, string> = {
+  veteran:           '#00ffcc',  // positive — cyan
+  'ancient-touched': '#cc88ff',  // achievement — purple
+  curious:           '#8888ff',  // explorer — soft purple
+  cautious:          '#44cc88',  // defensive — green
+  reckless:          '#ff8800',  // risky — orange
+  scarred:           '#ff8800',  // risky — orange
+};
 
 function acepBar(xp: number, max = 50): string {
   const filled = Math.round((xp / max) * 10);
   return '█'.repeat(filled) + '░'.repeat(10 - filled);
+}
+
+function toTitleCase(moduleId: string): string {
+  return moduleId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function ShipDetailPanel() {
@@ -23,14 +36,17 @@ export function ShipDetailPanel() {
   const xp = ship.acepXp;
   const traits = ship.acepTraits ?? [];
   const installedModules = ship.modules ?? [];
-  const maxSlots = Math.max(installedModules.length + 2, 3);
+  const baseSlots = HULLS[ship.hullType]?.slots ?? 3;
+  const extraSlots = ship.acepEffects?.extraModuleSlots ?? 0;
+  const maxSlots = baseSlots + extraSlots;
   const freeSlots = maxSlots - installedModules.length;
+  const gen = ship.acepGeneration;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px', fontSize: '0.78rem' }}>
       {/* Header */}
       <div style={{ fontSize: '0.7rem', letterSpacing: '2px', color: '#888', marginBottom: '8px' }}>
-        ⬡ {ship.name}
+        ⬡ {ship.name}{gen && gen > 1 ? ` · GEN ${gen}` : ''}
       </div>
 
       {/* ACEP Paths */}
@@ -57,7 +73,9 @@ export function ShipDetailPanel() {
             traits.map((t, i) => (
               <span key={t}>
                 {i > 0 && <span style={{ color: '#333' }}> · </span>}
-                <span style={{ color: '#ff4444' }}>⬡ {t.toUpperCase()}</span>
+                <span data-trait={t} style={{ color: TRAIT_COLORS[t] ?? '#aaa' }}>
+                  ⬡ {t.toUpperCase()}
+                </span>
               </span>
             ))
           ) : (
@@ -73,7 +91,7 @@ export function ShipDetailPanel() {
         </div>
         {installedModules.length > 0 ? (
           <div style={{ color: '#aaa', fontSize: '0.68rem', lineHeight: 1.4 }}>
-            {installedModules.map((m) => m.moduleId.replace(/_/g, ' ')).join(' · ')}
+            {installedModules.map((m) => toTitleCase(m.moduleId)).join(' · ')}
           </div>
         ) : (
           <div style={{ color: '#444', fontSize: '0.65rem' }}>No modules installed</div>

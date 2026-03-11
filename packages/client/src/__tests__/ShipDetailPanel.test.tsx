@@ -109,4 +109,60 @@ describe('ShipDetailPanel', () => {
     await userEvent.click(screen.getByText('[MODULES →]'));
     expect(setMonitorMode).toHaveBeenCalledWith('SHIP-SYS', 'modules');
   });
+
+  it('shows generation when acepGeneration > 1', () => {
+    mockStoreState({
+      ship: { ...baseShip, acepGeneration: 3 },
+      setMonitorMode: vi.fn(),
+    } as any);
+    render(<ShipDetailPanel />);
+    expect(screen.getByText(/GEN 3/)).toBeDefined();
+  });
+
+  it('does not show generation for gen 1', () => {
+    mockStoreState({
+      ship: { ...baseShip, acepGeneration: 1 },
+      setMonitorMode: vi.fn(),
+    } as any);
+    render(<ShipDetailPanel />);
+    expect(screen.queryByText(/GEN/)).toBeNull();
+  });
+
+  it('shows correct slot count from hull definition', () => {
+    // scout hull has 3 base slots; 0 extraModuleSlots → 3 total
+    mockStoreState({
+      ship: { ...baseShip, hullType: 'scout', modules: [], acepEffects: { extraModuleSlots: 0 } },
+      setMonitorMode: vi.fn(),
+    } as any);
+    render(<ShipDetailPanel />);
+    expect(screen.getByText(/0\/3 SLOTS/)).toBeDefined();
+  });
+
+  it('adds extraModuleSlots to hull base slots', () => {
+    mockStoreState({
+      ship: { ...baseShip, hullType: 'scout', modules: [], acepEffects: { extraModuleSlots: 2 } },
+      setMonitorMode: vi.fn(),
+    } as any);
+    render(<ShipDetailPanel />);
+    expect(screen.getByText(/0\/5 SLOTS/)).toBeDefined();
+  });
+
+  it('shows module names in Title Case', () => {
+    // baseShip already has modules with moduleId 'mining_laser_mk1'
+    // toTitleCase('mining_laser_mk1') → 'Mining Laser Mk1'
+    mockStoreState({ ship: baseShip, monitorModes: {}, setMonitorMode: vi.fn() } as any);
+    render(<ShipDetailPanel />);
+    expect(screen.getByText(/Mining Laser Mk1/)).toBeDefined();
+  });
+
+  it('shows veteran trait in cyan not red', () => {
+    mockStoreState({
+      ship: { ...baseShip, acepTraits: ['veteran'] },
+      monitorModes: {}, setMonitorMode: vi.fn(),
+    } as any);
+    const { container } = render(<ShipDetailPanel />);
+    const traitEl = container.querySelector('[data-trait="veteran"]');
+    expect(traitEl).not.toBeNull();
+    expect((traitEl as HTMLElement).style.color).not.toBe('rgb(255, 68, 68)');
+  });
 });
