@@ -509,6 +509,7 @@ adminRouter.get('/errors', async (req: Request, res: Response) => {
 adminRouter.post('/errors/:id/ignore', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
     const ok = await updateErrorLogStatus(id, 'ignored');
     await logAdminEvent('ignore_error', { id });
     res.json({ success: ok });
@@ -521,6 +522,7 @@ adminRouter.post('/errors/:id/ignore', async (req: Request, res: Response) => {
 adminRouter.post('/errors/:id/resolve', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
     const ok = await updateErrorLogStatus(id, 'resolved');
     await logAdminEvent('resolve_error', { id });
     res.json({ success: ok });
@@ -533,6 +535,7 @@ adminRouter.post('/errors/:id/resolve', async (req: Request, res: Response) => {
 adminRouter.delete('/errors/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
     const ok = await deleteErrorLog(id);
     await logAdminEvent('delete_error', { id });
     res.json({ success: ok });

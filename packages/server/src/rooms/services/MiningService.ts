@@ -107,6 +107,10 @@ export class MiningService {
   }
 
   async handleJettison(client: Client, data: JettisonMessage): Promise<void> {
+    if (!this.ctx.checkRate(client.sessionId, 'jettison', 500)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
     if (rejectGuest(client, 'Abwerfen')) return;
     const auth = client.auth as AuthPayload;
     const { resource } = data;

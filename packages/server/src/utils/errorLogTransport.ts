@@ -12,9 +12,9 @@ function extractLocation(stack: string | undefined): string | null {
   return null;
 }
 
-export async function captureError(err: Error, _context: string): Promise<void> {
+export async function captureError(err: Error, context: string): Promise<void> {
   try {
-    const location = extractLocation(err.stack);
+    const location = extractLocation(err.stack) ?? context;
     const fingerprint = createHash('sha256')
       .update((err.message ?? '') + (location ?? ''))
       .digest('hex');
