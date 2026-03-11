@@ -3272,20 +3272,21 @@ export async function deductInventory(
   itemId: string,
   amount: number,
 ): Promise<void> {
+  // Exact match: DELETE row directly (avoids CHECK violation on quantity > 0)
+  const del = await query(
+    `DELETE FROM inventory WHERE player_id = $1 AND item_type = $2 AND item_id = $3 AND quantity = $4
+     RETURNING id`,
+    [playerId, itemType, itemId, amount],
+  );
+  if (del.rows.length > 0) return;
+  // Surplus: decrement (quantity > amount, result always > 0)
   const res = await query<{ quantity: number }>(
     `UPDATE inventory SET quantity = quantity - $4
-     WHERE player_id = $1 AND item_type = $2 AND item_id = $3 AND quantity >= $4
+     WHERE player_id = $1 AND item_type = $2 AND item_id = $3 AND quantity > $4
      RETURNING quantity`,
     [playerId, itemType, itemId, amount],
   );
   if (res.rows.length === 0) throw new Error(`Insufficient ${itemType}:${itemId}`);
-  if (res.rows[0].quantity === 0) {
-    await query(`DELETE FROM inventory WHERE player_id = $1 AND item_type = $2 AND item_id = $3`, [
-      playerId,
-      itemType,
-      itemId,
-    ]);
-  }
 }
 
 export async function transferInventoryItem(

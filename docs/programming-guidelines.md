@@ -139,10 +139,17 @@ Jeder interaktive Workflow im Cockpit folgt demselben Muster:
 
 ## 5. Fehlerbehandlung
 
-- Server sendet `{ code, message }` → Client zeigt über `actionError` / `InlineError`
+### Server-seitig
+
+- **Alle Fehler loggen:** Jeder `catch`-Block muss `logger.error({ err }, '...')` aufrufen (pino)
+- **ServerErrors → Admin ERRORS Tab:** Unerwartete Server-Fehler (500er, uncaught exceptions, Service-Fehler) werden in die DB geschrieben und im Admin-Panel unter dem ERRORS Tab angezeigt
+- **Validierungsfehler → Client:** Server sendet `{ code, message }` → Client zeigt über `actionError` / `InlineError`
+
+### Client-seitig
+
 - Validierungsfehler: inline am Element anzeigen (nicht als Toast)
 - Netzwerkfehler: Client zeigt Verbindungsstatus, kein Error-Dialog
-- Unerwartete Fehler: kurzer InlineError, Details in Browser-Konsole + pino Server-Log
+- Unerwartete Fehler: kurzer InlineError, Details in Browser-Konsole
 
 ---
 

@@ -67,18 +67,49 @@ describe('inventory queries', () => {
 
   it('deductInventory throws when insufficient quantity', async () => {
     const { query, deductInventory } = await freshImports();
-    vi.mocked(query).mockResolvedValue({ rows: [] } as any); // no rows = insufficient
+    // Both DELETE (exact) and UPDATE (surplus) return no rows → insufficient
+    vi.mocked(query).mockResolvedValue({ rows: [] } as any);
     await expect(deductInventory('player1', 'resource', 'ore', 5)).rejects.toThrow('Insufficient');
+  });
+
+  it('deductInventory deletes row when quantity equals amount', async () => {
+    const { query, deductInventory } = await freshImports();
+    // DELETE exact-match succeeds
+    vi.mocked(query).mockResolvedValueOnce({ rows: [{ id: 'some-id' }] } as any);
+    await deductInventory('player1', 'resource', 'ore', 3);
+    expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM inventory'), [
+      'player1',
+      'resource',
+      'ore',
+      3,
+    ]);
+    // Only one query call (no UPDATE needed)
+    expect(vi.mocked(query)).toHaveBeenCalledTimes(1);
+  });
+
+  it('deductInventory decrements when quantity exceeds amount', async () => {
+    const { query, deductInventory } = await freshImports();
+    vi.mocked(query)
+      .mockResolvedValueOnce({ rows: [] } as any) // DELETE exact-match: no match
+      .mockResolvedValueOnce({ rows: [{ quantity: 3 }] } as any); // UPDATE surplus: success
+    await deductInventory('player1', 'resource', 'ore', 2);
+    expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('UPDATE inventory'), [
+      'player1',
+      'resource',
+      'ore',
+      2,
+    ]);
   });
 
   it('transferInventoryItem deducts from source and upserts to target', async () => {
     const { query, transferInventoryItem } = await freshImports();
-    // deductInventory needs to succeed (returns a row with quantity > 0 to avoid a delete call)
+    // deductInventory: DELETE exact-match misses, UPDATE surplus succeeds
     vi.mocked(query)
-      .mockResolvedValueOnce({ rows: [{ quantity: 3 }] } as any) // deduct UPDATE succeeds
-      .mockResolvedValueOnce({ rows: [] } as any); // upsert (no delete since qty > 0)
+      .mockResolvedValueOnce({ rows: [] } as any) // DELETE exact-match: no match
+      .mockResolvedValueOnce({ rows: [{ quantity: 3 }] } as any) // UPDATE surplus: success
+      .mockResolvedValueOnce({ rows: [] } as any); // upsert INSERT
     await transferInventoryItem('player1', 'player2', 'module', 'drive_mk2', 2);
-    // First call should be the deduct UPDATE
+    // Second call should be the deduct UPDATE
     expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('UPDATE inventory'), [
       'player1',
       'module',
