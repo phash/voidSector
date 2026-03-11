@@ -7,7 +7,7 @@ import { getAcepBoostCost } from '@void-sector/shared';
 const PATHS: Array<{ key: AcepPath; label: string; color: string }> = [
   { key: 'ausbau',   label: 'AUSBAU', color: '#FFB000' },
   { key: 'intel',    label: 'INTEL',  color: '#4af' },
-  { key: 'kampf',    label: 'KAMPF',  color: '#FF4444' },
+  { key: 'kampf',    label: 'KAMPF',  color: '#f44' },
   { key: 'explorer', label: 'EXPLR',  color: '#4fa' },
 ];
 
