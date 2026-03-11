@@ -53,6 +53,12 @@ export interface UISlice {
   breadcrumbStack: Array<{ label: string; program: string }>;
   contextMenu: { playerId: string; playerName: string; x: number; y: number } | null;
 
+  // ACEP program tab state
+  acepActiveTab: 'acep' | 'module' | 'shop';
+  acepHoveredModuleId: string | null;
+  setAcepActiveTab: (tab: 'acep' | 'module' | 'shop') => void;
+  setAcepHoveredModuleId: (id: string | null) => void;
+
   setScreen: (screen: Screen) => void;
   setTheme: (theme: ThemeColor) => void;
   setJumpPending: (pending: boolean) => void;
@@ -108,6 +114,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   navReturnProgram: null,
   breadcrumbStack: [],
   contextMenu: null,
+  acepActiveTab: 'acep',
+  acepHoveredModuleId: null,
 
   setScreen: (screen) => set({ screen }),
   setTheme: (theme) => {
@@ -188,6 +196,8 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   openContextMenu: (playerId, playerName, x, y) =>
     set({ contextMenu: { playerId, playerName, x, y } }),
   closeContextMenu: () => set({ contextMenu: null }),
+  setAcepActiveTab: (tab) => set({ acepActiveTab: tab }),
+  setAcepHoveredModuleId: (id) => set({ acepHoveredModuleId: id }),
 
   stationTerminalOpen: false,
   openStationTerminal: () => set({ stationTerminalOpen: true }),
