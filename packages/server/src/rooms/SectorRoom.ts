@@ -134,6 +134,7 @@ import type { AlienInteractMessage } from './services/AlienInteractionService.js
 import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
+import { RepairService } from './services/RepairService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -181,6 +182,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private territory!: TerritoryService;
   private storyChain!: StoryQuestChainService;
   private communityQuests!: CommunityQuestService;
+  private repair!: RepairService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
 
   /** Get a player's current sector X coordinate */
@@ -317,6 +319,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.chat = new ChatService(this.serviceCtx);
     this.ships = new ShipService(this.serviceCtx);
     this.world = new WorldService(this.serviceCtx);
+    this.repair = new RepairService(this.serviceCtx);
     this.alienInteraction = new AlienInteractionService(this.serviceCtx);
     this.territory = new TerritoryService(this.serviceCtx);
     this.storyChain = new StoryQuestChainService();
@@ -468,6 +471,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('combatRound', async (client, data) => {
       await this.combat.handleCombatRound(client, data);
+    });
+    this.onMessage('repairModule', async (client, data: { moduleId: string }) => {
+      await this.repair.handleRepairModule(client, data);
+    });
+    this.onMessage('stationRepair', async (client, data) => {
+      await this.repair.handleStationRepair(client, data);
     });
 
     // ── Mining ──────────────────────────────────────────────────────
