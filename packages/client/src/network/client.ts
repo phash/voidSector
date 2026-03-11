@@ -438,6 +438,7 @@ class GameNetwork {
         'BUILD_FAIL',
         'INSUFFICIENT',
         'INVALID_INPUT',
+        'HYPERJUMP_FAIL',
       ];
       if (inlineCodes.some((c) => data.code.startsWith(c))) {
         store.setActionError(data);
@@ -2202,7 +2203,11 @@ class GameNetwork {
 
   // Hyperjump / Autopilot
   sendHyperJump(targetX: number, targetY: number) {
-    this.sectorRoom?.send('hyperJump', { targetX, targetY });
+    if (!this.sectorRoom) {
+      useStore.getState().setActionError({ code: 'HYPERJUMP_FAIL', message: 'Keine Verbindung — Seite neu laden' });
+      return;
+    }
+    this.sectorRoom.send('hyperJump', { targetX, targetY });
   }
 
   sendStartAutopilot(targetX: number, targetY: number, useHyperjump: boolean = false) {

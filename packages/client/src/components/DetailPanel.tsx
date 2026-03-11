@@ -851,14 +851,17 @@ export function DetailPanel() {
               const apCost = shipStats ? calcHyperjumpAP(shipStats.engineSpeed) : 0;
               const fuelCost = shipStats ? calcHyperjumpFuel(shipStats.fuelPerJump, distance) : 0;
               return (
-                <button
-                  className="vs-btn"
-                  style={{ marginTop: 8, display: 'block', width: '100%' }}
-                  onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}
-                >
-                  [HYPERJUMP ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})]
-                  {shipStats ? ` ${apCost}AP / ${fuelCost}F` : ''}
-                </button>
+                <>
+                  <button
+                    className="vs-btn"
+                    style={{ marginTop: 8, display: 'block', width: '100%' }}
+                    onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}
+                  >
+                    [HYPERJUMP ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})]
+                    {shipStats ? ` ${apCost}AP / ${fuelCost}F` : ''}
+                  </button>
+                  <InlineError codes={['HYPERJUMP_FAIL']} />
+                </>
               );
             }
             return null;
