@@ -12,7 +12,7 @@ import type {
 } from '@void-sector/shared';
 
 import { validateNpcTrade, validateTransfer, getReputationTier } from '../../engine/commands.js';
-import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
+import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
 import { getStationFaction } from '../../engine/npcgen.js';
 import {
   getOrInitStation,
@@ -60,6 +60,7 @@ import {
   getPlayerStationRep,
   updatePlayerStationRep,
   getPlayerResearch,
+  getActiveShip,
 } from '../../db/queries.js';
 import {
   addToInventory,
@@ -80,6 +81,7 @@ import {
   REP_PRICE_MODIFIERS,
   getFuelRepPriceModifier,
   STATION_REP_TRADE,
+  getAcepLevel,
 } from '@void-sector/shared';
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
@@ -590,6 +592,13 @@ export class EconomyService {
 
     if (!data?.recipeId || typeof data.recipeId !== 'string') {
       client.send('factoryUpdate', { error: 'Invalid recipe ID' });
+      return;
+    }
+
+    const shipForFactory = await getActiveShip(auth.userId);
+    const acepXpFactory = shipForFactory ? await getAcepXpSummary(shipForFactory.id) : { ausbau: 0 };
+    if (getAcepLevel(acepXpFactory.ausbau) < 2) {
+      client.send('error', { code: 'FACTORY_LOCKED', message: 'Fabrik erfordert AUSBAU Level 2' });
       return;
     }
 
