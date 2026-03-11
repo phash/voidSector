@@ -281,21 +281,21 @@ describe('ShipStatusPanel', () => {
     expect(screen.queryByText('HYPERDRIVE')).not.toBeInTheDocument();
   });
 
-  it('renders [MODULES] quick link', () => {
+  it('renders [ACEP] quick link', () => {
     render(<ShipStatusPanel />);
 
-    expect(screen.getByText('[MODULES]')).toBeInTheDocument();
+    expect(screen.getByText('[ACEP]')).toBeInTheDocument();
   });
 
-  it('clicking [MODULES] calls setActiveProgram with MODULES', async () => {
+  it('clicking [ACEP] calls setActiveProgram with ACEP', async () => {
     const user = userEvent.setup();
     const setActiveProgram = vi.fn();
     mockStoreState({ ship: baseShip, setActiveProgram });
     render(<ShipStatusPanel />);
 
-    await user.click(screen.getByText('[MODULES]'));
+    await user.click(screen.getByText('[ACEP]'));
 
-    expect(setActiveProgram).toHaveBeenCalledWith('MODULES');
+    expect(setActiveProgram).toHaveBeenCalledWith('ACEP');
   });
 
 });
