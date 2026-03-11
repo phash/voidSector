@@ -78,7 +78,7 @@ function fillQuestTemplate(
       .replace('{amount}', String(amount));
     objectives.push({
       type: 'fetch',
-      description: `${amount} ${resource}`,
+      description: `${amount} ${resource} zur Station (${stationX}:${stationY}) liefern`,
       resource,
       amount,
       progress: 0,
@@ -162,6 +162,17 @@ function fillQuestTemplate(
         description: `Ziel: (${targetX}, ${targetY})`,
         targetX,
         targetY,
+        fulfilled: false,
+      });
+    }
+
+    // Scan quests: add delivery objective — player must return data slate to station
+    if (template.type === 'scan') {
+      objectives.push({
+        type: 'scan_deliver',
+        description: `Data Slate zur Station (${stationX}:${stationY}) abliefern`,
+        stationX,
+        stationY,
         fulfilled: false,
       });
     }

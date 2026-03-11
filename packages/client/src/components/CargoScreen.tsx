@@ -77,6 +77,7 @@ export function CargoScreen() {
   const [selectedSlateId, setSelectedSlateId] = useState<string | null>(null);
 
   const resources = inventory.filter((i) => i.itemType === 'resource');
+  const dataSlates = inventory.filter((i) => i.itemType === 'data_slate');
   const modules = inventory.filter((i) => i.itemType === 'module');
   const blueprints = inventory.filter((i) => i.itemType === 'blueprint');
   const setActiveProgram = useStore((s) => s.setActiveProgram);
@@ -187,6 +188,24 @@ export function CargoScreen() {
               {resources.map((item) => (
                 <div key={item.itemId} style={{ marginBottom: 2 }}>
                   {item.itemId.toUpperCase()} x{item.quantity}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {dataSlates.length > 0 && (
+            <div
+              style={{
+                borderTop: '1px solid var(--color-dim)',
+                paddingTop: '8px',
+                marginBottom: '16px',
+                fontSize: '0.8rem',
+              }}
+            >
+              <div style={{ opacity: 0.6, marginBottom: 4 }}>DATA SLATES (QUEST):</div>
+              {dataSlates.map((item) => (
+                <div key={item.itemId} style={{ marginBottom: 2, color: '#c8a020' }}>
+                  ◈ DATA SLATE
                 </div>
               ))}
             </div>

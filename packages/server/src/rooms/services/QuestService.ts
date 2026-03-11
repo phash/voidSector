@@ -38,6 +38,7 @@ import {
   getAcceptedQuestTemplateIds,
   addWissen,
   getQuestById,
+  getCargoCapForPlayer,
 } from '../../db/queries.js';
 import {
   getCargoState,
@@ -104,6 +105,24 @@ export class QuestService {
     let objectives = questTemplate.objectives;
     let title = questTemplate.title;
     let description = questTemplate.description;
+
+    // Fetch quest: check cargo capacity before accepting
+    const fetchObj = objectives.find((o) => o.type === 'fetch');
+    if (fetchObj?.amount) {
+      const [cargoState, cargoCap] = await Promise.all([
+        getCargoState(auth.userId),
+        getCargoCapForPlayer(auth.userId),
+      ]);
+      const currentUsed =
+        cargoState.ore + cargoState.gas + cargoState.crystal + cargoState.slates + cargoState.artefact;
+      if (currentUsed + fetchObj.amount > cargoCap) {
+        this.ctx.send(client, 'acceptQuestResult', {
+          success: false,
+          error: 'Zu wenig Laderaum für diese Quest',
+        });
+        return;
+      }
+    }
 
     // Bounty chase: generate trail at accept time
     if (objectives[0]?.type === 'bounty_trail') {
@@ -193,13 +212,20 @@ export class QuestService {
   async handleAbandonQuest(client: Client, data: AbandonQuestMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
 
-    // Bounty chase cleanup: remove prisoner if combat objective was fulfilled
+    // Cleanup inventory items tied to this quest
     const quest = await getQuestById(data.questId, auth.userId);
     if (quest) {
       const objectives = quest.objectives as any[];
+      // Bounty chase: remove prisoner if combat objective was fulfilled
       const combatObj = objectives?.find((o: any) => o.type === 'bounty_combat');
       if (combatObj?.fulfilled) {
         await removeFromInventory(auth.userId, 'prisoner', quest.id, 1);
+      }
+      // Scan quest: remove data slate if scan is done but not yet delivered
+      const scanDone = objectives?.some((o: any) => o.type === 'scan' && o.fulfilled);
+      const deliverDone = objectives?.some((o: any) => o.type === 'scan_deliver' && o.fulfilled);
+      if (scanDone && !deliverDone) {
+        await removeFromInventory(auth.userId, 'data_slate', quest.id, 1);
       }
     }
 
@@ -431,6 +457,28 @@ export class QuestService {
         ) {
           obj.fulfilled = true;
           updated = true;
+          // When all scan objectives in this quest are now fulfilled, issue a data slate
+          const allScansDone = objectives
+            .filter((o) => o.type === 'scan')
+            .every((o) => o.fulfilled);
+          if (allScansDone) {
+            await addToInventory(playerId, 'data_slate', row.id, 1);
+          }
+        }
+
+        // scan_deliver: player returns data slate to quest station
+        if (
+          obj.type === 'scan_deliver' &&
+          action === 'arrive' &&
+          obj.stationX === context.sectorX &&
+          obj.stationY === context.sectorY
+        ) {
+          const hasSlate = await getInventoryItem(playerId, 'data_slate', row.id);
+          if (hasSlate > 0) {
+            await removeFromInventory(playerId, 'data_slate', row.id, 1);
+            obj.fulfilled = true;
+            updated = true;
+          }
         }
 
         if (
