@@ -98,8 +98,8 @@ export function AcepDetailPanel() {
 
   const deltas = STAT_LABELS
     .map(({ key, label, format }) => {
-      const beforeNum = statsWithout[key] as number;
-      const afterNum = statsCandidate[key] as number;
+      const beforeNum = typeof statsWithout[key] === 'number' ? statsWithout[key] as number : 0;
+      const afterNum = typeof statsCandidate[key] === 'number' ? statsCandidate[key] as number : 0;
       const delta = afterNum - beforeNum;
       if (Math.abs(delta) < 0.001) return null;
       const sign = delta > 0 ? '+' : '-';
@@ -116,7 +116,7 @@ export function AcepDetailPanel() {
 
   // Find currently installed module in same category (for SHOP tab replacement note)
   const replacedModule = activeTab === 'shop'
-    ? ship.modules.find((m) => {
+    ? (ship.modules ?? []).find((m) => {
         const d = MODULES[m.moduleId];
         return d && d.category === def.category;
       })
@@ -166,9 +166,9 @@ export function AcepDetailPanel() {
       {activeTab === 'module' && (
         <>
           {(() => {
-            const installed = ship.modules.find((m) => m.moduleId === hoveredId);
+            const installed = (ship.modules ?? []).find((m) => m.moduleId === hoveredId);
             if (!installed) return null;
-            const maxHp = installed.maxHp ?? MODULES[hoveredId]?.maxHp ?? 20;
+            const maxHp = MODULES[hoveredId]?.maxHp ?? 20;
             const currentHp = installed.currentHp ?? maxHp;
             const filled = maxHp > 0 ? Math.round((currentHp / maxHp) * 6) : 6;
             const bar = '█'.repeat(filled) + '░'.repeat(6 - filled);
