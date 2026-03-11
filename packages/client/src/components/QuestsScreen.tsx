@@ -481,7 +481,6 @@ export function QuestsScreen() {
 
   // Filter out accepted quests from availableQuests when activeQuests changes
   useEffect(() => {
-    if (activeQuests.length === 0) return;
     const acceptedIds = new Set(activeQuests.map((q) => q.templateId).filter(Boolean));
     setAvailableQuests((prev) => prev.filter((q) => !acceptedIds.has(q.templateId)));
   }, [activeQuests]);

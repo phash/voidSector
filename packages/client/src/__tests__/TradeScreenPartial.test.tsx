@@ -15,6 +15,7 @@ vi.mock('../state/store', () => ({
       credits: 100,
       npcStationData: { items: [], name: 'Test Station', level: 1, xp: 0, nextLevelXp: 100, inventory: [] },
       tradeMessage: 'Nur 2x verkauft — Station ist fast voll',
+      setTradeMessage: vi.fn(),
       kontorStatus: null,
       position: { x: 5, y: 5 },
       setActiveProgram: vi.fn(),

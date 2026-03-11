@@ -47,6 +47,7 @@ export function TradeScreen() {
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
   const tradeMessage = useStore((s) => s.tradeMessage);
+  const setTradeMessage = useStore((s) => s.setTradeMessage);
   const [amount, setAmount] = useState(1);
   const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
 
@@ -57,6 +58,11 @@ export function TradeScreen() {
   const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
   const canTrade = isStation || isHomeBase;
   const hasKontorOrders = kontorOrders.length > 0;
+
+  useEffect(() => {
+    // Clear stale trade message when screen opens
+    setTradeMessage(null);
+  }, []);
 
   useEffect(() => {
     network.requestCredits();
