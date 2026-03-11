@@ -32,8 +32,6 @@ import type {
   ConfigureRouteResultMessage,
   CreateCustomSlateMessage,
   Bookmark,
-  CombatV2State,
-  CombatV2RoundResult,
   StationCombatEvent,
   AdminMessage,
   AdminQuestNotification,
@@ -1013,25 +1011,6 @@ class GameNetwork {
       },
     );
     // ─────────────────────────────────────────────────────────────────────────
-
-    room.onMessage('combatV2Init', (data: { state: CombatV2State }) => {
-      useStore.getState().setActiveCombatV2(data.state);
-    });
-
-    room.onMessage('combatV2Result', (data: CombatV2RoundResult) => {
-      const store = useStore.getState();
-      if (data.state) {
-        store.setActiveCombatV2(data.state.status === 'active' ? data.state : null);
-      }
-      if (data.finalResult) {
-        const encounter = store.activeBattle ?? store.activeCombatV2?.encounter;
-        if (encounter) {
-          store.setLastBattleResult({ encounter, result: data.finalResult as any });
-        }
-        store.setActiveCombatV2(null);
-        store.setActiveBattle(null);
-      }
-    });
 
     // Permadeath: ship destroyed in combat → clear combat state, show notification
     room.onMessage(
@@ -2056,22 +2035,6 @@ class GameNetwork {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-
-  sendCombatV2Action(tactic: string, specialAction: string, sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED');
-      return;
-    }
-    this.sectorRoom.send('combatV2Action', { tactic, specialAction, sectorX, sectorY });
-  }
-
-  sendCombatV2Flee(sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED');
-      return;
-    }
-    this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
-  }
 
   sendEjectPod(sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {

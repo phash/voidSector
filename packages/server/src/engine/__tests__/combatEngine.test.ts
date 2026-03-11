@@ -277,7 +277,7 @@ describe('resolveRound - draw', () => {
 });
 
 describe('resolveRound - emergency eject', () => {
-  it('eject when HP <= 15%', () => {
+  it('eject when HP < 15%', () => {
     const state = makeCombatState({ playerHp: 10, playerMaxHp: 100 }); // 10% < 15%
     const input: RoundInput = {
       energyAllocations: [],
@@ -287,6 +287,19 @@ describe('resolveRound - emergency eject', () => {
     const result = resolveRound(state, input);
     expect(result.ejected).toBe(true);
     expect(result.outcome).toBe('ejected');
+  });
+
+  it('no eject when HP is exactly 15% (strict less-than boundary)', () => {
+    // Exactly 15% — must NOT trigger eject (spec requires strictly < 15%)
+    const state = makeCombatState({ playerHp: 15, playerMaxHp: 100, enemyLevel: 0 });
+    const input: RoundInput = {
+      energyAllocations: [],
+      primaryAction: { type: 'wait' },
+      reactionChoice: { type: 'emergency_eject' },
+    };
+    const result = resolveRound(state, input);
+    // Enemy level 0 deals 0 damage, so HP stays at exactly 15 → eject must be blocked
+    expect(result.ejected).toBe(false);
   });
 
   it('no eject when HP is above 15%', () => {
@@ -304,12 +317,12 @@ describe('resolveRound - emergency eject', () => {
 });
 
 describe('resolveRound - ancient abilities', () => {
-  it('explorer_passive reveals all enemy modules', () => {
+  it('explorer_passive reveals all enemy modules when charged (>= 3 rounds)', () => {
     const enemyModules: EnemyModule[] = [
       { category: 'weapon', tier: 1, currentHp: 20, maxHp: 20, powerLevel: 'high', revealed: false },
       { category: 'shield', tier: 1, currentHp: 20, maxHp: 20, powerLevel: 'mid', revealed: false },
     ];
-    const state = makeCombatState({ enemyModules });
+    const state = makeCombatState({ enemyModules, ancientChargeRounds: 3 });
     const input: RoundInput = {
       energyAllocations: [],
       primaryAction: { type: 'wait' },
@@ -318,13 +331,14 @@ describe('resolveRound - ancient abilities', () => {
     const result = resolveRound(state, input);
     expect(result.newState.enemyModules.every((m) => m.revealed)).toBe(true);
     expect(result.newState.ancientChargeRounds).toBe(0);
+    expect(result.newState.ancientAbilityUsed).toBe(true);
   });
 
-  it('energy_pulse deals direct damage ignoring shields', () => {
+  it('energy_pulse deals direct damage ignoring shields when charged (>= 3 rounds)', () => {
     const enemyModules: EnemyModule[] = [
       { category: 'shield', tier: 2, currentHp: 35, maxHp: 35, powerLevel: 'high', revealed: true },
     ];
-    const state = makeCombatState({ enemyHp: 80, enemyModules });
+    const state = makeCombatState({ enemyHp: 80, enemyModules, ancientChargeRounds: 3 });
     const input: RoundInput = {
       energyAllocations: [],
       primaryAction: { type: 'wait' },
@@ -343,6 +357,44 @@ describe('resolveRound - ancient abilities', () => {
     };
     const result = resolveRound(state, input);
     expect(result.newState.ancientChargeRounds).toBe(3);
+  });
+
+  it('ancientAbility is ignored if charge rounds < 3 (server validation)', () => {
+    const enemyModules: EnemyModule[] = [
+      { category: 'weapon', tier: 1, currentHp: 20, maxHp: 20, powerLevel: 'high', revealed: false },
+    ];
+    // Only 2 charge rounds — ability should NOT fire
+    const state = makeCombatState({ enemyModules, ancientChargeRounds: 2 });
+    const input: RoundInput = {
+      energyAllocations: [],
+      primaryAction: { type: 'wait' },
+      ancientAbility: { type: 'explorer_passive' },
+    };
+    const result = resolveRound(state, input);
+    // Modules must NOT be revealed — ability was ignored
+    expect(result.newState.enemyModules.every((m) => m.revealed)).toBe(false);
+    // ancientAbilityUsed must remain false
+    expect(result.newState.ancientAbilityUsed).toBe(false);
+    // charge rounds stay unchanged when ability is sent but blocked (no increment branch fires)
+    expect(result.newState.ancientChargeRounds).toBe(2);
+  });
+
+  it('ancientAbility is ignored if already used (server validation)', () => {
+    const enemyModules: EnemyModule[] = [
+      { category: 'weapon', tier: 1, currentHp: 20, maxHp: 20, powerLevel: 'high', revealed: false },
+    ];
+    // Charged but already used
+    const state = makeCombatState({ enemyModules, ancientChargeRounds: 5, ancientAbilityUsed: true });
+    const input: RoundInput = {
+      energyAllocations: [],
+      primaryAction: { type: 'wait' },
+      ancientAbility: { type: 'explorer_passive' },
+    };
+    const result = resolveRound(state, input);
+    // Modules must NOT be revealed — ability was already used
+    expect(result.newState.enemyModules.every((m) => m.revealed)).toBe(false);
+    // charge rounds stay unchanged — ability was sent but blocked, no increment fires
+    expect(result.newState.ancientChargeRounds).toBe(5);
   });
 });
 

@@ -152,7 +152,8 @@ export function CombatDialog() {
   const generatorEpEstimate = (() => {
     if (!generatorModule) return 0;
     const tier = generatorModule.tier ?? 1;
-    const baseEp = tier * 4; // T1=4, T2=8, T3=12, T4=16, T5=20
+    const EP_BY_TIER: Record<number, number> = { 1: 6, 2: 9, 3: 12, 4: 15, 5: 18 };
+    const baseEp = EP_BY_TIER[tier] ?? 6; // T1=6, T2=9, T3=12, T4=15, T5=18
     const currentHp = generatorModule.currentHp ?? MODULE_HP_BY_TIER[tier as keyof typeof MODULE_HP_BY_TIER] ?? 20;
     const maxHp = generatorModule.maxHp ?? MODULE_HP_BY_TIER[tier as keyof typeof MODULE_HP_BY_TIER] ?? 20;
     const hpRatio = maxHp > 0 ? currentHp / maxHp : 0;

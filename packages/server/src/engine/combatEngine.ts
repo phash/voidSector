@@ -135,33 +135,7 @@ export function resolveRound(state: CombatState, input: RoundInput): RoundResult
   let ejected = false;
   let outcome: RoundResult['outcome'] = 'ongoing';
 
-  // ── Step 1: Ancient Ability ─────────────────────────────────────────────────
-  if (input.ancientAbility) {
-    const ability = input.ancientAbility;
-
-    if (ability.type === 'explorer_passive') {
-      for (const enemyMod of newState.enemyModules) {
-        enemyMod.revealed = true;
-      }
-      logLines.push('EXPLORER PASSIVE: All enemy modules revealed.');
-    } else if (ability.type === 'energy_pulse') {
-      const pulseDamage = 20; // flat damage ignoring shields
-      newState.enemyHp = Math.max(0, newState.enemyHp - pulseDamage);
-      enemyDamageTaken += pulseDamage;
-      logLines.push(`ENERGY PULSE: ${pulseDamage} direct damage to enemy (shields bypassed).`);
-      if (newState.enemyHp <= 0) {
-        outcome = 'victory';
-      }
-    }
-
-    newState.ancientAbilityUsed = true;
-    newState.ancientChargeRounds = 0;
-  } else {
-    // Increment charge rounds when ability is NOT used
-    newState.ancientChargeRounds += 1;
-  }
-
-  // ── Step 2: Apply Energy Allocations ───────────────────────────────────────
+  // ── Step 1: Apply Energy Allocations ───────────────────────────────────────
   const availableEp = calculateAvailableEp(newState);
   const epSpent = calculateEpCost(input.energyAllocations);
   const epRemaining = Math.max(0, availableEp - epSpent);
@@ -175,7 +149,7 @@ export function resolveRound(state: CombatState, input: RoundInput): RoundResult
     }
   }
 
-  // ── Step 3: Primary Action ─────────────────────────────────────────────────
+  // ── Step 2: Primary Action ─────────────────────────────────────────────────
   if (outcome === 'ongoing') {
     const action = input.primaryAction;
 
@@ -318,7 +292,7 @@ export function resolveRound(state: CombatState, input: RoundInput): RoundResult
     }
   }
 
-  // ── Step 4: Enemy Action ────────────────────────────────────────────────────
+  // ── Step 3: Enemy Action ────────────────────────────────────────────────────
   if (outcome === 'ongoing' || outcome === 'victory') {
     // Enemy always attacks (even on victory round, to show the hit that was taken)
     if (outcome === 'ongoing') {
@@ -374,7 +348,7 @@ export function resolveRound(state: CombatState, input: RoundInput): RoundResult
     }
   }
 
-  // ── Step 5: Reaction Choice ─────────────────────────────────────────────────
+  // ── Step 4: Reaction Choice ─────────────────────────────────────────────────
   if (input.reactionChoice) {
     const reaction = input.reactionChoice;
 
@@ -389,14 +363,40 @@ export function resolveRound(state: CombatState, input: RoundInput): RoundResult
       newState.playerHp = Math.min(newState.playerMaxHp, newState.playerHp + reduction);
       logLines.push(`ECM PULSE: Reduced incoming damage by ${reduction}.`);
     } else if (reaction.type === 'emergency_eject') {
-      if (newState.playerHp <= newState.playerMaxHp * 0.15) {
+      if (newState.playerHp < newState.playerMaxHp * 0.15) {
         ejected = true;
         outcome = 'ejected';
         logLines.push('EMERGENCY EJECT: Escape pod launched! Cargo lost.');
       } else {
-        logLines.push('EMERGENCY EJECT: HP too high — eject threshold not met (requires ≤15% HP).');
+        logLines.push('EMERGENCY EJECT: HP too high — eject threshold not met (requires <15% HP).');
       }
     }
+  }
+
+  // ── Step 5: Ancient Ability ─────────────────────────────────────────────────
+  if (input.ancientAbility && newState.ancientChargeRounds >= 3 && !newState.ancientAbilityUsed) {
+    const ability = input.ancientAbility;
+
+    if (ability.type === 'explorer_passive') {
+      for (const enemyMod of newState.enemyModules) {
+        enemyMod.revealed = true;
+      }
+      logLines.push('EXPLORER PASSIVE: All enemy modules revealed.');
+    } else if (ability.type === 'energy_pulse') {
+      const pulseDamage = 20; // flat damage ignoring shields
+      newState.enemyHp = Math.max(0, newState.enemyHp - pulseDamage);
+      enemyDamageTaken += pulseDamage;
+      logLines.push(`ENERGY PULSE: ${pulseDamage} direct damage to enemy (shields bypassed).`);
+      if (newState.enemyHp <= 0) {
+        outcome = 'victory';
+      }
+    }
+
+    newState.ancientAbilityUsed = true;
+    newState.ancientChargeRounds = 0;
+  } else if (!input.ancientAbility) {
+    // Increment charge rounds when ability is NOT used
+    newState.ancientChargeRounds += 1;
   }
 
   // ── Step 6: Check End Conditions ────────────────────────────────────────────
