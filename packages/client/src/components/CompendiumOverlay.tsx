@@ -21,6 +21,29 @@ function renderBody(body: string, onNavigate: (id: string) => void): ReactNode[]
     const paragraph = paragraphs[pi];
     const lines = paragraph.split('\n');
 
+    // Check if this paragraph is an image block: ![caption](img:path)
+    const imgMatch = paragraph.trim().match(/^!\[([^\]]*)\]\(img:([^)]+)\)$/);
+    if (imgMatch) {
+      const [, caption, path] = imgMatch;
+      elements.push(
+        <div key={`img-${pi}`} className="compendium-img-block" style={{ margin: '16px 0', textAlign: 'center' }}>
+          <img
+            src={`/compendium/${path}.png`}
+            alt={caption}
+            loading="lazy"
+            style={{ maxWidth: '100%', imageRendering: 'pixelated', border: '1px solid rgba(255,176,0,0.3)' }}
+          />
+          <div
+            className="compendium-img-caption"
+            style={{ fontSize: '0.65rem', color: 'var(--color-dim)', marginTop: '4px', letterSpacing: '0.1em' }}
+          >
+            [ {caption} ]
+          </div>
+        </div>,
+      );
+      continue;
+    }
+
     // Check if this paragraph is a table (all non-empty lines start with |)
     const nonEmpty = lines.filter((l) => l.trim().length > 0);
     const isTable = nonEmpty.length > 0 && nonEmpty.every((l) => l.trim().startsWith('|'));

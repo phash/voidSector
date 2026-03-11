@@ -9,6 +9,7 @@ import {
   getArticle,
   getArticlesByCategory,
 } from '../data/compendium';
+import * as compendiumData from '../data/compendium';
 
 function setupStore(overrides: Record<string, unknown> = {}) {
   mockStoreState({
@@ -209,5 +210,49 @@ describe('CompendiumOverlay', () => {
     render(<CompendiumOverlay />);
     // The sidebar item should be visible (category auto-expanded)
     expect(screen.getByTestId(`compendium-item-${article.id}`)).toBeDefined();
+  });
+
+  describe('img: block rendering', () => {
+    it('renders compendium-img-block with img and caption from img: marker', () => {
+      const spy = vi.spyOn(compendiumData, 'getArticle').mockReturnValue({
+        id: 'grundlagen-start',
+        title: 'TEST',
+        category: 'grundlagen',
+        icon: '◈',
+        summary: 'Test summary of at least twenty characters.',
+        body: 'Vortext.\n\n![Test Bild](img:acep/test)\n\nNachtext.',
+      });
+
+      setupStore({ compendiumOpen: true, compendiumArticleId: 'grundlagen-start' });
+      const { container } = render(<CompendiumOverlay />);
+
+      const imgBlock = container.querySelector('.compendium-img-block');
+      expect(imgBlock).not.toBeNull();
+
+      const img = container.querySelector('img');
+      expect(img?.getAttribute('src')).toBe('/compendium/acep/test.png');
+
+      const caption = container.querySelector('.compendium-img-caption');
+      expect(caption?.textContent).toContain('Test Bild');
+
+      spy.mockRestore();
+    });
+
+    it('does not render compendium-img-block for non-img paragraphs', () => {
+      const spy = vi.spyOn(compendiumData, 'getArticle').mockReturnValue({
+        id: 'grundlagen-start',
+        title: 'TEST',
+        category: 'grundlagen',
+        icon: '◈',
+        summary: 'Test summary of at least twenty characters.',
+        body: 'Normaler Text ohne Bild.',
+      });
+
+      setupStore({ compendiumOpen: true, compendiumArticleId: 'grundlagen-start' });
+      const { container } = render(<CompendiumOverlay />);
+
+      expect(container.querySelector('.compendium-img-block')).toBeNull();
+      spy.mockRestore();
+    });
   });
 });
