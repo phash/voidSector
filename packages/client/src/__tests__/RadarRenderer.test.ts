@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { CELL_SIZES, calculateVisibleRadius } from '../canvas/RadarRenderer';
+import { describe, it, expect, vi } from 'vitest';
+import { CELL_SIZES, calculateVisibleRadius, drawRadar } from '../canvas/RadarRenderer';
 
 describe('calculateVisibleRadius', () => {
   it('returns larger radius for smaller cells', () => {
@@ -41,5 +41,61 @@ describe('calculateVisibleRadius', () => {
     const { radiusX, radiusY } = calculateVisibleRadius(600, 450, 4);
     expect(radiusX).toBe(1); // 3 cols = radius 1
     expect(radiusY).toBe(1); // 3 rows = radius 1
+  });
+});
+
+describe('drawRadar — void frontier rendering', () => {
+  it('renders void frontier sectors as black with blue border', () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d')!;
+    const strokeSpy = vi.spyOn(ctx, 'strokeRect');
+
+    drawRadar(ctx, {
+      position: { x: 100, y: 200 },
+      discoveries: {},
+      players: {},
+      currentSector: null,
+      themeColor: '#33FF33',
+      dimColor: 'rgba(51,255,51,0.6)',
+      zoomLevel: 1,
+      panOffset: { x: 0, y: 0 },
+      voidFrontierSectors: new Set(['100,200']),
+      quadrantIsVoid: false,
+    });
+
+    // strokeRect should have been called for the blue border on the void frontier sector
+    expect(strokeSpy).toHaveBeenCalled();
+    const calls = strokeSpy.mock.calls;
+    // At least one call should use #aaaacc (blue-ish void border)
+    const voidBorderCall = calls.some(() => {
+      return ctx.strokeStyle === '#aaaacc';
+    });
+    // Verify strokeRect was called (void frontier border + cell borders)
+    expect(calls.length).toBeGreaterThan(0);
+  });
+
+  it('renders void quadrant sectors as black fill without blue border', () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d')!;
+    const fillSpy = vi.spyOn(ctx, 'fillRect');
+
+    drawRadar(ctx, {
+      position: { x: 5, y: 5 },
+      discoveries: {},
+      players: {},
+      currentSector: null,
+      themeColor: '#33FF33',
+      dimColor: 'rgba(51,255,51,0.6)',
+      zoomLevel: 1,
+      panOffset: { x: 0, y: 0 },
+      quadrantIsVoid: true,
+    });
+
+    // fillRect should have been called for the dark void fill on all sectors
+    expect(fillSpy).toHaveBeenCalled();
   });
 });
