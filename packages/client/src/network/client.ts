@@ -353,6 +353,13 @@ class GameNetwork {
           lastLogEntry: string | null;
           hasSalvage: boolean;
         }>;
+        sectorX?: number;
+        sectorY?: number;
+        quadrantX?: number;
+        quadrantY?: number;
+        sectorType?: string;
+        structures?: string[];
+        universeTick?: number;
       }) => {
         const store = useStore.getState();
         store.setScanPending(false);
@@ -803,6 +810,16 @@ class GameNetwork {
         store.addLogEntry('DATA SLATE ERSTELLT');
         if (data.cargo) store.setCargo(data.cargo);
         if (data.ap) store.setAP(data.ap);
+        this.sectorRoom?.send('getMySlates');
+      } else {
+        store.addLogEntry(`SLATE FEHLER: ${data.error}`);
+      }
+    });
+
+    room.onMessage('slateFromScanResult', (data: { success: boolean; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('SCAN SLATE GESPEICHERT');
         this.sectorRoom?.send('getMySlates');
       } else {
         store.addLogEntry(`SLATE FEHLER: ${data.error}`);
@@ -1927,6 +1944,10 @@ class GameNetwork {
   // Data Slates
   sendCreateSlate(slateType: 'sector' | 'area' | 'jumpgate') {
     this.sectorRoom?.send('createSlate', { slateType });
+  }
+
+  sendCreateSlateFromScan() {
+    this.sectorRoom?.send('createSlateFromScan', {});
   }
 
   requestMySlates() {

@@ -1,14 +1,31 @@
+import { useState } from 'react';
 import { useStore } from '../../state/store';
+import { network } from '../../network/client';
 
 export function LocalScanResultOverlay() {
   const result = useStore((s) => s.localScanResult);
   const setLocalScanResult = useStore((s) => s.setLocalScanResult);
+  const cargo = useStore((s) => s.cargo);
+  const ship = useStore((s) => s.ship);
+  const [slateSaved, setSlateSaved] = useState(false);
 
   if (!result) return null;
 
-  const { resources, hiddenSignatures, wrecks } = result;
+  const { resources, hiddenSignatures, wrecks, sectorX, sectorY, quadrantX, quadrantY, sectorType, structures, universeTick } = result;
   const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
   const hasWrecks = wrecks && wrecks.length > 0;
+
+  // Cargo check for slate button
+  const cargoTotal = (cargo.ore ?? 0) + (cargo.gas ?? 0) + (cargo.crystal ?? 0)
+    + (cargo.slates ?? 0) + (cargo.artefact ?? 0);
+  const cargoCap = ship?.stats?.cargoCap ?? 0;
+  const cargoFull = cargoCap > 0 && cargoTotal >= cargoCap;
+
+  const handleSaveSlate = () => {
+    if (slateSaved || cargoFull) return;
+    network.sendCreateSlateFromScan();
+    setSlateSaved(true);
+  };
 
   return (
     <div
@@ -50,8 +67,40 @@ export function LocalScanResultOverlay() {
           justifyContent: 'space-between',
         }}>
           <span>◈ SCAN ERGEBNIS</span>
-          <span style={{ color: 'var(--color-dim)' }}>LOCAL SCAN</span>
+          <span style={{ color: 'var(--color-dim)' }}>
+            LOCAL SCAN{universeTick != null ? ` · TICK ${universeTick}` : ''}
+          </span>
         </div>
+
+        {/* Location Context */}
+        {sectorX != null && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
+            <div style={{ padding: '4px 8px', border: '1px solid rgba(255,176,0,0.15)' }}>
+              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>QUADRANT</div>
+              <div style={{ color: 'var(--color-primary)', fontSize: '0.75rem' }}>Q {quadrantX}:{quadrantY}</div>
+            </div>
+            <div style={{ padding: '4px 8px', border: '1px solid rgba(255,176,0,0.15)' }}>
+              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>SEKTOR</div>
+              <div style={{ color: 'var(--color-primary)', fontSize: '0.75rem' }}>({sectorX}, {sectorY})</div>
+            </div>
+          </div>
+        )}
+
+        {/* Sector Type + Structures */}
+        {sectorType && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
+            <div style={{ padding: '4px 8px', border: '1px solid rgba(255,176,0,0.15)' }}>
+              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>SEKTORTYP</div>
+              <div style={{ color: 'var(--color-primary)', fontSize: '0.75rem' }}>{sectorType.toUpperCase()}</div>
+            </div>
+            <div style={{ padding: '4px 8px', border: '1px solid rgba(255,176,0,0.15)' }}>
+              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>STRUKTUREN</div>
+              <div style={{ color: '#4a9', fontSize: '0.75rem' }}>
+                {structures && structures.length > 0 ? structures.join(', ') : '—'}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Resources */}
         <div style={{ marginBottom: '12px' }}>
@@ -132,8 +181,24 @@ export function LocalScanResultOverlay() {
           </div>
         )}
 
-        {/* Close */}
-        <div style={{ textAlign: 'right', marginTop: '8px' }}>
+        {/* Buttons: SAVE TO SLATE + CLOSE */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', gap: '8px' }}>
+          <button
+            onClick={handleSaveSlate}
+            disabled={slateSaved || cargoFull}
+            style={{
+              border: `1px solid ${slateSaved ? '#4a9' : cargoFull ? '#333' : '#00BFFF'}`,
+              background: 'none',
+              color: slateSaved ? '#4a9' : cargoFull ? '#666' : '#00BFFF',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.7rem',
+              cursor: slateSaved || cargoFull ? 'not-allowed' : 'pointer',
+              padding: '3px 12px',
+              letterSpacing: '0.1em',
+            }}
+          >
+            {slateSaved ? '✓ SLATE GESPEICHERT' : cargoFull ? '[SLATE] CARGO VOLL' : '[SAVE TO SLATE]'}
+          </button>
           <button
             onClick={() => setLocalScanResult(null)}
             style={{
