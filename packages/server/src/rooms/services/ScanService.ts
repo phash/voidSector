@@ -33,7 +33,9 @@ import {
   addTypedArtefact,
   getAllQuadrantControls,
   addWissen,
+  getPlayerJumpGate,
 } from '../../db/queries.js';
+import { getUniverseTickCount } from '../../engine/universeBootstrap.js';
 import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
 import { addToInventory, getInventoryItem, getCargoState } from '../../engine/inventoryService.js';
@@ -104,6 +106,13 @@ export class ScanService {
     const py = this.ctx._py(client.sessionId);
     const wrecks = await getWrecksInSector(this.ctx.quadrantX, this.ctx.quadrantY, px, py);
 
+    // Build structures list from sector data
+    const structures: string[] = [];
+    if (sectorData?.type === 'station') structures.push('npc_station');
+    if (sectorData?.contents?.includes('ruin')) structures.push('ruin');
+    const jumpgate = await getPlayerJumpGate(px, py);
+    if (jumpgate) structures.push('jumpgate');
+
     client.send('localScanResult', {
       resources,
       hiddenSignatures: result.hiddenSignatures,
@@ -114,6 +123,13 @@ export class ScanService {
         lastLogEntry: w.lastLogEntry,
         hasSalvage: w.salvageableModules.length > 0,
       })),
+      sectorX: px,
+      sectorY: py,
+      quadrantX: this.ctx.quadrantX,
+      quadrantY: this.ctx.quadrantY,
+      sectorType: sectorData?.type ?? 'empty',
+      structures,
+      universeTick: getUniverseTickCount(),
     });
     client.send('apUpdate', result.newAP!);
 

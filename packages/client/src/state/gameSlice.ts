@@ -320,6 +320,13 @@ export interface GameSlice {
       lastLogEntry: string | null;
       hasSalvage: boolean;
     }>;
+    sectorX?: number;
+    sectorY?: number;
+    quadrantX?: number;
+    quadrantY?: number;
+    sectorType?: string;
+    structures?: string[];
+    universeTick?: number;
   } | null;
 
   // Base

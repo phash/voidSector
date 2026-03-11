@@ -47,6 +47,7 @@ vi.mock('../db/queries.js', () => ({
   recordAlienEncounter: vi.fn().mockResolvedValue(undefined),
   upsertInventory: vi.fn().mockResolvedValue(undefined),
   deductInventory: vi.fn().mockResolvedValue(undefined),
+  getPlayerJumpGate: vi.fn().mockResolvedValue(null),
   getInventory: vi.fn().mockResolvedValue([]),
   getCargoCapForPlayer: vi.fn().mockResolvedValue(50),
   transferInventoryItem: vi.fn().mockResolvedValue(undefined),
@@ -108,6 +109,10 @@ vi.mock('../engine/traitCalculator.js', () => ({
 
 vi.mock('../engine/personalityMessages.js', () => ({
   getPersonalityComment: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock('../engine/universeBootstrap.js', () => ({
+  getUniverseTickCount: vi.fn().mockReturnValue(1000),
 }));
 
 vi.mock('../rooms/services/RedisAPStore.js', () => ({

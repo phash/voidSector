@@ -264,6 +264,14 @@ export interface LocalScanResult {
   rareResources?: Record<string, number>;
   hiddenObjects?: string[];
   hiddenSignatures: boolean;
+  // Extended context (added for scan-to-slate):
+  sectorX?: number;
+  sectorY?: number;
+  quadrantX?: number;
+  quadrantY?: number;
+  sectorType?: string;
+  structures?: string[];
+  universeTick?: number;
 }
 
 export type LocalScanMessage = Record<string, never>;
@@ -438,7 +446,7 @@ export interface AcceptOrderMessage {
 }
 
 // --- Data Slates ---
-export type SlateType = 'sector' | 'area' | 'custom' | 'jumpgate';
+export type SlateType = 'sector' | 'area' | 'custom' | 'jumpgate' | 'scan';
 
 export interface SectorSlateData {
   x: number;
@@ -447,6 +455,12 @@ export interface SectorSlateData {
   ore: number;
   gas: number;
   crystal: number;
+  // Scan-slate specific (optional — only present on slate_type='scan'):
+  quadrantX?: number;
+  quadrantY?: number;
+  structures?: string[];
+  wrecks?: Array<{ playerName: string; tier: number }>;
+  scannedAtTick?: number;
 }
 
 export interface DataSlate {
