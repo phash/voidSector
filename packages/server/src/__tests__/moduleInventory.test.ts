@@ -54,6 +54,7 @@ vi.mock('@void-sector/shared', () => ({
   isModuleUnlocked: vi.fn().mockReturnValue(true),
   canStartResearch: vi.fn(),
   RESEARCH_TICK_MS: 60000,
+  getActiveDrawbacks: vi.fn().mockReturnValue([]),
 }));
 
 // ── Mock other engine deps used by ShipService ───────────────────────────────
