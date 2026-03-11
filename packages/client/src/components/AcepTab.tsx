@@ -124,7 +124,7 @@ export function AcepTab() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <div style={sectionHdr}>ENTWICKLUNGSPFADE</div>
         <div style={{ color: '#555', fontSize: '0.85rem' }}>
-          GESAMT: {xp.total}/100
+          GESAMT: {xp.total ?? 0}/100
         </div>
       </div>
       {PATHS.map(({ key, label, color }) => {

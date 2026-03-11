@@ -74,6 +74,33 @@ describe('AcepTab', () => {
     render(<AcepTab />);
     const boostBtns = screen.getAllByText(/\[\+5\]/i);
     expect(boostBtns.length).toBeGreaterThan(0);
+    // Click the first [+5] button (AUSBAU path, xp=20, cost=300cr/8w — covered by credits:500, wissen:10)
+    fireEvent.click(boostBtns[0]);
+    expect(network.sendAcepBoost).toHaveBeenCalledWith('ausbau');
+  });
+
+  it('rename button shows input field', () => {
+    render(<AcepTab />);
+    fireEvent.click(screen.getByText(/UMBENENNEN/i));
+    expect(screen.getByPlaceholderText('Name...')).toBeInTheDocument();
+  });
+
+  it('typing in rename input and pressing Enter calls sendRenameShip', () => {
+    render(<AcepTab />);
+    fireEvent.click(screen.getByText(/UMBENENNEN/i));
+    const input = screen.getByPlaceholderText('Name...');
+    fireEvent.change(input, { target: { value: 'New Name' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(network.sendRenameShip).toHaveBeenCalledWith('ship-1', 'New Name');
+  });
+
+  it('typing in rename input and clicking OK calls sendRenameShip', () => {
+    render(<AcepTab />);
+    fireEvent.click(screen.getByText(/UMBENENNEN/i));
+    const input = screen.getByPlaceholderText('Name...');
+    fireEvent.change(input, { target: { value: 'Another Name' } });
+    fireEvent.click(screen.getByText('OK'));
+    expect(network.sendRenameShip).toHaveBeenCalledWith('ship-1', 'Another Name');
   });
 
   it('[+5] button is disabled when credits are insufficient', () => {
