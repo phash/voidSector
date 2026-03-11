@@ -18,6 +18,8 @@ export interface QuestTemplate {
   distanceRange?: [number, number];
   /** For multi-objective scan quests: scan N adjacent sectors around a seed-placed target */
   scanAdjacentCount?: number;
+  /** For bounty_chase quests: [min, max] pirate level */
+  targetLevelRange?: [number, number];
 }
 
 export const QUEST_TEMPLATES: QuestTemplate[] = [
@@ -144,6 +146,34 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardRepBase: 15,
     rewardWissenBase: 2,
     distanceRange: [10, 30],
+    rivalFactionId: 'traders',
+    rivalRepPenalty: 5,
+  },
+  {
+    id: 'pirates_bounty_chase',
+    type: 'bounty_chase',
+    factionId: 'pirates',
+    title: 'Kopfgeld-Auftrag',
+    descriptionTemplate: 'Verfolge und fange den Piraten {targetName}. Bringe ihn lebend zurück.',
+    requiredTier: 'neutral',
+    rewardCreditsBase: 120,
+    rewardXpBase: 40,
+    rewardRepBase: 12,
+    rewardWissenBase: 3,
+    targetLevelRange: [1, 3],
+  },
+  {
+    id: 'pirates_elite_bounty_chase',
+    type: 'bounty_chase',
+    factionId: 'pirates',
+    title: 'Hochrangiges Kopfgeld',
+    descriptionTemplate: 'Der gefährliche Pirat {targetName} hat eine hohe Kopfgeld-Prämie. Fange ihn.',
+    requiredTier: 'friendly',
+    rewardCreditsBase: 300,
+    rewardXpBase: 80,
+    rewardRepBase: 25,
+    rewardWissenBase: 3,
+    targetLevelRange: [4, 6],
     rivalFactionId: 'traders',
     rivalRepPenalty: 5,
   },

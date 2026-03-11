@@ -104,6 +104,28 @@ function fillQuestTemplate(
     });
   }
 
+  if (template.type === 'bounty_chase') {
+    // Placeholder — real objectives generated at accept time in QuestService
+    description = description.replace('{targetName}', '???');
+    objectives.push(
+      {
+        type: 'bounty_trail',
+        description: 'Verfolge die Spur des Ziels',
+        fulfilled: false,
+      },
+      {
+        type: 'bounty_combat',
+        description: 'Schalte das Ziel aus',
+        fulfilled: false,
+      },
+      {
+        type: 'bounty_deliver',
+        description: 'Liefere den Gefangenen ab',
+        fulfilled: false,
+      },
+    );
+  }
+
   if (
     (template.type === 'delivery' || template.type === 'scan' || template.type === 'bounty') &&
     template.distanceRange
