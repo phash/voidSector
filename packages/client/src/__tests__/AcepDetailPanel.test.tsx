@@ -65,7 +65,8 @@ describe('AcepDetailPanel', () => {
   it('MODULE tab with hover shows HP line', () => {
     const shipWithModule = {
       ...mockShip,
-      modules: [{ moduleId: 'drive_mk1', slotIndex: 0, currentHp: 6, maxHp: 10, source: 'standard' as const }],
+      // maxHp on ShipModule is not used — max HP comes from MODULES['drive_mk1'].maxHp (= 20)
+      modules: [{ moduleId: 'drive_mk1', slotIndex: 0, currentHp: 6, source: 'standard' as const }],
     };
     mockStoreState({ ship: shipWithModule as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'drive_mk1' });
     render(<AcepDetailPanel />);
