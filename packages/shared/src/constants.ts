@@ -120,11 +120,11 @@ export const RESEARCH_LAB_WISSEN_RATE: Record<number, number> = {
 };
 
 export const RESEARCH_LAB_NAMES: Record<number, string> = {
-  1: 'GRUNDLABOR',
-  2: 'FORSCHUNGSLABOR',
-  3: 'ANALYSESTATION',
-  4: 'FORSCHUNGSTURM',
-  5: 'OBSERVATORIUM',
+  1: 'AUSBAU Level 1',
+  2: 'AUSBAU Level 2',
+  3: 'AUSBAU Level 3',
+  4: 'AUSBAU Level 4',
+  5: 'AUSBAU Level 5',
 };
 
 /** Maximum research lab tier */
@@ -2193,6 +2193,7 @@ export const MONITORS = {
   TECH: 'TECH',
   QUAD_MAP: 'QUAD-MAP',
   NEWS: 'NEWS',
+  ACEP: 'ACEP',
 } as const;
 
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
@@ -2210,6 +2211,7 @@ export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.QUAD_MAP,
   MONITORS.NEWS,
   MONITORS.LOG,
+  MONITORS.ACEP,
 ];
 
 /** Labels for cockpit program buttons */
@@ -2227,6 +2229,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
   LOG: 'LOG',
   MODULES: 'MODULES',
   HANGAR: 'HANGAR',
+  ACEP: 'ACEP',
 };
 
 // --- Phase 5: Deep Systems ---
