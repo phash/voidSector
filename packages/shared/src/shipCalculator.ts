@@ -164,3 +164,16 @@ export function validateModuleInstall(
 
   return { valid: true };
 }
+
+/** Returns all active runtime drawback IDs from installed modules */
+export function getActiveDrawbacks(modules: ShipModule[]): string[] {
+  const effects: string[] = [];
+  for (const mod of modules) {
+    const def = MODULES[mod.moduleId];
+    if (!def?.drawbacks) continue;
+    for (const drawback of def.drawbacks) {
+      if (drawback.runtimeEffect) effects.push(drawback.runtimeEffect);
+    }
+  }
+  return effects;
+}
