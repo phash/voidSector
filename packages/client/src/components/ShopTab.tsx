@@ -1,17 +1,18 @@
+import type { CSSProperties } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULES, isModuleUnlocked } from '@void-sector/shared';
-import type { ModuleDefinition } from '@void-sector/shared';
+import type { ModuleDefinition, CargoState } from '@void-sector/shared';
 import { getModuleSourceColor } from './moduleUtils';
 
-const sectionHdr: React.CSSProperties = {
+const sectionHdr: CSSProperties = {
   fontSize: '0.75rem',
   letterSpacing: '0.12em',
   color: '#666',
   marginBottom: 10,
 };
 
-const btnStyle: React.CSSProperties = {
+const btnStyle: CSSProperties = {
   background: 'transparent',
   border: '1px solid var(--color-primary)',
   color: 'var(--color-primary)',
@@ -20,6 +21,24 @@ const btnStyle: React.CSSProperties = {
   padding: '4px 10px',
   cursor: 'pointer',
 };
+
+function canAfford(def: ModuleDefinition, credits: number, cargo: CargoState): boolean {
+  if (credits < def.cost.credits) return false;
+  if (def.cost.ore !== undefined && cargo.ore < def.cost.ore) return false;
+  if (def.cost.gas !== undefined && cargo.gas < def.cost.gas) return false;
+  if (def.cost.crystal !== undefined && cargo.crystal < def.cost.crystal) return false;
+  if (def.cost.artefact !== undefined && cargo.artefact < def.cost.artefact) return false;
+  return true;
+}
+
+function costLabel(def: ModuleDefinition): string {
+  const parts: string[] = [`${def.cost.credits} CR`];
+  if (def.cost.ore !== undefined) parts.push(`${def.cost.ore} Erz`);
+  if (def.cost.gas !== undefined) parts.push(`${def.cost.gas} Gas`);
+  if (def.cost.crystal !== undefined) parts.push(`${def.cost.crystal} Kristall`);
+  if (def.cost.artefact !== undefined) parts.push(`${def.cost.artefact} Artefakt`);
+  return parts.join(' + ');
+}
 
 export function ShopTab() {
   const credits = useStore((s) => s.credits);
@@ -31,7 +50,7 @@ export function ShopTab() {
 
   const atStation =
     currentSector?.type === 'station' ||
-    baseStructures.some((s: any) => s.type === 'base');
+    baseStructures.some((s) => s.type === 'base');
 
   if (!atStation) {
     return (
@@ -56,24 +75,6 @@ export function ShopTab() {
     (m) => !m.isFoundOnly && isModuleUnlocked(m.id, research),
   );
 
-  function canAfford(def: ModuleDefinition): boolean {
-    if (credits < def.cost.credits) return false;
-    if (def.cost.ore !== undefined && cargo.ore < def.cost.ore) return false;
-    if (def.cost.gas !== undefined && cargo.gas < def.cost.gas) return false;
-    if (def.cost.crystal !== undefined && cargo.crystal < def.cost.crystal) return false;
-    if (def.cost.artefact !== undefined && cargo.artefact < def.cost.artefact) return false;
-    return true;
-  }
-
-  function costLabel(def: ModuleDefinition): string {
-    const parts: string[] = [`${def.cost.credits} CR`];
-    if (def.cost.ore !== undefined) parts.push(`${def.cost.ore} Erz`);
-    if (def.cost.gas !== undefined) parts.push(`${def.cost.gas} Gas`);
-    if (def.cost.crystal !== undefined) parts.push(`${def.cost.crystal} Kristall`);
-    if (def.cost.artefact !== undefined) parts.push(`${def.cost.artefact} Artefakt`);
-    return parts.join(' + ');
-  }
-
   return (
     <div
       style={{
@@ -89,7 +90,7 @@ export function ShopTab() {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {availableModules.map((def: ModuleDefinition) => {
-          const affordable = canAfford(def);
+          const affordable = canAfford(def, credits, cargo);
           return (
             <div
               key={def.id}
