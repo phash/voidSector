@@ -16,6 +16,7 @@ import { MiningDetailPanel } from './MiningDetailPanel';
 import { QuestDetailPanel } from './QuestDetailPanel';
 import { FactionDetailPanel } from './FactionDetailPanel';
 import { ShipDetailPanel } from './ShipDetailPanel';
+import { AcepDetailPanel } from './AcepDetailPanel';
 import { SectorInfo, StatusBar } from './HUD';
 import { NavControls } from './NavControls';
 import { ShipStatusPanel } from './ShipStatusPanel';
@@ -52,6 +53,8 @@ function getDetailForProgram(programId: string): ReactNode | null {
       return <FactionDetailPanel />;
     case 'SHIP-SYS':
       return <ShipDetailPanel />;
+    case 'ACEP':
+      return <AcepDetailPanel />;
     default:
       return null;
   }

@@ -16,7 +16,6 @@ import { BattleDialog } from './BattleDialog';
 import { CombatV2Dialog } from './CombatV2Dialog';
 import { CombatDialog } from './CombatDialog';
 import { BattleResultDialog } from './BattleResultDialog';
-import { ModulePanel } from './ModulePanel';
 import { AcepProgram } from './AcepProgram';
 import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
@@ -39,9 +38,6 @@ import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 // --- SHIP-SYS: Settings + Modules ---
 
-type ShipSysView = 'settings' | 'modules';
-
-const SHIP_SYS_MODES: ShipSysView[] = ['settings', 'modules'];
 
 const ACEP_PATHS = [
   { key: 'ausbau', label: 'AUSBAU', color: '#ffaa00', max: 50 },
@@ -236,8 +232,6 @@ function TerritoryPanel() {
 }
 
 function ShipSysScreen() {
-  const view = (useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'settings') as ShipSysView;
-
   useEffect(() => {
     network.sendGetShips(); // refresh acepXp + ship stats on open
   }, []);
@@ -245,8 +239,7 @@ function ShipSysScreen() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {view === 'settings' && <SettingsView />}
-        {view === 'modules' && <ModulePanel />}
+        <SettingsView />
       </div>
     </div>
   );
@@ -351,8 +344,6 @@ function renderScreen(monitorId: string) {
       return <QuadMapScreen />;
     case MONITORS.NEWS:
       return <NewsScreen />;
-    case 'MODULES':
-      return <ModulePanel />;
     case MONITORS.ACEP:
       return <AcepProgram />;
     default:
