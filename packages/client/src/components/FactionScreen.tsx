@@ -68,7 +68,7 @@ function FactionTabView() {
         {tab === 'info' && <InfoTab faction={faction} myRank={myRank} isLeader={isLeader} isOfficer={isOfficer} />}
         {tab === 'members' && <MembersTab isLeader={isLeader} isOfficer={isOfficer} />}
         {tab === 'upgrades' && <UpgradesTab isLeader={isLeader} />}
-        {tab === 'management' && <ManagementTab isLeader={isLeader} />}
+        {tab === 'management' && <ManagementTab isLeader={isLeader} isOfficer={isOfficer} />}
       </div>
     </div>
   );
@@ -212,7 +212,7 @@ function UpgradesTab({ isLeader }: { isLeader: boolean }) {
   );
 }
 
-function ManagementTab({ isLeader }: { isLeader: boolean }) {
+function ManagementTab({ isLeader, isOfficer }: { isLeader: boolean; isOfficer: boolean }) {
   const faction = useStore((s) => s.faction)!;
   const [recruiting, setRecruiting] = useState<boolean>(faction.isRecruiting ?? false);
   const [slogan, setSlogan] = useState<string>(faction.slogan ?? '');
@@ -225,7 +225,7 @@ function ManagementTab({ isLeader }: { isLeader: boolean }) {
 
       {/* Invite + join mode + disband */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        {isLeader && <InviteButton />}
+        {(isLeader || isOfficer) && <InviteButton />}
         {isLeader && <JoinModeSelector currentMode={faction.joinMode} />}
         {isLeader && (
           <button

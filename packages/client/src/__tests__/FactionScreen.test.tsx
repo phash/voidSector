@@ -124,6 +124,19 @@ describe('FactionScreen — in faction', () => {
     expect(screen.getByText(/UPGRADE TREE/)).toBeDefined();
   });
 
+  it('shows [INVITE] button in management tab for officer', () => {
+    factionState('management', {
+      playerId: 'p3',
+      factionMembers: [
+        { playerId: 'p1', playerName: 'TestPlayer', rank: 'leader' as const, joinedAt: Date.now() },
+        { playerId: 'p2', playerName: 'Member1', rank: 'member' as const, joinedAt: Date.now() },
+        { playerId: 'p3', playerName: 'Officer1', rank: 'officer' as const, joinedAt: Date.now() },
+      ],
+    });
+    render(<FactionScreen />);
+    expect(screen.getByText(/\[INVITE\]/)).toBeDefined();
+  });
+
   it('shows management controls for leader on management tab', () => {
     factionState('management');
     render(<FactionScreen />);
