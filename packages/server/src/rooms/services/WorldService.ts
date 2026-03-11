@@ -147,6 +147,8 @@ import {
   depositResources,
 } from '../../db/constructionQueries.js';
 import type { ConstructionSite } from '../../db/constructionQueries.js';
+import { getWrecksInSector } from '../../engine/permadeathService.js';
+import { getUniverseTickCount } from '../../engine/universeBootstrap.js';
 
 function toConstructionSiteState(site: ConstructionSite): ConstructionSiteState {
   return {
@@ -873,6 +875,58 @@ export class WorldService {
       ap: currentAP.current,
     });
     client.send('apUpdate', currentAP);
+  }
+
+  async handleCreateSlateFromScan(client: Client): Promise<void> {
+    if (rejectGuest(client, 'Scan-Slates erstellen')) return;
+    const auth = client.auth as AuthPayload;
+
+    // Cargo check
+    const ship = this.ctx.getShipForClient(client.sessionId);
+    const cargo = await getCargoState(auth.userId);
+    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+    if (cargoTotal + 1 > ship.cargoCap) {
+      client.send('slateFromScanResult', { success: false, error: 'CARGO_FULL' });
+      return;
+    }
+
+    // Build sector data from server state (no trust on client data)
+    const sectorX = this.ctx._px(client.sessionId);
+    const sectorY = this.ctx._py(client.sessionId);
+    const sector = await getSector(sectorX, sectorY);
+    const resources = sector?.resources ?? { ore: 0, gas: 0, crystal: 0 };
+
+    // Derive structures
+    const structures: string[] = [];
+    if (sector?.type === 'station') structures.push('npc_station');
+    if (sector?.contents?.includes('ruin')) structures.push('ruin');
+    const jumpgate = await getPlayerJumpGate(sectorX, sectorY);
+    if (jumpgate) structures.push('jumpgate');
+
+    // Get wrecks
+    const wrecks = await getWrecksInSector(this.ctx.quadrantX, this.ctx.quadrantY, sectorX, sectorY);
+
+    const sectorData = [{
+      x: sectorX,
+      y: sectorY,
+      quadrantX: this.ctx.quadrantX,
+      quadrantY: this.ctx.quadrantY,
+      type: sector?.type ?? 'empty',
+      ore: resources.ore ?? 0,
+      gas: resources.gas ?? 0,
+      crystal: resources.crystal ?? 0,
+      structures,
+      wrecks: wrecks.map((w) => ({ playerName: w.playerName, tier: w.radarIconData?.tier ?? 1 })),
+      scannedAtTick: getUniverseTickCount(),
+    }];
+
+    // Create slate + add to cargo
+    await createDataSlate(auth.userId, 'scan', sectorData);
+    await addSlateToCargo(auth.userId);
+    const updatedCargo = await getCargoState(auth.userId);
+
+    client.send('slateFromScanResult', { success: true });
+    client.send('cargoUpdate', updatedCargo);
   }
 
   async handleActivateSlate(client: Client, data: ActivateSlateMessage): Promise<void> {

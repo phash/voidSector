@@ -720,6 +720,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('createSlate', async (client, data: CreateSlateMessage) => {
       await this.world.handleCreateSlate(client, data);
     });
+    this.onMessage('createSlateFromScan', async (client) => {
+      await this.world.handleCreateSlateFromScan(client);
+    });
     this.onMessage('activateSlate', async (client, data: ActivateSlateMessage) => {
       await this.world.handleActivateSlate(client, data);
     });
