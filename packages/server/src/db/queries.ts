@@ -388,9 +388,9 @@ export async function updateSectorResources(
          '{lastMinedTick,${minedResource}}', $4::text::jsonb
        ),
        last_mined = $5,
-       last_mined_tick = $4
+       last_mined_tick = $6
      WHERE x = $1 AND y = $2`,
-    [x, y, JSON.stringify(resources), currentTick, Date.now()],
+    [x, y, JSON.stringify(resources), currentTick, Date.now(), currentTick],
   );
 }
 
