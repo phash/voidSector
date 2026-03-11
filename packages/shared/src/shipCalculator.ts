@@ -1,7 +1,33 @@
-import { HULLS, MODULES } from './constants.js';
-import type { HullType, ShipModule, ShipStats } from './types.js';
+import {
+  HULLS,
+  MODULES,
+  ACEP_LEVEL_THRESHOLDS,
+  ACEP_LEVEL_MULTIPLIERS,
+  ACEP_EXTRA_SLOT_THRESHOLDS,
+} from './constants.js';
+import type { HullType, ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
 
-export function calculateShipStats(hullType: HullType, modules: ShipModule[]): ShipStats {
+/** Returns ACEP level (1–5) for a given XP value. */
+export function getAcepLevel(xp: number): number {
+  let level = 1;
+  for (const [lvl, threshold] of Object.entries(ACEP_LEVEL_THRESHOLDS)) {
+    if (xp >= threshold) {
+      level = Number(lvl);
+    }
+  }
+  return level;
+}
+
+/** Returns the number of extra slots unlocked based on ausbau XP. */
+export function getExtraSlotCount(ausbauXp: number): number {
+  return ACEP_EXTRA_SLOT_THRESHOLDS.filter((t) => ausbauXp >= t).length;
+}
+
+export function calculateShipStats(
+  hullType: HullType,
+  modules: ShipModule[],
+  acepXp?: AcepXpSnapshot,
+): ShipStats {
   const hull = HULLS[hullType];
   const stats: ShipStats = {
     fuelMax: hull.baseFuel,
@@ -32,16 +58,39 @@ export function calculateShipStats(hullType: HullType, modules: ShipModule[]): S
     miningBonus: 0,
   };
 
+  // Pre-compute ACEP levels per path
+  const levels: Record<string, number> = acepXp
+    ? {
+        ausbau: getAcepLevel(acepXp.ausbau),
+        intel: getAcepLevel(acepXp.intel),
+        kampf: getAcepLevel(acepXp.kampf),
+        explorer: getAcepLevel(acepXp.explorer),
+      }
+    : {};
+
   for (const mod of modules) {
     const def = MODULES[mod.moduleId];
     if (!def) continue;
+
+    // Determine multiplier: highest level among module's ACEP paths
+    const modPaths = def.acepPaths ?? [];
+    const multiplier =
+      modPaths.length > 0 && acepXp
+        ? Math.max(...modPaths.map((p) => ACEP_LEVEL_MULTIPLIERS[levels[p]] ?? 1.0))
+        : 1.0;
+
     for (const [key, value] of Object.entries(def.effects)) {
+      if (typeof value !== 'number') {
+        // e.g. weaponType — not a number, assign directly
+        (stats as any)[key] = value;
+        continue;
+      }
       if (key === 'damageMod') {
-        stats.damageMod += value as number;
-      } else if (key === 'weaponType') {
-        stats.weaponType = value as ShipStats['weaponType'];
+        // damageMod is always additive, never multiplied
+        stats.damageMod += value;
       } else {
-        (stats as any)[key] += value as number;
+        // Positive values are multiplied by ACEP multiplier; negatives are not
+        (stats as any)[key] += value > 0 ? value * multiplier : value;
       }
     }
   }

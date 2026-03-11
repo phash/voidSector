@@ -1,6 +1,6 @@
 export * from './types.js';
 export * from './constants.js';
-export { calculateShipStats, validateModuleInstall } from './shipCalculator.js';
+export { calculateShipStats, validateModuleInstall, getAcepLevel, getExtraSlotCount } from './shipCalculator.js';
 export {
   calcHyperjumpAP,
   calcHyperjumpFuel,
