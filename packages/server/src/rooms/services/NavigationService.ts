@@ -294,8 +294,16 @@ export class NavigationService {
       return;
     }
 
-    // Record discovery
+    // Record discovery (check first-time before inserting)
+    const sectorAlreadyKnown = await isRouteDiscovered(auth.userId, targetX, targetY);
     await addDiscovery(auth.userId, targetX, targetY);
+
+    // ACEP XP: AUSBAU per jump
+    addAcepXpForPlayer(auth.userId, 'ausbau', 2).catch(() => {});
+    // ACEP XP: EXPLORER for first sector discovery
+    if (!sectorAlreadyKnown) {
+      addAcepXpForPlayer(auth.userId, 'explorer', 10).catch(() => {});
+    }
 
     // Check for origin badge
     if (targetX === 0 && targetY === 0) {
@@ -1456,8 +1464,16 @@ export class NavigationService {
       await saveSector(targetSector);
     }
 
-    // Record discovery
+    // Record discovery (check first-time before inserting)
+    const pgSectorAlreadyKnown = await isRouteDiscovered(auth.userId, targetX, targetY);
     await addDiscovery(auth.userId, targetX, targetY);
+
+    // ACEP XP: AUSBAU per jump
+    addAcepXpForPlayer(auth.userId, 'ausbau', 2).catch(() => {});
+    // ACEP XP: EXPLORER for first sector discovery
+    if (!pgSectorAlreadyKnown) {
+      addAcepXpForPlayer(auth.userId, 'explorer', 10).catch(() => {});
+    }
 
     // Check cross-quadrant
     const { qx: curQx, qy: curQy } = sectorToQuadrant(sx, sy);
