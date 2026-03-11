@@ -70,6 +70,7 @@ vi.mock('@void-sector/shared', () => ({
   isModuleUnlocked: vi.fn().mockReturnValue(true),
   canStartResearch: vi.fn(),
   RESEARCH_TICK_MS: 60000,
+  UNIVERSE_TICK_MS: 5000,
   WORLD_SEED: 42,
   AP_COSTS_LOCAL_SCAN: 1,
 }));
