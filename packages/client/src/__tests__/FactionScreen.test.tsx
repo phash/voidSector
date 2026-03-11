@@ -48,8 +48,8 @@ describe('FactionScreen — no faction', () => {
   it('shows create/join when not in faction', () => {
     render(<FactionScreen />);
     expect(screen.getByText(/NOT IN A FACTION/)).toBeDefined();
-    expect(screen.getByText('[GRÜNDEN]')).toBeDefined();
-    expect(screen.getByText('[BEITRETEN]')).toBeDefined();
+    expect(screen.getByText('[FOUND]')).toBeDefined();
+    expect(screen.getByText('[JOIN]')).toBeDefined();
   });
 
   it('shows pending invites', () => {
@@ -64,8 +64,8 @@ describe('FactionScreen — no faction', () => {
     render(<FactionScreen />);
     expect(screen.getByText(/COOL/)).toBeDefined();
     expect(screen.getByText(/Cool Faction/)).toBeDefined();
-    expect(screen.getByText(/JA/)).toBeDefined();
-    expect(screen.getByText(/NEIN/)).toBeDefined();
+    expect(screen.getByText('[YES]')).toBeDefined();
+    expect(screen.getByText('[NO]')).toBeDefined();
   });
 });
 
@@ -77,12 +77,30 @@ describe('FactionScreen — in faction', () => {
     expect(screen.getByText(/\[TST\] Test Faction/)).toBeDefined();
   });
 
-  it('shows tab buttons', () => {
+  it('shows join mode and member count in info tab', () => {
+    render(<FactionScreen />);
+    expect(screen.getByText(/INVITE/)).toBeDefined();
+    expect(screen.getByText(/3 Members/)).toBeDefined();
+  });
+
+  it('shows only INFO/MEMBERS/UPGRADES tabs for non-leader', () => {
+    factionState('info', { playerId: 'p2' }); // p2 is member, not leader
     render(<FactionScreen />);
     expect(screen.getByText('[INFO]')).toBeDefined();
     expect(screen.getByText('[MEMBERS]')).toBeDefined();
     expect(screen.getByText('[UPGRADES]')).toBeDefined();
+    expect(screen.queryByText('[MGMT]')).toBeNull();
+  });
+
+  it('shows MGMT tab for leader', () => {
+    render(<FactionScreen />); // default is p1 as leader
     expect(screen.getByText('[MGMT]')).toBeDefined();
+  });
+
+  it('shows [LEAVE] button in members tab for non-leader', () => {
+    factionState('members', { playerId: 'p2' });
+    render(<FactionScreen />);
+    expect(screen.getByText('[LEAVE]')).toBeDefined();
   });
 
   it('tab buttons call setMonitorMode', async () => {
@@ -103,15 +121,15 @@ describe('FactionScreen — in faction', () => {
   it('shows upgrade tree on upgrades tab', () => {
     factionState('upgrades');
     render(<FactionScreen />);
-    expect(screen.getByText(/VERBESSERUNGSBAUM/)).toBeDefined();
+    expect(screen.getByText(/UPGRADE TREE/)).toBeDefined();
   });
 
   it('shows management controls for leader on management tab', () => {
     factionState('management');
     render(<FactionScreen />);
-    expect(screen.getByText(/EINLADEN/)).toBeDefined();
-    expect(screen.getByText(/MODUS/)).toBeDefined();
-    expect(screen.getByText(/AUFLÖSEN/)).toBeDefined();
+    expect(screen.getByText(/\[INVITE\]/)).toBeDefined();
+    expect(screen.getByText(/\[MODE\]/)).toBeDefined();
+    expect(screen.getByText(/\[DISBAND\]/)).toBeDefined();
   });
 
   it('shows invite code in management tab for code mode', () => {
@@ -125,12 +143,6 @@ describe('FactionScreen — in faction', () => {
   it('shows recruiting toggle in management tab for leader', () => {
     factionState('management');
     render(<FactionScreen />);
-    expect(screen.getByText(/AKTIV REKRUTIEREN/)).toBeDefined();
-  });
-
-  it('[VERLASSEN] visible for non-leader on management tab', () => {
-    factionState('management', { playerId: 'p2' });
-    render(<FactionScreen />);
-    expect(screen.getByText(/VERLASSEN/)).toBeDefined();
+    expect(screen.getByText(/ACTIVE RECRUITING/)).toBeDefined();
   });
 });
