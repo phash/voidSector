@@ -1,12 +1,12 @@
-import { AP_DEFAULTS } from '@void-sector/shared';
-import type { APState } from '@void-sector/shared';
+import { AP_DEFAULTS, calculateApRegen } from '@void-sector/shared';
+import type { APState, ShipModule } from '@void-sector/shared';
 
-export function createAPState(now: number = Date.now()): APState {
+export function createAPState(now: number = Date.now(), modules?: ShipModule[]): APState {
   return {
     current: AP_DEFAULTS.startingAP,
     max: AP_DEFAULTS.max,
     lastTick: now,
-    regenPerSecond: AP_DEFAULTS.regenPerSecond,
+    regenPerSecond: modules !== undefined ? calculateApRegen(modules) : AP_DEFAULTS.regenPerSecond,
   };
 }
 

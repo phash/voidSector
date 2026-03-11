@@ -194,12 +194,17 @@ export async function createShip(
     [playerId, hullType, name, initialFuel],
   );
   const row = rows[0];
+  // All new ships start with generator_mk1 in slot 0 (generator slot)
+  const initialModules: ShipModule[] = [
+    { moduleId: 'generator_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
+  ];
+  await query('UPDATE ships SET modules = $1 WHERE id = $2', [JSON.stringify(initialModules), row.id]);
   return {
     id: row.id,
     ownerId: row.owner_id,
     hullType: row.hull_type as HullType,
     name: row.name,
-    modules: row.modules,
+    modules: initialModules,
     active: row.active,
     createdAt: row.created_at,
   };

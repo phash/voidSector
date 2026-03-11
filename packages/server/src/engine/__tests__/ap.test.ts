@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createAPState, calculateCurrentAP, spendAP } from '../ap.js';
-import { AP_DEFAULTS, AP_COSTS } from '@void-sector/shared';
+import { AP_DEFAULTS, AP_COSTS, BASE_HULL_AP_REGEN } from '@void-sector/shared';
+import type { ShipModule } from '@void-sector/shared';
 
 describe('AP engine', () => {
   it('creates AP state with defaults', () => {
@@ -8,6 +9,23 @@ describe('AP engine', () => {
     expect(ap.current).toBe(AP_DEFAULTS.startingAP);
     expect(ap.max).toBe(AP_DEFAULTS.max);
     expect(ap.regenPerSecond).toBe(AP_DEFAULTS.regenPerSecond);
+  });
+
+  it('createAPState uses calculateApRegen when modules provided (no generator)', () => {
+    // No generator module → regenPerSecond should equal BASE_HULL_AP_REGEN
+    const modules: ShipModule[] = [];
+    const ap = createAPState(Date.now(), modules);
+    expect(ap.regenPerSecond).toBeCloseTo(BASE_HULL_AP_REGEN);
+  });
+
+  it('createAPState uses calculateApRegen when generator_mk1 present', () => {
+    // generator_mk1: apRegenPerSecond=0.20, powerLevel=high (multiplier=1.0), currentHp=maxHp=20
+    // expected: BASE_HULL_AP_REGEN + 0.20 * 1.0 * 1.0 = 0.08 + 0.20 = 0.28
+    const modules: ShipModule[] = [
+      { moduleId: 'generator_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
+    ];
+    const ap = createAPState(Date.now(), modules);
+    expect(ap.regenPerSecond).toBeCloseTo(BASE_HULL_AP_REGEN + 0.20);
   });
 
   it('calculateCurrentAP regenerates over time', () => {

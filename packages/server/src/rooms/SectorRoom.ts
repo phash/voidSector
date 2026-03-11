@@ -75,6 +75,7 @@ import {
   RECONNECTION_TIMEOUT_S,
   FEATURE_HYPERDRIVE_V2,
   calculateShipStats,
+  calculateApRegen,
   createHyperdriveState,
   calculateCurrentCharge,
   HULLS,
@@ -1182,9 +1183,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Record discovery
       await addDiscovery(auth.userId, sectorX, sectorY);
 
-      // Send initial AP state
+      // Send initial AP state — recalculate regenPerSecond from current modules
       const ap = await getAPState(auth.userId);
-      const updated = calculateCurrentAP(ap);
+      const regenFromModules = calculateApRegen(shipRecord.modules);
+      const updated = calculateCurrentAP({ ...ap, regenPerSecond: regenFromModules });
       await saveAPState(auth.userId, updated);
       client.send('apUpdate', updated);
 
