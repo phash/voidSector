@@ -375,8 +375,7 @@ export class NavigationService {
         quadrantY: tgtQy,
         eventData: { fromQuadrant: { qx: curQx, qy: curQy }, toQuadrant: { qx: tgtQx, qy: tgtQy } },
       }).catch(() => {});
-      // ACEP: EXPLORER-XP for cross-quadrant jump
-      addAcepXpForPlayer(auth.userId, 'explorer', 2).catch(() => {});
+      // ACEP: EXPLORER-XP (+50) for world-first quadrant discovery is handled in WorldService.checkFirstContact
     }
   }
 

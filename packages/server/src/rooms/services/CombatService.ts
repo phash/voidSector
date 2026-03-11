@@ -179,8 +179,8 @@ export class CombatService {
         sectorX: data.sectorX,
         sectorY: data.sectorY,
       });
-      // ACEP: KAMPF-XP for combat victory (spec: pirat +5, general +10)
-      addAcepXpForPlayer(auth.userId, 'kampf', 5).catch(() => {});
+      // ACEP: KAMPF-XP for combat victory (spec: +10)
+      addAcepXpForPlayer(auth.userId, 'kampf', 10).catch(() => {});
       this._emitPersonalityComment(client, auth.userId, 'combat_victory').catch(() => {});
     } else if (result.outcome === 'defeat') {
       this._emitPersonalityComment(client, auth.userId, 'combat_defeat').catch(() => {});
