@@ -49,6 +49,8 @@ export function MiningScreen() {
   const cargoCap = ship?.stats?.cargoCap ?? 5;
   const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
   const cargoFull = cargoTotal >= cargoCap;
+  const cargoPercent = cargoCap > 0 ? cargoTotal / cargoCap : 0;
+  const cargoBarColor = cargoPercent >= 1 ? '#ff4444' : cargoPercent >= 0.8 ? '#FFB000' : '#4a9';
   const apCurrent = ap?.current ?? 0;
 
   return (
@@ -117,8 +119,11 @@ export function MiningScreen() {
             ) : (
               <div>STATUS: {UI.status.IDLE}</div>
             )}
-            <div style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '4px' }}>
-              CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
+            <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>
+              <span style={{ color: cargoBarColor }}>
+                CARGO: {cargoTotal}/{cargoCap} ({Math.round(cargoPercent * 100)}%)
+              </span>
+              {' — '}ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
             </div>
           </div>
 

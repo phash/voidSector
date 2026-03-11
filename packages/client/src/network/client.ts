@@ -458,6 +458,16 @@ class GameNetwork {
     // Cargo updates
     room.onMessage('cargoUpdate', (data: CargoState) => {
       useStore.getState().setCargo(data);
+      // Auto-stop mining when cargo is full
+      const state = useStore.getState();
+      if (state.mining?.active && state.ship) {
+        const cargoTotal = (data.ore ?? 0) + (data.gas ?? 0) + (data.crystal ?? 0)
+          + (data.slates ?? 0) + (data.artefact ?? 0);
+        const cargoCap = state.ship.stats?.cargoCap ?? 0;
+        if (cargoCap > 0 && cargoTotal >= cargoCap) {
+          this.sendStopMine();
+        }
+      }
     });
 
     // Ship data (new designer format: id, ownerId, hullType, name, modules, stats, fuel, active)

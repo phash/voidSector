@@ -1,5 +1,6 @@
 import { useStore } from '../state/store';
 import { SectorArtwork } from './SectorArtwork';
+import { btn } from '../ui-strings';
 
 const panelStyle: React.CSSProperties = {
   padding: '12px',
@@ -13,6 +14,7 @@ const panelStyle: React.CSSProperties = {
 export function MiningDetailPanel() {
   const currentSector = useStore((s) => s.currentSector);
   const mining = useStore((s) => s.mining);
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
 
   const resources = currentSector?.resources;
   const hasResources =
@@ -78,6 +80,16 @@ export function MiningDetailPanel() {
           <div>MINING ACTIVE: {mining.resource?.toUpperCase()}</div>
           <div style={{ color: 'var(--color-dim)' }}>RATE: {mining.rate}u/s</div>
         </div>
+      )}
+
+      {hasResources && !mining?.active && (
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.75rem', marginTop: '8px' }}
+          onClick={() => setActiveProgram('MINING')}
+        >
+          {btn('MINING ÖFFNEN')}
+        </button>
       )}
     </div>
   );
