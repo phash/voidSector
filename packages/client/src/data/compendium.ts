@@ -57,10 +57,10 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     summary: 'Einführung in voidSector — Cockpit, Programme, erste Aktionen.',
     body: `Du befindest dich im Cockpit deines Schiffes. Das Interface besteht aus 6 Sektionen:
 
-- **Sektion 1** (links): Programm-Selektor — 11 Buttons für alle Hauptprogramme
+- **Sektion 1** (links): Programm-Selektor — 12 Buttons für alle Hauptprogramme
 - **Sektion 2** (Mitte oben): Hauptmonitor — aktives Programm
 - **Sektion 3** (Mitte rechts): Detail-Monitor — kontextabhängige Zusatzinfos
-- **Sektion 4** (rechts oben): SHIP-SYS — Status, Module, Hangar, ACEP
+- **Sektion 4** (rechts oben): SHIP-SYS — Status, Module, Hangar (ACEP ist eigenes Programm in Sektion 1)
 - **Sektion 5** (rechts Mitte): Navigation — Sektor-Info, AP, Steuerung
 - **Sektion 6** (rechts unten): COMMS — Chat und Kommunikation
 
@@ -266,8 +266,8 @@ SHIP-SYS → Einstellungen: Zeigt alle 4 Pfade als Balken mit aktuellem Stand.`,
     title: 'MONITORSYSTEM',
     category: 'grundlagen',
     icon: '▣',
-    summary: 'Die 11 Programme des Cockpits — was jeder Monitor anzeigt und wozu er dient.',
-    body: `Das Cockpit hat 11 wählbare Programme (Sektion 1, linke Leiste):
+    summary: 'Die 12 Programme des Cockpits — was jeder Monitor anzeigt und wozu er dient.',
+    body: `Das Cockpit hat 12 Programme (Sektion 1, linke Leiste):
 
 | Programm | Funktion |
 |---|---|
@@ -282,12 +282,13 @@ SHIP-SYS → Einstellungen: Zeigt alle 4 Pfade als Balken mit aktuellem Stand.`,
 | QUAD-MAP | Quadranten-Karte (Canvas-Renderer) |
 | NEWS | VOID SECTOR NEWS — server-weite Ereignisse |
 | LOG | Ereignis-Log, Chat-Verlauf |
+| ACEP | Modul-Slots und XP-Pfade auf einem Screen |
 
 **Zusatz-Panel (Sektion 3 — Detail-Monitor):**
 Zeigt kontextabhängige Infos zum aktiven Programm: Mining-Status, Cargo-Detail, Trade-Preise, Quest-Details.
 
 **SHIP-SYS (Sektion 4):**
-Immer sichtbar. Tabs: EINSTELLUNGEN (ACEP-Panel, Territory), MODULE, HANGAR.
+Immer sichtbar. Tabs: EINSTELLUNGEN, MODULE, HANGAR. Das ACEP-Panel ist nun ein eigenes Programm.
 
 **Mobile-Ansicht:**
 Auf Mobilgeräten (<1024px): Tab-Leiste unten, vollbild-Monitor, "MEHR"-Overlay für zusätzliche Programme.`,

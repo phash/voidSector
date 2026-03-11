@@ -275,6 +275,27 @@ describe('Compendium Data', () => {
   });
 
   // -------------------------------------------------------------------------
+  // article content updates
+  // -------------------------------------------------------------------------
+
+  describe('article content updates', () => {
+    it("monitore summary mentions 12 Programme", () => {
+      const a = getArticle('monitore');
+      expect(a?.summary).toContain('12 Programme');
+    });
+
+    it("monitore body mentions 12 Programme", () => {
+      const a = getArticle('monitore');
+      expect(a?.body).toContain('12 Programme');
+    });
+
+    it("monitore body has ACEP row", () => {
+      const a = getArticle('monitore');
+      expect(a?.body).toContain('ACEP');
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Content quality
   // -------------------------------------------------------------------------
 
