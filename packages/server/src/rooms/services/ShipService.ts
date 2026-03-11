@@ -6,6 +6,7 @@ import type { ShipModule, ResearchState } from '@void-sector/shared';
 import {
   calculateShipStats,
   validateModuleInstall,
+  getActiveDrawbacks,
   isModuleUnlocked,
   canStartResearch,
   MODULES,
@@ -65,7 +66,7 @@ export class ShipService {
         const acepXp = await getAcepXpSummary(s.id);
         return {
           ...s,
-          stats: calculateShipStats(s.hullType, s.modules),
+          stats: calculateShipStats(s.hullType, s.modules, acepXp),
           acepXp,
           acepEffects: getAcepEffects(acepXp),
           acepTraits: s.acepTraits,
@@ -82,11 +83,14 @@ export class ShipService {
     const auth = client.auth as AuthPayload;
     const ship = await getActiveShip(auth.userId);
     if (!ship) return;
+    // Fetch ACEP XP for slot validation and stat calculation
+    const acepXp = await getAcepXpSummary(ship.id);
     const validation = validateModuleInstall(
       ship.hullType,
       ship.modules,
       data.moduleId,
       data.slotIndex,
+      acepXp,
     );
     if (!validation.valid) {
       client.send('error', { code: 'INSTALL_FAIL', message: validation.error! });
@@ -99,16 +103,17 @@ export class ShipService {
       return;
     }
     await removeFromInventory(auth.userId, 'module', data.moduleId, 1);
-    // Install
+    // Install — source defaults to 'standard' (inventory-tracked source TBD)
     const newModules: ShipModule[] = [
       ...ship.modules,
       { moduleId: data.moduleId, slotIndex: data.slotIndex, source: 'standard' as const },
     ];
     await updateShipModules(ship.id, newModules);
-    // Recalculate and send
-    const newStats = calculateShipStats(ship.hullType, newModules);
+    // Recalculate stats and collect active drawbacks
+    const newStats = calculateShipStats(ship.hullType, newModules, acepXp);
+    const drawbacks = getActiveDrawbacks(newModules);
     this.ctx.clientShips.set(client.sessionId, newStats);
-    client.send('moduleInstalled', { modules: newModules, stats: newStats });
+    client.send('moduleInstalled', { modules: newModules, stats: newStats, drawbacks });
   }
 
   async handleRemoveModule(client: Client, data: { slotIndex: number }): Promise<void> {
@@ -125,8 +130,9 @@ export class ShipService {
     await updateShipModules(ship.id, newModules);
     // Add back to inventory
     await addToInventory(auth.userId, 'module', mod.moduleId, 1);
-    // Recalculate
-    const newStats = calculateShipStats(ship.hullType, newModules);
+    // Recalculate stats with ACEP XP
+    const acepXp = await getAcepXpSummary(ship.id);
+    const newStats = calculateShipStats(ship.hullType, newModules, acepXp);
     this.ctx.clientShips.set(client.sessionId, newStats);
     client.send('moduleRemoved', {
       modules: newModules,
