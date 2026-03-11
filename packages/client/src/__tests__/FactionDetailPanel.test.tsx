@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FactionDetailPanel } from '../components/FactionDetailPanel';
 import { mockStoreState } from '../test/mockStore';
+import { FACTION_UPGRADE_TIERS } from '@void-sector/shared';
 
 vi.mock('../network/client', () => ({
   network: { requestHumanityReps: vi.fn() },
@@ -70,12 +71,12 @@ describe('FactionDetailPanel — State A (member)', () => {
       factionUpgrades: [{ tier: 1, choice: 'A', chosenAt: Date.now() }],
     });
     render(<FactionDetailPanel />);
-    expect(screen.getByText(/AKTIVE UPGRADES/)).toBeDefined();
+    expect(screen.getByText(/ACTIVE UPGRADES/)).toBeDefined();
   });
 
   it('shows next tier info when upgrades remain', () => {
     render(<FactionDetailPanel />);
-    expect(screen.getByText(/NÄCHSTER UPGRADE/)).toBeDefined();
+    expect(screen.getByText(/NEXT UPGRADE/)).toBeDefined();
     expect(screen.getByText(/TIER 1/)).toBeDefined();
   });
 
@@ -93,6 +94,23 @@ describe('FactionDetailPanel — State A (member)', () => {
     render(<FactionDetailPanel />);
     await userEvent.click(screen.getByText('[UPGRADES →]'));
     expect(setMonitorMode).toHaveBeenCalledWith('FACTION', 'upgrades');
+  });
+
+  it('shows next upgrade with both option names', () => {
+    memberState({ factionUpgrades: [] });
+    render(<FactionDetailPanel />);
+    const tierDef = FACTION_UPGRADE_TIERS[1];
+    expect(screen.getByText(new RegExp(tierDef.optionA.name, 'i'))).toBeDefined();
+    expect(screen.getByText(new RegExp(tierDef.optionB.name, 'i'))).toBeDefined();
+  });
+
+  it('shows active upgrade effects, not just names', () => {
+    memberState({
+      factionUpgrades: [{ tier: 1, choice: 'A' as const, chosenAt: Date.now() }],
+    });
+    render(<FactionDetailPanel />);
+    const effect = FACTION_UPGRADE_TIERS[1].optionA.effect;
+    expect(screen.getByText(new RegExp(effect.replace(/[+%]/g, '\\$&'), 'i'))).toBeDefined();
   });
 });
 
@@ -115,9 +133,9 @@ describe('FactionDetailPanel — State B (non-member)', () => {
     expect(screen.getByText(/\+12/)).toBeDefined();
   });
 
-  it('shows NO CONNECTION when no recruiting factions', () => {
+  it('shows NO OPEN RECRUITMENT when no recruiting factions', () => {
     render(<FactionDetailPanel />);
-    expect(screen.getByText(/NO CONNECTION TO NETWORK/)).toBeDefined();
+    expect(screen.getByText(/NO OPEN RECRUITMENT/)).toBeDefined();
   });
 
   it('shows recruiting faction card with name and slogan', () => {
@@ -153,16 +171,33 @@ describe('FactionDetailPanel — State B (non-member)', () => {
     expect(screen.getByTestId('progress-dots')).toBeDefined();
   });
 
-  it('faction card button calls setMonitorMode(FACTION, info)', async () => {
-    const setMonitorMode = vi.fn();
+  it('faction card button calls setActiveProgram(FACTION)', async () => {
+    const setActiveProgram = vi.fn();
     noFactionState({
       recruitingFactions: [
         { factionId: 'f1', name: 'IRON VEIL', color: null, slogan: null, memberCount: 4 },
       ],
-      setMonitorMode,
+      setActiveProgram,
     });
     render(<FactionDetailPanel />);
     await userEvent.click(screen.getByText('[IRON VEIL →]'));
-    expect(setMonitorMode).toHaveBeenCalledWith('FACTION', 'info');
+    expect(setActiveProgram).toHaveBeenCalledWith('FACTION');
+  });
+
+  it('shows NO OPEN RECRUITMENT when recruitingFactions empty', () => {
+    noFactionState({ recruitingFactions: [] });
+    render(<FactionDetailPanel />);
+    expect(screen.getByText(/NO OPEN RECRUITMENT/)).toBeDefined();
+  });
+
+  it('recruit panel button calls setActiveProgram FACTION', async () => {
+    const setActiveProgram = vi.fn();
+    noFactionState({
+      recruitingFactions: [{ factionId: 'f1', name: 'STAR CORP', color: null, slogan: 'We recruit', memberCount: 5 }],
+      setActiveProgram,
+    });
+    render(<FactionDetailPanel />);
+    await userEvent.click(screen.getByText(/\[STAR CORP →\]/));
+    expect(setActiveProgram).toHaveBeenCalledWith('FACTION');
   });
 });

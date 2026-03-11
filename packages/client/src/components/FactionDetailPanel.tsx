@@ -27,7 +27,7 @@ function FactionMemberPanel() {
   const activeUpgrades = factionUpgrades.map((u) => {
     const tierDef = FACTION_UPGRADE_TIERS[u.tier];
     const opt = u.choice === 'A' ? tierDef.optionA : tierDef.optionB;
-    return opt.name;
+    return opt.effect;
   });
 
   const nextTierNum = [1, 2, 3].find((t) => !factionUpgrades.some((u) => u.tier === t));
@@ -40,13 +40,13 @@ function FactionMemberPanel() {
       </div>
 
       <div style={{ background: '#0a0800', border: '1px solid #222', padding: '6px 8px', marginBottom: '8px' }}>
-        <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>DEIN RANG</div>
+        <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>YOUR RANK</div>
         <div style={{ color: '#fff', fontSize: '0.9rem' }}>{myRank.toUpperCase()}</div>
       </div>
 
       {activeUpgrades.length > 0 && (
         <div style={{ marginBottom: '6px' }}>
-          <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>AKTIVE UPGRADES</div>
+          <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>ACTIVE UPGRADES</div>
           <div style={{ color: '#aaa', fontSize: '0.68rem' }}>
             {activeUpgrades.map((u) => `✓ ${u}`).join('  ')}
           </div>
@@ -55,9 +55,9 @@ function FactionMemberPanel() {
 
       {nextTierDef && (
         <div style={{ marginBottom: '8px' }}>
-          <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>NÄCHSTER UPGRADE</div>
+          <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>NEXT UPGRADE</div>
           <div style={{ color: '#ffb000', fontSize: '0.68rem' }}>
-            → TIER {nextTierNum} — {nextTierDef.cost} CR
+            → TIER {nextTierNum}: {nextTierDef.optionA.name} vs {nextTierDef.optionB.name}
           </div>
         </div>
       )}
@@ -86,6 +86,7 @@ function FactionRecruitPanel() {
   const humanityReps = useStore((s) => s.humanityReps);
   const recruitingFactions = useStore((s) => s.recruitingFactions);
   const setMonitorMode = useStore((s) => s.setMonitorMode);
+  const setActiveProgram = useStore((s) => s.setActiveProgram);
   const [cardIdx, setCardIdx] = useState(0);
 
   useEffect(() => {
@@ -121,7 +122,7 @@ function FactionRecruitPanel() {
       </div>
 
       {recruitingFactions.length === 0 ? (
-        <div style={{ color: '#444', fontSize: '0.7rem' }}>NO CONNECTION TO NETWORK...</div>
+        <div style={{ color: '#444', fontSize: '0.7rem' }}>NO OPEN RECRUITMENT</div>
       ) : (
         <>
           <div style={{ fontSize: '0.62rem', letterSpacing: '1px', color: '#ffb000', marginBottom: '6px' }}>
@@ -147,7 +148,7 @@ function FactionRecruitPanel() {
                 </div>
               )}
               <div style={{ color: '#555', fontSize: '0.62rem' }}>
-                {currentCard.memberCount} Mitglieder
+                {currentCard.memberCount} Members
               </div>
             </div>
           )}
@@ -175,7 +176,7 @@ function FactionRecruitPanel() {
             <button
               className="vs-btn"
               style={{ fontSize: '0.65rem', width: '100%', textAlign: 'left' }}
-              onClick={() => setMonitorMode(MONITORS.FACTION, 'info')}
+              onClick={() => setActiveProgram('FACTION')}
             >
               [{currentCard.name} →]
             </button>

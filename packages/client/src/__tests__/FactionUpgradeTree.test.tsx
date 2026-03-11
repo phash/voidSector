@@ -45,10 +45,10 @@ describe('FactionUpgradeTree', () => {
     vi.clearAllMocks();
   });
 
-  it('shows VERBESSERUNGSBAUM section header', () => {
+  it('shows UPGRADE TREE section header', () => {
     upgradesState();
     render(<FactionScreen />);
-    expect(screen.getByText('VERBESSERUNGSBAUM')).toBeDefined();
+    expect(screen.getByText('UPGRADE TREE')).toBeDefined();
   });
 
   it('shows tier labels with cost', () => {

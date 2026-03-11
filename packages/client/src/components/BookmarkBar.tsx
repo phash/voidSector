@@ -71,7 +71,7 @@ function TrackedQuestPanel({ quest, onClose }: { quest: TrackedQuest; onClose?: 
             color: 'rgba(255,176,0,0.4)',
             border: 'none',
             fontFamily: 'inherit',
-            fontSize: '0.6rem',
+            fontSize: '0.75rem',
             cursor: 'pointer',
             marginTop: 4,
             padding: 0,

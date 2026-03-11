@@ -30,19 +30,20 @@ function FactionTabView() {
 
   const myRank = members.find((m) => m.playerId === playerId)?.rank ?? 'member';
   const isLeader = myRank === 'leader';
+  const isOfficer = myRank === 'officer';
 
   const tabs: { id: FactionTab; label: string }[] = [
     { id: 'info', label: '[INFO]' },
     { id: 'members', label: '[MEMBERS]' },
     { id: 'upgrades', label: '[UPGRADES]' },
-    { id: 'management', label: '[MGMT]' },
+    ...(isLeader || isOfficer ? [{ id: 'management' as FactionTab, label: '[MGMT]' }] : []),
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
       {/* Header — always visible */}
       <div style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '4px' }}>
-        FRAKTION
+        FACTION
       </div>
       <div style={{ fontSize: '1rem', marginBottom: '8px' }}>
         [{faction.tag}] {faction.name}
@@ -64,21 +65,29 @@ function FactionTabView() {
 
       {/* Tab content */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {tab === 'info' && <InfoTab faction={faction} />}
-        {tab === 'members' && <MembersTab isLeader={isLeader} isOfficer={myRank === 'officer'} />}
+        {tab === 'info' && <InfoTab faction={faction} myRank={myRank} isLeader={isLeader} isOfficer={isOfficer} />}
+        {tab === 'members' && <MembersTab isLeader={isLeader} isOfficer={isOfficer} />}
         {tab === 'upgrades' && <UpgradesTab isLeader={isLeader} />}
-        {tab === 'management' && <ManagementTab isLeader={isLeader} />}
+        {tab === 'management' && <ManagementTab isLeader={isLeader} isOfficer={isOfficer} />}
       </div>
     </div>
   );
 }
 
-function InfoTab({ faction }: { faction: any }) {
+function InfoTab({ faction, myRank, isLeader, isOfficer }: { faction: any; myRank: string; isLeader: boolean; isOfficer: boolean }) {
   return (
     <div style={{ fontSize: '0.8rem' }}>
       <div style={{ opacity: 0.7, marginBottom: '6px' }}>
-        Modus: {faction.joinMode.toUpperCase()} | {faction.memberCount} Mitglieder
+        Mode: {faction.joinMode.toUpperCase()} | {faction.memberCount} Members
       </div>
+      <div style={{ opacity: 0.7, marginBottom: '6px' }}>
+        Rank: {myRank.toUpperCase()}
+      </div>
+      {(isLeader || isOfficer) && faction.joinMode === 'code' && faction.inviteCode && (
+        <div style={{ opacity: 0.7, marginBottom: '6px' }}>
+          Invite Code: {faction.inviteCode}
+        </div>
+      )}
     </div>
   );
 }
@@ -89,7 +98,7 @@ function MembersTab({ isLeader, isOfficer }: { isLeader: boolean; isOfficer: boo
 
   return (
     <div>
-      <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>MITGLIEDER</div>
+      <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>MEMBERS</div>
       {members.map((m) => (
         <div
           key={m.playerId}
@@ -139,6 +148,13 @@ function MembersTab({ isLeader, isOfficer }: { isLeader: boolean; isOfficer: boo
           )}
         </div>
       ))}
+      {!isLeader && (
+        <div style={{ marginTop: '12px', borderTop: '1px solid var(--color-dim)', paddingTop: '8px' }}>
+          <button className="vs-btn" onClick={() => network.sendFactionAction('leave')}>
+            [LEAVE]
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -149,7 +165,7 @@ function UpgradesTab({ isLeader }: { isLeader: boolean }) {
   return (
     <div>
       <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '6px', letterSpacing: '0.1em' }}>
-        VERBESSERUNGSBAUM
+        UPGRADE TREE
       </div>
       {[1, 2, 3].map((tier) => {
         const tierDef = FACTION_UPGRADE_TIERS[tier];
@@ -196,10 +212,10 @@ function UpgradesTab({ isLeader }: { isLeader: boolean }) {
   );
 }
 
-function ManagementTab({ isLeader }: { isLeader: boolean }) {
+function ManagementTab({ isLeader, isOfficer }: { isLeader: boolean; isOfficer: boolean }) {
   const faction = useStore((s) => s.faction)!;
-  const [recruiting, setRecruiting] = useState(false);
-  const [slogan, setSlogan] = useState('');
+  const [recruiting, setRecruiting] = useState<boolean>(faction.isRecruiting ?? false);
+  const [slogan, setSlogan] = useState<string>(faction.slogan ?? '');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -207,23 +223,18 @@ function ManagementTab({ isLeader }: { isLeader: boolean }) {
         <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Code: {faction.inviteCode}</div>
       )}
 
-      {/* Invite + join mode + disband / leave */}
+      {/* Invite + join mode + disband */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        {isLeader && <InviteButton />}
+        {(isLeader || isOfficer) && <InviteButton />}
         {isLeader && <JoinModeSelector currentMode={faction.joinMode} />}
         {isLeader && (
           <button
             className="vs-btn"
             onClick={() => {
-              if (confirm('Fraktion auflösen?')) network.sendFactionAction('disband');
+              if (confirm('Disband faction?')) network.sendFactionAction('disband');
             }}
           >
-            [AUFLÖSEN]
-          </button>
-        )}
-        {!isLeader && (
-          <button className="vs-btn" onClick={() => network.sendFactionAction('leave')}>
-            [VERLASSEN]
+            [DISBAND]
           </button>
         )}
       </div>
@@ -238,10 +249,10 @@ function ManagementTab({ isLeader }: { isLeader: boolean }) {
               checked={recruiting}
               onChange={(e) => setRecruiting(e.target.checked)}
             />
-            AKTIV REKRUTIEREN
+            ACTIVE RECRUITING
           </label>
           <div style={{ fontSize: '0.75rem', opacity: 0.7, marginBottom: '4px' }}>
-            Slogan (max 160 Zeichen):
+            SLOGAN (max 160 chars):
           </div>
           <textarea
             className="vs-input"
@@ -258,7 +269,7 @@ function ManagementTab({ isLeader }: { isLeader: boolean }) {
             className="vs-btn"
             onClick={() => network.sendSetRecruiting(recruiting, slogan || null)}
           >
-            [SPEICHERN]
+            [SAVE]
           </button>
         </div>
       )}
@@ -277,7 +288,7 @@ function NoFactionView({ invites }: { invites: any[] }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
       <div style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '8px' }}>
-        FRAKTION
+        FACTION
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', fontFamily: 'monospace', color: '#555', marginBottom: '12px' }}>
         <div>NOT IN A FACTION</div>
@@ -289,18 +300,18 @@ function NoFactionView({ invites }: { invites: any[] }) {
 
       {invites.length > 0 && (
         <div style={{ marginBottom: '12px' }}>
-          <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>EINLADUNGEN</div>
+          <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>INVITATIONS</div>
           {invites.map((inv: any) => (
             <div
               key={inv.id}
               style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px', fontSize: '0.8rem', flexWrap: 'wrap' }}
             >
               <span>[{inv.factionTag}] {inv.factionName}</span>
-              <span style={{ opacity: 0.5 }}>von {inv.inviterName}</span>
+              <span style={{ opacity: 0.5 }}>from {inv.inviterName}</span>
               <button className="vs-btn" style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-                onClick={() => network.sendRespondInvite(inv.id, true)}>[JA]</button>
+                onClick={() => network.sendRespondInvite(inv.id, true)}>[YES]</button>
               <button className="vs-btn" style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-                onClick={() => network.sendRespondInvite(inv.id, false)}>[NEIN]</button>
+                onClick={() => network.sendRespondInvite(inv.id, false)}>[NO]</button>
             </div>
           ))}
         </div>
@@ -308,40 +319,40 @@ function NoFactionView({ invites }: { invites: any[] }) {
 
       <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
         <button className={`vs-btn ${tab === 'create' ? 'vs-btn-active' : ''}`} onClick={() => setTab('create')}>
-          [GRÜNDEN]
+          [FOUND]
         </button>
         <button className={`vs-btn ${tab === 'join' ? 'vs-btn-active' : ''}`} onClick={() => setTab('join')}>
-          [BEITRETEN]
+          [JOIN]
         </button>
       </div>
 
       {tab === 'create' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <input className="vs-input" placeholder="Fraktionsname" value={name}
+          <input className="vs-input" placeholder="Faction name" value={name}
             onChange={(e) => setName(e.target.value)} maxLength={64} />
-          <input className="vs-input" placeholder="Tag (3-5 Zeichen)" value={tag}
+          <input className="vs-input" placeholder="Tag (3-5 chars)" value={tag}
             onChange={(e) => setTag(e.target.value.toUpperCase())} maxLength={5} />
           <select className="vs-input" value={joinMode} onChange={(e) => setJoinMode(e.target.value as FactionJoinMode)}>
-            <option value="open">Offen</option>
-            <option value="code">Einladungscode</option>
-            <option value="invite">Nur Einladung</option>
+            <option value="open">OPEN</option>
+            <option value="code">CODE</option>
+            <option value="invite">INVITE</option>
           </select>
           <button className="vs-btn" disabled={name.trim().length < 3 || tag.trim().length < 3}
             onClick={() => network.sendCreateFaction(name.trim(), tag.trim(), joinMode)}>
-            [FRAKTION GRÜNDEN]
+            [FOUND FACTION]
           </button>
         </div>
       )}
 
       {tab === 'join' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Einladungscode eingeben:</div>
+          <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Enter invite code:</div>
           <div style={{ display: 'flex', gap: '6px' }}>
             <input className="vs-input" placeholder="CODE" value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={8} />
             <button className="vs-btn" disabled={code.length < 4}
               onClick={() => network.sendFactionAction('joinCode', { code })}>
-              [BEITRETEN]
+              [JOIN]
             </button>
           </div>
         </div>
@@ -355,12 +366,12 @@ function InviteButton() {
   const [open, setOpen] = useState(false);
 
   if (!open) {
-    return <button className="vs-btn" onClick={() => setOpen(true)}>[EINLADEN]</button>;
+    return <button className="vs-btn" onClick={() => setOpen(true)}>[INVITE]</button>;
   }
 
   return (
     <div style={{ display: 'flex', gap: '4px' }}>
-      <input className="vs-input" placeholder="Spielername" value={name}
+      <input className="vs-input" placeholder="Player name" value={name}
         onChange={(e) => setName(e.target.value)} style={{ width: '120px' }} />
       <button className="vs-btn" disabled={!name.trim()}
         onClick={() => {
@@ -377,7 +388,7 @@ function JoinModeSelector({ currentMode }: { currentMode: string }) {
   const [open, setOpen] = useState(false);
 
   if (!open) {
-    return <button className="vs-btn" onClick={() => setOpen(true)}>[MODUS]</button>;
+    return <button className="vs-btn" onClick={() => setOpen(true)}>[MODE]</button>;
   }
 
   const modes: FactionJoinMode[] = ['open', 'code', 'invite'];
