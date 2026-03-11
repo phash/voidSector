@@ -133,21 +133,22 @@ describe('calculateShipStats', () => {
 });
 
 describe('validateModuleInstall', () => {
-  it('rejects slot index beyond hull capacity', () => {
+  it('rejects wrong category for specialized slot', () => {
+    // slot 5 is mining; drive_mk1 is category drive → mismatch
     const result = validateModuleInstall('scout', [], 'drive_mk1', 5);
     expect(result.valid).toBe(false);
-    expect(result.error).toContain('Invalid slot');
+    expect(result.error).toContain('Specialized Slot');
   });
 
   it('rejects occupied slot', () => {
     const result = validateModuleInstall(
       'scout',
-      [{ moduleId: 'drive_mk1', slotIndex: 0 }],
-      'cargo_mk1',
+      [{ moduleId: 'drive_mk1', slotIndex: 0, source: 'standard' }],
+      'drive_mk2',
       0,
     );
     expect(result.valid).toBe(false);
-    expect(result.error).toContain('occupied');
+    expect(result.error).toContain('belegt');
   });
 
   it('rejects unknown module', () => {
@@ -160,12 +161,12 @@ describe('validateModuleInstall', () => {
     expect(result.valid).toBe(true);
   });
 
-  it('accepts install in different slot', () => {
+  it('accepts cargo module in cargo slot (slot 6)', () => {
     const result = validateModuleInstall(
       'freighter',
-      [{ moduleId: 'drive_mk1', slotIndex: 0 }],
+      [{ moduleId: 'drive_mk1', slotIndex: 0, source: 'standard' }],
       'cargo_mk1',
-      1,
+      6,
     );
     expect(result.valid).toBe(true);
   });

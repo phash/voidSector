@@ -4,6 +4,9 @@ import {
   ACEP_LEVEL_THRESHOLDS,
   ACEP_LEVEL_MULTIPLIERS,
   ACEP_EXTRA_SLOT_THRESHOLDS,
+  DEFENSE_ONLY_CATEGORIES,
+  SPECIALIZED_SLOT_CATEGORIES,
+  UNIQUE_MODULE_CATEGORIES,
 } from './constants.js';
 import type { HullType, ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
 
@@ -110,13 +113,54 @@ export function validateModuleInstall(
   currentModules: ShipModule[],
   moduleId: string,
   slotIndex: number,
+  acepXp: AcepXpSnapshot = { ausbau: 0, intel: 0, kampf: 0, explorer: 0 },
 ): { valid: boolean; error?: string } {
-  const hull = HULLS[hullType];
   const moduleDef = MODULES[moduleId];
-  if (!moduleDef) return { valid: false, error: 'Unknown module' };
-  if (slotIndex < 0 || slotIndex >= hull.slots) return { valid: false, error: 'Invalid slot' };
-  if (currentModules.some((m) => m.slotIndex === slotIndex)) {
-    return { valid: false, error: 'Slot occupied' };
+  if (!moduleDef) return { valid: false, error: 'Unbekanntes Modul' };
+
+  const category = moduleDef.category;
+  const isSpecializedSlot = slotIndex < 7;
+  const isExtraSlot = slotIndex >= 7;
+  const extraSlotCount = getExtraSlotCount(acepXp.ausbau);
+  const maxAllowedSlotIndex = 7 + extraSlotCount - 1; // z.B. bei 1 extra slot = max index 7
+
+  // defense/special nur in Extra-Slots
+  if (DEFENSE_ONLY_CATEGORIES.includes(category) && isSpecializedSlot) {
+    return { valid: false, error: `${category}-Module können nur in Extra-Slots installiert werden` };
   }
+
+  // Specialized Slot: nur passende Kategorie
+  if (isSpecializedSlot) {
+    const expectedCategory = SPECIALIZED_SLOT_CATEGORIES[slotIndex];
+    if (expectedCategory && expectedCategory !== category && !DEFENSE_ONLY_CATEGORIES.includes(category)) {
+      return { valid: false, error: `Specialized Slot ${slotIndex} ist für '${expectedCategory}' reserviert` };
+    }
+  }
+
+  // Extra-Slot: AUSBAU-Gate
+  if (isExtraSlot) {
+    if (extraSlotCount === 0 || slotIndex > maxAllowedSlotIndex) {
+      return { valid: false, error: `Extra-Slot ${slotIndex} noch nicht freigeschaltet — benötigt höheres AUSBAU-Level` };
+    }
+  }
+
+  // Unique-Enforcement: max 1× pro Schiff (auch in Extra-Slots)
+  if (moduleDef.isUnique || UNIQUE_MODULE_CATEGORIES.includes(category)) {
+    const alreadyInstalled = currentModules.some(
+      (m) => {
+        const existingDef = MODULES[m.moduleId];
+        return existingDef?.category === category;
+      }
+    );
+    if (alreadyInstalled) {
+      return { valid: false, error: `Unique-Modul: ${category} bereits installiert. Nur 1× pro Schiff erlaubt.` };
+    }
+  }
+
+  // Slot bereits belegt?
+  if (currentModules.some((m) => m.slotIndex === slotIndex)) {
+    return { valid: false, error: 'Slot bereits belegt' };
+  }
+
   return { valid: true };
 }
