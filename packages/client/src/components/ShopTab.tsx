@@ -2,6 +2,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULES, isModuleUnlocked } from '@void-sector/shared';
 import type { ModuleDefinition } from '@void-sector/shared';
+import { getModuleSourceColor } from './moduleUtils';
 
 const sectionHdr: React.CSSProperties = {
   fontSize: '0.75rem',
@@ -66,10 +67,10 @@ export function ShopTab() {
 
   function costLabel(def: ModuleDefinition): string {
     const parts: string[] = [`${def.cost.credits} CR`];
-    if (def.cost.ore) parts.push(`${def.cost.ore} Erz`);
-    if (def.cost.gas) parts.push(`${def.cost.gas} Gas`);
-    if (def.cost.crystal) parts.push(`${def.cost.crystal} Kristall`);
-    if (def.cost.artefact) parts.push(`${def.cost.artefact} Artefakt`);
+    if (def.cost.ore !== undefined) parts.push(`${def.cost.ore} Erz`);
+    if (def.cost.gas !== undefined) parts.push(`${def.cost.gas} Gas`);
+    if (def.cost.crystal !== undefined) parts.push(`${def.cost.crystal} Kristall`);
+    if (def.cost.artefact !== undefined) parts.push(`${def.cost.artefact} Artefakt`);
     return parts.join(' + ');
   }
 
@@ -103,7 +104,7 @@ export function ShopTab() {
               onMouseLeave={() => setHovered(null)}
             >
               <div>
-                <div style={{ color: '#FFB000', fontSize: '0.95rem' }}>
+                <div style={{ color: getModuleSourceColor(undefined), fontSize: '0.95rem' }}>
                   {def.displayName ?? def.name}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 3 }}>

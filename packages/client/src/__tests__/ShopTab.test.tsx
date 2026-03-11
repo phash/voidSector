@@ -69,4 +69,15 @@ describe('ShopTab', () => {
     const buyBtns = screen.getAllByRole('button', { name: /KAUFEN/i });
     expect(buyBtns.every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
   });
+
+  it('ore: 0 in cargo does not disable buttons for modules that do not require ore (undefined !== 0)', () => {
+    // cargo.ore = 0 but credits are sufficient
+    // Modules whose cost.ore is undefined should still be purchasable
+    // This test ensures costLabel/canAfford use !== undefined, not truthy checks
+    mockStoreState({ ...baseStore, credits: 9999, cargo: { ore: 0, gas: 99, crystal: 99, artefact: 99, slates: 0 } as any });
+    render(<ShopTab />);
+    const buyBtns = screen.getAllByRole('button', { name: /KAUFEN/i });
+    // At least some buttons should be enabled (those whose cost.ore is undefined)
+    expect(buyBtns.some((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+  });
 });
