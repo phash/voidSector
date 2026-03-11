@@ -26,6 +26,7 @@ import { StoryEventOverlay } from './overlays/StoryEventOverlay';
 import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
 import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
+import { LocalScanResultOverlay } from './overlays/LocalScanResultOverlay';
 
 interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
@@ -198,6 +199,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
         </div>
       </div>
       <PlayerContextMenu />
+      <LocalScanResultOverlay />
       <StoryEventOverlay />
       <FirstContactNewsOverlay />
       <AlienEncounterToast />

@@ -92,10 +92,28 @@ export function MiningScreen() {
           >
             {mining?.active ? (
               <>
-                <div style={{ marginBottom: '6px' }}>
-                  MINING {mining.resource?.toUpperCase()} — RATE: {mining.rate}u/s |{' '}
-                  {UI.status.YIELD}: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
-                </div>
+                {/* Live flow: ASTEROID → CARGO (#261) */}
+                {(() => {
+                  const mined = Math.round(miningProgress * mining.sectorYield);
+                  const remaining = mining.sectorYield - mined;
+                  const res = mining.resource as 'ore' | 'gas' | 'crystal' | undefined;
+                  const cargoRes = res ? (cargo[res] ?? 0) : cargoTotal;
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '0.8rem' }}>
+                      <div style={{ textAlign: 'center', minWidth: 52 }}>
+                        <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>ASTEROID</div>
+                        <div style={{ color: 'var(--color-primary)', fontSize: '1.1rem', fontWeight: 'bold' }}>{remaining}</div>
+                      </div>
+                      <div style={{ flex: 1, textAlign: 'center', color: 'var(--color-dim)', fontSize: '0.7rem' }}>
+                        ── {mining.rate}u/s ──►
+                      </div>
+                      <div style={{ textAlign: 'center', minWidth: 52 }}>
+                        <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>CARGO</div>
+                        <div style={{ color: '#4a9', fontSize: '1.1rem', fontWeight: 'bold' }}>{cargoRes + mined}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <div
                     style={{
@@ -113,6 +131,9 @@ export function MiningScreen() {
                         transition: 'width 0.2s linear',
                       }}
                     />
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', whiteSpace: 'nowrap' }}>
+                    {Math.round(miningProgress * 100)}%
                   </div>
                 </div>
               </>

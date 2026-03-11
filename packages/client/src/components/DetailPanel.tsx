@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
+import { network } from '../network/client';
 import {
   SECTOR_COLORS,
   FUEL_COST_PER_UNIT,
@@ -469,28 +470,55 @@ export function DetailPanel() {
         SECTOR ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})
       </div>
 
-      {/* Capability chips (#148) */}
+      {/* Capability chips — clickable quick-actions (#259) */}
       {sector &&
         (() => {
           const caps = getSectorCapabilities(sector, jumpGateInfo, playerGateInfo, isPlayerHere);
           if (caps.length === 0) return null;
+          const capAction: Record<string, (() => void) | undefined> = {
+            mine: () => setActiveProgram('MINING'),
+            trade: () => setActiveProgram('TRADE'),
+            quest: () => setActiveProgram('QUESTS'),
+            scan: () => network.sendLocalScan(),
+          };
           return (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-              {caps.map((cap) => (
-                <span
-                  key={cap}
-                  style={{
-                    fontSize: '0.6rem',
-                    letterSpacing: '0.1em',
-                    padding: '1px 5px',
-                    border: '1px solid var(--color-dim)',
-                    color: 'var(--color-dim)',
-                    opacity: 0.8,
-                  }}
-                >
-                  {CAPABILITY_LABELS[cap]}
-                </span>
-              ))}
+              {caps.map((cap) => {
+                const action = capAction[cap];
+                return action ? (
+                  <button
+                    key={cap}
+                    onClick={action}
+                    style={{
+                      fontSize: '0.6rem',
+                      letterSpacing: '0.1em',
+                      padding: '1px 5px',
+                      border: '1px solid var(--color-primary)',
+                      color: 'var(--color-primary)',
+                      background: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      opacity: 0.9,
+                    }}
+                  >
+                    {CAPABILITY_LABELS[cap]}
+                  </button>
+                ) : (
+                  <span
+                    key={cap}
+                    style={{
+                      fontSize: '0.6rem',
+                      letterSpacing: '0.1em',
+                      padding: '1px 5px',
+                      border: '1px solid var(--color-dim)',
+                      color: 'var(--color-dim)',
+                      opacity: 0.8,
+                    }}
+                  >
+                    {CAPABILITY_LABELS[cap]}
+                  </span>
+                );
+              })}
             </div>
           );
         })()}

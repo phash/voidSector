@@ -309,6 +309,19 @@ export interface GameSlice {
   // Selected sector (radar click)
   selectedSector: { x: number; y: number } | null;
 
+  // LocalScan result popup
+  localScanResult: {
+    resources: { ore: number; gas: number; crystal: number };
+    hiddenSignatures: boolean;
+    wrecks?: Array<{
+      id: string;
+      playerName: string;
+      radarIconData: { tier: number; path: string };
+      lastLogEntry: string | null;
+      hasSalvage: boolean;
+    }>;
+  } | null;
+
   // Base
   baseStructures: any[];
 
@@ -545,6 +558,7 @@ export interface GameSlice {
   setAlert: (monitorId: string, active: boolean) => void;
   clearAlert: (monitorId: string) => void;
   setSelectedSector: (sector: { x: number; y: number } | null) => void;
+  setLocalScanResult: (result: GameSlice['localScanResult']) => void;
   setBaseStructures: (structures: any[]) => void;
   setCredits: (credits: number) => void;
   setStorage: (storage: StorageInventory) => void;
@@ -675,6 +689,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   channelAlerts: {},
   alerts: {},
   selectedSector: null,
+  localScanResult: null,
   baseStructures: [],
   credits: 0,
   alienCredits: 0,
@@ -868,6 +883,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       return { alerts: next };
     }),
   setSelectedSector: (selectedSector) => set({ selectedSector }),
+  setLocalScanResult: (localScanResult) => set({ localScanResult }),
   setBaseStructures: (baseStructures) => set({ baseStructures }),
   setCredits: (credits) => set({ credits }),
   setStorage: (storage) => set({ storage }),

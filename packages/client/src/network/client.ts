@@ -361,6 +361,8 @@ class GameNetwork {
           store.setCurrentSector(updatedSector);
           store.addDiscoveries([updatedSector]);
         }
+        // Show scan result popup
+        store.setLocalScanResult(data);
         if (data.hiddenSignatures) {
           store.addLogEntry('UNKNOWN SIGNATURES DETECTED — SCANNER UPGRADE REQUIRED');
         }

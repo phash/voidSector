@@ -142,7 +142,9 @@ describe('MiningScreen', () => {
       },
     });
     render(<MiningScreen />);
-    expect(screen.getByText(/MINING ORE/)).toBeInTheDocument();
+    // New live-flow display shows ASTEROID and CARGO labels
+    expect(screen.getAllByText(/ASTEROID/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/CARGO/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('displays IDLE status when not mining', () => {
