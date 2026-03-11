@@ -280,6 +280,95 @@ export function DetailPanel() {
     setDrillDown(null);
   }, [selectedSector?.x, selectedSector?.y]);
 
+  const selectedSlate = selectedSlateId
+    ? mySlates.find((s: DataSlate) => s.id === selectedSlateId)
+    : null;
+
+  if (activeProgram === 'CARGO' && selectedSlate) {
+    return (
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.75rem',
+        padding: '8px',
+        height: '100%',
+        overflowY: 'auto',
+      }}>
+        <div style={{ fontSize: '0.85rem', marginBottom: 8, letterSpacing: '0.1em' }}>
+          DATA SLATE [{selectedSlate.slateType === 'sector' ? 'SEKTOR'
+            : selectedSlate.slateType === 'area' ? 'GEBIET'
+            : selectedSlate.slateType === 'scan' ? 'SCAN'
+            : selectedSlate.slateType === 'jumpgate' ? 'JUMPGATE'
+            : 'CUSTOM'}]
+        </div>
+
+        <div style={{ opacity: 0.5, fontSize: '0.65rem', marginBottom: 8 }}>
+          Erstellt: {new Date(selectedSlate.createdAt).toLocaleDateString('de-DE')}
+        </div>
+
+        {/* Custom slate content */}
+        {selectedSlate.slateType === 'custom' && selectedSlate.customData && (
+          <div>
+            <div style={{ marginBottom: 4 }}>Label: {selectedSlate.customData.label}</div>
+            {selectedSlate.customData.notes && (
+              <div style={{ opacity: 0.7, marginBottom: 4, whiteSpace: 'pre-wrap' }}>
+                {selectedSlate.customData.notes}
+              </div>
+            )}
+            {selectedSlate.customData.coordinates && selectedSlate.customData.coordinates.length > 0 && (
+              <div style={{ marginBottom: 4 }}>
+                Koordinaten: {selectedSlate.customData.coordinates.map((c: any) => `(${c.x},${c.y})`).join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Jumpgate slate content */}
+        {selectedSlate.slateType === 'jumpgate' && selectedSlate.sectorData?.[0] && (
+          <div>
+            <div>Gate-ID: {(selectedSlate.sectorData[0] as any).gateId}</div>
+            <div>Position: ({(selectedSlate.sectorData[0] as any).sectorX}, {(selectedSlate.sectorData[0] as any).sectorY})</div>
+            <div>Owner: {(selectedSlate.sectorData[0] as any).ownerName}</div>
+          </div>
+        )}
+
+        {/* Sector/Area/Scan slate content — list of sectors */}
+        {['sector', 'area', 'scan'].includes(selectedSlate.slateType) && selectedSlate.sectorData && (
+          <div>
+            {selectedSlate.sectorData.map((sec, i) => (
+              <div key={i} style={{
+                marginBottom: 6,
+                padding: '4px 6px',
+                border: '1px solid rgba(255,176,0,0.1)',
+              }}>
+                <div style={{ opacity: 0.5, fontSize: '0.65rem' }}>
+                  {(sec as any).quadrantX !== undefined
+                    ? `Q${(sec as any).quadrantX}:${(sec as any).quadrantY} — `
+                    : ''}
+                  ({sec.x}, {sec.y})
+                </div>
+                <div>Typ: {sec.type?.toUpperCase() ?? 'UNKNOWN'}</div>
+                <div>Ore: {sec.ore} | Gas: {sec.gas} | Crystal: {sec.crystal}</div>
+                {(sec as any).structures?.length > 0 && (
+                  <div style={{ opacity: 0.7 }}>Strukturen: {(sec as any).structures.join(', ')}</div>
+                )}
+                {(sec as any).wrecks?.length > 0 && (
+                  <div style={{ opacity: 0.7 }}>
+                    Wracks: {(sec as any).wrecks.map((w: any) => `${w.playerName} (T${w.tier})`).join(', ')}
+                  </div>
+                )}
+                {(sec as any).scannedAtTick !== undefined && (
+                  <div style={{ opacity: 0.4, fontSize: '0.6rem' }}>
+                    Scan-Tick: {(sec as any).scannedAtTick}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!selectedSector) {
     return (
       <div style={{ padding: 16, textAlign: 'center', opacity: 0.4, fontSize: '0.8rem' }}>

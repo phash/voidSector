@@ -2048,7 +2048,7 @@ export const NEBULA_ZONE_GRID = 250;   // was 5_000; 1-2 clusters per 500×500 q
 export const NEBULA_ZONE_CHANCE = 0.4; // 40% of centers activate → ~1.6 blobs per quadrant
 export const NEBULA_ZONE_MIN_RADIUS = 2.5; // was 3; ~20 sectors min (π×r²)
 export const NEBULA_ZONE_MAX_RADIUS = 8; // max radius → ~201 sectors per blob
-export const NEBULA_SAFE_ORIGIN = 200; // no nebula zones within this many sectors of origin
+export const NEBULA_SAFE_ORIGIN = 50; // no nebula zones within this many sectors of origin — reduced for better quest accessibility
 
 // Two-stage worldgen: environment weights (first roll).
 // Nebula is handled purely via zone system (NEBULA_ZONE_*) — no scattered random nebula.
