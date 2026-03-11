@@ -131,6 +131,9 @@ export class ScanService {
       sectorY: this.ctx._py(client.sessionId),
     });
 
+    // Community quest: auto-contribute scans
+    this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_scan').catch(() => {});
+
     // ACEP: INTEL-XP + personality comment for scanning (spec: +3 per scan)
     addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
     this._emitPersonalityComment(client, auth.userId, 'scan').catch(() => {});
@@ -293,6 +296,11 @@ export class ScanService {
         sectorX: s.x,
         sectorY: s.y,
       });
+    }
+
+    // Community quest: auto-contribute scanned sectors
+    if (allCoords.length > 0) {
+      this.ctx.contributeToCommunityQuest(auth.userId, allCoords.length, 'community_scan').catch(() => {});
     }
 
     // ACEP: INTEL-XP for area scan (discovering new sectors) (spec: +3)

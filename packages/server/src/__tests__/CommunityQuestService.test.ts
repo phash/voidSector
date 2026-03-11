@@ -20,6 +20,9 @@ vi.mock('../db/queries.js', () => ({
   addCommunityQuestContribution: vi.fn().mockResolvedValue(undefined),
   expireOldCommunityQuests: vi.fn().mockResolvedValue(undefined),
   completeCommunityQuest: vi.fn().mockResolvedValue(undefined),
+  contributeHumanityRep: vi.fn().mockResolvedValue(undefined),
+  addWissen: vi.fn().mockResolvedValue(undefined),
+  recordNewsEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { CommunityQuestService } from '../rooms/services/CommunityQuestService.js';

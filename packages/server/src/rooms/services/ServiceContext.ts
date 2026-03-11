@@ -73,4 +73,5 @@ export interface ServiceContext {
     client: Client,
   ) => Promise<void>;
   applyXpGain: (playerId: string, xp: number, client: Client) => Promise<void>;
+  contributeToCommunityQuest: (playerId: string, count: number, questType: string) => Promise<void>;
 }

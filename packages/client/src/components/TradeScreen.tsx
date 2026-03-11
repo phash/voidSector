@@ -339,10 +339,10 @@ export function TradeScreen() {
                             {playerAmount}
                             <span style={{ opacity: 0.4, fontSize: '0.65rem' }}> Cargo</span>
                           </div>
-                          {playerAmount > 0 && (
+                          {effectiveMax > 0 && (
                             <button
                               style={{ ...btnStyle, fontSize: '0.55rem', opacity: 0.8, marginTop: 3 }}
-                              onClick={() => network.sendNpcTrade(item.itemType, playerAmount, 'sell')}
+                              onClick={() => network.sendNpcTrade(item.itemType, effectiveMax, 'sell')}
                             >
                               {allLabel}
                             </button>

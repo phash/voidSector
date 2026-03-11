@@ -296,12 +296,13 @@ export class SectorRoom extends Room<SectorRoomState> {
       },
       disposeCallbacks: this.disposeCallbacks,
       roomId: this.roomId,
-      // These will be wired to WorldService/QuestService after instantiation
+      // These will be wired to WorldService/QuestService/CommunityQuestService after instantiation
       checkFirstContact: null as any,
       checkQuestProgress: null as any,
       checkAndEmitDistressCalls: null as any,
       applyReputationChange: null as any,
       applyXpGain: null as any,
+      contributeToCommunityQuest: null as any,
     };
 
     // Instantiate services
@@ -329,6 +330,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.serviceCtx.checkFirstContact = this.world.checkFirstContact.bind(this.world);
     this.serviceCtx.checkAndEmitDistressCalls = this.world.checkAndEmitDistressCalls.bind(
       this.world,
+    );
+    this.serviceCtx.contributeToCommunityQuest = this.communityQuests.contribute.bind(
+      this.communityQuests,
     );
 
     // ── Navigation ──────────────────────────────────────────────────

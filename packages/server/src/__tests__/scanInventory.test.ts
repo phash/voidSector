@@ -143,6 +143,7 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
     checkQuestProgress: vi.fn().mockResolvedValue(undefined),
     applyXpGain: vi.fn().mockResolvedValue(undefined),
     applyReputationChange: vi.fn().mockResolvedValue(undefined),
+    contributeToCommunityQuest: vi.fn().mockResolvedValue(undefined),
     sendToPlayer: vi.fn(),
     send: vi.fn(),
     ...overrides,

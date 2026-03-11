@@ -211,7 +211,7 @@ export function BookmarkBar() {
             return (
               <div
                 key={tq.questId}
-                style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 2 }}
                 onMouseEnter={() => {
                   setHoveredSlot(slotId);
                   showQuestPanel(tq.questId);
@@ -233,38 +233,37 @@ export function BookmarkBar() {
                     padding: '2px 4px',
                     borderColor: '#4488FF',
                     color: '#4488FF',
-                    width: '100%',
+                    flex: 1,
+                    minWidth: 0,
                     textAlign: 'left',
                     overflow: 'hidden',
                     whiteSpace: 'nowrap',
                     textOverflow: 'ellipsis',
-                    paddingRight: hoveredSlot === slotId ? '18px' : '4px',
                   }}
                   title={tq.title}
                 >
                   [{typeShort}] {tq.title}
                 </button>
-                {hoveredSlot === slotId && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      network.sendTrackQuest(tq.questId, false);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      background: 'none',
-                      border: 'none',
-                      color: '#f44',
-                      cursor: 'pointer',
-                      fontFamily: 'monospace',
-                      fontSize: '0.75rem',
-                      padding: '0 2px',
-                    }}
-                  >
-                    [X]
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    network.sendTrackQuest(tq.questId, false);
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    width: 18,
+                    background: 'none',
+                    border: 'none',
+                    color: hoveredSlot === slotId ? '#f44' : 'transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'monospace',
+                    fontSize: '0.75rem',
+                    padding: 0,
+                  }}
+                  aria-label="Quest entfernen"
+                >
+                  ×
+                </button>
                 {questPanelSlot === tq.questId && <TrackedQuestPanel quest={tq} />}
               </div>
             );
