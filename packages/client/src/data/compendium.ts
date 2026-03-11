@@ -256,8 +256,13 @@ AP wird in Sektion 5 (Navigation) als Balken angezeigt. Gelb = genug, Orange = n
 - Legacy-Vererbung: 40% des ACEP-XP wird nach Permadeath vererbt
 
 **ACEP im Interface:**
-SHIP-SYS → Einstellungen: Zeigt alle 4 Pfade als Balken mit aktuellem Stand.`,
-    seeAlso: ['acep-pfade', 'acep-traits', 'radar-evolution', 'permadeath', 'acep-handbuch'],
+Das ACEP-Programm (Sektion 1 → ACEP) zeigt alle Modul-Slots und XP-Pfade auf einem Screen.
+SHIP-SYS (Sektion 4) → EINSTELLUNGEN zeigt die ACEP-Balken weiterhin zusätzlich.
+
+**AUSBAU-Level und Gating:**
+- Fabrik: erfordert AUSBAU Level 2 (ab 8 AUSBAU-XP)
+- Forschungsslot 2: erfordert AUSBAU Level 3 (ab 18 AUSBAU-XP)`,
+    seeAlso: ['acep-pfade', 'acep-traits', 'radar-evolution', 'permadeath', 'acep-handbuch', 'acep-monitor', 'acep-slots'],
     tags: ['acep', 'spezialisierung', 'xp', 'pfade', 'evolution'],
   },
 
@@ -1725,7 +1730,7 @@ Das Schiff kommentiert Aktionen im LOG — Ton und Inhalt abhängig von freigesc
 Traits schließen sich nicht gegenseitig aus. Ein "VETERAN + NEUGIERIG"-Schiff kombiniert beide Persönlichkeitsstile.
 
 **Trait-Anzeige:**
-SHIP-SYS → EINSTELLUNGEN → ACEP-Panel zeigt aktive Traits unter den XP-Balken.`,
+Das ACEP-Programm (Sektion 1 → ACEP) zeigt aktive Traits unter den XP-Pfad-Balken.`,
     seeAlso: ['acep-pfade', 'acep-intro', 'radar-evolution', 'acep-handbuch'],
     tags: ['traits', 'persönlichkeit', 'veteran', 'neugierig', 'charakter'],
   },
