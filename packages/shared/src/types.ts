@@ -26,7 +26,7 @@ export type SectorContent =
 export type MineableResourceType = 'ore' | 'gas' | 'crystal';
 export type ResourceType = MineableResourceType | 'artefact';
 
-export type ItemType = 'resource' | 'module' | 'blueprint' | 'prisoner';
+export type ItemType = 'resource' | 'module' | 'blueprint' | 'prisoner' | 'data_slate';
 
 export interface InventoryItem {
   itemType: ItemType;
@@ -619,7 +619,8 @@ export type QuestType =
   | 'bounty_chase'
   | 'bounty_trail'
   | 'bounty_combat'
-  | 'bounty_deliver';
+  | 'bounty_deliver'
+  | 'scan_deliver';
 export type QuestStatus = 'active' | 'completed' | 'expired' | 'abandoned';
 
 export interface QuestObjective {
