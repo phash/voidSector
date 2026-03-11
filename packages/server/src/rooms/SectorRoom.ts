@@ -67,7 +67,6 @@ import {
   getVisitedQuadrantSet,
   getAllAlienReputations,
   getInventory,
-  getResearchLabTier,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -81,6 +80,7 @@ import {
   HULLS,
   STATION_REP_VISIT,
   COSMIC_FACTION_IDS,
+  getAcepLevel,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -1267,7 +1267,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const activeResearch2 = await getActiveResearch(auth.userId, 2);
       const wissen = await getWissen(auth.userId);
       const typedArtefacts = await getTypedArtefacts(auth.userId);
-      const labTier = await getResearchLabTier(auth.userId);
+      const labTier = getAcepLevel(acepXp.ausbau);
       client.send('researchState', {
         unlockedModules: researchData.unlockedModules,
         blueprints: researchData.blueprints,

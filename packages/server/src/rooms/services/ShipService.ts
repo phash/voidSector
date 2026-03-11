@@ -9,6 +9,7 @@ import {
   getActiveDrawbacks,
   isModuleUnlocked,
   canStartResearch,
+  getAcepLevel,
   MODULES,
   HULLS,
   HULL_PRICES,
@@ -52,7 +53,6 @@ import {
   addWissen,
   getTypedArtefacts,
   deductTypedArtefacts,
-  getResearchLabTier,
 } from '../../db/queries.js';
 
 export class ShipService {
@@ -238,7 +238,9 @@ export class ShipService {
     const active2 = await getActiveResearch(auth.userId, 2);
     const wissen = await getWissen(auth.userId);
     const typedArtefacts = await getTypedArtefacts(auth.userId);
-    const labTier = await getResearchLabTier(auth.userId);
+    const shipForLabTier = await getActiveShip(auth.userId);
+    const acepXpForTier = shipForLabTier ? await getAcepXpSummary(shipForLabTier.id) : { ausbau: 0 };
+    const labTier = getAcepLevel(acepXpForTier.ausbau);
 
     client.send('researchState', {
       unlockedModules: research.unlockedModules,
@@ -263,7 +265,9 @@ export class ShipService {
     const active1 = await getActiveResearch(auth.userId, 1);
     const active2 = await getActiveResearch(auth.userId, 2);
     const wissen = await getWissen(auth.userId);
-    const labTier = await getResearchLabTier(auth.userId);
+    const shipForLabTier = await getActiveShip(auth.userId);
+    const acepXpForTier = shipForLabTier ? await getAcepXpSummary(shipForLabTier.id) : { ausbau: 0 };
+    const labTier = getAcepLevel(acepXpForTier.ausbau);
     const typedArtefacts = await getTypedArtefacts(auth.userId);
 
     const reps = await getPlayerReputations(auth.userId);
