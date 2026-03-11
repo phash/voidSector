@@ -40,6 +40,9 @@ import {
   getQuestById,
 } from '../../db/queries.js';
 import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
+import { generateBountyTrail } from '../../engine/bountyQuestGen.js';
+import { hashCoords } from '../../engine/worldgen.js';
+import { QUEST_TEMPLATES } from '../../engine/questTemplates.js';
 
 export class QuestService {
   constructor(private ctx: ServiceContext) {}
@@ -93,15 +96,66 @@ export class QuestService {
       return;
     }
 
+    let objectives = questTemplate.objectives;
+    let title = questTemplate.title;
+    let description = questTemplate.description;
+
+    // Bounty chase: generate trail at accept time
+    if (objectives[0]?.type === 'bounty_trail') {
+      const origTemplate = QUEST_TEMPLATES.find((t) => t.id === data.templateId);
+      const [minLvl, maxLvl] = origTemplate?.targetLevelRange ?? [1, 3];
+      const levelSeed = hashCoords(data.stationX, data.stationY, dayOfYear);
+      const targetLevel = minLvl + (Math.abs(levelSeed) % (maxLvl - minLvl + 1));
+
+      const trail = generateBountyTrail(
+        data.stationX,
+        data.stationY,
+        targetLevel,
+        dayOfYear,
+      );
+
+      objectives = [
+        {
+          type: 'bounty_trail' as const,
+          description: 'Verfolge die Spur des Ziels',
+          fulfilled: false,
+          trail: trail.steps,
+          currentStep: 0,
+          targetName: trail.targetName,
+          targetLevel: trail.targetLevel,
+          currentHint: trail.steps[0]?.hint ?? '',
+        },
+        {
+          type: 'bounty_combat' as const,
+          description: `Schalte ${trail.targetName} aus`,
+          fulfilled: false,
+          sectorX: trail.combatX,
+          sectorY: trail.combatY,
+          targetName: trail.targetName,
+          targetLevel: trail.targetLevel,
+        },
+        {
+          type: 'bounty_deliver' as const,
+          description: 'Liefere den Gefangenen zur Auftrags-Station',
+          fulfilled: false,
+          stationX: data.stationX,
+          stationY: data.stationY,
+        },
+      ];
+
+      title = `Kopfgeld: ${trail.targetName}`;
+      description = description.replace('???', trail.targetName);
+    }
+
     const expiresAt = new Date(Date.now() + QUEST_EXPIRY_DAYS * 86400000);
     const questId = await insertQuest(
       auth.userId,
       data.templateId,
-      questTemplate.title,
-      questTemplate.description,
+      title,
+      description,
       data.stationX,
       data.stationY,
-      questTemplate.objectives,
+      objectives,
       questTemplate.rewards,
       expiresAt,
     );
@@ -111,11 +165,11 @@ export class QuestService {
       templateId: data.templateId,
       npcName: questTemplate.npcName,
       npcFactionId: questTemplate.npcFactionId,
-      title: questTemplate.title,
-      description: questTemplate.description,
+      title,
+      description,
       stationX: data.stationX,
       stationY: data.stationY,
-      objectives: questTemplate.objectives,
+      objectives,
       rewards: questTemplate.rewards,
       status: 'active',
       acceptedAt: Date.now(),
