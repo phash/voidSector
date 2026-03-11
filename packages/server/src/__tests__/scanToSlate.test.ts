@@ -74,21 +74,19 @@ describe('createSlateFromScan — logic validation', () => {
     expect(structures).toEqual(['ruin']);
   });
 
-  it('rejects when cargo is full (cargoTotal >= cargoCap)', async () => {
+  it('rejects when memory is full (slates >= memory)', async () => {
     vi.mocked(getCargoState).mockResolvedValue({
-      ore: 10, gas: 5, crystal: 3, slates: 2, artefact: 0,
+      ore: 0, gas: 0, crystal: 0, slates: 6, artefact: 0,
     });
     const cargo = await getCargoState('player-1');
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
-    const cargoCap = 20;
-    expect(cargoTotal + 1 > cargoCap).toBe(true);
+    const memory = 6;
+    expect(cargo.slates >= memory).toBe(true);
   });
 
-  it('allows when cargo has space', async () => {
+  it('allows when memory has space', async () => {
     const cargo = await getCargoState('player-1');
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
-    const cargoCap = 20;
-    expect(cargoTotal + 1 > cargoCap).toBe(false);
+    const memory = 6;
+    expect(cargo.slates >= memory).toBe(false);
   });
 
   it('calls createDataSlate with scan type and addSlateToCargo', async () => {

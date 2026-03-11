@@ -781,14 +781,12 @@ export class WorldService {
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
     const cargo = await getCargoState(auth.userId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
-
     const validation = validateCreateSlate(
       {
         ap: currentAP.current,
         scannerLevel: ship.scannerLevel,
-        cargoTotal,
-        cargoCap: ship.cargoCap,
+        slateCount: cargo.slates,
+        memory: ship.memory,
       },
       data.slateType,
     );
@@ -881,12 +879,11 @@ export class WorldService {
     if (rejectGuest(client, 'Scan-Slates erstellen')) return;
     const auth = client.auth as AuthPayload;
 
-    // Cargo check
+    // Memory check
     const ship = this.ctx.getShipForClient(client.sessionId);
     const cargo = await getCargoState(auth.userId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
-    if (cargoTotal + 1 > ship.cargoCap) {
-      client.send('slateFromScanResult', { success: false, error: 'CARGO_FULL' });
+    if (cargo.slates >= ship.memory) {
+      client.send('slateFromScanResult', { success: false, error: 'MEMORY_FULL' });
       return;
     }
 
@@ -1143,9 +1140,8 @@ export class WorldService {
 
     const cargo = await getCargoState(auth.userId);
     const ship = this.ctx.getShipForClient(client.sessionId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
-    if (cargoTotal >= ship.cargoCap) {
-      client.send('error', { code: 'CARGO_FULL', message: 'No cargo space' });
+    if (cargo.slates >= ship.memory) {
+      client.send('error', { code: 'MEMORY_FULL', message: 'Memory full — no space for slate' });
       return;
     }
 
