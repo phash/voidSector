@@ -65,24 +65,43 @@ describe('ModuleTab', () => {
     expect(screen.getByText('LEER')).toBeInTheDocument();
   });
 
-  it('renders inventory item with install button', () => {
+  it('renders inventory item with select prompt', () => {
     mockStoreState({
       ship: mockShip as any,
       moduleInventory: ['drive_mk1'],
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<ModuleTab />);
-    expect(screen.getByText('[INST]')).toBeInTheDocument();
+    expect(screen.getByText('AUSWÄHLEN')).toBeInTheDocument();
   });
 
-  it('INST button calls sendInstallModule', () => {
+  it('selecting inventory module highlights compatible slots with [+] button', () => {
     mockStoreState({
       ship: mockShip as any,
       moduleInventory: ['drive_mk1'],
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<ModuleTab />);
-    fireEvent.click(screen.getByText('[INST]'));
-    expect(network.sendInstallModule).toHaveBeenCalledWith('ship-1', 'drive_mk1', expect.any(Number));
+    // Click module in inventory to select it
+    fireEvent.click(screen.getByText('AUSWÄHLEN'));
+    // Drive slot (index 1) should now show [+] and "kompatibel"
+    expect(screen.getByText('[+]')).toBeInTheDocument();
+    expect(screen.getByText(/kompatibel/)).toBeInTheDocument();
+    // Inventory should now show "WÄHLE SLOT"
+    expect(screen.getByText(/WÄHLE SLOT/)).toBeInTheDocument();
+  });
+
+  it('clicking [+] on a compatible slot calls sendInstallModule', () => {
+    mockStoreState({
+      ship: mockShip as any,
+      moduleInventory: ['drive_mk1'],
+      setAcepHoveredModuleId: vi.fn(),
+    });
+    render(<ModuleTab />);
+    // Select module
+    fireEvent.click(screen.getByText('AUSWÄHLEN'));
+    // Click install on compatible slot
+    fireEvent.click(screen.getByText('[+]'));
+    expect(network.sendInstallModule).toHaveBeenCalledWith('ship-1', 'drive_mk1', 1);
   });
 });

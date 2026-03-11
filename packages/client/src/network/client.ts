@@ -526,6 +526,7 @@ class GameNetwork {
           ship: { ...ship, modules: data.modules, stats: data.stats },
         });
       }
+      this.sendGetModuleInventory();
     });
 
     room.onMessage(
