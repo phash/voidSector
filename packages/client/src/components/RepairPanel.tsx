@@ -13,10 +13,10 @@ const DAMAGE_STATE_COLORS = {
 };
 
 const DAMAGE_STATE_LABELS = {
-  intact:    'INTACT',
-  light:     'LIGHT',
-  heavy:     'HEAVY',
-  destroyed: 'DESTROYED',
+  intact:    'INTAKT',
+  light:     'LEICHT',
+  heavy:     'SCHWER',
+  destroyed: 'ZERSTÖRT',
 };
 
 /**
@@ -39,6 +39,18 @@ function getRepairCost(
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
+const srOnlyStyle: React.CSSProperties = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0,0,0,0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
+
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: '0.6rem',
@@ -46,12 +58,12 @@ const mono: React.CSSProperties = {
 
 const dimStyle: React.CSSProperties = {
   ...mono,
-  color: 'var(--color-dim)',
+  color: '#88aa66',
 };
 
 const hdrStyle: React.CSSProperties = {
   ...dimStyle,
-  borderBottom: '1px solid var(--color-dim)',
+  borderBottom: '1px solid #88aa66',
   paddingBottom: 2,
   marginTop: 8,
   marginBottom: 4,
@@ -88,6 +100,7 @@ export function RepairPanel() {
 
   const [busy, setBusy] = useState<string | null>(null);  // moduleId currently being repaired
   const [stationBusy, setStationBusy] = useState(false);
+  const [repairResult, setRepairResult] = useState<string | null>(null);
 
   if (!ship) {
     return (
@@ -132,7 +145,11 @@ export function RepairPanel() {
     setBusy(moduleId);
     network.sendRepairModule(moduleId);
     // Clear busy after a short delay (result handled by message handler)
-    setTimeout(() => setBusy(null), 2000);
+    setTimeout(() => {
+      setBusy(null);
+      setRepairResult('Modul erfolgreich repariert');
+      setTimeout(() => setRepairResult(null), 3000);
+    }, 2000);
   }
 
   function handleStationRepair() {
@@ -147,8 +164,13 @@ export function RepairPanel() {
       data-testid="repair-panel"
       style={{ padding: '4px 8px', ...mono, color: 'var(--color-primary)', overflowY: 'auto' }}
     >
+      {/* Aria live region for repair feedback */}
+      <div aria-live="polite" style={srOnlyStyle}>
+        {repairResult}
+      </div>
+
       {/* Repair Module Status */}
-      <div style={hdrStyle}>REPAIR SYSTEM</div>
+      <div style={hdrStyle}>REPARATUR-SYSTEM</div>
       {repairModEntry && repairModDef ? (
         <div style={{ marginBottom: 6 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -159,17 +181,17 @@ export function RepairPanel() {
           </div>
           {repairModDestroyed && (
             <div style={{ color: DAMAGE_STATE_COLORS.destroyed, fontSize: '0.55rem', marginTop: 2 }}>
-              REPAIR DRONE DESTROYED — cannot be used
+              REPARATUR-DROHNE ZERSTÖRT — kann nicht verwendet werden
             </div>
           )}
           {repairTier < 3 && !repairModDestroyed && (
             <div style={{ ...dimStyle, fontSize: '0.55rem', marginTop: 2 }}>
-              Tier {repairTier}: can repair LIGHT → INTACT only
+              Tier {repairTier}: kann nur LEICHT → INTAKT reparieren
             </div>
           )}
           {repairTier >= 3 && !repairModDestroyed && (
             <div style={{ ...dimStyle, fontSize: '0.55rem', marginTop: 2 }}>
-              Tier {repairTier}: can repair all damage brackets
+              Tier {repairTier}: kann alle Schadensstufen reparieren
             </div>
           )}
         </div>
@@ -178,27 +200,28 @@ export function RepairPanel() {
           data-testid="no-repair-module"
           style={{ color: DAMAGE_STATE_COLORS.destroyed, fontSize: '0.6rem', marginBottom: 6 }}
         >
-          NO REPAIR MODULE INSTALLED
+          KEIN REPARATUR-MODUL INSTALLIERT
         </div>
       )}
 
       {/* Station Repair */}
       {isAtStation && (
         <>
-          <div style={hdrStyle}>STATION REPAIR</div>
+          <div style={hdrStyle}>STATIONS-REPARATUR</div>
           {hasModuleDamage ? (
             <div style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={dimStyle}>COST</span>
+                <span style={dimStyle}>KOSTEN</span>
                 <span style={{ color: credits >= stationRepairCost ? '#00ff41' : DAMAGE_STATE_COLORS.heavy }}>
                   {stationRepairCost} CR
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={dimStyle}>AVAILABLE</span>
+                <span style={dimStyle}>VERFÜGBAR</span>
                 <span>{credits} CR</span>
               </div>
               <button
+                className="repair-btn"
                 data-testid="station-repair-btn"
                 style={{
                   ...btnStationStyle,
@@ -208,19 +231,19 @@ export function RepairPanel() {
                 onClick={handleStationRepair}
                 disabled={stationBusy || credits < stationRepairCost}
               >
-                {stationBusy ? '[REPAIRING...]' : '[FULL REPAIR — ALL MODULES]'}
+                {stationBusy ? '[REPARIERE...]' : '[VOLLREPARATUR — ALLE MODULE]'}
               </button>
             </div>
           ) : (
-            <div style={{ ...dimStyle, marginBottom: 8 }}>All modules intact — no cost</div>
+            <div style={{ ...dimStyle, marginBottom: 8 }}>Alle Module intakt — keine Kosten</div>
           )}
         </>
       )}
 
       {/* Module List */}
-      <div style={hdrStyle}>MODULES</div>
+      <div style={hdrStyle}>MODULE</div>
       {installedModules.length === 0 ? (
-        <div style={{ ...dimStyle, opacity: 0.5 }}>No modules installed</div>
+        <div style={{ ...dimStyle, opacity: 0.5 }}>Keine Module installiert</div>
       ) : (
         installedModules.map((m) => {
           const def      = MODULES[m.moduleId];
@@ -247,6 +270,8 @@ export function RepairPanel() {
             ? (cargo.ore ?? 0) >= cost.ore && (cargo.crystal ?? 0) >= cost.crystal
             : false;
 
+          const moduleName = def.displayName ?? def.name;
+
           return (
             <div
               key={m.moduleId}
@@ -260,7 +285,7 @@ export function RepairPanel() {
               {/* Module name + damage label */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
                 <span style={{ fontSize: '0.6rem', color: 'var(--color-primary)' }}>
-                  {def.displayName ?? def.name}
+                  {moduleName}
                 </span>
                 <span
                   data-testid={`damage-state-${m.moduleId}`}
@@ -273,6 +298,12 @@ export function RepairPanel() {
               {/* HP bar */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <div
+                  role="meter"
+                  aria-label={`${moduleName} Trefferpunkte`}
+                  aria-valuenow={curHp}
+                  aria-valuemin={0}
+                  aria-valuemax={maxHp}
+                  aria-valuetext={`${curHp} von ${maxHp}`}
                   style={{
                     flex: 1,
                     height: 3,
@@ -301,6 +332,7 @@ export function RepairPanel() {
                   {canRepairOnboard ? (
                     <>
                       <button
+                        className="repair-btn"
                         data-testid={`repair-btn-${m.moduleId}`}
                         style={{
                           ...btnStyle,
@@ -310,26 +342,26 @@ export function RepairPanel() {
                         onClick={() => handleRepairModule(m.moduleId)}
                         disabled={!!busy || !canAfford}
                       >
-                        {busy === m.moduleId ? '[REPAIRING...]' : '[REPAIR]'}
+                        {busy === m.moduleId ? '[REPARIERE...]' : '[REPARIEREN]'}
                       </button>
                       <span style={dimStyle}>
-                        {cost.ore > 0 && `${cost.ore} ORE`}
+                        {cost.ore > 0 && `${cost.ore} Erz`}
                         {cost.ore > 0 && cost.crystal > 0 && ' + '}
-                        {cost.crystal > 0 && `${cost.crystal} CRYSTAL`}
+                        {cost.crystal > 0 && `${cost.crystal} Kristall`}
                       </span>
                       {!canAfford && (
                         <span style={{ color: DAMAGE_STATE_COLORS.heavy, fontSize: '0.55rem' }}>
-                          INSUFF.
+                          FEHLT
                         </span>
                       )}
                     </>
                   ) : (
                     <span style={{ ...dimStyle, fontSize: '0.55rem' }}>
                       {!repairModEntry
-                        ? '— no repair module'
+                        ? '— kein Reparatur-Modul'
                         : repairModDestroyed
-                        ? '— repair drone destroyed'
-                        : `— needs T3 drone (${DAMAGE_STATE_LABELS[dmgState]})`}
+                        ? '— Reparatur-Drohne zerstört'
+                        : `— benötigt T3 Drohne (${DAMAGE_STATE_LABELS[dmgState]})`}
                     </span>
                   )}
                 </div>

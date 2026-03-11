@@ -26,6 +26,20 @@ function calcTotalEpCost(allocations: Record<string, PowerLevel>, modules: Clien
   return total;
 }
 
+// ─── sr-only style ────────────────────────────────────────────────────────────
+
+const srOnlyStyle: React.CSSProperties = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0,0,0,0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function HpBar({
@@ -33,11 +47,13 @@ function HpBar({
   max,
   label,
   color,
+  name,
 }: {
   current: number;
   max: number;
   label: string;
   color: string;
+  name: string;
 }) {
   const pct = max > 0 ? Math.max(0, current / max) : 0;
   const barWidth = 18;
@@ -45,6 +61,12 @@ function HpBar({
   const bar = '\u25A0'.repeat(filled) + '\u2591'.repeat(barWidth - filled);
   return (
     <div
+      role="meter"
+      aria-label={`${name} Trefferpunkte`}
+      aria-valuenow={current}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuetext={`${current} von ${max}`}
       style={{
         fontFamily: 'var(--font-mono)',
         fontSize: '0.68rem',
@@ -69,7 +91,7 @@ function moduleHpColor(current: number, max: number): string {
 }
 
 function EpCostLabel({ cost }: { cost: number }) {
-  if (cost === 0) return <span style={{ color: '#444' }}>0EP</span>;
+  if (cost === 0) return <span style={{ color: '#6a6a6a' }}>0EP</span>;
   return <span style={{ color: '#aaa' }}>{cost}EP</span>;
 }
 
@@ -86,7 +108,7 @@ const SECTION: React.CSSProperties = {
 
 const SECTION_HEADER: React.CSSProperties = {
   fontSize: '0.58rem',
-  color: '#338833',
+  color: '#55aa55',
   letterSpacing: '0.15em',
   marginBottom: '6px',
 };
@@ -116,6 +138,7 @@ export function CombatDialog() {
   const [useAncient, setUseAncient] = useState(false);
 
   const logRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Reset allocations when combat starts
   useEffect(() => {
@@ -141,6 +164,50 @@ export function CombatDialog() {
   const handleClose = useCallback(() => {
     setActiveCombat(null);
   }, [setActiveCombat]);
+
+  // ── Focus trapping ──────────────────────────────────────────────────────────
+  const isEnded = !!(combat?.outcome && combat.outcome !== 'ongoing');
+
+  useEffect(() => {
+    if (!combat) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const previousFocus = document.activeElement as HTMLElement;
+
+    const firstFocusable = dialog.querySelector<HTMLElement>(
+      'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    firstFocusable?.focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && isEnded) {
+        handleClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const focusables = Array.from(
+        dialog!.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [combat, isEnded, handleClose]);
 
   if (!combat) return null;
 
@@ -187,8 +254,6 @@ export function CombatDialog() {
   // Revealed enemy modules for aim target selection
   const revealedEnemyModules = combat.enemyModules.filter((m) => m.revealed && m.currentHp > 0);
 
-  // Is combat over?
-  const isEnded = combat.outcome && combat.outcome !== 'ongoing';
   const hpLow = combat.playerHp / combat.playerMaxHp < 0.15;
 
   const handleSubmit = useCallback(() => {
@@ -262,6 +327,16 @@ export function CombatDialog() {
     boxShadow: '0 0 20px rgba(0,255,65,0.15)',
   };
 
+  // ── Outcome label for live region ────────────────────────────────────────────
+  const outcomeLabels: Record<string, string> = {
+    victory: 'SIEG',
+    defeat: 'NIEDERLAGE',
+    fled: 'FLUCHT ERFOLGREICH',
+    draw: 'UNENTSCHIEDEN',
+    ejected: 'NOTAUSSTIEG',
+  };
+  const outcome = combat.outcome ? (outcomeLabels[combat.outcome] ?? combat.outcome.toUpperCase()) : '';
+
   // ── Result Overlay ──────────────────────────────────────────────────────────
   if (isEnded) {
     const outcomeColors: Record<string, string> = {
@@ -271,24 +346,23 @@ export function CombatDialog() {
       draw: '#aaaaaa',
       ejected: '#ff8800',
     };
-    const outcomeLabels: Record<string, string> = {
-      victory: 'SIEG',
-      defeat: 'NIEDERLAGE',
-      fled: 'FLUCHT ERFOLGREICH',
-      draw: 'UNENTSCHIEDEN',
-      ejected: 'NOTAUSSTIEG',
-    };
     const oc = combat.outcome ?? 'draw';
     const color = outcomeColors[oc] ?? '#aaa';
     const label = outcomeLabels[oc] ?? oc.toUpperCase();
 
     return (
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="combat-result-title"
         style={containerStyle}
       >
+        {/* Kampfergebnis — assertive live region */}
+        <div aria-live="assertive" aria-atomic="true" style={srOnlyStyle}>
+          Kampf beendet: {outcome}
+        </div>
+
         <div style={{ ...dialogStyle, textAlign: 'center' }}>
           <div
             id="combat-result-title"
@@ -305,7 +379,7 @@ export function CombatDialog() {
 
           {combat.outcome === 'victory' && combat.loot && (
             <div style={{ marginBottom: '16px', ...MONO }}>
-              <div style={{ color: '#338833', fontSize: '0.6rem', marginBottom: '6px', letterSpacing: '0.15em' }}>
+              <div style={{ color: '#55aa55', fontSize: '0.6rem', marginBottom: '6px', letterSpacing: '0.15em' }}>
                 BEUTE
               </div>
               {combat.loot.credits !== undefined && combat.loot.credits > 0 && (
@@ -323,7 +397,7 @@ export function CombatDialog() {
           <div
             style={{
               fontSize: '0.65rem',
-              color: '#555',
+              color: '#77aa77',
               marginBottom: '16px',
               maxHeight: '100px',
               overflowY: 'auto',
@@ -331,11 +405,12 @@ export function CombatDialog() {
             }}
           >
             {combat.log.slice(-5).map((line, i) => (
-              <div key={i} style={{ color: '#444' }}>{line}</div>
+              <div key={i} style={{ color: '#66aa66' }}>{line}</div>
             ))}
           </div>
 
           <button
+            className="combat-btn"
             onClick={handleClose}
             data-testid="combat-close-btn"
             style={{
@@ -359,11 +434,17 @@ export function CombatDialog() {
   // ── Active Combat Dialog ────────────────────────────────────────────────────
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="combat-title"
       style={containerStyle}
     >
+      {/* Unsichtbare Live-Region für Rundenwechsel */}
+      <div aria-live="polite" aria-atomic="true" style={srOnlyStyle}>
+        {combat && `Runde ${combat.round} von 10. Schiff: ${combat.playerHp} von ${combat.playerMaxHp} HP. Feind: ${combat.enemyHp} von ${combat.enemyMaxHp} HP.`}
+      </div>
+
       <div style={dialogStyle}>
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div
@@ -386,12 +467,12 @@ export function CombatDialog() {
         {/* ── Status Bars ────────────────────────────────────────────────── */}
         <div style={{ ...SECTION }}>
           <div style={SECTION_HEADER}>STATUS</div>
-          <HpBar current={combat.playerHp} max={combat.playerMaxHp} label="SCHIFF" color="#00ff41" />
-          <HpBar current={combat.enemyHp} max={combat.enemyMaxHp} label="FEIND " color="#ff4136" />
+          <HpBar current={combat.playerHp} max={combat.playerMaxHp} label="SCHIFF" color="#00ff41" name="Schiff" />
+          <HpBar current={combat.enemyHp} max={combat.enemyMaxHp} label="FEIND " color="#ff4136" name="Feind" />
           <div
             style={{
               fontSize: '0.6rem',
-              color: '#556655',
+              color: '#77aa77',
               marginTop: '4px',
             }}
           >
@@ -410,7 +491,11 @@ export function CombatDialog() {
               }}
             >
               {totalEpCost.toFixed(1)}/{availableEp.toFixed(1)} EP
-              {overBudget && ' ⚠ ÜBERBUDGET'}
+              {overBudget && (
+                <span role="alert" style={{ color: '#ff4136', marginLeft: '8px' }}>
+                  ÜBERBUDGET
+                </span>
+              )}
             </span>
           </div>
 
@@ -434,13 +519,14 @@ export function CombatDialog() {
               >
                 GENERATOR T{generatorModule.tier}
               </span>
-              <span style={{ fontSize: '0.58rem', color: '#444' }}>
+              <span style={{ fontSize: '0.58rem', color: '#6a6a6a' }}>
                 {generatorModule.currentHp ?? generatorModule.maxHp}/{generatorModule.maxHp} HP
               </span>
               {POWER_LEVELS.map((pl) => {
                 const active = (allocations[generatorModule.moduleId] ?? 'high') === pl;
                 return (
                   <button
+                    className="combat-btn"
                     key={pl}
                     data-testid={`gen-pl-${pl}`}
                     onClick={() =>
@@ -448,11 +534,12 @@ export function CombatDialog() {
                     }
                     style={{
                       background: active ? '#003300' : 'transparent',
-                      color: active ? '#00ff41' : '#338833',
+                      color: active ? '#00ff41' : '#55aa55',
                       border: `1px solid ${active ? '#00ff41' : '#1a3a1a'}`,
                       fontFamily: 'var(--font-mono)',
                       fontSize: '0.58rem',
-                      padding: '2px 5px',
+                      padding: '5px 8px',
+                      minHeight: '32px',
                       cursor: 'pointer',
                     }}
                   >
@@ -489,7 +576,7 @@ export function CombatDialog() {
                 >
                   {mod.category} T{mod.tier}
                 </span>
-                <span style={{ fontSize: '0.58rem', color: '#444' }}>
+                <span style={{ fontSize: '0.58rem', color: '#6a6a6a' }}>
                   {mod.currentHp ?? mod.maxHp}/{mod.maxHp} HP
                 </span>
                 {POWER_LEVELS.map((level) => {
@@ -497,6 +584,7 @@ export function CombatDialog() {
                   const cost = getEpCost(mod.category, level);
                   return (
                     <button
+                      className="combat-btn"
                       key={level}
                       data-testid={`mod-${mod.moduleId}-${level}`}
                       disabled={destroyed}
@@ -507,11 +595,12 @@ export function CombatDialog() {
                       title={`${level.toUpperCase()} — ${cost} EP`}
                       style={{
                         background: active ? '#003300' : 'transparent',
-                        color: active ? '#00ff41' : '#338833',
+                        color: active ? '#00ff41' : '#55aa55',
                         border: `1px solid ${active ? '#00ff41' : '#1a3a1a'}`,
                         fontFamily: 'var(--font-mono)',
                         fontSize: '0.58rem',
-                        padding: '2px 5px',
+                        padding: '5px 8px',
+                        minHeight: '32px',
                         cursor: destroyed ? 'not-allowed' : 'pointer',
                       }}
                     >
@@ -540,6 +629,7 @@ export function CombatDialog() {
               ] as const
             ).map(({ action, label, enabled, tooltip }) => (
               <button
+                className="combat-btn"
                 key={action}
                 data-testid={`action-${action}`}
                 disabled={!enabled}
@@ -547,7 +637,7 @@ export function CombatDialog() {
                 title={tooltip}
                 style={{
                   background: primaryAction === action ? '#003300' : 'transparent',
-                  color: primaryAction === action ? '#00ff41' : enabled ? '#338833' : '#222',
+                  color: primaryAction === action ? '#00ff41' : enabled ? '#55aa55' : '#4a4a4a',
                   border: `1px solid ${primaryAction === action ? '#00ff41' : enabled ? '#1a3a1a' : '#111'}`,
                   fontFamily: 'var(--font-mono)',
                   fontSize: '0.62rem',
@@ -561,11 +651,29 @@ export function CombatDialog() {
             ))}
           </div>
 
+          {/* Disabled action hints */}
+          {primaryAction === 'attack' && !hasWeaponPowered && (
+            <div style={{ fontSize: '0.6rem', color: '#ff8800', marginTop: '4px' }}>
+              Waffe muss mindestens auf LOW stehen
+            </div>
+          )}
+          {primaryAction === 'scan' && !hasScannerPowered && (
+            <div style={{ fontSize: '0.6rem', color: '#ff8800', marginTop: '4px' }}>
+              Scanner muss mindestens auf LOW stehen
+            </div>
+          )}
+          {primaryAction === 'flee' && !hasDrivePowered && (
+            <div style={{ fontSize: '0.6rem', color: '#ff8800', marginTop: '4px' }}>
+              Antrieb muss mindestens auf LOW stehen
+            </div>
+          )}
+
           {/* Aim target selector */}
           {primaryAction === 'aim' && revealedEnemyModules.length > 0 && (
             <div style={{ marginTop: '6px', ...MONO, fontSize: '0.62rem' }}>
-              <label style={{ color: '#556655', marginRight: '6px' }}>ZIEL:</label>
+              <label htmlFor="aim-target-select" style={{ color: '#77aa77', marginRight: '6px' }}>ZIEL:</label>
               <select
+                id="aim-target-select"
                 value={aimTarget}
                 onChange={(e) => setAimTarget(e.target.value)}
                 data-testid="aim-target-select"
@@ -607,6 +715,7 @@ export function CombatDialog() {
               ] as const
             ).map(({ type, label, enabled }) => (
               <button
+                className="combat-btn"
                 key={type}
                 data-testid={`reaction-${type}`}
                 disabled={!enabled}
@@ -621,8 +730,8 @@ export function CombatDialog() {
                       : reaction === type
                         ? '#00ff41'
                         : enabled
-                          ? '#338833'
-                          : '#222',
+                          ? '#55aa55'
+                          : '#4a4a4a',
                   border: `1px solid ${
                     type === 'emergency_eject'
                       ? reaction === type
@@ -646,7 +755,7 @@ export function CombatDialog() {
             ))}
           </div>
           {!hpLow && (
-            <div style={{ fontSize: '0.57rem', color: '#333', marginTop: '4px' }}>
+            <div style={{ fontSize: '0.57rem', color: '#555', marginTop: '4px' }}>
               Notausstieg bei &lt;15% HP verfügbar
             </div>
           )}
@@ -659,6 +768,7 @@ export function CombatDialog() {
               ANCIENT ABILITY — BEREIT ({combat.ancientChargeRounds} Runden geladen)
             </div>
             <button
+              className="combat-btn"
               data-testid="ancient-ability-btn"
               onClick={() => setUseAncient((v) => !v)}
               style={{
@@ -685,7 +795,7 @@ export function CombatDialog() {
         <div style={{ ...SECTION }}>
           <div style={SECTION_HEADER}>FEIND-MODULE</div>
           {combat.enemyModules.length === 0 && (
-            <div style={{ fontSize: '0.6rem', color: '#333' }}>Keine Module bekannt</div>
+            <div style={{ fontSize: '0.6rem', color: '#555' }}>Keine Module bekannt</div>
           )}
           {combat.enemyModules.map((em, i) => (
             <div
@@ -693,16 +803,16 @@ export function CombatDialog() {
               style={{
                 fontSize: '0.62rem',
                 marginBottom: '2px',
-                color: em.revealed ? moduleHpColor(em.currentHp, em.maxHp) : '#333',
+                color: em.revealed ? moduleHpColor(em.currentHp, em.maxHp) : '#555',
               }}
             >
               {em.revealed ? (
                 <>
                   {em.category.toUpperCase()} T{em.tier} — {em.currentHp}/{em.maxHp} HP
-                  {em.currentHp <= 0 && <span style={{ color: '#333' }}> [ZERSTÖRT]</span>}
+                  {em.currentHp <= 0 && <span style={{ color: '#555' }}> [ZERSTÖRT]</span>}
                 </>
               ) : (
-                <span style={{ color: '#222' }}>??? [UNBEKANNT — Scan für Details]</span>
+                <span style={{ color: '#4a4a4a' }}>??? [UNBEKANNT — Scan für Details]</span>
               )}
             </div>
           ))}
@@ -713,18 +823,20 @@ export function CombatDialog() {
           <div style={SECTION_HEADER}>KAMPF-PROTOKOLL</div>
           <div
             ref={logRef}
+            role="log"
+            aria-live="polite"
             style={{
               maxHeight: '90px',
               overflowY: 'auto',
               fontSize: '0.6rem',
-              color: '#446644',
+              color: '#66aa66',
               lineHeight: 1.5,
             }}
           >
             {combat.log.length === 0 && (
               <div style={{ color: '#223322' }}>Kampf beginnt in Runde 1...</div>
             )}
-            {combat.log.slice(-8).map((line, i) => (
+            {combat.log.map((line, i) => (
               <div key={i}>{line}</div>
             ))}
           </div>
@@ -732,13 +844,14 @@ export function CombatDialog() {
 
         {/* ── Submit ─────────────────────────────────────────────────────── */}
         <button
+          className="combat-btn"
           data-testid="submit-round-btn"
           disabled={overBudget}
           onClick={handleSubmit}
           style={{
             background: overBudget ? 'transparent' : '#001a00',
-            color: overBudget ? '#222' : '#00ff41',
-            border: `2px solid ${overBudget ? '#222' : '#00ff41'}`,
+            color: overBudget ? '#4a4a4a' : '#00ff41',
+            border: `2px solid ${overBudget ? '#4a4a4a' : '#00ff41'}`,
             fontFamily: 'var(--font-mono)',
             fontSize: '0.75rem',
             padding: '10px',

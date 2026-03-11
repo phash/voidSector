@@ -149,7 +149,7 @@ describe('RepairPanel', () => {
     expect(screen.getByText(/NO SHIP DATA/i)).toBeInTheDocument();
   });
 
-  it('shows NO REPAIR MODULE INSTALLED when no repair module is equipped', () => {
+  it('shows KEIN REPARATUR-MODUL INSTALLIERT when no repair module is equipped', () => {
     mockStoreState({
       ship: { ...baseShip, modules: [laserIntact] },
       cargo: { ...defaultCargo },
@@ -160,7 +160,7 @@ describe('RepairPanel', () => {
     expect(screen.getByTestId('no-repair-module')).toBeInTheDocument();
   });
 
-  it('renders intact module with INTACT label and no repair button', () => {
+  it('renders intact module with INTAKT label and no repair button', () => {
     mockStoreState({
       ship: { ...baseShip, modules: [repairDroneMk1, laserIntact] },
       cargo: { ...defaultCargo },
@@ -168,11 +168,11 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('INTACT');
+    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('INTAKT');
     expect(screen.queryByTestId('repair-btn-laser_mk1')).not.toBeInTheDocument();
   });
 
-  it('shows LIGHT damage state for a lightly damaged module', () => {
+  it('shows LEICHT damage state for a lightly damaged module', () => {
     mockStoreState({
       ship: { ...baseShip, modules: [repairDroneMk1, laserLightDamage] },
       cargo: { ...defaultCargo },
@@ -180,7 +180,7 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('LIGHT');
+    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('LEICHT');
   });
 
   it('shows repair button with cost for light damage when repair module is installed', () => {
@@ -193,8 +193,8 @@ describe('RepairPanel', () => {
     render(<RepairPanel />);
     // Repair button should be present
     expect(screen.getByTestId('repair-btn-laser_mk1')).toBeInTheDocument();
-    // Cost: tier 1 × 5 ore = 5 ore for light → intact
-    expect(screen.getByText(/5 ORE/i)).toBeInTheDocument();
+    // Cost: tier 1 × 5 ore = 5 ore for light → intact (shown as "5 Erz")
+    expect(screen.getByText(/5 Erz/i)).toBeInTheDocument();
   });
 
   it('calls sendRepairModule when repair button is clicked', () => {
@@ -221,7 +221,7 @@ describe('RepairPanel', () => {
     expect(btn).toBeDisabled();
   });
 
-  it('shows HEAVY damage and requires T3 for Tier 1 repair drone', () => {
+  it('shows SCHWER damage and requires T3 for Tier 1 repair drone', () => {
     mockStoreState({
       ship: { ...baseShip, modules: [repairDroneMk1, laserHeavyDamage] },
       cargo: { ...defaultCargo, ore: 20, crystal: 20 },
@@ -229,11 +229,11 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('HEAVY');
+    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('SCHWER');
     // No repair button — T1 can't do heavy
     expect(screen.queryByTestId('repair-btn-laser_mk1')).not.toBeInTheDocument();
-    // Shows "needs T3 drone" message
-    expect(screen.getByText(/needs T3 drone/i)).toBeInTheDocument();
+    // Shows "benötigt T3 Drohne" message
+    expect(screen.getByText(/benötigt T3 Drohne/i)).toBeInTheDocument();
   });
 
   it('allows heavy repair with T3 repair drone', () => {
@@ -247,11 +247,11 @@ describe('RepairPanel', () => {
     expect(screen.getByTestId('repair-btn-laser_mk1')).toBeInTheDocument();
     // Cost: tier 3 × 3 ore + tier 3 × 2 crystal = 9 ore + 6 crystal
     // Use getAllByText since both modules may show identical costs
-    expect(screen.getAllByText(/9 ORE/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/6 CRYSTAL/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/9 Erz/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/6 Kristall/i).length).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows DESTROYED damage state', () => {
+  it('shows ZERSTÖRT damage state', () => {
     mockStoreState({
       ship: { ...baseShip, modules: [repairDroneMk3, laserDestroyed] },
       cargo: { ...defaultCargo, crystal: 20 },
@@ -259,9 +259,9 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('DESTROYED');
-    // Cost: tier 3 × 5 crystal = 15 crystal
-    expect(screen.getByText(/15 CRYSTAL/i)).toBeInTheDocument();
+    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('ZERSTÖRT');
+    // Cost: tier 3 × 5 crystal = 15 crystal (shown as "15 Kristall")
+    expect(screen.getByText(/15 Kristall/i)).toBeInTheDocument();
   });
 
   it('does not show station repair button when not at station', () => {
