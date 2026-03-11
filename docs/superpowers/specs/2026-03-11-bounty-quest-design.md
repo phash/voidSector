@@ -16,7 +16,18 @@ Implement a `bounty_chase` quest type where players track a named pirate across 
 
 ### Approach
 
-New quest template type `bounty_chase` within the existing `QuestService`. No new service or DB migrations needed. Trail state is stored in the existing `objectives` JSONB column of `player_quests`.
+New quest template type `bounty_chase` within the existing `QuestService`. No new DB tables or migrations needed. Trail state is stored in the existing `objectives` JSONB column of `player_quests`.
+
+### Shared Type Changes Required
+
+`packages/shared/src/types.ts` must be updated and rebuilt (`npm run build` in `packages/shared`):
+
+- **`QuestType`** union: add `'bounty_chase' | 'bounty_trail' | 'bounty_combat' | 'bounty_deliver'`
+- **`ItemType`** union: add `'prisoner'`
+
+### Trail Generation Hookpoint
+
+Trail generation (trail coords, target name, target level) happens inside `QuestService.handleAcceptQuest()` after template lookup, before DB insert — not in `questgen.ts`. The `questgen.ts` generates available quest templates at stations; the per-player trail is generated at accept time in `QuestService`.
 
 ### Files to Create/Modify
 
@@ -29,7 +40,7 @@ New quest template type `bounty_chase` within the existing `QuestService`. No ne
 | `packages/server/src/rooms/services/ScanService.ts` | Check for active bounty_chase quest on scan, trigger exclusive spawn |
 | `packages/server/src/rooms/services/CombatService.ts` | On bounty combat victory: add prisoner to inventory, mark objective |
 | `packages/client/src/components/QuestDetailPanel.tsx` | Add `WantedPoster` component, layout B (poster left / info right) |
-| `packages/shared/src/types.ts` | Add `bounty_trail`, `bounty_combat`, `bounty_deliver` objective types |
+| `packages/shared/src/types.ts` | Add `'bounty_chase' \| 'bounty_trail' \| 'bounty_combat' \| 'bounty_deliver'` to `QuestType` union; add `'prisoner'` to `ItemType` union; add objective interfaces |
 
 ---
 
@@ -50,7 +61,7 @@ Three sequential objectives stored in `player_quests.objectives`:
   currentStep: 0,       // index into trail[], incremented on each matching scan
   targetName: "Zyr'ex Korath",
   targetLevel: 4,
-  completed: false
+  fulfilled: false
 }
 
 // Objective 2: Fight the target
@@ -60,7 +71,7 @@ Three sequential objectives stored in `player_quests.objectives`:
   sectorY: 7,
   targetName: "Zyr'ex Korath",
   targetLevel: 4,
-  completed: false
+  fulfilled: false
 }
 
 // Objective 3: Return prisoner to station
@@ -68,7 +79,7 @@ Three sequential objectives stored in `player_quests.objectives`:
   type: 'bounty_deliver',
   stationX: 10,
   stationY: 15,
-  completed: false
+  fulfilled: false
 }
 ```
 
@@ -126,7 +137,7 @@ Generated deterministically at quest acceptance time using `hashCoords(stationX,
 
 When a player scans a sector:
 
-1. `ScanService` checks: does this player have an active `bounty_chase` quest where `bounty_combat.sectorX/Y` matches the scanned sector AND `bounty_trail` is `completed`?
+1. `ScanService` checks: does this player have an active `bounty_chase` quest where `bounty_combat.sectorX/Y` matches the scanned sector AND `bounty_trail.fulfilled === true`?
 2. **Yes** → skip `checkScanEvent()`, send `bountyAmbush` message with `{ targetName, targetLevel }` from the quest objective
 3. **No** → normal scan event flow
 
@@ -135,8 +146,8 @@ Redis deduplication key: `bounty_spawn:{playerId}:{questId}` (TTL 3600s) — pre
 ### Combat Resolution
 
 - Combat proceeds through the existing `CombatService` (same energy system)
-- Enemy stats generated from `targetLevel` via `generateEnemyModules(targetLevel)`
-- On **victory**: `addToInventory(playerId, 'prisoner', questId, 1)`, mark `bounty_combat` as `completed`
+- Enemy stats generated via `generateEnemyModules('pirate', targetLevel)` (existing signature: `enemyType: string, enemyLevel: number`)
+- On **victory**: `addToInventory(playerId, 'prisoner', questId, 1)`, mark `bounty_combat.fulfilled = true`
 - On **defeat/fled**: Redis key remains, player can retry on next scan
 
 ---
@@ -148,25 +159,27 @@ acceptQuest(bounty_chase)
   → generate trail, targetName, targetLevel
   → insert player_quest with 3 objectives
 
-Scan trail sector N (matching currentStep)
+Scan trail sector N (matching currentStep, NOT the combat sector)
   → checkQuestProgress('scan', {x, y})
   → trail.currentStep++, update hint in questProgress message
-  → if currentStep === trail.length: mark bounty_trail completed
+  → if currentStep === trail.length: mark bounty_trail.fulfilled = true
+  Note: bounty_trail only matches trail coords; combat sector coord is
+  exclusively in bounty_combat and handled separately by ScanService.
 
-Scan final combat sector (bounty_trail completed)
-  → ScanService detects bounty override
+Scan final combat sector (bounty_trail.fulfilled === true)
+  → ScanService detects bounty override (skips checkQuestProgress for this scan)
   → send bountyAmbush
 
 CombatService.handleCombatResult(victory)
   → addToInventory('prisoner', questId)
   → checkQuestProgress('battle_won', {x, y})
-  → mark bounty_combat completed
+  → mark bounty_combat.fulfilled = true
 
 Arrive at origin station (with prisoner in inventory)
-  → checkQuestProgress('arrive_station', {x, y})
+  → checkQuestProgress('arrive', {x, y})   // uses existing 'arrive' action string
   → remove prisoner from inventory
-  → mark bounty_deliver completed
-  → award rewards, send questCompleteOverlay
+  → mark bounty_deliver.fulfilled = true
+  → award rewards, send questComplete   // existing message
 ```
 
 ---
@@ -217,6 +230,8 @@ For `bounty_chase` quests, `QuestDetailPanel` renders a `WantedPoster` component
 
 The hint updates live via the existing `questProgress` WebSocket message.
 
+The `bounty_chase` type is detected client-side via the `Quest.objectives[0].type === 'bounty_trail'` check (the existing `Quest` type exposes `objectives` as the raw JSONB array). No additional `questType` field needed on the client.
+
 ### QuestJournal
 
 In the quest list, `bounty_chase` quests show:
@@ -232,7 +247,7 @@ In the quest list, `bounty_chase` quests show:
 |---------|-----------|---------|
 | `bountyAmbush` | Server→Client | Triggers exclusive pirate encounter at final sector |
 | `questProgress` | Server→Client | Updated hint text after each trail scan |
-| `questCompleteOverlay` | Server→Client | Reuses existing completion popup on delivery |
+| `questComplete` | Server→Client | Reuses existing completion message on delivery |
 
 ---
 
@@ -241,6 +256,7 @@ In the quest list, `bounty_chase` quests show:
 - **Player leaves combat sector without fighting:** Redis TTL keeps spawn slot alive for 1h; re-scan re-triggers `bountyAmbush`
 - **Quest expires while prisoner in inventory:** Prisoner item removed via expiry cleanup (existing quest expiry handler extended)
 - **Player dies (permadeath):** Prisoner item lost with cargo; quest must be re-accepted
+- **Player manually abandons quest:** `handleAbandonQuest` must call `removeFromInventory(playerId, 'prisoner', questId, 1)` if `bounty_combat.fulfilled === true` (prisoner already captured). Extend existing `handleAbandonQuest` in `QuestService`.
 
 ---
 
