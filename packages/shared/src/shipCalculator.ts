@@ -7,6 +7,8 @@ import {
   DEFENSE_ONLY_CATEGORIES,
   SPECIALIZED_SLOT_CATEGORIES,
   UNIQUE_MODULE_CATEGORIES,
+  BASE_HULL_AP_REGEN,
+  POWER_LEVEL_MULTIPLIERS,
 } from './constants.js';
 import type { HullType, ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
 
@@ -180,4 +182,49 @@ export function getActiveDrawbacks(modules: ShipModule[]): string[] {
     }
   }
   return effects;
+}
+
+export type DamageState = 'intact' | 'light' | 'heavy' | 'destroyed';
+
+/** Derives damage state from currentHp/maxHp ratio */
+export function getDamageState(currentHp: number, maxHp: number): DamageState {
+  if (maxHp <= 0) return 'destroyed';
+  const ratio = currentHp / maxHp;
+  if (ratio > 0.75) return 'intact';
+  if (ratio > 0.50) return 'light';
+  if (ratio > 0.25) return 'heavy';
+  return 'destroyed';
+}
+
+/** Returns effective power level after applying damage state caps */
+export function getModuleEffectivePowerLevel(
+  mod: ShipModule,
+): 'off' | 'low' | 'mid' | 'high' {
+  const requested = mod.powerLevel ?? 'high';
+  const def = MODULES[mod.moduleId];
+  if (!def) return requested;
+  const maxHp = def.maxHp ?? 20;
+  const currentHp = mod.currentHp ?? maxHp;
+  const state = getDamageState(currentHp, maxHp);
+  if (state === 'destroyed') return 'off';
+  if (state === 'heavy' && (requested === 'high' || requested === 'mid')) return 'low';
+  if (state === 'light' && requested === 'high') return 'mid';
+  return requested;
+}
+
+/** Calculates AP/s based on installed generator module + base hull regen */
+export function calculateApRegen(modules: ShipModule[]): number {
+  let regen = BASE_HULL_AP_REGEN;
+  for (const mod of modules) {
+    const def = MODULES[mod.moduleId];
+    if (!def || def.category !== 'generator') continue;
+    const apPerSecond = (def.effects as any).apRegenPerSecond ?? 0;
+    const effectivePower = getModuleEffectivePowerLevel(mod);
+    const multiplier = POWER_LEVEL_MULTIPLIERS[effectivePower] ?? 0;
+    const maxHp = def.maxHp ?? 20;
+    const currentHp = mod.currentHp ?? maxHp;
+    const hpRatio = maxHp > 0 ? currentHp / maxHp : 0;
+    regen += apPerSecond * multiplier * hpRatio;
+  }
+  return regen;
 }
