@@ -254,3 +254,29 @@ describe('handleAbandonQuest — bounty_chase prisoner cleanup', () => {
     expect(removeFromInventory).not.toHaveBeenCalled();
   });
 });
+
+describe('bounty combat victory → prisoner capture (integration)', () => {
+  it('checkQuestProgress battle_won at combat sector captures prisoner', async () => {
+    const row = {
+      id: 'quest-1',
+      template_id: 'pirates_bounty_chase',
+      station_x: 10,
+      station_y: 10,
+      rewards: { credits: 120, xp: 40, reputation: 12, wissen: 3 },
+      objectives: [
+        { type: 'bounty_trail', fulfilled: true, trail: [], currentStep: 2, targetName: "Zyr'ex Korath", targetLevel: 2 },
+        { type: 'bounty_combat', fulfilled: false, sectorX: 20, sectorY: 20, targetName: "Zyr'ex Korath", targetLevel: 2 },
+        { type: 'bounty_deliver', fulfilled: false, stationX: 10, stationY: 10 },
+      ],
+    };
+    vi.clearAllMocks();
+    (getActiveQuests as any).mockResolvedValue([row]);
+
+    const service = new QuestService(makeCtx() as any);
+    await service.checkQuestProgress(makeClient() as any, 'player-1', 'battle_won', { sectorX: 20, sectorY: 20 });
+
+    expect(addToInventory).toHaveBeenCalledWith('player-1', 'prisoner', 'quest-1', 1);
+    const updated = (updateQuestObjectives as any).mock.calls[0][1];
+    expect(updated[1].fulfilled).toBe(true);
+  });
+});
