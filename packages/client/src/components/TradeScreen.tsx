@@ -300,6 +300,12 @@ export function TradeScreen() {
                       // itemType is always a resource key for NPC station inventory items
                       const playerAmount =
                         cargo[item.itemType as 'ore' | 'gas' | 'crystal'] ?? 0;
+                      const stationCapacityRemaining = item.maxStock - item.stock;
+                      const effectiveMax = Math.min(playerAmount, stationCapacityRemaining);
+                      const allLabel =
+                        effectiveMax < playerAmount
+                          ? `ALL (${playerAmount} → max ${effectiveMax})`
+                          : `ALL (${playerAmount})`;
                       return (
                         <div
                           key={item.itemType}
@@ -327,6 +333,14 @@ export function TradeScreen() {
                             {playerAmount}
                             <span style={{ opacity: 0.4, fontSize: '0.65rem' }}> Cargo</span>
                           </div>
+                          {playerAmount > 0 && (
+                            <button
+                              style={{ ...btnStyle, fontSize: '0.55rem', opacity: 0.8, marginTop: 3 }}
+                              onClick={() => network.sendNpcTrade(item.itemType, playerAmount, 'sell')}
+                            >
+                              {allLabel}
+                            </button>
+                          )}
                         </div>
                       );
                     })}
