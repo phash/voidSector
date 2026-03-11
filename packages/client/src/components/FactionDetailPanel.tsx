@@ -40,7 +40,7 @@ function FactionMemberPanel() {
       </div>
 
       <div style={{ background: '#0a0800', border: '1px solid #222', padding: '6px 8px', marginBottom: '8px' }}>
-        <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>DEIN RANG</div>
+        <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>YOUR RANK</div>
         <div style={{ color: '#fff', fontSize: '0.9rem' }}>{myRank.toUpperCase()}</div>
       </div>
 
@@ -55,7 +55,7 @@ function FactionMemberPanel() {
 
       {nextTierDef && (
         <div style={{ marginBottom: '8px' }}>
-          <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>NÄCHSTER UPGRADE</div>
+          <div style={{ fontSize: '0.6rem', color: '#555', marginBottom: '2px' }}>NEXT UPGRADE</div>
           <div style={{ color: '#ffb000', fontSize: '0.68rem' }}>
             → TIER {nextTierNum}: {nextTierDef.optionA.name} vs {nextTierDef.optionB.name}
           </div>
@@ -148,7 +148,7 @@ function FactionRecruitPanel() {
                 </div>
               )}
               <div style={{ color: '#555', fontSize: '0.62rem' }}>
-                {currentCard.memberCount} Mitglieder
+                {currentCard.memberCount} Members
               </div>
             </div>
           )}

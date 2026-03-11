@@ -76,7 +76,7 @@ describe('FactionDetailPanel — State A (member)', () => {
 
   it('shows next tier info when upgrades remain', () => {
     render(<FactionDetailPanel />);
-    expect(screen.getByText(/NÄCHSTER UPGRADE/)).toBeDefined();
+    expect(screen.getByText(/NEXT UPGRADE/)).toBeDefined();
     expect(screen.getByText(/TIER 1/)).toBeDefined();
   });
 
