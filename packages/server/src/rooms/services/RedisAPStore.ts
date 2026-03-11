@@ -59,6 +59,7 @@ export async function getMiningState(playerId: string): Promise<MiningState> {
     startedAt: data.startedAt ? Number(data.startedAt) : null,
     rate: Number(data.rate),
     sectorYield: Number(data.sectorYield),
+    mineAll: data.mineAll === 'true',
   };
 }
 
@@ -75,6 +76,7 @@ export async function saveMiningState(playerId: string, state: MiningState): Pro
     startedAt: String(state.startedAt || 0),
     rate: String(state.rate),
     sectorYield: String(state.sectorYield),
+    mineAll: String(state.mineAll),
   });
 }
 

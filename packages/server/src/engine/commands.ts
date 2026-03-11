@@ -127,6 +127,7 @@ export function validateMine(
   cargoCap: number,
   sectorX: number,
   sectorY: number,
+  mineAll: boolean = false,
 ): MineValidation {
   if (!['ore', 'gas', 'crystal'].includes(resource)) {
     return { valid: false, error: 'Invalid resource type' };
@@ -141,7 +142,7 @@ export function validateMine(
   if (cargoTotal >= cargoCap) {
     return { valid: false, error: 'Cargo hold is full' };
   }
-  const state = startMining(resource, sectorX, sectorY, sectorResources[mineableRes]);
+  const state = startMining(resource, sectorX, sectorY, sectorResources[mineableRes], Date.now(), mineAll);
   return { valid: true, state };
 }
 

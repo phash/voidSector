@@ -10,6 +10,7 @@ export function createMiningState(): MiningState {
     startedAt: null,
     rate: 0,
     sectorYield: 0,
+    mineAll: false,
   };
 }
 
@@ -19,6 +20,7 @@ export function startMining(
   sectorY: number,
   sectorYield: number,
   now: number = Date.now(),
+  mineAll: boolean = false,
 ): MiningState {
   return {
     active: true,
@@ -28,6 +30,7 @@ export function startMining(
     startedAt: now,
     rate: MINING_RATE_PER_SECOND,
     sectorYield,
+    mineAll,
   };
 }
 
