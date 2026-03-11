@@ -1,4 +1,4 @@
-import { query } from './client.js';
+import { query, withTransaction } from './client.js';
 import type {
   SectorData,
   PlayerData,
@@ -3058,6 +3058,24 @@ export interface QuadrantControlRow {
   friction_score: number;
   station_tier: number;
   last_strategic_tick: Date | null;
+  void_cluster_id: string | null;
+}
+
+export interface VoidClusterRow {
+  id: string;
+  state: 'growing' | 'splitting' | 'dying';
+  size: number;
+  split_threshold: number;
+  spawned_at: Date;
+  origin_qx: number;
+  origin_qy: number;
+}
+
+export interface VoidClusterQuadrantRow {
+  cluster_id: string;
+  qx: number;
+  qy: number;
+  progress: number;
 }
 
 export interface NpcFleetRow {
@@ -3097,17 +3115,18 @@ export async function getQuadrantControl(
 export async function upsertQuadrantControl(data: {
   qx: number;
   qy: number;
-  controlling_faction: string;
+  controlling_faction: string | null;
   faction_shares: Record<string, number>;
   attack_value: number;
   defense_value: number;
   friction_score: number;
   station_tier: number;
+  void_cluster_id?: string | null;
 }): Promise<void> {
   await query(
     `INSERT INTO quadrant_control
-      (qx, qy, controlling_faction, faction_shares, attack_value, defense_value, friction_score, station_tier, last_strategic_tick)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+      (qx, qy, controlling_faction, faction_shares, attack_value, defense_value, friction_score, station_tier, void_cluster_id, last_strategic_tick)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
      ON CONFLICT (qx, qy) DO UPDATE SET
        controlling_faction = EXCLUDED.controlling_faction,
        faction_shares = EXCLUDED.faction_shares,
@@ -3115,6 +3134,7 @@ export async function upsertQuadrantControl(data: {
        defense_value = EXCLUDED.defense_value,
        friction_score = EXCLUDED.friction_score,
        station_tier = EXCLUDED.station_tier,
+       void_cluster_id = EXCLUDED.void_cluster_id,
        last_strategic_tick = NOW()`,
     [
       data.qx,
@@ -3125,6 +3145,7 @@ export async function upsertQuadrantControl(data: {
       data.defense_value,
       data.friction_score,
       data.station_tier,
+      data.void_cluster_id ?? null,
     ],
   );
 }
@@ -3422,4 +3443,166 @@ export async function insertCombatLog(params: {
       JSON.stringify(params.loot),
     ],
   );
+}
+
+// ─── Void Clusters ────────────────────────────────────────────────────────────
+
+export async function getVoidClusters(): Promise<VoidClusterRow[]> {
+  const res = await query<VoidClusterRow>('SELECT * FROM void_clusters');
+  return res.rows;
+}
+
+export async function getVoidClusterById(id: string): Promise<VoidClusterRow | null> {
+  const res = await query<VoidClusterRow>(
+    'SELECT * FROM void_clusters WHERE id = $1',
+    [id],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function upsertVoidCluster(cluster: VoidClusterRow): Promise<void> {
+  await query(
+    `INSERT INTO void_clusters (id, state, size, split_threshold, spawned_at, origin_qx, origin_qy)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (id) DO UPDATE SET
+       state = EXCLUDED.state,
+       size  = EXCLUDED.size`,
+    [
+      cluster.id,
+      cluster.state,
+      cluster.size,
+      cluster.split_threshold,
+      cluster.spawned_at,
+      cluster.origin_qx,
+      cluster.origin_qy,
+    ],
+  );
+}
+
+export async function deleteVoidCluster(id: string): Promise<void> {
+  await query('DELETE FROM void_clusters WHERE id = $1', [id]);
+}
+
+export async function getVoidClusterQuadrants(
+  clusterId: string,
+): Promise<VoidClusterQuadrantRow[]> {
+  const res = await query<VoidClusterQuadrantRow>(
+    'SELECT * FROM void_cluster_quadrants WHERE cluster_id = $1',
+    [clusterId],
+  );
+  return res.rows;
+}
+
+export async function upsertVoidClusterQuadrant(
+  clusterId: string,
+  qx: number,
+  qy: number,
+  progress: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO void_cluster_quadrants (cluster_id, qx, qy, progress)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (cluster_id, qx, qy) DO UPDATE SET progress = EXCLUDED.progress`,
+    [clusterId, qx, qy, progress],
+  );
+}
+
+export async function deleteVoidClusterQuadrant(
+  clusterId: string,
+  qx: number,
+  qy: number,
+): Promise<void> {
+  await query(
+    'DELETE FROM void_cluster_quadrants WHERE cluster_id = $1 AND qx = $2 AND qy = $3',
+    [clusterId, qx, qy],
+  );
+}
+
+/**
+ * Atomically replace frontier sectors for a specific cluster+quadrant.
+ * Deletes old rows for (clusterId, qx, qy), inserts new ones.
+ * All within a single transaction.
+ */
+export async function replaceVoidFrontierSectors(
+  clusterId: string,
+  qx: number,
+  qy: number,
+  sectors: Array<{ x: number; y: number }>,
+): Promise<void> {
+  await withTransaction(async (client) => {
+    const ox = qx * 10000;
+    const oy = qy * 10000;
+    await client.query(
+      `DELETE FROM void_frontier_sectors
+       WHERE cluster_id = $1 AND x >= $2 AND x < $3 AND y >= $4 AND y < $5`,
+      [clusterId, ox, ox + 10000, oy, oy + 10000],
+    );
+    if (sectors.length > 0) {
+      const values = sectors
+        .map((_, i) => `($1, $${i * 2 + 2}, $${i * 2 + 3})`)
+        .join(', ');
+      const params: (string | number)[] = [clusterId];
+      for (const s of sectors) {
+        params.push(s.x, s.y);
+      }
+      await client.query(
+        `INSERT INTO void_frontier_sectors (cluster_id, x, y) VALUES ${values}
+         ON CONFLICT DO NOTHING`,
+        params,
+      );
+    }
+  });
+}
+
+export async function deleteVoidFrontierSectorsForQuadrant(
+  clusterId: string,
+  qx: number,
+  qy: number,
+): Promise<void> {
+  const ox = qx * 10000;
+  const oy = qy * 10000;
+  await query(
+    `DELETE FROM void_frontier_sectors
+     WHERE cluster_id = $1 AND x >= $2 AND x < $3 AND y >= $4 AND y < $5`,
+    [clusterId, ox, ox + 10000, oy, oy + 10000],
+  );
+}
+
+export async function isVoidFrontierSector(x: number, y: number): Promise<boolean> {
+  const res = await query<{ exists: boolean }>(
+    'SELECT EXISTS(SELECT 1 FROM void_frontier_sectors WHERE x = $1 AND y = $2) AS exists',
+    [x, y],
+  );
+  return res.rows[0]?.exists ?? false;
+}
+
+export async function createVoidHive(
+  qx: number,
+  qy: number,
+  clusterId: string,
+): Promise<void> {
+  const id = `void_hive_${qx}_${qy}`;
+  const sx = qx * 10000 + 5000;
+  const sy = qy * 10000 + 5000;
+  await query(
+    `INSERT INTO void_hives (id, qx, qy, sector_x, sector_y, cluster_id)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (qx, qy) DO NOTHING`,
+    [id, qx, qy, sx, sy, clusterId],
+  );
+}
+
+export async function deleteVoidHive(qx: number, qy: number): Promise<void> {
+  await query('DELETE FROM void_hives WHERE qx = $1 AND qy = $2', [qx, qy]);
+}
+
+export async function getVoidHive(
+  qx: number,
+  qy: number,
+): Promise<{ id: string; sector_x: number; sector_y: number } | null> {
+  const res = await query<{ id: string; sector_x: number; sector_y: number }>(
+    'SELECT id, sector_x, sector_y FROM void_hives WHERE qx = $1 AND qy = $2',
+    [qx, qy],
+  );
+  return res.rows[0] ?? null;
 }

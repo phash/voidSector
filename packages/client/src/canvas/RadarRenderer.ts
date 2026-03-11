@@ -98,6 +98,10 @@ interface RadarState {
   trackedQuests?: TrackedQuest[];
   miningActive?: boolean;
   civShips?: CivShip[];
+  /** Set of "x,y" strings that are void frontier sectors */
+  voidFrontierSectors?: Set<string>;
+  /** True if the player's current quadrant is fully void */
+  quadrantIsVoid?: boolean;
 }
 
 function easeInOutCubic(t: number): number {
@@ -179,6 +183,21 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const isCenter = dx === 0 && dy === 0;
       const hb = state.homeBase ?? { x: 0, y: 0 };
       const isHome = sx === hb.x && sy === hb.y;
+
+      // Void frontier rendering — black fill with optional blue border
+      const isVoidFrontier = state.voidFrontierSectors?.has(`${sx},${sy}`) ?? false;
+      const isInVoidQuadrant = state.quadrantIsVoid ?? false;
+
+      if (isVoidFrontier || isInVoidQuadrant) {
+        ctx.fillStyle = '#050508';
+        ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        if (isVoidFrontier && !isInVoidQuadrant) {
+          ctx.strokeStyle = '#aaaacc';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        }
+        continue; // skip normal sector rendering
+      }
 
       // Staleness rendering — dim/fade old discoveries
       if (sector && !isPlayer) {

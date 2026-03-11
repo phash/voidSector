@@ -1972,6 +1972,37 @@ export const MODULES: Record<string, ModuleDefinition> = {
     isFoundOnly: true,
     drawbacks: [{ runtimeEffect: 'pirate_transponder_rep', description: 'Alle Fraktionen −30 Reputation sofort' }],
   },
+
+  // === VOID MODULES (found-only, not researchable) ===
+  void_shield: {
+    id: 'void_shield',
+    category: 'shield',
+    tier: 5,
+    name: 'VOID SHIELD',
+    displayName: 'V.SHLD',
+    primaryEffect: { stat: 'shieldHp', delta: 0, label: 'Void-Schutz' },
+    secondaryEffects: [{ stat: 'defenseMultiplier', delta: -0.3, label: '-30% Abwehr vs kinetisch' }],
+    effects: { shieldHp: 0 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf', 'ausbau'],
+    isUnique: true,
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'void_shield_kinetic_weak', description: 'Schützt vor Void-Todeszonen. -30% Verteidigung vs kinetische Waffen.' }],
+  },
+  void_gun: {
+    id: 'void_gun',
+    category: 'weapon',
+    tier: 5,
+    name: 'VOID GUN',
+    displayName: 'V.GUN',
+    primaryEffect: { stat: 'weaponDamage', delta: 20, label: 'Schaden +20 (vs Void ×5)' },
+    secondaryEffects: [],
+    effects: { weaponAttack: 20 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'void_gun_bonus', description: 'Zerstört Void Hives. Maximale Wirkung gegen Void (×5 Schaden).' }],
+  },
 };
 
 // Backfill maxHp for all modules that don't have it set explicitly

@@ -17,6 +17,7 @@ function makeQuadrant(qx: number, qy: number, faction: string): QuadrantControlR
     friction_score: 0,
     station_tier: 1,
     last_strategic_tick: null,
+    void_cluster_id: null,
   };
 }
 

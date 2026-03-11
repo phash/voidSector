@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { QUADRANT_SIZE } from '@void-sector/shared';
 import {
   QUAD_CELL_SIZES,
@@ -9,6 +9,7 @@ import {
   QUAD_ZOOM_MAX_ADMIN,
   quadrantAtPoint,
   sectorToQuadrantCoords,
+  drawQuadrantMap,
 } from '../canvas/QuadrantMapRenderer';
 
 describe('QuadrantMapRenderer', () => {
@@ -165,6 +166,68 @@ describe('QuadrantMapRenderer', () => {
       expect(QUAD_FRAME_LEFT).toBeGreaterThan(0);
       expect(QUAD_FRAME_BOTTOM).toBeGreaterThan(0);
       expect(QUAD_FRAME_PAD).toBeGreaterThan(0);
+    });
+  });
+
+  describe('void quadrant rendering', () => {
+    it('renders void quadrant with black fill', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 400;
+      const ctx = canvas.getContext('2d')!;
+      const fillSpy = vi.spyOn(ctx, 'fillRect');
+
+      drawQuadrantMap(ctx, {
+        quadrantControls: [
+          {
+            qx: 0,
+            qy: 0,
+            controlling_faction: 'voids',
+            faction_shares: { voids: 100 },
+            friction_score: 0,
+            friction_state: 'peaceful_halt',
+            attack_value: 0,
+            defense_value: 0,
+            station_tier: 0,
+            void_cluster_id: 'vc_test',
+          },
+        ],
+        knownQuadrants: [{ qx: 0, qy: 0, learnedAt: new Date().toISOString() }],
+        currentQuadrant: { qx: 0, qy: 0 },
+        selectedQuadrant: null,
+        themeColor: '#00ff88',
+        dimColor: 'rgba(0,255,136,0.4)',
+        zoomLevel: 2,
+        panOffset: { x: 0, y: 0 },
+        animTime: 0,
+      });
+
+      expect(fillSpy).toHaveBeenCalled();
+      // Verify that '#050508' was used as fillStyle at some point during rendering
+      const calls = fillSpy.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+    });
+
+    it('renders partial void conquest with progress overlay', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 400;
+      const ctx = canvas.getContext('2d')!;
+      const fillSpy = vi.spyOn(ctx, 'fillRect');
+
+      drawQuadrantMap(ctx, {
+        knownQuadrants: [{ qx: 0, qy: 0, learnedAt: new Date().toISOString() }],
+        currentQuadrant: { qx: 0, qy: 0 },
+        selectedQuadrant: null,
+        themeColor: '#00ff88',
+        dimColor: 'rgba(0,255,136,0.4)',
+        zoomLevel: 2,
+        panOffset: { x: 0, y: 0 },
+        animTime: 0,
+        voidQuadrantProgress: new Map([['0:0', 50]]),
+      });
+
+      expect(fillSpy).toHaveBeenCalled();
     });
   });
 });

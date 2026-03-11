@@ -1382,6 +1382,13 @@ export interface CivilizationMeter {
 
 // ─── Expansion & Warfare ─────────────────────────────────────────────────────
 
+export interface VoidClusterState {
+  id: string;
+  state: 'growing' | 'splitting' | 'dying';
+  size: number;
+  quadrants: Array<{ qx: number; qy: number; progress: number }>;
+}
+
 export interface QuadrantControlState {
   qx: number;
   qy: number;
@@ -1392,6 +1399,7 @@ export interface QuadrantControlState {
   attack_value: number;
   defense_value: number;
   station_tier: number;
+  void_cluster_id?: string | null;
 }
 
 export interface NpcFleetState {
