@@ -1196,6 +1196,7 @@ export interface ShipStats {
   apRegenPerSecond?: number;
   repairHpPerRound: number;
   repairHpPerSecond: number;
+  memory: number;
 }
 
 export interface ShipRecord {

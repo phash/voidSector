@@ -9,6 +9,7 @@ import {
   UNIQUE_MODULE_CATEGORIES,
   BASE_HULL_AP_REGEN,
   POWER_LEVEL_MULTIPLIERS,
+  BASE_SCANNER_MEMORY,
 } from './constants.js';
 import type { HullType, ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
 
@@ -64,6 +65,7 @@ export function calculateShipStats(
     generatorEpPerRound: 0,
     repairHpPerRound: 0,
     repairHpPerSecond: 0,
+    memory: BASE_SCANNER_MEMORY,
   };
 
   // Pre-compute ACEP levels per path
@@ -109,6 +111,7 @@ export function calculateShipStats(
   stats.damageMod = Math.max(0.25, stats.damageMod);
   stats.engineSpeed = Math.max(1, Math.min(5, stats.engineSpeed));
   stats.hyperdriveFuelEfficiency = Math.max(0, Math.min(1, stats.hyperdriveFuelEfficiency));
+  stats.memory = Math.max(0, Math.round(stats.memory));
 
   return stats;
 }

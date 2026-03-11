@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateShipStats, validateModuleInstall } from '../shipCalculator';
+import { getPhysicalCargoTotal } from '../constants';
 
 describe('calculateShipStats', () => {
   it('returns hull base stats with no modules', () => {
@@ -169,5 +170,41 @@ describe('validateModuleInstall', () => {
       7,
     );
     expect(result.valid).toBe(true);
+  });
+});
+
+describe('memory stat', () => {
+  it('returns BASE_SCANNER_MEMORY with no scanner modules', () => {
+    const stats = calculateShipStats('scout', []);
+    expect(stats.memory).toBe(2);
+  });
+
+  it('adds scanner module memory to base', () => {
+    const stats = calculateShipStats('scout', [{ moduleId: 'scanner_mk1', slotIndex: 0 }]);
+    expect(stats.memory).toBe(6); // 2 base + 4
+  });
+
+  it('accumulates memory from multiple scanners', () => {
+    const stats = calculateShipStats('scout', [
+      { moduleId: 'scanner_mk1', slotIndex: 0 },
+      { moduleId: 'quantum_scanner', slotIndex: 1 },
+    ]);
+    expect(stats.memory).toBe(16); // 2 + 4 + 10
+  });
+
+  it('war_scanner adds 0 memory', () => {
+    const stats = calculateShipStats('scout', [{ moduleId: 'war_scanner', slotIndex: 0 }]);
+    expect(stats.memory).toBe(2); // 2 base + 0
+  });
+});
+
+describe('getPhysicalCargoTotal', () => {
+  it('sums ore + gas + crystal + artefact, excludes slates', () => {
+    const cargo = { ore: 5, gas: 3, crystal: 2, slates: 10, artefact: 1 };
+    expect(getPhysicalCargoTotal(cargo)).toBe(11);
+  });
+
+  it('returns 0 for empty cargo', () => {
+    expect(getPhysicalCargoTotal({ ore: 0, gas: 0, crystal: 0, artefact: 0 })).toBe(0);
   });
 });

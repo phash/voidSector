@@ -330,6 +330,12 @@ export const SLATE_AREA_RADIUS: Record<number, number> = {
   3: 4,
 };
 
+export const BASE_SCANNER_MEMORY = 2;
+
+export function getPhysicalCargoTotal(cargo: { ore: number; gas: number; crystal: number; artefact: number }): number {
+  return cargo.ore + cargo.gas + cargo.crystal + cargo.artefact;
+}
+
 // --- Phase 4: NPC Ecosystem ---
 
 export const NPC_FACTION_WEIGHTS: Record<string, number> = {
@@ -924,8 +930,8 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'SCANNER MK.I',
     displayName: 'SCAN MK.I',
     primaryEffect: { stat: 'scannerLevel', delta: 1, label: 'Scan-Level +1' },
-    secondaryEffects: [],
-    effects: { scannerLevel: 1 },
+    secondaryEffects: [{ stat: 'memory', delta: 4, label: 'Memory +4' }],
+    effects: { scannerLevel: 1, memory: 4 },
     cost: { credits: 120, crystal: 5 },
     acepPaths: ['intel'],
     isUnique: true,
@@ -937,8 +943,11 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'SCANNER MK.II',
     displayName: 'SCAN MK.II',
     primaryEffect: { stat: 'scannerLevel', delta: 1, label: 'Scan-Level +1' },
-    secondaryEffects: [{ stat: 'commRange', delta: 50, label: 'Komm-Reichweite +50' }],
-    effects: { scannerLevel: 1, commRange: 50 },
+    secondaryEffects: [
+      { stat: 'commRange', delta: 50, label: 'Komm-Reichweite +50' },
+      { stat: 'memory', delta: 6, label: 'Memory +6' },
+    ],
+    effects: { scannerLevel: 1, commRange: 50, memory: 6 },
     cost: { credits: 350, crystal: 15 },
     researchCost: { wissen: 300 },
     researchDurationMin: 5,
@@ -956,8 +965,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [
       { stat: 'commRange', delta: 100, label: 'Komm-Reichweite +100' },
       { stat: 'artefactChanceBonus', delta: 0.03, label: 'Artefakt-Chance +3%' },
+      { stat: 'memory', delta: 10, label: 'Memory +10' },
     ],
-    effects: { scannerLevel: 2, commRange: 100, artefactChanceBonus: 0.03 },
+    effects: { scannerLevel: 2, commRange: 100, artefactChanceBonus: 0.03, memory: 10 },
     cost: { credits: 900, crystal: 30, gas: 10 },
     researchCost: { wissen: 800, artefacts: { scanner: 1 } },
     researchDurationMin: 15,
@@ -1250,8 +1260,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [
       { stat: 'commRange', delta: 200, label: 'Komm-Reichweite +200' },
       { stat: 'artefactChanceBonus', delta: 0.05, label: 'Artefakt-Chance +5%' },
+      { stat: 'memory', delta: 10, label: 'Memory +10' },
     ],
-    effects: { scannerLevel: 3, commRange: 200, artefactChanceBonus: 0.05 },
+    effects: { scannerLevel: 3, commRange: 200, artefactChanceBonus: 0.05, memory: 10 },
     cost: { credits: 1500, crystal: 50 },
     researchCost: { wissen: 800, artefacts: { scanner: 1 } },
     researchDurationMin: 25,
@@ -1423,8 +1434,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'commRange', delta: 150, label: 'Komm-Reichweite +150' },
       { stat: 'artefactChanceBonus', delta: 0.05, label: 'Artefakt-Chance +5%' },
       { stat: 'miningBonus', delta: 0.1, label: 'Mining +10%' },
+      { stat: 'memory', delta: 14, label: 'Memory +14' },
     ],
-    effects: { scannerLevel: 3, commRange: 150, artefactChanceBonus: 0.05, miningBonus: 0.1 },
+    effects: { scannerLevel: 3, commRange: 150, artefactChanceBonus: 0.05, miningBonus: 0.1, memory: 14 },
     cost: { credits: 2000, crystal: 50, gas: 20, artefact: 2 },
     researchCost: { wissen: 2000, artefacts: { scanner: 2 } },
     researchDurationMin: 22,
@@ -1443,8 +1455,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'commRange', delta: 250, label: 'Komm-Reichweite +250' },
       { stat: 'artefactChanceBonus', delta: 0.08, label: 'Artefakt-Chance +8%' },
       { stat: 'miningBonus', delta: 0.15, label: 'Mining +15%' },
+      { stat: 'memory', delta: 20, label: 'Memory +20' },
     ],
-    effects: { scannerLevel: 4, commRange: 250, artefactChanceBonus: 0.08, miningBonus: 0.15 },
+    effects: { scannerLevel: 4, commRange: 250, artefactChanceBonus: 0.08, miningBonus: 0.15, memory: 20 },
     cost: { credits: 5000, crystal: 100, gas: 40, artefact: 6 },
     researchCost: { wissen: 5000, artefacts: { scanner: 3 } },
     researchDurationMin: 35,
@@ -1775,7 +1788,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     displayName: 'WAR SC',
     primaryEffect: { stat: 'artefactChanceBonus', delta: 0, label: 'Kampf-Scanner' },
     secondaryEffects: [{ stat: 'scannerLevel', delta: -2, label: 'Zivile Scans −2' }],
-    effects: { artefactChanceBonus: 0, scannerLevel: -2 },
+    effects: { artefactChanceBonus: 0, scannerLevel: -2, memory: 0 },
     cost: { credits: 0 },
     acepPaths: ['intel', 'kampf'],
     isUnique: true,
