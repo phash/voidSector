@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { StrategicTickService } from '../engine/strategicTickService.js';
 
+// Mock wissenTickHandler to avoid real DB connection
+vi.mock('../engine/wissenTickHandler.js', () => ({
+  processWissenTick: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock all DB queries
 vi.mock('../db/queries.js', () => ({
   getAllQuadrantControls: vi.fn(),
@@ -11,6 +16,16 @@ vi.mock('../db/queries.js', () => ({
   getArrivedNpcFleets: vi.fn(),
   deleteArrivedNpcFleets: vi.fn(),
   logExpansionEvent: vi.fn(),
+  getVoidClusters: vi.fn().mockResolvedValue([]),
+  getVoidClusterQuadrants: vi.fn().mockResolvedValue([]),
+  upsertVoidCluster: vi.fn().mockResolvedValue(undefined),
+  deleteVoidCluster: vi.fn().mockResolvedValue(undefined),
+  upsertVoidClusterQuadrant: vi.fn().mockResolvedValue(undefined),
+  deleteVoidClusterQuadrant: vi.fn().mockResolvedValue(undefined),
+  replaceVoidFrontierSectors: vi.fn().mockResolvedValue(undefined),
+  deleteVoidFrontierSectorsForQuadrant: vi.fn().mockResolvedValue(undefined),
+  createVoidHive: vi.fn().mockResolvedValue(undefined),
+  deleteVoidHive: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
@@ -19,6 +34,7 @@ import {
   getArrivedNpcFleets,
   deleteArrivedNpcFleets,
   createNpcFleet,
+  getVoidClusters,
 } from '../db/queries.js';
 
 const mockGetAllQuadrantControls = vi.mocked(getAllQuadrantControls);
@@ -74,5 +90,17 @@ describe('StrategicTickService', () => {
     await service.tick(new Map());
     expect(mockGetArrivedNpcFleets).toHaveBeenCalled();
     expect(mockDeleteArrivedNpcFleets).toHaveBeenCalled();
+  });
+
+  it('tick calls void lifecycle processing', async () => {
+    mockGetArrivedNpcFleets.mockResolvedValue([]);
+    mockDeleteArrivedNpcFleets.mockResolvedValue(undefined);
+    mockGetAllQuadrantControls.mockResolvedValue([]);
+    mockGetAllFactionConfigs.mockResolvedValue([]);
+    const mockGetVoidClusters = vi.mocked(getVoidClusters);
+    mockGetVoidClusters.mockResolvedValue([]);
+    await service.init();
+    await service.tick(new Map());
+    expect(mockGetVoidClusters).toHaveBeenCalled();
   });
 });

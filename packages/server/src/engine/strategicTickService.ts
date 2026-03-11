@@ -15,6 +15,7 @@ import { findAllBorderPairs, getExpansionTarget } from './expansionEngine.js';
 import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
 import { processWissenTick } from './wissenTickHandler.js';
+import { VoidLifecycleService } from './voidLifecycleService.js';
 
 const AGGRESSION_MUL = parseFloat(process.env.ALIEN_AGGRESSION_MUL ?? '1');
 const EXPANSION_RATE_MUL = parseFloat(process.env.ALIEN_EXPANSION_RATE_MUL ?? '1');
@@ -24,9 +25,11 @@ export type RepStore = Map<string, number>;
 
 export class StrategicTickService {
   private factionConfig: FactionConfigService;
+  private voidLifecycle: VoidLifecycleService;
 
   constructor(private redis: Redis) {
     this.factionConfig = new FactionConfigService();
+    this.voidLifecycle = new VoidLifecycleService(redis);
   }
 
   async init(): Promise<void> {
@@ -74,6 +77,9 @@ export class StrategicTickService {
 
     // 3. Wissen generation for research labs
     await processWissenTick(60_000); // strategic tick interval ~60s
+
+    // 4. Void civilization lifecycle
+    await this.voidLifecycle.tick();
   }
 
   private async processWarfareTick(
