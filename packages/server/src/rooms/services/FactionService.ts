@@ -61,6 +61,8 @@ export class FactionService {
         inviteCode: factionRow.invite_code,
         memberCount: Number(factionRow.member_count),
         createdAt: new Date(factionRow.created_at).getTime(),
+        isRecruiting: factionRow.is_recruiting ?? false,
+        slogan: factionRow.slogan ?? null,
       },
       members: members.map((m) => ({
         playerId: m.player_id,

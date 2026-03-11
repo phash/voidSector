@@ -214,8 +214,8 @@ function UpgradesTab({ isLeader }: { isLeader: boolean }) {
 
 function ManagementTab({ isLeader }: { isLeader: boolean }) {
   const faction = useStore((s) => s.faction)!;
-  const [recruiting, setRecruiting] = useState(false);
-  const [slogan, setSlogan] = useState('');
+  const [recruiting, setRecruiting] = useState<boolean>(faction.isRecruiting ?? false);
+  const [slogan, setSlogan] = useState<string>(faction.slogan ?? '');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

@@ -508,6 +508,8 @@ export interface Faction {
   inviteCode?: string;
   memberCount?: number;
   createdAt: number;
+  isRecruiting?: boolean;
+  slogan?: string | null;
 }
 
 export interface FactionMember {

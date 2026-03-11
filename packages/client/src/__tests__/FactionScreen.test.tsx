@@ -145,4 +145,14 @@ describe('FactionScreen — in faction', () => {
     render(<FactionScreen />);
     expect(screen.getByText(/ACTIVE RECRUITING/)).toBeDefined();
   });
+
+  it('management tab shows current recruiting state from server', () => {
+    factionState('management', {
+      faction: { ...baseFaction, isRecruiting: true, slogan: 'We mine together' },
+    });
+    render(<FactionScreen />);
+    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+    expect(screen.getByDisplayValue('We mine together')).toBeDefined();
+  });
 });
