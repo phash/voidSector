@@ -2,6 +2,7 @@ import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import type { ShipModule, ResearchState } from '@void-sector/shared';
+import { logger } from '../../utils/logger.js';
 
 import {
   calculateShipStats,
@@ -362,6 +363,7 @@ export class ShipService {
         wissen: newWissen,
       });
     } catch (err) {
+      logger.error({ err, moduleId: data.moduleId, slot, userId: auth.userId }, 'Research start failed');
       // Rollback: refund Wissen since research did not start
       await addWissen(auth.userId, wissenCost).catch(() => {
         /* best-effort refund */

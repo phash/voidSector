@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { useStore } from '../state/store';
 import { MODULES, isModuleFreelyAvailable } from '@void-sector/shared';
 import type { ModuleDefinition } from '@void-sector/shared';
@@ -24,16 +24,19 @@ const CATEGORY_LABELS: Record<string, string> = {
   mining: 'BERGBAU',
 };
 
-const COL_WIDTH = 90;
-const ROW_HEIGHT = 52;
-const NODE_W = 76;
-const NODE_H = 22;
-const HEADER_H = 28;
-const PADDING_X = 8;
-const PADDING_Y = 8;
+const COL_WIDTH = 140;
+const ROW_HEIGHT = 68;
+const NODE_W = 120;
+const NODE_H = 34;
+const HEADER_H = 36;
+const PADDING_X = 12;
+const PADDING_Y = 12;
 
-const CANVAS_W = CATEGORIES.length * COL_WIDTH + PADDING_X * 2;
-const CANVAS_H = 5 * ROW_HEIGHT + HEADER_H + PADDING_Y * 2;
+const WORLD_W = CATEGORIES.length * COL_WIDTH + PADDING_X * 2;
+const WORLD_H = 5 * ROW_HEIGHT + HEADER_H + PADDING_Y * 2;
+
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2.5;
 
 type NodeStatus = 'free' | 'unlocked' | 'blueprint' | 'researching' | 'researching2' | 'locked';
 
@@ -71,18 +74,33 @@ function statusColor(status: NodeStatus): string {
   }
 }
 
+const LEGEND: { label: string; color: string }[] = [
+  { label: 'Frei', color: '#00FF88' },
+  { label: 'Erforscht', color: '#00AA55' },
+  { label: 'Blueprint', color: '#00BFFF' },
+  { label: 'Forschung', color: '#FFB000' },
+  { label: 'Gesperrt', color: '#444' },
+];
+
 export function TechTreeCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const research = useStore((s) => s.research);
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const setSelectedTechModule = useStore((s) => s.setSelectedTechModule);
 
-  // Build node grid: category × tier (computed once per render)
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const [showHelp, setShowHelp] = useState(false);
+
+  // Build node grid
   const nodeGrid = new Map<string, { mod: ModuleDefinition; col: number; row: number }>();
   for (const [id, mod] of Object.entries(MODULES)) {
     const col = CATEGORIES.indexOf(mod.category as (typeof CATEGORIES)[number]);
-    if (col === -1) continue; // skip 'special' — no column
-    const row = 5 - mod.tier; // tier 5 at top (row 0), tier 1 at bottom (row 4)
+    if (col === -1) continue;
+    const row = 5 - mod.tier;
     nodeGrid.set(id, { mod, col, row });
   }
 
@@ -92,20 +110,34 @@ export function TechTreeCanvas() {
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    const dpr = window.devicePixelRatio || 1;
+    const displayW = container.clientWidth;
+    const displayH = container.clientHeight - 52; // reserve space for header + legend
+    canvas.width = displayW * dpr;
+    canvas.height = displayH * dpr;
+    canvas.style.width = `${displayW}px`;
+    canvas.style.height = `${displayH}px`;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, displayW, displayH);
     ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillRect(0, 0, displayW, displayH);
+
+    ctx.save();
+    ctx.translate(pan.x, pan.y);
+    ctx.scale(zoom, zoom);
 
     // Column headers
-    ctx.font = '7px monospace';
+    ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'center';
     for (let c = 0; c < CATEGORIES.length; c++) {
-      ctx.fillStyle = '#666';
-      ctx.fillText(CATEGORY_LABELS[CATEGORIES[c]], PADDING_X + c * COL_WIDTH + COL_WIDTH / 2, 18);
+      ctx.fillStyle = '#888';
+      ctx.fillText(CATEGORY_LABELS[CATEGORIES[c]], PADDING_X + c * COL_WIDTH + COL_WIDTH / 2, 24);
     }
 
     // Dependency arrows
@@ -139,62 +171,184 @@ export function TechTreeCanvas() {
       ctx.lineWidth = isSelected ? 2 : 1;
       ctx.strokeRect(x, y, NODE_W, NODE_H);
 
-      ctx.fillStyle = status === 'locked' ? '#444' : color;
-      ctx.font = '7px monospace';
+      ctx.fillStyle = status === 'locked' ? '#555' : color;
+      ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      const label = mod.name.length > 12 ? mod.name.substring(0, 11) + '\u2026' : mod.name;
-      ctx.fillText(label, x + NODE_W / 2, y + 14);
+      const label = mod.name.length > 16 ? mod.name.substring(0, 15) + '\u2026' : mod.name;
+      ctx.fillText(label, x + NODE_W / 2, y + 21);
     }
-  }, [research, selectedModuleId, nodeGrid]);
+
+    ctx.restore();
+  }, [research, selectedModuleId, nodeGrid, zoom, pan]);
 
   useEffect(() => {
     draw();
   }, [draw]);
 
+  // Resize observer
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const obs = new ResizeObserver(() => draw());
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, [draw]);
+
+  // Screen → world coordinates
+  const screenToWorld = useCallback(
+    (clientX: number, clientY: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { wx: 0, wy: 0 };
+      const rect = canvas.getBoundingClientRect();
+      const sx = clientX - rect.left;
+      const sy = clientY - rect.top;
+      return { wx: (sx - pan.x) / zoom, wy: (sy - pan.y) / zoom };
+    },
+    [pan, zoom],
+  );
+
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = CANVAS_W / rect.width;
-      const scaleY = CANVAS_H / rect.height;
-      const mx = (e.clientX - rect.left) * scaleX;
-      const my = (e.clientY - rect.top) * scaleY;
-
+      if (dragging) return;
+      const { wx, wy } = screenToWorld(e.clientX, e.clientY);
       for (const [id, { col, row }] of nodeGrid) {
         const x = nodeX(col);
         const y = nodeY(row);
-        if (mx >= x && mx <= x + NODE_W && my >= y && my <= y + NODE_H) {
+        if (wx >= x && wx <= x + NODE_W && wy >= y && wy <= y + NODE_H) {
           setSelectedTechModule(id);
           return;
         }
       }
     },
-    [setSelectedTechModule, nodeGrid],
+    [setSelectedTechModule, nodeGrid, screenToWorld, dragging],
   );
 
+  const handleWheel = useCallback(
+    (e: React.WheelEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      const { wx, wy } = screenToWorld(e.clientX, e.clientY);
+      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
+      // Adjust pan so the point under the cursor stays fixed
+      setPan({
+        x: e.clientX - canvasRef.current!.getBoundingClientRect().left - wx * newZoom,
+        y: e.clientY - canvasRef.current!.getBoundingClientRect().top - wy * newZoom,
+      });
+      setZoom(newZoom);
+    },
+    [zoom, screenToWorld],
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (e.button !== 0) return;
+      setDragging(false);
+      dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+      const onMove = (me: MouseEvent) => {
+        const dx = me.clientX - dragStart.current.x;
+        const dy = me.clientY - dragStart.current.y;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) setDragging(true);
+        setPan({ x: dragStart.current.panX + dx, y: dragStart.current.panY + dy });
+      };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        setTimeout(() => setDragging(false), 50);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    },
+    [pan],
+  );
+
+  const resetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '4px' }}>
+    <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '4px' }}>
       <div
         style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: '0.6rem',
+          fontSize: '0.75rem',
           color: 'var(--color-primary)',
           marginBottom: 4,
           letterSpacing: '0.1em',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        WISSEN: {(research.wissen ?? 0).toLocaleString()}
-        <span style={{ color: 'var(--color-dim)', marginLeft: 8 }}>
-          +{research.wissenRate ?? 0}/h
+        <span>
+          WISSEN: {(research.wissen ?? 0).toLocaleString()}
+          <span style={{ color: 'var(--color-dim)', marginLeft: 8 }}>
+            +{research.wissenRate ?? 0}/h
+          </span>
+        </span>
+        <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {LEGEND.map((l) => (
+            <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <span style={{ display: 'inline-block', width: 8, height: 8, background: l.color, border: '1px solid #333' }} />
+              <span style={{ color: '#888', fontSize: '0.65rem' }}>{l.label}</span>
+            </span>
+          ))}
+          <button
+            onClick={() => setShowHelp((h) => !h)}
+            style={{
+              background: 'transparent',
+              border: '1px solid #555',
+              color: '#888',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.65rem',
+              padding: '1px 6px',
+              cursor: 'pointer',
+              marginLeft: 4,
+            }}
+          >
+            [?]
+          </button>
+          <button
+            onClick={resetView}
+            style={{
+              background: 'transparent',
+              border: '1px solid #555',
+              color: '#888',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.65rem',
+              padding: '1px 6px',
+              cursor: 'pointer',
+            }}
+          >
+            [RESET]
+          </button>
         </span>
       </div>
+      {showHelp && (
+        <div
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.7rem',
+            color: '#aaa',
+            background: '#111',
+            border: '1px solid #333',
+            padding: '6px 10px',
+            marginBottom: 4,
+            lineHeight: 1.5,
+          }}
+        >
+          <b style={{ color: 'var(--color-primary)' }}>TECH-BAUM</b> — Klicke ein Modul zum Auswählen.
+          Details rechts im Panel. Scrollrad zum Zoomen, Ziehen zum Verschieben.
+          Module mit Voraussetzung sind durch Linien verbunden.
+          Erforsche Module im Detail-Panel mit Wissen + Artefakten.
+        </div>
+      )}
       <canvas
         ref={canvasRef}
-        width={CANVAS_W}
-        height={CANVAS_H}
         onClick={handleClick}
-        style={{ width: '100%', cursor: 'pointer', imageRendering: 'pixelated' }}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        style={{ flex: 1, cursor: dragging ? 'grabbing' : 'grab' }}
       />
     </div>
   );

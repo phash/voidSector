@@ -2189,9 +2189,9 @@ export async function startActiveResearch(
 ): Promise<void> {
   await query(
     `INSERT INTO active_research (user_id, module_id, started_at, completes_at, slot)
-     VALUES ($1, $2, to_timestamp($3 / 1000.0), to_timestamp($4 / 1000.0), $5)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (user_id, slot) DO UPDATE
-     SET module_id = $2, started_at = to_timestamp($3 / 1000.0), completes_at = to_timestamp($4 / 1000.0)`,
+     SET module_id = $2, started_at = $3, completes_at = $4`,
     [userId, moduleId, startedAt, completesAt, slot],
   );
 }
