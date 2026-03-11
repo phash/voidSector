@@ -16,11 +16,11 @@ import type {
 import {
   SPAWN_CLUSTER_MAX_PLAYERS,
   SPAWN_CLUSTER_RADIUS,
-  RESOURCE_REGEN_PER_MINUTE,
-  CRYSTAL_REGEN_PER_MINUTE,
-  RESOURCE_REGEN_DELAY_MINUTES,
+  RESOURCE_REGEN_DELAY_TICKS,
+  RESOURCE_REGEN_INTERVAL_TICKS,
   calculateShipStats,
 } from '@void-sector/shared';
+import { getUniverseTickCount } from '../engine/universeBootstrap.js';
 
 export async function createPlayer(
   username: string,
@@ -298,11 +298,12 @@ export async function getSector(x: number, y: number): Promise<SectorData | null
     environment: string;
     contents: string[];
     last_mined: string | null;
+    last_mined_tick: string | null;
     max_ore: number;
     max_gas: number;
     max_crystal: number;
   }>(
-    'SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents, last_mined, max_ore, max_gas, max_crystal FROM sectors WHERE x = $1 AND y = $2',
+    'SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents, last_mined, last_mined_tick, max_ore, max_gas, max_crystal FROM sectors WHERE x = $1 AND y = $2',
     [x, y],
   );
   if (result.rows.length === 0) return null;
@@ -310,26 +311,26 @@ export async function getSector(x: number, y: number): Promise<SectorData | null
   const meta = row.metadata || {};
   let resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
 
-  // Apply resource regeneration if sector was mined (with 5-minute delay)
-  if (row.last_mined && (row.max_ore > 0 || row.max_gas > 0 || row.max_crystal > 0)) {
-    const elapsedMinutes = (Date.now() - Number(row.last_mined)) / 60000;
-    const regenMinutes = Math.max(0, elapsedMinutes - RESOURCE_REGEN_DELAY_MINUTES);
-    if (regenMinutes > 0) {
-      resources = {
-        ore: Math.min(
-          row.max_ore,
-          resources.ore + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE),
-        ),
-        gas: Math.min(
-          row.max_gas,
-          resources.gas + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE),
-        ),
-        crystal: Math.min(
-          row.max_crystal,
-          resources.crystal + Math.floor(regenMinutes * CRYSTAL_REGEN_PER_MINUTE),
-        ),
-      };
-    }
+  // Tick-based resource regeneration (per-resource independent)
+  const lastMinedTick = (meta.lastMinedTick as Record<string, number | null>) || {};
+  const currentTick = getUniverseTickCount();
+
+  if (row.max_ore > 0 || row.max_gas > 0 || row.max_crystal > 0) {
+    const regenResource = (current: number, max: number, resLastTick: number | null): number => {
+      if (resLastTick === null || max <= 0) return current;
+      const ticksSinceMined = currentTick - resLastTick;
+      if (ticksSinceMined <= RESOURCE_REGEN_DELAY_TICKS) return current;
+      const regen = Math.floor(
+        (ticksSinceMined - RESOURCE_REGEN_DELAY_TICKS) / RESOURCE_REGEN_INTERVAL_TICKS,
+      );
+      return Math.min(max, current + regen);
+    };
+
+    resources = {
+      ore: regenResource(resources.ore, row.max_ore, lastMinedTick.ore ?? null),
+      gas: regenResource(resources.gas, row.max_gas, lastMinedTick.gas ?? null),
+      crystal: regenResource(resources.crystal, row.max_crystal, lastMinedTick.crystal ?? null),
+    };
   }
 
   return {
@@ -340,7 +341,12 @@ export async function getSector(x: number, y: number): Promise<SectorData | null
     discoveredBy: row.discovered_by,
     discoveredAt: row.discovered_at,
     metadata: row.metadata,
-    resources,
+    resources: {
+      ...resources,
+      maxOre: row.max_ore,
+      maxGas: row.max_gas,
+      maxCrystal: row.max_crystal,
+    },
     environment: (row.environment ?? 'empty') as SectorData['environment'],
     contents: (row.contents ?? []) as SectorData['contents'],
   };
@@ -372,11 +378,19 @@ export async function updateSectorResources(
   x: number,
   y: number,
   resources: { ore: number; gas: number; crystal: number },
+  minedResource: string,
 ): Promise<void> {
+  const currentTick = getUniverseTickCount();
   await query(
-    `UPDATE sectors SET metadata = jsonb_set(COALESCE(metadata, '{}'), '{resources}', $3::jsonb), last_mined = $4
+    `UPDATE sectors SET
+       metadata = jsonb_set(
+         jsonb_set(COALESCE(metadata, '{}'), '{resources}', $3::jsonb),
+         '{lastMinedTick,${minedResource}}', $4::text::jsonb
+       ),
+       last_mined = $5,
+       last_mined_tick = $4
      WHERE x = $1 AND y = $2`,
-    [x, y, JSON.stringify(resources), Date.now()],
+    [x, y, JSON.stringify(resources), currentTick, Date.now()],
   );
 }
 
@@ -1980,26 +1994,26 @@ export async function getSectorsInRange(
     const meta = r.metadata || {};
     let resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
 
-    // Apply resource regeneration if sector was mined (with 5-minute delay)
-    if (r.last_mined && (r.max_ore > 0 || r.max_gas > 0 || r.max_crystal > 0)) {
-      const elapsedMinutes = (Date.now() - Number(r.last_mined)) / 60000;
-      const regenMinutes = Math.max(0, elapsedMinutes - RESOURCE_REGEN_DELAY_MINUTES);
-      if (regenMinutes > 0) {
-        resources = {
-          ore: Math.min(
-            r.max_ore,
-            resources.ore + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE),
-          ),
-          gas: Math.min(
-            r.max_gas,
-            resources.gas + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE),
-          ),
-          crystal: Math.min(
-            r.max_crystal,
-            resources.crystal + Math.floor(regenMinutes * CRYSTAL_REGEN_PER_MINUTE),
-          ),
-        };
-      }
+    // Tick-based resource regeneration (per-resource independent)
+    const lastMinedTick = (meta.lastMinedTick as Record<string, number | null>) || {};
+    const rangeTick = getUniverseTickCount();
+
+    if (r.max_ore > 0 || r.max_gas > 0 || r.max_crystal > 0) {
+      const regenResource = (current: number, max: number, resLastTick: number | null): number => {
+        if (resLastTick === null || max <= 0) return current;
+        const ticksSinceMined = rangeTick - resLastTick;
+        if (ticksSinceMined <= RESOURCE_REGEN_DELAY_TICKS) return current;
+        const regen = Math.floor(
+          (ticksSinceMined - RESOURCE_REGEN_DELAY_TICKS) / RESOURCE_REGEN_INTERVAL_TICKS,
+        );
+        return Math.min(max, current + regen);
+      };
+
+      resources = {
+        ore: regenResource(resources.ore, r.max_ore, lastMinedTick.ore ?? null),
+        gas: regenResource(resources.gas, r.max_gas, lastMinedTick.gas ?? null),
+        crystal: regenResource(resources.crystal, r.max_crystal, lastMinedTick.crystal ?? null),
+      };
     }
 
     return {
@@ -2010,7 +2024,12 @@ export async function getSectorsInRange(
       discoveredBy: r.discovered_by,
       discoveredAt: r.discovered_at,
       metadata: r.metadata ?? {},
-      resources,
+      resources: {
+        ...resources,
+        maxOre: r.max_ore,
+        maxGas: r.max_gas,
+        maxCrystal: r.max_crystal,
+      },
       environment: (r.environment ?? 'empty') as SectorData['environment'],
       contents: (r.contents ?? []) as SectorData['contents'],
     };
