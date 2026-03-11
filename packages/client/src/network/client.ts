@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import { QUADRANT_SIZE } from '@void-sector/shared';
+import { QUADRANT_SIZE, MODULES } from '@void-sector/shared';
 import type {
   APState,
   SectorData,
@@ -954,6 +954,61 @@ class GameNetwork {
             newState.loot = data.loot;
           }
           store.setActiveCombat(newState);
+        }
+      },
+    );
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── RepairService — onboard module repair & station repair ───────────────
+    room.onMessage(
+      'repairModuleResult',
+      (data: {
+        success: boolean;
+        moduleId?: string;
+        newHp?: number;
+        maxHp?: number;
+        error?: string;
+      }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`REPAIR ERROR: ${data.error}`);
+          return;
+        }
+        // Update the module's currentHp in ship state
+        if (data.moduleId !== undefined && data.newHp !== undefined) {
+          const ship = store.ship;
+          if (ship) {
+            const updatedModules = ship.modules.map((m) =>
+              m.moduleId === data.moduleId ? { ...m, currentHp: data.newHp! } : m,
+            );
+            store.setShip({ ...ship, modules: updatedModules });
+          }
+        }
+      },
+    );
+
+    room.onMessage(
+      'stationRepairResult',
+      (data: {
+        success: boolean;
+        modulesRepaired?: number;
+        cost?: number;
+        error?: string;
+      }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`STATION REPAIR ERROR: ${data.error}`);
+          return;
+        }
+        // Restore all modules to full HP in ship state
+        const ship = store.ship;
+        if (ship) {
+          const updatedModules = ship.modules.map((m) => {
+            const def = MODULES[m.moduleId];
+            const maxHp = def?.maxHp ?? 20;
+            return { ...m, currentHp: maxHp };
+          });
+          store.setShip({ ...ship, modules: updatedModules });
         }
       },
     );
@@ -2369,6 +2424,16 @@ class GameNetwork {
 
   sendCraftModule(blueprintId: string) {
     this.sectorRoom?.send('craftModule', { blueprintId });
+  }
+
+  // ── RepairService ──────────────────────────────────────────────────────────
+
+  sendRepairModule(moduleId: string) {
+    this.sectorRoom?.send('repairModule', { moduleId });
+  }
+
+  sendStationRepair() {
+    this.sectorRoom?.send('stationRepair', {});
   }
 }
 

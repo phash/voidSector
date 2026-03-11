@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { HULLS } from '@void-sector/shared';
+import { RepairPanel } from './RepairPanel';
 
 const ACEP_PATHS = [
   { key: 'ausbau',   label: 'CONSTRUCTION', color: '#ffaa00', max: 50 },
@@ -17,7 +18,7 @@ const row  = { display: 'flex', justifyContent: 'space-between', padding: '1px 0
 const hdr  = { ...dim, borderBottom: '1px solid var(--color-dim)', paddingBottom: 2, marginTop: 8, marginBottom: 4, letterSpacing: '0.15em' };
 const linkBtn = { background: 'transparent', border: 'none', color: 'var(--color-primary)', ...mono, cursor: 'pointer', textDecoration: 'underline', padding: '2px 0' } as React.CSSProperties;
 
-type Tab = 'cargo' | 'mining' | 'stats';
+type Tab = 'cargo' | 'mining' | 'stats' | 'repair';
 
 export function ShipStatusPanel() {
   const ship             = useStore((s) => s.ship);
@@ -122,7 +123,7 @@ export function ShipStatusPanel() {
 
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
-        {(['cargo', 'mining', 'stats'] as Tab[]).map((t) => (
+        {(['cargo', 'mining', 'stats', 'repair'] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} style={{
             ...linkBtn,
             color: tab === t ? 'var(--color-primary)' : 'var(--color-dim)',
@@ -184,6 +185,13 @@ export function ShipStatusPanel() {
               <span style={pri}>{val}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Repair tab */}
+      {tab === 'repair' && (
+        <div style={{ marginTop: 4 }}>
+          <RepairPanel />
         </div>
       )}
 
