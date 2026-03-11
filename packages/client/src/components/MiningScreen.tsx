@@ -6,13 +6,14 @@ import type { MineableResourceType } from '@void-sector/shared';
 import { btn, btnDisabled, UI } from '../ui-strings';
 import { InlineError } from './InlineError';
 
-function ResourceBar({ label, value, max }: { label: string; value: number; max: number }) {
+function ResourceBar({ label, value, max, maxResource }: { label: string; value: number; max: number; maxResource?: number }) {
   const width = 10;
-  const filled = max > 0 ? Math.round((value / max) * width) : 0;
+  const displayMax = maxResource ?? max;
+  const filled = displayMax > 0 ? Math.round((value / displayMax) * width) : 0;
   const bar = '\u2587'.repeat(filled) + '\u2591'.repeat(width - filled);
   return (
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
-      {label.padEnd(10)} {bar} {String(value).padStart(3)}
+      {label.padEnd(10)} {bar} {String(value).padStart(3)}{maxResource !== undefined ? `/${maxResource}` : ''}
     </div>
   );
 }
@@ -27,6 +28,7 @@ export function MiningScreen() {
   const ap = useStore((s) => s.ap);
 
   const [miningProgress, setMiningProgress] = useState(0);
+  const [mineAll, setMineAll] = useState(false);
 
   useEffect(() => {
     if (!mining?.active || mining.startedAt === null) {
@@ -44,7 +46,12 @@ export function MiningScreen() {
   }, [mining?.active, mining?.startedAt, mining?.rate, mining?.sectorYield]);
 
   const resources = currentSector?.resources || { ore: 0, gas: 0, crystal: 0 };
-  const maxYield = Math.max(resources.ore, resources.gas, resources.crystal, 1);
+  const maxYield = Math.max(
+    resources.maxOre ?? resources.ore,
+    resources.maxGas ?? resources.gas,
+    resources.maxCrystal ?? resources.crystal,
+    1,
+  );
   const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
   const cargoCap = ship?.stats?.cargoCap ?? 5;
   const cargoTotal = getPhysicalCargoTotal(cargo);
@@ -77,9 +84,9 @@ export function MiningScreen() {
       ) : (
         <>
           <div style={{ marginBottom: '16px' }}>
-            <ResourceBar label="ORE" value={resources.ore} max={maxYield} />
-            <ResourceBar label="GAS" value={resources.gas} max={maxYield} />
-            <ResourceBar label="CRYSTAL" value={resources.crystal} max={maxYield} />
+            <ResourceBar label="ORE" value={resources.ore} max={maxYield} maxResource={resources.maxOre} />
+            <ResourceBar label="GAS" value={resources.gas} max={maxYield} maxResource={resources.maxGas} />
+            <ResourceBar label="CRYSTAL" value={resources.crystal} max={maxYield} maxResource={resources.maxCrystal} />
           </div>
 
           <div
@@ -148,13 +155,13 @@ export function MiningScreen() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
             {RESOURCE_TYPES.map((res: MineableResourceType) => (
               <button
                 key={res}
                 className="vs-btn"
                 disabled={mining?.active === true || resources[res] <= 0 || cargoFull || apCurrent < 1}
-                onClick={() => network.sendMine(res)}
+                onClick={() => network.sendMine(res, mineAll)}
               >
                 {mining?.active === true || resources[res] <= 0
                   ? btn(`MINE ${res.toUpperCase()}`)
@@ -172,6 +179,20 @@ export function MiningScreen() {
             >
               {btn(UI.actions.STOP)}
             </button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={mineAll}
+                onChange={(e) => {
+                  setMineAll(e.target.checked);
+                  if (mining?.active) {
+                    network.sendToggleMineAll(e.target.checked);
+                  }
+                }}
+                style={{ accentColor: 'var(--color-primary)' }}
+              />
+              ALLES ABBAUEN
+            </label>
           </div>
           <InlineError codes={['NO_RESOURCES', 'MINE_FAILED', 'RATE_LIMIT', 'INVALID_INPUT']} />
         </>

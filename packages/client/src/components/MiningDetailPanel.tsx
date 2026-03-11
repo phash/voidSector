@@ -52,19 +52,19 @@ export function MiningDetailPanel() {
       {resources.ore > 0 && (
         <div>
           <span style={{ color: 'var(--color-dim)' }}>ORE: </span>
-          <span>{resources.ore}</span>
+          <span>{resources.ore}{resources.maxOre ? `/${resources.maxOre}` : ''}</span>
         </div>
       )}
       {resources.gas > 0 && (
         <div>
           <span style={{ color: 'var(--color-dim)' }}>GAS: </span>
-          <span>{resources.gas}</span>
+          <span>{resources.gas}{resources.maxGas ? `/${resources.maxGas}` : ''}</span>
         </div>
       )}
       {resources.crystal > 0 && (
         <div>
           <span style={{ color: 'var(--color-dim)' }}>CRYSTAL: </span>
-          <span>{resources.crystal}</span>
+          <span>{resources.crystal}{resources.maxCrystal ? `/${resources.maxCrystal}` : ''}</span>
         </div>
       )}
 

@@ -50,7 +50,7 @@ describe('MiningScreen', () => {
   it('calls sendMine on button click', async () => {
     render(<MiningScreen />);
     await userEvent.click(screen.getByText('[MINE ORE]'));
-    expect(network.sendMine).toHaveBeenCalledWith('ore');
+    expect(network.sendMine).toHaveBeenCalledWith('ore', false);
   });
 
   it('disables mine buttons when mining is active', () => {

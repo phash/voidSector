@@ -642,7 +642,12 @@ export function DetailPanel() {
                     faction: (sector as any).faction,
                     resources: sector.resources
                       ? Object.entries(sector.resources)
-                          .map(([r, a]) => `${r.toUpperCase()} x${a}`)
+                          .filter(([r]) => !r.startsWith('max'))
+                          .map(([r, a]) => {
+                            const maxKey = `max${r.charAt(0).toUpperCase()}${r.slice(1)}` as keyof typeof sector.resources;
+                            const maxVal = sector.resources?.[maxKey];
+                            return `${r.toUpperCase()} x${a}${maxVal ? `/${maxVal}` : ''}`;
+                          })
                           .join(', ')
                       : undefined,
                     stationVariant: sector.metadata?.stationVariant as string | undefined,
@@ -661,11 +666,17 @@ export function DetailPanel() {
           {sector.resources && (
             <>
               <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>RESOURCES</div>
-              {Object.entries(sector.resources).map(([res, amount]) => (
-                <div key={res}>
-                  {res.toUpperCase()} ──── {amount}
-                </div>
-              ))}
+              {Object.entries(sector.resources)
+                .filter(([res]) => !res.startsWith('max'))
+                .map(([res, amount]) => {
+                  const maxKey = `max${res.charAt(0).toUpperCase()}${res.slice(1)}` as keyof typeof sector.resources;
+                  const maxVal = sector.resources?.[maxKey];
+                  return (
+                    <div key={res}>
+                      {res.toUpperCase()} ──── {amount}{maxVal ? `/${maxVal}` : ''}
+                    </div>
+                  );
+                })}
             </>
           )}
           {isPlayerHere && (

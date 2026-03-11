@@ -1851,12 +1851,12 @@ class GameNetwork {
     this.sectorRoom.send('getDiscoveries', {});
   }
 
-  sendMine(resource: string) {
+  sendMine(resource: string, mineAll?: boolean) {
     if (!this.sectorRoom) {
       useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
       return;
     }
-    this.sectorRoom.send('mine', { resource });
+    this.sectorRoom.send('mine', { resource, mineAll: mineAll ?? false });
   }
 
   sendStopMine() {
@@ -1865,6 +1865,11 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('stopMine', {});
+  }
+
+  sendToggleMineAll(mineAll: boolean) {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('toggleMineAll', { mineAll });
   }
 
   sendJettison(resource: string) {
