@@ -10,7 +10,8 @@ export type CompendiumCategory =
   | 'handel'
   | 'technik'
   | 'sozial'
-  | 'fortgeschritten';
+  | 'fortgeschritten'
+  | 'acep';
 
 export interface CompendiumArticle {
   id: string;
@@ -36,6 +37,7 @@ export const COMPENDIUM_CATEGORIES: {
   { id: 'technik', label: 'TECHNIK', icon: '⚙' },
   { id: 'sozial', label: 'SOZIAL', icon: '◉' },
   { id: 'fortgeschritten', label: 'FORTGESCHRITTEN', icon: '◇' },
+  { id: 'acep', label: 'ACEP', icon: '⬟' },
 ];
 
 // ---------------------------------------------------------------------------

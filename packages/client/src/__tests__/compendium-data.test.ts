@@ -96,6 +96,16 @@ describe('Compendium Data', () => {
       }
     });
 
+    it("has an 'acep' category in COMPENDIUM_CATEGORIES", () => {
+      expect(COMPENDIUM_CATEGORIES.some((c) => c.id === 'acep')).toBe(true);
+    });
+
+    it("'acep' category has icon ⬟ and label ACEP", () => {
+      const cat = COMPENDIUM_CATEGORIES.find((c) => c.id === 'acep');
+      expect(cat?.icon).toBe('⬟');
+      expect(cat?.label).toBe('ACEP');
+    });
+
     it('every category has at least one article', () => {
       for (const cat of COMPENDIUM_CATEGORIES) {
         const articles = getArticlesByCategory(cat.id);
