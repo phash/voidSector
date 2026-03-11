@@ -1829,16 +1829,48 @@ Pilot Harkon Breis wollte "in allem gut sein". Er verteilte gleichmäßig: 25/25
 Ergebnis: Überall ein kleiner Bonus. Nirgendwo gut genug. Besiegt von einem Piraten mit +5%-Schadensbonus.
 Sein Wrack treibt bei [00F2:0179]. Es ist gut beschriftet.
 
+![Harkon Breis winkt aus seinem beschrifteten Wrack. Schild: "GLEICHMÄSSIG VERTEILT".](img:acep/pilot-harkon)
+
 *Fallstudie 2 — Der Kampfspezialist ohne Treibstoff:*
 Korbin Vex: 50 KAMPF-XP. Maximaler Schaden. Dann — kein Treibstoff im Nebula-Sektor.
 [SYSTEM]: Feinde erkannt. Kein Treibstoff. Das ist ungünstig.
 Korbin blieb vier Tage in jenem Sektor.
+
+![Korbin Vex treibt im Nebula. Treibstoffanzeige rot. Piraten im Hintergrund stehen gelangweilt.](img:acep/pilot-korbin)
 
 *Fallstudie 3 — Die EXPLORER-Pilotin mit zu vielen Ruinen:*
 Yara Finn: 25 EXPLORER-XP → alle Ancient-Ruinen auf dem Radar sichtbar.
 Es waren sehr viele. Sie flog zur nächsten. Dort wartete eine Ancient-Wächterin.
 Yara hatte null Kampf-XP.
 [SYSTEM]: Flucht erfolgreich. ...ich empfehle zukünftig weniger Neugier.
+
+![Yara Finn flieht. 5 Tempel-Icons auf Mini-Radar. Ancient-Wächterin dahinter.](img:acep/pilot-yara)
+
+---
+
+**Das neue ACEP-Programm**
+
+Nach mehreren Eingaben bei der Zuständigen Behörde (Abteilung: Unklare Beschwerden) mit dem Betreff "Wo sind meine Balken?" wurde ACEP ein eigenes Cockpit-Programm.
+
+Links: deine Module. Rechts: deine XP-Pfade.
+Du kannst jetzt beides gleichzeitig ignorieren statt nacheinander. Das nennt sich Fortschritt.
+
+*Fallstudie 4 — Der Monitor-Erkunder:*
+Pilot Ren Dalvik öffnete den neuen ACEP-Monitor und klickte auf alle leeren Slots.
+Jeder Klick öffnete das MODULE-Programm. Das war beabsichtigt.
+Ren klickte 47 Mal. Es blieben 47 leere Slots.
+[SYSTEM]: Module werden im MODULE-Programm erworben, nicht durch wiederholtes Klicken auf ihre Abwesenheit.
+Ren lebt noch. Er hat jetzt 0 Module und ein tiefes, praxisnahes Verständnis der Benutzeroberfläche.
+
+*Fallstudie 5 — Die Fabrik-Ungeduld:*
+Pilotin Sera Voss entschied, sofort eine Fabrik auf ihrer Basis zu errichten.
+AUSBAU Level 1. Fabrik gesperrt.
+Sie baute Mining-Module. AUSBAU Level 1. Fabrik gesperrt.
+Sie engagierte sich im Kampf. AUSBAU Level 1. Fabrik gesperrt.
+Während dieser Zeit: 7 AUSBAU-XP. Beständig.
+[SYSTEM]: Fabrik erfordert AUSBAU Level 2. Das entspricht 8 XP. Du hast 7.
+Das Universum ist präzise.
+Sera hat seitdem eine sehr gepflegte Basis mit einer unbenutzten Fabrik, die sie täglich besucht.
 
 ---
 
