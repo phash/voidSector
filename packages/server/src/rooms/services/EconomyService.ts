@@ -12,6 +12,7 @@ import type {
 } from '@void-sector/shared';
 
 import { validateNpcTrade, validateTransfer, getReputationTier } from '../../engine/commands.js';
+import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { getStationFaction } from '../../engine/npcgen.js';
 import {
   getOrInitStation,
@@ -162,6 +163,8 @@ export class EconomyService {
       const sy = this.ctx._py(client.sessionId);
 
       if (action === 'sell') {
+        // Capture full-cargo state before selling (for ACEP XP)
+        const wasFullLoad = cargoTotal >= shipStats.cargoCap * 0.8;
         // Check cargo has enough
         if (cargo[resource as MineableResourceType] < amount) {
           client.send('npcTradeResult', {
@@ -207,6 +210,10 @@ export class EconomyService {
         });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
+        // ACEP: AUSBAU-XP for selling full cargo load (spec: +2 when ≥80% full)
+        if (wasFullLoad) {
+          addAcepXpForPlayer(auth.userId, 'ausbau', 2).catch(() => {});
+        }
         // Send station info update (rich format with inventory)
         await this.sendNpcStationUpdate(client, sx, sy);
       } else {
