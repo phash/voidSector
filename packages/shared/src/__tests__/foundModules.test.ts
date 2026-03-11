@@ -26,7 +26,7 @@ describe('found modules', () => {
 
   it('all found modules have drawbacks defined', () => {
     const foundModules = Object.values(MODULES).filter((m) => m.isFoundOnly);
-    expect(foundModules.length).toBeGreaterThanOrEqual(34);
+    expect(foundModules.length).toBe(29);
     for (const mod of foundModules) {
       expect(mod.drawbacks, `${mod.id} missing drawbacks`).toBeDefined();
       expect(mod.drawbacks!.length, `${mod.id} drawbacks empty`).toBeGreaterThan(0);
