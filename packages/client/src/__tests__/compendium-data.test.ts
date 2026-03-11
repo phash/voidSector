@@ -255,6 +255,19 @@ describe('Compendium Data', () => {
   });
 
   // -------------------------------------------------------------------------
+  // ACEP articles
+  // -------------------------------------------------------------------------
+
+  describe('ACEP articles', () => {
+    it("has article 'acep-monitor'", () => {
+      const a = getArticle('acep-monitor');
+      expect(a).toBeDefined();
+      expect(a?.category).toBe('acep');
+      expect(a?.body.length).toBeGreaterThan(100);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Content quality
   // -------------------------------------------------------------------------
 

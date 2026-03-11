@@ -1935,6 +1935,45 @@ Als regulärer Spieler hast du keinen Zugang zur Admin-Konsole. Die hier beschri
     seeAlso: ['quests', 'npc-stationen'],
     tags: ['admin', 'konsole', 'broadcast', 'verwaltung', 'server'],
   },
+
+  // ==========================================================================
+  // ACEP
+  // ==========================================================================
+
+  {
+    id: 'acep-monitor',
+    title: 'DAS ACEP-PROGRAMM',
+    category: 'acep',
+    icon: '⬟',
+    summary: 'Das neue Cockpit-Programm zeigt Modul-Slots und XP-Pfade auf einem Screen. Verwirrt anfangs. Wird nützlich.',
+    body: `Das ACEP-Programm ist das zwölfte Mitglied der Cockpit-Software-Familie.
+Es wurde eingeführt, nachdem eine statistisch relevante Anzahl von Piloten gleichzeitig auf ihre Module und ihre XP-Pfade schauen wollte.
+Das ist, rein geometrisch betrachtet, möglich. Das ACEP-Programm macht es komfortabler.
+
+**Was der Monitor zeigt:**
+Links: deine 8 Modul-Slots und deren aktueller Zustand.
+Rechts: deine vier ACEP-Pfade mit XP-Stand und freigeschalteten Effekten.
+
+Der Monitor zeigt viele Balken. Einige davon sind leer. Das ist nicht der Monitor's Schuld.
+Der Monitor tut, was er kann.
+
+**Wie man ihn öffnet:**
+Sektion 1 (linke Leiste des Cockpits) → Programm ACEP.
+Falls du Sektion 1 nicht findest: Sie ist die linke Leiste. Du hast sie bereits gesehen.
+
+**Klick auf einen leeren Slot:**
+Öffnet das MODULE-Programm. Das ist kein Fehler — es ist ein Hinweis.
+Der ACEP-Monitor verkauft keine Module. Er dokumentiert deren Abwesenheit mit bemerkenswert ruhiger Haltung.
+
+**Klick auf einen belegten Slot:**
+Zeigt den UNINSTALL-Button. Dieser tut, was er ankündigt.
+Es empfiehlt sich, kurz innezuhalten. Module erwerben kostet Credits.
+Das Universum hat keine Rückgaberichtlinie.
+
+![Pilot starrt auf den ACEP-Monitor. Zwei Spalten voller Balken. Fragezeichen über dem Helm.](img:acep/acep-monitor-screen)`,
+    seeAlso: ['acep-slots', 'acep-intro', 'acep-handbuch'],
+    tags: ['acep', 'monitor', 'programme', 'module', 'slots'],
+  },
 ];
 
 // ---------------------------------------------------------------------------
