@@ -1,14 +1,6 @@
-import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULES, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
-
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
 
 function costLine(cost: {
   credits: number;
@@ -25,14 +17,6 @@ function costLine(cost: {
   return parts.join(' | ');
 }
 
-function formatCountdown(ms: number): string {
-  if (ms <= 0) return 'FERTIG';
-  const totalSec = Math.ceil(ms / 1000);
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}m ${s}s`;
-}
-
 const btnStyle: React.CSSProperties = {
   background: 'transparent',
   border: '1px solid var(--color-primary)',
@@ -44,31 +28,14 @@ const btnStyle: React.CSSProperties = {
   letterSpacing: '0.05em',
 };
 
-const btnDangerStyle: React.CSSProperties = {
-  ...btnStyle,
-  borderColor: 'var(--color-danger)',
-  color: 'var(--color-danger)',
-};
-
 export function TechDetailPanel() {
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const research = useStore((s) => s.research);
   const credits = useStore((s) => s.credits);
   const cargo = useStore((s) => s.cargo);
   const storage = useStore((s) => s.storage);
-  const position = useStore((s) => s.position);
-  const homeBase = useStore((s) => s.homeBase);
   const currentSector = useStore((s) => s.currentSector);
   const baseStructures = useStore((s) => s.baseStructures);
-
-  const [now, setNow] = useState(Date.now());
-
-  // Countdown timer for active research
-  useEffect(() => {
-    if (!research.activeResearch) return;
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, [research.activeResearch]);
 
   if (!selectedModuleId) {
     return (
@@ -90,7 +57,6 @@ export function TechDetailPanel() {
   const mod = MODULES[selectedModuleId];
   if (!mod) return null;
 
-  const isAtHome = position.x === homeBase.x && position.y === homeBase.y;
   const isAtStation = currentSector?.type === 'station';
   const hasBase = baseStructures.some((s: any) => s.type === 'base');
   const canShop = isAtStation || hasBase;
@@ -102,9 +68,6 @@ export function TechDetailPanel() {
     artefact: cargo.artefact + storage.artefact,
   };
 
-  const isResearching = research.activeResearch?.moduleId === mod.id;
-  const remaining = isResearching ? research.activeResearch!.completesAt - now : 0;
-  const isComplete = isResearching && remaining <= 0;
   const isFree = isModuleFreelyAvailable(mod.id);
   const isUnlocked = research.unlockedModules.includes(mod.id);
   const hasBP = research.blueprints.includes(mod.id);
@@ -188,11 +151,6 @@ export function TechDetailPanel() {
             FORSCHUNGSKOSTEN
           </div>
           <div>{costLine(mod.researchCost)}</div>
-          {mod.researchDurationMin && (
-            <div style={{ color: 'var(--color-dim)' }}>
-              DAUER: {formatDuration(mod.researchDurationMin)}
-            </div>
-          )}
         </div>
       )}
 
@@ -216,7 +174,7 @@ export function TechDetailPanel() {
         {(isFree || isUnlocked) && (
           <div>
             <div style={{ color: '#00FF88', marginBottom: 4 }}>
-              {isFree ? 'FREI VERFÜGBAR' : 'ERFORSCHT ✓'}
+              {isFree ? 'FREI VERFÜGBAR' : 'ERFORSCHT'}
             </div>
             {canShop && (
               <button style={btnStyle} onClick={() => network.sendBuyModule(mod.id)}>
@@ -238,43 +196,8 @@ export function TechDetailPanel() {
             </button>
           </div>
         )}
-        {isResearching && (
-          <div>
-            {isComplete ? (
-              <>
-                <div style={{ color: '#00FF88', marginBottom: 4 }}>FORSCHUNG ABGESCHLOSSEN</div>
-                <button style={btnStyle} onClick={() => network.sendClaimResearch()}>
-                  [ABSCHLIESSEN]
-                </button>
-              </>
-            ) : (
-              <>
-                <div style={{ color: '#FFB000', marginBottom: 4 }}>
-                  FORSCHUNG LÄUFT... {formatCountdown(remaining)}
-                </div>
-                <button style={btnDangerStyle} onClick={() => network.sendCancelResearch()}>
-                  [ABBRECHEN]
-                </button>
-              </>
-            )}
-          </div>
-        )}
-        {!isFree && !isUnlocked && !isResearching && mod.researchCost && (
-          <div>
-            {!isAtHome && (
-              <div style={{ color: 'var(--color-dim)', marginBottom: 4 }}>
-                FORSCHUNG NUR AN HEIMATBASIS
-              </div>
-            )}
-            {isAtHome && researchCheck.valid && !research.activeResearch && (
-              <button style={btnStyle} onClick={() => network.sendStartResearch(mod.id)}>
-                [FORSCHUNG STARTEN]
-              </button>
-            )}
-            {isAtHome && !researchCheck.valid && (
-              <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>{researchCheck.error}</div>
-            )}
-          </div>
+        {!isFree && !isUnlocked && mod.researchCost && !researchCheck.valid && (
+          <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>{researchCheck.error}</div>
         )}
       </div>
     </div>

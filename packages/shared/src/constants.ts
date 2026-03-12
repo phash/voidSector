@@ -108,15 +108,6 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
 
 // ── Research Lab / Wissen ─────────────────────────────────────────────
 
-/** Base Wissen generation per hour by research lab tier (1–5) */
-export const RESEARCH_LAB_WISSEN_RATE: Record<number, number> = {
-  1: 5, // Grundlabor
-  2: 12, // Forschungslabor
-  3: 25, // Analysestation
-  4: 45, // Forschungsturm
-  5: 80, // Observatorium
-};
-
 /** Lab tier Wissen multiplier for active generation (replaces passive tick) */
 export const LAB_WISSEN_MULTIPLIER: Record<number, number> = {
   0: 1.0,
@@ -127,61 +118,8 @@ export const LAB_WISSEN_MULTIPLIER: Record<number, number> = {
   5: 5.0,
 };
 
-export const RESEARCH_LAB_NAMES: Record<number, string> = {
-  1: 'AUSBAU Level 1',
-  2: 'AUSBAU Level 2',
-  3: 'AUSBAU Level 3',
-  4: 'AUSBAU Level 4',
-  5: 'AUSBAU Level 5',
-};
-
 /** Maximum research lab tier */
 export const RESEARCH_LAB_MAX_TIER = 5;
-
-/** Lab tier required to research modules of each module tier */
-export const RESEARCH_LAB_TIER_FOR_MODULE_TIER: Record<number, number> = {
-  1: 1,
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-};
-
-/** Wissen multipliers by sector type/environment present in the station's sector */
-export const WISSEN_SECTOR_MULTIPLIERS: Record<string, number> = {
-  asteroid_field: 1.2,
-  nebula: 1.5,
-  anomaly: 2.0,
-  black_hole_adjacent: 2.5,
-  ancient_jumpgate: 5.0,
-};
-
-/** Base Wissen cost to research a module, by module tier */
-export const WISSEN_COST_BY_TIER: Record<number, number> = {
-  1: 100,
-  2: 300,
-  3: 800,
-  4: 2000,
-  5: 5000,
-};
-
-/** Required artefacts (matching module category) per module tier */
-export const ARTEFACT_REQUIRED_BY_TIER: Record<number, number> = {
-  1: 0,
-  2: 0,
-  3: 1,
-  4: 2,
-  5: 3,
-};
-
-/** Wissen cost reduction per matching artefact used */
-export const ARTEFACT_WISSEN_BONUS = 500;
-
-/** Research time reduction per matching artefact used (fraction, e.g. 0.1 = 10%) */
-export const ARTEFACT_TIME_BONUS_PER = 0.1;
-
-/** Maximum artefacts that can be used per research */
-export const MAX_ARTEFACTS_PER_RESEARCH = 3;
 
 /** Credits + material cost to upgrade research lab to the given tier */
 export const RESEARCH_LAB_UPGRADE_COSTS: Record<

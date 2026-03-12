@@ -1222,18 +1222,7 @@ export interface ShipRecord {
 export interface ResearchState {
   unlockedModules: string[];
   blueprints: string[];
-  activeResearch: {
-    moduleId: string;
-    startedAt: number;
-    completesAt: number;
-  } | null;
-  activeResearch2?: {
-    moduleId: string;
-    startedAt: number;
-    completesAt: number;
-  } | null;
   wissen?: number;
-  wissenRate?: number; // Wissen/hour (for display)
 }
 
 // --- Admin Messages ---

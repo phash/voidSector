@@ -38,19 +38,15 @@ const WORLD_H = 5 * ROW_HEIGHT + HEADER_H + PADDING_Y * 2;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.5;
 
-type NodeStatus = 'free' | 'unlocked' | 'blueprint' | 'researching' | 'researching2' | 'locked';
+type NodeStatus = 'free' | 'unlocked' | 'blueprint' | 'locked';
 
 function getStatus(
   mod: ModuleDefinition,
   research: {
-    activeResearch: { moduleId: string } | null;
-    activeResearch2?: { moduleId: string } | null;
     unlockedModules: string[];
     blueprints: string[];
   },
 ): NodeStatus {
-  if (research.activeResearch?.moduleId === mod.id) return 'researching';
-  if (research.activeResearch2?.moduleId === mod.id) return 'researching2';
   if (isModuleFreelyAvailable(mod.id)) return 'free';
   if (research.unlockedModules.includes(mod.id)) return 'unlocked';
   if (research.blueprints.includes(mod.id)) return 'blueprint';
@@ -65,10 +61,6 @@ function statusColor(status: NodeStatus): string {
       return '#00AA55';
     case 'blueprint':
       return '#00BFFF';
-    case 'researching':
-      return '#FFB000';
-    case 'researching2':
-      return '#FF8800';
     case 'locked':
       return '#444';
   }
@@ -78,7 +70,6 @@ const LEGEND: { label: string; color: string }[] = [
   { label: 'Frei', color: '#00FF88' },
   { label: 'Erforscht', color: '#00AA55' },
   { label: 'Blueprint', color: '#00BFFF' },
-  { label: 'Forschung', color: '#FFB000' },
   { label: 'Gesperrt', color: '#444' },
 ];
 
@@ -282,9 +273,6 @@ export function TechTreeCanvas() {
       >
         <span>
           WISSEN: {(research.wissen ?? 0).toLocaleString()}
-          <span style={{ color: 'var(--color-dim)', marginLeft: 8 }}>
-            +{research.wissenRate ?? 0}/h
-          </span>
         </span>
         <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {LEGEND.map((l) => (

@@ -674,15 +674,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       const items = await getInventory(auth.userId);
       client.send('inventoryState', { items });
     });
-    this.onMessage('startResearch', (client, data) => this.ships.handleStartResearch(client, data));
-    this.onMessage('cancelResearch', (client, data) =>
-      this.ships.handleCancelResearch(client, data),
-    );
-    this.onMessage('claimResearch', (client, data) => this.ships.handleClaimResearch(client, data));
     this.onMessage('activateBlueprint', (client, data) =>
       this.ships.handleActivateBlueprint(client, data),
     );
-    this.onMessage('getResearchState', (client) => this.ships.handleGetResearchState(client));
     this.onMessage('craftModule', (client, data) => this.ships.handleCraftModule(client, data));
     this.onMessage('acepBoost', (client, data: { path: AcepPath }) =>
       this.ships.handleAcepBoost(client, data),

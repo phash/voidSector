@@ -145,7 +145,7 @@ describe('constants', () => {
   });
 });
 
-import { MONITORS, COCKPIT_PROGRAMS, COCKPIT_PROGRAM_LABELS, RESEARCH_LAB_NAMES } from '../constants.js';
+import { MONITORS, COCKPIT_PROGRAMS, COCKPIT_PROGRAM_LABELS } from '../constants.js';
 
 describe('ACEP constants', () => {
   it('MONITORS.ACEP exists', () => {
@@ -156,10 +156,5 @@ describe('ACEP constants', () => {
   });
   it('COCKPIT_PROGRAM_LABELS has ACEP entry', () => {
     expect(COCKPIT_PROGRAM_LABELS['ACEP']).toBe('ACEP');
-  });
-  it('RESEARCH_LAB_NAMES use AUSBAU Level strings', () => {
-    expect(RESEARCH_LAB_NAMES[1]).toBe('AUSBAU Level 1');
-    expect(RESEARCH_LAB_NAMES[3]).toBe('AUSBAU Level 3');
-    expect(RESEARCH_LAB_NAMES[5]).toBe('AUSBAU Level 5');
   });
 });

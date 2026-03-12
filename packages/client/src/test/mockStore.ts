@@ -94,10 +94,7 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     research: {
       unlockedModules: [],
       blueprints: [],
-      activeResearch: null,
-      activeResearch2: null,
       wissen: 0,
-      wissenRate: 0,
     },
     pendingBlueprint: null,
     npcStationData: null,

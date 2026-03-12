@@ -1,12 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isModuleFreelyAvailable, isModuleUnlocked, canStartResearch } from '../research';
-import {
-  MODULES,
-  WISSEN_COST_BY_TIER,
-  ARTEFACT_REQUIRED_BY_TIER,
-  MAX_ARTEFACTS_PER_RESEARCH,
-  WISSEN_SECTOR_MULTIPLIERS,
-} from '../constants';
+import { MODULES } from '../constants';
 import { ARTEFACT_TYPES, ARTEFACT_TYPE_FOR_CATEGORY } from '../types';
 import type { ResearchState } from '../types';
 
@@ -14,10 +8,7 @@ function emptyResearch(): ResearchState {
   return {
     unlockedModules: [],
     blueprints: [],
-    activeResearch: null,
-    activeResearch2: null,
     wissen: 0,
-    wissenRate: 0,
   };
 }
 
@@ -77,16 +68,16 @@ describe('isModuleUnlocked', () => {
 
 describe('canStartResearch', () => {
   it('allows research when prereq met and resources available', () => {
-    // drive_mk2: tier 2, requires lab 2, 300 wissen, no artefacts
+    // drive_mk2: tier 2, requires 300 wissen
     const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 300 };
-    const result = canStartResearch('drive_mk2', rs, {}, 2);
+    const result = canStartResearch('drive_mk2', rs, {});
     expect(result.valid).toBe(true);
   });
 
   it('rejects when prerequisite not met', () => {
     // drive_mk3 requires drive_mk2 which is NOT freely available
     const rs: ResearchState = { ...emptyResearch(), wissen: 99999 };
-    const result = canStartResearch('drive_mk3', rs, PLENTY_ARTEFACTS, 3);
+    const result = canStartResearch('drive_mk3', rs, PLENTY_ARTEFACTS);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Prerequisite');
   });
@@ -97,74 +88,13 @@ describe('canStartResearch', () => {
       unlockedModules: ['drive_mk1', 'drive_mk2'],
       wissen: 99999,
     };
-    const result = canStartResearch('drive_mk2', rs, {}, 2);
+    const result = canStartResearch('drive_mk2', rs, {});
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Already unlocked');
   });
 
-  it('rejects when research slot 1 already busy', () => {
-    const rs: ResearchState = {
-      unlockedModules: ['drive_mk1'],
-      blueprints: [],
-      activeResearch: { moduleId: 'cargo_mk2', startedAt: 1000, completesAt: 2000 },
-      activeResearch2: null,
-      wissen: 99999,
-      wissenRate: 0,
-    };
-    const result = canStartResearch('drive_mk2', rs, {}, 2, 1);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('slot 1 already busy');
-  });
-
-  it('rejects slot 2 when lab tier < 3', () => {
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 99999 };
-    const result = canStartResearch('drive_mk2', rs, {}, 2, 2);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Slot 2 requires');
-  });
-
-  it('rejects slot 2 when slot 2 already busy', () => {
-    const rs: ResearchState = {
-      unlockedModules: ['drive_mk1'],
-      blueprints: [],
-      activeResearch: null,
-      activeResearch2: { moduleId: 'cargo_mk2', startedAt: 1000, completesAt: 2000 },
-      wissen: 99999,
-      wissenRate: 0,
-    };
-    const result = canStartResearch('drive_mk2', rs, {}, 3, 2);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('slot 2 already busy');
-  });
-
-  it('allows slot 2 when lab tier >= 3 and slot is free', () => {
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 300 };
-    const result = canStartResearch('drive_mk2', rs, {}, 3, 2);
-    expect(result.valid).toBe(true);
-  });
-
-  it('rejects when lab tier too low', () => {
-    // drive_mk2 requires lab tier 2; labTier = 1
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 99999 };
-    const result = canStartResearch('drive_mk2', rs, {}, 1);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Requires');
-  });
-
-  it('rejects when artefact_drive is insufficient', () => {
-    // drive_mk3: tier 3, requires 1 drive artefact
-    const rs: ResearchState = {
-      ...emptyResearch(),
-      unlockedModules: ['drive_mk1', 'drive_mk2'],
-      wissen: 99999,
-    };
-    const result = canStartResearch('drive_mk3', rs, { drive: 0 }, 3);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('artefact');
-  });
-
   it('rejects freely available modules', () => {
-    const result = canStartResearch('drive_mk1', emptyResearch(), {}, 1);
+    const result = canStartResearch('drive_mk1', emptyResearch(), {});
     expect(result.valid).toBe(false);
     expect(result.error).toContain('does not require research');
   });
@@ -176,7 +106,7 @@ describe('canStartResearch', () => {
       unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
       wissen: 99999,
     };
-    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3);
+    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Faction requirement');
   });
@@ -187,7 +117,7 @@ describe('canStartResearch', () => {
       unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
       wissen: 99999,
     };
-    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, {
+    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, undefined, undefined, {
       ancients: 'friendly',
     });
     expect(result.valid).toBe(false);
@@ -200,7 +130,7 @@ describe('canStartResearch', () => {
       unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
       wissen: 99999,
     };
-    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, {
+    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, undefined, undefined, {
       ancients: 'honored',
     });
     expect(result.valid).toBe(true);
@@ -209,13 +139,13 @@ describe('canStartResearch', () => {
   it('rejects when not enough wissen', () => {
     // drive_mk2 costs 300 wissen
     const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 100 };
-    const result = canStartResearch('drive_mk2', rs, {}, 2);
+    const result = canStartResearch('drive_mk2', rs, {});
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Wissen');
   });
 
   it('rejects unknown module', () => {
-    const result = canStartResearch('nonexistent', emptyResearch(), {}, 1);
+    const result = canStartResearch('nonexistent', emptyResearch(), {});
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Unknown');
   });
@@ -273,32 +203,6 @@ describe('ArtefactType', () => {
     expect(Object.keys(ARTEFACT_TYPE_FOR_CATEGORY)).toHaveLength(11);
     expect(ARTEFACT_TYPE_FOR_CATEGORY['drive']).toBe('drive');
     expect(ARTEFACT_TYPE_FOR_CATEGORY['mining']).toBe('mining');
-  });
-});
-
-describe('Wissen constants', () => {
-  it('WISSEN_COST_BY_TIER covers tiers 1-5', () => {
-    for (let t = 1; t <= 5; t++) {
-      expect(WISSEN_COST_BY_TIER[t]).toBeGreaterThan(0);
-    }
-  });
-
-  it('costs increase with tier', () => {
-    for (let t = 1; t < 5; t++) {
-      expect(WISSEN_COST_BY_TIER[t + 1]).toBeGreaterThan(WISSEN_COST_BY_TIER[t]);
-    }
-  });
-
-  it('T1-T2 require no artefacts, T3-T5 require some', () => {
-    expect(ARTEFACT_REQUIRED_BY_TIER[1]).toBe(0);
-    expect(ARTEFACT_REQUIRED_BY_TIER[2]).toBe(0);
-    expect(ARTEFACT_REQUIRED_BY_TIER[3]).toBeGreaterThan(0);
-    expect(ARTEFACT_REQUIRED_BY_TIER[5]).toBe(MAX_ARTEFACTS_PER_RESEARCH);
-  });
-
-  it('ancient_jumpgate has highest multiplier', () => {
-    const max = Math.max(...Object.values(WISSEN_SECTOR_MULTIPLIERS));
-    expect(WISSEN_SECTOR_MULTIPLIERS['ancient_jumpgate']).toBe(max);
   });
 });
 
