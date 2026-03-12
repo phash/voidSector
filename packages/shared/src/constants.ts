@@ -2035,14 +2035,13 @@ for (const mod of Object.values(MODULES)) {
   }
 }
 
-export const SECTOR_COLORS: Record<SectorType | 'home_base', string> = {
+export const SECTOR_COLORS: Record<SectorType, string> = {
   empty: '#FFB000',
   asteroid_field: '#FF8C00',
   nebula: '#00BFFF',
   station: '#00FF88',
   anomaly: '#FF00FF',
   pirate: '#FF3333',
-  home_base: '#FFFFFF',
 };
 
 export const SPAWN_MIN_DISTANCE = 10_000_000;
@@ -2168,7 +2167,6 @@ export const SYMBOLS = {
   pirate: '\u2620',
   player: '\u25C6',
   iron: '\u26CF',
-  homeBase: '\u2302',
   jumpgate: '\u25CE', // ◎
 } as const;
 
@@ -2196,7 +2194,6 @@ export const ENVIRONMENT_SYMBOLS: Record<SectorEnvironment, string> = {
 export const CONTENT_SYMBOLS: Partial<Record<SectorContent, string>> = {
   asteroid_field: '\u25C6', // ◆
   station: 'S',
-  home_base: 'H',
   player_base: 'B',
   anomaly: '\u25CA', // ◊
   pirate_zone: '\u2620', // ☠
@@ -2212,7 +2209,6 @@ export const CONTENT_COLORS: Partial<Record<SectorContent, string>> = {
   station: '#00FF88',
   anomaly: '#FF00FF',
   pirate_zone: '#FF3333',
-  home_base: '#FFFFFF',
   player_base: '#FFFFFF',
   meteor: '#FFD700',
   relic: '#CC44FF',
@@ -2393,9 +2389,6 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 
 // Multi-content sectors
 export const SECTOR_MAX_FEATURES = 3;
-
-// Home base safe zone — no pirate spawns within this Manhattan distance
-export const HOME_BASE_SAFE_RADIUS = 5;
 
 // Emergency Warp (Notruf)
 /** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */

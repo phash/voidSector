@@ -16,7 +16,6 @@ export type SectorContent =
   | 'station'
   | 'anomaly'
   | 'pirate_zone'
-  | 'home_base'
   | 'player_base'
   | 'meteor'
   | 'relic'
@@ -156,7 +155,6 @@ export function deriveContents(type: SectorType): SectorContent[] {
 export interface PlayerData {
   id: string;
   username: string;
-  homeBase: Coords;
   xp: number;
   level: number;
   credits?: number;

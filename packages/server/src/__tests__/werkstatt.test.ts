@@ -14,7 +14,6 @@ vi.mock('../db/queries.js', () => ({
   deductCredits: vi.fn(),
   // ShipService deps (need stubs even if not called in craftModule path)
   getActiveShip: vi.fn(),
-  getPlayerHomeBase: vi.fn(),
   getPlayerShips: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),

@@ -110,7 +110,6 @@ describe('generateSectorContents', () => {
       'station',
       'anomaly',
       'pirate_zone',
-      'home_base',
       'player_base',
       'meteor',
       'relic',

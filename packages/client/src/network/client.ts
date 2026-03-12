@@ -1344,10 +1344,6 @@ class GameNetwork {
       useStore.getState().setBookmarks(data.bookmarks);
     });
 
-    room.onMessage('homeBaseUpdate', (data: { homeBase: { x: number; y: number } }) => {
-      useStore.getState().setHomeBase(data.homeBase);
-    });
-
     // Trade Routes
     room.onMessage('tradeRoutesUpdate', (data: TradeRoute[]) => {
       useStore.getState().setTradeRoutes(data);

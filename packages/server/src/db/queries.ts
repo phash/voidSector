@@ -24,25 +24,22 @@ import { getUniverseTickCount } from '../engine/universeBootstrap.js';
 export async function createPlayer(
   username: string,
   passwordHash: string,
-  homeBase: { x: number; y: number } = { x: 0, y: 0 },
 ): Promise<PlayerData> {
   const result = await query<{
     id: string;
     username: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    `INSERT INTO players (username, password_hash, home_base)
-     VALUES ($1, $2, $3)
-     RETURNING id, username, home_base, xp, level`,
-    [username, passwordHash, JSON.stringify(homeBase)],
+    `INSERT INTO players (username, password_hash)
+     VALUES ($1, $2)
+     RETURNING id, username, xp, level`,
+    [username, passwordHash],
   );
   const row = result.rows[0];
   return {
     id: row.id,
     username: row.username,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
@@ -50,25 +47,22 @@ export async function createPlayer(
 
 export async function createGuestPlayer(
   username: string,
-  homeBase: { x: number; y: number } = { x: 0, y: 0 },
 ): Promise<PlayerData> {
   const result = await query<{
     id: string;
     username: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    `INSERT INTO players (username, password_hash, home_base, is_guest, guest_created_at)
-     VALUES ($1, '', $2, TRUE, NOW())
-     RETURNING id, username, home_base, xp, level`,
-    [username, JSON.stringify(homeBase)],
+    `INSERT INTO players (username, password_hash, is_guest, guest_created_at)
+     VALUES ($1, '', TRUE, NOW())
+     RETURNING id, username, xp, level`,
+    [username],
   );
   const row = result.rows[0];
   return {
     id: row.id,
     username: row.username,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
@@ -88,11 +82,10 @@ export async function findPlayerByUsername(
     id: string;
     username: string;
     password_hash: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    'SELECT id, username, password_hash, home_base, xp, level FROM players WHERE LOWER(username) = LOWER($1)',
+    'SELECT id, username, password_hash, xp, level FROM players WHERE LOWER(username) = LOWER($1)',
     [username],
   );
   if (result.rows.length === 0) return null;
@@ -101,18 +94,9 @@ export async function findPlayerByUsername(
     id: row.id,
     username: row.username,
     passwordHash: row.password_hash,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
-}
-
-export async function getPlayerHomeBase(playerId: string): Promise<{ x: number; y: number }> {
-  const { rows } = await query<{ home_base: { x: number; y: number } }>(
-    'SELECT home_base FROM players WHERE id = $1',
-    [playerId],
-  );
-  return rows[0]?.home_base ?? { x: 0, y: 0 };
 }
 
 export async function getMiningStoryIndex(playerId: string): Promise<number> {
@@ -583,10 +567,7 @@ export async function getStructuresInRange(
 export async function getPlayerBaseStructures(playerId: string): Promise<any[]> {
   const { rows } = await query(
     `SELECT s.* FROM structures s
-     JOIN players p ON p.id = $1
      WHERE s.owner_id = $1
-       AND s.sector_x = (p.home_base->>'x')::int
-       AND s.sector_y = (p.home_base->>'y')::int
      ORDER BY s.created_at ASC`,
     [playerId],
   );
@@ -747,11 +728,9 @@ export async function getPlayerStructure(
   type: string,
 ): Promise<{ id: string; tier: number; sector_x: number; sector_y: number } | null> {
   const { rows } = await query<{ id: string; tier: number; sector_x: number; sector_y: number }>(
-    `SELECT s.id, s.tier, s.sector_x, s.sector_y FROM structures s
-     JOIN players p ON p.id = $1
-     WHERE s.owner_id = $1 AND s.type = $2
-       AND s.sector_x = (p.home_base->>'x')::int
-       AND s.sector_y = (p.home_base->>'y')::int`,
+    `SELECT id, tier, sector_x, sector_y FROM structures
+     WHERE owner_id = $1 AND type = $2
+     LIMIT 1`,
     [playerId, type],
   );
   return rows[0] ?? null;
