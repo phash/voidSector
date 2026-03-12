@@ -70,59 +70,17 @@ describe('CargoDetailPanel', () => {
 });
 
 describe('MiningDetailPanel', () => {
-  it('shows KEINE RESSOURCEN when sector has no resources', () => {
+  it('shows MINE TO BEGIN when no story progress', () => {
     mockStoreState({
-      currentSector: {
-        x: 0,
-        y: 0,
-        type: 'empty',
-        seed: 42,
-        discoveredBy: null,
-        discoveredAt: null,
-        metadata: {},
-        environment: 'empty' as const,
-        contents: [],
-      },
+      mining: null,
+      miningStoryIndex: 0,
     });
     render(<MiningDetailPanel />);
-    expect(screen.getByText('NO RESOURCES')).toBeInTheDocument();
+    expect(screen.getByText(/MINE TO BEGIN/)).toBeInTheDocument();
   });
 
-  it('shows resource info when sectorData has resources', () => {
+  it('shows story fragment when storyIndex > 0', () => {
     mockStoreState({
-      currentSector: {
-        x: 5,
-        y: 3,
-        type: 'asteroid_field',
-        seed: 99,
-        discoveredBy: null,
-        discoveredAt: null,
-        metadata: {},
-        environment: 'empty' as const,
-        contents: [],
-        resources: { ore: 150, gas: 0, crystal: 30 },
-      },
-    });
-    render(<MiningDetailPanel />);
-    expect(screen.getByText('SECTOR RESOURCES')).toBeInTheDocument();
-    expect(screen.getByText('150')).toBeInTheDocument();
-    expect(screen.getByText('30')).toBeInTheDocument();
-  });
-
-  it('shows active mining status', () => {
-    mockStoreState({
-      currentSector: {
-        x: 5,
-        y: 3,
-        type: 'asteroid_field',
-        seed: 99,
-        discoveredBy: null,
-        discoveredAt: null,
-        metadata: {},
-        environment: 'empty' as const,
-        contents: [],
-        resources: { ore: 100, gas: 0, crystal: 0 },
-      },
       mining: {
         active: true,
         resource: 'ore',
@@ -131,11 +89,22 @@ describe('MiningDetailPanel', () => {
         sectorY: 3,
         startedAt: Date.now(),
         sectorYield: 100,
+        mineAll: false,
       },
+      miningStoryIndex: 1,
     });
     render(<MiningDetailPanel />);
-    expect(screen.getByText(/MINING ACTIVE/)).toBeInTheDocument();
-    expect(screen.getAllByText(/ORE/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/KEINE PANIK/)).toBeInTheDocument();
+    expect(screen.getByText(/FRAGMENT 1/)).toBeInTheDocument();
+  });
+
+  it('shows MINE TO CONTINUE when idle with story progress', () => {
+    mockStoreState({
+      mining: null,
+      miningStoryIndex: 1,
+    });
+    render(<MiningDetailPanel />);
+    expect(screen.getByText(/MINE TO CONTINUE/)).toBeInTheDocument();
   });
 });
 
