@@ -10,3 +10,4 @@ export {
 export { createHyperdriveState, calculateCurrentCharge, spendCharge } from './hyperdriveCalc.js';
 export { generateStationName } from './stationNames.js';
 export { isModuleFreelyAvailable, isModuleUnlocked, canStartResearch } from './research.js';
+export * from './stationProduction.js';
