@@ -38,28 +38,28 @@ export class StationProductionService {
   constructor(private ctx: ServiceContext) {}
 
   registerHandlers(room: Room): void {
-    room.onMessage('stationProductionGet', (client) => {
+    room.onMessage('getStationProduction', (client) => {
       this.handleGet(client).catch((err) => {
-        logger.error({ err }, 'stationProductionGet error');
+        logger.error({ err }, 'getStationProduction error');
         client.send('actionError', { code: 'INTERNAL', message: 'Server error' });
       });
     });
 
     room.onMessage(
-      'stationProductionBuy',
+      'buyFromStation',
       (client, msg: { itemId: string; quantity: number }) => {
         this.handleBuy(client, msg).catch((err) => {
-          logger.error({ err }, 'stationProductionBuy error');
+          logger.error({ err }, 'buyFromStation error');
           client.send('actionError', { code: 'INTERNAL', message: 'Server error' });
         });
       },
     );
 
     room.onMessage(
-      'stationProductionSell',
+      'sellToStation',
       (client, msg: { itemId: string; quantity: number }) => {
         this.handleSell(client, msg).catch((err) => {
-          logger.error({ err }, 'stationProductionSell error');
+          logger.error({ err }, 'sellToStation error');
           client.send('actionError', { code: 'INTERNAL', message: 'Server error' });
         });
       },
