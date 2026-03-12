@@ -1,0 +1,162 @@
+import { useState, useEffect } from 'react';
+
+const ORE_FRAMES = [
+  [
+    '    ╔══════╗',
+    '    ║⛏ ORE ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │▓▓▒▒░░ │',
+    '   │░▓▓▒▒░ │',
+    '   │░░▓▓▒▒ │',
+    '   └───────┘',
+    '   /// /// ///',
+  ],
+  [
+    '    ╔══════╗',
+    '    ║⛏ ORE ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │▒▒░░▓▓ │',
+    '   │▒▒░░░▓ │',
+    '   │▓▒▒░░░ │',
+    '   └───────┘',
+    '   // /// ///',
+  ],
+  [
+    '    ╔══════╗',
+    '    ║⛏ ORE ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │░░▓▓▒▒ │',
+    '   │░▓▒▒░░ │',
+    '   │▒▒░░▓▓ │',
+    '   └───────┘',
+    '   /// // ///',
+  ],
+];
+
+const GAS_FRAMES = [
+  [
+    '    ╔══════╗',
+    '    ║♨ GAS ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │ ░ ░ ░ │',
+    '   │░ ∙ ░ ∙│',
+    '   │ ∙ ░ ∙ │',
+    '   └───────┘',
+    '   ~ ~~ ~ ~~',
+  ],
+  [
+    '    ╔══════╗',
+    '    ║♨ GAS ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │∙ ░ ∙ ░│',
+    '   │ ░ ∙ ░ │',
+    '   │░ ∙ ░ ∙│',
+    '   └───────┘',
+    '   ~~ ~ ~~ ~',
+  ],
+  [
+    '    ╔══════╗',
+    '    ║♨ GAS ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │ ∙ ░ ∙ │',
+    '   │∙ ░ ∙ ░│',
+    '   │ ░ ∙ ░ │',
+    '   └───────┘',
+    '   ~ ~ ~~ ~~',
+  ],
+];
+
+const CRYSTAL_FRAMES = [
+  [
+    '    ╔══════╗',
+    '    ║◆ CRY ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │ ◇ ◆ ◇ │',
+    '   │◆ ◇ ◆ ◇│',
+    '   │ ◇ ◆ ◇ │',
+    '   └───────┘',
+    '   *  **  * *',
+  ],
+  [
+    '    ╔══════╗',
+    '    ║◆ CRY ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │◇ ◆ ◇ ◆│',
+    '   │ ◆ ◇ ◆ │',
+    '   │◇ ◆ ◇ ◆│',
+    '   └───────┘',
+    '   **  * * **',
+  ],
+  [
+    '    ╔══════╗',
+    '    ║◆ CRY ║',
+    '    ╚══╦═══╝',
+    '   ┌───╨───┐',
+    '   │◆ ◇ ◆ ◇│',
+    '   │ ◇ ◆ ◇ │',
+    '   │◆ ◇ ◆ ◇│',
+    '   └───────┘',
+    '   * **  ** *',
+  ],
+];
+
+const IDLE_ART = [
+  '    ╔══════╗',
+  '    ║ IDLE ║',
+  '    ╚══════╝',
+  '   ┌───────┐',
+  '   │ · · · │',
+  '   │ · · · │',
+  '   │ · · · │',
+  '   └───────┘',
+  '   . . . . . ',
+];
+
+const FRAMES: Record<string, string[][]> = {
+  ore: ORE_FRAMES,
+  gas: GAS_FRAMES,
+  crystal: CRYSTAL_FRAMES,
+};
+
+export function MiningArtwork({ resource }: { resource: string | null }) {
+  const [frame, setFrame] = useState(0);
+
+  useEffect(() => {
+    if (!resource) return;
+    const id = setInterval(() => {
+      setFrame((f) => (f + 1) % 3);
+    }, 500);
+    return () => clearInterval(id);
+  }, [resource]);
+
+  const frames = resource ? FRAMES[resource] : null;
+  const lines = frames ? frames[frame % frames.length] : IDLE_ART;
+
+  return (
+    <div style={{ marginBottom: 8 }}>
+      {lines.map((line, i) => (
+        <div
+          key={i}
+          style={{
+            fontFamily: "'Share Tech Mono', monospace",
+            fontSize: '0.6rem',
+            lineHeight: 1.3,
+            color: 'var(--color-primary)',
+            opacity: 0.7,
+            whiteSpace: 'pre',
+          }}
+        >
+          {line}
+        </div>
+      ))}
+    </div>
+  );
+}
