@@ -90,7 +90,6 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     shipList: [],
     moduleInventory: [],
     baseName: '',
-    homeBase: { x: 0, y: 0 },
     research: {
       unlockedModules: [],
       blueprints: [],

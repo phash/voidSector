@@ -31,7 +31,6 @@ vi.mock('../state/store', () => ({
       playerId: 'test-player',
       tradeRoutes: [],
       discoveries: [],
-      homeBase: { x: 0, y: 0 },
       kontorOrders: [],
       navReturnProgram: null,
     })

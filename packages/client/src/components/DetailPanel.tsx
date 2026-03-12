@@ -4,7 +4,6 @@ import { network } from '../network/client';
 import {
   SECTOR_COLORS,
   FUEL_COST_PER_UNIT,
-  FREE_REFUEL_MAX_SHIPS,
   REP_PRICE_MODIFIERS,
   generateStationName,
   calcHyperjumpAP,
@@ -256,8 +255,6 @@ export function DetailPanel() {
 
   const autoFollow = useStore((s) => s.autoFollow);
   const mining = useStore((s) => s.mining);
-  const shipList = useStore((s) => s.shipList);
-  const homeBase = useStore((s) => s.homeBase);
   const activeQuests = useStore((s) => s.activeQuests);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const constructionSites = useStore((s) => s.constructionSites);
@@ -381,7 +378,6 @@ export function DetailPanel() {
   const key = `${selectedSector.x}:${selectedSector.y}`;
   const sector = discoveries[key];
   const isPlayerHere = selectedSector.x === position.x && selectedSector.y === position.y;
-  const isHome = selectedSector.x === homeBase.x && selectedSector.y === homeBase.y;
   const constructionSite = constructionSites.find(
     (c) => c.sectorX === selectedSector.x && c.sectorY === selectedSector.y,
   );
@@ -397,9 +393,7 @@ export function DetailPanel() {
   );
 
   const sectorColor = sector
-    ? isHome
-      ? SECTOR_COLORS.home_base
-      : (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty)
+    ? (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty)
     : 'var(--color-dim)';
 
   const sectorScanEvents = scanEvents.filter(
@@ -449,9 +443,8 @@ export function DetailPanel() {
 
   // Drill-down: station detail view
   if (drillDown?.type === 'station' && sector) {
-    const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
     const isStation = sector.type === 'station' || (sector as any).contents?.includes('station');
-    const isFreeRefuel = isHomeBase && shipList.length <= FREE_REFUEL_MAX_SHIPS;
+    const isFreeRefuel = false;
     return (
       <div
         style={{
@@ -477,7 +470,7 @@ export function DetailPanel() {
             FACTION: {(sector as any).faction ?? 'INDEPENDENT'}
           </div>
         )}
-        {isPlayerHere && fuel && fuel.current < fuel.max && (isStation || isHomeBase) && (
+        {isPlayerHere && fuel && fuel.current < fuel.max && isStation && (
           <RefuelPanel fuel={fuel} isFreeRefuel={isFreeRefuel} />
         )}
         {isPlayerHere && jumpGateInfo && <JumpGatePanel gate={jumpGateInfo} />}
@@ -632,7 +625,7 @@ export function DetailPanel() {
               }}
               onClick={() =>
                 setDetailView({
-                  type: isHome ? 'home_base' : sector.type,
+                  type: sector.type,
                   data: {
                     name:
                       sector.type === 'station'
@@ -805,7 +798,6 @@ export function DetailPanel() {
           {/* Sector elements list */}
           {(sector.type === 'station' ||
             (sector as any).contents?.includes('station') ||
-            isHome ||
             playersHere.length > 0) && (
             <div style={{ marginTop: 8 }}>
               <div style={{ letterSpacing: '0.15em', opacity: 0.6, marginBottom: 4 }}>
@@ -849,23 +841,6 @@ export function DetailPanel() {
                       </span>
                     ))}
                   </span>
-                </button>
-              )}
-              {isHome && (
-                <button
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: SECTOR_COLORS.home_base,
-                    fontFamily: 'inherit',
-                    fontSize: 'inherit',
-                    padding: '2px 0',
-                    display: 'block',
-                  }}
-                  onClick={() => setDrillDown({ type: 'station', name: 'HOME BASE' })}
-                >
-                  ◆ HOME BASE
                 </button>
               )}
               {playersHere.map((p) => (

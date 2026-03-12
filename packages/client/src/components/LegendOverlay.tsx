@@ -3,7 +3,6 @@ import { SYMBOLS, SECTOR_COLORS, SECTOR_TYPES } from '@void-sector/shared';
 
 const LEGEND_ENTRIES = [
   { symbol: SYMBOLS.ship, name: 'YOUR SHIP', color: '#FFFFFF', key: 'YOUR SHIP' },
-  { symbol: SYMBOLS.homeBase, name: 'HOME BASE', color: SECTOR_COLORS.home_base, key: 'HOME BASE' },
   { symbol: SYMBOLS.player, name: 'OTHER PLAYER', color: '#FFB000', key: 'OTHER PLAYER' },
   ...SECTOR_TYPES.map((type) => ({
     symbol: SYMBOLS[type as keyof typeof SYMBOLS] ?? SYMBOLS.empty,
@@ -15,7 +14,6 @@ const LEGEND_ENTRIES = [
 
 const LEGEND_DESCRIPTIONS: Record<string, string> = {
   'YOUR SHIP': 'Dein Raumschiff. Bewege dich mit Klick auf benachbarte Sektoren.',
-  'HOME BASE': 'Deine Heimatbasis. Starte hier Upgrades und lagere Ressourcen.',
   'OTHER PLAYER': 'Ein anderer Spieler ist in diesem Sektor.',
   empty: 'Leerer Sektor. Kein bekannter Inhalt.',
   station: 'Raumstation. Handel, Reparatur, Schiffs-Upgrades.',

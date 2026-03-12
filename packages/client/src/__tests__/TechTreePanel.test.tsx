@@ -24,7 +24,6 @@ describe('TechTreePanel', () => {
         wissen: 0,
         wissenRate: 0,
       },
-      homeBase: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
     });
     render(<TechTreePanel />);
@@ -45,7 +44,6 @@ describe('TechTreePanel', () => {
         wissen: 0,
         wissenRate: 0,
       },
-      homeBase: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
     });
     render(<TechTreePanel />);
@@ -64,7 +62,6 @@ describe('TechTreePanel', () => {
         wissen: 0,
         wissenRate: 0,
       },
-      homeBase: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
     });
     render(<TechTreePanel />);

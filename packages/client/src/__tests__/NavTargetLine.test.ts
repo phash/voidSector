@@ -30,7 +30,6 @@ describe('RadarRenderer navTarget line', () => {
       scanEvents: [],
       discoveryTimestamps: {},
       hullType: 'scout' as const,
-      homeBase: { x: 0, y: 0 },
       bookmarks: [],
       animTime: 0,
     };

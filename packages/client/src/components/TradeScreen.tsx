@@ -41,7 +41,6 @@ export function TradeScreen() {
   const position = useStore((s) => s.position);
   const discoveries = useStore((s) => s.discoveries);
   const ship = useStore((s) => s.ship);
-  const homeBase = useStore((s) => s.homeBase);
   const npcStationData = useStore((s) => s.npcStationData);
   const kontorOrders = useStore((s) => s.kontorOrders);
   const navReturnProgram = useStore((s) => s.navReturnProgram);
@@ -56,8 +55,8 @@ export function TradeScreen() {
   const tier = tradingPost?.tier ?? 0;
 
   const isStation = currentSector?.type === 'station';
-  const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
-  const canTrade = isStation || isHomeBase;
+  const hasBase = baseStructures.some((s: any) => s.type === 'trading_post' || s.type === 'base');
+  const canTrade = isStation || hasBase;
   const hasKontorOrders = kontorOrders.length > 0;
 
   useEffect(() => {
