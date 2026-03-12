@@ -20,6 +20,7 @@ import {
   ARTEFACT_TIME_BONUS_PER,
 } from '@void-sector/shared';
 import { getReputationTier } from '../../engine/commands.js';
+import { awardWissen } from '../../engine/wissenService.js';
 import { getFuelState } from './RedisAPStore.js';
 import {
   getAcepXpSummary,
@@ -473,6 +474,7 @@ export class ShipService {
 
     client.send('craftResult', { success: true, moduleId: data.moduleId });
     client.send('logEntry', `HERGESTELLT: ${mod.name ?? data.moduleId}`);
+    awardWissen(auth.userId, 3).catch(() => {});  // +3 per craft
   }
 
   async handleActivateBlueprint(client: Client, data: { moduleId: string }): Promise<void> {
