@@ -4,43 +4,43 @@ import {
   AUTOPILOT_STEP_MS,
   STALENESS_DIM_HOURS,
   STALENESS_FADE_DAYS,
-  SHIP_CLASSES,
+  HULLS,
 } from '@void-sector/shared';
 
 describe('Hyperjump Navigation', () => {
-  const scout = SHIP_CLASSES.aegis_scout_mk1;
-  const seeker = SHIP_CLASSES.void_seeker_mk2;
+  const scout = HULLS.scout;     // baseApPerJump: 1, baseFuelPerJump: 1
+  const freighter = HULLS.freighter; // baseApPerJump: 2, baseFuelPerJump: 2
 
   describe('cost calculations', () => {
-    it('calculates AP cost with discount for scout', () => {
+    it('calculates AP cost with discount for scout hull', () => {
       const distance = 10;
-      const apCost = Math.ceil(distance * scout.apCostJump * HYPERJUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * scout.baseApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(5);
     });
 
-    it('calculates AP cost with discount for seeker', () => {
+    it('calculates AP cost with discount for freighter hull', () => {
       const distance = 7;
-      const apCost = Math.ceil(distance * seeker.apCostJump * HYPERJUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * freighter.baseApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(7);
     });
 
     it('applies ceil to non-integer AP costs', () => {
       const distance = 3;
       // 3 * 1 * 0.5 = 1.5 -> ceil = 2
-      const apCost = Math.ceil(distance * scout.apCostJump * HYPERJUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * scout.baseApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(2);
     });
 
-    it('calculates fuel cost for scout', () => {
+    it('calculates fuel cost for scout hull', () => {
       const distance = 10;
-      const fuelCost = distance * scout.fuelPerJump;
-      expect(fuelCost).toBe(50);
+      const fuelCost = distance * scout.baseFuelPerJump;
+      expect(fuelCost).toBe(10);
     });
 
-    it('calculates fuel cost for seeker', () => {
+    it('calculates fuel cost for freighter hull', () => {
       const distance = 10;
-      const fuelCost = distance * seeker.fuelPerJump;
-      expect(fuelCost).toBe(30);
+      const fuelCost = distance * freighter.baseFuelPerJump;
+      expect(fuelCost).toBe(20);
     });
   });
 
