@@ -21,6 +21,7 @@ import { SectorInfo, StatusBar } from './HUD';
 import { NavControls } from './NavControls';
 import { ShipStatusPanel } from './ShipStatusPanel';
 import { CombatStatusPanel } from './CombatStatusPanel';
+import { SlateControls } from './SlateControls';
 import { CommsScreen } from './CommsScreen';
 import { PlayerContextMenu } from './PlayerContextMenu';
 import { StoryEventOverlay } from './overlays/StoryEventOverlay';
@@ -183,12 +184,15 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       {/* Section 5: Navigation */}
       <div className="cockpit-sec5 cockpit-section">
         <div className="cockpit-monitor cockpit-nav-monitor">
-          <SectorInfo />
-          <StatusBar />
-          <NavControls />
-          <div className="cockpit-nav-panels">
+          <div className="nav-zone-a">
+            <SectorInfo />
+            <StatusBar />
+            <NavControls />
+          </div>
+          <div className="nav-zone-b">
             <ShipStatusPanel />
             <CombatStatusPanel />
+            <SlateControls />
           </div>
         </div>
       </div>
