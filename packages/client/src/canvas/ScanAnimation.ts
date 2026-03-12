@@ -115,7 +115,7 @@ export function drawScanOverlay(
 
   // --- CRT glitch/scanline flash during pulses ---
   const glitchIntensity = 0.15 * (1 - progress);
-  if (glitchIntensity > 0.02 && w > 0 && h > 0 && ctx.canvas.width > 0 && ctx.canvas.height > 0) {
+  if (glitchIntensity > 0.02 && w > 0 && h > 0 && ctx.canvas && ctx.canvas.width > 0 && ctx.canvas.height > 0) {
     // Horizontal scanline displacement
     const numBars = 2 + pulseCount;
     for (let i = 0; i < numBars; i++) {
