@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { HULLS, getPhysicalCargoTotal } from '@void-sector/shared';
+import { HULLS, getPhysicalCargoTotal, MODULES } from '@void-sector/shared';
 
 const mono = { fontFamily: 'var(--font-mono)', fontSize: '0.55rem' };
 const dim  = { ...mono, color: 'var(--color-dim)' };
@@ -43,15 +43,22 @@ export function ShipBlock() {
   const hull = HULLS[hullType];
 
   // Aggregate HP from modules; fall back to stats.hp when no modules or all modules have 0 maxHp
-  const modulesMaxHp = modules.reduce((s, m) => s + (m.maxHp ?? 0), 0);
+  const modulesMaxHp = modules.reduce((s, m) => {
+    const def = MODULES[m.moduleId];
+    return s + (def?.maxHp ?? 0);
+  }, 0);
   const totalMaxHp = modules.length > 0 && modulesMaxHp > 0
     ? modulesMaxHp
-    : (stats.hp ?? 100);
+    : stats.hp;
 
-  const modulesCurrentHp = modules.reduce((s, m) => s + (m.currentHp ?? m.maxHp ?? 0), 0);
+  const modulesCurrentHp = modules.reduce((s, m) => {
+    const def = MODULES[m.moduleId];
+    const maxHp = def?.maxHp ?? 0;
+    return s + (m.currentHp ?? maxHp);
+  }, 0);
   const totalCurrentHp = modules.length > 0 && modulesMaxHp > 0
     ? modulesCurrentHp
-    : (stats.hp ?? 100);
+    : stats.hp;
 
   function startRename() { setNameInput(shipName); setRenaming(true); }
   function commitRename() {
