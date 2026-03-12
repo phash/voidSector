@@ -2,14 +2,6 @@ import { useState, useRef } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { HULLS } from '@void-sector/shared';
-import { RepairPanel } from './RepairPanel';
-
-const ACEP_PATHS = [
-  { key: 'ausbau',   label: 'CONSTRUCTION', color: '#ffaa00', max: 50 },
-  { key: 'intel',    label: 'INTEL',        color: '#00ffcc', max: 50 },
-  { key: 'kampf',    label: 'COMBAT',       color: '#ff4444', max: 50 },
-  { key: 'explorer', label: 'EXPLORER',     color: '#8888ff', max: 50 },
-] as const;
 
 const mono = { fontFamily: 'var(--font-mono)', fontSize: '0.55rem' };
 const dim  = { ...mono, color: 'var(--color-dim)' };
@@ -18,13 +10,12 @@ const row  = { display: 'flex', justifyContent: 'space-between', padding: '1px 0
 const hdr  = { ...dim, borderBottom: '1px solid var(--color-dim)', paddingBottom: 2, marginTop: 8, marginBottom: 4, letterSpacing: '0.15em' };
 const linkBtn = { background: 'transparent', border: 'none', color: 'var(--color-primary)', ...mono, cursor: 'pointer', textDecoration: 'underline', padding: '2px 0' } as React.CSSProperties;
 
-type Tab = 'cargo' | 'mining' | 'stats' | 'repair';
+type Tab = 'cargo' | 'stats';
 
 export function ShipStatusPanel() {
   const ship             = useStore((s) => s.ship);
   const fuel             = useStore((s) => s.fuel);
   const cargo            = useStore((s) => s.cargo);
-  const mining           = useStore((s) => s.mining);
   const hyperdriveState  = useStore((s) => s.hyperdriveState);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
 
@@ -98,32 +89,9 @@ export function ShipStatusPanel() {
       )}
       <div style={{ ...dim, marginBottom: 6 }}>{hull?.name ?? hullType.toUpperCase()}</div>
 
-      {/* ACEP bars */}
-      {xp && (
-        <>
-          <div style={hdr}>ACEP</div>
-          {ACEP_PATHS.map(({ key, label, color, max }) => {
-            const val = xp[key] ?? 0;
-            const pct = Math.min(100, (val / max) * 100);
-            return (
-              <div key={key} style={{ marginBottom: 3 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', ...dim }}>
-                  <span style={{ color }}>{label}</span>
-                  <span>{val}/{max}</span>
-                </div>
-                <div style={{ height: 2, background: 'rgba(255,255,255,0.08)' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: color, transition: 'width 0.3s' }} />
-                </div>
-              </div>
-            );
-          })}
-          <div style={{ ...dim, marginTop: 2 }}>BUDGET: {xp.total ?? 0}/100</div>
-        </>
-      )}
-
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
-        {(['cargo', 'mining', 'stats', 'repair'] as Tab[]).map((t) => (
+        {(['cargo', 'stats'] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} style={{
             ...linkBtn,
             color: tab === t ? 'var(--color-primary)' : 'var(--color-dim)',
@@ -155,21 +123,6 @@ export function ShipStatusPanel() {
         </div>
       )}
 
-      {/* Mining tab */}
-      {tab === 'mining' && (
-        <div style={{ marginTop: 4 }}>
-          {mining?.active ? (
-            <>
-              <div style={row}><span style={dim}>RESOURCE</span><span style={pri}>{mining.resource?.toUpperCase() ?? '—'}</span></div>
-              <div style={row}><span style={dim}>RATE</span><span style={pri}>{mining.rate}/tick</span></div>
-              <div style={row}><span style={dim}>YIELD</span><span style={pri}>{mining.sectorYield}</span></div>
-            </>
-          ) : (
-            <div style={{ ...dim, marginTop: 4, opacity: 0.5 }}>INACTIVE</div>
-          )}
-        </div>
-      )}
-
       {/* Stats tab */}
       {tab === 'stats' && (
         <div style={{ marginTop: 4 }}>
@@ -185,13 +138,6 @@ export function ShipStatusPanel() {
               <span style={pri}>{val}</span>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Repair tab */}
-      {tab === 'repair' && (
-        <div style={{ marginTop: 4 }}>
-          <RepairPanel />
         </div>
       )}
 

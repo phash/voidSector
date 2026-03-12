@@ -50,6 +50,27 @@ import { generateBountyTrail } from '../../engine/bountyQuestGen.js';
 import { hashCoords } from '../../engine/worldgen.js';
 import { QUEST_TEMPLATES } from '../../engine/questTemplates.js';
 
+// Douglas Adams-style jettison messages
+const JETTISON_MESSAGES = [
+  "So long, and thanks for all the cargo.",
+  "The universe is a big place. Your cargo just became someone else's problem.",
+  "Don't panic. Your cargo did.",
+  "This is Earth. Mostly harmless. Your cargo: definitely being harmful if dropped.",
+  "42 reasons why you shouldn't abandon quests. This wasn't one of them.",
+  "Your cargo has been jettisoned into the vast emptiness of space. Mostly harmless.",
+  "The Answer to Life, the Universe, and Everything is 42. Your cargo? Gone.",
+  "Space is big. Really big. Your cargo is now part of it.",
+  "You have just destroyed a perfectly good cargo. Well done.",
+  "The cargo was incinerated. Don't ask what's for dinner.",
+  "Goodbye, cargo. It was nice knowing you. Mostly.",
+  "Your cargo has entered the infinite improbability of being lost forever.",
+  "So this is it. We're really doing it. Jettisoning cargo. Brilliant.",
+];
+
+function getRandomJettisonMessage(): string {
+  return JETTISON_MESSAGES[Math.floor(Math.random() * JETTISON_MESSAGES.length)];
+}
+
 export class QuestService {
   constructor(private ctx: ServiceContext) {}
 
@@ -212,20 +233,24 @@ export class QuestService {
   async handleAbandonQuest(client: Client, data: AbandonQuestMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
 
-    // Cleanup inventory items tied to this quest
+    // Cleanup inventory items tied to this quest & track jettisoned items
     const quest = await getQuestById(data.questId, auth.userId);
+    const jettisoned: string[] = [];
+
     if (quest) {
       const objectives = quest.objectives as any[];
       // Bounty chase: remove prisoner if combat objective was fulfilled
       const combatObj = objectives?.find((o: any) => o.type === 'bounty_combat');
       if (combatObj?.fulfilled) {
         await removeFromInventory(auth.userId, 'prisoner', quest.id, 1);
+        jettisoned.push('prisoner');
       }
       // Scan quest: remove data slate if scan is done but not yet delivered
       const scanDone = objectives?.some((o: any) => o.type === 'scan' && o.fulfilled);
       const deliverDone = objectives?.some((o: any) => o.type === 'scan_deliver' && o.fulfilled);
       if (scanDone && !deliverDone) {
         await removeFromInventory(auth.userId, 'data_slate', quest.id, 1);
+        jettisoned.push('data_slate');
       }
     }
 
@@ -235,6 +260,12 @@ export class QuestService {
       error: updated ? undefined : 'Quest not found',
     });
     if (updated) {
+      // Send jettison notification if items were removed
+      if (jettisoned.length > 0) {
+        const jettisonMsg = getRandomJettisonMessage();
+        this.ctx.send(client, 'logEntry',
+          `QUEST ABGEBROCHEN — Ladung abgeworfen: ${jettisoned.join(', ')} • "${jettisonMsg}"`);
+      }
       await this.sendActiveQuests(client, auth.userId);
     }
   }

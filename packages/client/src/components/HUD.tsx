@@ -100,70 +100,76 @@ export function StatusBar() {
         borderBottom: '1px solid var(--color-dim)',
         fontSize: '0.8rem',
         letterSpacing: '0.08em',
-        lineHeight: 1.8,
         display: 'flex',
-        flexWrap: 'wrap',
-        gap: '4px 16px',
-        alignItems: 'center',
-        minWidth: 0,
-        overflow: 'hidden',
+        flexDirection: 'column',
+        gap: 0,
       }}
     >
-      <span className={[flashing ? 'ap-flash' : '', apPulse ? 'ap-pulse' : ''].filter(Boolean).join(' ')}>
-        AP: {ap ? `${displayAP}/${ap.max}` : '---'}{' '}
-        <SegmentedBar current={ap ? displayAP : 0} max={ap?.max ?? 100} width={8} />
-      </span>
-      {ap && (
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
-          {ap.regenPerSecond}/s{' '}
-          {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `FULL ${secondsToFull}s`}
+      {/* Row 1: AP */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          lineHeight: 1.6,
+        }}
+      >
+        <span className={[flashing ? 'ap-flash' : '', apPulse ? 'ap-pulse' : ''].filter(Boolean).join(' ')}>
+          AP: {ap ? `${displayAP}/${ap.max}` : '---'}{' '}
+          <SegmentedBar current={ap ? displayAP : 0} max={ap?.max ?? 100} width={8} />
         </span>
-      )}
-      <span style={{ color: 'var(--color-dim)' }}>|</span>
-      {fuel && (
-        <>
-          <span
-            style={{
-              color:
-                fuel.current <= 0
-                  ? '#FF3333'
-                  : fuel.current < fuel.max * 0.2
-                    ? '#FF6644'
-                    : undefined,
-              animation: fuel.current <= 0 ? 'bezel-alert-pulse 1s infinite' : undefined,
-            }}
-          >
-            FUEL: {Math.floor(fuel.current)}/{fuel.max}{' '}
-            <SegmentedBar current={fuel.current} max={fuel.max} width={8} />
+        {ap && (
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
+            {ap.regenPerSecond}/s {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `IN ${secondsToFull}s`}
           </span>
-          {fuel.current <= 0 && (
-            <span style={{ color: '#FF3333', fontSize: '0.75rem', fontWeight: 'bold' }}>
-              TANK LEER
+        )}
+      </div>
+
+      {/* Row 2: FUEL + CR + GAST */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          lineHeight: 1.6,
+        }}
+      >
+        {fuel && (
+          <>
+            <span
+              style={{
+                color:
+                  fuel.current <= 0
+                    ? '#FF3333'
+                    : fuel.current < fuel.max * 0.2
+                      ? '#FF6644'
+                      : undefined,
+                animation: fuel.current <= 0 ? 'bezel-alert-pulse 1s infinite' : undefined,
+              }}
+            >
+              FUEL: {Math.floor(fuel.current)}/{fuel.max}{' '}
+              <SegmentedBar current={fuel.current} max={fuel.max} width={8} />
             </span>
-          )}
-          {fuel.current > 0 && fuel.current < fuel.max * 0.2 && (
-            <span style={{ color: '#FF6644', fontSize: '0.75rem' }}>TREIBSTOFF NIEDRIG</span>
-          )}
-          <span style={{ fontSize: '0.7rem', color: 'var(--color-dim)' }}>
-            SPD {ship?.stats.engineSpeed ?? 1}
-          </span>
-        </>
-      )}
-      <span style={{ color: 'var(--color-dim)' }}>|</span>
-      <span>CR: {credits.toLocaleString()}</span>
-      <span style={{ color: 'var(--color-dim)', fontSize: '0.7rem' }}>◈ WISSEN: {wissen}</span>
-      {alienCredits > 0 && (
-        <>
-          <span style={{ color: 'var(--color-dim)' }}>|</span>
-          <span style={{ color: '#00BFFF' }}>A-CR: {alienCredits.toLocaleString()}</span>
-        </>
-      )}
-      {isGuest && (
-        <>
-          <span style={{ color: 'var(--color-dim)' }}>|</span>
-          <span style={{ color: '#FFAA00', fontWeight: 'bold' }}>[GAST]</span>
-        </>
-      )}
+            <span style={{ fontSize: '0.7rem', color: 'var(--color-dim)' }}>
+              SPD {ship?.stats.engineSpeed ?? 1}
+            </span>
+          </>
+        )}
+        <span style={{ color: 'var(--color-dim)' }}>|</span>
+        <span>CR: {credits.toLocaleString()}</span>
+        {isGuest && (
+          <>
+            <span style={{ color: 'var(--color-dim)' }}>|</span>
+            <span style={{ color: '#FFAA00', fontWeight: 'bold' }}>[GAST]</span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

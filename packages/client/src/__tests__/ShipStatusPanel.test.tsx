@@ -154,7 +154,7 @@ describe('ShipStatusPanel', () => {
     expect(network.sendRenameShip).not.toHaveBeenCalled();
   });
 
-  it('renders ACEP bars when ship.acepXp is present', () => {
+  it('does not render ACEP bars (removed in Sec 5 restructure)', () => {
     mockStoreState({
       ship: {
         ...baseShip,
@@ -163,12 +163,10 @@ describe('ShipStatusPanel', () => {
     });
     render(<ShipStatusPanel />);
 
-    expect(screen.getByText('ACEP')).toBeInTheDocument();
-    expect(screen.getByText('CONSTRUCTION')).toBeInTheDocument();
-    expect(screen.getByText('INTEL')).toBeInTheDocument();
-    expect(screen.getByText('COMBAT')).toBeInTheDocument();
-    expect(screen.getByText('EXPLORER')).toBeInTheDocument();
-    expect(screen.getByText('BUDGET: 65/100')).toBeInTheDocument();
+    // ACEP bars removed from ShipStatusPanel in Sec 5 restructure
+    expect(screen.queryByText('ACEP')).not.toBeInTheDocument();
+    expect(screen.queryByText('CONSTRUCTION')).not.toBeInTheDocument();
+    expect(screen.queryByText('BUDGET: 65/100')).not.toBeInTheDocument();
   });
 
   it('does not render ACEP section when ship.acepXp is absent', () => {
@@ -205,8 +203,7 @@ describe('ShipStatusPanel', () => {
     expect(screen.getByText('CAPACITY')).toBeInTheDocument();
   });
 
-  it('switching to MINING tab shows mining content', async () => {
-    const user = userEvent.setup();
+  it('does not show MINING tab (removed in Sec 5 restructure)', () => {
     mockStoreState({
       ship: baseShip,
       mining: {
@@ -221,22 +218,16 @@ describe('ShipStatusPanel', () => {
     });
     render(<ShipStatusPanel />);
 
-    await user.click(screen.getByText('[MINING]'));
-
-    expect(screen.getByText('RESOURCE')).toBeInTheDocument();
-    expect(screen.getByText('ORE')).toBeInTheDocument();
-    expect(screen.getByText('RATE')).toBeInTheDocument();
-    expect(screen.getByText('2/tick')).toBeInTheDocument();
+    // MINING tab removed from ShipStatusPanel
+    expect(screen.queryByText('[MINING]')).not.toBeInTheDocument();
   });
 
-  it('shows INAKTIV in MINING tab when mining is null', async () => {
-    const user = userEvent.setup();
+  it('does not show MINING tab even when mining is active', () => {
     mockStoreState({ ship: baseShip, mining: null });
     render(<ShipStatusPanel />);
 
-    await user.click(screen.getByText('[MINING]'));
-
-    expect(screen.getByText('INACTIVE')).toBeInTheDocument();
+    // MINING tab removed from ShipStatusPanel
+    expect(screen.queryByText('[MINING]')).not.toBeInTheDocument();
   });
 
   it('switching to STATS tab shows ship stats', async () => {

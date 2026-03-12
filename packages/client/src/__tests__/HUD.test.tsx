@@ -77,10 +77,11 @@ describe('StatusBar', () => {
     expect(screen.getByText('[GAST]')).toBeInTheDocument();
   });
 
-  it('shows alien credits when present', () => {
+  it('does not show alien credits (moved elsewhere)', () => {
     mockStoreState({ alienCredits: 42 });
     render(<StatusBar />);
-    expect(screen.getByText(/A-CR: 42/)).toBeInTheDocument();
+    // Alien credits removed from StatusBar in Sec 5 restructure
+    expect(screen.queryByText(/A-CR: 42/)).not.toBeInTheDocument();
   });
 });
 

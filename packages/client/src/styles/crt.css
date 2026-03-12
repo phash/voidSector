@@ -1385,9 +1385,22 @@
 .cockpit-nav-monitor {
   display: flex;
   flex-direction: column;
-  overflow: auto;
-  padding: 4px;
-  gap: 2px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.nav-zone-a {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--color-dim);
+}
+
+.nav-zone-b {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 8px;
 }
 
 .cockpit-nav-panels {
