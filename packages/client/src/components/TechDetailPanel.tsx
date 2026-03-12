@@ -56,8 +56,6 @@ export function TechDetailPanel() {
   const credits = useStore((s) => s.credits);
   const cargo = useStore((s) => s.cargo);
   const storage = useStore((s) => s.storage);
-  const position = useStore((s) => s.position);
-  const homeBase = useStore((s) => s.homeBase);
   const currentSector = useStore((s) => s.currentSector);
   const baseStructures = useStore((s) => s.baseStructures);
 
@@ -90,9 +88,9 @@ export function TechDetailPanel() {
   const mod = MODULES[selectedModuleId];
   if (!mod) return null;
 
-  const isAtHome = position.x === homeBase.x && position.y === homeBase.y;
   const isAtStation = currentSector?.type === 'station';
   const hasBase = baseStructures.some((s: any) => s.type === 'base');
+  const isAtHome = hasBase;
   const canShop = isAtStation || hasBase;
   const resources = {
     credits,
