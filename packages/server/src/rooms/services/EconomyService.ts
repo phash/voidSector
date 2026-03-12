@@ -56,7 +56,6 @@ import {
   createTradeOrder,
   findPlayerByUsername,
   getPlayerBaseStructures,
-  playerHasBaseAtSector,
   getPlayerShips,
   getPlayerReputation,
   getPlayerStationRep,
@@ -510,12 +509,12 @@ export class EconomyService {
 
     // Must be at a station or own base
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const hasBaseHere = await playerHasBaseAtSector(
-      auth.userId,
-      this.ctx._px(client.sessionId),
-      this.ctx._py(client.sessionId),
-    );
-    if (!isStation && !hasBaseHere) {
+    const player = await findPlayerByUsername(auth.username);
+    if (!player) return;
+    const isHomeBase =
+      this.ctx._px(client.sessionId) === player.homeBase.x &&
+      this.ctx._py(client.sessionId) === player.homeBase.y;
+    if (!isStation && !isHomeBase) {
       client.send('refuelResult', {
         success: false,
         error: 'Must be at a station or your base to refuel',
@@ -535,7 +534,7 @@ export class EconomyService {
     const amount = Math.min(data.amount, tankSpace);
 
     const playerShips = await getPlayerShips(auth.userId);
-    const isFreeRefuel = hasBaseHere && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
+    const isFreeRefuel = isHomeBase && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
 
     // Check station fuel stock — cap fill amount to what the station has available
     let availableAmount = amount;
