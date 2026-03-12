@@ -10,6 +10,7 @@ import {
   updateStationFuelStock,
   consumeStationGas,
   getAllStationsForFuelProduction,
+  deductStationFuelStock,
 } from '../db/npcStationQueries.js';
 
 const mockQuery = vi.mocked(query);
@@ -53,5 +54,15 @@ describe('station fuel queries', () => {
     } as any);
     const result = await getAllStationsForFuelProduction();
     expect(result).toEqual([{ x: 10, y: 20, level: 3 }]);
+  });
+
+  it('deductStationFuelStock returns deducted amount from query result', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ deducted: 300 }] } as any);
+    const deducted = await deductStationFuelStock(3, 4, 500);
+    expect(deducted).toBe(300);
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('FOR UPDATE'),
+      expect.arrayContaining([3, 4, 500]),
+    );
   });
 });
