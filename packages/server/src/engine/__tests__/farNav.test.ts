@@ -8,8 +8,8 @@ import {
 } from '@void-sector/shared';
 
 describe('Hyperjump Navigation', () => {
-  const scout = HULLS.scout;     // baseApPerJump: 1, baseFuelPerJump: 1
-  const freighter = HULLS.freighter; // baseApPerJump: 2, baseFuelPerJump: 2
+  const scout = HULLS.scout;     // baseApPerJump: 1, baseFuelPerJump: 100
+  const freighter = HULLS.freighter; // baseApPerJump: 2, baseFuelPerJump: 100
 
   describe('cost calculations', () => {
     it('calculates AP cost with discount for scout hull', () => {
@@ -34,13 +34,13 @@ describe('Hyperjump Navigation', () => {
     it('calculates fuel cost for scout hull', () => {
       const distance = 10;
       const fuelCost = distance * scout.baseFuelPerJump;
-      expect(fuelCost).toBe(10);
+      expect(fuelCost).toBe(1000); // 10 * 100
     });
 
     it('calculates fuel cost for freighter hull', () => {
       const distance = 10;
       const fuelCost = distance * freighter.baseFuelPerJump;
-      expect(fuelCost).toBe(20);
+      expect(fuelCost).toBe(1000); // 10 * 100 (all hulls share baseFuelPerJump=100)
     });
   });
 

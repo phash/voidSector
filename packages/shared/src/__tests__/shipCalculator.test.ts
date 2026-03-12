@@ -5,7 +5,7 @@ import { getPhysicalCargoTotal } from '../constants';
 describe('calculateShipStats', () => {
   it('returns hull base stats with no modules', () => {
     const stats = calculateShipStats('scout', []);
-    expect(stats.fuelMax).toBe(80);
+    expect(stats.fuelMax).toBe(10_000);
     expect(stats.cargoCap).toBe(3);
     expect(stats.jumpRange).toBe(5);
     expect(stats.apCostJump).toBe(1);
@@ -36,25 +36,26 @@ describe('calculateShipStats', () => {
 
   it('ignores unknown modules', () => {
     const stats = calculateShipStats('scout', [{ moduleId: 'nonexistent', slotIndex: 0 }]);
-    expect(stats.fuelMax).toBe(80); // unchanged
+    expect(stats.fuelMax).toBe(10_000); // unchanged
   });
 
   it('works with all hull types', () => {
     const stats = calculateShipStats('battleship', []);
-    expect(stats.fuelMax).toBe(180);
+    expect(stats.fuelMax).toBe(10_000);
     expect(stats.hp).toBe(150);
     expect(stats.cargoCap).toBe(5);
   });
 
   it('should include fuelPerJump in calculated stats', () => {
     const stats = calculateShipStats('scout', []);
-    expect(stats.fuelPerJump).toBe(1);
+    expect(stats.fuelPerJump).toBe(100);
   });
 
-  it('should have higher fuelPerJump for heavy hulls', () => {
+  it('should have equal baseFuelPerJump for all hulls (fuel cost differentiated via HULL_FUEL_MULTIPLIER)', () => {
     const freighterStats = calculateShipStats('freighter', []);
     const scoutStats = calculateShipStats('scout', []);
-    expect(freighterStats.fuelPerJump).toBeGreaterThan(scoutStats.fuelPerJump);
+    expect(freighterStats.fuelPerJump).toBe(100);
+    expect(scoutStats.fuelPerJump).toBe(100);
   });
 
   it('returns zero combat stats with no modules', () => {

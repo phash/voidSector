@@ -294,29 +294,29 @@ describe('Hyperdrive V2 — Charge System', () => {
 
   describe('auto-refuel at station', () => {
     it('calculates correct refuel cost', () => {
-      const currentFuel = 30;
-      const fuelMax = 100;
+      const currentFuel = 3_000;
+      const fuelMax = 10_000;
       const tankSpace = fuelMax - currentFuel;
       const cost = tankSpace * FUEL_COST_PER_UNIT;
 
-      expect(tankSpace).toBe(70);
-      expect(cost).toBe(140);
+      expect(tankSpace).toBe(7_000);
+      expect(cost).toBe(700); // 7_000 * 0.1
     });
 
     it('skips refuel when tank is full', () => {
-      const currentFuel = 100;
-      const fuelMax = 100;
+      const currentFuel = 10_000;
+      const fuelMax = 10_000;
       const tankSpace = fuelMax - currentFuel;
       expect(tankSpace).toBe(0);
     });
 
     it('skips refuel when credits are insufficient', () => {
       const currentFuel = 0;
-      const fuelMax = 100;
+      const fuelMax = 10_000;
       const tankSpace = fuelMax - currentFuel;
       const cost = tankSpace * FUEL_COST_PER_UNIT;
       const credits = 50;
-      expect(credits < cost).toBe(true);
+      expect(credits < cost).toBe(true); // 50 < 1000
     });
   });
 

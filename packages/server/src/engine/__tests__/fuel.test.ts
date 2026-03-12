@@ -6,7 +6,7 @@ describe('Fuel System', () => {
   const explorer = HULLS.explorer;
 
   it('should have fuel cost per unit defined', () => {
-    expect(FUEL_COST_PER_UNIT).toBe(2);
+    expect(FUEL_COST_PER_UNIT).toBe(0.1);
   });
 
   it('should define baseFuelPerJump for all hull types', () => {
@@ -21,12 +21,30 @@ describe('Fuel System', () => {
     expect(scout.baseFuelPerJump).toBeGreaterThan(0);
   });
 
-  it('explorer hull should have more fuel capacity than scout', () => {
-    expect(explorer.baseFuel).toBeGreaterThan(scout.baseFuel);
+  it('explorer hull should have same fuel capacity as scout', () => {
+    expect(explorer.baseFuel).toBe(scout.baseFuel);
   });
 
   it('refuel cost should be calculable', () => {
     const cost = scout.baseFuel * FUEL_COST_PER_UNIT;
-    expect(cost).toBe(160); // 80 * 2
+    expect(cost).toBe(1000); // 10_000 * 0.1
+  });
+});
+
+describe('Fuel System (new values)', () => {
+  it('all hulls have baseFuel 10_000', () => {
+    for (const hull of Object.values(HULLS)) {
+      expect(hull.baseFuel).toBe(10_000);
+    }
+  });
+
+  it('all hulls have baseFuelPerJump 100', () => {
+    for (const hull of Object.values(HULLS)) {
+      expect(hull.baseFuelPerJump).toBe(100);
+    }
+  });
+
+  it('FUEL_COST_PER_UNIT is 0.1', () => {
+    expect(FUEL_COST_PER_UNIT).toBe(0.1);
   });
 });
