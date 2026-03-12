@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { innerCoord, calcHyperjumpFuel } from '@void-sector/shared';
+import { innerCoord, calcHyperjumpFuel, HULLS } from '@void-sector/shared';
 
 /**
  * NavTargetPanel — coordinate input, bookmark selection, hyperjump toggle,
@@ -44,7 +44,7 @@ export function NavTargetPanel() {
 
   // Simple cost preview (client-side estimate)
   const estimatedAP = distance; // 1 AP per sector for normal mode
-  const fuelPerJump = ship?.stats?.fuelPerJump ?? 100;
+  const fuelPerJump = ship?.stats?.fuelPerJump ?? HULLS.scout.baseFuelPerJump;
   const estimatedFuel = useHyperjump ? calcHyperjumpFuel(fuelPerJump, distance) : 0;
   const estimatedTimeSec = useHyperjump ? Math.ceil(distance / 3) * 2 : distance * 3;
 
