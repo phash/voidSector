@@ -659,6 +659,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('renameBase', async (client, data: { name: string }) => {
       await this.ships.handleRenameBase(client, data);
     });
+    this.onMessage('getModuleInventory', async (client) => {
+      await this.ships.handleGetModuleInventory(client);
+    });
     this.onMessage('getInventory', async (client) => {
       const auth = client.auth as AuthPayload;
       const items = await getInventory(auth.userId);

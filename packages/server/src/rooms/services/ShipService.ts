@@ -30,6 +30,7 @@ import {
 import {
   addToInventory,
   removeFromInventory,
+  getInventory,
   getInventoryItem,
   getCargoState,
 } from '../../engine/inventoryService.js';
@@ -218,6 +219,15 @@ export class ShipService {
     const auth = client.auth as AuthPayload;
     await renameBase(auth.userId, data.name);
     client.send('baseRenamed', { name: data.name.slice(0, 20) });
+  }
+
+  async handleGetModuleInventory(client: Client): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const items = await getInventory(auth.userId);
+    const modules = items
+      .filter((i) => i.itemType === 'module')
+      .flatMap((i) => Array(i.quantity).fill(i.itemId) as string[]);
+    client.send('moduleInventory', { modules });
   }
 
   // ── Research Handlers ───────────────────────────────────────────────
