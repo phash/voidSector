@@ -616,6 +616,18 @@ class GameNetwork {
       });
     });
 
+    // Tech tree (node-based)
+    room.onMessage('techTreeUpdate', (data) => {
+      useStore.getState().setTechTree(data);
+    });
+
+    room.onMessage('wissenUpdate', (data) => {
+      useStore.getState().setResearch({
+        ...useStore.getState().research,
+        wissen: data.wissen,
+      });
+    });
+
     room.onMessage(
       'refuelResult',
       (data: { success: boolean; error?: string; fuel?: FuelState; credits?: number }) => {
@@ -2344,15 +2356,15 @@ class GameNetwork {
     this.sectorRoom?.send('getModuleInventory');
   }
 
-  // Tech-Baum: Research
-  sendStartResearch(moduleId: string, slot: 1 | 2 = 1, artefactsToUse?: Record<string, number>) {
-    this.sectorRoom?.send('startResearch', { moduleId, slot, artefactsToUse });
+  // Tech-Baum: Tech Tree (node-based)
+  getTechTree(): void {
+    this.sectorRoom?.send('getTechTree');
   }
-  sendCancelResearch(slot: 1 | 2 = 1) {
-    this.sectorRoom?.send('cancelResearch', { slot });
+  researchTechNode(nodeId: string): void {
+    this.sectorRoom?.send('researchTechNode', { nodeId });
   }
-  sendClaimResearch(slot: 1 | 2 = 1) {
-    this.sectorRoom?.send('claimResearch', { slot });
+  resetTechTree(): void {
+    this.sectorRoom?.send('resetTechTree');
   }
   sendActivateBlueprint(moduleId: string) {
     this.sectorRoom?.send('activateBlueprint', { moduleId });

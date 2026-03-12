@@ -7,6 +7,7 @@ vi.mock('../network/client', () => ({
   network: {
     sendActivateBlueprint: vi.fn(),
     requestResearchState: vi.fn(),
+    getTechTree: vi.fn(),
   },
 }));
 

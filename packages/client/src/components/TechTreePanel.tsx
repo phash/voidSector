@@ -56,6 +56,7 @@ export function TechTreePanel() {
 
   useEffect(() => {
     network.requestResearchState();
+    network.getTechTree();
   }, []);
 
   const grouped = groupModulesByCategory();
