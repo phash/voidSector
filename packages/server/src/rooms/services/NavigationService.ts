@@ -983,13 +983,15 @@ export class NavigationService {
     startStep: number,
     useHyperjump: boolean,
     ship: ShipStats,
+    overrideTickMs?: number,
   ): void {
     let currentStep = startStep;
     const speed = ship.engineSpeed;
     const tickMs =
-      useHyperjump && speed > 0
+      overrideTickMs ??
+      (useHyperjump && speed > 0
         ? Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / speed))
-        : STEP_INTERVAL_MS;
+        : STEP_INTERVAL_MS);
 
     const timer = setInterval(async () => {
       try {
