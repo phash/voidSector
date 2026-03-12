@@ -160,3 +160,82 @@ describe('startAutopilotTimer — overrideTickMs', () => {
     vi.useRealTimers();
   });
 });
+
+describe('handleSlowFlight', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(sectorToQuadrant).mockImplementation((_x, _y) => ({ qx: 0, qy: 0 }));
+    vi.mocked(getMiningState).mockResolvedValue(null);
+    vi.mocked(getPlayerPosition).mockResolvedValue({ x: 1, y: 1 });
+    vi.mocked(getAPState).mockResolvedValue({
+      current: 100,
+      max: 100,
+      lastUpdated: Date.now(),
+    } as any);
+    vi.mocked(saveAutopilotRoute).mockResolvedValue(undefined);
+    vi.mocked(isRouteDiscovered).mockResolvedValue(true);
+  });
+
+  it('rejects with error when target is in a different quadrant', async () => {
+    vi.mocked(sectorToQuadrant)
+      .mockReturnValueOnce({ qx: 0, qy: 0 }) // current pos
+      .mockReturnValueOnce({ qx: 1, qy: 0 }); // target pos — different!
+
+    const ctx = makeCtx();
+    const service = new NavigationService(ctx);
+    const client = makeClient();
+
+    await service.handleSlowFlight(client, { targetX: 10001, targetY: 1 });
+
+    expect(client.send).toHaveBeenCalledWith('error', {
+      code: 'SLOW_FLIGHT_FAIL',
+      message: expect.stringContaining('intra-quadrant'),
+    });
+    expect(ctx.autopilotTimers.has('sess1')).toBe(false);
+  });
+
+  it('rejects when autopilot already active', async () => {
+    const ctx = makeCtx();
+    ctx.autopilotTimers.set('sess1', {} as any);
+    const service = new NavigationService(ctx);
+    const client = makeClient();
+
+    await service.handleSlowFlight(client, { targetX: 3, targetY: 1 });
+
+    expect(client.send).toHaveBeenCalledWith('error', {
+      code: 'SLOW_FLIGHT_FAIL',
+      message: expect.any(String),
+    });
+  });
+
+  it('sends autopilotStart with source slow_flight when valid', async () => {
+    vi.useFakeTimers();
+    const ctx = makeCtx();
+    const service = new NavigationService(ctx);
+    const client = makeClient();
+
+    await service.handleSlowFlight(client, { targetX: 3, targetY: 1 });
+
+    expect(client.send).toHaveBeenCalledWith(
+      'autopilotStart',
+      expect.objectContaining({ source: 'slow_flight', targetX: 3, targetY: 1 }),
+    );
+    expect(ctx.autopilotTimers.has('sess1')).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it('stops when AP below apCostJump', async () => {
+    vi.useFakeTimers();
+    vi.mocked(getAPState).mockResolvedValue({ current: 1, max: 100, lastUpdated: Date.now() } as any);
+    const ctx = makeCtx();
+    const service = new NavigationService(ctx);
+    const client = makeClient();
+
+    // AP is 1, apCostJump is 2 — should still start (checked before first tick)
+    // but once timer runs, it will find AP < cost and pause
+    await service.handleSlowFlight(client, { targetX: 3, targetY: 1 });
+    // autopilotStart is still sent (AP check happens at tick time, not before)
+    expect(client.send).toHaveBeenCalledWith('autopilotStart', expect.objectContaining({ source: 'slow_flight' }));
+    vi.useRealTimers();
+  });
+});

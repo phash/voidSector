@@ -92,6 +92,8 @@ import {
   BLACK_HOLE_MIN_DISTANCE,
 } from '@void-sector/shared';
 
+const SLOW_FLIGHT_INTERVAL_MS = 3000;
+
 export class NavigationService {
   constructor(private ctx: ServiceContext) {}
 
@@ -972,6 +974,110 @@ export class NavigationService {
   }
 
   /**
+   * Slow Flight: automatic sector-by-sector navigation, intra-quadrant only.
+   * Extends the existing autopilot with a fixed 3000ms tick and no fuel cost.
+   */
+  async handleSlowFlight(
+    client: Client,
+    data: { targetX: number; targetY: number },
+  ): Promise<void> {
+    const { targetX, targetY } = data;
+    const auth = client.auth as AuthPayload;
+
+    // Reject if autopilot already active
+    if (this.ctx.autopilotTimers.has(client.sessionId)) {
+      client.send('error', { code: 'SLOW_FLIGHT_FAIL', message: 'Autopilot already active' });
+      return;
+    }
+
+    if (!this.ctx.checkRate(client.sessionId, 'slowFlight', 1000)) {
+      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
+
+    // Reject guests
+    if (rejectGuest(client, 'SlowFlight')) return;
+
+    if (
+      !isInt(targetX) ||
+      !isInt(targetY) ||
+      Math.abs(targetX) > MAX_COORD ||
+      Math.abs(targetY) > MAX_COORD
+    ) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Invalid coordinates' });
+      return;
+    }
+
+    // Check mining state
+    const mining = await getMiningState(auth.userId);
+    if (mining?.active) {
+      client.send('error', { code: 'SLOW_FLIGHT_FAIL', message: 'Cannot start while mining' });
+      return;
+    }
+
+    // Get current position
+    const pos = await getPlayerPosition(auth.userId);
+    if (!pos) {
+      client.send('error', { code: 'SLOW_FLIGHT_FAIL', message: 'Position unknown' });
+      return;
+    }
+
+    if (pos.x === targetX && pos.y === targetY) {
+      client.send('error', { code: 'SLOW_FLIGHT_FAIL', message: 'Already at target' });
+      return;
+    }
+
+    // Validate intra-quadrant
+    const { qx: curQx, qy: curQy } = sectorToQuadrant(pos.x, pos.y);
+    const { qx: tgtQx, qy: tgtQy } = sectorToQuadrant(targetX, targetY);
+    if (curQx !== tgtQx || curQy !== tgtQy) {
+      client.send('error', {
+        code: 'SLOW_FLIGHT_FAIL',
+        message: 'Slow Flight is intra-quadrant only — use Hyperjump for cross-quadrant',
+      });
+      return;
+    }
+
+    const ship = this.ctx.getShipForClient(client.sessionId);
+
+    // Calculate path (no black hole avoidance for slow flight)
+    const path = calculateAutopilotPath(
+      { x: pos.x, y: pos.y },
+      { x: targetX, y: targetY },
+      () => false,
+    );
+
+    if (path.length === 0) {
+      client.send('error', { code: 'SLOW_FLIGHT_FAIL', message: 'No path found' });
+      return;
+    }
+
+    // Validate AP
+    const ap = await getAPState(auth.userId);
+    const updated = calculateCurrentAP(ap);
+    if (updated.current < ship.apCostJump) {
+      client.send('error', { code: 'SLOW_FLIGHT_FAIL', message: 'Not enough AP' });
+      return;
+    }
+
+    // Save route to DB
+    const now = Date.now();
+    await saveAutopilotRoute(auth.userId, targetX, targetY, false, path, now);
+
+    // Send start message with source identifier
+    client.send('autopilotStart', {
+      targetX,
+      targetY,
+      totalSteps: path.length,
+      currentStep: 0,
+      source: 'slow_flight',
+    });
+
+    // Begin stepping at SLOW_FLIGHT_INTERVAL_MS (3000ms per sector)
+    this.startAutopilotTimer(client, auth, path, 0, false, ship, SLOW_FLIGHT_INTERVAL_MS, true);
+  }
+
+  /**
    * Start (or resume) the autopilot interval timer for a client.
    * Each tick applies one segment of movement, deducts resources
    * incrementally, and persists progress to DB.
@@ -984,6 +1090,7 @@ export class NavigationService {
     useHyperjump: boolean,
     ship: ShipStats,
     overrideTickMs?: number,
+    isSlowFlight?: boolean,
   ): void {
     let currentStep = startStep;
     const speed = ship.engineSpeed;
@@ -1023,7 +1130,12 @@ export class NavigationService {
           }
           this.ctx.playerSectorData.set(client.sessionId, targetSector);
 
-          client.send('autopilotComplete', { x: target.x, y: target.y, sector: targetSector });
+          client.send('autopilotComplete', {
+            x: target.x,
+            y: target.y,
+            sector: targetSector,
+            ...(isSlowFlight ? { source: 'slow_flight' } : {}),
+          });
 
           // Quadrant first-contact detection
           await this.ctx.checkFirstContact(client, auth, target.x, target.y);
