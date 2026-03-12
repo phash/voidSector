@@ -12,3 +12,4 @@ export { createHyperdriveState, calculateCurrentCharge, spendCharge } from './hy
 export { generateStationName } from './stationNames.js';
 export { isModuleFreelyAvailable, isModuleUnlocked, canStartResearch } from './research.js';
 export * from './techTree.js';
+export * from './techTreeEffects.js';
