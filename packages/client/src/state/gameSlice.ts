@@ -298,6 +298,7 @@ export interface GameSlice {
 
   // Mining
   mining: MiningState | null;
+  miningStoryIndex: number;
 
   // Cargo
   cargo: CargoState;
@@ -566,6 +567,7 @@ export interface GameSlice {
   setTradeMessage: (message: string | null) => void;
   setActiveMonitor: (monitor: string) => void;
   setMining: (mining: MiningState) => void;
+  setMiningStoryIndex: (index: number) => void;
   setCargo: (cargo: CargoState) => void;
   addChatMessage: (msg: ChatMessage) => void;
   setChatChannel: (channel: ChatChannel) => void;
@@ -685,6 +687,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   log: [],
   actionError: null,
   mining: null,
+  miningStoryIndex: 0,
   cargo: {
     ore: 0,
     gas: 0,
@@ -863,6 +866,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
 
   setActiveMonitor: (activeMonitor) => set({ activeMonitor }),
   setMining: (mining) => set({ mining }),
+  setMiningStoryIndex: (index) => set({ miningStoryIndex: index }),
   setCargo: (cargo) => set({ cargo }),
 
   addChatMessage: (msg) =>
