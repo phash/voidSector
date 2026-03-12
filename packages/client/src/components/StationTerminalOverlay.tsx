@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../state/store';
-import { FabrikPanel } from './FabrikPanel';
+import { FabrikScreen } from './FabrikScreen';
 import { TradeScreen } from './TradeScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { generateStationName, innerCoord } from '@void-sector/shared';
@@ -131,7 +131,7 @@ export function StationTerminalOverlay() {
             } as React.CSSProperties
           }
         >
-          {program === 'fabrik' && <FabrikPanel />}
+          {program === 'fabrik' && <FabrikScreen />}
           {program === 'handel' && <TradeScreen />}
           {program === 'quests' && <QuestsScreen />}
         </div>
