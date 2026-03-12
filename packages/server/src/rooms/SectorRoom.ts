@@ -405,9 +405,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('hyperJump', async (client, data: HyperJumpMessage) => {
       await this.navigation.handleHyperJump(client, data);
     });
-    this.onMessage('emergencyWarp', async (client) => {
-      await this.navigation.handleEmergencyWarp(client);
-    });
     this.onMessage('cancelAutopilot', async (client) => {
       await this.navigation.handleCancelAutopilot(client);
     });
@@ -661,9 +658,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('renameBase', async (client, data: { name: string }) => {
       await this.ships.handleRenameBase(client, data);
-    });
-    this.onMessage('getModuleInventory', async (client) => {
-      await this.ships.handleGetModuleInventory(client);
     });
     this.onMessage('getInventory', async (client) => {
       const auth = client.auth as AuthPayload;

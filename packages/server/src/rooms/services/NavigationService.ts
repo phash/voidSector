@@ -74,9 +74,6 @@ import {
   HYPERJUMP_PIRATE_FUEL_PENALTY,
   HULL_FUEL_MULTIPLIER,
   FUEL_COST_PER_UNIT,
-  EMERGENCY_WARP_FREE_RADIUS,
-  EMERGENCY_WARP_CREDIT_PER_SECTOR,
-  EMERGENCY_WARP_FUEL_GRANT,
   REP_PRICE_MODIFIERS,
   getFuelRepPriceModifier,
   STATION_REP_VISIT,
@@ -1333,95 +1330,6 @@ export class NavigationService {
     } catch {
       // Don't block on auto-refuel failure
     }
-  }
-
-  async handleEmergencyWarp(client: Client): Promise<void> {
-    const auth = client.auth as AuthPayload;
-
-    // Only available when fuel is empty
-    const ship = this.ctx.getShipForClient(client.sessionId);
-    const currentFuel = (await getFuelState(auth.userId)) ?? 0;
-    if (currentFuel > 0) {
-      client.send('emergencyWarpResult', {
-        success: false,
-        error: 'Emergency warp only available when fuel is empty',
-      });
-      return;
-    }
-
-    // Reject if autopilot is active
-    if (this.ctx.autopilotTimers.has(client.sessionId)) {
-      client.send('emergencyWarpResult', { success: false, error: 'Cannot warp during autopilot' });
-      return;
-    }
-
-    // Reject if mining is active
-    const mining = await getMiningState(auth.userId);
-    if (mining?.active) {
-      client.send('emergencyWarpResult', { success: false, error: 'Cannot warp while mining' });
-      return;
-    }
-
-    // Warp to origin (spawn area)
-    const targetX = 0;
-    const targetY = 0;
-    const currentX = this.ctx.state.players.get(client.sessionId)?.x ?? 0;
-    const currentY = this.ctx.state.players.get(client.sessionId)?.y ?? 0;
-    const distance = Math.abs(targetX - currentX) + Math.abs(targetY - currentY);
-
-    // Already at origin
-    if (distance === 0) {
-      client.send('emergencyWarpResult', { success: false, error: 'Already at origin' });
-      return;
-    }
-
-    // Calculate cost — free within radius, credits per sector beyond
-    let creditCost = 0;
-    if (distance > EMERGENCY_WARP_FREE_RADIUS) {
-      creditCost = (distance - EMERGENCY_WARP_FREE_RADIUS) * EMERGENCY_WARP_CREDIT_PER_SECTOR;
-      const credits = await getPlayerCredits(auth.userId);
-      if (credits < creditCost) {
-        client.send('emergencyWarpResult', {
-          success: false,
-          error: `Not enough credits (need ${creditCost}, have ${credits})`,
-        });
-        return;
-      }
-      await deductCredits(auth.userId, creditCost);
-    }
-
-    // Load or generate target sector
-    let targetSector = await getSector(targetX, targetY);
-    if (!targetSector) {
-      {
-        const { qx, qy } = sectorToQuadrant(targetX, targetY);
-        const _controls = await getAllQuadrantControls();
-        targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
-      }
-      await saveSector(targetSector);
-    }
-
-    // Grant emergency fuel
-    await saveFuelState(auth.userId, EMERGENCY_WARP_FUEL_GRANT);
-    client.send('fuelUpdate', { current: EMERGENCY_WARP_FUEL_GRANT, max: ship.fuelMax });
-
-    // Save new position
-    await savePlayerPosition(auth.userId, targetX, targetY);
-
-    // Record discovery
-    await addDiscovery(auth.userId, targetX, targetY);
-
-    // Get remaining credits
-    const remainingCredits = await getPlayerCredits(auth.userId);
-
-    // Send result — client will handle room switch like a jump
-    client.send('emergencyWarpResult', {
-      success: true,
-      newSector: targetSector,
-      fuelGranted: EMERGENCY_WARP_FUEL_GRANT,
-      creditCost,
-      credits: remainingCredits,
-    });
   }
 
   // ── Player Gate Travel ─────────────────────────────────────────────

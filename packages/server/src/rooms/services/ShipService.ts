@@ -40,7 +40,6 @@ import {
   updateShipModules,
   renameShip,
   renameBase,
-  getInventory,
   getPlayerResearch,
   addUnlockedModule,
   getActiveResearch,
@@ -219,16 +218,6 @@ export class ShipService {
     const auth = client.auth as AuthPayload;
     await renameBase(auth.userId, data.name);
     client.send('baseRenamed', { name: data.name.slice(0, 20) });
-  }
-
-  async handleGetModuleInventory(client: Client): Promise<void> {
-    const auth = client.auth as AuthPayload;
-    const items = await getInventory(auth.userId);
-    // Return module IDs as a flat string[] for backward-compatibility with the client
-    const modules = items
-      .filter((i) => i.itemType === 'module')
-      .flatMap((i) => Array(i.quantity).fill(i.itemId) as string[]);
-    client.send('moduleInventory', { modules });
   }
 
   // ── Research Handlers ───────────────────────────────────────────────
