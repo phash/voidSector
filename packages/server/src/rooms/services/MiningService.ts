@@ -83,16 +83,20 @@ export class MiningService {
     const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
     const result = stopMining(mining, cargoSpace);
 
+    // FIX #279: Always deplete resource from sector, even if mined=0 (cargo full case)
     if (result.mined > 0 && result.resource) {
       await addToInventory(playerId, 'resource', result.resource, result.mined);
-      await this.depleteResource(
-        mining.sectorX, mining.sectorY,
-        result.resource as MineableResourceType, result.mined,
-      );
       const miningXp = Math.floor(result.mined / 5);
       if (miningXp > 0) {
         addAcepXpForPlayer(playerId, 'ausbau', miningXp).catch(() => {});
       }
+    }
+    // Deplete sector resources regardless of cargo (result.mined could be 0 if cargo full)
+    if (result.resource && mining.sectorYield > 0) {
+      await this.depleteResource(
+        mining.sectorX, mining.sectorY,
+        result.resource as MineableResourceType, result.mined,
+      );
     }
 
     await saveMiningState(playerId, result.newState);
@@ -104,8 +108,10 @@ export class MiningService {
       if (newCargoSpace > 0) {
         const sectorData = await getSector(mining.sectorX, mining.sectorY);
         if (sectorData?.resources) {
+          let foundResource = false;
           for (const res of MINE_ALL_ORDER) {
             if (sectorData.resources[res] > 0) {
+              foundResource = true;
               const nextResult = validateMine(
                 res, sectorData.resources, result.newState,
                 newCargoTotal, ship.cargoCap,
@@ -128,6 +134,10 @@ export class MiningService {
                 return;
               }
             }
+          }
+          // FIX #279: If no resources left and mineAll was active, stop mining and notify
+          if (!foundResource) {
+            client.send('logEntry', 'SEKTOR ERSCHÖPFT — MINING BEENDET');
           }
         }
       }
