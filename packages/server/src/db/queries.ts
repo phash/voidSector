@@ -1240,6 +1240,20 @@ export async function insertQuest(
   return rows[0].id;
 }
 
+export async function getExpiredPlayerQuestsWithItems(): Promise<
+  { id: string; player_id: string; objectives: any[] }[]
+> {
+  const { rows } = await query(
+    `SELECT id, player_id, objectives FROM player_quests
+     WHERE status = 'active' AND expires_at < NOW()`,
+  );
+  return rows.map((r: any) => ({
+    id: r.id,
+    player_id: r.player_id,
+    objectives: typeof r.objectives === 'string' ? JSON.parse(r.objectives) : r.objectives,
+  }));
+}
+
 export async function updateQuestStatus(questId: string, status: string): Promise<boolean> {
   const result = await query(`UPDATE player_quests SET status = $2 WHERE id = $1`, [
     questId,
