@@ -1,6 +1,6 @@
 import { useStore } from '../state/store';
-import { SectorArtwork } from './SectorArtwork';
-import { btn } from '../ui-strings';
+import { MiningArtwork } from './MiningArtwork';
+import { MINING_STORY, STORY_FRAGMENT_COUNT } from '../data/miningStory';
 
 const panelStyle: React.CSSProperties = {
   padding: '12px',
@@ -9,87 +9,87 @@ const panelStyle: React.CSSProperties = {
   fontSize: '0.7rem',
   height: '100%',
   overflow: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
 };
 
 export function MiningDetailPanel() {
-  const currentSector = useStore((s) => s.currentSector);
   const mining = useStore((s) => s.mining);
-  const setActiveProgram = useStore((s) => s.setActiveProgram);
+  const storyIndex = useStore((s) => s.miningStoryIndex);
 
-  const resources = currentSector?.resources;
-  const hasResources =
-    resources && (resources.ore > 0 || resources.gas > 0 || resources.crystal > 0);
+  const isActive = mining?.active === true;
+  const resource = isActive ? mining.resource : null;
 
-  if (!hasResources) {
-    return (
-      <div
-        style={{
-          ...panelStyle,
-          color: 'var(--color-dim)',
-          textAlign: 'center',
-          marginTop: 24,
-        }}
-      >
-        NO RESOURCES
-      </div>
-    );
-  }
+  // Show the latest unlocked fragment
+  const displayIndex = Math.min(storyIndex, STORY_FRAGMENT_COUNT) - 1;
+  const fragment = displayIndex >= 0 ? MINING_STORY[displayIndex] : null;
+  const isComplete = storyIndex >= STORY_FRAGMENT_COUNT;
 
   return (
     <div style={panelStyle}>
-      <SectorArtwork sectorType={currentSector?.type ?? 'empty'} />
-      <div
-        style={{
-          fontSize: '0.75rem',
-          fontWeight: 'bold',
-          marginBottom: 8,
-          letterSpacing: '0.1em',
-        }}
-      >
-        SECTOR RESOURCES
-      </div>
+      <MiningArtwork resource={resource} />
 
-      {resources.ore > 0 && (
-        <div>
-          <span style={{ color: 'var(--color-dim)' }}>ORE: </span>
-          <span>{resources.ore}{resources.maxOre ? `/${resources.maxOre}` : ''}</span>
+      {fragment ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {fragment.chapter && (
+            <div
+              style={{
+                fontSize: '0.65rem',
+                letterSpacing: '0.15em',
+                opacity: 0.5,
+                marginBottom: 8,
+              }}
+            >
+              {fragment.chapter}
+            </div>
+          )}
+          <div
+            key={displayIndex}
+            style={{
+              fontSize: '0.75rem',
+              lineHeight: 1.6,
+              color: 'var(--color-primary)',
+              opacity: 0.85,
+              animation: 'fadeIn 0.8s ease-in',
+            }}
+          >
+            {fragment.text}
+          </div>
+
+          <div
+            style={{
+              marginTop: 'auto',
+              paddingTop: 12,
+              fontSize: '0.55rem',
+              opacity: 0.3,
+              letterSpacing: '0.1em',
+            }}
+          >
+            {isComplete
+              ? 'THE END — SO LONG, AND THANKS FOR ALL THE ORE.'
+              : `[FRAGMENT ${storyIndex}/${STORY_FRAGMENT_COUNT}]`}
+          </div>
         </div>
-      )}
-      {resources.gas > 0 && (
-        <div>
-          <span style={{ color: 'var(--color-dim)' }}>GAS: </span>
-          <span>{resources.gas}{resources.maxGas ? `/${resources.maxGas}` : ''}</span>
-        </div>
-      )}
-      {resources.crystal > 0 && (
-        <div>
-          <span style={{ color: 'var(--color-dim)' }}>CRYSTAL: </span>
-          <span>{resources.crystal}{resources.maxCrystal ? `/${resources.maxCrystal}` : ''}</span>
+      ) : (
+        <div style={{ opacity: 0.4, fontSize: '0.65rem', textAlign: 'center', marginTop: 16 }}>
+          {isActive
+            ? 'INITIALIZING STORY DATABASE...'
+            : 'MINE TO BEGIN THE STORY...'}
         </div>
       )}
 
-      {mining?.active && (
+      {!isActive && fragment && !isComplete && (
         <div
           style={{
-            marginTop: 12,
-            padding: '6px 8px',
-            border: '1px solid var(--color-primary)',
-            fontSize: '0.65rem',
+            fontSize: '0.6rem',
+            opacity: 0.35,
+            textAlign: 'center',
+            marginTop: 8,
+            letterSpacing: '0.1em',
           }}
         >
-          <div>MINING ACTIVE: {mining.resource?.toUpperCase()}</div>
-          <div style={{ color: 'var(--color-dim)' }}>RATE: {mining.rate}u/s</div>
+          MINE TO CONTINUE...
         </div>
-      )}
-
-      {hasResources && !mining?.active && (
-        <button
-          className="vs-btn"
-          style={{ fontSize: '0.75rem', marginTop: '8px' }}
-          onClick={() => setActiveProgram('MINING')}
-        >
-          {btn('MINING ÖFFNEN')}
-        </button>
       )}
     </div>
   );
