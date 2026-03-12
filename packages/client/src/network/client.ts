@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import { QUADRANT_SIZE, MODULES, getPhysicalCargoTotal } from '@void-sector/shared';
+import { QUADRANT_SIZE, MODULES, MONITORS, getPhysicalCargoTotal } from '@void-sector/shared';
 import type {
   APState,
   SectorData,
@@ -1389,6 +1389,7 @@ class GameNetwork {
         totalSteps: number;
         costs?: { totalFuel: number; totalAP: number; estimatedTime: number };
         currentStep?: number;
+        source?: 'slow_flight';
       }) => {
         const store = useStore.getState();
         store.setAutopilot({
@@ -1406,6 +1407,9 @@ class GameNetwork {
           status: 'active',
           useHyperjump: false,
         });
+        if (data.source === 'slow_flight') {
+          store.setSlowFlightActive(true);
+        }
       },
     );
 
@@ -1439,36 +1443,47 @@ class GameNetwork {
       },
     );
 
-    room.onMessage('autopilotComplete', async (data: { x: number; y: number }) => {
-      const store = useStore.getState();
-      store.setAutopilot(null);
-      store.setAutopilotStatus(null);
-      store.setNavTarget(null);
-      if (data.x >= 0 && data.y >= 0) {
-        store.setPosition({ x: data.x, y: data.y });
-        store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);
-        // Join the destination sector room so subsequent moves work
-        try {
-          await this.joinSector(data.x, data.y);
-        } catch (err) {
-          store.addLogEntry(`Sector-Join nach Autopilot fehlgeschlagen: ${(err as Error).message}`);
+    room.onMessage(
+      'autopilotComplete',
+      async (data: { x: number; y: number; source?: 'slow_flight'; sector?: { type: string } }) => {
+        const store = useStore.getState();
+        store.setAutopilot(null);
+        store.setAutopilotStatus(null);
+        store.setNavTarget(null);
+        store.setSlowFlightActive(false);
+        if (data.x >= 0 && data.y >= 0) {
+          store.setPosition({ x: data.x, y: data.y });
+          store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);
+          // Auto-open MINING tab when slow flight arrives at an asteroid field
+          if (data.source === 'slow_flight' && data.sector?.type === 'asteroid_field') {
+            store.setActiveMonitor(MONITORS.MINING);
+          }
+          // Join the destination sector room so subsequent moves work
+          try {
+            await this.joinSector(data.x, data.y);
+          } catch (err) {
+            store.addLogEntry(
+              `Sector-Join nach Autopilot fehlgeschlagen: ${(err as Error).message}`,
+            );
+          }
+        } else {
+          // Cancelled: rejoin current sector from store.position
+          const pos = store.position;
+          store.addLogEntry('Autopilot abgebrochen.');
+          try {
+            await this.joinSector(pos.x, pos.y);
+          } catch {
+            // Best effort — already at current position room
+          }
         }
-      } else {
-        // Cancelled: rejoin current sector from store.position
-        const pos = store.position;
-        store.addLogEntry('Autopilot abgebrochen.');
-        try {
-          await this.joinSector(pos.x, pos.y);
-        } catch {
-          // Best effort — already at current position room
-        }
-      }
-      store.resetPan();
-    });
+        store.resetPan();
+      },
+    );
 
     room.onMessage('autopilotPaused', (data: { reason: string; currentStep: number }) => {
       const store = useStore.getState();
       const existing = store.autopilotStatus;
+      store.setSlowFlightActive(false);
       store.setAutopilotStatus({
         targetX: existing?.targetX ?? store.autopilot?.targetX ?? 0,
         targetY: existing?.targetY ?? store.autopilot?.targetY ?? 0,
@@ -1797,6 +1812,14 @@ class GameNetwork {
     }
     useStore.getState().setJumpPending(true);
     this.sectorRoom.send('jump', { targetX, targetY });
+  }
+
+  sendSlowFlight(targetX: number, targetY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('startSlowFlight', { targetX, targetY });
   }
 
   sendScan() {
