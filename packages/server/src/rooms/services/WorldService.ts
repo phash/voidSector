@@ -47,7 +47,8 @@ import {
   generateQuadrantName,
 } from '../../engine/quadrantEngine.js';
 import {
-  JUMPGATE_FUEL_COST,
+  JUMPGATE_TRAVEL_COST_CREDITS,
+  PLAYER_GATE_TRAVEL_COST_CREDITS,
   JUMPGATE_BUILD_COST,
   JUMPGATE_UPGRADE_COSTS,
   JUMPGATE_DISTANCE_LIMITS,
@@ -1188,23 +1189,25 @@ export class WorldService {
       return;
     }
 
-    // Deduct fuel
-    const currentFuel = await getFuelState(auth.userId);
-    if (currentFuel === null || currentFuel < JUMPGATE_FUEL_COST) {
-      client.send('useJumpGateResult', { success: false, error: 'Not enough fuel' });
+    // Deduct credits (player gates are cheaper)
+    const isPlayerGate = gate.ownerId != null;
+    const travelCost = isPlayerGate
+      ? PLAYER_GATE_TRAVEL_COST_CREDITS
+      : JUMPGATE_TRAVEL_COST_CREDITS;
+    const currentCredits = await getPlayerCredits(auth.userId);
+    if (currentCredits < travelCost) {
+      client.send('useJumpGateResult', { success: false, error: 'Not enough credits' });
       return;
     }
-    await saveFuelState(auth.userId, currentFuel - JUMPGATE_FUEL_COST);
+    await deductCredits(auth.userId, travelCost);
+    const updatedCredits = await getPlayerCredits(auth.userId);
 
     client.send('useJumpGateResult', {
       success: true,
       targetX: gate.targetX,
       targetY: gate.targetY,
-      fuel: {
-        current: currentFuel - JUMPGATE_FUEL_COST,
-        max: this.ctx.getShipForClient(client.sessionId).fuelMax,
-      },
     });
+    client.send('creditsUpdate', { credits: updatedCredits });
   }
 
   async handleFrequencyMatch(
@@ -1224,22 +1227,25 @@ export class WorldService {
       return;
     }
 
-    const currentFuel = await getFuelState(auth.userId);
-    if (currentFuel === null || currentFuel < JUMPGATE_FUEL_COST) {
-      client.send('useJumpGateResult', { success: false, error: 'Not enough fuel' });
+    // Deduct credits (player gates are cheaper)
+    const isPlayerGate = gate.ownerId != null;
+    const travelCost = isPlayerGate
+      ? PLAYER_GATE_TRAVEL_COST_CREDITS
+      : JUMPGATE_TRAVEL_COST_CREDITS;
+    const currentCredits = await getPlayerCredits(auth.userId);
+    if (currentCredits < travelCost) {
+      client.send('useJumpGateResult', { success: false, error: 'Not enough credits' });
       return;
     }
-    await saveFuelState(auth.userId, currentFuel - JUMPGATE_FUEL_COST);
+    await deductCredits(auth.userId, travelCost);
+    const updatedCredits = await getPlayerCredits(auth.userId);
 
     client.send('useJumpGateResult', {
       success: true,
       targetX: gate.targetX,
       targetY: gate.targetY,
-      fuel: {
-        current: currentFuel - JUMPGATE_FUEL_COST,
-        max: this.ctx.getShipForClient(client.sessionId).fuelMax,
-      },
     });
+    client.send('creditsUpdate', { credits: updatedCredits });
   }
 
   // ── Rescue Handlers ─────────────────────────────────────────────────
