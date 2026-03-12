@@ -1077,7 +1077,8 @@ export class WorldService {
 
   async handleNpcBuyback(client: Client, data: NpcBuybackMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
+    // Check if player is at a station (NPC buyback is available at any station)
+    const isAtStation = this.ctx._pst(client.sessionId) === 'station';
     const slate = await getSlateById(data.slateId);
 
     if (!slate || slate.owner_id !== auth.userId || slate.status !== 'available') {
@@ -1086,7 +1087,7 @@ export class WorldService {
     }
 
     const sectorCount = (slate.sector_data as any[]).length;
-    const validation = validateNpcBuyback(!!tradingPost, sectorCount);
+    const validation = validateNpcBuyback(isAtStation, sectorCount);
     if (!validation.valid) {
       client.send('npcBuybackResult', { success: false, error: validation.error });
       return;
