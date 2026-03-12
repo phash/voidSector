@@ -102,6 +102,8 @@ interface RadarState {
   voidFrontierSectors?: Set<string>;
   /** True if the player's current quadrant is fully void */
   quadrantIsVoid?: boolean;
+  /** Slow flight path from current position to target — drawn as dashed overlay */
+  slowFlightPath?: Array<{ x: number; y: number }>;
 }
 
 function easeInOutCubic(t: number): number {
@@ -812,6 +814,34 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       }
       ctx.restore();
     }
+  }
+
+  // --- Slow flight path overlay ---
+  if (state.slowFlightPath && state.slowFlightPath.length >= 2) {
+    const start = state.slowFlightPath[0];
+    const end = state.slowFlightPath[state.slowFlightPath.length - 1];
+
+    const startDx = start.x - viewX;
+    const startDy = start.y - viewY;
+    const endDx = end.x - viewX;
+    const endDy = end.y - viewY;
+
+    const x1 = gridCenterX + startDx * CELL_W;
+    const y1 = gridCenterY + startDy * CELL_H;
+    const x2 = gridCenterX + endDx * CELL_W;
+    const y2 = gridCenterY + endDy * CELL_H;
+
+    ctx.save();
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = state.themeColor;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 
   // --- Coordinate frame (tightly wraps actual cells) ---
