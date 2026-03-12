@@ -412,6 +412,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('startAutopilot', async (client, data) => {
       await this.navigation.handleStartAutopilot(client, data);
     });
+    this.onMessage('startSlowFlight', async (client, data: { targetX: number; targetY: number }) => {
+      await this.navigation.handleSlowFlight(client, data);
+    });
     this.onMessage('getAutopilotStatus', async (client) => {
       await this.navigation.handleGetAutopilotStatus(client);
     });
