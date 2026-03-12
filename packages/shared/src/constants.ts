@@ -117,6 +117,16 @@ export const RESEARCH_LAB_WISSEN_RATE: Record<number, number> = {
   5: 80, // Observatorium
 };
 
+/** Lab tier Wissen multiplier for active generation (replaces passive tick) */
+export const LAB_WISSEN_MULTIPLIER: Record<number, number> = {
+  0: 1.0,
+  1: 1.5,
+  2: 2.0,
+  3: 3.0,
+  4: 4.0,
+  5: 5.0,
+};
+
 export const RESEARCH_LAB_NAMES: Record<number, string> = {
   1: 'AUSBAU Level 1',
   2: 'AUSBAU Level 2',
