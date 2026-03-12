@@ -1,4 +1,4 @@
-import { HULLS, MODULES, ACEP_LEVEL_THRESHOLDS, ACEP_LEVEL_MULTIPLIERS, ACEP_EXTRA_SLOT_THRESHOLDS, DEFENSE_ONLY_CATEGORIES, SPECIALIZED_SLOT_CATEGORIES, UNIQUE_MODULE_CATEGORIES, BASE_HULL_AP_REGEN, POWER_LEVEL_MULTIPLIERS, BASE_SCANNER_MEMORY, } from './constants.js';
+import { HULLS, MODULES, ACEP_LEVEL_THRESHOLDS, ACEP_LEVEL_MULTIPLIERS, ACEP_EXTRA_SLOT_THRESHOLDS, DEFENSE_ONLY_CATEGORIES, SPECIALIZED_SLOT_CATEGORIES, UNIQUE_MODULE_CATEGORIES, BASE_HULL_AP_REGEN, POWER_LEVEL_MULTIPLIERS, BASE_SCANNER_MEMORY, FUEL_MIN_TANK, } from './constants.js';
 /** Returns ACEP level (1–5) for a given XP value. */
 export function getAcepLevel(xp) {
     let level = 1;
@@ -88,6 +88,7 @@ export function calculateShipStats(hullType, modules, acepXp) {
     stats.engineSpeed = Math.max(1, Math.min(5, stats.engineSpeed));
     stats.hyperdriveFuelEfficiency = Math.max(0, Math.min(1, stats.hyperdriveFuelEfficiency));
     stats.memory = Math.max(0, Math.round(stats.memory));
+    stats.fuelMax = Math.max(FUEL_MIN_TANK, stats.fuelMax);
     return stats;
 }
 export function validateModuleInstall(hullType, currentModules, moduleId, slotIndex, acepXp = { ausbau: 0, intel: 0, kampf: 0, explorer: 0 }) {

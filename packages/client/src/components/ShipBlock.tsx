@@ -42,13 +42,16 @@ export function ShipBlock() {
   const { id: shipId, name: shipName, hullType, stats, modules } = ship;
   const hull = HULLS[hullType];
 
-  // Aggregate HP from modules; fall back to full stats.hp when no modules
-  const totalMaxHp = modules.length > 0
-    ? modules.reduce((s, m) => s + (m.maxHp ?? 0), 0)
-    : stats.hp;
-  const totalCurrentHp = modules.length > 0
-    ? modules.reduce((s, m) => s + (m.currentHp ?? m.maxHp ?? 0), 0)
-    : stats.hp;
+  // Aggregate HP from modules; fall back to stats.hp when no modules or all modules have 0 maxHp
+  const modulesMaxHp = modules.reduce((s, m) => s + (m.maxHp ?? 0), 0);
+  const totalMaxHp = modules.length > 0 && modulesMaxHp > 0
+    ? modulesMaxHp
+    : (stats.hp ?? 100);
+
+  const modulesCurrentHp = modules.reduce((s, m) => s + (m.currentHp ?? m.maxHp ?? 0), 0);
+  const totalCurrentHp = modules.length > 0 && modulesMaxHp > 0
+    ? modulesCurrentHp
+    : (stats.hp ?? 100);
 
   function startRename() { setNameInput(shipName); setRenaming(true); }
   function commitRename() {

@@ -1,4 +1,4 @@
-import type { SectorType, ShipClass, MineableResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, ModuleCategory, SectorEnvironment, SectorContent, ProductionRecipe } from './types.js';
+import type { SectorType, MineableResourceType, StructureType, HullType, HullDefinition, ModuleDefinition, ModuleCategory, SectorEnvironment, SectorContent, ProductionRecipe } from './types.js';
 export declare const SECTOR_TYPES: SectorType[];
 /** @deprecated Not used in worldgen. See CONTENT_WEIGHTS + ENVIRONMENT_WEIGHTS in packages/server/src/engine/worldgen.ts. */
 export declare const SECTOR_WEIGHTS: Record<SectorType, number>;
@@ -179,7 +179,7 @@ export declare const TRADING_POST_TIERS: Record<number, {
     name: string;
     upgradeCost: number;
 }>;
-export declare const SHIP_CLASSES: Record<ShipClass, {
+export declare const SHIP_CLASSES: Record<string, {
     name: string;
     displayName: string;
     jumpRange: number;
@@ -295,7 +295,8 @@ export declare const FREE_REFUEL_MAX_SHIPS = 3;
 export declare const STATION_FUEL_BASELINE_PER_TICK = 10;
 export declare const STATION_FUEL_GAS_RATE_PER_TICK = 100;
 export declare const STATION_FUEL_PER_GAS = 1;
-export declare const STATION_FUEL_MAX_STOCK = 50_000;
+export declare const STATION_FUEL_MAX_STOCK = 50000;
+/** Efficiency multiplier per station level: level → rate multiplier (1.0 = 100 fuel/tick, 1.2 = 120 fuel/tick) */
 export declare const STATION_FUEL_LEVEL_EFFICIENCY: Record<number, number>;
 export declare function getFuelRepPriceModifier(reputation: number): number;
 export declare const STATION_REP_VISIT = 1;
@@ -314,6 +315,8 @@ export declare const FACTION_UPGRADE_TIERS: Record<number, {
 export declare const JUMPGATE_CHANCE = 0.005;
 export declare const JUMPGATE_SALT = 777;
 export declare const JUMPGATE_FUEL_COST = 1;
+export declare const JUMPGATE_TRAVEL_COST_CREDITS = 50;
+export declare const PLAYER_GATE_TRAVEL_COST_CREDITS = 25;
 export declare const JUMPGATE_MIN_RANGE = 50;
 export declare const JUMPGATE_MAX_RANGE = 10000;
 export declare const JUMPGATE_CODE_LENGTH = 8;

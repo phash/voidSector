@@ -693,7 +693,7 @@ export const MODULES = {
         primaryEffect: { stat: 'jumpRange', delta: 1, label: 'Sprungweite +1' },
         secondaryEffects: [
             { stat: 'engineSpeed', delta: 1, label: 'Engine-Speed +1' },
-            { stat: 'fuelMax', delta: 2000, label: 'Fuel-Tank +2.000' },
+            { stat: 'fuelMax', delta: 2_000, label: 'Fuel-Tank +2.000' },
         ],
         effects: {
             jumpRange: 1,
@@ -701,7 +701,7 @@ export const MODULES = {
             hyperdriveRange: 4,
             hyperdriveSpeed: 2,
             hyperdriveRegen: 1.0,
-            fuelMax: 2000,
+            fuelMax: 2_000,
         },
         cost: { credits: 100, ore: 10 },
         acepPaths: ['ausbau', 'explorer'],
@@ -716,7 +716,7 @@ export const MODULES = {
         secondaryEffects: [
             { stat: 'engineSpeed', delta: 2, label: 'Engine-Speed +2' },
             { stat: 'apCostJump', delta: -0.2, label: 'AP/Sprung -0.2' },
-            { stat: 'fuelMax', delta: 4000, label: 'Fuel-Tank +4.000' },
+            { stat: 'fuelMax', delta: 4_000, label: 'Fuel-Tank +4.000' },
         ],
         effects: {
             jumpRange: 2,
@@ -726,7 +726,7 @@ export const MODULES = {
             hyperdriveSpeed: 3,
             hyperdriveRegen: 1.5,
             hyperdriveFuelEfficiency: 0.1,
-            fuelMax: 4000,
+            fuelMax: 4_000,
         },
         cost: { credits: 300, ore: 20, crystal: 5 },
         researchCost: { wissen: 300 },
@@ -744,7 +744,7 @@ export const MODULES = {
         secondaryEffects: [
             { stat: 'engineSpeed', delta: 3, label: 'Engine-Speed +3' },
             { stat: 'apCostJump', delta: -0.5, label: 'AP/Sprung -0.5' },
-            { stat: 'fuelMax', delta: 7000, label: 'Fuel-Tank +7.000' },
+            { stat: 'fuelMax', delta: 7_000, label: 'Fuel-Tank +7.000' },
         ],
         effects: {
             jumpRange: 3,
@@ -754,7 +754,7 @@ export const MODULES = {
             hyperdriveSpeed: 5,
             hyperdriveRegen: 2.0,
             hyperdriveFuelEfficiency: 0.2,
-            fuelMax: 7000,
+            fuelMax: 7_000,
         },
         cost: { credits: 800, ore: 40, crystal: 15 },
         researchCost: { wissen: 800, artefacts: { drive: 1 } },
@@ -799,9 +799,9 @@ export const MODULES = {
         primaryEffect: { stat: 'cargoCap', delta: 25, label: 'Frachtraum +25' },
         secondaryEffects: [
             { stat: 'safeSlotBonus', delta: 2, label: 'Safe-Slot +2' },
-            { stat: 'fuelMax', delta: 2000, label: 'Fuel-Tank +2.000' },
+            { stat: 'fuelMax', delta: 2_000, label: 'Fuel-Tank +2.000' },
         ],
-        effects: { cargoCap: 25, safeSlotBonus: 2, fuelMax: 2000 },
+        effects: { cargoCap: 25, safeSlotBonus: 2, fuelMax: 2_000 },
         cost: { credits: 600, ore: 30, gas: 10 },
         researchCost: { wissen: 800, artefacts: { cargo: 1 } },
         researchDurationMin: 10,
@@ -1257,7 +1257,7 @@ export const MODULES = {
             { stat: 'engineSpeed', delta: 4, label: 'Engine-Speed +4' },
             { stat: 'hyperdriveRegen', delta: 2.5, label: 'Hyperdrive-Regen +2.5' },
             { stat: 'hyperdriveFuelEfficiency', delta: 0.3, label: 'Fuel-Effizienz +30%' },
-            { stat: 'fuelMax', delta: 12000, label: 'Fuel-Tank +12.000' },
+            { stat: 'fuelMax', delta: 12_000, label: 'Fuel-Tank +12.000' },
         ],
         effects: {
             jumpRange: 4,
@@ -1267,7 +1267,7 @@ export const MODULES = {
             hyperdriveSpeed: 6,
             hyperdriveRegen: 2.5,
             hyperdriveFuelEfficiency: 0.3,
-            fuelMax: 12000,
+            fuelMax: 12_000,
         },
         cost: { credits: 2000, ore: 60, crystal: 30, artefact: 3 },
         researchCost: { wissen: 2000, artefacts: { drive: 2 } },
@@ -1286,7 +1286,7 @@ export const MODULES = {
             { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
             { stat: 'hyperdriveRegen', delta: 4.0, label: 'Hyperdrive-Regen +4.0' },
             { stat: 'hyperdriveFuelEfficiency', delta: 0.5, label: 'Fuel-Effizienz +50%' },
-            { stat: 'fuelMax', delta: 18000, label: 'Fuel-Tank +18.000' },
+            { stat: 'fuelMax', delta: 18_000, label: 'Fuel-Tank +18.000' },
         ],
         effects: {
             jumpRange: 6,
@@ -1296,7 +1296,7 @@ export const MODULES = {
             hyperdriveSpeed: 10,
             hyperdriveRegen: 4.0,
             hyperdriveFuelEfficiency: 0.5,
-            fuelMax: 18000,
+            fuelMax: 18_000,
         },
         cost: { credits: 5000, ore: 120, crystal: 60, artefact: 8 },
         researchCost: { wissen: 5000, artefacts: { drive: 3 } },
@@ -1394,9 +1394,9 @@ export const MODULES = {
         primaryEffect: { stat: 'cargoCap', delta: 40, label: 'Frachtraum +40' },
         secondaryEffects: [
             { stat: 'safeSlotBonus', delta: 3, label: 'Safe-Slot +3' },
-            { stat: 'fuelMax', delta: 4000, label: 'Fuel-Tank +4.000' },
+            { stat: 'fuelMax', delta: 4_000, label: 'Fuel-Tank +4.000' },
         ],
-        effects: { cargoCap: 40, safeSlotBonus: 3, fuelMax: 4000 },
+        effects: { cargoCap: 40, safeSlotBonus: 3, fuelMax: 4_000 },
         cost: { credits: 1500, ore: 50, gas: 20, artefact: 2 },
         researchCost: { wissen: 2000, artefacts: { cargo: 2 } },
         researchDurationMin: 18,
@@ -1412,9 +1412,9 @@ export const MODULES = {
         primaryEffect: { stat: 'cargoCap', delta: 60, label: 'Frachtraum +60' },
         secondaryEffects: [
             { stat: 'safeSlotBonus', delta: 5, label: 'Safe-Slot +5' },
-            { stat: 'fuelMax', delta: 8000, label: 'Fuel-Tank +8.000' },
+            { stat: 'fuelMax', delta: 8_000, label: 'Fuel-Tank +8.000' },
         ],
-        effects: { cargoCap: 60, safeSlotBonus: 5, fuelMax: 8000 },
+        effects: { cargoCap: 60, safeSlotBonus: 5, fuelMax: 8_000 },
         cost: { credits: 4000, ore: 100, gas: 40, artefact: 5 },
         researchCost: { wissen: 5000, artefacts: { cargo: 3 } },
         researchDurationMin: 30,
@@ -2122,15 +2122,22 @@ export const COCKPIT_PROGRAM_LABELS = {
 };
 // --- Phase 5: Deep Systems ---
 // Fuel
-export const FUEL_COST_PER_UNIT = 0.1;
-export const FUEL_MIN_TANK = 1000;
+export const FUEL_COST_PER_UNIT = 0.1; // 0.1 credits per fuel unit (was 2)
+export const FUEL_MIN_TANK = 1_000; // minimum tank size regardless of hull+modules
 export const FREE_REFUEL_MAX_SHIPS = 3;
 // Station fuel production
-export const STATION_FUEL_BASELINE_PER_TICK = 10;
-export const STATION_FUEL_GAS_RATE_PER_TICK = 100;
-export const STATION_FUEL_PER_GAS = 1;
-export const STATION_FUEL_MAX_STOCK = 50_000;
-export const STATION_FUEL_LEVEL_EFFICIENCY = { 1: 1.0, 2: 1.2, 3: 1.4, 4: 1.6, 5: 2.0 };
+export const STATION_FUEL_BASELINE_PER_TICK = 10; // fuel produced per tick without gas
+export const STATION_FUEL_GAS_RATE_PER_TICK = 100; // fuel produced per tick when gas available (before efficiency)
+export const STATION_FUEL_PER_GAS = 1; // GAS units consumed per gas-enhanced tick
+export const STATION_FUEL_MAX_STOCK = 50_000; // cap per station
+/** Efficiency multiplier per station level: level → rate multiplier (1.0 = 100 fuel/tick, 1.2 = 120 fuel/tick) */
+export const STATION_FUEL_LEVEL_EFFICIENCY = {
+    1: 1.0,
+    2: 1.2,
+    3: 1.4,
+    4: 1.6,
+    5: 2.0,
+};
 // Per-station reputation fuel price modifiers (more granular than faction REP_PRICE_MODIFIERS)
 // Takes a reputation score (-100..+100) and returns a price multiplier.
 export function getFuelRepPriceModifier(reputation) {
@@ -2169,6 +2176,8 @@ export const FACTION_UPGRADE_TIERS = {
 export const JUMPGATE_CHANCE = 0.005; // natural bidirectional/wormhole gates (1 in 200 sectors)
 export const JUMPGATE_SALT = 777;
 export const JUMPGATE_FUEL_COST = 1;
+export const JUMPGATE_TRAVEL_COST_CREDITS = 50; // credits to use a public jumpgate
+export const PLAYER_GATE_TRAVEL_COST_CREDITS = 25; // credits to use a player-built gate (cheaper)
 export const JUMPGATE_MIN_RANGE = 50;
 export const JUMPGATE_MAX_RANGE = 10000;
 export const JUMPGATE_CODE_LENGTH = 8;
