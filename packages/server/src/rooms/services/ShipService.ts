@@ -1,7 +1,7 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import type { ShipModule, ResearchState } from '@void-sector/shared';
+import type { ShipModule } from '@void-sector/shared';
 
 import {
   calculateShipStats,
@@ -37,6 +37,7 @@ import {
   deductCredits,
   getWissen,
 } from '../../db/queries.js';
+import { getOrCreateTechTree } from '../../db/techTreeQueries.js';
 
 export class ShipService {
   constructor(private ctx: ServiceContext) {}
@@ -131,10 +132,12 @@ export class ShipService {
       client.send('error', { code: 'UNKNOWN_MODULE', message: 'Unknown module' });
       return;
     }
-    // Check if module is unlocked (research/blueprint/tier1)
-    const dbResearch = await getPlayerResearch(auth.userId);
-    const researchState: ResearchState = { ...dbResearch };
-    if (!isModuleUnlocked(data.moduleId, researchState)) {
+    // Check if module is unlocked (freely available, blueprint, or tech-tree tier)
+    const [techTree, dbResearch] = await Promise.all([
+      getOrCreateTechTree(auth.userId),
+      getPlayerResearch(auth.userId),
+    ]);
+    if (!isModuleUnlocked(data.moduleId, moduleDef, techTree.researched_nodes, dbResearch.blueprints)) {
       client.send('error', { code: 'MODULE_LOCKED', message: 'Module not researched' });
       return;
     }

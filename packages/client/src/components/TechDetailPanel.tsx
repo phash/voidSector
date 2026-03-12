@@ -1,6 +1,6 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULES, isModuleFreelyAvailable, canStartResearch } from '@void-sector/shared';
+import { MODULES, isModuleFreelyAvailable } from '@void-sector/shared';
 
 function costLine(cost: {
   credits: number;
@@ -31,9 +31,6 @@ const btnStyle: React.CSSProperties = {
 export function TechDetailPanel() {
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const research = useStore((s) => s.research);
-  const credits = useStore((s) => s.credits);
-  const cargo = useStore((s) => s.cargo);
-  const storage = useStore((s) => s.storage);
   const currentSector = useStore((s) => s.currentSector);
   const baseStructures = useStore((s) => s.baseStructures);
 
@@ -60,18 +57,10 @@ export function TechDetailPanel() {
   const isAtStation = currentSector?.type === 'station';
   const hasBase = baseStructures.some((s: any) => s.type === 'base');
   const canShop = isAtStation || hasBase;
-  const resources = {
-    credits,
-    ore: cargo.ore + storage.ore,
-    gas: cargo.gas + storage.gas,
-    crystal: cargo.crystal + storage.crystal,
-    artefact: cargo.artefact + storage.artefact,
-  };
 
   const isFree = isModuleFreelyAvailable(mod.id);
   const isUnlocked = research.unlockedModules.includes(mod.id);
   const hasBP = research.blueprints.includes(mod.id);
-  const researchCheck = canStartResearch(mod.id, research, resources);
 
   const prerequisiteMod = mod.prerequisite ? MODULES[mod.prerequisite] : null;
 
@@ -196,8 +185,8 @@ export function TechDetailPanel() {
             </button>
           </div>
         )}
-        {!isFree && !isUnlocked && mod.researchCost && !researchCheck.valid && (
-          <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>{researchCheck.error}</div>
+        {!isFree && !isUnlocked && !hasBP && mod.researchCost && (
+          <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>GESPERRT</div>
         )}
       </div>
     </div>
