@@ -19,11 +19,16 @@ vi.mock('../db/queries.js', () => ({
   getCargoCapForPlayer: vi.fn(),
   transferInventoryItem: vi.fn(),
   getInventoryItem: vi.fn(),
+  getMiningStoryIndex: vi.fn().mockResolvedValue(0),
+  updateMiningStoryIndex: vi.fn().mockResolvedValue(undefined),
+  updateSectorResources: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../rooms/services/RedisAPStore.js', () => ({
   getMiningState: vi.fn(),
   saveMiningState: vi.fn(),
+  getMiningStoryCounter: vi.fn().mockResolvedValue(0),
+  setMiningStoryCounter: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../engine/commands.js', () => ({

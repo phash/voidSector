@@ -68,6 +68,7 @@ import {
   getAllAlienReputations,
   getInventory,
   getPlayerHomeBase,
+  getMiningStoryIndex,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
@@ -121,7 +122,7 @@ import type { ServiceContext } from './services/ServiceContext.js';
 import { NavigationService } from './services/NavigationService.js';
 import { ScanService } from './services/ScanService.js';
 import { CombatService } from './services/CombatService.js';
-import { MiningService } from './services/MiningService.js';
+import { MiningService, updateStoryProgress } from './services/MiningService.js';
 import { EconomyService } from './services/EconomyService.js';
 import { FactionService } from './services/FactionService.js';
 import { QuestService } from './services/QuestService.js';
@@ -1193,6 +1194,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       });
       client.send('fuelUpdate', { current: fuelCurrent, max: stats.fuelMax });
 
+      // Send mining story progress
+      const storyIndex = await getMiningStoryIndex(auth.userId);
+      client.send('miningStoryUpdate', { storyIndex });
+
       // Record discovery
       await addDiscovery(auth.userId, sectorX, sectorY);
 
@@ -1437,6 +1442,8 @@ export class SectorRoom extends Room<SectorRoomState> {
         const result = stopMining(mining, cargoSpace);
         if (result.mined > 0 && result.resource) {
           await addToInventory(auth.userId, 'resource', result.resource, result.mined);
+          // Story progress (fire and forget — player is leaving)
+          updateStoryProgress(auth.userId, result.mined).catch(() => {});
         }
         await saveMiningState(auth.userId, result.newState);
       }

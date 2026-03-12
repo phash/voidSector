@@ -128,6 +128,12 @@ export class MiningService {
 
     await saveMiningState(playerId, result.newState);
 
+    // Story progress (before potential chain — this segment's mined amount counts)
+    const newStoryIndex = await updateStoryProgress(playerId, result.mined);
+    if (newStoryIndex !== null) {
+      client.send('miningStoryUpdate', { storyIndex: newStoryIndex });
+    }
+
     // Mine-all chaining
     if (mining.mineAll) {
       const newCargoTotal = await getResourceTotal(playerId);
@@ -173,6 +179,12 @@ export class MiningService {
     const cargo = await getCargoState(playerId);
     client.send('miningUpdate', result.newState);
     client.send('cargoUpdate', cargo);
+
+    // Send updated sector resources so client bars sync
+    const updatedSector = await getSector(mining.sectorX, mining.sectorY);
+    if (updatedSector) {
+      client.send('sectorData', updatedSector);
+    }
   }
 
   private async depleteResource(
@@ -282,6 +294,18 @@ export class MiningService {
     const cargo = await getCargoState(auth.userId);
     client.send('miningUpdate', result.newState);
     client.send('cargoUpdate', cargo);
+
+    // Story progress
+    const newIndex = await updateStoryProgress(auth.userId, result.mined);
+    if (newIndex !== null) {
+      client.send('miningStoryUpdate', { storyIndex: newIndex });
+    }
+
+    // Send updated sector resources so client bars sync
+    const updatedSector = await getSector(mining.sectorX, mining.sectorY);
+    if (updatedSector) {
+      client.send('sectorData', updatedSector);
+    }
   }
 
   async handleToggleMineAll(client: Client, data: { mineAll: boolean }): Promise<void> {
