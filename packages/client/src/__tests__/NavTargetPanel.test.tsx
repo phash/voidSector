@@ -186,7 +186,7 @@ describe('NavTargetPanel', () => {
           contents: [],
         },
       },
-      fuel: { current: 100, max: 100 },
+      fuel: { current: 10000, max: 10000 },
       ap: { current: 100, max: 100, lastTick: Date.now(), regenPerSecond: 0.5 },
       autopilot: null,
       autopilotStatus: null,

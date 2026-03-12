@@ -953,11 +953,18 @@ export function DetailPanel() {
               const shipStats = ship?.stats ?? null;
               const apCost = shipStats ? calcHyperjumpAP(shipStats.engineSpeed) : 0;
               const fuelCost = shipStats ? calcHyperjumpFuel(shipStats.fuelPerJump, distance) : 0;
+              const hasEnoughFuel = (fuel?.current ?? 0) >= fuelCost;
               return (
                 <>
                   <button
                     className="vs-btn"
-                    style={{ marginTop: 8, display: 'block', width: '100%' }}
+                    disabled={!hasEnoughFuel}
+                    style={{
+                      marginTop: 8,
+                      display: 'block',
+                      width: '100%',
+                      opacity: hasEnoughFuel ? 1 : 0.5,
+                    }}
                     onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}
                   >
                     [HYPERJUMP ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})]

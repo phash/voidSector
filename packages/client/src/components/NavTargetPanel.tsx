@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { innerCoord } from '@void-sector/shared';
+import { innerCoord, calcHyperjumpFuel } from '@void-sector/shared';
 
 /**
  * NavTargetPanel — coordinate input, bookmark selection, hyperjump toggle,
@@ -16,6 +16,7 @@ export function NavTargetPanel() {
   const navTarget = useStore((s) => s.navTarget);
   const fuel = useStore((s) => s.fuel);
   const ap = useStore((s) => s.ap);
+  const ship = useStore((s) => s.ship);
   const selectedSector = useStore((s) => s.selectedSector);
   const discoveries = useStore((s) => s.discoveries);
 
@@ -43,7 +44,8 @@ export function NavTargetPanel() {
 
   // Simple cost preview (client-side estimate)
   const estimatedAP = distance; // 1 AP per sector for normal mode
-  const estimatedFuel = useHyperjump ? Math.ceil(distance * 0.5) : 0;
+  const fuelPerJump = ship?.stats?.fuelPerJump ?? 100;
+  const estimatedFuel = useHyperjump ? calcHyperjumpFuel(fuelPerJump, distance) : 0;
   const estimatedTimeSec = useHyperjump ? Math.ceil(distance / 3) * 2 : distance * 3;
 
   const isTargetDiscovered = hasValidTarget && discoveries[`${targetX}:${targetY}`] !== undefined;
@@ -53,7 +55,7 @@ export function NavTargetPanel() {
     isTargetDiscovered &&
     !autopilot?.active &&
     (ap?.current ?? 0) >= 1 &&
-    (!useHyperjump || (fuel?.current ?? 0) >= 1);
+    (!useHyperjump || (fuel?.current ?? 0) >= estimatedFuel);
 
   const handleSetTarget = useCallback(() => {
     if (!hasValidTarget) return;
