@@ -44,7 +44,7 @@ describe('TradeScreen', () => {
     expect(screen.getByText(/NO TRADING AVAILABLE/)).toBeTruthy();
   });
 
-  it('shows NPC trade at home base without trading post', () => {
+  it('shows credits at home base', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 0, y: 0 },
@@ -52,22 +52,20 @@ describe('TradeScreen', () => {
       storage: { ore: 10, gas: 5, crystal: 2, artefact: 0 },
     });
     render(<TradeScreen />);
-    expect(screen.getByText(/NPC PRICES/)).toBeTruthy();
     expect(screen.getByText(/100 CR/)).toBeTruthy();
   });
 
-  it('shows NPC trade UI when trading post exists at home base', () => {
+  it('shows credits at home base with trading post', () => {
     mockStoreState({
       baseStructures: [{ id: 'tp1', type: 'trading_post', tier: 1, sector_x: 0, sector_y: 0 }],
       credits: 100,
       storage: { ore: 10, gas: 5, crystal: 2, artefact: 0 },
     });
     render(<TradeScreen />);
-    expect(screen.getByText(/NPC PRICES/)).toBeTruthy();
     expect(screen.getByText(/100 CR/)).toBeTruthy();
   });
 
-  it('shows NPC trade at station with cargo info (no station data yet)', () => {
+  it('shows STATION label at station sector', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
@@ -102,62 +100,7 @@ describe('TradeScreen', () => {
       npcStationData: null,
     });
     render(<TradeScreen />);
-    expect(screen.getByText(/NPC PRICES/)).toBeTruthy();
-    expect(screen.getAllByText(/STATION/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/CARGO/).length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('shows stock bars and dynamic prices when npcStationData is available', () => {
-    mockStoreState({
-      baseStructures: [],
-      position: { x: 10, y: 10 },
-      currentSector: {
-        x: 10,
-        y: 10,
-        type: 'station',
-        seed: 42,
-        discoveredBy: null,
-        discoveredAt: null,
-        metadata: {},
-        environment: 'empty' as const,
-        contents: ['station' as const],
-      },
-      credits: 200,
-      cargo: {
-        ore: 3,
-        gas: 1,
-        crystal: 0,
-        slates: 0,
-        artefact: 0,
-        artefact_drive: 0,
-        artefact_cargo: 0,
-        artefact_scanner: 0,
-        artefact_armor: 0,
-        artefact_weapon: 0,
-        artefact_shield: 0,
-        artefact_defense: 0,
-        artefact_special: 0,
-        artefact_mining: 0,
-      },
-      npcStationData: {
-        level: 1,
-        name: 'Outpost',
-        xp: 120,
-        nextLevelXp: 500,
-        inventory: [
-          { itemType: 'ore', stock: 82, maxStock: 100, buyPrice: 12, sellPrice: 8 },
-          { itemType: 'gas', stock: 20, maxStock: 100, buyPrice: 18, sellPrice: 15 },
-          { itemType: 'crystal', stock: 0, maxStock: 100, buyPrice: 25, sellPrice: 20 },
-        ],
-      },
-    });
-    render(<TradeScreen />);
-    expect(screen.getByText(/OUTPOST LV\.1/)).toBeTruthy();
-    expect(screen.getByText(/XP: 120\/500/)).toBeTruthy();
-    expect(screen.getByText('82/100')).toBeTruthy();
-    expect(screen.getByText('20/100')).toBeTruthy();
-    expect(screen.getByText('0/100')).toBeTruthy();
-    expect(screen.getByText('[UNAVAILABLE]')).toBeTruthy();
+    expect(screen.getByText(/STATION/)).toBeTruthy();
   });
 
   it('shows market tab at tier 2 at home base', () => {

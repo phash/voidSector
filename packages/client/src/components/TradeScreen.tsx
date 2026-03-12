@@ -2,9 +2,6 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import {
-  NPC_PRICES,
-  NPC_BUY_SPREAD,
-  NPC_SELL_SPREAD,
   MAX_TRADE_ROUTES,
   TRADE_ROUTE_MIN_CYCLE,
   TRADE_ROUTE_MAX_CYCLE,
@@ -24,12 +21,9 @@ const btnStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-const NPC_COLUMN_MAX_HEIGHT = 240;
-
 export function TradeScreen() {
   const credits = useStore((s) => s.credits);
   const storage = useStore((s) => s.storage);
-  const cargo = useStore((s) => s.cargo);
   const baseStructures = useStore((s) => s.baseStructures);
   const tradeOrders = useStore((s) => s.tradeOrders);
   const myOrders = useStore((s) => s.myOrders);
@@ -39,16 +33,13 @@ export function TradeScreen() {
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
   const discoveries = useStore((s) => s.discoveries);
-  const ship = useStore((s) => s.ship);
   const homeBase = useStore((s) => s.homeBase);
-  const npcStationData = useStore((s) => s.npcStationData);
   const kontorOrders = useStore((s) => s.kontorOrders);
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
-  const tradeMessage = useStore((s) => s.tradeMessage);
   const [amount, setAmount] = useState(1);
-  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
+  const [tab, setTab] = useState<'market' | 'slates' | 'routes' | 'kontor'>('market');
 
   const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
   const tier = tradingPost?.tier ?? 0;
@@ -61,17 +52,13 @@ export function TradeScreen() {
   useEffect(() => {
     network.requestCredits();
     network.requestKontorOrders();
-    if (isStation) {
-      network.requestNpcStationData();
-    } else {
-      network.requestStorage();
-      if (tier >= 2) {
-        network.requestTradeOrders();
-        network.requestMyOrders();
-        network.requestMySlates();
-      }
+    network.requestStorage();
+    if (tier >= 2) {
+      network.requestTradeOrders();
+      network.requestMyOrders();
+      network.requestMySlates();
     }
-  }, [tier, isStation]);
+  }, [tier]);
 
   if (!canTrade) {
     const nearest = findNearestStation(position, discoveries);
@@ -99,10 +86,6 @@ export function TradeScreen() {
     color: active ? '#050505' : 'var(--color-primary)',
   });
 
-  // At stations: cargo-based trading, NPC tab only
-  // At home base: storage-based trading, all tabs based on trading post tier
-  const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
 
   return (
     <div
@@ -131,9 +114,6 @@ export function TradeScreen() {
       </div>
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
-        <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>
-          NPC {UI.tabs.TRADE}
-        </button>
         {!isStation && tier >= 2 && (
           <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>
             {UI.tabs.MARKET}
@@ -173,291 +153,6 @@ export function TradeScreen() {
           }}
         />
       </div>
-      {tab === 'npc' && tradeMessage && (
-        <div style={{ fontSize: '0.65rem', color: 'var(--color-primary)', opacity: 0.7, marginTop: 4 }}>
-          {tradeMessage}
-        </div>
-      )}
-
-      {tab === 'npc' && (
-        <div>
-          {isStation && npcStationData ? (
-            <>
-              <div
-                style={{
-                  borderBottom: '1px solid var(--color-dim)',
-                  paddingBottom: '4px',
-                  marginBottom: '8px',
-                }}
-              >
-                {npcStationData.name.toUpperCase()} LV.{npcStationData.level} — XP:{' '}
-                {npcStationData.xp}/{npcStationData.nextLevelXp}
-              </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '0 12px',
-                }}
-              >
-                {/* Left column: Station inventory */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: '0.6rem',
-                      opacity: 0.5,
-                      marginBottom: 6,
-                      letterSpacing: '0.1em',
-                    }}
-                  >
-                    STATION LISTING
-                  </div>
-                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
-                    {npcStationData.inventory.map((item) => {
-                      const filled =
-                        item.maxStock > 0 ? Math.round((item.stock / item.maxStock) * 10) : 0;
-                      const empty = 10 - filled;
-                      const stockBar = '\u2588'.repeat(filled) + '\u2591'.repeat(empty);
-                      const outOfStock = item.stock < amount;
-                      const buyTotal = item.buyPrice * amount;
-                      const sellTotal = item.sellPrice * amount;
-                      return (
-                        <div
-                          key={item.itemType}
-                          style={{
-                            marginBottom: 8,
-                            borderBottom: '1px solid rgba(255,176,0,0.1)',
-                            paddingBottom: 6,
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '0.7rem',
-                              marginBottom: 2,
-                            }}
-                          >
-                            {item.itemType.toUpperCase()}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: '0.6rem',
-                              opacity: 0.6,
-                              letterSpacing: '0.05em',
-                              marginBottom: 3,
-                            }}
-                          >
-                            <span>{stockBar}</span>{' '}
-                            <span>{item.stock}/{item.maxStock}</span>
-                          </div>
-                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                            {outOfStock ? (
-                              <span style={{ ...btnStyle, opacity: 0.3, cursor: 'default' }}>
-                                [UNAVAILABLE]
-                              </span>
-                            ) : (
-                              <button
-                                style={{ ...btnStyle, fontSize: '0.6rem' }}
-                                onClick={() => network.sendNpcTrade(item.itemType, amount, 'buy')}
-                              >
-                                BUY ({buyTotal}CR)
-                              </button>
-                            )}
-                            <button
-                              style={{ ...btnStyle, fontSize: '0.6rem' }}
-                              onClick={() => network.sendNpcTrade(item.itemType, amount, 'sell')}
-                            >
-                              SELL ({sellTotal}CR)
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                {/* Right column: Player cargo */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: '0.6rem',
-                      opacity: 0.5,
-                      marginBottom: 6,
-                      letterSpacing: '0.1em',
-                    }}
-                  >
-                    ON BOARD ({cargoTotal}/{cargoCap})
-                  </div>
-                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
-                    {npcStationData.inventory.map((item) => {
-                      // itemType is always a resource key for NPC station inventory items
-                      const playerAmount =
-                        cargo[item.itemType as 'ore' | 'gas' | 'crystal'] ?? 0;
-                      return (
-                        <div
-                          key={item.itemType}
-                          style={{
-                            marginBottom: 8,
-                            borderBottom: '1px solid rgba(255,176,0,0.1)',
-                            paddingBottom: 6,
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: '0.7rem',
-                              marginBottom: 2,
-                            }}
-                          >
-                            {item.itemType.toUpperCase()}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: '0.85rem',
-                              color: 'var(--color-primary)',
-                            }}
-                          >
-                            {playerAmount}
-                            <span style={{ opacity: 0.4, fontSize: '0.65rem' }}> Cargo</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div
-                style={{
-                  borderBottom: '1px solid var(--color-dim)',
-                  paddingBottom: '4px',
-                  marginBottom: '8px',
-                }}
-              >
-                NPC PRICES (BUY / SELL)
-              </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '0 12px',
-                }}
-              >
-                {/* Left column: NPC station prices */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: '0.6rem',
-                      opacity: 0.5,
-                      marginBottom: 6,
-                      letterSpacing: '0.1em',
-                    }}
-                  >
-                    STATION
-                  </div>
-                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
-                    {(['ore', 'gas', 'crystal'] as const).map((res) => {
-                      const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
-                      const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
-                      const playerAmount = isStation ? cargo[res] : storage[res];
-                      return (
-                        <div
-                          key={res}
-                          style={{
-                            marginBottom: 8,
-                            borderBottom: '1px solid rgba(255,176,0,0.1)',
-                            paddingBottom: 6,
-                          }}
-                        >
-                          <div style={{ fontSize: '0.75rem', marginBottom: 3 }}>
-                            {res.toUpperCase()}
-                          </div>
-                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                            <button
-                              style={{ ...btnStyle, fontSize: '0.6rem' }}
-                              onClick={() => network.sendNpcTrade(res, amount, 'buy')}
-                            >
-                              B ({buyPrice}CR)
-                            </button>
-                            <button
-                              style={{ ...btnStyle, fontSize: '0.6rem' }}
-                              onClick={() => network.sendNpcTrade(res, amount, 'sell')}
-                            >
-                              S ({sellPrice}CR)
-                            </button>
-                            {playerAmount > 0 && (
-                              <button
-                                style={{ ...btnStyle, fontSize: '0.55rem', opacity: 0.8 }}
-                                onClick={() => network.sendNpcTrade(res, playerAmount, 'sell')}
-                              >
-                                ALL ({playerAmount})
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                {/* Right column: Player storage/cargo */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: '0.6rem',
-                      opacity: 0.5,
-                      marginBottom: 6,
-                      letterSpacing: '0.1em',
-                    }}
-                  >
-                    STORAGE
-                  </div>
-                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
-                    {(['ore', 'gas', 'crystal'] as const).map((res) => {
-                      const playerAmount = isStation ? cargo[res] : storage[res];
-                      return (
-                        <div
-                          key={res}
-                          style={{
-                            marginBottom: 8,
-                            borderBottom: '1px solid rgba(255,176,0,0.1)',
-                            paddingBottom: 6,
-                          }}
-                        >
-                          <div style={{ fontSize: '0.75rem', marginBottom: 3 }}>
-                            {res.toUpperCase()}
-                          </div>
-                          <div
-                            style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}
-                          >
-                            {playerAmount}
-                            <span style={{ opacity: 0.4, fontSize: '0.65rem' }}>
-                              {' '}
-                              {isStation ? 'Cargo' : 'Lager'}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              {isStation ? (
-                <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-                  CARGO: ORE {cargo.ore} | GAS {cargo.gas} | CRYSTAL {cargo.crystal} | ART{' '}
-                  {cargo.artefact} ({cargoTotal}/{cargoCap})
-                </div>
-              ) : (
-                <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
-                  STORAGE: ORE {storage.ore} | GAS {storage.gas} | CRYSTAL {storage.crystal} | ART{' '}
-                  {storage.artefact}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
       {tab === 'market' && !isStation && tier >= 2 && (
         <div>
           <div
