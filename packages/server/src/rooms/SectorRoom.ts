@@ -135,6 +135,7 @@ import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
 import { RepairService } from './services/RepairService.js';
+import { TechTreeService } from './services/TechTreeService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -183,6 +184,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private storyChain!: StoryQuestChainService;
   private communityQuests!: CommunityQuestService;
   private repair!: RepairService;
+  private techTree!: TechTreeService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
 
   /** Get a player's current sector X coordinate */
@@ -320,6 +322,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.ships = new ShipService(this.serviceCtx);
     this.world = new WorldService(this.serviceCtx);
     this.repair = new RepairService(this.serviceCtx);
+    this.techTree = new TechTreeService(this.serviceCtx);
     this.alienInteraction = new AlienInteractionService(this.serviceCtx);
     this.territory = new TerritoryService(this.serviceCtx);
     this.storyChain = new StoryQuestChainService();
@@ -684,6 +687,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('acepBoost', (client, data: { path: AcepPath }) =>
       this.ships.handleAcepBoost(client, data),
     );
+
+    // ── Tech Tree ───────────────────────────────────────────────────
+    this.onMessage('getTechTree', (client) => this.techTree.handleGetTechTree(client));
+    this.onMessage('researchTechNode', (client, data) => this.techTree.handleResearchNode(client, data));
+    this.onMessage('resetTechTree', (client) => this.techTree.handleResetTree(client));
 
     // ── World / Data Queries ────────────────────────────────────────
     this.onMessage('getAP', async (client) => {
