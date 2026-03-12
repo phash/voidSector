@@ -60,6 +60,19 @@ export function MiningScreen() {
   const cargoBarColor = cargoPercent >= 1 ? '#ff4444' : cargoPercent >= 0.8 ? '#FFB000' : '#4a9';
   const apCurrent = ap?.current ?? 0;
 
+  // Live resource countdown during active mining
+  const liveResources = { ...resources };
+  if (mining?.active && mining.startedAt !== null && mining.resource) {
+    const elapsed = (Date.now() - mining.startedAt) / 1000;
+    const mined = Math.floor(elapsed * mining.rate);
+    const remainingCargoSpace = Math.max(0, cargoCap - cargoTotal);
+    const capped = Math.min(mined, mining.sectorYield, remainingCargoSpace);
+    const res = mining.resource as keyof typeof liveResources;
+    if (res in liveResources) {
+      liveResources[res] = Math.max(0, (liveResources[res] ?? 0) - capped);
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
       <div
@@ -84,9 +97,9 @@ export function MiningScreen() {
       ) : (
         <>
           <div style={{ marginBottom: '16px' }}>
-            <ResourceBar label="ORE" value={resources.ore} max={maxYield} maxResource={resources.maxOre} />
-            <ResourceBar label="GAS" value={resources.gas} max={maxYield} maxResource={resources.maxGas} />
-            <ResourceBar label="CRYSTAL" value={resources.crystal} max={maxYield} maxResource={resources.maxCrystal} />
+            <ResourceBar label="ORE" value={liveResources.ore} max={maxYield} maxResource={resources.maxOre} />
+            <ResourceBar label="GAS" value={liveResources.gas} max={maxYield} maxResource={resources.maxGas} />
+            <ResourceBar label="CRYSTAL" value={liveResources.crystal} max={maxYield} maxResource={resources.maxCrystal} />
           </div>
 
           <div
