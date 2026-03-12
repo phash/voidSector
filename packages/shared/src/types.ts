@@ -229,6 +229,10 @@ export interface MiningState {
   mineAll: boolean;
 }
 
+export interface MiningStoryUpdate {
+  storyIndex: number;
+}
+
 export interface CargoState {
   ore: number;
   gas: number;
