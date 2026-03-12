@@ -35,7 +35,7 @@ import {
 } from '../../engine/inventoryService.js';
 import {
   getActiveShip,
-  getPlayerHomeBase,
+  playerHasBaseAtSector,
   getPlayerShips,
   updateShipModules,
   renameShip,
@@ -156,16 +156,17 @@ export class ShipService {
       client.send('error', { code: 'MODULE_LOCKED', message: 'Module not researched' });
       return;
     }
-    // Must be at station or home base
-    const homeBase = await getPlayerHomeBase(auth.userId);
+    // Must be at station or own base
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const isHomeBase =
-      this.ctx._px(client.sessionId) === homeBase.x &&
-      this.ctx._py(client.sessionId) === homeBase.y;
-    if (!isStation && !isHomeBase) {
+    const hasBase = await playerHasBaseAtSector(
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
+    if (!isStation && !hasBase) {
       client.send('error', {
         code: 'WRONG_LOCATION',
-        message: 'Must be at a station or home base',
+        message: 'Must be at a station or your base',
       });
       return;
     }

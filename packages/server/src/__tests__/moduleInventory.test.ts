@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ── Mock DB queries used by ShipService ──────────────────────────────────────
 vi.mock('../db/queries.js', () => ({
   getActiveShip: vi.fn(),
-  getPlayerHomeBase: vi.fn(),
+  playerHasBaseAtSector: vi.fn(),
   getPlayerShips: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
@@ -88,7 +88,6 @@ import {
 } from '../engine/inventoryService.js';
 import {
   getActiveShip,
-  getPlayerHomeBase,
   getPlayerCredits,
   deductCredits,
   getPlayerCargo,
@@ -138,7 +137,6 @@ beforeEach(() => vi.clearAllMocks());
 
 describe('ShipService.handleBuyModule', () => {
   it('calls addToInventory with module item type after purchase', async () => {
-    vi.mocked(getPlayerHomeBase).mockResolvedValue({ x: 0, y: 0 });
     vi.mocked(getPlayerCredits).mockResolvedValue(1000);
     vi.mocked(getPlayerCargo).mockResolvedValue({
       ore: 10,
@@ -162,7 +160,6 @@ describe('ShipService.handleBuyModule', () => {
   });
 
   it('does NOT call legacy addModuleToInventory after migration', async () => {
-    vi.mocked(getPlayerHomeBase).mockResolvedValue({ x: 0, y: 0 });
     vi.mocked(getPlayerCredits).mockResolvedValue(1000);
     vi.mocked(getPlayerCargo).mockResolvedValue({
       ore: 10,

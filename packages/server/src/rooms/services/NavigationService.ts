@@ -31,7 +31,6 @@ import {
   getPlayerCredits,
   deductCredits,
   addCredits,
-  getPlayerHomeBase,
   playerHasGateCode,
   getJumpGate,
   insertJumpGate,
@@ -1363,15 +1362,16 @@ export class NavigationService {
       return;
     }
 
-    // Get home base coordinates
-    const homeBase = await getPlayerHomeBase(auth.userId);
+    // Warp to origin (spawn area)
+    const targetX = 0;
+    const targetY = 0;
     const currentX = this.ctx.state.players.get(client.sessionId)?.x ?? 0;
     const currentY = this.ctx.state.players.get(client.sessionId)?.y ?? 0;
-    const distance = Math.abs(homeBase.x - currentX) + Math.abs(homeBase.y - currentY);
+    const distance = Math.abs(targetX - currentX) + Math.abs(targetY - currentY);
 
-    // Already at home base
+    // Already at origin
     if (distance === 0) {
-      client.send('emergencyWarpResult', { success: false, error: 'Already at home base' });
+      client.send('emergencyWarpResult', { success: false, error: 'Already at origin' });
       return;
     }
 
@@ -1390,13 +1390,13 @@ export class NavigationService {
       await deductCredits(auth.userId, creditCost);
     }
 
-    // Load or generate home base sector
-    let targetSector = await getSector(homeBase.x, homeBase.y);
+    // Load or generate target sector
+    let targetSector = await getSector(targetX, targetY);
     if (!targetSector) {
       {
-        const { qx, qy } = sectorToQuadrant(homeBase.x, homeBase.y);
+        const { qx, qy } = sectorToQuadrant(targetX, targetY);
         const _controls = await getAllQuadrantControls();
-        targetSector = generateSector(homeBase.x, homeBase.y, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+        targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
       }
       await saveSector(targetSector);
     }
@@ -1406,10 +1406,10 @@ export class NavigationService {
     client.send('fuelUpdate', { current: EMERGENCY_WARP_FUEL_GRANT, max: ship.fuelMax });
 
     // Save new position
-    await savePlayerPosition(auth.userId, homeBase.x, homeBase.y);
+    await savePlayerPosition(auth.userId, targetX, targetY);
 
-    // Record discovery of home sector
-    await addDiscovery(auth.userId, homeBase.x, homeBase.y);
+    // Record discovery
+    await addDiscovery(auth.userId, targetX, targetY);
 
     // Get remaining credits
     const remainingCredits = await getPlayerCredits(auth.userId);

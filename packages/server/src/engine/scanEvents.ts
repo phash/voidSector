@@ -1,6 +1,6 @@
 import { hashCoords } from './worldgen.js';
 import { generateDistressMessage } from './distressStories.js';
-import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULES, HOME_BASE_SAFE_RADIUS } from '@void-sector/shared';
+import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULES } from '@void-sector/shared';
 import type { ScanEventType, SectorEnvironment } from '@void-sector/shared';
 
 const SCAN_EVENT_SALT = 5555;
@@ -55,7 +55,6 @@ export function checkScanEvent(
   sectorX: number,
   sectorY: number,
   environment: SectorEnvironment = 'empty',
-  homeBase?: { x: number; y: number },
 ): ScanEventResult {
   const seed = hashCoords(sectorX, sectorY, WORLD_SEED + SCAN_EVENT_SALT);
   const normalized = (seed >>> 0) / 0x100000000;
@@ -70,13 +69,6 @@ export function checkScanEvent(
   for (const entry of EVENT_TYPE_WEIGHTS) {
     cumulative += entry.weight;
     if (typeSeed < cumulative) {
-      // Suppress pirate_ambush within home base safe zone
-      if (entry.type === 'pirate_ambush' && homeBase) {
-        const dist = Math.abs(sectorX - homeBase.x) + Math.abs(sectorY - homeBase.y);
-        if (dist <= HOME_BASE_SAFE_RADIUS) {
-          return { hasEvent: false };
-        }
-      }
       return {
         hasEvent: true,
         eventType: entry.type,

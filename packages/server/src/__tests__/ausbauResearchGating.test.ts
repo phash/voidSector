@@ -25,7 +25,6 @@ vi.mock('../db/queries.js', () => ({
   renameShip: vi.fn().mockResolvedValue(undefined),
   renameBase: vi.fn().mockResolvedValue(undefined),
   getInventory: vi.fn().mockResolvedValue([]),
-  getPlayerHomeBase: vi.fn().mockResolvedValue(null),
   startActiveResearch: vi.fn().mockResolvedValue(undefined),
   deleteActiveResearch: vi.fn().mockResolvedValue(undefined),
   getPlayerCredits: vi.fn().mockResolvedValue(9999),

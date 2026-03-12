@@ -20,7 +20,6 @@ vi.mock('../../../db/queries.js', () => ({
   getPlayerCredits: vi.fn(),
   deductCredits: vi.fn(),
   addCredits: vi.fn(),
-  getPlayerHomeBase: vi.fn(),
   playerHasGateCode: vi.fn(),
   recordNewsEvent: vi.fn(),
   awardBadge: vi.fn(),

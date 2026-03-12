@@ -29,7 +29,6 @@ vi.mock('../db/queries.js', () => ({
   getActiveShip: vi.fn(),
   recordAlienEncounter: vi.fn(),
   // ShipService deps
-  getPlayerHomeBase: vi.fn(),
   getPlayerShips: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),

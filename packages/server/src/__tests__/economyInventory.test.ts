@@ -32,7 +32,7 @@ vi.mock('../db/queries.js', () => ({
   getPlayerStructure: vi.fn().mockResolvedValue(null),
   upgradeStructureTier: vi.fn().mockResolvedValue(2),
   createTradeOrder: vi.fn().mockResolvedValue({ id: 'order-1' }),
-  findPlayerByUsername: vi.fn().mockResolvedValue({ homeBase: { x: 0, y: 0 } }),
+  findPlayerByUsername: vi.fn().mockResolvedValue({ id: 'user-123', username: 'test', xp: 0, level: 1, passwordHash: '' }),
   getPlayerBaseStructures: vi.fn().mockResolvedValue([]),
   playerHasBaseAtSector: vi.fn().mockResolvedValue(false),
   getPlayerShips: vi.fn().mockResolvedValue([]),
@@ -261,16 +261,9 @@ describe('EconomyService.handleTransfer toStorage — inventory migration', () =
   it('uses getCargoState (not getPlayerCargo) to read current cargo', async () => {
     const client = makeClient();
     const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
-    // Player at home base
-    const { findPlayerByUsername } = await import('../db/queries.js');
-    vi.mocked(findPlayerByUsername).mockResolvedValue({
-      id: 'user-123',
-      username: 'test',
-      xp: 0,
-      level: 1,
-      homeBase: { x: 5, y: 10 },
-      passwordHash: '',
-    });
+    // Player at own base
+    const { playerHasBaseAtSector } = await import('../db/queries.js');
+    vi.mocked(playerHasBaseAtSector).mockResolvedValue(true);
     const { validateTransfer: vt } = await import('../engine/commands.js');
     vi.mocked(vt).mockReturnValue({ valid: true });
 
@@ -293,15 +286,8 @@ describe('EconomyService.handleTransfer toStorage — inventory migration', () =
   it('uses removeFromInventory (not deductCargo) for toStorage direction', async () => {
     const client = makeClient();
     const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
-    const { findPlayerByUsername } = await import('../db/queries.js');
-    vi.mocked(findPlayerByUsername).mockResolvedValue({
-      id: 'user-123',
-      username: 'test',
-      xp: 0,
-      level: 1,
-      homeBase: { x: 5, y: 10 },
-      passwordHash: '',
-    });
+    const { playerHasBaseAtSector } = await import('../db/queries.js');
+    vi.mocked(playerHasBaseAtSector).mockResolvedValue(true);
     const { validateTransfer: vt } = await import('../engine/commands.js');
     vi.mocked(vt).mockReturnValue({ valid: true });
 
@@ -329,15 +315,8 @@ describe('EconomyService.handleTransfer toCargo — inventory migration', () => 
   it('uses addToInventory (not addToCargo) for toCargo direction', async () => {
     const client = makeClient();
     const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
-    const { findPlayerByUsername } = await import('../db/queries.js');
-    vi.mocked(findPlayerByUsername).mockResolvedValue({
-      id: 'user-123',
-      username: 'test',
-      xp: 0,
-      level: 1,
-      homeBase: { x: 5, y: 10 },
-      passwordHash: '',
-    });
+    const { playerHasBaseAtSector } = await import('../db/queries.js');
+    vi.mocked(playerHasBaseAtSector).mockResolvedValue(true);
     const { validateTransfer: vt } = await import('../engine/commands.js');
     vi.mocked(vt).mockReturnValue({ valid: true });
 

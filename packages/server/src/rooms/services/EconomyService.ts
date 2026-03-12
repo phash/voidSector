@@ -54,7 +54,7 @@ import {
   getPlayerStructure,
   upgradeStructureTier,
   createTradeOrder,
-  findPlayerByUsername,
+  playerHasBaseAtSector,
   getPlayerBaseStructures,
   getPlayerShips,
   getPlayerReputation,
@@ -152,15 +152,14 @@ export class EconomyService {
     const auth = client.auth as AuthPayload;
     const { resource, amount, action } = data;
 
-    const player = await findPlayerByUsername(auth.username);
-    if (!player) return;
-
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const isHomeBase =
-      this.ctx._px(client.sessionId) === player.homeBase.x &&
-      this.ctx._py(client.sessionId) === player.homeBase.y;
-    if (!isStation && !isHomeBase) {
-      client.send('npcTradeResult', { success: false, error: 'Must be at a station or home base' });
+    const hasBase = await playerHasBaseAtSector(
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
+    if (!isStation && !hasBase) {
+      client.send('npcTradeResult', { success: false, error: 'Must be at a station or your base' });
       return;
     }
 
@@ -451,21 +450,17 @@ export class EconomyService {
     const auth = client.auth as AuthPayload;
     const { resource, amount, direction } = data;
 
-    const player = await findPlayerByUsername(auth.username);
-    if (!player) {
-      client.send('error', { code: 'NO_PLAYER', message: 'Player not found' });
-      return;
-    }
-    if (
-      this.ctx._px(client.sessionId) !== player.homeBase.x ||
-      this.ctx._py(client.sessionId) !== player.homeBase.y
-    ) {
-      client.send('transferResult', { success: false, error: 'Must be at home base' });
+    const hasBase = await playerHasBaseAtSector(
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
+    if (!hasBase) {
+      client.send('transferResult', { success: false, error: 'Must be at your base' });
       return;
     }
 
     const storageStruct = await getPlayerStructure(auth.userId, 'storage');
-    // Home base always provides basic tier 1 storage, even without a storage structure
     const storageTier = storageStruct?.tier ?? 1;
 
     const currentCargo = await getCargoState(auth.userId);
@@ -509,12 +504,12 @@ export class EconomyService {
 
     // Must be at a station or own base
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const player = await findPlayerByUsername(auth.username);
-    if (!player) return;
-    const isHomeBase =
-      this.ctx._px(client.sessionId) === player.homeBase.x &&
-      this.ctx._py(client.sessionId) === player.homeBase.y;
-    if (!isStation && !isHomeBase) {
+    const hasBase = await playerHasBaseAtSector(
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
+    if (!isStation && !hasBase) {
       client.send('refuelResult', {
         success: false,
         error: 'Must be at a station or your base to refuel',
