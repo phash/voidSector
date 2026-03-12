@@ -225,9 +225,9 @@ describe('drive fuelMax bonus', () => {
     const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk5', slotIndex: 0 }]);
     expect(stats.fuelMax).toBe(28_000);
   });
-});
 
-it('fuelMax never falls below FUEL_MIN_TANK even with penalty modules', () => {
-  const stats = calculateShipStats('scout', []);
-  expect(stats.fuelMax).toBeGreaterThanOrEqual(FUEL_MIN_TANK);
+  it('fuelMax never falls below FUEL_MIN_TANK', () => {
+    const stats = calculateShipStats('scout', []);
+    expect(stats.fuelMax).toBeGreaterThanOrEqual(FUEL_MIN_TANK);
+  });
 });
