@@ -15,6 +15,7 @@ import {
   upsertStationData,
   upsertInventoryItem,
   getStationInventoryItem,
+  getStationInventory,
 } from '../../db/npcStationQueries.js';
 import {
   getStationLevel,
@@ -32,9 +33,16 @@ const mockGetStationData = vi.mocked(getStationData);
 const mockUpsertStationData = vi.mocked(upsertStationData);
 const mockUpsertInventoryItem = vi.mocked(upsertInventoryItem);
 const mockGetStationInventoryItem = vi.mocked(getStationInventoryItem);
+const mockGetStationInventory = vi.mocked(getStationInventory);
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // Default: station has all 3 resource types so backfill logic is skipped
+  mockGetStationInventory.mockResolvedValue([
+    { stationX: 0, stationY: 0, itemType: 'ore', stock: 100, maxStock: 200, consumptionRate: 3, restockRate: 4, lastUpdated: new Date().toISOString() },
+    { stationX: 0, stationY: 0, itemType: 'gas', stock: 80, maxStock: 200, consumptionRate: 3, restockRate: 4, lastUpdated: new Date().toISOString() },
+    { stationX: 0, stationY: 0, itemType: 'crystal', stock: 90, maxStock: 200, consumptionRate: 3, restockRate: 4, lastUpdated: new Date().toISOString() },
+  ]);
 });
 
 // ---------------------------------------------------------------------------
@@ -257,6 +265,65 @@ describe('getOrInitStation', () => {
     const result = await getOrInitStation(5, 10);
     expect(result).toEqual(existing);
     expect(mockUpsertStationData).not.toHaveBeenCalled();
+  });
+
+  it('backfills ore/gas/crystal inventory when station exists but resource rows are missing', async () => {
+    const existing: NpcStationData = {
+      stationX: 5,
+      stationY: 10,
+      level: 1,
+      xp: 0,
+      visitCount: 1,
+      tradeVolume: 0,
+      lastXpDecay: new Date().toISOString(),
+    };
+    mockGetStationData.mockResolvedValueOnce(existing);
+    // Station exists but only has fuel — no ore/gas/crystal
+    mockGetStationInventory.mockResolvedValueOnce([
+      {
+        stationX: 5,
+        stationY: 10,
+        itemType: 'fuel',
+        stock: 880,
+        maxStock: 50000,
+        consumptionRate: 0,
+        restockRate: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+    ]);
+    mockUpsertInventoryItem.mockResolvedValue(undefined);
+
+    const result = await getOrInitStation(5, 10);
+    expect(result).toEqual(existing);
+    // Should have created 3 inventory items (ore, gas, crystal)
+    expect(mockUpsertInventoryItem).toHaveBeenCalledTimes(3);
+    const insertedTypes = mockUpsertInventoryItem.mock.calls.map((c) => c[0].itemType);
+    expect(insertedTypes).toContain('ore');
+    expect(insertedTypes).toContain('gas');
+    expect(insertedTypes).toContain('crystal');
+  });
+
+  it('does not backfill when ore/gas/crystal already exist', async () => {
+    const existing: NpcStationData = {
+      stationX: 5,
+      stationY: 10,
+      level: 1,
+      xp: 0,
+      visitCount: 1,
+      tradeVolume: 0,
+      lastXpDecay: new Date().toISOString(),
+    };
+    mockGetStationData.mockResolvedValueOnce(existing);
+    mockGetStationInventory.mockResolvedValueOnce([
+      { stationX: 5, stationY: 10, itemType: 'ore', stock: 100, maxStock: 200, consumptionRate: 3, restockRate: 4, lastUpdated: new Date().toISOString() },
+      { stationX: 5, stationY: 10, itemType: 'gas', stock: 80, maxStock: 200, consumptionRate: 3, restockRate: 4, lastUpdated: new Date().toISOString() },
+      { stationX: 5, stationY: 10, itemType: 'crystal', stock: 90, maxStock: 200, consumptionRate: 3, restockRate: 4, lastUpdated: new Date().toISOString() },
+    ]);
+
+    const result = await getOrInitStation(5, 10);
+    expect(result).toEqual(existing);
+    // Should NOT have created any inventory items
+    expect(mockUpsertInventoryItem).not.toHaveBeenCalled();
   });
 
   it('creates new station when not in DB', async () => {

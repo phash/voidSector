@@ -135,7 +135,19 @@ export async function initStationInventory(x: number, y: number, maxStock: numbe
  */
 export async function getOrInitStation(x: number, y: number): Promise<NpcStationData> {
   const existing = await getStationData(x, y);
-  if (existing) return existing;
+  if (existing) {
+    // Backfill ore/gas/crystal if station was created without resource inventory
+    // (e.g. by the fuel system which only creates a fuel row)
+    const inventory = await getStationInventory(x, y);
+    const hasResources = RESOURCE_TYPES.every((r) =>
+      inventory.some((item) => item.itemType === r),
+    );
+    if (!hasResources) {
+      const level = getStationLevel(existing.xp);
+      await initStationInventory(x, y, level.maxStock);
+    }
+    return existing;
+  }
 
   const level = getStationLevel(0);
   const now = new Date().toISOString();
