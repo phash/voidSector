@@ -125,7 +125,7 @@ export function generateBountyTrail(
     maxDist = 20;
   }
 
-  const distHash = hashCoords(stationX, stationY, seed + 1);
+  const distHash = hashCoords(stationX, stationY, seed + 2);
   const startDist = minDist + (Math.abs(distHash) % (maxDist - minDist + 1));
 
   const steps: BountyTrailStep[] = [];

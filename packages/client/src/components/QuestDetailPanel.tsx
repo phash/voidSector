@@ -1,4 +1,5 @@
 import { useStore } from '../state/store';
+import { network } from '../network/client';
 import { WantedPoster } from './WantedPoster';
 
 const panelStyle: React.CSSProperties = {
@@ -8,6 +9,15 @@ const panelStyle: React.CSSProperties = {
   fontSize: '0.7rem',
   height: '100%',
   overflow: 'auto',
+};
+
+const abandonBtnStyle: React.CSSProperties = {
+  marginTop: 12,
+  fontSize: '0.65rem',
+  display: 'block',
+  width: '100%',
+  borderColor: 'var(--color-danger)',
+  color: 'var(--color-danger)',
 };
 
 export function QuestDetailPanel() {
@@ -81,6 +91,13 @@ export function QuestDetailPanel() {
             <span>{obj.description}</span>
           </div>
         ))}
+        <button
+          className="vs-btn"
+          style={abandonBtnStyle}
+          onClick={() => network.sendAbandonQuest(quest.id)}
+        >
+          [ABANDON]
+        </button>
       </div>
     );
   }
@@ -150,15 +167,8 @@ export function QuestDetailPanel() {
 
       <button
         className="vs-btn"
-        style={{
-          marginTop: 12,
-          fontSize: '0.65rem',
-          display: 'block',
-          width: '100%',
-          borderColor: 'var(--color-danger)',
-          color: 'var(--color-danger)',
-        }}
-        disabled
+        style={abandonBtnStyle}
+        onClick={() => network.sendAbandonQuest(quest.id)}
       >
         [ABANDON]
       </button>
