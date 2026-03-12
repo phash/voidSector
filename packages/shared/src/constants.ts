@@ -2293,6 +2293,20 @@ export const FUEL_COST_PER_UNIT = 0.1; // 0.1 credits per fuel unit (was 2)
 export const FUEL_MIN_TANK = 1_000; // minimum tank size regardless of hull+modules
 export const FREE_REFUEL_MAX_SHIPS = 3;
 
+// Station fuel production
+export const STATION_FUEL_BASELINE_PER_TICK = 10; // fuel produced per tick without gas
+export const STATION_FUEL_GAS_RATE_PER_TICK = 100; // fuel produced per tick when gas available (before efficiency)
+export const STATION_FUEL_PER_GAS = 1; // GAS units consumed per gas-enhanced tick
+export const STATION_FUEL_MAX_STOCK = 50_000; // cap per station
+/** Efficiency multiplier per station level: level → rate multiplier (1.0 = 100 fuel/tick, 1.2 = 120 fuel/tick) */
+export const STATION_FUEL_LEVEL_EFFICIENCY: Record<number, number> = {
+  1: 1.0,
+  2: 1.2,
+  3: 1.4,
+  4: 1.6,
+  5: 2.0,
+};
+
 // Per-station reputation fuel price modifiers (more granular than faction REP_PRICE_MODIFIERS)
 // Takes a reputation score (-100..+100) and returns a price multiplier.
 export function getFuelRepPriceModifier(reputation: number): number {

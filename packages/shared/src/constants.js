@@ -2125,6 +2125,12 @@ export const COCKPIT_PROGRAM_LABELS = {
 export const FUEL_COST_PER_UNIT = 0.1;
 export const FUEL_MIN_TANK = 1000;
 export const FREE_REFUEL_MAX_SHIPS = 3;
+// Station fuel production
+export const STATION_FUEL_BASELINE_PER_TICK = 10;
+export const STATION_FUEL_GAS_RATE_PER_TICK = 100;
+export const STATION_FUEL_PER_GAS = 1;
+export const STATION_FUEL_MAX_STOCK = 50_000;
+export const STATION_FUEL_LEVEL_EFFICIENCY = { 1: 1.0, 2: 1.2, 3: 1.4, 4: 1.6, 5: 2.0 };
 // Per-station reputation fuel price modifiers (more granular than faction REP_PRICE_MODIFIERS)
 // Takes a reputation score (-100..+100) and returns a price multiplier.
 export function getFuelRepPriceModifier(reputation) {
