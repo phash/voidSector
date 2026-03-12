@@ -127,7 +127,7 @@ describe('inventory queries', () => {
 
   it('getCargoCapForPlayer queries hull_type+modules and computes cargoCap via calculateShipStats', async () => {
     const { query, getCargoCapForPlayer } = await freshImports();
-    // scout with no modules has baseCargo of 3 (from SHIP_CLASSES constant)
+    // scout hull with no modules has baseCargo of 3 (from HULLS constant)
     vi.mocked(query).mockResolvedValueOnce({
       rows: [{ hull_type: 'scout', modules: [] }],
     } as any);

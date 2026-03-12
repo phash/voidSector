@@ -1,6 +1,5 @@
 import type {
   SectorType,
-  ShipClass,
   ResourceType,
   MineableResourceType,
   StructureType,
@@ -477,7 +476,7 @@ export const TRADING_POST_TIERS: Record<number, { name: string; upgradeCost: num
 
 // Ship class definitions (from visual reference material)
 export const SHIP_CLASSES: Record<
-  ShipClass,
+  string,
   {
     name: string;
     displayName: string;
@@ -2325,6 +2324,8 @@ export const FACTION_UPGRADE_TIERS: Record<
 export const JUMPGATE_CHANCE = 0.005; // natural bidirectional/wormhole gates (1 in 200 sectors)
 export const JUMPGATE_SALT = 777;
 export const JUMPGATE_FUEL_COST = 1;
+export const JUMPGATE_TRAVEL_COST_CREDITS = 50; // credits to use a public jumpgate
+export const PLAYER_GATE_TRAVEL_COST_CREDITS = 25; // credits to use a player-built gate (cheaper)
 export const JUMPGATE_MIN_RANGE = 50;
 export const JUMPGATE_MAX_RANGE = 10000;
 export const JUMPGATE_CODE_LENGTH = 8;

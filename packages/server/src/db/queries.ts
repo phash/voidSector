@@ -4,7 +4,6 @@ import type {
   PlayerData,
   CargoState,
   ResourceType,
-  ShipClass,
   Bookmark,
   HullType,
   ShipModule,
@@ -1436,7 +1435,8 @@ export async function setFactionRecruiting(
 export async function getJumpGate(sectorX: number, sectorY: number): Promise<any | null> {
   const { rows } = await query(
     `SELECT id, sector_x as "sectorX", sector_y as "sectorY", target_x as "targetX", target_y as "targetY",
-     gate_type as "gateType", requires_code as "requiresCode", requires_minigame as "requiresMinigame", access_code as "accessCode"
+     gate_type as "gateType", requires_code as "requiresCode", requires_minigame as "requiresMinigame", access_code as "accessCode",
+     owner_id as "ownerId"
      FROM jumpgates WHERE sector_x = $1 AND sector_y = $2`,
     [sectorX, sectorY],
   );

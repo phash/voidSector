@@ -66,7 +66,6 @@ export interface PlayerData {
     alienCredits?: number;
     isGuest?: boolean;
 }
-export type ShipClass = 'aegis_scout_mk1' | 'void_seeker_mk2';
 export interface FuelState {
     current: number;
     max: number;
