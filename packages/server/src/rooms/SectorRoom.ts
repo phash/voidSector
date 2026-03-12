@@ -81,6 +81,7 @@ import {
   STATION_REP_VISIT,
   COSMIC_FACTION_IDS,
   getAcepLevel,
+  FUEL_MIN_TANK,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -1171,6 +1172,13 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Send ship data to client
       const fuelState = await getFuelState(auth.userId);
       const acepXp = await getAcepXpSummary(shipRecord.id);
+      // Init fuel state in Redis; migrate stale pre-overhaul values (< FUEL_MIN_TANK)
+      const stale = fuelState !== null && fuelState < FUEL_MIN_TANK;
+      if (fuelState === null || stale) {
+        await saveFuelState(auth.userId, stats.fuelMax);
+      }
+      const fuelCurrent = fuelState === null || stale ? stats.fuelMax : fuelState;
+
       client.send('shipData', {
         id: shipRecord.id,
         ownerId: auth.userId,
@@ -1178,16 +1186,10 @@ export class SectorRoom extends Room<SectorRoomState> {
         name: shipRecord.name,
         modules: shipRecord.modules,
         stats,
-        fuel: fuelState ?? stats.fuelMax,
+        fuel: fuelCurrent,
         active: true,
         acepXp,
       });
-
-      // Init fuel state in Redis
-      if (fuelState === null) {
-        await saveFuelState(auth.userId, stats.fuelMax);
-      }
-      const fuelCurrent = fuelState ?? stats.fuelMax;
       client.send('fuelUpdate', { current: fuelCurrent, max: stats.fuelMax });
 
       // Record discovery
