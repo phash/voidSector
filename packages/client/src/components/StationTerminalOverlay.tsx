@@ -20,9 +20,15 @@ const bg = '#050505';
 
 export function StationTerminalOverlay() {
   const closeStationTerminal = useStore((s) => s.closeStationTerminal);
+  const setStationProductionState = useStore((s) => s.setStationProductionState);
   const position = useStore((s) => s.position);
   const currentSector = useStore((s) => s.currentSector);
   const [program, setProgram] = useState<TerminalProgram>('handel');
+
+  function handleClose() {
+    setStationProductionState(null);
+    closeStationTerminal();
+  }
 
   const stationName = generateStationName(position.x, position.y);
   const coord = `(${innerCoord(position.x)}, ${innerCoord(position.y)})`;
@@ -63,7 +69,7 @@ export function StationTerminalOverlay() {
           )}
         </div>
         <button
-          onClick={closeStationTerminal}
+          onClick={handleClose}
           style={{
             background: 'none',
             border: `1px solid ${dimGreen}`,
