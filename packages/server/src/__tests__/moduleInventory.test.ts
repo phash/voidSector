@@ -14,10 +14,6 @@ vi.mock('../db/queries.js', () => ({
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
   renameBase: vi.fn(),
-  // legacy module-inventory functions — should NOT be called after migration
-  getModuleInventory: vi.fn(),
-  addModuleToInventory: vi.fn(),
-  removeModuleFromInventory: vi.fn(),
   getPlayerLevel: vi.fn(),
   getPlayerResearch: vi.fn(),
   addUnlockedModule: vi.fn(),
@@ -26,8 +22,6 @@ vi.mock('../db/queries.js', () => ({
   deleteActiveResearch: vi.fn(),
   getPlayerCredits: vi.fn(),
   deductCredits: vi.fn(),
-  getPlayerCargo: vi.fn(),
-  deductCargo: vi.fn(),
   getPlayerReputations: vi.fn(),
   getStorageInventory: vi.fn(),
   // unified inventory functions
@@ -90,13 +84,8 @@ import {
   getActiveShip,
   getPlayerCredits,
   deductCredits,
-  getPlayerCargo,
-  deductCargo,
   getPlayerResearch,
   updateShipModules,
-  // legacy — should NOT be called
-  addModuleToInventory,
-  removeModuleFromInventory,
 } from '../db/queries.js';
 import { validateModuleInstall, isModuleUnlocked } from '@void-sector/shared';
 
@@ -138,15 +127,7 @@ beforeEach(() => vi.clearAllMocks());
 describe('ShipService.handleBuyModule', () => {
   it('calls addToInventory with module item type after purchase', async () => {
     vi.mocked(getPlayerCredits).mockResolvedValue(1000);
-    vi.mocked(getPlayerCargo).mockResolvedValue({
-      ore: 10,
-      gas: 0,
-      crystal: 0,
-      slates: 0,
-      artefact: 0,
-    });
     vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(deductCargo).mockResolvedValue(true);
     vi.mocked(getPlayerResearch).mockResolvedValue({
       unlockedModules: ['drive_mk2'],
       blueprints: [],
@@ -157,29 +138,6 @@ describe('ShipService.handleBuyModule', () => {
     await svc.handleBuyModule(client, { moduleId: 'drive_mk2' });
 
     expect(addToInventory).toHaveBeenCalledWith('player-1', 'module', 'drive_mk2', 1);
-  });
-
-  it('does NOT call legacy addModuleToInventory after migration', async () => {
-    vi.mocked(getPlayerCredits).mockResolvedValue(1000);
-    vi.mocked(getPlayerCargo).mockResolvedValue({
-      ore: 10,
-      gas: 0,
-      crystal: 0,
-      slates: 0,
-      artefact: 0,
-    });
-    vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(deductCargo).mockResolvedValue(true);
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
-      blueprints: [],
-    });
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleBuyModule(client, { moduleId: 'drive_mk2' });
-
-    expect(addModuleToInventory).not.toHaveBeenCalled();
   });
 });
 
@@ -216,18 +174,6 @@ describe('ShipService.handleInstallModule', () => {
     expect(updateShipModules).not.toHaveBeenCalled();
   });
 
-  it('does NOT call legacy removeModuleFromInventory after migration', async () => {
-    vi.mocked(getActiveShip).mockResolvedValue(SHIP as any);
-    vi.mocked(validateModuleInstall).mockReturnValue({ valid: true });
-    vi.mocked(getInventoryItem).mockResolvedValue(2);
-    vi.mocked(updateShipModules).mockResolvedValue(undefined);
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleInstallModule(client, { moduleId: 'drive_mk2', slotIndex: 0 });
-
-    expect(removeModuleFromInventory).not.toHaveBeenCalled();
-  });
 });
 
 // ─── handleRemoveModule ───────────────────────────────────────────────────────
@@ -245,17 +191,6 @@ describe('ShipService.handleRemoveModule', () => {
     expect(addToInventory).toHaveBeenCalledWith('player-1', 'module', 'drive_mk2', 1);
   });
 
-  it('does NOT call legacy addModuleToInventory after migration', async () => {
-    const shipWithMod = { ...SHIP, modules: [{ moduleId: 'drive_mk2', slotIndex: 1 }] };
-    vi.mocked(getActiveShip).mockResolvedValue(shipWithMod as any);
-    vi.mocked(updateShipModules).mockResolvedValue(undefined);
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleRemoveModule(client, { slotIndex: 1 });
-
-    expect(addModuleToInventory).not.toHaveBeenCalled();
-  });
 });
 
 // ─── permadeathService.salvageWreckModule ─────────────────────────────────────

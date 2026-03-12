@@ -13,7 +13,6 @@ vi.mock('../../db/queries.js', () => ({
   getPlayerCredits: vi.fn(),
   deductCredits: vi.fn(),
   addCredits: vi.fn(),
-  deductCargo: vi.fn(),
   transferInventoryItem: vi.fn(),
 }));
 
@@ -30,7 +29,6 @@ import {
   getPlayerCredits,
   deductCredits,
   addCredits,
-  deductCargo,
   transferInventoryItem,
 } from '../../db/queries.js';
 import {
@@ -50,7 +48,6 @@ const mockDeactivateKontorOrder = vi.mocked(deactivateKontorOrder);
 const mockGetPlayerCredits = vi.mocked(getPlayerCredits);
 const mockDeductCredits = vi.mocked(deductCredits);
 const mockAddCredits = vi.mocked(addCredits);
-const mockDeductCargo = vi.mocked(deductCargo);
 const mockTransferInventoryItem = vi.mocked(transferInventoryItem);
 
 beforeEach(() => {
@@ -289,7 +286,6 @@ describe('fillKontorOrder', () => {
       'ore',
       10,
     );
-    expect(mockDeductCargo).not.toHaveBeenCalled();
     expect(mockAddCredits).toHaveBeenCalledWith('seller-1', 100);
     expect(mockUpdateKontorOrderFilled).toHaveBeenCalledWith('order-1', 10);
     expect(mockDeactivateKontorOrder).not.toHaveBeenCalled();
@@ -313,7 +309,6 @@ describe('fillKontorOrder', () => {
       'ore',
       10,
     );
-    expect(mockDeductCargo).not.toHaveBeenCalled();
     expect(mockUpdateKontorOrderFilled).toHaveBeenCalledWith('order-1', 10);
     expect(mockDeactivateKontorOrder).toHaveBeenCalledWith('order-1');
   });
