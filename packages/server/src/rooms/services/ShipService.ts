@@ -30,7 +30,6 @@ import {
 import {
   addToInventory,
   removeFromInventory,
-  getInventory,
   getInventoryItem,
   getCargoState,
 } from '../../engine/inventoryService.js';
@@ -41,6 +40,7 @@ import {
   updateShipModules,
   renameShip,
   renameBase,
+  getInventory,
   getPlayerResearch,
   addUnlockedModule,
   getActiveResearch,
