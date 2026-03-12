@@ -7,16 +7,9 @@ export function CombatStatusPanel() {
 
   if (!ship) {
     return (
-      <div
-        style={{
-          padding: '4px 6px',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.6rem',
-          color: 'var(--color-dim)',
-          opacity: 0.5,
-        }}
-      >
-        NO COMBAT DATA
+      <div className="nav-block">
+        <div className="nav-block-header">── COMBAT ──</div>
+        <span style={{ color: 'var(--color-dim)', opacity: 0.5 }}>NO DATA</span>
       </div>
     );
   }
@@ -36,25 +29,11 @@ export function CombatStatusPanel() {
   const defName = defenseDef?.displayName || '---';
 
   return (
-    <div
-      style={{
-        padding: '4px 8px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '0.6rem',
-        lineHeight: 1.6,
-        color: 'var(--color-primary)',
-      }}
-    >
-      <div
-        style={{
-          borderTop: '1px solid var(--color-dim)',
-          borderBottom: '1px solid var(--color-dim)',
-          paddingTop: 2,
-          paddingBottom: 2,
-        }}
-      >
-        <span style={{ color: 'var(--color-dim)' }}>WPN:</span> {wpnName} {' | '}
-        <span style={{ color: 'var(--color-dim)' }}>SHD:</span> {shdVal} {' | '}
+    <div className="nav-block">
+      <div className="nav-block-header">── COMBAT ──</div>
+      <div className="combat-line">
+        <span style={{ color: 'var(--color-dim)' }}>WPN:</span> {wpnName}{' | '}
+        <span style={{ color: 'var(--color-dim)' }}>SHD:</span> {shdVal}{' | '}
         <span style={{ color: 'var(--color-dim)' }}>DEF:</span> {defName}
       </div>
     </div>

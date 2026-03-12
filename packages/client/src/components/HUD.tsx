@@ -26,9 +26,7 @@ export function StatusBar() {
   const fuel = useStore((s) => s.fuel);
   const ship = useStore((s) => s.ship);
   const credits = useStore((s) => s.credits);
-  const alienCredits = useStore((s) => s.alienCredits);
   const isGuest = useStore((s) => s.isGuest);
-  const wissen = useStore((s) => s.research.wissen ?? 0);
   const seenTips = useStore((s) => s.seenTips);
   const showTip = useStore((s) => s.showTip);
 
