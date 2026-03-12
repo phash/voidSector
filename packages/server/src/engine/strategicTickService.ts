@@ -7,7 +7,10 @@ import {
   getArrivedNpcFleets,
   deleteArrivedNpcFleets,
   logExpansionEvent,
+  getExpiredPlayerQuestsWithItems,
+  updateQuestStatus,
 } from '../db/queries.js';
+import { removeFromInventory } from './inventoryService.js';
 import type { QuadrantControlRow } from '../db/queries.js';
 import { FactionConfigService } from './factionConfigService.js';
 import { calculateFriction, repValueToTier } from './frictionEngine.js';
@@ -80,6 +83,31 @@ export class StrategicTickService {
 
     // 4. Void civilization lifecycle
     await this.voidLifecycle.tick();
+
+    // 5. Cleanup expired quest items (prisoner, data_slate)
+    await this.cleanupExpiredQuestItems();
+  }
+
+  private async cleanupExpiredQuestItems(): Promise<void> {
+    const expired = await getExpiredPlayerQuestsWithItems();
+    for (const quest of expired) {
+      const objectives = quest.objectives as any[];
+      // Bounty: remove prisoner if combat was fulfilled
+      const combatObj = objectives?.find((o: any) => o.type === 'bounty_combat');
+      if (combatObj?.fulfilled) {
+        await removeFromInventory(quest.player_id, 'prisoner', quest.id, 1);
+      }
+      // Scan: remove data_slate if scan done but not delivered
+      const scanDone = objectives?.some((o: any) => o.type === 'scan' && o.fulfilled);
+      const deliverDone = objectives?.some((o: any) => o.type === 'scan_deliver' && o.fulfilled);
+      if (scanDone && !deliverDone) {
+        await removeFromInventory(quest.player_id, 'data_slate', quest.id, 1);
+      }
+      await updateQuestStatus(quest.id, 'expired');
+    }
+    if (expired.length > 0) {
+      logger.info({ count: expired.length }, 'Expired quest items cleaned up');
+    }
   }
 
   private async processWarfareTick(

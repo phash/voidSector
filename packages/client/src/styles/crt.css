@@ -1464,20 +1464,26 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 8px 8px;
   background: transparent;
   border: none;
   border-bottom: 1px solid #1a1a1a;
+  border-left: 3px solid transparent;
   color: var(--color-dim);
   font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
   cursor: pointer;
   text-align: left;
 }
 
-.program-btn:hover { background: rgba(255,255,255,0.03); }
-.program-btn.active { color: var(--color-primary); background: rgba(255,255,255,0.05); }
+.program-btn:hover { background: rgba(255,255,255,0.03); border-left-color: rgba(255,176,0,0.3); }
+.program-btn.active {
+  color: var(--color-primary);
+  background: rgba(255,176,0,0.08);
+  border-left-color: var(--color-primary);
+  font-weight: bold;
+}
 .program-btn.alert { color: #FFB000; }
 
 .program-led {
