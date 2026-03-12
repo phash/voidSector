@@ -115,6 +115,21 @@ export async function getPlayerHomeBase(playerId: string): Promise<{ x: number; 
   return rows[0]?.home_base ?? { x: 0, y: 0 };
 }
 
+export async function getMiningStoryIndex(playerId: string): Promise<number> {
+  const { rows } = await query<{ mining_story_index: number }>(
+    'SELECT mining_story_index FROM players WHERE id = $1',
+    [playerId],
+  );
+  return rows[0]?.mining_story_index ?? 0;
+}
+
+export async function updateMiningStoryIndex(playerId: string, index: number): Promise<void> {
+  await query(
+    'UPDATE players SET mining_story_index = $1 WHERE id = $2',
+    [index, playerId],
+  );
+}
+
 export async function getActiveShip(playerId: string): Promise<ShipRecord | null> {
   const { rows } = await query<{
     id: string;
