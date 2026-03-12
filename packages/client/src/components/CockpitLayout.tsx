@@ -19,7 +19,7 @@ import { ShipDetailPanel } from './ShipDetailPanel';
 import { AcepDetailPanel } from './AcepDetailPanel';
 import { SectorInfo, StatusBar } from './HUD';
 import { NavControls } from './NavControls';
-import { ShipStatusPanel } from './ShipStatusPanel';
+import { ShipBlock, CargoBlock } from './ShipBlock';
 import { CombatStatusPanel } from './CombatStatusPanel';
 import { SlateControls } from './SlateControls';
 import { CommsScreen } from './CommsScreen';
@@ -190,7 +190,8 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
             <NavControls />
           </div>
           <div className="nav-zone-b">
-            <ShipStatusPanel />
+            <ShipBlock />
+            <CargoBlock />
             <CombatStatusPanel />
             <SlateControls />
           </div>
