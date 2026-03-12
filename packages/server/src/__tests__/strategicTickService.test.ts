@@ -26,6 +26,7 @@ vi.mock('../db/queries.js', () => ({
   deleteVoidFrontierSectorsForQuadrant: vi.fn().mockResolvedValue(undefined),
   createVoidHive: vi.fn().mockResolvedValue(undefined),
   deleteVoidHive: vi.fn().mockResolvedValue(undefined),
+  getExpiredPlayerQuestsWithItems: vi.fn().mockResolvedValue([]),
 }));
 
 import {

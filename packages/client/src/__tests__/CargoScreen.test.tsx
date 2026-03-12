@@ -87,7 +87,7 @@ describe('CargoScreen', () => {
 
   it('shows capacity info', () => {
     render(<CargoScreen />);
-    // total = 3 + 0 + 1 = 4, cargoCap for aegis_scout_mk1 = 5
+    // total = 3 + 0 + 1 = 4
     expect(screen.getByText(/CAPACITY/)).toBeInTheDocument();
   });
 
