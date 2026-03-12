@@ -12,7 +12,6 @@ vi.mock('../network/client', () => ({
     sendAreaScan: vi.fn(),
     sendBuild: vi.fn(),
     sendCancelAutopilot: vi.fn(),
-    sendEmergencyWarp: vi.fn(),
     sendSetAutoRefuel: vi.fn(),
   },
 }));

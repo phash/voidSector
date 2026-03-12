@@ -30,6 +30,7 @@ import {
 import {
   addToInventory,
   removeFromInventory,
+  getInventory,
   getInventoryItem,
   getCargoState,
 } from '../../engine/inventoryService.js';
@@ -40,7 +41,6 @@ import {
   updateShipModules,
   renameShip,
   renameBase,
-  getInventory,
   getPlayerResearch,
   addUnlockedModule,
   getActiveResearch,
@@ -224,7 +224,6 @@ export class ShipService {
   async handleGetModuleInventory(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
     const items = await getInventory(auth.userId);
-    // Return module IDs as a flat string[] for backward-compatibility with the client
     const modules = items
       .filter((i) => i.itemType === 'module')
       .flatMap((i) => Array(i.quantity).fill(i.itemId) as string[]);

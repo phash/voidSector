@@ -41,8 +41,6 @@ vi.mock('../db/queries.js', () => ({
   startActiveResearch: vi.fn(),
   deleteActiveResearch: vi.fn(),
   deductCredits: vi.fn(),
-  getPlayerCargo: vi.fn(),
-  deductCargo: vi.fn(),
   getPlayerReputations: vi.fn(),
   getStorageInventory: vi.fn(),
   // unified inventory
@@ -51,10 +49,6 @@ vi.mock('../db/queries.js', () => ({
   getInventoryItem: vi.fn(),
   transferInventoryItem: vi.fn(),
   getCargoCapForPlayer: vi.fn(),
-  // legacy module inventory — should NOT be called
-  getModuleInventory: vi.fn(),
-  addModuleToInventory: vi.fn(),
-  removeModuleFromInventory: vi.fn(),
 }));
 
 // ── Mock shared ──────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { legacySectorType, deriveEnvironment, deriveContents } from '../types';
+import { legacySectorType } from '../types';
 
 describe('legacySectorType', () => {
   it('returns empty for empty env with no contents', () => {
@@ -34,34 +34,3 @@ describe('legacySectorType', () => {
   });
 });
 
-describe('deriveEnvironment', () => {
-  it('returns nebula for nebula type', () => {
-    expect(deriveEnvironment('nebula')).toBe('nebula');
-  });
-  it('returns empty for all other types', () => {
-    expect(deriveEnvironment('empty')).toBe('empty');
-    expect(deriveEnvironment('station')).toBe('empty');
-    expect(deriveEnvironment('asteroid_field')).toBe('empty');
-    expect(deriveEnvironment('pirate')).toBe('empty');
-    expect(deriveEnvironment('anomaly')).toBe('empty');
-  });
-});
-
-describe('deriveContents', () => {
-  it('returns empty array for empty/nebula', () => {
-    expect(deriveContents('empty')).toEqual([]);
-    expect(deriveContents('nebula')).toEqual([]);
-  });
-  it('returns asteroid_field for asteroid_field', () => {
-    expect(deriveContents('asteroid_field')).toEqual(['asteroid_field']);
-  });
-  it('returns station for station', () => {
-    expect(deriveContents('station')).toEqual(['station']);
-  });
-  it('returns pirate_zone + asteroid_field for pirate', () => {
-    expect(deriveContents('pirate')).toEqual(['pirate_zone', 'asteroid_field']);
-  });
-  it('returns anomaly for anomaly', () => {
-    expect(deriveContents('anomaly')).toEqual(['anomaly']);
-  });
-});

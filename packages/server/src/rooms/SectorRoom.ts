@@ -405,9 +405,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('hyperJump', async (client, data: HyperJumpMessage) => {
       await this.navigation.handleHyperJump(client, data);
     });
-    this.onMessage('emergencyWarp', async (client) => {
-      await this.navigation.handleEmergencyWarp(client);
-    });
     this.onMessage('cancelAutopilot', async (client) => {
       await this.navigation.handleCancelAutopilot(client);
     });

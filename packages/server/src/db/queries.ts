@@ -2,8 +2,6 @@ import { query, withTransaction } from './client.js';
 import type {
   SectorData,
   PlayerData,
-  CargoState,
-  ResourceType,
   Bookmark,
   HullType,
   ShipModule,
@@ -234,40 +232,6 @@ export async function renameBase(playerId: string, name: string): Promise<void> 
   await query('UPDATE players SET base_name = $1 WHERE id = $2', [name.slice(0, 20), playerId]);
 }
 
-export async function getModuleInventory(playerId: string): Promise<string[]> {
-  const { rows } = await query<{ module_inventory: string[] }>(
-    'SELECT module_inventory FROM players WHERE id = $1',
-    [playerId],
-  );
-  return rows[0]?.module_inventory ?? [];
-}
-
-export async function addModuleToInventory(playerId: string, moduleId: string): Promise<void> {
-  await query(`UPDATE players SET module_inventory = module_inventory || $1::jsonb WHERE id = $2`, [
-    JSON.stringify(moduleId),
-    playerId,
-  ]);
-}
-
-export async function removeModuleFromInventory(
-  playerId: string,
-  moduleId: string,
-): Promise<boolean> {
-  // Remove first occurrence of moduleId from the JSONB array
-  const { rows } = await query<{ module_inventory: string[] }>(
-    'SELECT module_inventory FROM players WHERE id = $1',
-    [playerId],
-  );
-  const inv = rows[0]?.module_inventory ?? [];
-  const idx = inv.indexOf(moduleId);
-  if (idx === -1) return false;
-  inv.splice(idx, 1);
-  await query('UPDATE players SET module_inventory = $1 WHERE id = $2', [
-    JSON.stringify(inv),
-    playerId,
-  ]);
-  return true;
-}
 
 export async function getPlayerBaseName(playerId: string): Promise<string> {
   const { rows } = await query<{ base_name: string }>(
@@ -442,51 +406,6 @@ export async function isRouteDiscovered(
   return result.rows.length > 0;
 }
 
-export async function getPlayerCargo(playerId: string): Promise<CargoState> {
-  const result = await query<{ resource: string; quantity: number }>(
-    'SELECT resource, quantity FROM cargo WHERE player_id = $1',
-    [playerId],
-  );
-  const cargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 };
-  for (const row of result.rows) {
-    if (row.resource in cargo) {
-      cargo[row.resource as ResourceType] = row.quantity;
-    }
-  }
-  const slateRow = result.rows.find((r) => r.resource === 'slate');
-  if (slateRow) cargo.slates = slateRow.quantity;
-  return cargo;
-}
-
-export async function addToCargo(
-  playerId: string,
-  resource: ResourceType,
-  amount: number,
-): Promise<void> {
-  await query(
-    `INSERT INTO cargo (player_id, resource, quantity)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (player_id, resource)
-     DO UPDATE SET quantity = cargo.quantity + $3`,
-    [playerId, resource, amount],
-  );
-}
-
-export async function jettisonCargo(playerId: string, resource: ResourceType): Promise<number> {
-  const result = await query<{ quantity: number }>(
-    `DELETE FROM cargo WHERE player_id = $1 AND resource = $2 RETURNING quantity`,
-    [playerId, resource],
-  );
-  return result.rows.length > 0 ? result.rows[0].quantity : 0;
-}
-
-export async function getCargoTotal(playerId: string): Promise<number> {
-  const result = await query<{ total: string }>(
-    'SELECT COALESCE(SUM(quantity), 0) as total FROM cargo WHERE player_id = $1',
-    [playerId],
-  );
-  return Number(result.rows[0].total);
-}
 
 export async function findNearbyCluster(x: number, y: number): Promise<any | null> {
   const { rows } = await query(
@@ -574,18 +493,6 @@ export async function getPlayerBaseStructures(playerId: string): Promise<any[]> 
   return rows;
 }
 
-export async function deductCargo(
-  playerId: string,
-  resource: string,
-  amount: number,
-): Promise<boolean> {
-  const { rowCount } = await query(
-    `UPDATE cargo SET quantity = quantity - $3
-     WHERE player_id = $1 AND resource = $2 AND quantity >= $3`,
-    [playerId, resource, amount],
-  );
-  return (rowCount ?? 0) > 0;
-}
 
 export async function saveMessage(
   senderId: string,

@@ -121,35 +121,9 @@ export function legacySectorType(env: SectorEnvironment, contents: SectorContent
   return 'empty';
 }
 
-/** Derive environment from legacy SectorType */
-export function deriveEnvironment(type: SectorType): SectorEnvironment {
-  return type === 'nebula' ? 'nebula' : 'empty';
-}
-
 /** Returns true if a sector environment can be entered/traversed by a ship */
 export function isTraversable(env: SectorEnvironment): boolean {
   return env !== 'star' && env !== 'black_hole';
-}
-
-/** Returns true if an environment is a planet type */
-export function isPlanetEnvironment(env: SectorEnvironment): boolean {
-  return env === 'planet';
-}
-
-/** Derive contents from legacy SectorType */
-export function deriveContents(type: SectorType): SectorContent[] {
-  switch (type) {
-    case 'asteroid_field':
-      return ['asteroid_field'];
-    case 'station':
-      return ['station'];
-    case 'anomaly':
-      return ['anomaly'];
-    case 'pirate':
-      return ['pirate_zone', 'asteroid_field'];
-    default:
-      return [];
-  }
 }
 
 export interface PlayerData {
