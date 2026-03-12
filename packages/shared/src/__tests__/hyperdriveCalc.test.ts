@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createHyperdriveState, calculateCurrentCharge, spendCharge } from '../hyperdriveCalc';
 import { calculateShipStats } from '../shipCalculator';
+import { FUEL_MIN_TANK } from '../constants.js';
 
 describe('createHyperdriveState', () => {
   it('creates state from ship stats with full charge', () => {
@@ -207,4 +208,26 @@ describe('efficiency clamping in shipCalculator', () => {
     expect(stats.hyperdriveRegen).toBe(3.0);
     expect(stats.hyperdriveFuelEfficiency).toBeCloseTo(0.35);
   });
+});
+
+describe('drive fuelMax bonus', () => {
+  it('drive_mk1 adds 2_000 fuelMax', () => {
+    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk1', slotIndex: 0 }]);
+    expect(stats.fuelMax).toBe(12_000); // 10_000 base + 2_000
+  });
+
+  it('drive_mk3 adds 7_000 fuelMax', () => {
+    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk3', slotIndex: 0 }]);
+    expect(stats.fuelMax).toBe(17_000);
+  });
+
+  it('drive_mk5 adds 18_000 fuelMax', () => {
+    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk5', slotIndex: 0 }]);
+    expect(stats.fuelMax).toBe(28_000);
+  });
+});
+
+it('fuelMax never falls below FUEL_MIN_TANK even with penalty modules', () => {
+  const stats = calculateShipStats('scout', []);
+  expect(stats.fuelMax).toBeGreaterThanOrEqual(FUEL_MIN_TANK);
 });

@@ -809,13 +809,17 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'ION DRIVE MK.I',
     displayName: 'ION MK.I',
     primaryEffect: { stat: 'jumpRange', delta: 1, label: 'Sprungweite +1' },
-    secondaryEffects: [{ stat: 'engineSpeed', delta: 1, label: 'Engine-Speed +1' }],
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 1, label: 'Engine-Speed +1' },
+      { stat: 'fuelMax', delta: 2_000, label: 'Fuel-Tank +2.000' },
+    ],
     effects: {
       jumpRange: 1,
       engineSpeed: 1,
       hyperdriveRange: 4,
       hyperdriveSpeed: 2,
       hyperdriveRegen: 1.0,
+      fuelMax: 2_000,
     },
     cost: { credits: 100, ore: 10 },
     acepPaths: ['ausbau', 'explorer'],
@@ -830,6 +834,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [
       { stat: 'engineSpeed', delta: 2, label: 'Engine-Speed +2' },
       { stat: 'apCostJump', delta: -0.2, label: 'AP/Sprung -0.2' },
+      { stat: 'fuelMax', delta: 4_000, label: 'Fuel-Tank +4.000' },
     ],
     effects: {
       jumpRange: 2,
@@ -839,6 +844,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveSpeed: 3,
       hyperdriveRegen: 1.5,
       hyperdriveFuelEfficiency: 0.1,
+      fuelMax: 4_000,
     },
     cost: { credits: 300, ore: 20, crystal: 5 },
     researchCost: { wissen: 300 },
@@ -856,6 +862,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [
       { stat: 'engineSpeed', delta: 3, label: 'Engine-Speed +3' },
       { stat: 'apCostJump', delta: -0.5, label: 'AP/Sprung -0.5' },
+      { stat: 'fuelMax', delta: 7_000, label: 'Fuel-Tank +7.000' },
     ],
     effects: {
       jumpRange: 3,
@@ -865,6 +872,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveSpeed: 5,
       hyperdriveRegen: 2.0,
       hyperdriveFuelEfficiency: 0.2,
+      fuelMax: 7_000,
     },
     cost: { credits: 800, ore: 40, crystal: 15 },
     researchCost: { wissen: 800, artefacts: { drive: 1 } },
@@ -910,9 +918,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
     primaryEffect: { stat: 'cargoCap', delta: 25, label: 'Frachtraum +25' },
     secondaryEffects: [
       { stat: 'safeSlotBonus', delta: 2, label: 'Safe-Slot +2' },
-      { stat: 'fuelMax', delta: 20, label: 'Fuel-Tank +20' },
+      { stat: 'fuelMax', delta: 2_000, label: 'Fuel-Tank +2.000' },
     ],
-    effects: { cargoCap: 25, safeSlotBonus: 2, fuelMax: 20 },
+    effects: { cargoCap: 25, safeSlotBonus: 2, fuelMax: 2_000 },
     cost: { credits: 600, ore: 30, gas: 10 },
     researchCost: { wissen: 800, artefacts: { cargo: 1 } },
     researchDurationMin: 10,
@@ -1230,12 +1238,12 @@ export const MODULES: Record<string, ModuleDefinition> = {
     primaryEffect: { stat: 'jumpRange', delta: 6, label: 'Sprungweite +6' },
     secondaryEffects: [
       { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
-      { stat: 'fuelPerJump', delta: -3, label: 'Fuel/Sprung -3' },
+      { stat: 'fuelPerJump', delta: -30, label: 'Fuel/Sprung -30' },
     ],
     effects: {
       jumpRange: 6,
       engineSpeed: 5,
-      fuelPerJump: -3,
+      fuelPerJump: -30,
       hyperdriveRange: 30,
       hyperdriveSpeed: 8,
       hyperdriveRegen: 3.0,
@@ -1376,6 +1384,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 4, label: 'Engine-Speed +4' },
       { stat: 'hyperdriveRegen', delta: 2.5, label: 'Hyperdrive-Regen +2.5' },
       { stat: 'hyperdriveFuelEfficiency', delta: 0.3, label: 'Fuel-Effizienz +30%' },
+      { stat: 'fuelMax', delta: 12_000, label: 'Fuel-Tank +12.000' },
     ],
     effects: {
       jumpRange: 4,
@@ -1385,6 +1394,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveSpeed: 6,
       hyperdriveRegen: 2.5,
       hyperdriveFuelEfficiency: 0.3,
+      fuelMax: 12_000,
     },
     cost: { credits: 2000, ore: 60, crystal: 30, artefact: 3 },
     researchCost: { wissen: 2000, artefacts: { drive: 2 } },
@@ -1403,6 +1413,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
       { stat: 'hyperdriveRegen', delta: 4.0, label: 'Hyperdrive-Regen +4.0' },
       { stat: 'hyperdriveFuelEfficiency', delta: 0.5, label: 'Fuel-Effizienz +50%' },
+      { stat: 'fuelMax', delta: 18_000, label: 'Fuel-Tank +18.000' },
     ],
     effects: {
       jumpRange: 6,
@@ -1412,6 +1423,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       hyperdriveSpeed: 10,
       hyperdriveRegen: 4.0,
       hyperdriveFuelEfficiency: 0.5,
+      fuelMax: 18_000,
     },
     cost: { credits: 5000, ore: 120, crystal: 60, artefact: 8 },
     researchCost: { wissen: 5000, artefacts: { drive: 3 } },
@@ -1512,9 +1524,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
     primaryEffect: { stat: 'cargoCap', delta: 40, label: 'Frachtraum +40' },
     secondaryEffects: [
       { stat: 'safeSlotBonus', delta: 3, label: 'Safe-Slot +3' },
-      { stat: 'fuelMax', delta: 40, label: 'Fuel-Tank +40' },
+      { stat: 'fuelMax', delta: 4_000, label: 'Fuel-Tank +4.000' },
     ],
-    effects: { cargoCap: 40, safeSlotBonus: 3, fuelMax: 40 },
+    effects: { cargoCap: 40, safeSlotBonus: 3, fuelMax: 4_000 },
     cost: { credits: 1500, ore: 50, gas: 20, artefact: 2 },
     researchCost: { wissen: 2000, artefacts: { cargo: 2 } },
     researchDurationMin: 18,
@@ -1530,9 +1542,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
     primaryEffect: { stat: 'cargoCap', delta: 60, label: 'Frachtraum +60' },
     secondaryEffects: [
       { stat: 'safeSlotBonus', delta: 5, label: 'Safe-Slot +5' },
-      { stat: 'fuelMax', delta: 80, label: 'Fuel-Tank +80' },
+      { stat: 'fuelMax', delta: 8_000, label: 'Fuel-Tank +8.000' },
     ],
-    effects: { cargoCap: 60, safeSlotBonus: 5, fuelMax: 80 },
+    effects: { cargoCap: 60, safeSlotBonus: 5, fuelMax: 8_000 },
     cost: { credits: 4000, ore: 100, gas: 40, artefact: 5 },
     researchCost: { wissen: 5000, artefacts: { cargo: 3 } },
     researchDurationMin: 30,
@@ -2278,6 +2290,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
 
 // Fuel
 export const FUEL_COST_PER_UNIT = 0.1; // 0.1 credits per fuel unit (was 2)
+export const FUEL_MIN_TANK = 1_000; // minimum tank size regardless of hull+modules
 export const FREE_REFUEL_MAX_SHIPS = 3;
 
 // Per-station reputation fuel price modifiers (more granular than faction REP_PRICE_MODIFIERS)

@@ -10,6 +10,7 @@ import {
   BASE_HULL_AP_REGEN,
   POWER_LEVEL_MULTIPLIERS,
   BASE_SCANNER_MEMORY,
+  FUEL_MIN_TANK,
 } from './constants.js';
 import type { HullType, ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
 
@@ -112,6 +113,7 @@ export function calculateShipStats(
   stats.engineSpeed = Math.max(1, Math.min(5, stats.engineSpeed));
   stats.hyperdriveFuelEfficiency = Math.max(0, Math.min(1, stats.hyperdriveFuelEfficiency));
   stats.memory = Math.max(0, Math.round(stats.memory));
+  stats.fuelMax = Math.max(FUEL_MIN_TANK, stats.fuelMax);
 
   return stats;
 }

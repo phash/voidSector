@@ -289,7 +289,8 @@ export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
 export declare const COCKPIT_PROGRAMS: MonitorId[];
 /** Labels for cockpit program buttons */
 export declare const COCKPIT_PROGRAM_LABELS: Record<string, string>;
-export declare const FUEL_COST_PER_UNIT = 2;
+export declare const FUEL_COST_PER_UNIT = 0.1;
+export declare const FUEL_MIN_TANK = 1000;
 export declare const FREE_REFUEL_MAX_SHIPS = 3;
 export declare function getFuelRepPriceModifier(reputation: number): number;
 export declare const STATION_REP_VISIT = 1;
