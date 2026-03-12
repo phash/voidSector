@@ -6,28 +6,11 @@ import { MONITORS } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
 
 const emptySector: SectorData = {
-  x: 0,
-  y: 0,
-  type: 'empty',
-  seed: 42,
-  discoveredBy: null,
-  discoveredAt: null,
-  metadata: {},
-  environment: 'empty',
-  contents: [],
+  x: 0, y: 0, type: 'empty', seed: 42,
+  discoveredBy: null, discoveredAt: null, metadata: {}, environment: 'empty', contents: [],
 };
 
-const stationSector: SectorData = {
-  x: 1,
-  y: 1,
-  type: 'station',
-  seed: 99,
-  discoveredBy: null,
-  discoveredAt: null,
-  metadata: {},
-  environment: 'empty',
-  contents: ['station'],
-};
+const MOBILE_HOME_ID = '__HOME__';
 
 describe('useMobileTabs', () => {
   beforeEach(() => {
@@ -40,106 +23,81 @@ describe('useMobileTabs', () => {
     expect(result.current.tabs).toHaveLength(5);
   });
 
-  it('has NAV as first tab', () => {
+  it('HOME is first tab', () => {
     const { result } = renderHook(() => useMobileTabs());
-    expect(result.current.tabs[0].id).toBe(MONITORS.NAV_COM);
-    expect(result.current.tabs[0].label).toBe('NAV');
+    expect(result.current.tabs[0].id).toBe(MOBILE_HOME_ID);
+    expect(result.current.tabs[0].label).toBe('HOME');
   });
 
-  it('has SHIP as second tab', () => {
+  it('NAV is second tab with NAV-COM id', () => {
     const { result } = renderHook(() => useMobileTabs());
-    expect(result.current.tabs[1].id).toBe(MONITORS.SHIP_SYS);
-    expect(result.current.tabs[1].label).toBe('SHIP');
+    expect(result.current.tabs[1].id).toBe(MONITORS.NAV_COM);
+    expect(result.current.tabs[1].label).toBe('NAV');
   });
 
-  it('has CARGO as third tab when not at station', () => {
+  it('MINE is third tab with MINING id', () => {
     const { result } = renderHook(() => useMobileTabs());
-    expect(result.current.tabs[2].id).toBe(MONITORS.CARGO);
-    expect(result.current.tabs[2].label).toBe('CARGO');
+    expect(result.current.tabs[2].id).toBe(MONITORS.MINING);
+    expect(result.current.tabs[2].label).toBe('MINE');
   });
 
-  it('has TRADE as third tab when at station', () => {
-    mockStoreState({ currentSector: stationSector, alerts: {} });
+  it('QUESTS is fourth tab', () => {
     const { result } = renderHook(() => useMobileTabs());
-    expect(result.current.tabs[2].id).toBe(MONITORS.TRADE);
-    expect(result.current.tabs[2].label).toBe('TRADE');
+    expect(result.current.tabs[3].id).toBe(MONITORS.QUESTS);
+    expect(result.current.tabs[3].label).toBe('QUESTS');
   });
 
-  it('has COMMS as fourth tab', () => {
-    const { result } = renderHook(() => useMobileTabs());
-    expect(result.current.tabs[3].id).toBe(MONITORS.COMMS);
-    expect(result.current.tabs[3].label).toBe('COMMS');
-  });
-
-  it('has MEHR as fifth tab with isMehr flag', () => {
+  it('MEHR is fifth tab with isMehr flag', () => {
     const { result } = renderHook(() => useMobileTabs());
     const mehr = result.current.tabs[4];
     expect(mehr.label).toBe('MEHR');
     expect(mehr.isMehr).toBe(true);
   });
 
-  // --- MEHR monitors ---
-
-  it('returns overflow monitors in mehrMonitors', () => {
+  it('MEHR contains SHIP-SYS', () => {
     const { result } = renderHook(() => useMobileTabs());
     const ids = result.current.mehrMonitors.map((m) => m.id);
-    expect(ids).toContain(MONITORS.MINING);
-    expect(ids).toContain(MONITORS.BASE_LINK);
-    expect(ids).toContain(MONITORS.FACTION);
-    expect(ids).toContain(MONITORS.QUESTS);
-    expect(ids).toContain(MONITORS.TECH);
-    expect(ids).toContain(MONITORS.QUAD_MAP);
-    expect(ids).toContain(MONITORS.LOG);
+    expect(ids).toContain(MONITORS.SHIP_SYS);
   });
 
-  it('excludes CARGO from mehrMonitors when CARGO is in tab bar (not at station)', () => {
+  it('MEHR contains COMMS', () => {
     const { result } = renderHook(() => useMobileTabs());
     const ids = result.current.mehrMonitors.map((m) => m.id);
-    // CARGO is in position 3, so should NOT be in overflow
-    expect(ids).not.toContain(MONITORS.CARGO);
-    // TRADE should be in overflow since it is NOT in the tab bar
+    expect(ids).toContain(MONITORS.COMMS);
+  });
+
+  it('MEHR contains TRADE', () => {
+    const { result } = renderHook(() => useMobileTabs());
+    const ids = result.current.mehrMonitors.map((m) => m.id);
     expect(ids).toContain(MONITORS.TRADE);
   });
 
-  it('excludes TRADE from mehrMonitors when TRADE is in tab bar (at station)', () => {
-    mockStoreState({ currentSector: stationSector, alerts: {} });
+  it('MEHR does NOT contain MINING (it is a main tab)', () => {
     const { result } = renderHook(() => useMobileTabs());
     const ids = result.current.mehrMonitors.map((m) => m.id);
-    // TRADE is in position 3, so should NOT be in overflow
-    expect(ids).not.toContain(MONITORS.TRADE);
-    // CARGO should be in overflow since it is NOT in the tab bar
-    expect(ids).toContain(MONITORS.CARGO);
+    expect(ids).not.toContain(MONITORS.MINING);
   });
 
-  // --- Alert badge aggregation ---
-
-  it('returns 0 mehrAlertCount when no alerts', () => {
+  it('MEHR does NOT contain QUESTS (it is a main tab)', () => {
     const { result } = renderHook(() => useMobileTabs());
-    expect(result.current.mehrAlertCount).toBe(0);
+    const ids = result.current.mehrMonitors.map((m) => m.id);
+    expect(ids).not.toContain(MONITORS.QUESTS);
   });
 
-  it('counts alerts only for monitors in the MEHR list', () => {
+  it('counts alerts only for monitors in MEHR list', () => {
     mockStoreState({
       currentSector: emptySector,
       alerts: {
-        [MONITORS.MINING]: true,
-        [MONITORS.FACTION]: true,
-        [MONITORS.NAV_COM]: true, // not in MEHR list
+        [MONITORS.COMMS]: true,
+        [MONITORS.SHIP_SYS]: true,
+        [MONITORS.NAV_COM]: true, // not in MEHR
       },
     });
     const { result } = renderHook(() => useMobileTabs());
-    // NAV-COM is not in MEHR, so only MINING + FACTION = 2
     expect(result.current.mehrAlertCount).toBe(2);
   });
 
-  it('does not count alert for contextual tab monitor', () => {
-    // Not at station, so CARGO is in tab bar, not in MEHR
-    mockStoreState({
-      currentSector: emptySector,
-      alerts: {
-        [MONITORS.CARGO]: true,
-      },
-    });
+  it('returns 0 mehrAlertCount when no alerts', () => {
     const { result } = renderHook(() => useMobileTabs());
     expect(result.current.mehrAlertCount).toBe(0);
   });
@@ -147,7 +105,6 @@ describe('useMobileTabs', () => {
   it('handles null currentSector gracefully', () => {
     mockStoreState({ currentSector: null, alerts: {} });
     const { result } = renderHook(() => useMobileTabs());
-    // Falls back to CARGO (not at station)
-    expect(result.current.tabs[2].id).toBe(MONITORS.CARGO);
+    expect(result.current.tabs).toHaveLength(5);
   });
 });

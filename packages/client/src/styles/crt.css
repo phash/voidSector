@@ -1678,3 +1678,231 @@
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
+
+/* ── Mobile Dashboard ──────────────────────────────────────── */
+.mobile-dashboard {
+  padding: 8px;
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-dashboard-card {
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  padding: 8px 10px;
+  background: #060606;
+}
+
+.mobile-dashboard-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-card-title {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.mobile-card-subtitle {
+  color: #888;
+  font-size: 0.75rem;
+  margin-top: 3px;
+}
+
+.mobile-card-value {
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.mobile-card-status-active {
+  color: #63ff84;
+  font-size: 0.8rem;
+}
+
+.mobile-card-status-dim {
+  color: #555;
+  font-size: 0.8rem;
+}
+
+.mobile-card-stop-btn {
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  min-height: 44px;
+  min-width: 60px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+
+.mobile-card-action-btn {
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  min-height: 44px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+
+.mobile-progress-bar {
+  height: 4px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.mobile-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.mobile-ap-bar {
+  margin-top: auto;
+}
+
+/* ── Mobile NAV Tab ──────────────────────────────────────────── */
+.mobile-nav-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.mobile-nav-mode-toggle {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.mobile-nav-mode-btn {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid #2a2a2a;
+  color: #555;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.mobile-nav-mode-btn:last-child {
+  border-right: none;
+}
+
+.mobile-nav-mode-btn.active {
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.mobile-nav-radar {
+  flex: 0 0 40vh;
+  min-height: 200px;
+  position: relative;
+}
+
+.mobile-nav-flight-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid #2a2a2a;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+}
+
+.mobile-nav-bookmarks {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.mobile-nav-bookmarks-header {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.mobile-nav-bookmark-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.mobile-nav-bookmark-label {
+  color: #aaa;
+  font-size: 0.8rem;
+  flex: 1;
+}
+
+/* ── Mobile MINE Tab ──────────────────────────────────────────── */
+.mobile-mine-tab {
+  padding: 8px;
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-mine-header {
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.mobile-mine-card {
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  padding: 8px 10px;
+  background: #060606;
+}
+
+.mobile-mine-no-sector {
+  color: #555;
+  text-align: center;
+  margin-top: 40px;
+  font-size: 0.9rem;
+}
+
+.mobile-mine-cargo-row {
+  color: #888;
+  font-size: 0.8rem;
+  padding: 4px 0;
+}
+
+.mobile-mine-all-row {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.mobile-mine-all-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  min-height: 44px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}

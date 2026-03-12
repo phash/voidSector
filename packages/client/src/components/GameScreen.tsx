@@ -32,7 +32,10 @@ import { MehrOverlay } from './MehrOverlay';
 import { StationTerminalOverlay } from './StationTerminalOverlay';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { useMobileTabs } from '../hooks/useMobileTabs';
+import { useMobileTabs, MOBILE_HOME_ID } from '../hooks/useMobileTabs';
+import { MobileDashboard } from './MobileDashboard';
+import { MobileNavTab } from './MobileNavTab';
+import { MobileMineTab } from './MobileMineTab';
 import { MONITORS } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
@@ -380,6 +383,19 @@ function CockpitNavCom() {
   );
 }
 
+function renderMobileScreen(monitorId: string) {
+  switch (monitorId) {
+    case MOBILE_HOME_ID:
+      return <MobileDashboard />;
+    case MONITORS.NAV_COM:
+      return <MobileNavTab />;
+    case MONITORS.MINING:
+      return <MobileMineTab />;
+    default:
+      return renderScreen(monitorId);
+  }
+}
+
 /** Simplified renderScreen for cockpit layout — no embedded controls/details */
 function renderCockpitScreen(monitorId: string) {
   switch (monitorId) {
@@ -411,13 +427,22 @@ export function GameScreen() {
     document.documentElement.style.setProperty('--color-dim', profile.dim);
   }, [colorProfile]);
 
+  useEffect(() => {
+    // Only run on mobile viewports to avoid affecting desktop activeProgram logic
+    if (window.innerWidth >= 1024) return;
+    const mainTabIds = [MOBILE_HOME_ID, MONITORS.NAV_COM, MONITORS.MINING, MONITORS.QUESTS, '__MEHR__'];
+    if (!mainTabIds.includes(activeMonitor)) {
+      setActiveMonitor(MOBILE_HOME_ID);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Desktop layout (>= 1024px) */}
       <CockpitLayout renderScreen={renderCockpitScreen} />
 
       {/* Mobile content (< 1024px): full-screen active monitor */}
-      <div className="mobile-content">{renderScreen(activeMonitor)}</div>
+      <div className="mobile-content">{renderMobileScreen(activeMonitor)}</div>
 
       {/* Mobile tabs (< 1024px) — context-aware via useMobileTabs() */}
       <div className="mobile-tabs" data-testid="mobile-tabs">

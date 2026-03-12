@@ -390,6 +390,7 @@ export interface GameSlice {
 
   // Autopilot / Hyperjump
   autopilot: AutopilotState | null;
+  slowFlightActive: boolean;
   discoveryTimestamps: Record<string, number>;
 
   // Brightness burst: sector keys → timestamp when revealed by area scan
@@ -609,6 +610,7 @@ export interface GameSlice {
   setTradeRoutes: (routes: TradeRoute[]) => void;
   setBookmarks: (bookmarks: Bookmark[]) => void;
   setAutopilot: (state: AutopilotState | null) => void;
+  setSlowFlightActive: (active: boolean) => void;
   setDiscoveryTimestamps: (timestamps: Record<string, number>) => void;
   addScanBurstTimestamps: (keys: string[], now: number) => void;
   setTerritoryMap: (
@@ -739,6 +741,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   tradeRoutes: [],
   bookmarks: [],
   autopilot: null,
+  slowFlightActive: false,
   discoveryTimestamps: {},
   scanBurstTimestamps: {},
   territoryMap: {},
@@ -936,6 +939,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setTradeRoutes: (tradeRoutes) => set({ tradeRoutes }),
   setBookmarks: (bookmarks) => set({ bookmarks }),
   setAutopilot: (autopilot) => set({ autopilot }),
+  setSlowFlightActive: (slowFlightActive) => set({ slowFlightActive }),
   setDiscoveryTimestamps: (discoveryTimestamps) => set({ discoveryTimestamps }),
   addScanBurstTimestamps: (keys, now) =>
     set((s) => {
