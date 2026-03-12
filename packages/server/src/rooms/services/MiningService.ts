@@ -12,8 +12,8 @@ import { MINING_RATE_PER_SECOND } from '@void-sector/shared';
 import { validateMine, validateJettison } from '../../engine/commands.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { stopMining } from '../../engine/mining.js';
-import { getMiningState, saveMiningState } from './RedisAPStore.js';
-import { getSector, updateSectorResources } from '../../db/queries.js';
+import { getMiningState, saveMiningState, getMiningStoryCounter, setMiningStoryCounter } from './RedisAPStore.js';
+import { getSector, updateSectorResources, getMiningStoryIndex, updateMiningStoryIndex } from '../../db/queries.js';
 import {
   addToInventory,
   removeFromInventory,
@@ -24,6 +24,33 @@ import { rejectGuest } from './utils.js';
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
 const MINE_ALL_ORDER: MineableResourceType[] = ['ore', 'gas', 'crystal'];
+const STORY_THRESHOLD = 10;
+
+/**
+ * Update mining story progress. Returns new storyIndex if advanced, null otherwise.
+ */
+export async function updateStoryProgress(
+  playerId: string,
+  minedAmount: number,
+): Promise<number | null> {
+  if (minedAmount <= 0) return null;
+
+  const counter = await getMiningStoryCounter(playerId);
+  const total = counter + minedAmount;
+  const advancements = Math.floor(total / STORY_THRESHOLD);
+  const remainder = total % STORY_THRESHOLD;
+
+  if (advancements > 0) {
+    const currentIndex = await getMiningStoryIndex(playerId);
+    const newIndex = currentIndex + advancements;
+    await updateMiningStoryIndex(playerId, newIndex);
+    await setMiningStoryCounter(playerId, remainder);
+    return newIndex;
+  }
+
+  await setMiningStoryCounter(playerId, total);
+  return null;
+}
 
 export class MiningService {
   private autoStopTimers = new Map<string, NodeJS.Timeout>();

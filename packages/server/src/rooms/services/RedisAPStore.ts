@@ -113,4 +113,13 @@ export async function setHyperdriveState(userId: string, state: HyperdriveState)
   });
 }
 
+export async function getMiningStoryCounter(playerId: string): Promise<number> {
+  const val = await redis.get(`mining:story:${playerId}`);
+  return val ? parseInt(val, 10) : 0;
+}
+
+export async function setMiningStoryCounter(playerId: string, value: number): Promise<void> {
+  await redis.set(`mining:story:${playerId}`, String(value));
+}
+
 export { redis };
