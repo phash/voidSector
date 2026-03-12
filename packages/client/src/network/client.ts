@@ -1547,39 +1547,6 @@ class GameNetwork {
       },
     );
 
-    room.onMessage(
-      'emergencyWarpResult',
-      (data: {
-        success: boolean;
-        error?: string;
-        newSector?: SectorData;
-        fuelGranted?: number;
-        creditCost?: number;
-        credits?: number;
-      }) => {
-        if (data.success && data.newSector) {
-          const store = useStore.getState();
-          store.startJumpAnimation(0, 0);
-          const newSector = data.newSector;
-          const costMsg =
-            data.creditCost && data.creditCost > 0
-              ? ` (Kosten: ${data.creditCost} Credits)`
-              : ' (GRATIS)';
-          setTimeout(async () => {
-            store.addDiscoveries([newSector]);
-            store.addLogEntry(`NOTWARP zur Basis (${newSector.x}, ${newSector.y})${costMsg}`);
-            if (data.credits !== undefined) {
-              useStore.setState({ credits: data.credits });
-            }
-            await this.joinSector(newSector.x, newSector.y);
-            useStore.getState().clearJumpAnimation();
-          }, 800);
-        } else {
-          useStore.getState().addLogEntry(`Notwarp fehlgeschlagen: ${data.error}`);
-        }
-      },
-    );
-
     room.onMessage('allDiscoveries', (data: { discoveries: DiscoveryItem[] }) => {
       const store = useStore.getState();
       // Merge discovery timestamps
@@ -2281,14 +2248,6 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('setAutoRefuel', { enabled, maxPricePerUnit });
-  }
-
-  sendEmergencyWarp() {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
-      return;
-    }
-    this.sectorRoom.send('emergencyWarp');
   }
 
   sendCreateCustomSlate(data: CreateCustomSlateMessage) {
