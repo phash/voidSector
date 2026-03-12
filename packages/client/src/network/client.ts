@@ -479,6 +479,10 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('miningStoryUpdate', (data: { storyIndex: number }) => {
+      useStore.getState().setMiningStoryIndex(data.storyIndex);
+    });
+
     // Ship data (new designer format: id, ownerId, hullType, name, modules, stats, fuel, active)
     room.onMessage('shipData', (data: ClientShipData) => {
       useStore.getState().setShip(data);
