@@ -443,6 +443,26 @@ function CommunityTab() {
   );
 }
 
+// Helper: Calculate which items will be jettisoned on quest abandon
+function getJettisonItems(objectives: any[]): string[] {
+  const items: string[] = [];
+
+  // Bounty: prisoner if combat objective was fulfilled
+  const combatObj = objectives?.find((o: any) => o.type === 'bounty_combat');
+  if (combatObj?.fulfilled) {
+    items.push('prisoner');
+  }
+
+  // Scan: data_slate if scan is done but not yet delivered
+  const scanDone = objectives?.some((o: any) => o.type === 'scan' && o.fulfilled);
+  const deliverDone = objectives?.some((o: any) => o.type === 'scan_deliver' && o.fulfilled);
+  if (scanDone && !deliverDone) {
+    items.push('data_slate');
+  }
+
+  return items;
+}
+
 export function QuestsScreen() {
   const activeQuests = useStore((s) => s.activeQuests);
   const reputations = useStore((s) => s.reputations);
@@ -681,9 +701,17 @@ export function QuestsScreen() {
                           onClick={() => confirm(`abandon-${q.id}`, () => network.sendAbandonQuest(q.id))}
                           style={isArmed(`abandon-${q.id}`) ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
                         >
-                          {isArmed(`abandon-${q.id}`)
-                            ? btnDisabled(UI.actions.ABANDON, 'SURE?')
-                            : btn(UI.actions.ABANDON)}
+                          {isArmed(`abandon-${q.id}`) ? (
+                            (() => {
+                              const jettison = getJettisonItems(q.objectives);
+                              const jettisonText = jettison.length > 0
+                                ? `JETTISON: ${jettison.join(', ')}`
+                                : 'SURE?';
+                              return btnDisabled(UI.actions.ABANDON, jettisonText);
+                            })()
+                          ) : (
+                            btn(UI.actions.ABANDON)
+                          )}
                         </button>
                       </div>
                     )}
