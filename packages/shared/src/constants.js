@@ -46,9 +46,8 @@ export const SECTOR_RESOURCE_YIELDS = {
     pirate: { ore: 8, gas: 3, crystal: 8 },
 };
 export const MINING_RATE_PER_SECOND = 1;
-export const RESOURCE_REGEN_PER_MINUTE = 1;
-export const CRYSTAL_REGEN_PER_MINUTE = 1 / 3;
-export const RESOURCE_REGEN_DELAY_MINUTES = 5;
+export const RESOURCE_REGEN_DELAY_TICKS = 50;
+export const RESOURCE_REGEN_INTERVAL_TICKS = 12; // 1 unit per 12 ticks (60s)
 export const RESOURCE_TYPES = ['ore', 'gas', 'crystal'];
 export const STRUCTURE_COSTS = {
     comm_relay: { ore: 5, gas: 0, crystal: 2 },
@@ -1902,7 +1901,7 @@ export const NEBULA_ZONE_GRID = 250; // was 5_000; 1-2 clusters per 500×500 qua
 export const NEBULA_ZONE_CHANCE = 0.4; // 40% of centers activate → ~1.6 blobs per quadrant
 export const NEBULA_ZONE_MIN_RADIUS = 2.5; // was 3; ~20 sectors min (π×r²)
 export const NEBULA_ZONE_MAX_RADIUS = 8; // max radius → ~201 sectors per blob
-export const NEBULA_SAFE_ORIGIN = 200; // no nebula zones within this many sectors of origin
+export const NEBULA_SAFE_ORIGIN = 50; // no nebula zones within this many sectors of origin — reduced for better quest accessibility
 // Two-stage worldgen: environment weights (first roll).
 // Nebula is handled purely via zone system (NEBULA_ZONE_*) — no scattered random nebula.
 // The entire 'empty' weight falls to 'empty'; the gap falls through to 'empty' as well.
