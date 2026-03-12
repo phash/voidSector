@@ -17,7 +17,6 @@ import { calculateFriction, repValueToTier } from './frictionEngine.js';
 import { findAllBorderPairs, getExpansionTarget } from './expansionEngine.js';
 import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
-import { processWissenTick } from './wissenTickHandler.js';
 import { VoidLifecycleService } from './voidLifecycleService.js';
 
 const AGGRESSION_MUL = parseFloat(process.env.ALIEN_AGGRESSION_MUL ?? '1');
@@ -78,13 +77,10 @@ export class StrategicTickService {
     // 2. Alien expansion into unclaimed space
     await this.processAlienExpansion(allControls);
 
-    // 3. Wissen generation for research labs
-    await processWissenTick(60_000); // strategic tick interval ~60s
-
-    // 4. Void civilization lifecycle
+    // 3. Void civilization lifecycle
     await this.voidLifecycle.tick();
 
-    // 5. Cleanup expired quest items (prisoner, data_slate)
+    // 4. Cleanup expired quest items (prisoner, data_slate)
     await this.cleanupExpiredQuestItems();
   }
 
