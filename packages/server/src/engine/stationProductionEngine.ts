@@ -46,6 +46,9 @@ export function advanceProductionQueue(
 
   const tryStart = (): boolean => {
     const item = items[result.queue_index];
+    // Don't start if output buffer is already full — skip without consuming resources
+    const currentStock = result.finished_goods[item.itemId] ?? 0;
+    if (currentStock >= item.maxStock) return false;
     const cost = item.resourceCost;
     const sp = result.resource_stockpile;
     if ((sp.ore ?? 0) < (cost.ore ?? 0)) return false;
@@ -61,7 +64,22 @@ export function advanceProductionQueue(
   };
 
   if (result.current_item_started_at === null) {
-    tryStart();
+    // Try each item in order, skipping those with full output buffers
+    const startIndex = result.queue_index;
+    let tried = 0;
+    while (tried < items.length) {
+      const item = items[result.queue_index];
+      const currentStock = result.finished_goods[item.itemId] ?? 0;
+      if (currentStock >= item.maxStock) {
+        // Output buffer full — advance queue index and try next item
+        result.queue_index = (result.queue_index + 1) % items.length;
+        tried++;
+        if (result.queue_index === startIndex) break; // all items full
+        continue;
+      }
+      tryStart();
+      break;
+    }
     return result;
   }
 
@@ -78,7 +96,23 @@ export function advanceProductionQueue(
     result.queue_index = (result.queue_index + 1) % items.length;
     result.current_item_started_at = null;
 
-    if (!tryStart()) break;
+    // Try each item in order, skipping those with full output buffers
+    const startIndex = result.queue_index;
+    let tried = 0;
+    let started = false;
+    while (tried < items.length) {
+      const nextItem = items[result.queue_index];
+      const nextStock = result.finished_goods[nextItem.itemId] ?? 0;
+      if (nextStock >= nextItem.maxStock) {
+        result.queue_index = (result.queue_index + 1) % items.length;
+        tried++;
+        if (result.queue_index === startIndex) break; // all items full
+        continue;
+      }
+      started = tryStart();
+      break;
+    }
+    if (!started) break;
   }
 
   return result;

@@ -23,7 +23,9 @@ import {
   removeFromInventory,
   canAddResource,
   getInventoryItem,
+  getCargoState,
 } from '../../engine/inventoryService.js';
+import { getFuelState, saveFuelState } from './RedisAPStore.js';
 import { pool } from '../../db/client.js';
 import { logger } from '../../utils/logger.js';
 
@@ -68,6 +70,7 @@ export class StationProductionService {
 
   private async handleGet(client: Client): Promise<void> {
     if (this.ctx._pst(client.sessionId) !== 'station') return;
+    if (!this.ctx.checkRate(client.sessionId, 'stationGet', 1000)) return;
 
     const x = this.ctx._px(client.sessionId);
     const y = this.ctx._py(client.sessionId);
@@ -93,6 +96,7 @@ export class StationProductionService {
     msg: { itemId: string; quantity: number },
   ): Promise<void> {
     if (this.ctx._pst(client.sessionId) !== 'station') return;
+    if (!this.ctx.checkRate(client.sessionId, 'stationBuy', 500)) return;
 
     const x = this.ctx._px(client.sessionId);
     const y = this.ctx._py(client.sessionId);
@@ -140,6 +144,46 @@ export class StationProductionService {
       return;
     }
 
+    // Fuel special case: goes to Redis fuel state, not inventory
+    if (itemId === 'fuel') {
+      const ship = this.ctx.getShipForClient(client.sessionId);
+      const currentFuel = (await getFuelState(playerId)) ?? 0;
+      const tankSpace = ship.fuelMax - currentFuel;
+      if (tankSpace <= 0) {
+        client.send('actionError', { code: 'CARGO_FULL', message: 'Fuel tank is full' });
+        return;
+      }
+      const effectiveQuantity = Math.min(quantity, tankSpace);
+      const effectiveCost = itemCfg.buyPrice * effectiveQuantity;
+
+      const deducted = await deductCredits(playerId, effectiveCost);
+      if (!deducted) {
+        client.send('actionError', { code: 'INSUFFICIENT_CREDITS', message: 'Insufficient credits' });
+        return;
+      }
+
+      const newFuel = currentFuel + effectiveQuantity;
+      await saveFuelState(playerId, newFuel);
+
+      const newFinishedGoods = { ...updatedRow.finished_goods };
+      newFinishedGoods[itemId] = Math.max(0, (newFinishedGoods[itemId] ?? 0) - effectiveQuantity);
+      updatedRow.finished_goods = newFinishedGoods;
+
+      await saveStationProduction(pool, x, y, {
+        resource_stockpile: updatedRow.resource_stockpile,
+        passive_gen_last_tick: updatedRow.passive_gen_last_tick,
+        queue_index: updatedRow.queue_index,
+        current_item_started_at: updatedRow.current_item_started_at,
+        finished_goods: updatedRow.finished_goods,
+      });
+
+      const newCredits = await getPlayerCredits(playerId);
+      client.send('stationProductionUpdate', state);
+      client.send('creditsUpdate', { credits: newCredits });
+      client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
+      return;
+    }
+
     // Check cargo capacity for resource-type items
     const itemType: ItemType = itemCfg.category === 'MODULE' ? 'module' : 'resource';
     if (itemType === 'resource') {
@@ -171,25 +215,11 @@ export class StationProductionService {
       finished_goods: updatedRow.finished_goods,
     });
 
-    // Re-compute and send updated state
-    const { state: newState, updatedRow: finalRow } = computeStationProductionState(
-      updatedRow,
-      x,
-      y,
-      level,
-      Date.now(),
-    );
-    await saveStationProduction(pool, x, y, {
-      resource_stockpile: finalRow.resource_stockpile,
-      passive_gen_last_tick: finalRow.passive_gen_last_tick,
-      queue_index: finalRow.queue_index,
-      current_item_started_at: finalRow.current_item_started_at,
-      finished_goods: finalRow.finished_goods,
-    });
-
     const newCredits = await getPlayerCredits(playerId);
-    client.send('stationProductionUpdate', newState);
+    const updatedCargo = await getCargoState(playerId);
+    client.send('stationProductionUpdate', state);
     client.send('creditsUpdate', { credits: newCredits });
+    client.send('cargoUpdate', updatedCargo);
   }
 
   private async handleSell(
@@ -197,6 +227,7 @@ export class StationProductionService {
     msg: { itemId: string; quantity: number },
   ): Promise<void> {
     if (this.ctx._pst(client.sessionId) !== 'station') return;
+    if (!this.ctx.checkRate(client.sessionId, 'stationSell', 500)) return;
 
     const x = this.ctx._px(client.sessionId);
     const y = this.ctx._py(client.sessionId);
@@ -234,8 +265,7 @@ export class StationProductionService {
     const level = getStationLevel(station.xp).level;
     const { state, updatedRow } = computeStationProductionState(row, x, y, level, Date.now());
 
-    const tier = getDistanceTier(x, y);
-    const tierConfig = getTierConfig(tier);
+    const tierConfig = getTierConfig(getDistanceTier(x, y));
     const maxStockpile = tierConfig.maxStockpilePerResource;
 
     const currentStockpile = state.resourceStockpile[itemId as OreResource];
@@ -270,24 +300,10 @@ export class StationProductionService {
       finished_goods: updatedRow.finished_goods,
     });
 
-    // Re-compute and send updated state
-    const { state: newState, updatedRow: finalRow } = computeStationProductionState(
-      updatedRow,
-      x,
-      y,
-      level,
-      Date.now(),
-    );
-    await saveStationProduction(pool, x, y, {
-      resource_stockpile: finalRow.resource_stockpile,
-      passive_gen_last_tick: finalRow.passive_gen_last_tick,
-      queue_index: finalRow.queue_index,
-      current_item_started_at: finalRow.current_item_started_at,
-      finished_goods: finalRow.finished_goods,
-    });
-
-    client.send('stationProductionUpdate', newState);
+    const updatedCargo = await getCargoState(playerId);
+    client.send('stationProductionUpdate', state);
     client.send('creditsUpdate', { credits: newCredits });
+    client.send('cargoUpdate', updatedCargo);
 
     if (effectiveQuantity < quantity) {
       client.send('actionError', {
