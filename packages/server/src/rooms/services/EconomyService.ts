@@ -27,6 +27,8 @@ import {
   getStationInventoryItem,
   upsertInventoryItem,
   getStationInventory,
+  getStationFuelAndGas,
+  deductStationFuelStock,
 } from '../../db/npcStationQueries.js';
 import {
   getOrCreateFactoryState,
@@ -535,6 +537,19 @@ export class EconomyService {
     const playerShips = await getPlayerShips(auth.userId);
     const isFreeRefuel = hasBaseHere && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
 
+    // Check station fuel stock — cap fill amount to what the station has available
+    let availableAmount = amount;
+    if (isStation && !isFreeRefuel) {
+      const sx = this.ctx._px(client.sessionId);
+      const sy = this.ctx._py(client.sessionId);
+      const { fuel: stationFuel } = await getStationFuelAndGas(sx, sy);
+      availableAmount = Math.min(amount, stationFuel);
+      if (availableAmount <= 0) {
+        client.send('refuelResult', { success: false, error: 'Station fuel depleted' });
+        return;
+      }
+    }
+
     // Apply reputation price modifier at stations -- use the better of station-rep vs faction-rep
     let priceModifier = 1.0;
     if (isStation && !isFreeRefuel) {
@@ -558,7 +573,7 @@ export class EconomyService {
       priceModifier = Math.min(factionModifier, stationModifier);
     }
 
-    const cost = isFreeRefuel ? 0 : Math.ceil(amount * FUEL_COST_PER_UNIT * priceModifier);
+    const cost = isFreeRefuel ? 0 : Math.ceil(availableAmount * FUEL_COST_PER_UNIT * priceModifier);
 
     if (cost > 0) {
       const credits = await getPlayerCredits(auth.userId);
@@ -569,8 +584,14 @@ export class EconomyService {
       await deductCredits(auth.userId, cost);
     }
 
-    const newFuel = currentFuel + amount;
+    const newFuel = currentFuel + availableAmount;
     await saveFuelState(auth.userId, newFuel);
+
+    if (isStation && !isFreeRefuel) {
+      const sx = this.ctx._px(client.sessionId);
+      const sy = this.ctx._py(client.sessionId);
+      await deductStationFuelStock(sx, sy, availableAmount);
+    }
 
     const remainingCredits = await getPlayerCredits(auth.userId);
 
