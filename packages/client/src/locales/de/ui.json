@@ -110,6 +110,9 @@
   "ship.hullStatus.light": "LEICHT",
   "ship.hullStatus.heavy": "SCHWER",
   "ship.hullStatus.crit": "KRIT",
+  "ship.modulesSlots": "MODULE · {{count}}/{{max}} SLOTS",
+  "ship.noModulesInstalled": "Keine Module installiert",
+  "ship.slotsFree": "{{n}} Slot{{s}} frei",
 
   "stats.drive": "Antrieb",
   "stats.cargo": "Cargo",
@@ -123,10 +126,12 @@
   "stats.charge": "LADUNG",
 
   "acep.developmentPaths": "ENTWICKLUNGSPFADE",
+  "acep.pathsLabel": "ACEP PFADE",
   "acep.total": "GESAMT",
   "acep.activeEffects": "AKTIVE EFFEKTE",
   "acep.traits": "TRAITS",
   "acep.noTraits": "Noch keine Traits",
+  "acep.noTraitsActive": "NOCH KEINE TRAITS AKTIV",
   "acep.traitsExplain": "Traits entstehen durch XP-Verteilung auf die 4 Pfade.",
   "acep.budget": "BUDGET: {{current}}/{{max}} XP",
   "acep.xpDistribution": "AUSBAU: {{ausbau}} · INTEL: {{intel}} · KAMPF: {{kampf}} · EXPLR: {{explorer}}",

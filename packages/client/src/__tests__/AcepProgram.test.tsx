@@ -55,8 +55,8 @@ describe('AcepProgram', () => {
 
   it('ACEP tab is active by default', () => {
     render(<AcepProgram />);
-    // AcepTab content visible
-    expect(screen.getByText('AUSBAU')).toBeInTheDocument();
+    // AcepTab content visible — path label key returned by i18n mock
+    expect(screen.getByText('acep.paths.ausbau')).toBeInTheDocument();
   });
 
   it('clicking MODULE tab calls setAcepActiveTab', () => {
@@ -86,7 +86,7 @@ describe('AcepProgram', () => {
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<AcepProgram />);
-    expect(screen.getByText(/INSTALLIERT/i)).toBeInTheDocument();
+    expect(screen.getByText(/module\.installed/i)).toBeInTheDocument();
   });
 
   it('shows NO ACTIVE SHIP fallback when ship is null', () => {

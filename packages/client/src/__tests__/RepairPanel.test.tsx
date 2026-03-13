@@ -145,7 +145,7 @@ describe('RepairPanel', () => {
   it('shows NO SHIP DATA when ship is null', () => {
     mockStoreState({ ship: null, currentSector: emptySector });
     render(<RepairPanel />);
-    expect(screen.getByText(/NO SHIP DATA/i)).toBeInTheDocument();
+    expect(screen.getByText(/ship\.noShipData/i)).toBeInTheDocument();
   });
 
   it('shows KEIN REPARATUR-MODUL INSTALLIERT when no repair module is equipped', () => {
@@ -167,7 +167,7 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('INTAKT');
+    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('repair.damageState.intact');
     expect(screen.queryByTestId('repair-btn-laser_mk1')).not.toBeInTheDocument();
   });
 
@@ -179,7 +179,7 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('LEICHT');
+    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('repair.damageState.light');
   });
 
   it('shows repair button with cost for light damage when repair module is installed', () => {
@@ -192,8 +192,8 @@ describe('RepairPanel', () => {
     render(<RepairPanel />);
     // Repair button should be present
     expect(screen.getByTestId('repair-btn-laser_mk1')).toBeInTheDocument();
-    // Cost: tier 1 × 5 ore = 5 ore for light → intact (shown as "5 Erz")
-    expect(screen.getByText(/5 Erz/i)).toBeInTheDocument();
+    // Cost: tier 1 × 5 ore = 5 ore for light → intact (shown as "5 resources.ore" from i18n mock)
+    expect(screen.getByText(/5 resources\.ore/i)).toBeInTheDocument();
   });
 
   it('calls sendRepairModule when repair button is clicked', () => {
@@ -228,11 +228,11 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('SCHWER');
+    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('repair.damageState.heavy');
     // No repair button — T1 can't do heavy
     expect(screen.queryByTestId('repair-btn-laser_mk1')).not.toBeInTheDocument();
-    // Shows "benötigt T3 Drohne" message
-    expect(screen.getByText(/benötigt T3 Drohne/i)).toBeInTheDocument();
+    // Shows "repair.needsT3Drone" key
+    expect(screen.getByText(/repair\.needsT3Drone/i)).toBeInTheDocument();
   });
 
   it('allows heavy repair with T3 repair drone', () => {
@@ -245,9 +245,9 @@ describe('RepairPanel', () => {
     render(<RepairPanel />);
     expect(screen.getByTestId('repair-btn-laser_mk1')).toBeInTheDocument();
     // Cost: tier 3 × 3 ore + tier 3 × 2 crystal = 9 ore + 6 crystal
-    // Use getAllByText since both modules may show identical costs
-    expect(screen.getAllByText(/9 Erz/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/6 Kristall/i).length).toBeGreaterThanOrEqual(1);
+    // With i18n mock: "9 resources.ore" and "6 resources.crystal"
+    expect(screen.getAllByText(/9 resources\.ore/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/6 resources\.crystal/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows ZERSTÖRT damage state', () => {
@@ -258,9 +258,9 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('ZERSTÖRT');
-    // Cost: tier 3 × 5 crystal = 15 crystal (shown as "15 Kristall")
-    expect(screen.getByText(/15 Kristall/i)).toBeInTheDocument();
+    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('repair.damageState.destroyed');
+    // Cost: tier 3 × 5 crystal = 15 crystal (shown as "15 resources.crystal")
+    expect(screen.getByText(/15 resources\.crystal/i)).toBeInTheDocument();
   });
 
   it('does not show station repair button when not at station', () => {

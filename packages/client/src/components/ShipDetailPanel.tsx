@@ -1,4 +1,5 @@
 // packages/client/src/components/ShipDetailPanel.tsx
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { MONITORS, BASE_MODULE_SLOTS } from '@void-sector/shared';
 
@@ -28,6 +29,7 @@ function toTitleCase(moduleId: string): string {
 }
 
 export function ShipDetailPanel() {
+  const { t } = useTranslation('ui');
   const ship = useStore((s) => s.ship);
   const setMonitorMode = useStore((s) => s.setMonitorMode);
 
@@ -52,7 +54,7 @@ export function ShipDetailPanel() {
       {/* ACEP Paths */}
       <div style={{ background: '#0a0a0a', border: '1px solid #222', padding: '6px 8px', marginBottom: '8px' }}>
         <div style={{ fontSize: '0.6rem', letterSpacing: '1px', color: '#555', marginBottom: '6px' }}>
-          ACEP PATHS
+          {t('acep.pathsLabel')}
         </div>
         {ACEP_DETAIL_PATHS.map(({ key, label, color }) => {
           const val = xp ? xp[key] : 0;
@@ -70,16 +72,16 @@ export function ShipDetailPanel() {
         {/* Traits */}
         <div style={{ borderTop: '1px solid #1a1a1a', marginTop: '5px', paddingTop: '5px', fontSize: '0.67rem' }}>
           {traits.length > 0 ? (
-            traits.map((t, i) => (
-              <span key={t}>
+            traits.map((trait, i) => (
+              <span key={trait}>
                 {i > 0 && <span style={{ color: '#333' }}> · </span>}
-                <span data-trait={t} style={{ color: TRAIT_COLORS[t] ?? '#aaa' }}>
-                  ⬡ {t.toUpperCase()}
+                <span data-trait={trait} style={{ color: TRAIT_COLORS[trait] ?? '#aaa' }}>
+                  ⬡ {trait.toUpperCase()}
                 </span>
               </span>
             ))
           ) : (
-            <span style={{ color: '#444' }}>NO TRAITS ACTIVE YET</span>
+            <span style={{ color: '#444' }}>{t('acep.noTraitsActive')}</span>
           )}
         </div>
       </div>
@@ -87,14 +89,14 @@ export function ShipDetailPanel() {
       {/* Modules */}
       <div style={{ marginBottom: '8px' }}>
         <div style={{ fontSize: '0.6rem', letterSpacing: '1px', color: '#555', marginBottom: '4px' }}>
-          MODULES · {installedModules.length}/{maxSlots} SLOTS
+          {t('ship.modulesSlots', { count: installedModules.length, max: maxSlots })}
         </div>
         {installedModules.length > 0 ? (
           <div style={{ color: '#aaa', fontSize: '0.68rem', lineHeight: 1.4 }}>
             {installedModules.map((m) => toTitleCase(m.moduleId)).join(' · ')}
           </div>
         ) : (
-          <div style={{ color: '#444', fontSize: '0.65rem' }}>No modules installed</div>
+          <div style={{ color: '#444', fontSize: '0.65rem' }}>{t('ship.noModulesInstalled')}</div>
         )}
         <div style={{ color: '#444', fontSize: '0.65rem', marginTop: '2px' }}>
           {freeSlots} slot{freeSlots !== 1 ? 's' : ''} free

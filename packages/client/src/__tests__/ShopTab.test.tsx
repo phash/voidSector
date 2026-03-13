@@ -56,26 +56,26 @@ describe('ShopTab', () => {
   it('shows unavailable message when not at station or base', () => {
     mockStoreState({ ...baseStore, currentSector: { type: 'empty' } as any, baseStructures: [] });
     render(<ShopTab />);
-    expect(screen.getByText(/nur an Station/i)).toBeInTheDocument();
+    expect(screen.getByText(/shop\.onlyAtStation/i)).toBeInTheDocument();
   });
 
   it('shows module list when at station', () => {
     render(<ShopTab />);
-    // At least one [KAUFEN] button should exist (modules list is non-empty)
-    const buyBtns = screen.getAllByText(/KAUFEN/i);
+    // At least one shop.buy button should exist (modules list is non-empty)
+    const buyBtns = screen.getAllByText(/shop\.buy/i);
     expect(buyBtns.length).toBeGreaterThan(0);
   });
 
   it('shows module list when at home base', () => {
     mockStoreState({ ...baseStore, currentSector: { type: 'empty' } as any, baseStructures: [{ type: 'base' }] as any[] });
     render(<ShopTab />);
-    const buyBtns = screen.getAllByText(/KAUFEN/i);
+    const buyBtns = screen.getAllByText(/shop\.buy/i);
     expect(buyBtns.length).toBeGreaterThan(0);
   });
 
   it('KAUFEN calls sendBuyModule with module id', () => {
     render(<ShopTab />);
-    const buyBtns = screen.getAllByText(/KAUFEN/i);
+    const buyBtns = screen.getAllByText(/shop\.buy/i);
     fireEvent.click(buyBtns[0]);
     expect(network.sendBuyModule).toHaveBeenCalledTimes(1);
   });
@@ -84,7 +84,7 @@ describe('ShopTab', () => {
     mockStoreState({ ...baseStore, credits: 0 });
     render(<ShopTab />);
     // All buttons should be disabled (no credits)
-    const buyBtns = screen.getAllByRole('button', { name: /KAUFEN/i });
+    const buyBtns = screen.getAllByRole('button', { name: /shop\.buy/i });
     expect(buyBtns.every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
   });
 
@@ -94,7 +94,7 @@ describe('ShopTab', () => {
     // This test ensures costLabel/canAfford use !== undefined, not truthy checks
     mockStoreState({ ...baseStore, credits: 9999, cargo: { ...fullCargo, ore: 0 } });
     render(<ShopTab />);
-    const buyBtns = screen.getAllByRole('button', { name: /KAUFEN/i });
+    const buyBtns = screen.getAllByRole('button', { name: /shop\.buy/i });
     // At least some buttons should be enabled (those whose cost.ore is undefined)
     expect(buyBtns.some((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
   });
@@ -103,8 +103,8 @@ describe('ShopTab', () => {
     const setHovered = vi.fn();
     mockStoreState({ ...baseStore, setAcepHoveredModuleId: setHovered });
     render(<ShopTab />);
-    // Get the first module item row (parent div of the first KAUFEN button)
-    const buyBtns = screen.getAllByText(/KAUFEN/i);
+    // Get the first module item row (parent div of the first shop.buy button)
+    const buyBtns = screen.getAllByText(/shop\.buy/i);
     const moduleRow = buyBtns[0].closest('div[style*="border"]') ?? buyBtns[0].parentElement!;
     fireEvent.mouseEnter(moduleRow);
     expect(setHovered).toHaveBeenCalledTimes(1);
