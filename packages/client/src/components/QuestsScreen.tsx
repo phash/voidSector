@@ -535,6 +535,8 @@ export function QuestsScreen() {
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
   const setSelectedQuest = useStore((s) => s.setSelectedQuest);
+  const trackedQuests = useStore((s) => s.trackedQuests);
+  const trackedIds = new Set(trackedQuests.map((tq) => tq.questId));
   const { confirm, isArmed, disarm } = useConfirm(null);
 
   const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'reputation' | 'story'>('auftraege');
@@ -546,7 +548,14 @@ export function QuestsScreen() {
   useEffect(() => {
     network.requestActiveQuests();
     network.requestReputation();
+    network.requestTrackedQuests();
   }, []);
+
+  function toggleTrack(questId: string) {
+    const isTracked = trackedIds.has(questId);
+    if (!isTracked && trackedQuests.length >= MAX_TRACKED) return;
+    network.sendTrackQuest(questId, !isTracked);
+  }
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -660,8 +669,11 @@ export function QuestsScreen() {
           {subFilter === 'all' && (
             <>
               {/* Active quests — Journal format */}
-              <div style={{ color: '#FFB000', marginBottom: '4px', letterSpacing: '0.1em' }}>
-                ─── JOURNAL ({activeQuests.length}/3) ───
+              <div style={{ color: '#FFB000', marginBottom: '4px', letterSpacing: '0.1em', display: 'flex', justifyContent: 'space-between' }}>
+                <span>─── JOURNAL ({activeQuests.length}) ───</span>
+                <span style={{ color: trackedQuests.length >= MAX_TRACKED ? '#FF3333' : 'rgba(68,136,255,0.8)', fontSize: '0.55rem' }}>
+                  ◈ {trackedQuests.length}/{MAX_TRACKED}
+                </span>
               </div>
               {activeQuests.length === 0 && (
                 <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
@@ -673,13 +685,16 @@ export function QuestsScreen() {
                 const doneCount = q.objectives.filter((o) => o.fulfilled).length;
                 const allDone = doneCount === q.objectives.length;
                 const hasTarget = q.objectives.some((o) => o.targetX != null && o.targetY != null);
+                const isTracked = trackedIds.has(q.id);
+                const canTrack = isTracked || trackedQuests.length < MAX_TRACKED;
                 return (
                   <div
                     key={q.id}
                     style={{
-                      border: `1px solid ${allDone ? '#00FF88' : 'rgba(255,176,0,0.3)'}`,
+                      border: `1px solid ${allDone ? '#00FF88' : isTracked ? 'rgba(68,136,255,0.5)' : 'rgba(255,176,0,0.3)'}`,
                       marginBottom: '4px',
                       overflow: 'hidden',
+                      background: isTracked ? 'rgba(0,60,180,0.04)' : 'transparent',
                     }}
                   >
                     {/* Header row — click to expand and select for Sec 3 detail */}
@@ -703,6 +718,24 @@ export function QuestsScreen() {
                       </span>
                       <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         {questTypeBadge(q.templateId, allDone ? '#00FF88' : '#FFB000')}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleTrack(q.id); }}
+                          disabled={!canTrack}
+                          title={isTracked ? 'Nicht mehr verfolgen' : canTrack ? `Verfolgen (${trackedQuests.length}/${MAX_TRACKED})` : 'Max. Verfolgte erreicht'}
+                          style={{
+                            background: isTracked ? 'rgba(0,120,255,0.3)' : 'none',
+                            color: isTracked ? '#4488FF' : canTrack ? 'rgba(255,176,0,0.5)' : '#333',
+                            border: `1px solid ${isTracked ? '#4488FF' : canTrack ? 'rgba(255,176,0,0.3)' : '#333'}`,
+                            padding: '0px 3px',
+                            cursor: canTrack ? 'pointer' : 'not-allowed',
+                            fontFamily: 'inherit',
+                            fontSize: '0.55rem',
+                            lineHeight: 1.2,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isTracked ? '◈' : '◉'}
+                        </button>
                         <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.5rem' }}>
                           {isExpanded ? '▲' : '▼'}
                         </span>
@@ -810,8 +843,11 @@ export function QuestsScreen() {
                 );
               })}
 
-              {/* Journal filter panel */}
-              <div style={{ marginTop: '8px', borderTop: '1px solid rgba(255,176,0,0.15)', paddingTop: '8px' }}>
+              {/* Tracking filter / overview */}
+              <div style={{ marginTop: '8px', borderTop: '1px solid rgba(68,136,255,0.2)', paddingTop: '8px' }}>
+                <div style={{ color: 'rgba(68,136,255,0.7)', fontSize: '0.6rem', marginBottom: '4px', letterSpacing: '0.1em' }}>
+                  ─── TRACKING ({trackedQuests.length}/{MAX_TRACKED}) ───
+                </div>
                 <JournalTab />
               </div>
             </>
