@@ -43,11 +43,15 @@ export function generateStationQuests(
   const questCount = 2 + ((baseSeed >>> 0) % 3);
   const quests: AvailableQuest[] = [];
 
-  for (let i = 0; i < Math.min(questCount, eligible.length); i++) {
+  const usedTemplateIds = new Set<string>();
+  const maxAttempts = eligible.length * 2;
+  for (let i = 0; quests.length < questCount && i < maxAttempts; i++) {
     const templateIdx = ((baseSeed >>> (i * 4)) >>> 0) % eligible.length;
     const template = eligible[templateIdx];
-    const npc = npcs[i % npcs.length];
-    const questSeed = hashCoords(stationX + i, stationY + dayOfYear, WORLD_SEED + QUEST_SEED_SALT);
+    if (usedTemplateIds.has(template.id)) continue;
+    usedTemplateIds.add(template.id);
+    const npc = npcs[quests.length % npcs.length];
+    const questSeed = hashCoords(stationX + quests.length, stationY + dayOfYear, WORLD_SEED + QUEST_SEED_SALT);
 
     const quest = fillQuestTemplate(template, questSeed, stationX, stationY, npc.name, faction);
     if (quest) quests.push(quest);

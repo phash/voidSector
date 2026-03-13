@@ -875,6 +875,7 @@ class GameNetwork {
         store.setCredits(data.credits);
         this.sectorRoom?.send('getMySlates');
       } else {
+        store.setActionError({ code: 'SLATE_SELL_FAIL', message: data.error });
         store.addLogEntry(`VERKAUF FEHLGESCHLAGEN: ${data.error}`);
       }
     });
