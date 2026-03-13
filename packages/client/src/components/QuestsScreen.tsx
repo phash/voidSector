@@ -533,7 +533,7 @@ export function QuestsScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
-  const { confirm, isArmed, disarm } = useConfirm();
+  const { confirm, isArmed, disarm } = useConfirm(null);
 
   const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'reputation' | 'story'>('auftraege');
   const [subFilter, setSubFilter] = useState<'all' | 'rescue'>('all');

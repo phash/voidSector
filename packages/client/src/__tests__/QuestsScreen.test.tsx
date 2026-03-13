@@ -303,6 +303,42 @@ describe('QuestsScreen', () => {
     expect(screen.queryByText('ZIELE')).toBeNull();
   });
 
+  it('clicking ANNEHMEN calls sendAcceptQuest after arming', async () => {
+    mockStoreState({
+      activeQuests: [],
+      currentSector: { type: 'station', x: 5, y: 5 },
+      position: { x: 5, y: 5 },
+    });
+    render(<QuestsScreen />);
+    await userEvent.click(screen.getByText('tabs.available'));
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('stationNpcsResult', {
+        detail: {
+          npcs: [{ id: 'n1', name: 'Zar', factionId: 'traders' }],
+          quests: [{
+            templateId: 'fetch_gas_1',
+            npcName: 'Zar',
+            npcFactionId: 'traders',
+            title: 'Gas Delivery',
+            description: 'Deliver gas',
+            objectives: [],
+            rewards: { credits: 27, xp: 11, reputation: 5 },
+            requiredTier: 'neutral',
+          }],
+        },
+      }));
+    });
+
+    // First click arms the dialog
+    await userEvent.click(screen.getByText('[actions.accept]'));
+    expect(screen.getByText('[ANNEHMEN]')).toBeDefined();
+
+    // Second click (ANNEHMEN) should call sendAcceptQuest
+    await userEvent.click(screen.getByText('[ANNEHMEN]'));
+    expect(network.sendAcceptQuest).toHaveBeenCalledWith('fetch_gas_1', 5, 5);
+  });
+
   it('shows completed hint for fully fulfilled quest in collapsed state', () => {
     mockStoreState({
       activeQuests: [
