@@ -1,0 +1,16 @@
+# docker-compose.dev.yml — lokale Entwicklung
+#
+# Legt Postgres und Redis auf Host-Ports offen für direkten Zugriff
+# mit psql, redis-cli, DBeaver, etc.
+#
+# Verwendung:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
