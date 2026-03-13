@@ -17,7 +17,23 @@ while [[ $# -gt 0 ]]; do
     --keep-tunnel) KEEP_TUNNEL=true; shift ;;
     --branch) BRANCH="$2"; shift 2 ;;
     --no-pull) NO_PULL=true; shift ;;
-    *) echo "Unbekannte Option: $1"; echo "Verwendung: $0 [--keep-tunnel] [--branch <name>] [--no-pull]"; exit 1 ;;
+    --help|-h)
+      echo "Verwendung: $0 [OPTIONEN]"
+      echo ""
+      echo "Optionen:"
+      echo "  --keep-tunnel      Cloudflared nicht neu starten (Tunnel-URL bleibt erhalten)"
+      echo "  --branch <name>    Branch vor dem Deploy auschecken"
+      echo "  --no-pull          Kein git pull"
+      echo "  --help, -h         Diese Hilfe anzeigen"
+      echo ""
+      echo "Beispiele:"
+      echo "  ./deploy.sh                          # normaler Deploy (neue Tunnel-URL)"
+      echo "  ./deploy.sh --keep-tunnel            # Deploy, Tunnel-URL behalten"
+      echo "  ./deploy.sh --branch feat/xyz        # bestimmten Branch deployen"
+      echo "  ./deploy.sh --keep-tunnel --no-pull  # nur neu starten, kein git pull"
+      exit 0
+      ;;
+    *) echo "Unbekannte Option: $1"; echo "Hilfe: $0 --help"; exit 1 ;;
   esac
 done
 
