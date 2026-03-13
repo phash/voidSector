@@ -104,7 +104,7 @@ export function HelpOverlay() {
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={dismissTip}
         style={{
           background: 'rgba(0, 0, 0, 0.92)',
           border: '1px solid var(--color-primary)',
@@ -142,7 +142,8 @@ export function HelpOverlay() {
         {activeTip.articleId && (
           <div style={{ marginTop: '10px' }}>
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 openCompendium(activeTip.articleId);
               }}
               data-testid="compendium-link"
