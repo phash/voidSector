@@ -345,12 +345,16 @@ export class ScanService {
       // Faction sharing failure must not break scan
     }
 
-    // Phase 4: Check quest progress for scan quests
-    for (const s of sectors) {
-      await this.ctx.checkQuestProgress(client, auth.userId, 'scan', {
-        sectorX: s.x,
-        sectorY: s.y,
-      });
+    // Phase 4: Post-scan side effects — must not propagate errors (scanResult already sent)
+    try {
+      for (const s of sectors) {
+        await this.ctx.checkQuestProgress(client, auth.userId, 'scan', {
+          sectorX: s.x,
+          sectorY: s.y,
+        });
+      }
+    } catch (err) {
+      logger.error({ err }, 'post-scan quest progress check failed');
     }
 
     // Community quest: auto-contribute scanned sectors
@@ -366,7 +370,7 @@ export class ScanService {
     // Wissen: +1 per newly discovered sector (NOT capped — amounts are small: 1 per sector)
     const newSectorCount = newSectors.length;
     if (newSectorCount > 0) {
-      await addWissen(auth.userId, newSectorCount);
+      await addWissen(auth.userId, newSectorCount).catch(() => {});
     }
   }
 

@@ -84,7 +84,7 @@ export class CommunityQuestService {
       targetCount: row.target_count,
       currentCount: row.current_count,
       rewardType: row.reward_type,
-      expiresAt: row.expires_at,
+      expiresAt: row.expires_at ? Number(row.expires_at) : null,
       status: row.status,
     };
   }
