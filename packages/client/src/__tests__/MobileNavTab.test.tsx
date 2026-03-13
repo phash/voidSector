@@ -92,7 +92,7 @@ describe('MobileNavTab', () => {
     } as any);
     render(<MobileNavTab />);
     expect(screen.getByText(/Asteroid Base/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /→ GO/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /mobile\.go/i })).toBeInTheDocument();
   });
 
   it('bookmark GO sends sendSlowFlight in SLOW mode', async () => {
@@ -103,7 +103,7 @@ describe('MobileNavTab', () => {
       bookmarks: [{ slot: 1, sectorX: 10, sectorY: 7, label: 'Asteroid Base' }],
     } as any);
     render(<MobileNavTab />);
-    await userEvent.click(screen.getByRole('button', { name: /→ GO/i }));
+    await userEvent.click(screen.getByRole('button', { name: /mobile\.go/i }));
     expect(network.sendSlowFlight).toHaveBeenCalledWith(10, 7);
   });
 
@@ -114,7 +114,7 @@ describe('MobileNavTab', () => {
       bookmarks: [{ slot: 1, sectorX: 10, sectorY: 7, label: 'Asteroid Base' }],
     } as any);
     render(<MobileNavTab />);
-    await userEvent.click(screen.getByRole('button', { name: /→ GO/i }));
+    await userEvent.click(screen.getByRole('button', { name: /mobile\.go/i }));
     expect(network.sendJump).toHaveBeenCalledWith(10, 7);
   });
 
@@ -125,6 +125,6 @@ describe('MobileNavTab', () => {
       autopilot: { active: true, targetX: 8, targetY: 5, remaining: 3 },
     } as any);
     render(<MobileNavTab />);
-    expect(screen.getByText(/3 Sektoren/i)).toBeInTheDocument();
+    expect(screen.getByText(/mobile\.sectors/i)).toBeInTheDocument();
   });
 });

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MONITORS } from '@void-sector/shared';
 
 function MiningCard() {
+  const { t } = useTranslation('ui');
   const mining = useStore((s) => s.mining);
   const [elapsed, setElapsed] = useState(0);
 
@@ -33,13 +35,13 @@ function MiningCard() {
       style={mining?.active ? { borderColor: 'var(--color-primary)' } : undefined}
     >
       <div className="mobile-dashboard-card-row">
-        <span className="mobile-card-title">⛏ MINING</span>
+        <span className="mobile-card-title">{t('mobile.mining')}</span>
         {mining?.active ? (
           <span className="mobile-card-status-active">
-            AKTIV {mm}:{ss}
+            {t('mobile.miningActive', { mm, ss })}
           </span>
         ) : (
-          <span className="mobile-card-status-dim">INAKTIV</span>
+          <span className="mobile-card-status-dim">{t('mobile.miningInactive')}</span>
         )}
         {mining?.active && (
           <button
@@ -65,6 +67,7 @@ function MiningCard() {
 }
 
 function CargoCard() {
+  const { t } = useTranslation('ui');
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const currentSector = useStore((s) => s.currentSector);
@@ -77,7 +80,7 @@ function CargoCard() {
   return (
     <div className="mobile-dashboard-card">
       <div className="mobile-dashboard-card-row">
-        <span className="mobile-card-title">📦 CARGO</span>
+        <span className="mobile-card-title">{t('mobile.cargo')}</span>
         <span>
           {used} / {cap}
         </span>
@@ -86,7 +89,7 @@ function CargoCard() {
             className="mobile-card-action-btn"
             onClick={() => useStore.getState().setActiveMonitor(MONITORS.TRADE)}
           >
-            VERKAUFEN
+            {t('mobile.sell')}
           </button>
         )}
       </div>
@@ -104,6 +107,7 @@ function CargoCard() {
 }
 
 function NextDestCard() {
+  const { t } = useTranslation('ui');
   const bookmarks = useStore((s) => s.bookmarks);
   const setActiveMonitor = useStore((s) => s.setActiveMonitor);
 
@@ -114,7 +118,7 @@ function NextDestCard() {
   return (
     <div className="mobile-dashboard-card">
       <div className="mobile-dashboard-card-row">
-        <span className="mobile-card-title">🗺 NÄCHSTES ZIEL</span>
+        <span className="mobile-card-title">{t('mobile.nextDest')}</span>
       </div>
       <div className="mobile-dashboard-card-row">
         <span className="mobile-card-subtitle">
@@ -124,7 +128,7 @@ function NextDestCard() {
           className="mobile-card-action-btn"
           onClick={() => setActiveMonitor(MONITORS.NAV_COM)}
         >
-          FLIEGEN →
+          {t('mobile.fly')}
         </button>
       </div>
     </div>
@@ -132,6 +136,7 @@ function NextDestCard() {
 }
 
 function SlowFlightCard() {
+  const { t } = useTranslation('ui');
   const slowFlightActive = useStore((s) => s.slowFlightActive);
   const autopilot = useStore((s) => s.autopilot);
 
@@ -140,7 +145,7 @@ function SlowFlightCard() {
   return (
     <div className="mobile-dashboard-card" style={{ borderColor: 'var(--color-primary)' }}>
       <div className="mobile-dashboard-card-row">
-        <span className="mobile-card-title">✈ SLOW FLIGHT</span>
+        <span className="mobile-card-title">{t('mobile.slowFlight')}</span>
         <button
           className="mobile-card-stop-btn"
           onClick={() => network.sendCancelAutopilot()}
@@ -149,7 +154,7 @@ function SlowFlightCard() {
         </button>
       </div>
       <div className="mobile-card-subtitle">
-        → ({autopilot.targetX}/{autopilot.targetY}) · {autopilot.remaining} Sektoren
+        → ({autopilot.targetX}/{autopilot.targetY}) · {t('mobile.sectors', { n: autopilot.remaining })}
       </div>
     </div>
   );

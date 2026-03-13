@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { COLOR_PROFILES } from '../styles/themes';
 import type { ColorProfileName } from '../styles/themes';
@@ -13,6 +14,7 @@ const inlineInput: React.CSSProperties = {
 };
 
 export const SettingsPanel: React.FC = () => {
+  const { t } = useTranslation('ui');
   const username = useStore((s) => s.username);
   const colorProfile = useStore((s) => s.colorProfile);
   const setColorProfile = useStore((s) => s.setColorProfile);
@@ -31,15 +33,15 @@ export const SettingsPanel: React.FC = () => {
 
   return (
     <div className="settings-panel">
-      <div className="settings-header">EINSTELLUNGEN</div>
+      <div className="settings-header">{t('settings.settings')}</div>
 
       <div className="settings-row">
-        <span className="settings-label">PILOT</span>
+        <span className="settings-label">{t('settings.pilot')}</span>
         <span>{username ?? '—'}</span>
       </div>
 
       <div className="settings-row">
-        <span className="settings-label">FARBE</span>
+        <span className="settings-label">{t('settings.color')}</span>
         <select
           value={colorProfile}
           onChange={(e) => setColorProfile(e.target.value as ColorProfileName)}
@@ -55,7 +57,7 @@ export const SettingsPanel: React.FC = () => {
       </div>
 
       <div className="settings-row">
-        <span className="settings-label">HELLIGKEIT</span>
+        <span className="settings-label">{t('settings.brightness')}</span>
         <input
           type="range"
           className="settings-slider"
@@ -71,13 +73,13 @@ export const SettingsPanel: React.FC = () => {
 
       <div className="settings-row">
         <button className="vs-btn-sm" onClick={() => openCompendium()} data-testid="kompendium-btn">
-          ◈ KOMPENDIUM
+          {t('settings.compendium')}
         </button>
       </div>
 
       <div className="settings-row">
         <button className="vs-btn-sm vs-btn-danger" onClick={handleLogout}>
-          LOGOUT
+          {t('settings.logout')}
         </button>
       </div>
     </div>

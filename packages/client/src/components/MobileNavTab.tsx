@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RadarCanvas } from './RadarCanvas';
@@ -19,6 +20,7 @@ function useNavMode(): [NavMode, (m: NavMode) => void] {
 }
 
 export function MobileNavTab() {
+  const { t } = useTranslation('ui');
   const [navMode, setNavMode] = useNavMode();
   const bookmarks = useStore((s) => s.bookmarks);
   const slowFlightActive = useStore((s) => s.slowFlightActive);
@@ -70,7 +72,7 @@ export function MobileNavTab() {
       {slowFlightActive && autopilot?.active && (
         <div className="mobile-nav-flight-progress">
           <span>
-            ({autopilot.targetX}/{autopilot.targetY}) · {autopilot.remaining} Sektoren
+            ({autopilot.targetX}/{autopilot.targetY}) · {t('mobile.sectors', { n: autopilot.remaining })}
           </span>
           <button
             className="mobile-card-stop-btn"
@@ -84,7 +86,7 @@ export function MobileNavTab() {
       {/* Bookmarks */}
       {bookmarks && bookmarks.length > 0 && (
         <div className="mobile-nav-bookmarks">
-          <div className="mobile-nav-bookmarks-header">BOOKMARKS</div>
+          <div className="mobile-nav-bookmarks-header">{t('mobile.bookmarks')}</div>
           {bookmarks.map((bm) => (
             <div key={bm.slot} className="mobile-nav-bookmark-row">
               <span className="mobile-nav-bookmark-label">
@@ -93,9 +95,9 @@ export function MobileNavTab() {
               <button
                 className="mobile-card-action-btn"
                 onClick={() => handleBookmarkGo(bm.sectorX, bm.sectorY)}
-                aria-label="→ GO"
+                aria-label={t('mobile.go')}
               >
-                → GO
+                {t('mobile.go')}
               </button>
             </div>
           ))}
