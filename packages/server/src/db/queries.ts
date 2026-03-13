@@ -3264,7 +3264,7 @@ export async function ensureZentrumQuadrant(): Promise<void> {
   // Ensure quadrant_control entry exists for (0,0) as human home quadrant
   await query(
     `INSERT INTO quadrant_control (qx, qy, controlling_faction, faction_shares, attack_value, defense_value, friction_score, station_tier)
-     VALUES (0, 0, 'human', '{"human": 100}', 0, 100, 0, 1)
+     VALUES (0, 0, 'humans', '{"humans": 100}', 0, 100, 0, 1)
      ON CONFLICT (qx, qy) DO NOTHING`,
   );
 }
@@ -3273,7 +3273,7 @@ export async function ensureAlienHomeQuadrants(): Promise<number> {
   const factions = await getAllFactionConfigs();
   let seeded = 0;
   for (const f of factions) {
-    if (f.faction_id === 'human') continue;
+    if (f.faction_id === 'humans') continue;
     // Ensure quadrant row exists
     await query(
       `INSERT INTO quadrants (qx, qy, seed, name, discovered_by, discovered_at, config)

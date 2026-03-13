@@ -1657,13 +1657,13 @@ export class WorldService {
         // ACEP: EXPLORER-XP bonus for first quadrant discovery (spec: +50)
         addAcepXpForPlayer(auth.userId, 'explorer', 50).catch(() => {});
         // Log world-first quadrant discovery
-        logExpansionEvent('human', qx, qy, 'discovered').catch(() => {});
+        logExpansionEvent('humans', qx, qy, 'discovered').catch(() => {});
       } else {
         // Quadrant exists but player may not know it yet
         const alreadyKnown = await playerKnowsQuadrant(auth.userId, qx, qy);
         await addPlayerKnownQuadrant(auth.userId, qx, qy);
         if (!alreadyKnown) {
-          logExpansionEvent('human', qx, qy, 'discovered').catch(() => {});
+          logExpansionEvent('humans', qx, qy, 'discovered').catch(() => {});
         }
       }
     } catch (err) {

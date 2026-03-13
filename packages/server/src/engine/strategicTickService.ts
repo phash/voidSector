@@ -47,11 +47,11 @@ export class StrategicTickService {
     // 1. Update friction + handle warfare at all human<→alien borders
     const borderPairs = findAllBorderPairs(allControls);
     for (const { a, b } of borderPairs) {
-      if (a.controlling_faction !== 'human' && b.controlling_faction !== 'human') continue;
+      if (a.controlling_faction !== 'humans' && b.controlling_faction !== 'humans') continue;
       const alienFaction =
-        a.controlling_faction === 'human' ? b.controlling_faction : a.controlling_faction;
-      const humanQ = a.controlling_faction === 'human' ? a : b;
-      const alienQ = a.controlling_faction === 'human' ? b : a;
+        a.controlling_faction === 'humans' ? b.controlling_faction : a.controlling_faction;
+      const humanQ = a.controlling_faction === 'humans' ? a : b;
+      const alienQ = a.controlling_faction === 'humans' ? b : a;
 
       const rep = repStore.get(alienFaction) ?? 0;
       const repTier = repValueToTier(rep);
@@ -137,7 +137,7 @@ export class StrategicTickService {
         station_tier: humanQ.station_tier,
       });
       await logExpansionEvent(alienFaction, humanQ.qx, humanQ.qy, 'conquered');
-      await logExpansionEvent('human', humanQ.qx, humanQ.qy, 'lost');
+      await logExpansionEvent('humans', humanQ.qx, humanQ.qy, 'lost');
       const msg = `${alienFaction.toUpperCase()} CONQUEST — Quadrant [${humanQ.qx}/${humanQ.qy}] lost`;
       logger.warn({ alienFaction, qx: humanQ.qx, qy: humanQ.qy }, msg);
       await this.pushWarTickerEvent(msg);
@@ -181,7 +181,7 @@ export class StrategicTickService {
   private async processAlienExpansion(
     allControls: QuadrantControlRow[],
   ): Promise<void> {
-    const factions = this.factionConfig.getActiveFactions().filter((f) => f.faction_id !== 'human');
+    const factions = this.factionConfig.getActiveFactions().filter((f) => f.faction_id !== 'humans');
 
     for (const faction of factions) {
       const target = getExpansionTarget(

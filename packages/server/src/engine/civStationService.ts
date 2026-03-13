@@ -26,7 +26,7 @@ export async function ensureCivStations(): Promise<void> {
   let seeded = 0;
 
   for (const q of controls) {
-    if (!q.controlling_faction || q.controlling_faction === 'human') continue;
+    if (!q.controlling_faction || q.controlling_faction === 'humans') continue;
 
     const center = getQuadrantCenter(q.qx, q.qy);
     await civQueries.upsertStation(center.x, center.y, q.controlling_faction);
