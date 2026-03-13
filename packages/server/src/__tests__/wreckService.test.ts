@@ -7,6 +7,7 @@ vi.mock('../db/wreckQueries.js', () => ({
   updateWreckItem: vi.fn(),
   updateWreckModifier: vi.fn(),
   insertWreckSlateMetadata: vi.fn(),
+  getWreckSlateMetadata: vi.fn(),
   deleteWreckSlateMetadata: vi.fn(),
 }));
 vi.mock('../rooms/services/RedisAPStore.js', () => ({
@@ -16,6 +17,7 @@ vi.mock('../rooms/services/RedisAPStore.js', () => ({
 }));
 vi.mock('../engine/inventoryService.js', () => ({
   addToInventory: vi.fn(),
+  removeFromInventory: vi.fn().mockResolvedValue(undefined),
   canAddResource: vi.fn().mockResolvedValue(true),
   getInventoryItem: vi.fn().mockResolvedValue(0),
   getCargoState: vi.fn().mockResolvedValue({ ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 }),
@@ -27,12 +29,21 @@ vi.mock('../engine/acepXpService.js', () => ({
 }));
 vi.mock('../db/queries.js', () => ({
   getInventory: vi.fn().mockResolvedValue([]),
+  getSector: vi.fn().mockResolvedValue(null),
+  saveSector: vi.fn().mockResolvedValue(undefined),
+  addDiscovery: vi.fn().mockResolvedValue(undefined),
+  insertJumpGate: vi.fn().mockResolvedValue(undefined),
+  contributeHumanityRep: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../engine/worldgen.js', () => ({
+  generateSector: vi.fn().mockReturnValue({ x: 100, y: 200, type: 'asteroid' }),
 }));
 
 import { WreckService } from '../rooms/services/WreckService.js';
 import * as wreckQueries from '../db/wreckQueries.js';
 import * as RedisStore from '../rooms/services/RedisAPStore.js';
 import * as inventoryService from '../engine/inventoryService.js';
+import * as queries from '../db/queries.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -192,5 +203,45 @@ describe('WreckService.resolveSalvage (via timer)', () => {
     vi.useRealTimers();
 
     expect(client.send).toHaveBeenCalledWith('wreckExhausted', expect.objectContaining({ wreckId: 'wreck-1' }));
+  });
+});
+
+describe('WreckService.handleConsumeSlate', () => {
+  it('removes slate and sends slateConsumed with sector coords', async () => {
+    vi.mocked(wreckQueries.getWreckSlateMetadata).mockResolvedValue({
+      id: 'slate-uuid',
+      playerId: 'p1',
+      sectorX: 100,
+      sectorY: 200,
+      sectorType: 'asteroid',
+      hasJumpgate: false,
+      wreckTier: 2,
+    });
+    vi.mocked(wreckQueries.deleteWreckSlateMetadata).mockResolvedValue(undefined);
+
+    const ctx = makeCtx();
+    const service = new WreckService(ctx as any);
+    const client = makeClient();
+
+    await service.handleConsumeSlate(client as any, { slateId: 'slate-uuid' });
+
+    expect(wreckQueries.deleteWreckSlateMetadata).toHaveBeenCalledWith('slate-uuid');
+    expect(client.send).toHaveBeenCalledWith('slateConsumed', expect.objectContaining({
+      slateId: 'slate-uuid',
+      sectorX: 100,
+      sectorY: 200,
+    }));
+  });
+
+  it('sends actionError if slate not found', async () => {
+    vi.mocked(wreckQueries.getWreckSlateMetadata).mockResolvedValue(null);
+
+    const ctx = makeCtx();
+    const service = new WreckService(ctx as any);
+    const client = makeClient();
+
+    await service.handleConsumeSlate(client as any, { slateId: 'nonexistent' });
+
+    expect(client.send).toHaveBeenCalledWith('actionError', expect.objectContaining({ code: 'SLATE_NOT_FOUND' }));
   });
 });

@@ -21,6 +21,9 @@ export function NavTargetPanel() {
   const ship = useStore((s) => s.ship);
   const selectedSector = useStore((s) => s.selectedSector);
   const discoveries = useStore((s) => s.discoveries);
+  const wreckSlates = useStore((s) => s.wreckSlates);
+  const jumpGateInfo = useStore((s) => s.jumpGateInfo);
+  const isAtJumpgate = !!jumpGateInfo;
 
   const [inputX, setInputX] = useState('');
   const [inputY, setInputY] = useState('');
@@ -261,6 +264,30 @@ export function NavTargetPanel() {
             [ENGAGE]
           </button>
         </>
+      )}
+
+      {/* Slate Feed — only show if at jumpgate and has slates with jumpgate destinations */}
+      {isAtJumpgate && wreckSlates.filter((s) => s.hasJumpgate).length > 0 && (
+        <div style={{ marginTop: 8, borderTop: '1px solid var(--color-dim)', paddingTop: 8 }}>
+          <div style={{ color: 'var(--color-dim)', fontSize: '0.65rem', marginBottom: 4, letterSpacing: '0.1em' }}>
+            ◈ SLATE EINSPEISEN
+          </div>
+          {wreckSlates.filter((s) => s.hasJumpgate).map((slate) => (
+            <button
+              key={slate.id}
+              onClick={() => network.sendFeedSlateToGate(slate.id)}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                border: '1px solid var(--color-primary)',
+                background: 'none', color: 'var(--color-primary)',
+                fontFamily: 'var(--font-mono)', fontSize: '0.65rem',
+                cursor: 'pointer', padding: '2px 8px', marginBottom: 2,
+              }}
+            >
+              [{slate.sectorX}, {slate.sectorY}] SEKTOR
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

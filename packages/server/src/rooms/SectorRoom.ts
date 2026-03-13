@@ -483,6 +483,16 @@ export class SectorRoom extends Room<SectorRoomState> {
         logger.error({ err }, 'cancelSalvage error'),
       );
     });
+    this.onMessage('consumeWreckSlate', (client, data) => {
+      this.wreckService.handleConsumeSlate(client, data).catch((err) =>
+        logger.error({ err }, 'consumeWreckSlate error'),
+      );
+    });
+    this.onMessage('feedSlateToGate', (client, data) => {
+      this.wreckService.handleFeedSlateToGate(client, data).catch((err) =>
+        logger.error({ err }, 'feedSlateToGate error'),
+      );
+    });
 
     // ── Combat ──────────────────────────────────────────────────────
     this.onMessage('ejectPod', async (client, data: { sectorX: number; sectorY: number }) => {

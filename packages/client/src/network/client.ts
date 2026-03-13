@@ -1791,6 +1791,15 @@ class GameNetwork {
       useStore.getState().setSalvageSession(null);
     });
 
+    room.onMessage('slateConsumed', (data: { slateId: string; sectorX: number; sectorY: number; sectorType: string | null }) => {
+      useStore.getState().removeWreckSlate(data.slateId);
+      useStore.getState().addLogEntry(`DATA SLATE KONSUMIERT — Sektor (${data.sectorX}, ${data.sectorY}) aufgedeckt`);
+    });
+
+    room.onMessage('gateConnectionAdded', (_data: unknown) => {
+      // Jumpgate added — radar will update on next sector data sync
+    });
+
     room.onLeave(async (code) => {
       if (this.intentionalLeave) {
         this.intentionalLeave = false;
@@ -2507,6 +2516,14 @@ class GameNetwork {
 
   sendCancelSalvage() {
     this.sectorRoom?.send('cancelSalvage', {});
+  }
+
+  sendConsumeWreckSlate(slateId: string) {
+    this.sectorRoom?.send('consumeWreckSlate', { slateId });
+  }
+
+  sendFeedSlateToGate(slateId: string) {
+    this.sectorRoom?.send('feedSlateToGate', { slateId });
   }
 }
 

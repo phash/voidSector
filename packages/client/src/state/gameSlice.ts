@@ -692,6 +692,8 @@ export interface GameSlice {
   setActiveWreck: (wreck: WreckInvestigatedPayload | null) => void;
   setSalvageSession: (session: SalvageStartedPayload | null) => void;
   setWreckSlates: (slates: WreckSlateMetadata[]) => void;
+  addWreckSlate: (meta: WreckSlateMetadata) => void;
+  removeWreckSlate: (slateId: string) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -1065,4 +1067,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setActiveWreck: (activeWreck) => set({ activeWreck }),
   setSalvageSession: (salvageSession) => set({ salvageSession }),
   setWreckSlates: (wreckSlates) => set({ wreckSlates }),
+  addWreckSlate: (meta) => set((s) => ({ wreckSlates: [...s.wreckSlates, meta] })),
+  removeWreckSlate: (slateId) => set((s) => ({ wreckSlates: s.wreckSlates.filter((m) => m.id !== slateId) })),
 });

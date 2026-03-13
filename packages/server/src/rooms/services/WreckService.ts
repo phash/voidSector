@@ -11,6 +11,7 @@ import {
   WRECK_SALVAGE_AP_COST,
   WRECK_INVESTIGATE_AP_COST,
   WRECK_SLATE_CAP,
+  WRECK_SLATE_JUMPGATE_HUMANITY_TAX,
 } from '@void-sector/shared';
 import type { WreckSize, WreckItem } from '@void-sector/shared';
 import {
@@ -20,6 +21,8 @@ import {
   updateWreckItem,
   updateWreckModifier,
   insertWreckSlateMetadata,
+  getWreckSlateMetadata,
+  deleteWreckSlateMetadata,
 } from '../../db/wreckQueries.js';
 import {
   getSalvageSession,
@@ -28,6 +31,7 @@ import {
 } from './RedisAPStore.js';
 import {
   addToInventory,
+  removeFromInventory,
   canAddResource,
   getCargoState,
 } from '../../engine/inventoryService.js';
@@ -37,7 +41,15 @@ import {
   addAcepXpForPlayer,
 } from '../../engine/acepXpService.js';
 import { calcSalvageChance } from '../../engine/wreckSpawnEngine.js';
-import { getInventory } from '../../db/queries.js';
+import {
+  getInventory,
+  addDiscovery,
+  getSector,
+  saveSector,
+  insertJumpGate,
+  contributeHumanityRep,
+} from '../../db/queries.js';
+import { generateSector } from '../../engine/worldgen.js';
 import { logger } from '../../utils/logger.js';
 
 export class WreckService {
@@ -258,5 +270,81 @@ export class WreckService {
       this.salvageTimers.delete(auth.userId);
     }
     await clearSalvageSession(auth.userId);
+  }
+
+  async handleConsumeSlate(client: Client, data: { slateId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const meta = await getWreckSlateMetadata(data.slateId);
+    if (!meta) {
+      client.send('actionError', { code: 'SLATE_NOT_FOUND', message: 'Slate nicht gefunden' });
+      return;
+    }
+
+    await removeFromInventory(auth.userId, 'data_slate', data.slateId, 1);
+    await deleteWreckSlateMetadata(data.slateId);
+
+    let sector = await getSector(meta.sectorX, meta.sectorY);
+    if (!sector) {
+      sector = generateSector(meta.sectorX, meta.sectorY, null, false);
+      await saveSector(sector);
+    }
+    await addDiscovery(auth.userId, meta.sectorX, meta.sectorY);
+
+    client.send('slateConsumed', {
+      slateId: data.slateId,
+      sectorX: meta.sectorX,
+      sectorY: meta.sectorY,
+      sectorType: meta.sectorType,
+    });
+    client.send('logEntry', `DATA SLATE KONSUMIERT — Sektor (${meta.sectorX}, ${meta.sectorY}) aufgedeckt`);
+  }
+
+  async handleFeedSlateToGate(client: Client, data: { slateId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const sectorX = this.ctx._px(client.sessionId);
+    const sectorY = this.ctx._py(client.sessionId);
+
+    const sector = await getSector(sectorX, sectorY);
+    if (!sector?.jumpgate) {
+      client.send('actionError', { code: 'NO_GATE', message: 'Kein Jumpgate in diesem Sektor' });
+      return;
+    }
+
+    const meta = await getWreckSlateMetadata(data.slateId);
+    if (!meta?.hasJumpgate) {
+      client.send('actionError', { code: 'NO_JUMPGATE_IN_SLATE', message: 'Slate enthält kein Jumpgate-Sektor' });
+      return;
+    }
+
+    const dist = Math.sqrt((meta.sectorX - sectorX) ** 2 + (meta.sectorY - sectorY) ** 2);
+    if (dist > meta.wreckTier * 500) {
+      client.send('actionError', { code: 'GATE_OUT_OF_RANGE', message: 'Ziel außerhalb Reichweite' });
+      return;
+    }
+
+    await removeFromInventory(auth.userId, 'data_slate', data.slateId, 1);
+    await deleteWreckSlateMetadata(data.slateId);
+
+    await insertJumpGate({
+      id: uuidv4(),
+      sectorX,
+      sectorY,
+      targetX: meta.sectorX,
+      targetY: meta.sectorY,
+      gateType: 'human',
+      requiresCode: false,
+      requiresMinigame: false,
+      accessCode: null,
+    });
+
+    await contributeHumanityRep('human', WRECK_SLATE_JUMPGATE_HUMANITY_TAX);
+
+    client.send('gateConnectionAdded', {
+      fromX: sectorX,
+      fromY: sectorY,
+      toX: meta.sectorX,
+      toY: meta.sectorY,
+    });
+    client.send('logEntry', `JUMPGATE VERBUNDEN — Route zu (${meta.sectorX}, ${meta.sectorY}) hergestellt`);
   }
 }
