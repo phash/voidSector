@@ -52,6 +52,9 @@ import type {
   WreckInvestigatedPayload,
   SalvageStartedPayload,
   WreckSlateMetadata,
+  WreckItem,
+  SalvageResultPayload,
+  WreckExhaustedPayload,
 } from '@void-sector/shared';
 
 export interface QuestCompleteEntry {
