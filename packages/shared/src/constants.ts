@@ -2239,6 +2239,17 @@ export const FUEL_COST_PER_UNIT = 0.1; // 0.1 credits per fuel unit (was 2)
 export const FUEL_MIN_TANK = 1_000; // minimum tank size regardless of hull+modules
 export const FREE_REFUEL_MAX_SHIPS = 3;
 
+// Base ship stats (replaces hull-specific values after hull system removal)
+export const BASE_FUEL_CAPACITY = 10_000;
+export const BASE_FUEL_PER_JUMP = 100;
+export const BASE_CARGO = 3;
+export const BASE_MODULE_SLOTS = 3;
+export const BASE_HP = 100;
+export const BASE_JUMP_RANGE = 5;
+export const BASE_ENGINE_SPEED = 2;
+export const BASE_COMM_RANGE = 100;
+export const BASE_SCANNER_LEVEL = 1;
+
 // Station fuel production
 export const STATION_FUEL_BASELINE_PER_TICK = 10; // fuel produced per tick without gas
 export const STATION_FUEL_GAS_RATE_PER_TICK = 100; // fuel produced per tick when gas available (before efficiency)
