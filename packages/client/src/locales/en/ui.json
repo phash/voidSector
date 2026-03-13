@@ -442,5 +442,6 @@
 
   "detail.refuelLabel": "REFUEL — {{price}}",
   "detail.crPerUnit": "CR/u",
-  "detail.refuel": "[REFUEL]"
+  "detail.refuel": "[REFUEL]",
+  "detail.ancientXenostation": "ANCIENT XENOSTATION"
 }

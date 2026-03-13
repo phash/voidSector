@@ -125,7 +125,7 @@ describe('TradeDetailPanel', () => {
       npcStationData: null,
     });
     render(<TradeDetailPanel />);
-    expect(screen.getByText('KEIN HANDEL VERFÜGBAR')).toBeInTheDocument();
+    expect(screen.getByText('trade.noTradeAvailable')).toBeInTheDocument();
   });
 
   it('shows station trade info when at station', () => {
@@ -169,7 +169,7 @@ describe('TradeDetailPanel', () => {
     expect(screen.getByText('OMEGA STATION')).toBeInTheDocument();
     expect(screen.getByText('LEVEL 2')).toBeInTheDocument();
     expect(screen.getByText('ORE')).toBeInTheDocument();
-    expect(screen.getByText(/KAUF: 5 CR/)).toBeInTheDocument();
+    expect(screen.getByText(/trade\.kauf: 5 CR/)).toBeInTheDocument();
     expect(screen.getByText(/50\/200/)).toBeInTheDocument();
   });
 });
