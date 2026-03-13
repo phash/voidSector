@@ -48,6 +48,7 @@ export function TradeScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
+  const openStationTerminal = useStore((s) => s.openStationTerminal);
   const tradeMessage = useStore((s) => s.tradeMessage);
   const setTradeMessage = useStore((s) => s.setTradeMessage);
   const [amount, setAmount] = useState(1);
@@ -204,10 +205,31 @@ export function TradeScreen() {
                   borderBottom: '1px solid var(--color-dim)',
                   paddingBottom: '4px',
                   marginBottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
                 }}
               >
-                {npcStationData.name.toUpperCase()} LV.{npcStationData.level} — XP:{' '}
-                {npcStationData.xp}/{npcStationData.nextLevelXp}
+                <span>
+                  {npcStationData.name.toUpperCase()} LV.{npcStationData.level} — XP:{' '}
+                  {npcStationData.xp}/{npcStationData.nextLevelXp}
+                </span>
+                <button
+                  style={{
+                    ...btnStyle,
+                    fontSize: '0.65rem',
+                    borderColor: '#00FF88',
+                    color: '#00FF88',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={openStationTerminal}
+                >
+                  [ANDOCKEN]
+                </button>
+              </div>
+              <div style={{ fontSize: '0.6rem', opacity: 0.45, marginBottom: 6, letterSpacing: '0.05em' }}>
+                * Preise dynamisch (abhängig vom Lagerbestand)
               </div>
               <div
                 style={{

@@ -111,10 +111,11 @@ export async function initStationInventory(x: number, y: number, maxStock: numbe
     const startRatio = 0.5 + fraction * 0.3; // 0.5..0.8
     const startStock = Math.round(maxStock * startRatio);
 
-    // Restock and consumption rates: restock slightly > consumption so stations
-    // tend to slowly fill up when left alone.
-    const baseRestock = maxStock * 0.02; // 2% of max per hour
-    const baseConsumption = maxStock * 0.015; // 1.5% of max per hour
+    // Gas restocks at ~360/hour so the lazy-restock in consumeStationGas keeps up
+    // with the fuel engine's consumption rate (1 gas per 10s = 360/hour).
+    // Ore/crystal use the slower default rates.
+    const restockRate = res === 'gas' ? 360 : maxStock * 0.02;
+    const consumptionRate = res === 'gas' ? 0 : maxStock * 0.015;
 
     await upsertInventoryItem({
       stationX: x,
@@ -122,8 +123,8 @@ export async function initStationInventory(x: number, y: number, maxStock: numbe
       itemType: res,
       stock: startStock,
       maxStock,
-      restockRate: baseRestock,
-      consumptionRate: baseConsumption,
+      restockRate,
+      consumptionRate,
       lastUpdated: now,
     });
   }

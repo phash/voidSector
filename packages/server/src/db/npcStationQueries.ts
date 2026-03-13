@@ -174,15 +174,23 @@ export async function updateStationFuelStock(
   );
 }
 
-/** Decrements gas stock by amount. Does nothing if gas stock is already 0. */
+/** Decrements gas stock by amount, applying lazy restock first. Does nothing if gas stock is already 0. */
 export async function consumeStationGas(
   x: number,
   y: number,
   amount: number,
 ): Promise<void> {
+  // Apply lazy restock before consuming: gas regenerates over time based on restock_rate.
+  // This prevents gas from staying at 0 indefinitely — it refills naturally when not being consumed.
   await query(
     `UPDATE npc_station_inventory
-     SET stock = GREATEST(0, stock - $4), last_updated = NOW()
+     SET stock = GREATEST(0,
+       LEAST(max_stock,
+         stock + (restock_rate - consumption_rate) *
+           EXTRACT(EPOCH FROM (NOW() - last_updated::timestamptz)) / 3600.0
+       ) - $4
+     ),
+     last_updated = NOW()
      WHERE station_x = $1 AND station_y = $2 AND item_type = $3`,
     [x, y, 'gas', amount],
   );
