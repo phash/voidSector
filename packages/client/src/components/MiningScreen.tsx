@@ -10,7 +10,7 @@ import { InlineError } from './InlineError';
 function ResourceBar({ label, value, max, maxResource }: { label: string; value: number; max: number; maxResource?: number }) {
   const width = 10;
   const displayMax = maxResource ?? max;
-  const filled = displayMax > 0 ? Math.round((value / displayMax) * width) : 0;
+  const filled = displayMax > 0 ? Math.max(0, Math.min(Math.round((value / displayMax) * width), width)) : 0;
   const bar = '\u2587'.repeat(filled) + '\u2591'.repeat(width - filled);
   return (
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
