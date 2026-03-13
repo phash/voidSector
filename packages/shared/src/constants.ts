@@ -2053,7 +2053,7 @@ export const FREE_REFUEL_MAX_SHIPS = 3;
 // Base ship stats (replaces hull-specific values after hull system removal)
 export const BASE_FUEL_CAPACITY = 10_000;
 export const BASE_FUEL_PER_JUMP = 100;
-export const BASE_CARGO = 10;
+export const BASE_CARGO = 20;
 export const BASE_MODULE_SLOTS = 3;
 export const BASE_HP = 100;
 export const BASE_JUMP_RANGE = 5;
