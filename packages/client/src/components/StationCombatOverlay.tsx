@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { innerCoord } from '@void-sector/shared';
 
 export function StationCombatOverlay() {
+  const { t } = useTranslation('ui');
   const event = useStore((s) => s.stationCombatEvent);
   const setStationCombatEvent = useStore((s) => s.setStationCombatEvent);
 
@@ -11,10 +13,10 @@ export function StationCombatOverlay() {
     event.outcome === 'defended' ? '#00FF88' : event.outcome === 'damaged' ? '#FFB000' : '#FF3333';
   const outcomeText =
     event.outcome === 'defended'
-      ? 'ABGEWEHRT'
+      ? t('station.defended')
       : event.outcome === 'damaged'
-        ? 'BESCH\u00c4DIGT'
-        : 'ZERST\u00d6RT';
+        ? t('station.damaged')
+        : t('station.destroyed');
 
   return (
     <div
@@ -36,10 +38,10 @@ export function StationCombatOverlay() {
       <div
         style={{ color: '#FF3333', fontSize: '0.9rem', letterSpacing: '0.2em', marginBottom: 16 }}
       >
-        STATION UNTER ANGRIFF
+        {t('station.underAttack')}
       </div>
       <div style={{ color: '#888', fontSize: '0.7rem', marginBottom: 8 }}>
-        Sektor ({innerCoord(event.sectorX)}, {innerCoord(event.sectorY)}) &bull; Angreifer LV.
+        {t('scan.sector')} ({innerCoord(event.sectorX)}, {innerCoord(event.sectorY)}) &bull; {t('station.attackerLv')}
         {event.attackerLevel}
       </div>
       <div
@@ -49,7 +51,7 @@ export function StationCombatOverlay() {
       </div>
       {event.hpLost > 0 && (
         <div style={{ color: '#FF3333', fontSize: '0.7rem', marginBottom: 12 }}>
-          HP-Verlust: {event.hpLost}
+          {t('station.hpLost')} {event.hpLost}
         </div>
       )}
       <button
@@ -64,7 +66,7 @@ export function StationCombatOverlay() {
           cursor: 'pointer',
         }}
       >
-        [BEST\u00c4TIGEN]
+        {t('station.confirm')}
       </button>
     </div>
   );

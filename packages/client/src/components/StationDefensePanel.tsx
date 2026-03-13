@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { STATION_DEFENSE_DEFS } from '@void-sector/shared';
 
 export function StationDefensePanel() {
+  const { t } = useTranslation('ui');
   const stationDefenses = useStore((s) => s.stationDefenses);
   const credits = useStore((s) => s.credits);
 
@@ -20,12 +22,12 @@ export function StationDefensePanel() {
           fontSize: '0.75rem',
         }}
       >
-        STATIONSVERTEIDIGUNG
+        {t('stationDefense.title')}
       </div>
 
       {stationDefenses.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ color: '#888', marginBottom: 4 }}>INSTALLIERT:</div>
+          <div style={{ color: '#888', marginBottom: 4 }}>{t('stationDefense.installed')}</div>
           {stationDefenses.map((d) => (
             <div key={d.id} style={{ color: '#00FF88', marginBottom: 2 }}>
               &bull; {d.defenseType.replace(/_/g, ' ').toUpperCase()}
@@ -34,7 +36,7 @@ export function StationDefensePanel() {
         </div>
       )}
 
-      <div style={{ color: '#888', marginBottom: 4 }}>VERFÜGBAR:</div>
+      <div style={{ color: '#888', marginBottom: 4 }}>{t('stationDefense.available')}</div>
       {Object.entries(STATION_DEFENSE_DEFS).map(([id, def]) => {
         const installed = stationDefenses.some((d) => d.defenseType === id);
         const costStr = Object.entries(def.cost)
@@ -57,10 +59,10 @@ export function StationDefensePanel() {
               {id.replace(/_/g, ' ').toUpperCase()}
             </div>
             <div style={{ color: '#666', fontSize: '0.55rem' }}>
-              {def.damage ? `${def.damage} DMG/Runde` : ''}
-              {def.shieldHp ? `Schild: ${def.shieldHp} HP, +${def.shieldRegen}/Runde` : ''}
-              {def.oncePer ? ' (1\u00d7 pro Kampf)' : ''}
-              {def.bypassShields ? ' | Ignoriert Schilde' : ''}
+              {def.damage ? t('stationDefense.dmgPerRound', { dmg: def.damage }) : ''}
+              {def.shieldHp ? t('stationDefense.shield', { hp: def.shieldHp, regen: def.shieldRegen }) : ''}
+              {def.oncePer ? ` ${t('stationDefense.oncePer')}` : ''}
+              {def.bypassShields ? ` ${t('stationDefense.bypassShields')}` : ''}
             </div>
             <div style={{ color: '#555', fontSize: '0.55rem' }}>{costStr}</div>
             {!installed && (
@@ -78,11 +80,11 @@ export function StationDefensePanel() {
                   cursor: canAfford ? 'pointer' : 'not-allowed',
                 }}
               >
-                [INSTALLIEREN]
+                {t('stationDefense.install')}
               </button>
             )}
             {installed && (
-              <div style={{ color: '#00FF88', fontSize: '0.55rem', marginTop: 4 }}>INSTALLIERT</div>
+              <div style={{ color: '#00FF88', fontSize: '0.55rem', marginTop: 4 }}>{t('stationDefense.installedStatus')}</div>
             )}
           </div>
         );

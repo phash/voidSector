@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
@@ -24,6 +25,7 @@ const ANCIENT_ART = [
 ];
 
 export function BattleDialog() {
+  const { t } = useTranslation('ui');
   const activeBattle = useStore((s) => s.activeBattle);
   const activeCombatV2 = useStore((s) => s.activeCombatV2);
   const bountyEncounter = useStore((s) => s.bountyEncounter);
@@ -63,11 +65,11 @@ export function BattleDialog() {
         }}
       >
         <div style={{ border: '2px solid #c8a020', background: '#0a0800', padding: '20px', textAlign: 'center', maxWidth: '300px' }}>
-          <div style={{ color: '#c8a020', fontSize: '12px', letterSpacing: '2px', marginBottom: '8px' }}>KOPFGELD-ZIEL</div>
+          <div style={{ color: '#c8a020', fontSize: '12px', letterSpacing: '2px', marginBottom: '8px' }}>{t('battle.bountyTarget')}</div>
           <div style={{ color: '#e8c040', fontWeight: 'bold', marginBottom: '4px' }}>{bountyEncounter.targetName}</div>
-          <div style={{ color: '#aaa', fontSize: '11px', marginBottom: '12px' }}>Stufe {bountyEncounter.targetLevel} Pirat</div>
+          <div style={{ color: '#aaa', fontSize: '11px', marginBottom: '12px' }}>{t('battle.level', { n: bountyEncounter.targetLevel })} {t('battle.pirate')}</div>
           <button className="vs-btn" onClick={handleAttack} style={{ width: '100%' }}>
-            [ANGREIFEN]
+            {t('battle.attack')}
           </button>
         </div>
       </div>
@@ -82,7 +84,7 @@ export function BattleDialog() {
     activeBattle;
   const isAncient = pirateLevel >= 6;
   const enemyArt = isAncient ? ANCIENT_ART : PIRATE_ART;
-  const contactLabel = isAncient ? 'ALIEN-KONTAKT' : 'PIRATEN-KONTAKT';
+  const contactLabel = isAncient ? t('battle.alienContact') : t('battle.pirateContact');
   const contactColor = isAncient ? '#00BFFF' : '#FF3333';
 
   return (
@@ -138,10 +140,10 @@ export function BattleDialog() {
         </pre>
         <div style={{ color: '#FFB000', marginBottom: '12px' }}>
           <div>
-            Sektor: ({innerCoord(sectorX)}, {innerCoord(sectorY)})
+            {t('battle.sectorLabel')} ({innerCoord(sectorX)}, {innerCoord(sectorY)})
           </div>
           <div>
-            {isAncient ? 'Alien-Level' : 'Piraten-Level'}: {pirateLevel}
+            {isAncient ? t('battle.alienLevel') : t('battle.pirateLevel')}: {pirateLevel}
           </div>
           <div>
             HP: {pirateHp} | DMG: {pirateDamage}

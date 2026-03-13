@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord, calcHyperjumpFuel, BASE_FUEL_PER_JUMP } from '@void-sector/shared';
@@ -9,6 +10,7 @@ import { innerCoord, calcHyperjumpFuel, BASE_FUEL_PER_JUMP } from '@void-sector/
  * CRT-styled amber-on-dark monospace panel.
  */
 export function NavTargetPanel() {
+  const { t } = useTranslation('ui');
   const position = useStore((s) => s.position);
   const bookmarks = useStore((s) => s.bookmarks);
   const autopilot = useStore((s) => s.autopilot);
@@ -104,13 +106,13 @@ export function NavTargetPanel() {
               fontSize: '0.85rem',
             }}
           >
-            AUTOPILOT AKTIV
+            {t('nav.autopilotActive')}
           </div>
           <div style={{ fontSize: '0.8rem', marginBottom: 4 }}>
-            Ziel: ({innerCoord(autopilotStatus.targetX)}, {innerCoord(autopilotStatus.targetY)})
+            {t('nav.targetLabel')} ({innerCoord(autopilotStatus.targetX)}, {innerCoord(autopilotStatus.targetY)})
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-dim)', marginBottom: 8 }}>
-            Schritt {autopilotStatus.currentStep} / {autopilotStatus.totalSteps}
+            {t('nav.stepOf', { current: autopilotStatus.currentStep, total: autopilotStatus.totalSteps })}
           </div>
           {/* Progress bar */}
           <div style={progressBarOuterStyle}>
@@ -123,7 +125,7 @@ export function NavTargetPanel() {
             />
           </div>
           <button className="vs-btn" onClick={handleCancel} style={cancelBtnStyle}>
-            [ABBRECHEN]
+            {t('nav.cancel')}
           </button>
         </div>
       )}
@@ -139,10 +141,10 @@ export function NavTargetPanel() {
               fontSize: '0.85rem',
             }}
           >
-            AUTOPILOT PAUSIERT
+            {t('nav.autopilotPaused')}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-dim)', marginBottom: 4 }}>
-            Grund: {autopilotStatus?.pauseReason ?? 'unknown'}
+            {t('nav.reasonLabel')} {autopilotStatus?.pauseReason ?? 'unknown'}
           </div>
         </div>
       )}
@@ -228,7 +230,7 @@ export function NavTargetPanel() {
             </label>
             {useHyperjump && (
               <span style={{ color: '#00CCFF', fontSize: '0.7rem' }}>
-                Schneller, verbraucht Treibstoff
+                {t('nav.hyperjumpHint')}
               </span>
             )}
           </div>
@@ -236,12 +238,12 @@ export function NavTargetPanel() {
           {/* Cost preview */}
           {hasValidTarget && (
             <div style={costPreviewStyle}>
-              <div style={{ marginBottom: 2 }}>Distanz: {distance} Sektoren</div>
+              <div style={{ marginBottom: 2 }}>{t('nav.distanceSectors', { n: distance })}</div>
               <div>
                 AP: ~{estimatedAP} | <span style={{ color: estimatedFuel > 0 ? ((fuel?.current ?? 0) >= estimatedFuel ? '#4ade80' : '#f87171') : undefined }}>Fuel: ~{estimatedFuel}</span> | Zeit: ~{estimatedTimeSec}s
               </div>
               {!isTargetDiscovered && (
-                <div style={{ color: '#FF3333', marginTop: 4 }}>Ziel nicht entdeckt!</div>
+                <div style={{ color: '#FF3333', marginTop: 4 }}>{t('nav.targetNotDiscovered')}</div>
               )}
             </div>
           )}
