@@ -12,6 +12,14 @@ import { InlineError } from './InlineError';
 
 const MAX_TRACKED = 5;
 
+const NPC_FACTION_LABELS: Record<string, string> = {
+  independent: 'SOLO',
+  traders: 'HÄNDLER',
+  scientists: 'FORSCHER',
+  pirates: 'PIRATEN',
+  ancients: 'ANCIENTS',
+};
+
 const QUEST_TYPE_LABELS: Record<string, string> = {
   fetch: 'DELIVERY',
   scan: 'SCAN',
@@ -201,7 +209,7 @@ function JournalTab() {
               <option value="">{t('status.allFactions')}</option>
               {factionIds.map((f) => (
                 <option key={f} value={f}>
-                  {f.toUpperCase()}
+                  {NPC_FACTION_LABELS[f] ?? f.toUpperCase()}
                 </option>
               ))}
             </select>
@@ -607,31 +615,37 @@ export function QuestsScreen() {
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', width: '100%', flexWrap: 'nowrap', marginBottom: '8px' }}>
-        {(['auftraege', 'verfuegbar', 'reputation', 'story'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => {
-              setTab(t);
-              if (t === 'verfuegbar' && isAtStation) {
-                network.requestStationNpcs(position.x, position.y);
-              }
-            }}
-            style={{
-              width: '25%',
-              textAlign: 'center',
-              flexShrink: 0,
-              background: tab === t ? '#FFB000' : '#1a1a1a',
-              color: tab === t ? '#000' : '#FFB000',
-              border: '1px solid #FFB000',
-              padding: '2px 6px',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: 'inherit',
-            }}
-          >
-            {tabLabels[t]}
-          </button>
-        ))}
+        {(['auftraege', 'verfuegbar', 'reputation', 'story'] as const).map((tabKey) => {
+          const isStory = tabKey === 'story';
+          return (
+            <button
+              key={tabKey}
+              disabled={isStory}
+              onClick={() => {
+                setTab(tabKey);
+                if (tabKey === 'verfuegbar' && isAtStation) {
+                  network.requestStationNpcs(position.x, position.y);
+                }
+              }}
+              title={isStory ? 'Story-Events — in Entwicklung (#357)' : undefined}
+              style={{
+                width: '25%',
+                textAlign: 'center',
+                flexShrink: 0,
+                background: tab === tabKey ? '#FFB000' : '#1a1a1a',
+                color: tab === tabKey ? '#000' : isStory ? '#444' : '#FFB000',
+                border: `1px solid ${isStory ? '#333' : '#FFB000'}`,
+                padding: '2px 6px',
+                cursor: isStory ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+                fontSize: 'inherit',
+                opacity: isStory ? 0.4 : 1,
+              }}
+            >
+              {tabLabels[tabKey]}
+            </button>
+          );
+        })}
       </div>
 
       {/* AUFTRÄGE tab: active quests + journal + rescue */}
