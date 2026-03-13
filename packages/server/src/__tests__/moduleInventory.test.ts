@@ -49,6 +49,7 @@ vi.mock('@void-sector/shared', () => ({
   isModuleUnlocked: vi.fn().mockReturnValue(true),
   RESEARCH_TICK_MS: 60000,
   getActiveDrawbacks: vi.fn().mockReturnValue([]),
+  MODULE_HP_BY_TIER: { 1: 20, 2: 30, 3: 40, 4: 50, 5: 60 },
 }));
 
 // ── Mock techTreeQueries ─────────────────────────────────────────────────────
