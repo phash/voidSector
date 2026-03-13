@@ -3,7 +3,6 @@ import type {
   SectorData,
   PlayerData,
   Bookmark,
-  HullType,
   ShipModule,
   ShipRecord,
   JumpGateMapEntry,
@@ -116,7 +115,6 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
   const { rows } = await query<{
     id: string;
     owner_id: string;
-    hull_type: string;
     name: string;
     modules: ShipModule[];
     fuel: number;
@@ -125,7 +123,7 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
     acep_generation: number;
     acep_traits: string[];
   }>(
-    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at,
+    `SELECT id, owner_id, name, modules, fuel, active, created_at,
             acep_generation, acep_traits
      FROM ships WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
     [playerId],
@@ -135,7 +133,6 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
   return {
     id: row.id,
     ownerId: row.owner_id,
-    hullType: row.hull_type as HullType,
     name: row.name,
     modules: row.modules,
     active: row.active,
@@ -149,7 +146,6 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
   const { rows } = await query<{
     id: string;
     owner_id: string;
-    hull_type: string;
     name: string;
     modules: ShipModule[];
     fuel: number;
@@ -158,7 +154,7 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
     acep_generation: number;
     acep_traits: string[];
   }>(
-    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at,
+    `SELECT id, owner_id, name, modules, fuel, active, created_at,
             acep_generation, acep_traits
      FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
     [playerId],
@@ -166,7 +162,6 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
   return rows.map((row) => ({
     id: row.id,
     ownerId: row.owner_id,
-    hullType: row.hull_type as HullType,
     name: row.name,
     modules: row.modules,
     active: row.active,
@@ -178,16 +173,15 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
 
 export async function createShip(
   playerId: string,
-  hullType: HullType,
   name: string,
   initialFuel: number,
 ): Promise<ShipRecord> {
   // Deactivate current active ship
   await query('UPDATE ships SET active = false WHERE owner_id = $1 AND active = true', [playerId]);
   const { rows } = await query<any>(
-    `INSERT INTO ships (owner_id, hull_type, name, fuel, active)
-     VALUES ($1, $2, $3, $4, true) RETURNING *`,
-    [playerId, hullType, name, initialFuel],
+    `INSERT INTO ships (owner_id, name, fuel, active)
+     VALUES ($1, $2, $3, true) RETURNING *`,
+    [playerId, name, initialFuel],
   );
   const row = rows[0];
   // All new ships start with generator_mk1 in slot 0 (generator slot)
@@ -198,7 +192,6 @@ export async function createShip(
   return {
     id: row.id,
     ownerId: row.owner_id,
-    hullType: row.hull_type as HullType,
     name: row.name,
     modules: initialModules,
     active: row.active,
@@ -3235,13 +3228,13 @@ export async function transferInventoryItem(
 }
 
 export async function getCargoCapForPlayer(playerId: string): Promise<number> {
-  const res = await query<{ hull_type: string; modules: ShipModule[] }>(
-    `SELECT s.hull_type, s.modules FROM ships s WHERE s.owner_id = $1 AND s.active = TRUE LIMIT 1`,
+  const res = await query<{ modules: ShipModule[] }>(
+    `SELECT s.modules FROM ships s WHERE s.owner_id = $1 AND s.active = TRUE LIMIT 1`,
     [playerId],
   );
   const row = res.rows[0];
   if (!row) return 20;
-  const stats = calculateShipStats(row.hull_type as HullType, row.modules ?? []);
+  const stats = calculateShipStats(row.modules ?? []);
   return stats.cargoCap;
 }
 

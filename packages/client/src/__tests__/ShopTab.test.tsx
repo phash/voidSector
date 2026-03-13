@@ -38,7 +38,7 @@ const fullCargo: CargoState = {
 };
 
 const baseStore = {
-  ship: { id: 'ship-1', hullType: 'scout' as const, modules: [] } as any,
+  ship: { id: 'ship-1', modules: [] } as any,
   credits: 9999,
   cargo: fullCargo,
   research: { wissen: 0 } as any,

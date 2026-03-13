@@ -82,7 +82,7 @@ export class CombatService {
     }
 
     // Derive player HP from ship stats
-    const shipStats = calculateShipStats(ship.hullType, ship.modules);
+    const shipStats = calculateShipStats(ship.modules);
     const playerMaxHp = shipStats.hp;
     const playerHp = playerMaxHp; // start at full HP per encounter
 
@@ -228,7 +228,7 @@ export class CombatService {
       await updateShipModules(ship.id, updatedModules);
 
       // Update ctx ship cache
-      const stats = calculateShipStats(ship.hullType, updatedModules);
+      const stats = calculateShipStats(updatedModules);
       this.ctx.clientShips.set(client.sessionId, stats);
     }
 
@@ -524,15 +524,13 @@ export class CombatService {
     // Look up and send new ship data to client
     const newShip = await getActiveShip(auth.userId);
     if (newShip) {
-      const stats = calculateShipStats(newShip.hullType, newShip.modules);
+      const stats = calculateShipStats(newShip.modules);
       // Update room's ship cache
       this.ctx.clientShips.set(client.sessionId, stats);
-      this.ctx.clientHullTypes.set(client.sessionId, newShip.hullType);
       const acepXp = await getAcepXpSummary(newShip.id);
       client.send('shipData', {
         id: newShip.id,
         ownerId: auth.userId,
-        hullType: newShip.hullType,
         name: newShip.name,
         modules: newShip.modules,
         stats,

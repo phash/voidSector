@@ -71,7 +71,6 @@ export function RadarCanvas({ onSectorTap }: RadarCanvasProps = {}) {
       jumpGateInfo: state.jumpGateInfo,
       scanEvents: state.scanEvents,
       discoveryTimestamps: state.discoveryTimestamps,
-      hullType: state.ship?.hullType,
       acepXp: state.ship?.acepXp ?? null,
       bookmarks: state.bookmarks,
       animTime: performance.now(),

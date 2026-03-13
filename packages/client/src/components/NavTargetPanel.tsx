@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { innerCoord, calcHyperjumpFuel, HULLS } from '@void-sector/shared';
+import { innerCoord, calcHyperjumpFuel, BASE_FUEL_PER_JUMP } from '@void-sector/shared';
 
 /**
  * NavTargetPanel — coordinate input, bookmark selection, hyperjump toggle,
@@ -44,7 +44,7 @@ export function NavTargetPanel() {
 
   // Simple cost preview (client-side estimate)
   const estimatedAP = distance; // 1 AP per sector for normal mode
-  const fuelPerJump = ship?.stats?.fuelPerJump ?? HULLS.scout.baseFuelPerJump;
+  const fuelPerJump = ship?.stats?.fuelPerJump ?? BASE_FUEL_PER_JUMP;
   const estimatedFuel = useHyperjump ? calcHyperjumpFuel(fuelPerJump, distance) : 0;
   const estimatedTimeSec = useHyperjump ? Math.ceil(distance / 3) * 2 : distance * 3;
 
@@ -238,7 +238,7 @@ export function NavTargetPanel() {
             <div style={costPreviewStyle}>
               <div style={{ marginBottom: 2 }}>Distanz: {distance} Sektoren</div>
               <div>
-                AP: ~{estimatedAP} | Fuel: ~{estimatedFuel} | Zeit: ~{estimatedTimeSec}s
+                AP: ~{estimatedAP} | <span style={{ color: estimatedFuel > 0 ? ((fuel?.current ?? 0) >= estimatedFuel ? '#4ade80' : '#f87171') : undefined }}>Fuel: ~{estimatedFuel}</span> | Zeit: ~{estimatedTimeSec}s
               </div>
               {!isTargetDiscovered && (
                 <div style={{ color: '#FF3333', marginTop: 4 }}>Ziel nicht entdeckt!</div>

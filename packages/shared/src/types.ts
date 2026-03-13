@@ -1067,31 +1067,8 @@ export interface AutopilotCompleteMessage {
 export type JumpType = 'normal' | 'hyperjump';
 
 // --- Phase 7: Ship Designer ---
-export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
-export type HullSize = 'small' | 'medium' | 'large';
 export type ModuleCategory = ArtefactType;
 export type ModuleTier = 1 | 2 | 3 | 4 | 5;
-
-export interface HullDefinition {
-  name: string;
-  size: HullSize;
-  slots: number;
-  baseFuel: number;
-  baseCargo: number;
-  baseJumpRange: number;
-  baseApPerJump: number;
-  baseFuelPerJump: number;
-  baseHp: number;
-  baseCommRange: number;
-  baseScannerLevel: number;
-  baseEngineSpeed: number;
-  baseHyperdriveRange: number;
-  baseHyperdriveSpeed: number;
-  baseHyperdriveRegen: number;
-  baseHyperdriveFuelEfficiency: number;
-  unlockLevel: number;
-  unlockCost: number;
-}
 
 export interface ResearchCost {
   wissen: number;
@@ -1181,7 +1158,6 @@ export interface ShipStats {
 export interface ShipRecord {
   id: string;
   ownerId: string;
-  hullType: HullType;
   name: string;
   modules: ShipModule[];
   active: boolean;

@@ -29,7 +29,6 @@ describe('RadarRenderer navTarget line', () => {
       jumpGateInfo: null,
       scanEvents: [],
       discoveryTimestamps: {},
-      hullType: 'scout' as const,
       bookmarks: [],
       animTime: 0,
     };

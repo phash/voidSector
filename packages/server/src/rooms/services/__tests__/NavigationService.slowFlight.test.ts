@@ -100,7 +100,6 @@ function makeCtx(overrides: Partial<any> = {}): any {
     quadrantX: 0,
     quadrantY: 0,
     clientShips: new Map(),
-    clientHullTypes: new Map(),
     autopilotTimers: new Map(),
     playerSectorData: new Map(),
     checkRate: () => true,
@@ -108,7 +107,6 @@ function makeCtx(overrides: Partial<any> = {}): any {
       ({
         apCostJump: 2,
         engineSpeed: 1,
-        hullType: 'interceptor',
         stats: { cargoCap: 10 },
       } as any),
     getPlayerBonuses: vi.fn().mockResolvedValue({}),

@@ -20,7 +20,7 @@ const baseStats = {
 };
 
 const baseShip = {
-  id: 'ship-1', ownerId: 'player-1', hullType: 'scout' as const,
+  id: 'ship-1', ownerId: 'player-1',
   name: 'Astral Hawk', modules: [], stats: baseStats, fuel: 100, active: true,
 };
 
@@ -72,8 +72,8 @@ describe('ShipBlock', () => {
       ship: {
         ...baseShip,
         modules: [
-          { moduleId: 'mod-a', category: 'engine', tier: 1, currentHp: 5, maxHp: 10, powerLevel: 'high' as const },
-          { moduleId: 'mod-b', category: 'scanner', tier: 1, currentHp: 10, maxHp: 10, powerLevel: 'high' as const },
+          // generator_mk1 has maxHp: 20 in MODULES; currentHp: 15 → HP: 15/20
+          { moduleId: 'generator_mk1', slotIndex: 0, currentHp: 15, source: 'standard' as const },
         ],
       },
     });

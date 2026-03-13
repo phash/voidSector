@@ -483,7 +483,7 @@ class GameNetwork {
       useStore.getState().setMiningStoryIndex(data.storyIndex);
     });
 
-    // Ship data (new designer format: id, ownerId, hullType, name, modules, stats, fuel, active)
+    // Ship data (new designer format: id, ownerId, name, modules, stats, fuel, active)
     room.onMessage('shipData', (data: ClientShipData) => {
       useStore.getState().setShip(data);
     });

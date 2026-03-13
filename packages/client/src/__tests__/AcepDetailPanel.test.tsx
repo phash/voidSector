@@ -4,7 +4,7 @@ import { mockStoreState } from '../test/mockStore';
 import { AcepDetailPanel } from '../components/AcepDetailPanel';
 
 const mockShip = {
-  id: 'ship-1', name: 'T', hullType: 'scout' as const,
+  id: 'ship-1', name: 'T',
   modules: [],
   acepXp: { ausbau: 20, intel: 0, kampf: 0, explorer: 0, total: 20 },
   acepTraits: ['cautious'],

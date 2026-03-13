@@ -258,7 +258,7 @@ describe('adminRoutes', () => {
         credits: 500,
         cargo: { ore: 10 },
         ships: [
-          { id: 's1', hullType: 'scout', name: 'AEGIS', active: true, modules: [], fuel: 100 },
+          { id: 's1', name: 'AEGIS', active: true, modules: [], fuel: 100 },
         ],
       };
       mockGetPlayerFullProfile.mockResolvedValueOnce(player);

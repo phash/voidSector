@@ -78,7 +78,7 @@ export function ModuleTab() {
     for (const slot of slots) {
       if (!slot.module) {
         const result = validateModuleInstall(
-          ship.hullType, ship.modules, selectedModuleId, slot.index, acepXp,
+          ship.modules, selectedModuleId, slot.index, acepXp,
         );
         if (result.valid) compatibleSlots.add(slot.index);
       }

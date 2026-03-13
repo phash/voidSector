@@ -163,14 +163,14 @@ describe('spendCharge', () => {
 describe('efficiency clamping in shipCalculator', () => {
   it('clamps hyperdriveFuelEfficiency to [0, 1]', () => {
     // With void_drive: 0.35 — within range, should not be clamped
-    const stats = calculateShipStats('scout', [{ moduleId: 'void_drive', slotIndex: 0 }]);
+    const stats = calculateShipStats([{ moduleId: 'void_drive', slotIndex: 0 }]);
     expect(stats.hyperdriveFuelEfficiency).toBe(0.35);
     expect(stats.hyperdriveFuelEfficiency).toBeGreaterThanOrEqual(0);
     expect(stats.hyperdriveFuelEfficiency).toBeLessThanOrEqual(1);
   });
 
   it('returns zero hyperdrive stats with no drive modules', () => {
-    const stats = calculateShipStats('scout', []);
+    const stats = calculateShipStats([]);
     expect(stats.hyperdriveRange).toBe(0);
     expect(stats.hyperdriveSpeed).toBe(0);
     expect(stats.hyperdriveRegen).toBe(0);
@@ -178,7 +178,7 @@ describe('efficiency clamping in shipCalculator', () => {
   });
 
   it('adds hyperdrive stats from drive_mk1', () => {
-    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk1', slotIndex: 0 }]);
+    const stats = calculateShipStats([{ moduleId: 'drive_mk1', slotIndex: 0 }]);
     expect(stats.hyperdriveRange).toBe(4);
     expect(stats.hyperdriveSpeed).toBe(2);
     expect(stats.hyperdriveRegen).toBe(1.0);
@@ -186,7 +186,7 @@ describe('efficiency clamping in shipCalculator', () => {
   });
 
   it('adds hyperdrive stats from drive_mk2', () => {
-    const stats = calculateShipStats('freighter', [{ moduleId: 'drive_mk2', slotIndex: 0 }]);
+    const stats = calculateShipStats([{ moduleId: 'drive_mk2', slotIndex: 0 }]);
     expect(stats.hyperdriveRange).toBe(8);
     expect(stats.hyperdriveSpeed).toBe(3);
     expect(stats.hyperdriveRegen).toBe(1.5);
@@ -194,7 +194,7 @@ describe('efficiency clamping in shipCalculator', () => {
   });
 
   it('adds hyperdrive stats from drive_mk3', () => {
-    const stats = calculateShipStats('cruiser', [{ moduleId: 'drive_mk3', slotIndex: 0 }]);
+    const stats = calculateShipStats([{ moduleId: 'drive_mk3', slotIndex: 0 }]);
     expect(stats.hyperdriveRange).toBe(16);
     expect(stats.hyperdriveSpeed).toBe(5);
     expect(stats.hyperdriveRegen).toBe(2.0);
@@ -202,7 +202,7 @@ describe('efficiency clamping in shipCalculator', () => {
   });
 
   it('adds hyperdrive stats from void_drive', () => {
-    const stats = calculateShipStats('explorer', [{ moduleId: 'void_drive', slotIndex: 0 }]);
+    const stats = calculateShipStats([{ moduleId: 'void_drive', slotIndex: 0 }]);
     expect(stats.hyperdriveRange).toBe(30);
     expect(stats.hyperdriveSpeed).toBe(8);
     expect(stats.hyperdriveRegen).toBe(3.0);
@@ -212,22 +212,22 @@ describe('efficiency clamping in shipCalculator', () => {
 
 describe('drive fuelMax bonus', () => {
   it('drive_mk1 adds 2_000 fuelMax', () => {
-    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk1', slotIndex: 0 }]);
+    const stats = calculateShipStats([{ moduleId: 'drive_mk1', slotIndex: 0 }]);
     expect(stats.fuelMax).toBe(12_000); // 10_000 base + 2_000
   });
 
   it('drive_mk3 adds 7_000 fuelMax', () => {
-    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk3', slotIndex: 0 }]);
+    const stats = calculateShipStats([{ moduleId: 'drive_mk3', slotIndex: 0 }]);
     expect(stats.fuelMax).toBe(17_000);
   });
 
   it('drive_mk5 adds 18_000 fuelMax', () => {
-    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk5', slotIndex: 0 }]);
+    const stats = calculateShipStats([{ moduleId: 'drive_mk5', slotIndex: 0 }]);
     expect(stats.fuelMax).toBe(28_000);
   });
 
   it('fuelMax never falls below FUEL_MIN_TANK', () => {
-    const stats = calculateShipStats('scout', []);
+    const stats = calculateShipStats([]);
     expect(stats.fuelMax).toBeGreaterThanOrEqual(FUEL_MIN_TANK);
   });
 });

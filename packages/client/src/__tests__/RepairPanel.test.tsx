@@ -73,7 +73,6 @@ const laserDestroyed = {
 const baseShip = {
   id: 'ship-1',
   ownerId: 'player-1',
-  hullType: 'fighter' as const,
   name: 'TEST SHIP',
   modules: [] as typeof laserIntact[],
   stats: {

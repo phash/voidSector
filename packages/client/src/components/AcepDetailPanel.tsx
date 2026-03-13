@@ -90,11 +90,11 @@ export function AcepDetailPanel() {
   // Compute delta: stats with vs without this module
   const currentModules = ship.modules ?? [];
   const withoutModule = currentModules.filter((m) => m.moduleId !== hoveredId);
-  const statsWithout = calculateShipStats(ship.hullType, withoutModule, acepXp);
+  const statsWithout = calculateShipStats(withoutModule, acepXp);
   const statsCandidate =
     activeTab === 'shop'
-      ? calculateShipStats(ship.hullType, [...withoutModule, { moduleId: hoveredId, slotIndex: 99, source: 'standard' as const }], acepXp)
-      : calculateShipStats(ship.hullType, currentModules, acepXp);
+      ? calculateShipStats([...withoutModule, { moduleId: hoveredId, slotIndex: 99, source: 'standard' as const }], acepXp)
+      : calculateShipStats(currentModules, acepXp);
 
   const deltas = STAT_LABELS
     .map(({ key, label, format }) => {

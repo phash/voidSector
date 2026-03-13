@@ -1234,7 +1234,7 @@ expiresDays: 14"></textarea>
       } else {
         p.ships.forEach(function(s) {
           var shipRow = el('div', { style: 'font-size:12px;margin-bottom:4px;color:#aaa' });
-          shipRow.textContent = (s.active ? '\u2605 ' : '  ') + s.name + ' [' + s.hullType + '] fuel:' + s.fuel;
+          shipRow.textContent = (s.active ? '\u2605 ' : '  ') + s.name + ' fuel:' + s.fuel;
           shipsSection.appendChild(shipRow);
         });
       }

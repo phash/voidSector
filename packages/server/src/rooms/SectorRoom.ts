@@ -73,16 +73,15 @@ import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
 import {
   RECONNECTION_TIMEOUT_S,
-  FEATURE_HYPERDRIVE_V2,
   calculateShipStats,
   calculateApRegen,
   createHyperdriveState,
   calculateCurrentCharge,
-  HULLS,
   STATION_REP_VISIT,
   COSMIC_FACTION_IDS,
   getAcepLevel,
   FUEL_MIN_TANK,
+  BASE_FUEL_CAPACITY,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -110,7 +109,6 @@ import type {
   SetBookmarkMessage,
   ClearBookmarkMessage,
   HyperJumpMessage,
-  HullType,
   ShipStats,
   ChatMessage,
   QuadrantControlState,
@@ -155,7 +153,6 @@ interface SectorRoomOptions {
 
 export class SectorRoom extends Room<SectorRoomState> {
   private clientShips = new Map<string, ShipStats>();
-  private clientHullTypes = new Map<string, HullType>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
   private rateLimits = new Map<string, Map<string, number>>();
   private disposeCallbacks: Array<() => void> = [];
@@ -212,7 +209,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private getShipForClient(sessionId: string): ShipStats {
-    return this.clientShips.get(sessionId) ?? calculateShipStats('scout', []);
+    return this.clientShips.get(sessionId) ?? calculateShipStats([]);
   }
 
   private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
@@ -266,7 +263,6 @@ export class SectorRoom extends Room<SectorRoomState> {
       quadrantX: this.quadrantX,
       quadrantY: this.quadrantY,
       clientShips: this.clientShips,
-      clientHullTypes: this.clientHullTypes,
       autopilotTimers: this.autopilotTimers,
       playerSectorData: this.playerSectorData,
       checkRate: this.checkRate.bind(this),
@@ -1163,11 +1159,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Load active ship (or create default scout on first login)
       let shipRecord = await getActiveShip(auth.userId);
       if (!shipRecord) {
-        shipRecord = await createShip(auth.userId, 'scout', 'AEGIS', HULLS.scout.baseFuel);
+        shipRecord = await createShip(auth.userId, 'AEGIS', BASE_FUEL_CAPACITY);
       }
-      const stats = calculateShipStats(shipRecord.hullType, shipRecord.modules);
+      const stats = calculateShipStats(shipRecord.modules);
       this.clientShips.set(client.sessionId, stats);
-      this.clientHullTypes.set(client.sessionId, shipRecord.hullType);
 
       // Send ship data to client
       const fuelState = await getFuelState(auth.userId);
@@ -1182,7 +1177,6 @@ export class SectorRoom extends Room<SectorRoomState> {
       client.send('shipData', {
         id: shipRecord.id,
         ownerId: auth.userId,
-        hullType: shipRecord.hullType,
         name: shipRecord.name,
         modules: shipRecord.modules,
         stats,
@@ -1306,10 +1300,8 @@ export class SectorRoom extends Room<SectorRoomState> {
         recordVisit(sectorX, sectorY).catch(() => {});
         updatePlayerStationRep(auth.userId, sectorX, sectorY, STATION_REP_VISIT).catch(() => {});
 
-        // Auto-refuel at station when FEATURE_HYPERDRIVE_V2 is enabled
-        if (FEATURE_HYPERDRIVE_V2) {
-          await this.navigation.tryAutoRefuel(client, auth, stats);
-        }
+        // Auto-refuel at station
+        await this.navigation.tryAutoRefuel(client, auth, stats);
       }
 
       // Detect jumpgate in sector (also works for D-pad arrivals via cross-quadrant join)
@@ -1318,8 +1310,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Detect player-built jumpgate in sector
       await this.navigation.detectAndSendPlayerGate(client, sectorX, sectorY);
 
-      // Send initial hyperdrive state when V2 is enabled
-      if (FEATURE_HYPERDRIVE_V2 && stats.hyperdriveRange > 0) {
+      // Send initial hyperdrive state
+      if (stats.hyperdriveRange > 0) {
         let hdState = await getHyperdriveState(auth.userId);
         if (!hdState) {
           hdState = createHyperdriveState(stats);
@@ -1472,7 +1464,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
 
     this.clientShips.delete(client.sessionId);
-    this.clientHullTypes.delete(client.sessionId);
     this.rateLimits.delete(client.sessionId);
     this.playerSectorData.delete(client.sessionId);
     this.state.players.delete(client.sessionId);

@@ -27,7 +27,7 @@ vi.mock('../db/npcStationQueries.js', () => ({
 }));
 
 vi.mock('../db/queries.js', () => ({
-  getActiveShip: vi.fn().mockResolvedValue({ id: 'ship-1', hullType: 'scout', modules: [] }),
+  getActiveShip: vi.fn().mockResolvedValue({ id: 'ship-1', modules: [] }),
   getPlayerStructure: vi.fn().mockResolvedValue({ id: 'factory-1', type: 'factory' }),
   getOrCreateFactoryState: vi.fn().mockResolvedValue(undefined),
   getPlayerResearch: vi.fn().mockResolvedValue({ unlockedModules: [], blueprints: [] }),

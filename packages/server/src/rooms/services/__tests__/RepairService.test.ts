@@ -62,7 +62,6 @@ function makeServiceContext(overrides: Partial<any> = {}): any {
 function makeShip(modulesOverride?: any[]): any {
   return {
     id: 'ship-1',
-    hullType: 'explorer_hull',
     modules: modulesOverride ?? [
       { moduleId: 'repair_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 55 },
       { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 5 },

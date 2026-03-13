@@ -123,7 +123,6 @@ describe('CargoScreen', () => {
       ship: {
         id: 'ship1',
         ownerId: 'p1',
-        hullType: 'scout' as const,
         name: 'Test Ship',
         modules: [],
         fuel: 100,
@@ -185,7 +184,6 @@ describe('CargoScreen', () => {
       ship: {
         id: 'ship1',
         ownerId: 'p1',
-        hullType: 'scout' as const,
         name: 'Test Ship',
         modules: [],
         fuel: 100,

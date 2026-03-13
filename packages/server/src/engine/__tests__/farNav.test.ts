@@ -4,43 +4,38 @@ import {
   AUTOPILOT_STEP_MS,
   STALENESS_DIM_HOURS,
   STALENESS_FADE_DAYS,
-  HULLS,
 } from '@void-sector/shared';
 
 describe('Hyperjump Navigation', () => {
-  const scout = HULLS.scout;     // baseApPerJump: 1, baseFuelPerJump: 100
-  const freighter = HULLS.freighter; // baseApPerJump: 2, baseFuelPerJump: 100
+  // Hardcoded values (all ships share same base values after hull removal)
+  const baseApPerJump = 1;
+  const baseFuelPerJump = 100;
 
   describe('cost calculations', () => {
-    it('calculates AP cost with discount for scout hull', () => {
+    it('calculates AP cost with discount', () => {
       const distance = 10;
-      const apCost = Math.ceil(distance * scout.baseApPerJump * HYPERJUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * baseApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(5);
     });
 
-    it('calculates AP cost with discount for freighter hull', () => {
+    it('calculates AP cost with higher base AP', () => {
       const distance = 7;
-      const apCost = Math.ceil(distance * freighter.baseApPerJump * HYPERJUMP_AP_DISCOUNT);
+      const higherApPerJump = 2;
+      const apCost = Math.ceil(distance * higherApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(7);
     });
 
     it('applies ceil to non-integer AP costs', () => {
       const distance = 3;
       // 3 * 1 * 0.5 = 1.5 -> ceil = 2
-      const apCost = Math.ceil(distance * scout.baseApPerJump * HYPERJUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * baseApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(2);
     });
 
-    it('calculates fuel cost for scout hull', () => {
+    it('calculates fuel cost', () => {
       const distance = 10;
-      const fuelCost = distance * scout.baseFuelPerJump;
+      const fuelCost = distance * baseFuelPerJump;
       expect(fuelCost).toBe(1000); // 10 * 100
-    });
-
-    it('calculates fuel cost for freighter hull', () => {
-      const distance = 10;
-      const fuelCost = distance * freighter.baseFuelPerJump;
-      expect(fuelCost).toBe(1000); // 10 * 100 (all hulls share baseFuelPerJump=100)
     });
   });
 
