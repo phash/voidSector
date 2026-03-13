@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../state/store';
-import { FabrikPanel } from './FabrikPanel';
+import { FabrikScreen } from './FabrikScreen';
 import { TradeScreen } from './TradeScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { generateStationName, innerCoord } from '@void-sector/shared';
@@ -22,9 +22,15 @@ const bg = '#050505';
 export function StationTerminalOverlay() {
   const { t } = useTranslation('ui');
   const closeStationTerminal = useStore((s) => s.closeStationTerminal);
+  const setStationProductionState = useStore((s) => s.setStationProductionState);
   const position = useStore((s) => s.position);
   const currentSector = useStore((s) => s.currentSector);
   const [program, setProgram] = useState<TerminalProgram>('handel');
+
+  function handleClose() {
+    setStationProductionState(null);
+    closeStationTerminal();
+  }
 
   const stationName = generateStationName(position.x, position.y);
   const coord = `(${innerCoord(position.x)}, ${innerCoord(position.y)})`;
@@ -65,7 +71,7 @@ export function StationTerminalOverlay() {
           )}
         </div>
         <button
-          onClick={closeStationTerminal}
+          onClick={handleClose}
           style={{
             background: 'none',
             border: `1px solid ${dimGreen}`,
@@ -127,7 +133,7 @@ export function StationTerminalOverlay() {
             } as React.CSSProperties
           }
         >
-          {program === 'fabrik' && <FabrikPanel />}
+          {program === 'fabrik' && <FabrikScreen />}
           {program === 'handel' && <TradeScreen />}
           {program === 'quests' && <QuestsScreen />}
         </div>

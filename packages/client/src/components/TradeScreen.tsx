@@ -2,9 +2,6 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import {
-  NPC_PRICES,
-  NPC_BUY_SPREAD,
-  NPC_SELL_SPREAD,
   MAX_TRADE_ROUTES,
   TRADE_ROUTE_MIN_CYCLE,
   TRADE_ROUTE_MAX_CYCLE,
@@ -26,13 +23,10 @@ const btnStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-const NPC_COLUMN_MAX_HEIGHT = 240;
-
 export function TradeScreen() {
   const { t } = useTranslation('ui');
   const credits = useStore((s) => s.credits);
   const storage = useStore((s) => s.storage);
-  const cargo = useStore((s) => s.cargo);
   const baseStructures = useStore((s) => s.baseStructures);
   const tradeOrders = useStore((s) => s.tradeOrders);
   const myOrders = useStore((s) => s.myOrders);
@@ -42,6 +36,7 @@ export function TradeScreen() {
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
   const discoveries = useStore((s) => s.discoveries);
+  const homeBase = useStore((s) => s.homeBase);
   const ship = useStore((s) => s.ship);
   const npcStationData = useStore((s) => s.npcStationData);
   const kontorOrders = useStore((s) => s.kontorOrders);
@@ -52,7 +47,7 @@ export function TradeScreen() {
   const tradeMessage = useStore((s) => s.tradeMessage);
   const setTradeMessage = useStore((s) => s.setTradeMessage);
   const [amount, setAmount] = useState(1);
-  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
+  const [tab, setTab] = useState<'market' | 'slates' | 'routes' | 'kontor'>('market');
 
   const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
   const tier = tradingPost?.tier ?? 0;
@@ -70,17 +65,13 @@ export function TradeScreen() {
   useEffect(() => {
     network.requestCredits();
     network.requestKontorOrders();
-    if (isStation) {
-      network.requestNpcStationData();
-    } else {
-      network.requestStorage();
-      if (tier >= 2) {
-        network.requestTradeOrders();
-        network.requestMyOrders();
-        network.requestMySlates();
-      }
+    network.requestStorage();
+    if (tier >= 2) {
+      network.requestTradeOrders();
+      network.requestMyOrders();
+      network.requestMySlates();
     }
-  }, [tier, isStation]);
+  }, [tier]);
 
   if (!canTrade) {
     const nearest = findNearestStation(position, discoveries);

@@ -48,6 +48,7 @@ import type {
   InventoryItem,
   ConstructionSiteState,
   QuestRewards,
+  StationProductionState,
   WreckInfo,
   WreckInvestigatedPayload,
   SalvageStartedPayload,
@@ -453,6 +454,9 @@ export interface GameSlice {
     error?: string;
   } | null;
 
+  // Station Production
+  stationProductionState: StationProductionState | null;
+
   // Kontor
   kontorOrders: Array<{
     id: string;
@@ -649,6 +653,7 @@ export interface GameSlice {
   setNpcStationData: (data: GameSlice['npcStationData']) => void;
   setFactoryState: (data: GameSlice['factoryState']) => void;
   setKontorOrders: (orders: GameSlice['kontorOrders']) => void;
+  setStationProductionState: (data: StationProductionState | null) => void;
   startShipMoveAnimation: (fromX: number, fromY: number, toX: number, toY: number) => void;
   clearShipMoveAnimation: () => void;
   setPlayerGateInfo: (
@@ -788,6 +793,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   pendingBlueprint: null,
   npcStationData: null,
   factoryState: null,
+  stationProductionState: null,
   kontorOrders: [],
   navTarget: null,
   autopilotStatus: null,
@@ -997,6 +1003,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setNpcStationData: (npcStationData) => set({ npcStationData }),
   setFactoryState: (factoryState) => set({ factoryState }),
   setKontorOrders: (kontorOrders) => set({ kontorOrders }),
+  setStationProductionState: (stationProductionState) => set({ stationProductionState }),
   startShipMoveAnimation: (fromX, fromY, toX, toY) =>
     set({
       shipMoveAnimation: { fromX, fromY, toX, toY, startTime: performance.now(), duration: 600 },

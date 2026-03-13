@@ -48,6 +48,7 @@ import type {
   ConstructionSiteState,
   NpcTradeResultMessage,
   AcepPath,
+  StationProductionState,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -1776,6 +1777,10 @@ class GameNetwork {
       room.send('getInventory');
     });
 
+    room.onMessage('stationProductionUpdate', (data: StationProductionState) => {
+      useStore.getState().setStationProductionState(data);
+    });
+
     // --- Wreck POI handlers ---
 
     room.onMessage('wreckInvestigated', (data: WreckInvestigatedPayload) => {
@@ -2503,6 +2508,20 @@ class GameNetwork {
 
   sendCraftModule(blueprintId: string) {
     this.sectorRoom?.send('craftModule', { blueprintId });
+  }
+
+  // --- Station Production ---
+
+  getStationProduction() {
+    this.sectorRoom?.send('getStationProduction');
+  }
+
+  buyFromStation(itemId: string, quantity: number) {
+    this.sectorRoom?.send('buyFromStation', { itemId, quantity });
+  }
+
+  sellToStation(itemId: string, quantity: number) {
+    this.sectorRoom?.send('sellToStation', { itemId, quantity });
   }
 
   // ── RepairService ──────────────────────────────────────────────────────────

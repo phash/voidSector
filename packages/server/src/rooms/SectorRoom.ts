@@ -132,6 +132,7 @@ import type { AlienInteractMessage } from './services/AlienInteractionService.js
 import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
+import { StationProductionService } from './services/StationProductionService.js';
 import { RepairService } from './services/RepairService.js';
 import { TechTreeService } from './services/TechTreeService.js';
 import {
@@ -181,6 +182,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private territory!: TerritoryService;
   private storyChain!: StoryQuestChainService;
   private communityQuests!: CommunityQuestService;
+  private stationProduction!: StationProductionService;
   private repair!: RepairService;
   private techTree!: TechTreeService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
@@ -333,6 +335,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.storyChain = new StoryQuestChainService();
     this.communityQuests = new CommunityQuestService();
     await this.communityQuests.seedInitialIfEmpty().catch(() => {});
+    this.stationProduction = new StationProductionService(this.serviceCtx);
+    this.stationProduction.registerHandlers(this);
 
     // Wire cross-service callbacks
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);

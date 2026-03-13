@@ -11,5 +11,6 @@ export {
 export { createHyperdriveState, calculateCurrentCharge, spendCharge } from './hyperdriveCalc.js';
 export { generateStationName } from './stationNames.js';
 export { isModuleFreelyAvailable, isModuleUnlocked } from './research.js';
+export * from './stationProduction.js';
 export * from './techTree.js';
 export * from './techTreeEffects.js';
