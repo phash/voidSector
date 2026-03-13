@@ -96,6 +96,10 @@ vi.mock('../engine/permadeathService.js', () => ({
   salvageWreckModule: vi.fn().mockResolvedValue(null),
 }));
 
+vi.mock('../db/wreckQueries.js', () => ({
+  getWreckAtSector: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock('../engine/acepXpService.js', () => ({
   addAcepXpForPlayer: vi.fn().mockResolvedValue(undefined),
   getAcepXpSummary: vi.fn().mockResolvedValue({}),

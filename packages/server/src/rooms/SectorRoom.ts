@@ -120,6 +120,7 @@ import { NavigationService } from './services/NavigationService.js';
 import { ScanService } from './services/ScanService.js';
 import { CombatService } from './services/CombatService.js';
 import { MiningService, updateStoryProgress } from './services/MiningService.js';
+import { WreckService } from './services/WreckService.js';
 import { EconomyService } from './services/EconomyService.js';
 import { FactionService } from './services/FactionService.js';
 import { QuestService } from './services/QuestService.js';
@@ -169,6 +170,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private scanning!: ScanService;
   private combat!: CombatService;
   private mining!: MiningService;
+  private wreckService!: WreckService;
   private economy!: EconomyService;
   private factions!: FactionService;
   private quests!: QuestService;
@@ -317,6 +319,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.scanning = new ScanService(this.serviceCtx);
     this.combat = new CombatService(this.serviceCtx);
     this.mining = new MiningService(this.serviceCtx);
+    this.wreckService = new WreckService(this.serviceCtx);
     this.economy = new EconomyService(this.serviceCtx);
     this.factions = new FactionService(this.serviceCtx);
     this.quests = new QuestService(this.serviceCtx);
@@ -457,6 +460,24 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('salvageWreck', async (client, data: { wreckId: string }) => {
       await this.scanning.handleSalvageWreck(client, data);
+    });
+
+    this.onMessage('investigateWreck', (client, data) => {
+      this.wreckService.handleInvestigate(client, data).catch((err) =>
+        logger.error({ err }, 'investigateWreck error'),
+      );
+    });
+
+    this.onMessage('startSalvage', (client, data) => {
+      this.wreckService.handleStartSalvage(client, data).catch((err) =>
+        logger.error({ err }, 'startSalvage error'),
+      );
+    });
+
+    this.onMessage('cancelSalvage', (client) => {
+      this.wreckService.handleCancelSalvage(client).catch((err) =>
+        logger.error({ err }, 'cancelSalvage error'),
+      );
     });
 
     // ── Combat ──────────────────────────────────────────────────────
@@ -1484,6 +1505,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   async onDispose() {
     this.mining.clearAllTimers();
+    this.wreckService.clearAllTimers();
     for (const cb of this.disposeCallbacks) {
       cb();
     }

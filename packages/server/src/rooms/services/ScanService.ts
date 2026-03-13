@@ -43,6 +43,7 @@ import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
 import { addToInventory, getInventoryItem, getCargoState } from '../../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
+import { getWreckAtSector } from '../../db/wreckQueries.js';
 import { redis } from './RedisAPStore.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
@@ -115,6 +116,11 @@ export class ScanService {
     const jumpgate = await getPlayerJumpGate(px, py);
     if (jumpgate) structures.push('jumpgate');
 
+    const wreck = await getWreckAtSector(px, py);
+    const wreckInfo = wreck && wreck.status !== 'exhausted'
+      ? { wreckId: wreck.id, tier: wreck.tier, size: wreck.size, status: wreck.status }
+      : null;
+
     client.send('localScanResult', {
       resources,
       hiddenSignatures: result.hiddenSignatures,
@@ -125,6 +131,7 @@ export class ScanService {
         lastLogEntry: w.lastLogEntry,
         hasSalvage: w.salvageableModules.length > 0,
       })),
+      wreckInfo,
       sectorX: px,
       sectorY: py,
       quadrantX: this.ctx.quadrantX,
