@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import type { APState, MiningState, HyperdriveState } from '@void-sector/shared';
 import { createAPState } from '../../engine/ap.js';
 import { createMiningState } from '../../engine/mining.js';
+import { AP_DEFAULTS } from '@void-sector/shared';
 
 dotenv.config();
 
@@ -17,11 +18,15 @@ export async function getAPState(playerId: string): Promise<APState> {
     await saveAPState(playerId, fresh);
     return fresh;
   }
+  const safeNum = (val: string | undefined, fallback: number) => {
+    const n = Number(val);
+    return isNaN(n) ? fallback : n;
+  };
   return {
-    current: Number(data.current),
-    max: Number(data.max),
-    lastTick: Number(data.lastTick),
-    regenPerSecond: Number(data.regenPerSecond),
+    current: safeNum(data.current, AP_DEFAULTS.startingAP),
+    max: safeNum(data.max, AP_DEFAULTS.max),
+    lastTick: safeNum(data.lastTick, Date.now()),
+    regenPerSecond: safeNum(data.regenPerSecond, AP_DEFAULTS.regenPerSecond),
   };
 }
 

@@ -249,6 +249,19 @@ export class ScanService {
     const currentAP = calculateCurrentAP(ap, Date.now());
     const scannerLevel = this.ctx.getShipForClient(client.sessionId).scannerLevel;
 
+    const sectorX = this.ctx._px(client.sessionId);
+    const sectorY = this.ctx._py(client.sessionId);
+
+    // Nebula interference check BEFORE spending AP
+    const currentSectorData = await getSector(sectorX, sectorY);
+    if (currentSectorData?.type === 'nebula') {
+      client.send('error', {
+        code: 'SCAN_FAIL',
+        message: 'Nebula interference: only local scan available in nebula sectors',
+      });
+      return;
+    }
+
     const scanResult = validateAreaScan(currentAP, scannerLevel);
     if (!scanResult.valid) {
       client.send('error', { code: 'SCAN_FAIL', message: scanResult.error! });
@@ -260,18 +273,6 @@ export class ScanService {
     // Apply faction scan radius bonus
     const bonuses = await this.ctx.getPlayerBonuses(auth.userId);
     const radius = scanResult.radius + bonuses.scanRadiusBonus;
-    const sectorX = this.ctx._px(client.sessionId);
-    const sectorY = this.ctx._py(client.sessionId);
-
-    // Nebula interference: area scan is blocked inside nebula sectors
-    const currentSectorData = await getSector(sectorX, sectorY);
-    if (currentSectorData?.type === 'nebula') {
-      client.send('error', {
-        code: 'SCAN_FAIL',
-        message: 'Nebula interference: only local scan available in nebula sectors',
-      });
-      return;
-    }
 
     // Batch load existing sectors
     const existingSectors = await getSectorsInRange(sectorX, sectorY, radius);

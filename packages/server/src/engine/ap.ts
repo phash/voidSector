@@ -11,15 +11,23 @@ export function createAPState(now: number = Date.now(), modules?: ShipModule[]):
 }
 
 export function calculateCurrentAP(ap: APState, now: number = Date.now()): APState {
-  const elapsed = (now - ap.lastTick) / 1000;
-  if (elapsed <= 0) return { ...ap, lastTick: now };
+  // Guard against corrupted state (NaN from stale Redis data)
+  const safeCurrent = isNaN(ap.current) ? AP_DEFAULTS.startingAP : ap.current;
+  const safeRegen = isNaN(ap.regenPerSecond) ? AP_DEFAULTS.regenPerSecond : ap.regenPerSecond;
+  const safeLastTick = isNaN(ap.lastTick) ? now : ap.lastTick;
+  const safeMax = isNaN(ap.max) ? AP_DEFAULTS.max : ap.max;
 
-  const regenerated = elapsed * ap.regenPerSecond;
-  const newCurrent = Math.min(ap.max, ap.current + regenerated);
+  const elapsed = (now - safeLastTick) / 1000;
+  if (elapsed <= 0) return { ...ap, current: safeCurrent, regenPerSecond: safeRegen, max: safeMax, lastTick: now };
+
+  const regenerated = elapsed * safeRegen;
+  const newCurrent = Math.min(safeMax, safeCurrent + regenerated);
 
   return {
     ...ap,
     current: Math.floor(newCurrent),
+    max: safeMax,
+    regenPerSecond: safeRegen,
     lastTick: now,
   };
 }
