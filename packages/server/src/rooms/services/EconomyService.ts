@@ -529,7 +529,7 @@ export class EconomyService {
     const amount = Math.min(data.amount, tankSpace);
 
     const playerShips = await getPlayerShips(auth.userId);
-    const isFreeRefuel = isHomeBase && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
+    const isFreeRefuel = hasBase && !isStation && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
 
     // Check station fuel stock — cap fill amount to what the station has available
     let availableAmount = amount;
