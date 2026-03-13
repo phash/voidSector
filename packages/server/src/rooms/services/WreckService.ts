@@ -12,7 +12,7 @@ import {
   WRECK_INVESTIGATE_AP_COST,
   WRECK_SLATE_CAP,
 } from '@void-sector/shared';
-import type { WreckSize } from '@void-sector/shared';
+import type { WreckSize, WreckItem } from '@void-sector/shared';
 import {
   getWreckAtSector,
   getWreckById,
@@ -40,15 +40,10 @@ import { calcSalvageChance } from '../../engine/wreckSpawnEngine.js';
 import { getInventory } from '../../db/queries.js';
 import { logger } from '../../utils/logger.js';
 
-// ServiceContext extended with optional deductAP for AP management
-type WreckCtx = ServiceContext & {
-  deductAP: (sessionId: string, cost: number) => Promise<boolean>;
-};
-
 export class WreckService {
   private salvageTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  constructor(private ctx: WreckCtx) {}
+  constructor(private ctx: ServiceContext) {}
 
   clearAllTimers(): void {
     for (const t of this.salvageTimers.values()) clearTimeout(t);
@@ -74,7 +69,7 @@ export class WreckService {
       return;
     }
 
-    const apOk = await this.ctx.deductAP(client.sessionId, WRECK_INVESTIGATE_AP_COST);
+    const apOk = await this.ctx.deductAP(auth.userId, WRECK_INVESTIGATE_AP_COST);
     if (!apOk) {
       client.send('actionError', { code: 'NO_AP', message: 'Zu wenig AP' });
       return;
@@ -111,7 +106,7 @@ export class WreckService {
     }
 
     const { itemIndex } = data;
-    const item = (wreck.items as any[])[itemIndex];
+    const item = (wreck.items as WreckItem[])[itemIndex];
     if (!item) {
       client.send('actionError', { code: 'INVALID_ITEM', message: 'Item nicht gefunden' });
       return;
@@ -137,7 +132,7 @@ export class WreckService {
       }
     }
 
-    const apOk = await this.ctx.deductAP(client.sessionId, WRECK_SALVAGE_AP_COST);
+    const apOk = await this.ctx.deductAP(auth.userId, WRECK_SALVAGE_AP_COST);
     if (!apOk) {
       client.send('actionError', { code: 'NO_AP', message: 'Zu wenig AP' });
       return;
@@ -190,14 +185,14 @@ export class WreckService {
     itemIndex: number,
   ): Promise<void> {
     const session = await getSalvageSession(playerId);
-    if (!session || session.wreckId !== wreckId) return;
+    if (!session || session.wreckId !== wreckId || session.itemIndex !== itemIndex) return;
 
     await clearSalvageSession(playerId);
 
     const success = Math.random() < session.resolveChance;
     const w = await getWreckById(wreckId);
     if (!w) return;
-    const item = (w.items as any[])[itemIndex];
+    const item = (w.items as WreckItem[])[itemIndex];
     if (!item) return;
 
     const delta = success ? WRECK_DIFFICULTY_SUCCESS_DELTA : WRECK_DIFFICULTY_FAIL_DELTA;
@@ -211,7 +206,7 @@ export class WreckService {
     let cargoUpdate = undefined;
 
     if (success) {
-      Promise.resolve(addAcepXpForPlayer(playerId, 'explorer', 2)).catch(() => {});
+      addAcepXpForPlayer(playerId, 'explorer', 2).catch(() => {});
 
       if (item.itemType === 'data_slate') {
         const slateId = uuidv4();
@@ -243,9 +238,9 @@ export class WreckService {
     });
 
     const updatedWreck = await getWreckById(wreckId);
-    const updatedItems = updatedWreck?.items as any[] | undefined;
+    const updatedItems = updatedWreck?.items as WreckItem[] | undefined;
 
-    if (updatedItems?.every((i: any) => i.salvaged)) {
+    if (updatedItems?.every((i) => i.salvaged)) {
       await updateWreckStatus(wreckId, 'exhausted');
       client.send('wreckExhausted', {
         wreckId,

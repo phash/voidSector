@@ -5,7 +5,7 @@ const { Room, ServerError } = colyseus;
 import { SectorRoomState, PlayerSchema } from './schema/SectorState.js';
 import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
-import { calculateCurrentAP } from '../engine/ap.js';
+import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
@@ -303,6 +303,13 @@ export class SectorRoom extends Room<SectorRoomState> {
       applyReputationChange: null as any,
       applyXpGain: null as any,
       contributeToCommunityQuest: null as any,
+      deductAP: async (playerId: string, cost: number): Promise<boolean> => {
+        const ap = await getAPState(playerId);
+        const newAP = spendAP(ap, cost);
+        if (!newAP) return false;
+        await saveAPState(playerId, newAP);
+        return true;
+      },
     };
 
     // Instantiate services

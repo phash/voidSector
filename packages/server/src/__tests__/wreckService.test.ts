@@ -23,7 +23,7 @@ vi.mock('../engine/inventoryService.js', () => ({
 vi.mock('../engine/acepXpService.js', () => ({
   getAcepXpSummary: vi.fn().mockResolvedValue({ ausbau: 0, intel: 0, kampf: 0, explorer: 0, total: 0 }),
   getAcepEffects: vi.fn().mockReturnValue({ helionDecoderEnabled: false }),
-  addAcepXpForPlayer: vi.fn(),
+  addAcepXpForPlayer: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('../db/queries.js', () => ({
   getInventory: vi.fn().mockResolvedValue([]),
@@ -37,7 +37,7 @@ import * as inventoryService from '../engine/inventoryService.js';
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(inventoryService.canAddResource).mockResolvedValue(true);
-  vi.mocked(inventoryService.getCargoState).mockResolvedValue({ ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 } as any);
+  vi.mocked(inventoryService.getCargoState).mockResolvedValue({ ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 });
 });
 
 const makeClient = (playerId = 'p1', sectorX = 5, sectorY = 5) => ({
@@ -145,7 +145,7 @@ describe('WreckService.resolveSalvage (via timer)', () => {
     vi.mocked(wreckQueries.updateWreckItem).mockResolvedValue(undefined);
     vi.mocked(wreckQueries.updateWreckModifier).mockResolvedValue(undefined);
     vi.mocked(wreckQueries.updateWreckStatus).mockResolvedValue(undefined);
-    vi.mocked(inventoryService.getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 } as any);
+    vi.mocked(inventoryService.getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
 
     const ctx = makeCtx();
     const service = new WreckService(ctx as any);
@@ -180,7 +180,7 @@ describe('WreckService.resolveSalvage (via timer)', () => {
     vi.mocked(wreckQueries.updateWreckItem).mockResolvedValue(undefined);
     vi.mocked(wreckQueries.updateWreckModifier).mockResolvedValue(undefined);
     vi.mocked(wreckQueries.updateWreckStatus).mockResolvedValue(undefined);
-    vi.mocked(inventoryService.getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 } as any);
+    vi.mocked(inventoryService.getCargoState).mockResolvedValue({ ore: 10, gas: 0, crystal: 0, slates: 0, artefact: 0 });
 
     const ctx = makeCtx();
     const service = new WreckService(ctx as any);
