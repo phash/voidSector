@@ -1,30 +1,62 @@
-# VoidSector — Master Roadmap: Alle offenen Issues
+# VoidSector — Master Roadmap
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Ziel:** Alle 43 offenen GitHub Issues in logischer Reihenfolge umsetzen — von Bugfixes bis zur vollständigen Lebendiges-Universum + Alien-Quest-Erweiterung.
-
-**Kontext:** Kein Live-Betrieb, keine Userdaten → kein Datenmigrations-Overhead. Fresh Seed nach jedem größeren Rebuild möglich.
+**Stand:** 2026-03-13 · Zuletzt aktualisiert nach i18n Phase A Merge
 
 **Architektur:** Colyseus (Rooms), PostgreSQL (queries.ts), Redis (AP/State), React + Zustand (Client), Vitest (Tests).
 
 ---
 
-## Übersicht: Sprints
+## ✅ Abgeschlossen
 
-| Sprint | Issues | Typ | Dauer |
-|--------|--------|-----|-------|
-| 0 — Bugfixes | #143, #144, #154 | 🐛 Bug | ~1 Tag |
-| 1 — UI Quick Wins | #152, #153, #155, #158, #160, #161/#147 | ✨ UI | ~2 Tage |
-| 2 — Navigation + Karte | #156, #148, #151 | ✨ Feature | ~2 Tage |
-| 3 — Mining + Trade + Quest | #140, #141, #157 | ✨ Feature | ~2 Tage |
-| 4 — Scan + Schiff + Station | #159, #146, #149 | ✨ Feature | ~1 Woche |
-| P2 — Sektor-System Rebuild | #162–168 | 🏗 Epic | ~3 Wochen |
-| LU — Lebendiges Universum | #177–184 | 🏗 Epic | ~3 Wochen |
-| D — Drohnen-System | #169 | ✨ Feature | ~1 Woche |
-| AQ — Alien Quest System | #170–175 | 🏗 Epic | ~7 Wochen |
+| Phase | Inhalt |
+|-------|--------|
+| Phasen 1–7 | Fuel, Jumpgates, Autopilot, Ship Designer, Trade, Factions, Quests, Combat v2 |
+| Codebase Review | SectorRoom → 10 Services, ESLint/Prettier, pino |
+| Admin Console | Admin API, Quadrant-System, QUAD-MAP, First-Contact-Naming |
+| Cockpit | 6-Section-Layout, Bookmarks, Staleness, Nav-Grid-Overhaul |
+| Quality Sprints S0–S4 | Bugfixes, UI Quick Wins, Navigation, Mining/Trade, Scan/Schiff |
+| Phase 2 | Sektor-System Rebuild (#162–168) |
+| Phase LU | Lebendiges Universum (#177–184) |
+| Phase D | Drohnen-System (#169) |
+| Phase EW | frictionEngine, expansionEngine, warfareEngine, StrategicTickService |
+| Phase AQ | Alien Quest System (#170–175) |
+| Humanity Rep | Alien-Rep-Aggregat, Encounter-Modifier, AlienEncounterToast |
+| ACEP | XP-Engine, 4 Paths, Traits, Permadeath, 3-Tab-UI, Sec3-Detailpanel |
+| Forschung & Wissen | Wissen-Ressource, Artefakte (9 Typen), Lab 1–5, TechTreeCanvas (Migration 044) |
+| Hull-Legacy-Cleanup | HullType/HULLS entfernt, BASE_*-Konstanten, Hyperjump V2 permanent (Migration 060) |
+| Playtest-Fixes | HANGAR entfernt, drive_mk1 Starter, actionError/badgeAwarded Handler, BASE_CARGO=10, Cargo-Module ×2 |
+| i18n Phase A | DE/EN Locale-Dateien, i18n.ts, ui-helpers.ts, alle UI-Strings externalisiert |
 
-**Gesamtdauer:** ca. 16–18 Wochen
+---
+
+## 🔜 Offen — Nächste Schritte
+
+| Prio | Feature | Notizen |
+|------|---------|---------|
+| 1 | **Wreck-POIs auf dem Radar** | Explizit als nächstes in CLAUDE.md |
+| 2 | i18n Phase B | EN-Texte vervollständigen, Sprach-Toggle |
+| — | Sprint 0–4 Restbugs | Soweit nicht in S0–S4 erledigt: #143 (Gates), #144 (Piratenkampf), #154 (Sektor-Infos) |
+
+---
+
+## Abhängigkeits-Grafik (aktuell)
+
+```
+i18n Phase A ✅
+    │
+    └──► i18n Phase B (EN-Texte, Toggle)
+
+Wreck-POIs ← nächstes Feature
+```
+
+---
+
+## Archiv: Sprint-Details (alle erledigt — S0–S4, P2, LU, D, AQ)
+
+> Die detaillierten Implementierungsschritte der erledigten Sprints sind in der Git-History.
+> Restbugs aus Sprint 0 (#143, #144, #154) prüfen via GitHub Issues.
 
 ---
 
