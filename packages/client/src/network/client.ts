@@ -452,6 +452,21 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('actionError', (data: { code: string; message: string } | string) => {
+      const store = useStore.getState();
+      if (typeof data === 'string') {
+        store.setActionError({ code: 'ACTION_ERROR', message: data });
+        store.addLogEntry(`FEHLER: ${data}`);
+      } else {
+        store.setActionError(data);
+        store.addLogEntry(`FEHLER: ${data.message}`);
+      }
+    });
+
+    room.onMessage('badgeAwarded', (data: { badgeType: string }) => {
+      useStore.getState().addLogEntry(`ABZEICHEN ERHALTEN: ${data.badgeType}`);
+    });
+
     // Mining updates
     room.onMessage('miningUpdate', (data: MiningState) => {
       const store = useStore.getState();

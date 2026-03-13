@@ -2039,7 +2039,6 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
   NEWS: 'NEWS',
   LOG: 'LOG',
   MODULES: 'MODULES',
-  HANGAR: 'HANGAR',
   ACEP: 'ACEP',
 };
 
