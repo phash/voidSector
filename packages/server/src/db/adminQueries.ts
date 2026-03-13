@@ -68,7 +68,6 @@ export interface AdminPlayerFull extends AdminPlayer {
   cargo: Record<string, number>;
   ships: Array<{
     id: string;
-    hullType: string;
     name: string;
     active: boolean;
     modules: string[];
@@ -103,18 +102,16 @@ export async function getPlayerFullProfile(id: string): Promise<AdminPlayerFull 
 
   const shipsResult = await query<{
     id: string;
-    hull_type: string;
     name: string;
     active: boolean;
     modules: string[];
     fuel: number;
   }>(
-    `SELECT id, hull_type, name, active, modules, fuel FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
+    `SELECT id, name, active, modules, fuel FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
     [id],
   );
   const ships = shipsResult.rows.map((s) => ({
     id: s.id,
-    hullType: s.hull_type,
     name: s.name,
     active: s.active,
     modules: s.modules ?? [],
@@ -903,4 +900,64 @@ export async function getAdminQuadrantMap(): Promise<AdminQuadrantMapEntry[]> {
     border_state: r.border_state,
     fleet_count: r.fleet_count,
   }));
+}
+
+// ── Error Log Queries ────────────────────────────────────────────────
+
+export interface ErrorLog {
+  id: number;
+  fingerprint: string;
+  message: string;
+  location: string | null;
+  stack: string | null;
+  count: number;
+  first_seen: string;
+  last_seen: string;
+  status: 'new' | 'ignored' | 'resolved';
+  github_issue_url: string | null;
+}
+
+export async function upsertErrorLog(
+  fingerprint: string,
+  message: string,
+  location: string | null,
+  stack: string | null,
+): Promise<void> {
+  await query(
+    `INSERT INTO error_logs (fingerprint, message, location, stack)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (fingerprint)
+     DO UPDATE SET count = error_logs.count + 1, last_seen = NOW()`,
+    [fingerprint, message, location, stack],
+  );
+}
+
+export async function getErrorLogs(status?: string): Promise<ErrorLog[]> {
+  const filterByStatus = status && status !== 'all';
+  const res = await query<ErrorLog>(
+    filterByStatus
+      ? `SELECT * FROM error_logs WHERE status = $1 ORDER BY last_seen DESC LIMIT 200`
+      : `SELECT * FROM error_logs ORDER BY last_seen DESC LIMIT 200`,
+    filterByStatus ? [status] : [],
+  );
+  return res.rows;
+}
+
+export async function updateErrorLogStatus(
+  id: number,
+  status: 'new' | 'ignored' | 'resolved',
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE error_logs SET status = $1 WHERE id = $2 RETURNING id`,
+    [status, id],
+  );
+  return res.rows.length > 0;
+}
+
+export async function deleteErrorLog(id: number): Promise<boolean> {
+  const res = await query(
+    `DELETE FROM error_logs WHERE id = $1 RETURNING id`,
+    [id],
+  );
+  return res.rows.length > 0;
 }

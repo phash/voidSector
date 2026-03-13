@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
@@ -24,8 +25,11 @@ const ANCIENT_ART = [
 ];
 
 export function BattleDialog() {
+  const { t } = useTranslation('ui');
   const activeBattle = useStore((s) => s.activeBattle);
   const activeCombatV2 = useStore((s) => s.activeCombatV2);
+  const bountyEncounter = useStore((s) => s.bountyEncounter);
+  const setBountyEncounter = useStore((s) => s.setBountyEncounter);
 
   useEffect(() => {
     if (!activeBattle) return;
@@ -38,6 +42,40 @@ export function BattleDialog() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [activeBattle]);
 
+  if (bountyEncounter && !activeCombatV2) {
+    const handleAttack = () => {
+      setBountyEncounter(null);
+      network.sendCombatInit(
+        'pirate',
+        bountyEncounter.targetLevel,
+        bountyEncounter.sectorX,
+        bountyEncounter.sectorY,
+      );
+    };
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000,
+        }}
+      >
+        <div style={{ border: '2px solid #c8a020', background: '#0a0800', padding: '20px', textAlign: 'center', maxWidth: '300px' }}>
+          <div style={{ color: '#c8a020', fontSize: '12px', letterSpacing: '2px', marginBottom: '8px' }}>{t('battle.bountyTarget')}</div>
+          <div style={{ color: '#e8c040', fontWeight: 'bold', marginBottom: '4px' }}>{bountyEncounter.targetName}</div>
+          <div style={{ color: '#aaa', fontSize: '11px', marginBottom: '12px' }}>{t('battle.level', { n: bountyEncounter.targetLevel })} {t('battle.pirate')}</div>
+          <button className="vs-btn" onClick={handleAttack} style={{ width: '100%' }}>
+            {t('battle.attack')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // If combat v2 is active, don't render v1 dialog
   if (activeCombatV2) return null;
   if (!activeBattle) return null;
@@ -46,7 +84,7 @@ export function BattleDialog() {
     activeBattle;
   const isAncient = pirateLevel >= 6;
   const enemyArt = isAncient ? ANCIENT_ART : PIRATE_ART;
-  const contactLabel = isAncient ? 'ALIEN-KONTAKT' : 'PIRATEN-KONTAKT';
+  const contactLabel = isAncient ? t('battle.alienContact') : t('battle.pirateContact');
   const contactColor = isAncient ? '#00BFFF' : '#FF3333';
 
   return (
@@ -74,14 +112,14 @@ export function BattleDialog() {
           padding: '16px',
           maxWidth: '380px',
           fontFamily: 'monospace',
-          fontSize: '12px',
+          fontSize: '0.65rem',
         }}
       >
         <div
           id="battle-title"
           style={{
             color: contactColor,
-            fontSize: '14px',
+            fontSize: '0.75rem',
             marginBottom: '8px',
             textAlign: 'center',
           }}
@@ -102,10 +140,10 @@ export function BattleDialog() {
         </pre>
         <div style={{ color: '#FFB000', marginBottom: '12px' }}>
           <div>
-            Sektor: ({innerCoord(sectorX)}, {innerCoord(sectorY)})
+            {t('battle.sectorLabel')} ({innerCoord(sectorX)}, {innerCoord(sectorY)})
           </div>
           <div>
-            {isAncient ? 'Alien-Level' : 'Piraten-Level'}: {pirateLevel}
+            {isAncient ? t('battle.alienLevel') : t('battle.pirateLevel')}: {pirateLevel}
           </div>
           <div>
             HP: {pirateHp} | DMG: {pirateDamage}
@@ -122,7 +160,7 @@ export function BattleDialog() {
               padding: '6px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '12px',
+              fontSize: '0.65rem',
             }}
           >
             [KAMPF] -- Auto-Resolve
@@ -137,7 +175,7 @@ export function BattleDialog() {
               padding: '6px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '12px',
+              fontSize: '0.65rem',
             }}
           >
             [FLUCHT] -- 2 AP, 60% Chance
@@ -153,7 +191,7 @@ export function BattleDialog() {
                 padding: '6px',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
-                fontSize: '12px',
+                fontSize: '0.65rem',
               }}
             >
               [VERHANDELN] -- {negotiateCost} CR
@@ -161,7 +199,7 @@ export function BattleDialog() {
           )}
 
           {!canNegotiate && (
-            <div style={{ color: 'rgba(255,176,0,0.3)', fontSize: '10px', textAlign: 'center' }}>
+            <div style={{ color: 'rgba(255,176,0,0.3)', fontSize: '0.55rem', textAlign: 'center' }}>
               Verhandlung erfordert Piraten-Rep &gt;= Friendly
             </div>
           )}

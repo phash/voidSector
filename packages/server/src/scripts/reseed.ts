@@ -42,16 +42,12 @@ async function reseed() {
   // 3. Create test accounts — all spawn in quadrant (3000,3000), sector ~(1234,1234)
   //    absolute = quadrant * QUADRANT_SIZE + sector = 3000 * 10000 + 1234 = 30001234
   const passwordHash = await bcrypt.hash('test1234', SALT_ROUNDS);
-  const accounts = [
-    { username: 'Phash', homeBase: { x: 30001234, y: 30001234 } },
-    { username: 'Smasher', homeBase: { x: 30001254, y: 30001234 } },
-    { username: 'Fede', homeBase: { x: 30001234, y: 30001254 } },
-  ];
+  const accounts = ['Phash', 'Smasher', 'Fede'];
 
-  for (const acct of accounts) {
-    const player = await createPlayer(acct.username, passwordHash, acct.homeBase);
+  for (const username of accounts) {
+    const player = await createPlayer(username, passwordHash);
     logger.info(
-      { username: acct.username, id: player.id, x: acct.homeBase.x, y: acct.homeBase.y },
+      { username, id: player.id },
       'Created player',
     );
   }

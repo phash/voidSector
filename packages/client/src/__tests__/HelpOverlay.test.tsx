@@ -45,7 +45,7 @@ describe('HelpOverlay', () => {
     });
     render(<HelpOverlay />);
     expect(screen.getByTestId('compendium-link')).toBeInTheDocument();
-    expect(screen.getByText('MEHR IM KOMPENDIUM ▸')).toBeInTheDocument();
+    expect(screen.getByText('help.moreInCompendium')).toBeInTheDocument();
   });
 
   it('clicking compendium link opens compendium at article', async () => {

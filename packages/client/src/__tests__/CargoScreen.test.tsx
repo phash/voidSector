@@ -74,13 +74,9 @@ describe('CargoScreen', () => {
     expect(crystalBtn).not.toBeDisabled();
   });
 
-  it('calls sendJettison on double-click (two-click confirm)', async () => {
+  it('calls sendJettison on single click', async () => {
     render(<CargoScreen />);
-    // First click arms the button (shows SURE?)
     await userEvent.click(screen.getByText('[JETTISON ORE]'));
-    expect(network.sendJettison).not.toHaveBeenCalled();
-    // Second click confirms
-    await userEvent.click(screen.getByText('[JETTISON ORE — SURE?]'));
     expect(network.sendJettison).toHaveBeenCalledWith('ore');
   });
 
@@ -91,11 +87,11 @@ describe('CargoScreen', () => {
 
   it('shows capacity info', () => {
     render(<CargoScreen />);
-    // total = 3 + 0 + 1 = 4, cargoCap for aegis_scout_mk1 = 5
+    // total = 3 + 0 + 1 = 4
     expect(screen.getByText(/CAPACITY/)).toBeInTheDocument();
   });
 
-  it('shows slate count when player has slates', () => {
+  it('shows slate count when player has slates', async () => {
     mockStoreState({
       cargo: {
         ore: 1,
@@ -127,7 +123,6 @@ describe('CargoScreen', () => {
       ship: {
         id: 'ship1',
         ownerId: 'p1',
-        hullType: 'scout' as const,
         name: 'Test Ship',
         modules: [],
         fuel: 100,
@@ -161,8 +156,10 @@ describe('CargoScreen', () => {
       },
     });
     render(<CargoScreen />);
-    expect(screen.getByText(/DATA SLATES: 2/)).toBeDefined();
-    expect(screen.getByText(/\[ACTIVATE\]/)).toBeDefined();
+    // Slate content moved to SLATES tab — switch to it first
+    await userEvent.click(screen.getByText('SLATES'));
+    expect(screen.getByText(/MEMORY: 2/)).toBeDefined();
+    expect(screen.getByText(/\[actions\.activate\]/)).toBeDefined();
   });
 
   it('does not show create slate buttons (moved to SlateControls)', () => {
@@ -187,7 +184,6 @@ describe('CargoScreen', () => {
       ship: {
         id: 'ship1',
         ownerId: 'p1',
-        hullType: 'scout' as const,
         name: 'Test Ship',
         modules: [],
         fuel: 100,

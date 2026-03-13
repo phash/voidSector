@@ -10,7 +10,8 @@ export type CompendiumCategory =
   | 'handel'
   | 'technik'
   | 'sozial'
-  | 'fortgeschritten';
+  | 'fortgeschritten'
+  | 'acep';
 
 export interface CompendiumArticle {
   id: string;
@@ -36,6 +37,7 @@ export const COMPENDIUM_CATEGORIES: {
   { id: 'technik', label: 'TECHNIK', icon: '⚙' },
   { id: 'sozial', label: 'SOZIAL', icon: '◉' },
   { id: 'fortgeschritten', label: 'FORTGESCHRITTEN', icon: '◇' },
+  { id: 'acep', label: 'ACEP', icon: '⬟' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -55,10 +57,10 @@ export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
     summary: 'Einführung in voidSector — Cockpit, Programme, erste Aktionen.',
     body: `Du befindest dich im Cockpit deines Schiffes. Das Interface besteht aus 6 Sektionen:
 
-- **Sektion 1** (links): Programm-Selektor — 11 Buttons für alle Hauptprogramme
+- **Sektion 1** (links): Programm-Selektor — 12 Buttons für alle Hauptprogramme
 - **Sektion 2** (Mitte oben): Hauptmonitor — aktives Programm
 - **Sektion 3** (Mitte rechts): Detail-Monitor — kontextabhängige Zusatzinfos
-- **Sektion 4** (rechts oben): SHIP-SYS — Status, Module, Hangar, ACEP
+- **Sektion 4** (rechts oben): SHIP-SYS — Status, Module, Hangar (ACEP ist eigenes Programm in Sektion 1)
 - **Sektion 5** (rechts Mitte): Navigation — Sektor-Info, AP, Steuerung
 - **Sektion 6** (rechts unten): COMMS — Chat und Kommunikation
 
@@ -254,8 +256,13 @@ AP wird in Sektion 5 (Navigation) als Balken angezeigt. Gelb = genug, Orange = n
 - Legacy-Vererbung: 40% des ACEP-XP wird nach Permadeath vererbt
 
 **ACEP im Interface:**
-SHIP-SYS → Einstellungen: Zeigt alle 4 Pfade als Balken mit aktuellem Stand.`,
-    seeAlso: ['acep-pfade', 'acep-traits', 'radar-evolution', 'permadeath', 'acep-handbuch'],
+Das ACEP-Programm (Sektion 1 → ACEP) zeigt alle Modul-Slots und XP-Pfade auf einem Screen.
+SHIP-SYS (Sektion 4) → EINSTELLUNGEN zeigt die ACEP-Balken weiterhin zusätzlich.
+
+**AUSBAU-Level und Gating:**
+- Fabrik: erfordert AUSBAU Level 2 (ab 8 AUSBAU-XP)
+- Forschungsslot 2: erfordert AUSBAU Level 3 (ab 18 AUSBAU-XP)`,
+    seeAlso: ['acep-pfade', 'acep-traits', 'radar-evolution', 'permadeath', 'acep-handbuch', 'acep-monitor', 'acep-slots'],
     tags: ['acep', 'spezialisierung', 'xp', 'pfade', 'evolution'],
   },
 
@@ -264,8 +271,8 @@ SHIP-SYS → Einstellungen: Zeigt alle 4 Pfade als Balken mit aktuellem Stand.`,
     title: 'MONITORSYSTEM',
     category: 'grundlagen',
     icon: '▣',
-    summary: 'Die 11 Programme des Cockpits — was jeder Monitor anzeigt und wozu er dient.',
-    body: `Das Cockpit hat 11 wählbare Programme (Sektion 1, linke Leiste):
+    summary: 'Die 12 Programme des Cockpits — was jeder Monitor anzeigt und wozu er dient.',
+    body: `Das Cockpit hat 12 Programme (Sektion 1, linke Leiste):
 
 | Programm | Funktion |
 |---|---|
@@ -280,12 +287,13 @@ SHIP-SYS → Einstellungen: Zeigt alle 4 Pfade als Balken mit aktuellem Stand.`,
 | QUAD-MAP | Quadranten-Karte (Canvas-Renderer) |
 | NEWS | VOID SECTOR NEWS — server-weite Ereignisse |
 | LOG | Ereignis-Log, Chat-Verlauf |
+| ACEP | Modul-Slots und XP-Pfade auf einem Screen |
 
 **Zusatz-Panel (Sektion 3 — Detail-Monitor):**
 Zeigt kontextabhängige Infos zum aktiven Programm: Mining-Status, Cargo-Detail, Trade-Preise, Quest-Details.
 
 **SHIP-SYS (Sektion 4):**
-Immer sichtbar. Tabs: EINSTELLUNGEN (ACEP-Panel, Territory), MODULE, HANGAR.
+Immer sichtbar. Tabs: EINSTELLUNGEN, MODULE, HANGAR. Das ACEP-Panel ist nun ein eigenes Programm.
 
 **Mobile-Ansicht:**
 Auf Mobilgeräten (<1024px): Tab-Leiste unten, vollbild-Monitor, "MEHR"-Overlay für zusätzliche Programme.`,
@@ -1722,7 +1730,7 @@ Das Schiff kommentiert Aktionen im LOG — Ton und Inhalt abhängig von freigesc
 Traits schließen sich nicht gegenseitig aus. Ein "VETERAN + NEUGIERIG"-Schiff kombiniert beide Persönlichkeitsstile.
 
 **Trait-Anzeige:**
-SHIP-SYS → EINSTELLUNGEN → ACEP-Panel zeigt aktive Traits unter den XP-Balken.`,
+Das ACEP-Programm (Sektion 1 → ACEP) zeigt aktive Traits unter den XP-Pfad-Balken.`,
     seeAlso: ['acep-pfade', 'acep-intro', 'radar-evolution', 'acep-handbuch'],
     tags: ['traits', 'persönlichkeit', 'veteran', 'neugierig', 'charakter'],
   },
@@ -1821,16 +1829,48 @@ Pilot Harkon Breis wollte "in allem gut sein". Er verteilte gleichmäßig: 25/25
 Ergebnis: Überall ein kleiner Bonus. Nirgendwo gut genug. Besiegt von einem Piraten mit +5%-Schadensbonus.
 Sein Wrack treibt bei [00F2:0179]. Es ist gut beschriftet.
 
+![Harkon Breis winkt aus seinem beschrifteten Wrack. Schild: "GLEICHMÄSSIG VERTEILT".](img:acep/pilot-harkon)
+
 *Fallstudie 2 — Der Kampfspezialist ohne Treibstoff:*
 Korbin Vex: 50 KAMPF-XP. Maximaler Schaden. Dann — kein Treibstoff im Nebula-Sektor.
 [SYSTEM]: Feinde erkannt. Kein Treibstoff. Das ist ungünstig.
 Korbin blieb vier Tage in jenem Sektor.
+
+![Korbin Vex treibt im Nebula. Treibstoffanzeige rot. Piraten im Hintergrund stehen gelangweilt.](img:acep/pilot-korbin)
 
 *Fallstudie 3 — Die EXPLORER-Pilotin mit zu vielen Ruinen:*
 Yara Finn: 25 EXPLORER-XP → alle Ancient-Ruinen auf dem Radar sichtbar.
 Es waren sehr viele. Sie flog zur nächsten. Dort wartete eine Ancient-Wächterin.
 Yara hatte null Kampf-XP.
 [SYSTEM]: Flucht erfolgreich. ...ich empfehle zukünftig weniger Neugier.
+
+![Yara Finn flieht. 5 Tempel-Icons auf Mini-Radar. Ancient-Wächterin dahinter.](img:acep/pilot-yara)
+
+---
+
+**Das neue ACEP-Programm**
+
+Nach mehreren Eingaben bei der Zuständigen Behörde (Abteilung: Unklare Beschwerden) mit dem Betreff "Wo sind meine Balken?" wurde ACEP ein eigenes Cockpit-Programm.
+
+Links: deine Module. Rechts: deine XP-Pfade.
+Du kannst jetzt beides gleichzeitig ignorieren statt nacheinander. Das nennt sich Fortschritt.
+
+*Fallstudie 4 — Der Monitor-Erkunder:*
+Pilot Ren Dalvik öffnete den neuen ACEP-Monitor und klickte auf alle leeren Slots.
+Jeder Klick öffnete das MODULE-Programm. Das war beabsichtigt.
+Ren klickte 47 Mal. Es blieben 47 leere Slots.
+[SYSTEM]: Module werden im MODULE-Programm erworben, nicht durch wiederholtes Klicken auf ihre Abwesenheit.
+Ren lebt noch. Er hat jetzt 0 Module und ein tiefes, praxisnahes Verständnis der Benutzeroberfläche.
+
+*Fallstudie 5 — Die Fabrik-Ungeduld:*
+Pilotin Sera Voss entschied, sofort eine Fabrik auf ihrer Basis zu errichten.
+AUSBAU Level 1. Fabrik gesperrt.
+Sie baute Mining-Module. AUSBAU Level 1. Fabrik gesperrt.
+Sie engagierte sich im Kampf. AUSBAU Level 1. Fabrik gesperrt.
+Während dieser Zeit: 7 AUSBAU-XP. Beständig.
+[SYSTEM]: Fabrik erfordert AUSBAU Level 2. Das entspricht 8 XP. Du hast 7.
+Das Universum ist präzise.
+Sera hat seitdem eine sehr gepflegte Basis mit einer unbenutzten Fabrik, die sie täglich besucht.
 
 ---
 
@@ -1932,6 +1972,103 @@ Zeigt aktuelle Ressourcen-Preise, Markt-Aktivität und Station-Level-Verteilung.
 Als regulärer Spieler hast du keinen Zugang zur Admin-Konsole. Die hier beschriebenen Funktionen dienen Server-Betreibern.`,
     seeAlso: ['quests', 'npc-stationen'],
     tags: ['admin', 'konsole', 'broadcast', 'verwaltung', 'server'],
+  },
+
+  // ==========================================================================
+  // ACEP
+  // ==========================================================================
+
+  {
+    id: 'acep-monitor',
+    title: 'DAS ACEP-PROGRAMM',
+    category: 'acep',
+    icon: '⬟',
+    summary: 'Das neue Cockpit-Programm zeigt Modul-Slots und XP-Pfade auf einem Screen. Verwirrt anfangs. Wird nützlich.',
+    body: `Das ACEP-Programm ist das zwölfte Mitglied der Cockpit-Software-Familie.
+Es wurde eingeführt, nachdem eine statistisch relevante Anzahl von Piloten gleichzeitig auf ihre Module und ihre XP-Pfade schauen wollte.
+Das ist, rein geometrisch betrachtet, möglich. Das ACEP-Programm macht es komfortabler.
+
+**Was der Monitor zeigt:**
+Links: deine 8 Modul-Slots und deren aktueller Zustand.
+Rechts: deine vier ACEP-Pfade mit XP-Stand und freigeschalteten Effekten.
+
+Der Monitor zeigt viele Balken. Einige davon sind leer. Das ist nicht der Monitor's Schuld.
+Der Monitor tut, was er kann.
+
+**Wie man ihn öffnet:**
+Sektion 1 (linke Leiste des Cockpits) → Programm ACEP.
+Falls du Sektion 1 nicht findest: Sie ist die linke Leiste. Du hast sie bereits gesehen.
+
+**Klick auf einen leeren Slot:**
+Öffnet das MODULE-Programm. Das ist kein Fehler — es ist ein Hinweis.
+Der ACEP-Monitor verkauft keine Module. Er dokumentiert deren Abwesenheit mit bemerkenswert ruhiger Haltung.
+
+**Klick auf einen belegten Slot:**
+Zeigt den UNINSTALL-Button. Dieser tut, was er ankündigt.
+Es empfiehlt sich, kurz innezuhalten. Module erwerben kostet Credits.
+Das Universum hat keine Rückgaberichtlinie.
+
+![Pilot starrt auf den ACEP-Monitor. Zwei Spalten voller Balken. Fragezeichen über dem Helm.](img:acep/acep-monitor-screen)`,
+    seeAlso: ['acep-slots', 'acep-intro', 'acep-handbuch'],
+    tags: ['acep', 'monitor', 'programme', 'module', 'slots'],
+  },
+
+  {
+    id: 'acep-slots',
+    title: 'MODUL-SLOTS & AUSBAU-GATING',
+    category: 'acep',
+    icon: '⬟',
+    summary: '8 Spezialisierte Slots plus Extra-Slots durch AUSBAU-XP. Forschungsslot 2 ab Level 3. Fabrik ab Level 2.',
+    body: `Dein Schiff hat Slots. Slots nehmen Module auf. Module tun Dinge.
+Das ist die vollständige Zusammenfassung. Die Details folgen, weil sie relevant sind.
+
+**Die 8 Spezialisierten Slots:**
+
+| Kürzel | Kategorie | Funktion |
+|---|---|---|
+| GEN | Generator | Energie-Output, AP-Regen-Bonus |
+| DRV | Antrieb | Sprungreichweite, Geschwindigkeit |
+| WPN | Waffe | Kampfschaden |
+| ARM | Panzerung | Schadensreduktion |
+| SHD | Schild | Schild-HP und Regenerationsrate |
+| SCN | Scanner | Scan-Radius, Tarn-Erkennung |
+| MIN | Mining | Abbaurate, Ressourcen-Bonus |
+| CGO | Fracht | Laderaum-Kapazität |
+
+Jeder Slot akzeptiert genau ein Modul seiner Kategorie.
+Das System ist in dieser Hinsicht unnachgiebig. Es hat gute Gründe dafür.
+Ob es diese Gründe jemals erklären wird: unwahrscheinlich.
+
+**Extra-Slots durch AUSBAU-XP:**
+
+| AUSBAU-XP | Extra-Slots |
+|---|---|
+| 0–9 | +0 |
+| 10–24 | +1 |
+| 25–39 | +2 |
+| 40–49 | +3 |
+| 50 | +4 |
+
+Extra-Slots akzeptieren Module jeder Kategorie — du entscheidest.
+Das Universum hat hierzu keine Präferenz. Jedenfalls keine geäußerte.
+
+**AUSBAU-Level und was er freischaltet:**
+
+| Level | AUSBAU-XP | Forschungsslot 2 | Fabrik |
+|---|---|---|---|
+| 1 | 0–7 | — | — |
+| 2 | 8–17 | — | freigeschaltet |
+| 3 | 18–31 | freigeschaltet | freigeschaltet |
+| 4 | 32–49 | freigeschaltet | freigeschaltet |
+| 5 | 50 | freigeschaltet | freigeschaltet |
+
+Die Fabrik war früher an ein stationäres Gebäude gebunden.
+Jetzt ist sie an AUSBAU-Level gebunden. Das ist flexibler.
+Außer wenn dein AUSBAU-Level 1 ist. Dann ist es identisch frustrierend, nur anders begründet.
+
+![Schema: 8 Spezialisierte Slots plus Extra-Slots. Mehrere davon leer mit ??? beschriftet.](img:acep/acep-slots-diagram)`,
+    seeAlso: ['acep-monitor', 'acep-pfade', 'acep-intro'],
+    tags: ['acep', 'slots', 'module', 'ausbau', 'gating', 'fabrik'],
   },
 ];
 

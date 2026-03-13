@@ -29,7 +29,6 @@ vi.mock('../db/queries.js', () => ({
   getActiveShip: vi.fn(),
   recordAlienEncounter: vi.fn(),
   // ShipService deps
-  getPlayerHomeBase: vi.fn(),
   getPlayerShips: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
@@ -42,8 +41,6 @@ vi.mock('../db/queries.js', () => ({
   startActiveResearch: vi.fn(),
   deleteActiveResearch: vi.fn(),
   deductCredits: vi.fn(),
-  getPlayerCargo: vi.fn(),
-  deductCargo: vi.fn(),
   getPlayerReputations: vi.fn(),
   getStorageInventory: vi.fn(),
   // unified inventory
@@ -52,27 +49,31 @@ vi.mock('../db/queries.js', () => ({
   getInventoryItem: vi.fn(),
   transferInventoryItem: vi.fn(),
   getCargoCapForPlayer: vi.fn(),
-  // legacy module inventory — should NOT be called
-  getModuleInventory: vi.fn(),
-  addModuleToInventory: vi.fn(),
-  removeModuleFromInventory: vi.fn(),
 }));
 
 // ── Mock shared ──────────────────────────────────────────────────────────────
 vi.mock('@void-sector/shared', () => ({
   MODULES: {
-    scanner_mk3: { id: 'scanner_mk3', name: 'Scanner MK3', researchCost: { credits: 200 } },
-    drive_mk2: { id: 'drive_mk2', name: 'Drive MK2', researchCost: { credits: 100 } },
+    scanner_mk3: { id: 'scanner_mk3', name: 'Scanner MK3', category: 'scanner', tier: 3, researchCost: { credits: 200 } },
+    drive_mk2: { id: 'drive_mk2', name: 'Drive MK2', category: 'drive', tier: 2, researchCost: { credits: 100 } },
   },
-  HULLS: {},
   calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
   validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
   isModuleUnlocked: vi.fn().mockReturnValue(true),
-  canStartResearch: vi.fn(),
   RESEARCH_TICK_MS: 60000,
+  UNIVERSE_TICK_MS: 5000,
   WORLD_SEED: 42,
   AP_COSTS_LOCAL_SCAN: 1,
-  FEATURE_COMBAT_V2: false,
+}));
+
+// ── Mock techTreeQueries ─────────────────────────────────────────────────────
+vi.mock('../db/techTreeQueries.js', () => ({
+  getOrCreateTechTree: vi.fn().mockResolvedValue({
+    player_id: 'player-1',
+    researched_nodes: {},
+    total_researched: 0,
+    last_reset_at: null,
+  }),
 }));
 
 // ── Mock engine deps for ScanService ─────────────────────────────────────────
@@ -96,7 +97,6 @@ vi.mock('../engine/scanEvents.js', () => ({
   checkScanEvent: vi.fn().mockReturnValue(null),
 }));
 vi.mock('../engine/worldgen.js', () => ({ generateSector: vi.fn() }));
-vi.mock('../engine/combatV2.js', () => ({ initCombatV2: vi.fn() }));
 vi.mock('../rooms/services/RedisAPStore.js', () => ({
   getAPState: vi.fn().mockResolvedValue(null),
   saveAPState: vi.fn(),
@@ -160,7 +160,6 @@ function makeShipCtx(overrides: Record<string, unknown> = {}) {
     _py: vi.fn().mockReturnValue(0),
     _pst: vi.fn().mockReturnValue('station'),
     clientShips: new Map(),
-    clientHullTypes: new Map(),
     ...overrides,
   } as any;
 }

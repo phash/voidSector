@@ -32,7 +32,6 @@ import type {
   ShipRecord,
   ShipStats,
   ShipModule,
-  HullType,
   CombatV2State,
   StationDefense,
   StationCombatEvent,
@@ -50,6 +49,13 @@ import type {
   ConstructionSiteState,
   QuestRewards,
   StationProductionState,
+  WreckInfo,
+  WreckInvestigatedPayload,
+  SalvageStartedPayload,
+  WreckSlateMetadata,
+  WreckItem,
+  SalvageResultPayload,
+  WreckExhaustedPayload,
 } from '@void-sector/shared';
 
 export interface QuestCompleteEntry {
@@ -65,7 +71,6 @@ export interface QuestCompleteEntry {
 export interface ClientShipData {
   id: string;
   ownerId: string;
-  hullType: HullType;
   name: string;
   modules: ShipModule[];
   stats: ShipStats;
@@ -80,6 +85,7 @@ export interface ClientShipData {
     combatDamageBonus: number;
     ancientDetection: boolean;
     helionDecoderEnabled: boolean;
+    wreckDetection?: boolean;
   };
   acepGeneration?: number;
   acepTraits?: string[];
@@ -174,6 +180,47 @@ function safeRemoveItem(key: string): void {
   }
 }
 
+// ─── Kampfsystem v1 client types ────────────────────────────────────────────
+
+export interface ClientModule {
+  moduleId: string;
+  category: string;
+  tier: number;
+  currentHp: number;
+  maxHp: number;
+  powerLevel: 'off' | 'low' | 'mid' | 'high';
+}
+
+export interface ClientEnemyModule {
+  category: string;
+  tier: number;
+  currentHp: number;
+  maxHp: number;
+  powerLevel: 'off' | 'low' | 'mid' | 'high';
+  revealed: boolean;
+}
+
+export interface ClientCombatState {
+  playerHp: number;
+  playerMaxHp: number;
+  playerModules: ClientModule[];
+  epBuffer: number;
+  maxEpBuffer: number;
+  enemyType: string;
+  enemyLevel: number;
+  enemyHp: number;
+  enemyMaxHp: number;
+  enemyModules: ClientEnemyModule[];
+  round: number;
+  ancientChargeRounds: number;
+  ancientAbilityUsed: boolean;
+  log: string[];
+  outcome?: 'ongoing' | 'victory' | 'defeat' | 'fled' | 'draw' | 'ejected';
+  loot?: { credits?: number; ore?: number; crystal?: number };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface PlayerStats {
   sectorsScanned: number;
   quadrantsVisited: string[]; // "qx:qy" keys
@@ -215,6 +262,14 @@ export interface PlayerPresence {
   connected: boolean;
 }
 
+export interface BountyEncounterState {
+  questId: string;
+  targetName: string;
+  targetLevel: number;
+  sectorX: number;
+  sectorY: number;
+}
+
 export interface GameSlice {
   // Auth
   token: string | null;
@@ -250,6 +305,7 @@ export interface GameSlice {
 
   // Mining
   mining: MiningState | null;
+  miningStoryIndex: number;
 
   // Cargo
   cargo: CargoState;
@@ -268,6 +324,27 @@ export interface GameSlice {
 
   // Selected sector (radar click)
   selectedSector: { x: number; y: number } | null;
+
+  // LocalScan result popup
+  localScanResult: {
+    resources: { ore: number; gas: number; crystal: number };
+    hiddenSignatures: boolean;
+    wrecks?: Array<{
+      id: string;
+      playerName: string;
+      radarIconData: { tier: number; path: string };
+      lastLogEntry: string | null;
+      hasSalvage: boolean;
+    }>;
+    sectorX?: number;
+    sectorY?: number;
+    quadrantX?: number;
+    quadrantY?: number;
+    sectorType?: string;
+    structures?: string[];
+    universeTick?: number;
+    wreckInfo?: { wreckId: string; tier: number; size: string; status: string } | null;
+  } | null;
 
   // Base
   baseStructures: any[];
@@ -299,11 +376,15 @@ export interface GameSlice {
   reputations: PlayerReputation[];
   playerUpgrades: PlayerUpgrade[];
   activeBattle: PirateEncounter | null;
+  bountyEncounter: BountyEncounterState | null;
   lastBattleResult: { encounter: PirateEncounter; result: BattleResult } | null;
   activeCombatV2: CombatV2State | null;
   stationDefenses: StationDefense[];
   stationCombatEvent: StationCombatEvent | null;
   scanEvents: ScanEvent[];
+
+  // Kampfsystem v1 — energy-based round combat
+  activeCombat: ClientCombatState | null;
 
   // Phase 5: Deep Systems
   jumpGateInfo: JumpGateInfo | null;
@@ -318,6 +399,7 @@ export interface GameSlice {
 
   // Autopilot / Hyperjump
   autopilot: AutopilotState | null;
+  slowFlightActive: boolean;
   discoveryTimestamps: Record<string, number>;
 
   // Brightness burst: sector keys → timestamp when revealed by area scan
@@ -334,7 +416,6 @@ export interface GameSlice {
   shipList: (ShipRecord & { stats: ShipStats })[];
   moduleInventory: string[];
   baseName: string;
-  homeBase: { x: number; y: number };
 
   // Research / Tech tree
   research: ResearchState;
@@ -355,6 +436,8 @@ export interface GameSlice {
       buyPrice: number;
       sellPrice: number;
     }>;
+    stationFuel: number;
+    stationGas: number;
   } | null;
 
   // Factory
@@ -475,8 +558,21 @@ export interface GameSlice {
   // Tracked quests
   trackedQuests: TrackedQuest[];
 
+  // Tech tree (new node-based system)
+  techTree: {
+    researchedNodes: Record<string, number>;
+    totalResearched: number;
+    resetCooldownRemaining: number;
+  } | null;
+
   // Trade feedback (partial sell message)
   tradeMessage: string | null;
+
+  // Wreck POI state
+  sectorWrecks: Record<string, WreckInfo>;        // key: "x:y"
+  activeWreck: WreckInvestigatedPayload | null;
+  salvageSession: SalvageStartedPayload | null;
+  wreckSlates: WreckSlateMetadata[];
 
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
@@ -496,6 +592,7 @@ export interface GameSlice {
   setTradeMessage: (message: string | null) => void;
   setActiveMonitor: (monitor: string) => void;
   setMining: (mining: MiningState) => void;
+  setMiningStoryIndex: (index: number) => void;
   setCargo: (cargo: CargoState) => void;
   addChatMessage: (msg: ChatMessage) => void;
   setChatChannel: (channel: ChatChannel) => void;
@@ -505,6 +602,7 @@ export interface GameSlice {
   setAlert: (monitorId: string, active: boolean) => void;
   clearAlert: (monitorId: string) => void;
   setSelectedSector: (sector: { x: number; y: number } | null) => void;
+  setLocalScanResult: (result: GameSlice['localScanResult']) => void;
   setBaseStructures: (structures: any[]) => void;
   setCredits: (credits: number) => void;
   setStorage: (storage: StorageInventory) => void;
@@ -518,10 +616,12 @@ export interface GameSlice {
   setReputations: (reps: PlayerReputation[]) => void;
   setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
   setActiveBattle: (encounter: PirateEncounter | null) => void;
+  setBountyEncounter: (encounter: BountyEncounterState | null) => void;
   setLastBattleResult: (
     result: { encounter: PirateEncounter; result: BattleResult } | null,
   ) => void;
   setActiveCombatV2: (activeCombatV2: CombatV2State | null) => void;
+  setActiveCombat: (state: ClientCombatState | null) => void;
   setStationDefenses: (stationDefenses: StationDefense[]) => void;
   setStationCombatEvent: (stationCombatEvent: StationCombatEvent | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
@@ -537,6 +637,7 @@ export interface GameSlice {
   setTradeRoutes: (routes: TradeRoute[]) => void;
   setBookmarks: (bookmarks: Bookmark[]) => void;
   setAutopilot: (state: AutopilotState | null) => void;
+  setSlowFlightActive: (active: boolean) => void;
   setDiscoveryTimestamps: (timestamps: Record<string, number>) => void;
   addScanBurstTimestamps: (keys: string[], now: number) => void;
   setTerritoryMap: (
@@ -545,7 +646,6 @@ export interface GameSlice {
   setShipList: (ships: (ShipRecord & { stats: ShipStats })[]) => void;
   setModuleInventory: (modules: string[]) => void;
   setBaseName: (name: string) => void;
-  setHomeBase: (coords: { x: number; y: number }) => void;
   setResearch: (research: ResearchState) => void;
   setTypedArtefacts: (artefacts: Record<string, number>) => void;
   setLabTier: (tier: number) => void;
@@ -591,9 +691,16 @@ export interface GameSlice {
   addWarTickerEvent: (event: WarTickerEvent) => void;
   setInventory: (items: InventoryItem[]) => void;
   setTrackedQuests: (quests: TrackedQuest[]) => void;
+  setTechTree: (data: { researchedNodes: Record<string, number>; totalResearched: number; resetCooldownRemaining: number }) => void;
   setConstructionSites: (sites: ConstructionSiteState[]) => void;
   upsertConstructionSite: (site: ConstructionSiteState) => void;
   removeConstructionSite: (siteId: string) => void;
+  setSectorWrecks: (wrecks: Record<string, WreckInfo>) => void;
+  setActiveWreck: (wreck: WreckInvestigatedPayload | null) => void;
+  setSalvageSession: (session: SalvageStartedPayload | null) => void;
+  setWreckSlates: (slates: WreckSlateMetadata[]) => void;
+  addWreckSlate: (meta: WreckSlateMetadata) => void;
+  removeWreckSlate: (slateId: string) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -612,6 +719,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   log: [],
   actionError: null,
   mining: null,
+  miningStoryIndex: 0,
   cargo: {
     ore: 0,
     gas: 0,
@@ -635,6 +743,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   channelAlerts: {},
   alerts: {},
   selectedSector: null,
+  localScanResult: null,
   baseStructures: [],
   credits: 0,
   alienCredits: 0,
@@ -652,8 +761,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   reputations: [],
   playerUpgrades: [],
   activeBattle: null,
+  bountyEncounter: null,
   lastBattleResult: null,
   activeCombatV2: null,
+  activeCombat: null,
   stationDefenses: [],
   stationCombatEvent: null,
   scanEvents: [],
@@ -665,20 +776,17 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   tradeRoutes: [],
   bookmarks: [],
   autopilot: null,
+  slowFlightActive: false,
   discoveryTimestamps: {},
   scanBurstTimestamps: {},
   territoryMap: {},
   shipList: [],
   moduleInventory: [],
   baseName: '',
-  homeBase: { x: 0, y: 0 },
   research: {
     unlockedModules: [],
     blueprints: [],
-    activeResearch: null,
-    activeResearch2: null,
     wissen: 0,
-    wissenRate: 0,
   },
   typedArtefacts: {} as Record<string, number>,
   labTier: 0,
@@ -717,8 +825,13 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   warTicker: [],
   inventory: [],
   trackedQuests: [],
+  techTree: null,
   constructionSites: [],
   tradeMessage: null,
+  sectorWrecks: {},
+  activeWreck: null,
+  salvageSession: null,
+  wreckSlates: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -787,6 +900,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
 
   setActiveMonitor: (activeMonitor) => set({ activeMonitor }),
   setMining: (mining) => set({ mining }),
+  setMiningStoryIndex: (index) => set({ miningStoryIndex: index }),
   setCargo: (cargo) => set({ cargo }),
 
   addChatMessage: (msg) =>
@@ -828,12 +942,16 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       return { alerts: next };
     }),
   setSelectedSector: (selectedSector) => set({ selectedSector }),
+  setLocalScanResult: (localScanResult) => set({ localScanResult }),
   setBaseStructures: (baseStructures) => set({ baseStructures }),
   setCredits: (credits) => set({ credits }),
   setStorage: (storage) => set({ storage }),
   setTradeOrders: (tradeOrders) => set({ tradeOrders }),
   setMyOrders: (myOrders) => set({ myOrders }),
-  setMySlates: (mySlates) => set({ mySlates }),
+  setMySlates: (mySlates) => set((state) => ({
+    mySlates,
+    cargo: { ...state.cargo, slates: mySlates.length },
+  })),
   setFaction: (faction) => set({ faction }),
   setFactionMembers: (factionMembers) => set({ factionMembers }),
   setFactionInvites: (factionInvites) => set({ factionInvites }),
@@ -841,8 +959,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setReputations: (reputations) => set({ reputations }),
   setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
   setActiveBattle: (activeBattle) => set({ activeBattle }),
+  setBountyEncounter: (bountyEncounter) => set({ bountyEncounter }),
   setLastBattleResult: (lastBattleResult) => set({ lastBattleResult }),
   setActiveCombatV2: (activeCombatV2) => set({ activeCombatV2 }),
+  setActiveCombat: (activeCombat) => set({ activeCombat }),
   setStationDefenses: (stationDefenses) => set({ stationDefenses }),
   setStationCombatEvent: (stationCombatEvent) => set({ stationCombatEvent }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
@@ -860,6 +980,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setTradeRoutes: (tradeRoutes) => set({ tradeRoutes }),
   setBookmarks: (bookmarks) => set({ bookmarks }),
   setAutopilot: (autopilot) => set({ autopilot }),
+  setSlowFlightActive: (slowFlightActive) => set({ slowFlightActive }),
   setDiscoveryTimestamps: (discoveryTimestamps) => set({ discoveryTimestamps }),
   addScanBurstTimestamps: (keys, now) =>
     set((s) => {
@@ -875,7 +996,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setShipList: (shipList) => set({ shipList }),
   setModuleInventory: (moduleInventory) => set({ moduleInventory }),
   setBaseName: (baseName) => set({ baseName }),
-  setHomeBase: (homeBase) => set({ homeBase }),
   setResearch: (research) => set({ research }),
   setTypedArtefacts: (artefacts) => set({ typedArtefacts: artefacts }),
   setLabTier: (tier) => set({ labTier: tier }),
@@ -945,6 +1065,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     set((state) => ({ warTicker: [event, ...state.warTicker].slice(0, 10) })),
   setInventory: (inventory) => set({ inventory }),
   setTrackedQuests: (trackedQuests) => set({ trackedQuests }),
+  setTechTree: (data) => set({ techTree: data }),
   setConstructionSites: (sites) => set({ constructionSites: sites }),
   upsertConstructionSite: (site) => set((s) => ({
     constructionSites: s.constructionSites.some((c) => c.id === site.id)
@@ -954,4 +1075,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   removeConstructionSite: (siteId) => set((s) => ({
     constructionSites: s.constructionSites.filter((c) => c.id !== siteId),
   })),
+  setSectorWrecks: (sectorWrecks) => set({ sectorWrecks }),
+  setActiveWreck: (activeWreck) => set({ activeWreck }),
+  setSalvageSession: (salvageSession) => set({ salvageSession }),
+  setWreckSlates: (wreckSlates) => set({ wreckSlates }),
+  addWreckSlate: (meta) => set((s) => ({ wreckSlates: [...s.wreckSlates, meta] })),
+  removeWreckSlate: (slateId) => set((s) => ({ wreckSlates: s.wreckSlates.filter((m) => m.id !== slateId) })),
 });

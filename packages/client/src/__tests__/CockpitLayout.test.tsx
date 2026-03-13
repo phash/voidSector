@@ -57,8 +57,9 @@ vi.mock('../components/TvScreen', () => ({
 vi.mock('../components/CommsScreen', () => ({
   CommsScreen: () => <div data-testid="comms-screen">CommsScreen</div>,
 }));
-vi.mock('../components/ShipStatusPanel', () => ({
-  ShipStatusPanel: () => <div data-testid="ship-status-panel">ShipStatusPanel</div>,
+vi.mock('../components/ShipBlock', () => ({
+  ShipBlock: () => <div data-testid="ship-block">ShipBlock</div>,
+  CargoBlock: () => <div data-testid="cargo-block">CargoBlock</div>,
 }));
 vi.mock('../components/CombatStatusPanel', () => ({
   CombatStatusPanel: () => <div data-testid="combat-status-panel">CombatStatusPanel</div>,
@@ -133,8 +134,8 @@ describe('CockpitLayout', () => {
 
   it('renders SettingsPanel in section 4', () => {
     render(<CockpitLayout renderScreen={mockRenderScreen} />);
-    // SettingsPanel renders the "EINSTELLUNGEN" header
-    expect(screen.getByText('EINSTELLUNGEN')).toBeInTheDocument();
+    // SettingsPanel renders the settings header (i18n key)
+    expect(screen.getByText('settings.settings')).toBeInTheDocument();
   });
 
   it('renders hardware controls strips', () => {
@@ -165,7 +166,8 @@ describe('CockpitLayout', () => {
     expect(screen.getByTestId('sector-info')).toBeInTheDocument();
     expect(screen.getByTestId('status-bar')).toBeInTheDocument();
     expect(screen.getByTestId('nav-controls')).toBeInTheDocument();
-    expect(screen.getByTestId('ship-status-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('ship-block')).toBeInTheDocument();
+    expect(screen.getByTestId('cargo-block')).toBeInTheDocument();
     expect(screen.getByTestId('combat-status-panel')).toBeInTheDocument();
   });
 

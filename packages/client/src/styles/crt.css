@@ -156,7 +156,7 @@
 .bezel-label-vertical {
   writing-mode: vertical-lr;
   text-orientation: mixed;
-  font-size: 0.55rem;
+  font-size: 0.47rem;
   letter-spacing: 0.2em;
   color: rgba(255, 176, 0, 0.3);
 }
@@ -169,7 +169,7 @@
 }
 
 .bezel-led-label {
-  font-size: 0.45rem;
+  font-size: 0.39rem;
   letter-spacing: 0.1em;
   color: rgba(255, 176, 0, 0.3);
 }
@@ -561,7 +561,7 @@
   background: transparent;
   color: #555;
   font-family: var(--font-mono);
-  font-size: 0.55rem;
+  font-size: 0.47rem;
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: color 0.1s, border-color 0.1s, background 0.1s;
@@ -595,7 +595,7 @@
 }
 
 .mobile-tab-label {
-  font-size: 0.5rem;
+  font-size: 0.43rem;
   letter-spacing: 0.08em;
   opacity: 0.8;
 }
@@ -611,7 +611,7 @@
   border-radius: 7px;
   background: var(--color-primary);
   color: #000;
-  font-size: 0.5rem;
+  font-size: 0.43rem;
   font-weight: bold;
   line-height: 14px;
   text-align: center;
@@ -708,12 +708,12 @@
 }
 
 .mehr-card-icon {
-  font-size: 1.2rem;
+  font-size: 1.03rem;
   line-height: 1;
 }
 
 .mehr-card-label {
-  font-size: 0.55rem;
+  font-size: 0.47rem;
   letter-spacing: 0.08em;
   opacity: 0.8;
 }
@@ -820,7 +820,7 @@
 }
 
 .bezel-power-label {
-  font-size: 0.4rem;
+  font-size: 0.34rem;
   letter-spacing: 0.15em;
   color: rgba(255, 176, 0, 0.3);
   text-transform: uppercase;
@@ -945,14 +945,14 @@
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.15em;
-  color: rgba(255, 176, 0, 0.5);
+  color: rgba(255, 176, 0, 0.65);
   margin-left: auto;
   text-transform: uppercase;
 }
 
 .unified-bezel-chrome-toggle {
   font-family: var(--font-mono);
-  font-size: 0.55rem;
+  font-size: 0.47rem;
   color: rgba(255, 176, 0, 0.3);
   background: transparent;
   border: 1px solid #333;
@@ -1006,7 +1006,7 @@
 
 .unified-bezel-pan-btn {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.51rem;
   color: rgba(255, 176, 0, 0.4);
   background: #1a1a1a;
   border: 1px solid #333;
@@ -1042,7 +1042,7 @@
 
 .unified-bezel-mode-btn {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.51rem;
   color: rgba(255, 176, 0, 0.4);
   background: transparent;
   border: 1px solid #333;
@@ -1060,7 +1060,7 @@
 
 .unified-bezel-mode-label {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.51rem;
   letter-spacing: 0.1em;
   color: var(--color-primary);
   min-width: 48px;
@@ -1074,7 +1074,7 @@
 /* Auto-follow toggle button (main variant) */
 .unified-bezel-auto-btn {
   font-family: var(--font-mono);
-  font-size: 0.55rem;
+  font-size: 0.47rem;
   color: var(--color-dim);
   background: transparent;
   border: 1px solid var(--color-dim);
@@ -1128,7 +1128,7 @@
 
 .unified-bezel-zoom-label {
   font-family: var(--font-mono);
-  font-size: 0.5rem;
+  font-size: 0.43rem;
   letter-spacing: 0.1em;
   color: rgba(255, 176, 0, 0.3);
 }
@@ -1142,7 +1142,7 @@
 
 .unified-bezel-zoom-value {
   font-family: var(--font-mono);
-  font-size: 0.55rem;
+  font-size: 0.47rem;
   color: var(--color-primary);
   min-width: 12px;
   text-align: center;
@@ -1385,9 +1385,44 @@
 .cockpit-nav-monitor {
   display: flex;
   flex-direction: column;
-  overflow: auto;
-  padding: 4px;
-  gap: 2px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.nav-zone-a {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--color-dim);
+}
+
+.nav-zone-b {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+.nav-block {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.nav-block-header {
+  color: var(--color-dim);
+  letter-spacing: 0.12em;
+  border-bottom: 1px solid var(--color-dim);
+  padding-bottom: 2px;
+  margin-bottom: 3px;
+}
+
+.combat-line {
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cockpit-nav-panels {
@@ -1429,20 +1464,30 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 8px 8px;
   background: transparent;
   border: none;
   border-bottom: 1px solid #1a1a1a;
-  color: var(--color-dim);
+  border-left: 3px solid transparent;
+  color: #777;
   font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
   cursor: pointer;
   text-align: left;
 }
 
-.program-btn:hover { background: rgba(255,255,255,0.03); }
-.program-btn.active { color: var(--color-primary); background: rgba(255,255,255,0.05); }
+.program-btn:hover { background: rgba(255,255,255,0.03); border-left-color: rgba(255,176,0,0.3); }
+.program-btn.active {
+  color: var(--color-primary);
+  background: rgba(255,176,0,0.12);
+  border-left-color: var(--color-primary);
+  font-weight: bold;
+  box-shadow: inset 0 0 12px rgba(255,176,0,0.06);
+}
+.program-btn.active .program-led {
+  box-shadow: 0 0 4px currentColor;
+}
 .program-btn.alert { color: #FFB000; }
 
 .program-led {
@@ -1491,7 +1536,7 @@
 }
 
 .settings-label {
-  font-size: 0.55rem;
+  font-size: 0.47rem;
   opacity: 0.6;
   min-width: 24px;
 }
@@ -1506,8 +1551,8 @@
   border: 1px solid var(--color-dim);
   color: var(--color-primary);
   font-family: var(--font-mono);
-  font-size: 0.55rem;
-  padding: 2px 6px;
+  font-size: 0.57rem;
+  padding: 4px 8px;
   cursor: pointer;
 }
 
@@ -1518,7 +1563,7 @@
   border: 1px solid #FF4444;
   color: #FF4444;
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.57rem;
   padding: 4px 8px;
   cursor: pointer;
   width: 100%;
@@ -1554,7 +1599,7 @@
   background: #1a1a1a;
   border: 1px solid #333;
   color: var(--color-dim);
-  font-size: 0.5rem;
+  font-size: 0.43rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1572,7 +1617,7 @@
 
 .hw-zoom-label {
   font-family: var(--font-mono);
-  font-size: 0.5rem;
+  font-size: 0.43rem;
   color: var(--color-dim);
 }
 
@@ -1589,7 +1634,7 @@
   border: 1px solid #333;
   color: var(--color-dim);
   font-family: var(--font-mono);
-  font-size: 0.5rem;
+  font-size: 0.43rem;
   padding: 3px 8px;
   cursor: pointer;
   border-radius: 2px;
@@ -1620,7 +1665,7 @@
   border: 1px solid #333;
   color: var(--color-dim);
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.51rem;
   padding: 3px 6px;
   cursor: pointer;
 }
@@ -1636,4 +1681,232 @@
   animation: channel-blink 1s ease-in-out infinite;
   color: var(--color-primary);
   border-color: var(--color-primary);
+}
+
+/* ── Mobile Dashboard ──────────────────────────────────────── */
+.mobile-dashboard {
+  padding: 8px;
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-dashboard-card {
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  padding: 8px 10px;
+  background: #060606;
+}
+
+.mobile-dashboard-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-card-title {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.mobile-card-subtitle {
+  color: #888;
+  font-size: 0.75rem;
+  margin-top: 3px;
+}
+
+.mobile-card-value {
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.mobile-card-status-active {
+  color: #63ff84;
+  font-size: 0.8rem;
+}
+
+.mobile-card-status-dim {
+  color: #555;
+  font-size: 0.8rem;
+}
+
+.mobile-card-stop-btn {
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  min-height: 44px;
+  min-width: 60px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+
+.mobile-card-action-btn {
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  min-height: 44px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+
+.mobile-progress-bar {
+  height: 4px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.mobile-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.mobile-ap-bar {
+  margin-top: auto;
+}
+
+/* ── Mobile NAV Tab ──────────────────────────────────────────── */
+.mobile-nav-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.mobile-nav-mode-toggle {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.mobile-nav-mode-btn {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid #2a2a2a;
+  color: #555;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.mobile-nav-mode-btn:last-child {
+  border-right: none;
+}
+
+.mobile-nav-mode-btn.active {
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.mobile-nav-radar {
+  flex: 0 0 40vh;
+  min-height: 200px;
+  position: relative;
+}
+
+.mobile-nav-flight-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid #2a2a2a;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+}
+
+.mobile-nav-bookmarks {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.mobile-nav-bookmarks-header {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.mobile-nav-bookmark-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.mobile-nav-bookmark-label {
+  color: #aaa;
+  font-size: 0.8rem;
+  flex: 1;
+}
+
+/* ── Mobile MINE Tab ──────────────────────────────────────────── */
+.mobile-mine-tab {
+  padding: 8px;
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-mine-header {
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.mobile-mine-card {
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  padding: 8px 10px;
+  background: #060606;
+}
+
+.mobile-mine-no-sector {
+  color: #555;
+  text-align: center;
+  margin-top: 40px;
+  font-size: 0.9rem;
+}
+
+.mobile-mine-cargo-row {
+  color: #888;
+  font-size: 0.8rem;
+  padding: 4px 0;
+}
+
+.mobile-mine-all-row {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.mobile-mine-all-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  min-height: 44px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
 }

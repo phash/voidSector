@@ -16,7 +16,6 @@ export type SectorContent =
   | 'station'
   | 'anomaly'
   | 'pirate_zone'
-  | 'home_base'
   | 'player_base'
   | 'meteor'
   | 'relic'
@@ -26,12 +25,69 @@ export type SectorContent =
 export type MineableResourceType = 'ore' | 'gas' | 'crystal';
 export type ResourceType = MineableResourceType | 'artefact';
 
-export type ItemType = 'resource' | 'module' | 'blueprint';
+export type ItemType = 'resource' | 'module' | 'blueprint' | 'prisoner' | 'data_slate';
 
 export interface InventoryItem {
   itemType: ItemType;
   itemId: string;
   quantity: number;
+}
+
+export type WreckSize = 'small' | 'medium' | 'large';
+export type WreckStatus = 'intact' | 'investigated' | 'exhausted';
+
+export interface WreckItem {
+  itemType: 'resource' | 'module' | 'blueprint' | 'data_slate';
+  // Artefacts: itemType='resource', itemId='artefact_drive'|'artefact_cargo' etc.
+  itemId: string;
+  quantity: number;
+  baseDifficulty: number;  // 0.0–1.0
+  salvaged: boolean;       // true after any attempt (success or fail)
+}
+
+export interface WreckInfo {
+  wreckId: string;
+  tier: number;
+  size: WreckSize;
+  status: WreckStatus;
+}
+
+export interface WreckSlateMetadata {
+  id: string;
+  playerId: string;
+  sectorX: number;
+  sectorY: number;
+  sectorType: string | null;
+  hasJumpgate: boolean;
+  wreckTier: number;
+}
+
+// Server → Client events
+export interface WreckInvestigatedPayload {
+  wreckId: string;
+  items: WreckItem[];
+  size: WreckSize;
+  tier: number;
+}
+
+export interface SalvageStartedPayload {
+  wreckId: string;
+  itemIndex: number;
+  duration: number;
+  chance: number;
+}
+
+export interface SalvageResultPayload {
+  success: boolean;
+  item: WreckItem;
+  cargoUpdate?: CargoState;
+  newModifier: number;
+}
+
+export interface WreckExhaustedPayload {
+  wreckId: string;
+  sectorX: number;
+  sectorY: number;
 }
 
 export type ArtefactType =
@@ -43,7 +99,9 @@ export type ArtefactType =
   | 'shield'
   | 'defense'
   | 'special'
-  | 'mining';
+  | 'mining'
+  | 'generator'
+  | 'repair';
 
 export const ARTEFACT_TYPES: ArtefactType[] = [
   'drive',
@@ -55,6 +113,8 @@ export const ARTEFACT_TYPES: ArtefactType[] = [
   'defense',
   'special',
   'mining',
+  'generator',
+  'repair',
 ];
 
 /** Maps module category name to its matching ArtefactType (1:1) */
@@ -68,12 +128,17 @@ export const ARTEFACT_TYPE_FOR_CATEGORY: Record<ArtefactType, ArtefactType> = {
   defense: 'defense',
   special: 'special',
   mining: 'mining',
+  generator: 'generator',
+  repair: 'repair',
 };
 
 export interface SectorResources {
   ore: number;
   gas: number;
   crystal: number;
+  maxOre?: number;
+  maxGas?: number;
+  maxCrystal?: number;
 }
 
 export interface Coords {
@@ -113,49 +178,20 @@ export function legacySectorType(env: SectorEnvironment, contents: SectorContent
   return 'empty';
 }
 
-/** Derive environment from legacy SectorType */
-export function deriveEnvironment(type: SectorType): SectorEnvironment {
-  return type === 'nebula' ? 'nebula' : 'empty';
-}
-
 /** Returns true if a sector environment can be entered/traversed by a ship */
 export function isTraversable(env: SectorEnvironment): boolean {
   return env !== 'star' && env !== 'black_hole';
 }
 
-/** Returns true if an environment is a planet type */
-export function isPlanetEnvironment(env: SectorEnvironment): boolean {
-  return env === 'planet';
-}
-
-/** Derive contents from legacy SectorType */
-export function deriveContents(type: SectorType): SectorContent[] {
-  switch (type) {
-    case 'asteroid_field':
-      return ['asteroid_field'];
-    case 'station':
-      return ['station'];
-    case 'anomaly':
-      return ['anomaly'];
-    case 'pirate':
-      return ['pirate_zone', 'asteroid_field'];
-    default:
-      return [];
-  }
-}
-
 export interface PlayerData {
   id: string;
   username: string;
-  homeBase: Coords;
   xp: number;
   level: number;
   credits?: number;
   alienCredits?: number;
   isGuest?: boolean;
 }
-
-export type ShipClass = 'aegis_scout_mk1' | 'void_seeker_mk2';
 
 export interface FuelState {
   current: number;
@@ -219,6 +255,11 @@ export interface MiningState {
   startedAt: number | null;
   rate: number;
   sectorYield: number;
+  mineAll: boolean;
+}
+
+export interface MiningStoryUpdate {
+  storyIndex: number;
 }
 
 export interface CargoState {
@@ -246,6 +287,7 @@ export interface CargoState {
 
 export interface MineMessage {
   resource: ResourceType;
+  mineAll?: boolean;
 }
 
 export interface JettisonMessage {
@@ -258,6 +300,14 @@ export interface LocalScanResult {
   rareResources?: Record<string, number>;
   hiddenObjects?: string[];
   hiddenSignatures: boolean;
+  // Extended context (added for scan-to-slate):
+  sectorX?: number;
+  sectorY?: number;
+  quadrantX?: number;
+  quadrantY?: number;
+  sectorType?: string;
+  structures?: string[];
+  universeTick?: number;
 }
 
 export type LocalScanMessage = Record<string, never>;
@@ -432,7 +482,7 @@ export interface AcceptOrderMessage {
 }
 
 // --- Data Slates ---
-export type SlateType = 'sector' | 'area' | 'custom' | 'jumpgate';
+export type SlateType = 'sector' | 'area' | 'custom' | 'jumpgate' | 'scan';
 
 export interface SectorSlateData {
   x: number;
@@ -441,6 +491,12 @@ export interface SectorSlateData {
   ore: number;
   gas: number;
   crystal: number;
+  // Scan-slate specific (optional — only present on slate_type='scan'):
+  quadrantX?: number;
+  quadrantY?: number;
+  structures?: string[];
+  wrecks?: Array<{ playerName: string; tier: number }>;
+  scannedAtTick?: number;
 }
 
 export interface DataSlate {
@@ -591,7 +647,16 @@ export interface StationNpc {
   personality: number;
 }
 
-export type QuestType = 'fetch' | 'delivery' | 'scan' | 'bounty';
+export type QuestType =
+  | 'fetch'
+  | 'delivery'
+  | 'scan'
+  | 'bounty'
+  | 'bounty_chase'
+  | 'bounty_trail'
+  | 'bounty_combat'
+  | 'bounty_deliver'
+  | 'scan_deliver';
 export type QuestStatus = 'active' | 'completed' | 'expired' | 'abandoned';
 
 export interface QuestObjective {
@@ -603,6 +668,18 @@ export interface QuestObjective {
   amount?: number;
   progress?: number;
   fulfilled: boolean;
+  // bounty_trail fields
+  trail?: Array<{ x: number; y: number; hint: string }>;
+  currentStep?: number;
+  targetName?: string;
+  targetLevel?: number;
+  currentHint?: string;
+  // bounty_combat fields
+  sectorX?: number;
+  sectorY?: number;
+  // bounty_deliver fields
+  stationX?: number;
+  stationY?: number;
 }
 
 export interface Quest {
@@ -1047,36 +1124,29 @@ export interface AutopilotCompleteMessage {
 export type JumpType = 'normal' | 'hyperjump';
 
 // --- Phase 7: Ship Designer ---
-export type HullType = 'scout' | 'freighter' | 'cruiser' | 'explorer' | 'battleship';
-export type HullSize = 'small' | 'medium' | 'large';
 export type ModuleCategory = ArtefactType;
 export type ModuleTier = 1 | 2 | 3 | 4 | 5;
-
-export interface HullDefinition {
-  name: string;
-  size: HullSize;
-  slots: number;
-  baseFuel: number;
-  baseCargo: number;
-  baseJumpRange: number;
-  baseApPerJump: number;
-  baseFuelPerJump: number;
-  baseHp: number;
-  baseCommRange: number;
-  baseScannerLevel: number;
-  baseEngineSpeed: number;
-  baseHyperdriveRange: number;
-  baseHyperdriveSpeed: number;
-  baseHyperdriveRegen: number;
-  baseHyperdriveFuelEfficiency: number;
-  unlockLevel: number;
-  unlockCost: number;
-}
 
 export interface ResearchCost {
   wissen: number;
   /** Required artefacts by category — e.g. { drive: 1 } for a T3 drive module */
   artefacts?: Partial<Record<ArtefactType, number>>;
+}
+
+export type ModuleSource = 'standard' | 'found' | 'researched';
+
+export interface ModuleDrawback {
+  stat?: keyof ShipStats;
+  delta?: number;
+  runtimeEffect?: string;
+  description: string;
+}
+
+export interface AcepXpSnapshot {
+  ausbau: number;
+  intel: number;
+  kampf: number;
+  explorer: number;
 }
 
 export interface ModuleDefinition {
@@ -1093,11 +1163,19 @@ export interface ModuleDefinition {
   researchDurationMin?: number;
   prerequisite?: string;
   factionRequirement?: { factionId: string; minTier: string };
+  isUnique?: boolean;
+  isFoundOnly?: boolean;
+  drawbacks?: ModuleDrawback[];
+  acepPaths?: AcepPath[];
+  maxHp?: number;
 }
 
 export interface ShipModule {
   moduleId: string;
   slotIndex: number;
+  source: ModuleSource;
+  powerLevel?: 'off' | 'low' | 'mid' | 'high';
+  currentHp?: number;
 }
 
 export interface ShipStats {
@@ -1127,12 +1205,16 @@ export interface ShipStats {
   hyperdriveRegen: number;
   hyperdriveFuelEfficiency: number;
   miningBonus: number;
+  generatorEpPerRound: number;
+  apRegenPerSecond?: number;
+  repairHpPerRound: number;
+  repairHpPerSecond: number;
+  memory: number;
 }
 
 export interface ShipRecord {
   id: string;
   ownerId: string;
-  hullType: HullType;
   name: string;
   modules: ShipModule[];
   active: boolean;
@@ -1145,18 +1227,7 @@ export interface ShipRecord {
 export interface ResearchState {
   unlockedModules: string[];
   blueprints: string[];
-  activeResearch: {
-    moduleId: string;
-    startedAt: number;
-    completesAt: number;
-  } | null;
-  activeResearch2?: {
-    moduleId: string;
-    startedAt: number;
-    completesAt: number;
-  } | null;
   wissen?: number;
-  wissenRate?: number; // Wissen/hour (for display)
 }
 
 // --- Admin Messages ---
@@ -1348,6 +1419,13 @@ export interface CivilizationMeter {
 
 // ─── Expansion & Warfare ─────────────────────────────────────────────────────
 
+export interface VoidClusterState {
+  id: string;
+  state: 'growing' | 'splitting' | 'dying';
+  size: number;
+  quadrants: Array<{ qx: number; qy: number; progress: number }>;
+}
+
 export interface QuadrantControlState {
   qx: number;
   qy: number;
@@ -1358,6 +1436,7 @@ export interface QuadrantControlState {
   attack_value: number;
   defense_value: number;
   station_tier: number;
+  void_cluster_id?: string | null;
 }
 
 export interface NpcFleetState {

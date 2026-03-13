@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SYMBOLS, SECTOR_COLORS, SECTOR_TYPES } from '@void-sector/shared';
 
 const LEGEND_ENTRIES = [
   { symbol: SYMBOLS.ship, name: 'YOUR SHIP', color: '#FFFFFF', key: 'YOUR SHIP' },
-  { symbol: SYMBOLS.homeBase, name: 'HOME BASE', color: SECTOR_COLORS.home_base, key: 'HOME BASE' },
   { symbol: SYMBOLS.player, name: 'OTHER PLAYER', color: '#FFB000', key: 'OTHER PLAYER' },
   ...SECTOR_TYPES.map((type) => ({
     symbol: SYMBOLS[type as keyof typeof SYMBOLS] ?? SYMBOLS.empty,
@@ -13,20 +13,20 @@ const LEGEND_ENTRIES = [
   })),
 ];
 
-const LEGEND_DESCRIPTIONS: Record<string, string> = {
-  'YOUR SHIP': 'Dein Raumschiff. Bewege dich mit Klick auf benachbarte Sektoren.',
-  'HOME BASE': 'Deine Heimatbasis. Starte hier Upgrades und lagere Ressourcen.',
-  'OTHER PLAYER': 'Ein anderer Spieler ist in diesem Sektor.',
-  empty: 'Leerer Sektor. Kein bekannter Inhalt.',
-  station: 'Raumstation. Handel, Reparatur, Schiffs-Upgrades.',
-  asteroid_field: 'Asteroidenfeld. Enthält Erz-Ressourcen zum Mining.',
-  nebula: 'Nebula. Enthält Gas-Ressourcen. Area-Scan zeigt nur Nebel.',
-  anomaly: 'Anomalie. Seltenes Ereignis mit Erfahrungs- und Ruf-Boni.',
-  pirate: 'Piraten-Territorium. Hohes Kampfrisiko.',
-  wormhole: 'Wurmloch. Teleportiert dein Schiff zu einem entfernten Sektor.',
+const LEGEND_DESCRIPTION_KEYS: Record<string, string> = {
+  'YOUR SHIP': 'legend.yourShip',
+  'OTHER PLAYER': 'legend.otherPlayer',
+  empty: 'legend.empty',
+  station: 'legend.station',
+  asteroid_field: 'legend.asteroidField',
+  nebula: 'legend.nebula',
+  anomaly: 'legend.anomaly',
+  pirate: 'legend.pirate',
+  wormhole: 'legend.wormhole',
 };
 
 export function LegendOverlay({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation('ui');
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,12 +69,12 @@ export function LegendOverlay({ onClose }: { onClose: () => void }) {
             lineHeight: 1,
             fontFamily: 'var(--font-mono)',
           }}
-          title="Schließen"
+          title={t('actions.close')}
         >
           ✕
         </button>
 
-        <h3 style={{ marginBottom: 12 }}>RADAR LEGEND</h3>
+        <h3 style={{ marginBottom: 12 }}>{t('legend.radarLegend')}</h3>
         {LEGEND_ENTRIES.map(({ symbol, name, color, key }) => (
           <div key={name}>
             <div
@@ -95,7 +95,7 @@ export function LegendOverlay({ onClose }: { onClose: () => void }) {
                 {symbol}
               </span>
               <span>{name}</span>
-              {LEGEND_DESCRIPTIONS[key] && (
+              {LEGEND_DESCRIPTION_KEYS[key] && (
                 <span
                   style={{
                     marginLeft: 'auto',
@@ -108,7 +108,7 @@ export function LegendOverlay({ onClose }: { onClose: () => void }) {
                 </span>
               )}
             </div>
-            {selectedItem === key && LEGEND_DESCRIPTIONS[key] && (
+            {selectedItem === key && LEGEND_DESCRIPTION_KEYS[key] && (
               <div
                 style={{
                   margin: '0 4px 8px 40px',
@@ -121,13 +121,13 @@ export function LegendOverlay({ onClose }: { onClose: () => void }) {
                   fontFamily: 'var(--font-mono)',
                 }}
               >
-                {LEGEND_DESCRIPTIONS[key]}
+                {t(LEGEND_DESCRIPTION_KEYS[key])}
               </div>
             )}
           </div>
         ))}
         <div style={{ marginTop: 16, fontSize: '0.75rem', color: 'var(--color-dim)' }}>
-          Press ESC or click outside to close · click item for details
+          {t('legend.closeHint')}
         </div>
       </div>
     </div>

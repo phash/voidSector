@@ -7,7 +7,13 @@
 }
 
 :root {
-  font-size: 18px;
+  font-size: 23px;
+  /* Font size tiers */
+  --fs-xs:   0.43rem;  /* ~10px — bezel chrome */
+  --fs-sm:   0.52rem;  /* ~12px — chrome labels */
+  --fs-md:   0.71rem;  /* ~16px — secondary content */
+  --fs-base: 0.81rem;  /* ~19px — default content */
+  --fs-lg:   0.90rem;  /* ~21px — headers, primary buttons */
   --color-primary: #FFB000;
   --color-dim: rgba(255, 176, 0, 0.6);
   --color-bg: #050505;
@@ -117,4 +123,19 @@ select option {
 
 .ap-pulse {
   animation: ap-pulse 1.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 0.85; }
+}
+
+/* Combat UI focus indicators */
+.combat-btn:focus-visible {
+  outline: 2px solid #00ff41;
+  outline-offset: 2px;
+}
+.repair-btn:focus-visible {
+  outline: 2px solid #00ff41;
+  outline-offset: 2px;
 }

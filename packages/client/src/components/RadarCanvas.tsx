@@ -13,9 +13,13 @@ import { updateScanAnimation, drawScanOverlay } from '../canvas/ScanAnimation';
 import { useStore } from '../state/store';
 import { COLOR_PROFILES } from '../styles/themes';
 
+interface RadarCanvasProps {
+  onSectorTap?: (x: number, y: number) => void;
+}
+
 const DOUBLE_TAP_DELAY = 300;
 
-export function RadarCanvas() {
+export function RadarCanvas({ onSectorTap }: RadarCanvasProps = {}) {
   const lastTapRef = useRef(0);
 
   const draw = useCallback((ctx: CanvasRenderingContext2D) => {
@@ -67,9 +71,7 @@ export function RadarCanvas() {
       jumpGateInfo: state.jumpGateInfo,
       scanEvents: state.scanEvents,
       discoveryTimestamps: state.discoveryTimestamps,
-      hullType: state.ship?.hullType,
       acepXp: state.ship?.acepXp ?? null,
-      homeBase: state.homeBase,
       bookmarks: state.bookmarks,
       animTime: performance.now(),
       scanBurstTimestamps: state.scanBurstTimestamps,
@@ -80,6 +82,14 @@ export function RadarCanvas() {
       trackedQuests: state.trackedQuests,
       miningActive: !!state.mining?.active,
       civShips: state.civShips,
+      sectorWrecks: state.sectorWrecks,
+      slowFlightPath:
+        state.slowFlightActive && state.autopilot?.active
+          ? [
+              state.position,
+              { x: state.autopilot.targetX, y: state.autopilot.targetY },
+            ]
+          : undefined,
     };
 
     drawRadar(ctx, radarState);
@@ -118,6 +128,9 @@ export function RadarCanvas() {
     canvas.addEventListener('wheel', handleWheel, { passive: false });
     return () => canvas.removeEventListener('wheel', handleWheel);
   }, []);
+
+  const onSectorTapRef = useRef(onSectorTap);
+  useEffect(() => { onSectorTapRef.current = onSectorTap; }, [onSectorTap]);
 
   // Drag pan + double-click recenter + double-tap recenter
   useEffect(() => {
@@ -168,7 +181,13 @@ export function RadarCanvas() {
         const dy = Math.round((clickY - gridCenterY) / cellH);
         const viewX = state.position.x + state.panOffset.x;
         const viewY = state.position.y + state.panOffset.y;
-        state.setSelectedSector({ x: viewX + dx, y: viewY + dy });
+        const tappedX = viewX + dx;
+        const tappedY = viewY + dy;
+        if (onSectorTapRef.current) {
+          onSectorTapRef.current(tappedX, tappedY);
+        } else {
+          state.setSelectedSector({ x: tappedX, y: tappedY });
+        }
       }
       dragging = false;
     };

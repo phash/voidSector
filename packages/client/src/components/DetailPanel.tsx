@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
+import { network } from '../network/client';
 import {
   SECTOR_COLORS,
   FUEL_COST_PER_UNIT,
-  FREE_REFUEL_MAX_SHIPS,
   REP_PRICE_MODIFIERS,
   generateStationName,
   calcHyperjumpAP,
@@ -13,7 +14,7 @@ import {
   STRUCTURE_AP_COSTS,
   JUMPGATE_BUILD_COST,
 } from '@void-sector/shared';
-import type { ChatChannel, ConstructionSiteState } from '@void-sector/shared';
+import type { ChatChannel, ConstructionSiteState, DataSlate } from '@void-sector/shared';
 import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 import { PlayerGatePanel } from './PlayerGatePanel';
@@ -71,9 +72,11 @@ function RefuelPanel({
   fuel: { current: number; max: number };
   isFreeRefuel: boolean;
 }) {
+  const { t } = useTranslation('ui');
   const [amount, setAmount] = useState(Math.ceil(fuel.max - fuel.current));
   const reputations = useStore((s) => s.reputations);
   const currentSector = useStore((s) => s.currentSector);
+  const npcStationData = useStore((s) => s.npcStationData);
 
   // Reputation-based pricing
   const sectorFaction = (currentSector as any)?.faction;
@@ -86,10 +89,20 @@ function RefuelPanel({
   const totalCost = isFreeRefuel ? 0 : Math.ceil(amount * FUEL_COST_PER_UNIT * priceModifier);
   const tankSpace = Math.ceil(fuel.max - fuel.current);
 
+  const stationFuel = npcStationData?.stationFuel ?? 0;
+  const stationGas = npcStationData?.stationGas ?? 0;
+  const gasMode = stationGas >= 1;
+
   return (
     <div style={{ marginTop: 8, border: '1px solid var(--color-dim)', padding: '6px 8px' }}>
       <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', marginBottom: 4 }}>
-        REFUEL — {isFreeRefuel ? 'GRATIS' : `${unitCost} CR/u (${repTier.toUpperCase()})`}
+        {t('detail.refuelLabel', { price: isFreeRefuel ? t('status.free') : `${unitCost} ${t('detail.crPerUnit')} (${repTier.toUpperCase()})` })}
+      </div>
+      <div style={{ fontSize: '0.65rem', color: 'var(--color-dim)', marginBottom: 4, display: 'flex', gap: 8 }}>
+        <span>BESTAND: {stationFuel.toLocaleString()} FUEL</span>
+        <span style={{ color: gasMode ? '#00FF88' : 'var(--color-dim)' }}>
+          GAS: {stationGas} {gasMode ? '▲ BOOST' : ''}
+        </span>
       </div>
       <input
         type="range"
@@ -108,14 +121,14 @@ function RefuelPanel({
         }}
       >
         <span>+{amount} FUEL</span>
-        <span>{totalCost > 0 ? `${totalCost} CR` : 'GRATIS'}</span>
+        <span>{totalCost > 0 ? `${totalCost} CR` : t('status.free')}</span>
       </div>
       <button
         className="vs-btn"
         style={{ width: '100%', marginTop: 4, fontSize: '0.75rem' }}
         onClick={() => network.sendRefuel(amount)}
       >
-        [REFUEL]
+        {t('detail.refuel')}
       </button>
     </div>
   );
@@ -211,7 +224,7 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
                 />
                 <button
                   className="vs-btn"
-                  style={{ fontSize: '0.55rem', padding: '1px 4px' }}
+                  style={{ fontSize: '0.55rem', padding: '3px 6px' }}
                   onClick={() => setAmt(key, max, max)}
                 >
                   MAX
@@ -255,13 +268,14 @@ export function DetailPanel() {
 
   const autoFollow = useStore((s) => s.autoFollow);
   const mining = useStore((s) => s.mining);
-  const shipList = useStore((s) => s.shipList);
-  const homeBase = useStore((s) => s.homeBase);
   const activeQuests = useStore((s) => s.activeQuests);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const constructionSites = useStore((s) => s.constructionSites);
   const openStationTerminal = useStore((s) => s.openStationTerminal);
   const breadcrumbStack = useStore((s) => s.breadcrumbStack);
+  const activeProgram = useStore((s) => s.activeProgram);
+  const selectedSlateId = useStore((s) => s.selectedSlateId);
+  const mySlates = useStore((s) => s.mySlates);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
 
@@ -276,6 +290,95 @@ export function DetailPanel() {
     setDrillDown(null);
   }, [selectedSector?.x, selectedSector?.y]);
 
+  const selectedSlate = selectedSlateId
+    ? mySlates.find((s: DataSlate) => s.id === selectedSlateId)
+    : null;
+
+  if (activeProgram === 'CARGO' && selectedSlate) {
+    return (
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: '0.75rem',
+        padding: '8px',
+        height: '100%',
+        overflowY: 'auto',
+      }}>
+        <div style={{ fontSize: '0.85rem', marginBottom: 8, letterSpacing: '0.1em' }}>
+          DATA SLATE [{selectedSlate.slateType === 'sector' ? 'SEKTOR'
+            : selectedSlate.slateType === 'area' ? 'GEBIET'
+            : selectedSlate.slateType === 'scan' ? 'SCAN'
+            : selectedSlate.slateType === 'jumpgate' ? 'JUMPGATE'
+            : 'CUSTOM'}]
+        </div>
+
+        <div style={{ opacity: 0.5, fontSize: '0.65rem', marginBottom: 8 }}>
+          Erstellt: {new Date(selectedSlate.createdAt).toLocaleDateString('de-DE')}
+        </div>
+
+        {/* Custom slate content */}
+        {selectedSlate.slateType === 'custom' && selectedSlate.customData && (
+          <div>
+            <div style={{ marginBottom: 4 }}>Label: {selectedSlate.customData.label}</div>
+            {selectedSlate.customData.notes && (
+              <div style={{ opacity: 0.7, marginBottom: 4, whiteSpace: 'pre-wrap' }}>
+                {selectedSlate.customData.notes}
+              </div>
+            )}
+            {selectedSlate.customData.coordinates && selectedSlate.customData.coordinates.length > 0 && (
+              <div style={{ marginBottom: 4 }}>
+                Koordinaten: {selectedSlate.customData.coordinates.map((c: any) => `(${c.x},${c.y})`).join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Jumpgate slate content */}
+        {selectedSlate.slateType === 'jumpgate' && selectedSlate.sectorData?.[0] && (
+          <div>
+            <div>Gate-ID: {(selectedSlate.sectorData[0] as any).gateId}</div>
+            <div>Position: ({(selectedSlate.sectorData[0] as any).sectorX}, {(selectedSlate.sectorData[0] as any).sectorY})</div>
+            <div>Owner: {(selectedSlate.sectorData[0] as any).ownerName}</div>
+          </div>
+        )}
+
+        {/* Sector/Area/Scan slate content — list of sectors */}
+        {['sector', 'area', 'scan'].includes(selectedSlate.slateType) && selectedSlate.sectorData && (
+          <div>
+            {selectedSlate.sectorData.map((sec, i) => (
+              <div key={i} style={{
+                marginBottom: 6,
+                padding: '4px 6px',
+                border: '1px solid rgba(255,176,0,0.1)',
+              }}>
+                <div style={{ opacity: 0.5, fontSize: '0.65rem' }}>
+                  {(sec as any).quadrantX !== undefined
+                    ? `Q${(sec as any).quadrantX}:${(sec as any).quadrantY} — `
+                    : ''}
+                  ({sec.x}, {sec.y})
+                </div>
+                <div>Typ: {sec.type?.toUpperCase() ?? 'UNKNOWN'}</div>
+                <div>Ore: {sec.ore} | Gas: {sec.gas} | Crystal: {sec.crystal}</div>
+                {(sec as any).structures?.length > 0 && (
+                  <div style={{ opacity: 0.7 }}>Strukturen: {(sec as any).structures.join(', ')}</div>
+                )}
+                {(sec as any).wrecks?.length > 0 && (
+                  <div style={{ opacity: 0.7 }}>
+                    Wracks: {(sec as any).wrecks.map((w: any) => `${w.playerName} (T${w.tier})`).join(', ')}
+                  </div>
+                )}
+                {(sec as any).scannedAtTick !== undefined && (
+                  <div style={{ opacity: 0.4, fontSize: '0.6rem' }}>
+                    Scan-Tick: {(sec as any).scannedAtTick}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!selectedSector) {
     return (
       <div style={{ padding: 16, textAlign: 'center', opacity: 0.4, fontSize: '0.8rem' }}>
@@ -288,7 +391,6 @@ export function DetailPanel() {
   const key = `${selectedSector.x}:${selectedSector.y}`;
   const sector = discoveries[key];
   const isPlayerHere = selectedSector.x === position.x && selectedSector.y === position.y;
-  const isHome = selectedSector.x === homeBase.x && selectedSector.y === homeBase.y;
   const constructionSite = constructionSites.find(
     (c) => c.sectorX === selectedSector.x && c.sectorY === selectedSector.y,
   );
@@ -304,9 +406,7 @@ export function DetailPanel() {
   );
 
   const sectorColor = sector
-    ? isHome
-      ? SECTOR_COLORS.home_base
-      : (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty)
+    ? (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty)
     : 'var(--color-dim)';
 
   const sectorScanEvents = scanEvents.filter(
@@ -356,9 +456,8 @@ export function DetailPanel() {
 
   // Drill-down: station detail view
   if (drillDown?.type === 'station' && sector) {
-    const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
     const isStation = sector.type === 'station' || (sector as any).contents?.includes('station');
-    const isFreeRefuel = isHomeBase && shipList.length <= FREE_REFUEL_MAX_SHIPS;
+    const isFreeRefuel = false;
     return (
       <div
         style={{
@@ -384,7 +483,7 @@ export function DetailPanel() {
             FACTION: {(sector as any).faction ?? 'INDEPENDENT'}
           </div>
         )}
-        {isPlayerHere && fuel && fuel.current < fuel.max && (isStation || isHomeBase) && (
+        {isPlayerHere && fuel && fuel.current < fuel.max && isStation && (
           <RefuelPanel fuel={fuel} isFreeRefuel={isFreeRefuel} />
         )}
         {isPlayerHere && jumpGateInfo && <JumpGatePanel gate={jumpGateInfo} />}
@@ -469,28 +568,55 @@ export function DetailPanel() {
         SECTOR ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})
       </div>
 
-      {/* Capability chips (#148) */}
+      {/* Capability chips — clickable quick-actions (#259) */}
       {sector &&
         (() => {
           const caps = getSectorCapabilities(sector, jumpGateInfo, playerGateInfo, isPlayerHere);
           if (caps.length === 0) return null;
+          const capAction: Record<string, (() => void) | undefined> = {
+            mine: () => setActiveProgram('MINING'),
+            trade: () => setActiveProgram('TRADE'),
+            quest: () => setActiveProgram('QUESTS'),
+            scan: () => network.sendLocalScan(),
+          };
           return (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-              {caps.map((cap) => (
-                <span
-                  key={cap}
-                  style={{
-                    fontSize: '0.6rem',
-                    letterSpacing: '0.1em',
-                    padding: '1px 5px',
-                    border: '1px solid var(--color-dim)',
-                    color: 'var(--color-dim)',
-                    opacity: 0.8,
-                  }}
-                >
-                  {CAPABILITY_LABELS[cap]}
-                </span>
-              ))}
+              {caps.map((cap) => {
+                const action = capAction[cap];
+                return action ? (
+                  <button
+                    key={cap}
+                    onClick={action}
+                    style={{
+                      fontSize: '0.6rem',
+                      letterSpacing: '0.1em',
+                      padding: '3px 6px',
+                      border: '1px solid var(--color-primary)',
+                      color: 'var(--color-primary)',
+                      background: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      opacity: 0.9,
+                    }}
+                  >
+                    {CAPABILITY_LABELS[cap]}
+                  </button>
+                ) : (
+                  <span
+                    key={cap}
+                    style={{
+                      fontSize: '0.6rem',
+                      letterSpacing: '0.1em',
+                      padding: '3px 6px',
+                      border: '1px solid var(--color-dim)',
+                      color: 'var(--color-dim)',
+                      opacity: 0.8,
+                    }}
+                  >
+                    {CAPABILITY_LABELS[cap]}
+                  </span>
+                );
+              })}
             </div>
           );
         })()}
@@ -512,7 +638,7 @@ export function DetailPanel() {
               }}
               onClick={() =>
                 setDetailView({
-                  type: isHome ? 'home_base' : sector.type,
+                  type: sector.type,
                   data: {
                     name:
                       sector.type === 'station'
@@ -522,7 +648,12 @@ export function DetailPanel() {
                     faction: (sector as any).faction,
                     resources: sector.resources
                       ? Object.entries(sector.resources)
-                          .map(([r, a]) => `${r.toUpperCase()} x${a}`)
+                          .filter(([r]) => !r.startsWith('max'))
+                          .map(([r, a]) => {
+                            const maxKey = `max${r.charAt(0).toUpperCase()}${r.slice(1)}` as keyof typeof sector.resources;
+                            const maxVal = sector.resources?.[maxKey];
+                            return `${r.toUpperCase()} x${a}${maxVal ? `/${maxVal}` : ''}`;
+                          })
                           .join(', ')
                       : undefined,
                     stationVariant: sector.metadata?.stationVariant as string | undefined,
@@ -541,11 +672,17 @@ export function DetailPanel() {
           {sector.resources && (
             <>
               <div style={{ marginTop: 8, letterSpacing: '0.15em', opacity: 0.6 }}>RESOURCES</div>
-              {Object.entries(sector.resources).map(([res, amount]) => (
-                <div key={res}>
-                  {res.toUpperCase()} ──── {amount}
-                </div>
-              ))}
+              {Object.entries(sector.resources)
+                .filter(([res]) => !res.startsWith('max'))
+                .map(([res, amount]) => {
+                  const maxKey = `max${res.charAt(0).toUpperCase()}${res.slice(1)}` as keyof typeof sector.resources;
+                  const maxVal = sector.resources?.[maxKey];
+                  return (
+                    <div key={res}>
+                      {res.toUpperCase()} ──── {amount}{maxVal ? `/${maxVal}` : ''}
+                    </div>
+                  );
+                })}
             </>
           )}
           {isPlayerHere && (
@@ -674,7 +811,6 @@ export function DetailPanel() {
           {/* Sector elements list */}
           {(sector.type === 'station' ||
             (sector as any).contents?.includes('station') ||
-            isHome ||
             playersHere.length > 0) && (
             <div style={{ marginTop: 8 }}>
               <div style={{ letterSpacing: '0.15em', opacity: 0.6, marginBottom: 4 }}>
@@ -718,23 +854,6 @@ export function DetailPanel() {
                       </span>
                     ))}
                   </span>
-                </button>
-              )}
-              {isHome && (
-                <button
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: SECTOR_COLORS.home_base,
-                    fontFamily: 'inherit',
-                    fontSize: 'inherit',
-                    padding: '2px 0',
-                    display: 'block',
-                  }}
-                  onClick={() => setDrillDown({ type: 'station', name: 'HOME BASE' })}
-                >
-                  ◆ HOME BASE
                 </button>
               )}
               {playersHere.map((p) => (
@@ -822,15 +941,25 @@ export function DetailPanel() {
               const shipStats = ship?.stats ?? null;
               const apCost = shipStats ? calcHyperjumpAP(shipStats.engineSpeed) : 0;
               const fuelCost = shipStats ? calcHyperjumpFuel(shipStats.fuelPerJump, distance) : 0;
+              const hasEnoughFuel = (fuel?.current ?? 0) >= fuelCost;
               return (
-                <button
-                  className="vs-btn"
-                  style={{ marginTop: 8, display: 'block', width: '100%' }}
-                  onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}
-                >
-                  [HYPERJUMP ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})]
-                  {shipStats ? ` ${apCost}AP / ${fuelCost}F` : ''}
-                </button>
+                <>
+                  <button
+                    className="vs-btn"
+                    disabled={!hasEnoughFuel}
+                    style={{
+                      marginTop: 8,
+                      display: 'block',
+                      width: '100%',
+                      opacity: hasEnoughFuel ? 1 : 0.5,
+                    }}
+                    onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}
+                  >
+                    [HYPERJUMP ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})]
+                    {shipStats ? ` ${apCost}AP / ${fuelCost}F` : ''}
+                  </button>
+                  <InlineError codes={['HYPERJUMP_FAIL']} />
+                </>
               );
             }
             return null;
@@ -863,7 +992,7 @@ export function DetailPanel() {
                   freeSlot,
                   selectedSector.x,
                   selectedSector.y,
-                  sector?.type || '',
+                  `${(sector?.type || 'sector').toUpperCase()} (${selectedSector.x},${selectedSector.y})`,
                 );
               }
             }}

@@ -186,7 +186,7 @@ describe('NavTargetPanel', () => {
           contents: [],
         },
       },
-      fuel: { current: 100, max: 100 },
+      fuel: { current: 10000, max: 10000 },
       ap: { current: 100, max: 100, lastTick: Date.now(), regenPerSecond: 0.5 },
       autopilot: null,
       autopilotStatus: null,
@@ -222,10 +222,10 @@ describe('NavTargetPanel', () => {
       selectedSector: null,
     });
     render(<NavTargetPanel />);
-    expect(screen.getByText('AUTOPILOT AKTIV')).toBeDefined();
-    expect(screen.getByText(/Schritt 8 \/ 16/)).toBeDefined();
+    expect(screen.getByText('nav.autopilotActive')).toBeDefined();
+    expect(screen.getByText('nav.stepOf')).toBeDefined();
     expect(screen.getByTestId('autopilot-progress-bar')).toBeDefined();
-    expect(screen.getByText('[ABBRECHEN]')).toBeDefined();
+    expect(screen.getByText('nav.cancel')).toBeDefined();
   });
 
   it('calls sendCancelAutopilot on cancel click', () => {
@@ -248,7 +248,7 @@ describe('NavTargetPanel', () => {
       selectedSector: null,
     });
     render(<NavTargetPanel />);
-    fireEvent.click(screen.getByText('[ABBRECHEN]'));
+    fireEvent.click(screen.getByText('nav.cancel'));
     expect(network.sendCancelAutopilot).toHaveBeenCalled();
   });
 
@@ -290,7 +290,7 @@ describe('NavTargetPanel', () => {
     render(<NavTargetPanel />);
     fireEvent.change(screen.getByLabelText('Target X'), { target: { value: '5' } });
     fireEvent.change(screen.getByLabelText('Target Y'), { target: { value: '0' } });
-    expect(screen.getByText(/Distanz: 5 Sektoren/)).toBeDefined();
+    expect(screen.getByText('nav.distanceSectors')).toBeDefined();
     expect(screen.getByText(/AP: ~5/)).toBeDefined();
   });
 
@@ -353,7 +353,7 @@ describe('NavTargetPanel', () => {
       selectedSector: null,
     });
     render(<NavTargetPanel />);
-    expect(screen.getByText('AUTOPILOT PAUSIERT')).toBeDefined();
+    expect(screen.getByText('nav.autopilotPaused')).toBeDefined();
     expect(screen.getByText(/fuel_exhausted/)).toBeDefined();
   });
 
@@ -384,7 +384,7 @@ describe('NavTargetPanel', () => {
     render(<NavTargetPanel />);
     fireEvent.change(screen.getByLabelText('Target X'), { target: { value: '99' } });
     fireEvent.change(screen.getByLabelText('Target Y'), { target: { value: '99' } });
-    expect(screen.getByText('Ziel nicht entdeckt!')).toBeDefined();
+    expect(screen.getByText('nav.targetNotDiscovered')).toBeDefined();
   });
 
   it('hides coordinate inputs during active autopilot', () => {

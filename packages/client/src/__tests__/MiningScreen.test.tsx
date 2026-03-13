@@ -50,7 +50,7 @@ describe('MiningScreen', () => {
   it('calls sendMine on button click', async () => {
     render(<MiningScreen />);
     await userEvent.click(screen.getByText('[MINE ORE]'));
-    expect(network.sendMine).toHaveBeenCalledWith('ore');
+    expect(network.sendMine).toHaveBeenCalledWith('ore', false);
   });
 
   it('disables mine buttons when mining is active', () => {
@@ -88,7 +88,7 @@ describe('MiningScreen', () => {
 
   it('shows STOP button disabled when mining is NOT active', () => {
     render(<MiningScreen />);
-    const stopBtn = screen.getByText('[STOP]').closest('button');
+    const stopBtn = screen.getByText('[actions.stop]').closest('button');
     expect(stopBtn).toBeDisabled();
   });
 
@@ -106,7 +106,7 @@ describe('MiningScreen', () => {
       },
     });
     render(<MiningScreen />);
-    const stopBtn = screen.getByText('[STOP]').closest('button');
+    const stopBtn = screen.getByText('[actions.stop]').closest('button');
     expect(stopBtn).not.toBeDisabled();
   });
 
@@ -124,7 +124,7 @@ describe('MiningScreen', () => {
       },
     });
     render(<MiningScreen />);
-    await userEvent.click(screen.getByText('[STOP]'));
+    await userEvent.click(screen.getByText('[actions.stop]'));
     expect(network.sendStopMine).toHaveBeenCalled();
   });
 
@@ -142,11 +142,32 @@ describe('MiningScreen', () => {
       },
     });
     render(<MiningScreen />);
-    expect(screen.getByText(/MINING ORE/)).toBeInTheDocument();
+    // New live-flow display shows ASTEROID and CARGO labels
+    expect(screen.getAllByText(/ASTEROID/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/CARGO/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('displays IDLE status when not mining', () => {
     render(<MiningScreen />);
-    expect(screen.getByText(/IDLE/)).toBeInTheDocument();
+    expect(screen.getByText(/status\.idle/)).toBeInTheDocument();
+  });
+
+  it('does not crash when resource value exceeds maxResource (anomaly mineAll race condition)', () => {
+    // Anomaly: ore=5 but maxOre=3 (can happen during mineAll chain transition)
+    // Without clamping, filled=17 → repeat(-7) → RangeError
+    mockStoreState({
+      currentSector: {
+        x: 0, y: 0,
+        type: 'anomaly' as const,
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['anomaly' as const],
+        resources: { ore: 5, gas: 3, crystal: 20, maxOre: 3, maxGas: 3, maxCrystal: 20 },
+      },
+    });
+    expect(() => render(<MiningScreen />)).not.toThrow();
   });
 });

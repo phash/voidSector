@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { RESOURCE_TYPES, innerCoord } from '@void-sector/shared';
+import { RESOURCE_TYPES, innerCoord, getPhysicalCargoTotal } from '@void-sector/shared';
 import type { MineableResourceType } from '@void-sector/shared';
-import { btn, btnDisabled, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn, btnDisabled } from '../ui-helpers';
 import { InlineError } from './InlineError';
 
-function ResourceBar({ label, value, max }: { label: string; value: number; max: number }) {
+function ResourceBar({ label, value, max, maxResource }: { label: string; value: number; max: number; maxResource?: number }) {
   const width = 10;
-  const filled = max > 0 ? Math.round((value / max) * width) : 0;
+  const displayMax = maxResource ?? max;
+  const filled = displayMax > 0 ? Math.max(0, Math.min(Math.round((value / displayMax) * width), width)) : 0;
   const bar = '\u2587'.repeat(filled) + '\u2591'.repeat(width - filled);
   return (
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
-      {label.padEnd(10)} {bar} {String(value).padStart(3)}
+      {label.padEnd(10)} {bar} {String(value).padStart(3)}{maxResource !== undefined ? `/${maxResource}` : ''}
     </div>
   );
 }
 
 export function MiningScreen() {
+  const { t } = useTranslation('ui');
   const mining = useStore((s) => s.mining);
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
@@ -27,6 +30,7 @@ export function MiningScreen() {
   const ap = useStore((s) => s.ap);
 
   const [miningProgress, setMiningProgress] = useState(0);
+  const [mineAll, setMineAll] = useState(false);
 
   useEffect(() => {
     if (!mining?.active || mining.startedAt === null) {
@@ -44,12 +48,32 @@ export function MiningScreen() {
   }, [mining?.active, mining?.startedAt, mining?.rate, mining?.sectorYield]);
 
   const resources = currentSector?.resources || { ore: 0, gas: 0, crystal: 0 };
-  const maxYield = Math.max(resources.ore, resources.gas, resources.crystal, 1);
+  const maxYield = Math.max(
+    resources.maxOre ?? resources.ore,
+    resources.maxGas ?? resources.gas,
+    resources.maxCrystal ?? resources.crystal,
+    1,
+  );
   const hasResources = resources.ore > 0 || resources.gas > 0 || resources.crystal > 0;
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const cargoTotal = getPhysicalCargoTotal(cargo);
   const cargoFull = cargoTotal >= cargoCap;
+  const cargoPercent = cargoCap > 0 ? cargoTotal / cargoCap : 0;
+  const cargoBarColor = cargoPercent >= 1 ? '#ff4444' : cargoPercent >= 0.8 ? '#FFB000' : '#4a9';
   const apCurrent = ap?.current ?? 0;
+
+  // Live resource countdown during active mining
+  const liveResources = { ...resources };
+  if (mining?.active && mining.startedAt !== null && mining.resource) {
+    const elapsed = (Date.now() - mining.startedAt) / 1000;
+    const mined = Math.floor(elapsed * mining.rate);
+    const remainingCargoSpace = Math.max(0, cargoCap - cargoTotal);
+    const capped = Math.min(mined, mining.sectorYield, remainingCargoSpace);
+    const res = mining.resource as keyof typeof liveResources;
+    if (res in liveResources) {
+      liveResources[res] = Math.max(0, (liveResources[res] ?? 0) - capped);
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
@@ -75,9 +99,9 @@ export function MiningScreen() {
       ) : (
         <>
           <div style={{ marginBottom: '16px' }}>
-            <ResourceBar label="ORE" value={resources.ore} max={maxYield} />
-            <ResourceBar label="GAS" value={resources.gas} max={maxYield} />
-            <ResourceBar label="CRYSTAL" value={resources.crystal} max={maxYield} />
+            <ResourceBar label="ORE" value={liveResources.ore} max={maxYield} maxResource={resources.maxOre} />
+            <ResourceBar label="GAS" value={liveResources.gas} max={maxYield} maxResource={resources.maxGas} />
+            <ResourceBar label="CRYSTAL" value={liveResources.crystal} max={maxYield} maxResource={resources.maxCrystal} />
           </div>
 
           <div
@@ -90,10 +114,28 @@ export function MiningScreen() {
           >
             {mining?.active ? (
               <>
-                <div style={{ marginBottom: '6px' }}>
-                  MINING {mining.resource?.toUpperCase()} — RATE: {mining.rate}u/s |{' '}
-                  {UI.status.YIELD}: {Math.round(miningProgress * mining.sectorYield)}/{mining.sectorYield}u
-                </div>
+                {/* Live flow: ASTEROID → CARGO (#261) */}
+                {(() => {
+                  const mined = Math.round(miningProgress * mining.sectorYield);
+                  const remaining = mining.sectorYield - mined;
+                  const res = mining.resource as 'ore' | 'gas' | 'crystal' | undefined;
+                  const cargoRes = res ? (cargo[res] ?? 0) : cargoTotal;
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '0.8rem' }}>
+                      <div style={{ textAlign: 'center', minWidth: 52 }}>
+                        <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>ASTEROID</div>
+                        <div style={{ color: 'var(--color-primary)', fontSize: '1.1rem', fontWeight: 'bold' }}>{remaining}</div>
+                      </div>
+                      <div style={{ flex: 1, textAlign: 'center', color: 'var(--color-dim)', fontSize: '0.7rem' }}>
+                        ── {mining.rate}u/s ──►
+                      </div>
+                      <div style={{ textAlign: 'center', minWidth: 52 }}>
+                        <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>CARGO</div>
+                        <div style={{ color: '#4a9', fontSize: '1.1rem', fontWeight: 'bold' }}>{cargoRes + mined}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <div
                     style={{
@@ -112,30 +154,36 @@ export function MiningScreen() {
                       }}
                     />
                   </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', whiteSpace: 'nowrap' }}>
+                    {Math.round(miningProgress * 100)}%
+                  </div>
                 </div>
               </>
             ) : (
-              <div>STATUS: {UI.status.IDLE}</div>
+              <div>STATUS: {t('status.idle')}</div>
             )}
-            <div style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '4px' }}>
-              CARGO: {cargoTotal}/{cargoCap} — ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
+            <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>
+              <span style={{ color: cargoBarColor }}>
+                CARGO: {cargoTotal}/{cargoCap} ({Math.round(cargoPercent * 100)}%)
+              </span>
+              {' — '}ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
             {RESOURCE_TYPES.map((res: MineableResourceType) => (
               <button
                 key={res}
                 className="vs-btn"
                 disabled={mining?.active === true || resources[res] <= 0 || cargoFull || apCurrent < 1}
-                onClick={() => network.sendMine(res)}
+                onClick={() => network.sendMine(res, mineAll)}
               >
                 {mining?.active === true || resources[res] <= 0
                   ? btn(`MINE ${res.toUpperCase()}`)
                   : cargoFull
-                    ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.CARGO_FULL)
+                    ? btnDisabled(`MINE ${res.toUpperCase()}`, t('reasons.cargoFull'))
                     : apCurrent < 1
-                      ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.NO_AP)
+                      ? btnDisabled(`MINE ${res.toUpperCase()}`, t('reasons.noAp'))
                       : btn(`MINE ${res.toUpperCase()}`)}
               </button>
             ))}
@@ -144,8 +192,22 @@ export function MiningScreen() {
               disabled={!mining?.active}
               onClick={() => network.sendStopMine()}
             >
-              {btn(UI.actions.STOP)}
+              {btn(t('actions.stop'))}
             </button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={mineAll}
+                onChange={(e) => {
+                  setMineAll(e.target.checked);
+                  if (mining?.active) {
+                    network.sendToggleMineAll(e.target.checked);
+                  }
+                }}
+                style={{ accentColor: 'var(--color-primary)' }}
+              />
+              ALLES ABBAUEN
+            </label>
           </div>
           <InlineError codes={['NO_RESOURCES', 'MINE_FAILED', 'RATE_LIMIT', 'INVALID_INPUT']} />
         </>

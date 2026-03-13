@@ -1,17 +1,16 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { btn, btnDisabled, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn, btnDisabled } from '../ui-helpers';
 import {
   AP_COSTS,
   AP_COSTS_LOCAL_SCAN,
   AP_COSTS_BY_SCANNER,
-  EMERGENCY_WARP_FREE_RADIUS,
-  EMERGENCY_WARP_CREDIT_PER_SECTOR,
   innerCoord,
 } from '@void-sector/shared';
-import { SlateControls } from './SlateControls';
 
 export function NavControls() {
+  const { t } = useTranslation('ui');
   const position = useStore((s) => s.position);
   const jumpPending = useStore((s) => s.jumpPending);
   const ap = useStore((s) => s.ap);
@@ -27,14 +26,14 @@ export function NavControls() {
         <div
           style={{ color: '#FFB000', fontSize: '0.9rem', letterSpacing: '0.15em', marginBottom: 8 }}
         >
-          {UI.status.AUTOPILOT_ACTIVE}
+          {t('status.autopilotActive')}
         </div>
         <div style={{ fontSize: '0.8rem', marginBottom: 8 }}>
           TARGET: ({innerCoord(autopilot.targetX)}, {innerCoord(autopilot.targetY)}) | REMAINING:{' '}
           {autopilot.remaining}
         </div>
         <button className="vs-btn" onClick={() => network.sendCancelAutopilot()}>
-          {btn(UI.actions.CANCEL)}
+          {btn(t('actions.cancel'))}
         </button>
       </div>
     );
@@ -71,9 +70,9 @@ export function NavControls() {
             style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
           >
             {isMining
-              ? btnDisabled('↑', UI.reasons.MINING_ACTIVE)
+              ? btnDisabled('↑', t('reasons.miningActive'))
               : !canJump
-                ? btnDisabled('↑', UI.reasons.NO_AP)
+                ? btnDisabled('↑', t('reasons.noAp'))
                 : '↑'}
           </button>
           <div style={{ display: 'flex', gap: 4 }}>
@@ -85,9 +84,9 @@ export function NavControls() {
               style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               {isMining
-                ? btnDisabled('←', UI.reasons.MINING_ACTIVE)
+                ? btnDisabled('←', t('reasons.miningActive'))
                 : !canJump
-                  ? btnDisabled('←', UI.reasons.NO_AP)
+                  ? btnDisabled('←', t('reasons.noAp'))
                   : '←'}
             </button>
             <button
@@ -98,9 +97,9 @@ export function NavControls() {
               style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               {isMining
-                ? btnDisabled('↓', UI.reasons.MINING_ACTIVE)
+                ? btnDisabled('↓', t('reasons.miningActive'))
                 : !canJump
-                  ? btnDisabled('↓', UI.reasons.NO_AP)
+                  ? btnDisabled('↓', t('reasons.noAp'))
                   : '↓'}
             </button>
             <button
@@ -111,9 +110,9 @@ export function NavControls() {
               style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               {isMining
-                ? btnDisabled('→', UI.reasons.MINING_ACTIVE)
+                ? btnDisabled('→', t('reasons.miningActive'))
                 : !canJump
-                  ? btnDisabled('→', UI.reasons.NO_AP)
+                  ? btnDisabled('→', t('reasons.noAp'))
                   : '→'}
             </button>
           </div>
@@ -134,9 +133,9 @@ export function NavControls() {
             }
           >
             {isMining
-              ? btnDisabled(UI.actions.SCAN, UI.reasons.MINING_ACTIVE)
+              ? btnDisabled(t('actions.scan'), t('reasons.miningActive'))
               : !canLocalScan
-                ? btnDisabled(UI.actions.SCAN, UI.reasons.AP_COST(AP_COSTS_LOCAL_SCAN))
+                ? btnDisabled(t('actions.scan'), t('reasons.apCost', { n: AP_COSTS_LOCAL_SCAN }))
                 : btn('LOCAL SCAN')}
           </button>
           <button
@@ -153,9 +152,9 @@ export function NavControls() {
             }
           >
             {isMining
-              ? btnDisabled(UI.actions.SCAN, UI.reasons.MINING_ACTIVE)
+              ? btnDisabled(t('actions.scan'), t('reasons.miningActive'))
               : !canAreaScan
-                ? btnDisabled(UI.actions.SCAN, UI.reasons.AP_COST(AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3))
+                ? btnDisabled(t('actions.scan'), t('reasons.apCost', { n: AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3 }))
                 : btn('AREA SCAN')}
           </button>
         </div>
@@ -194,50 +193,9 @@ export function NavControls() {
             letterSpacing: '0.15em',
           }}
         >
-          {UI.status.MINING_LOCKED}
+          {t('status.miningLocked')}
         </div>
       )}
-      {fuel && fuel.current <= 0 && !isMining && (
-        <div
-          style={{
-            marginTop: 8,
-            padding: '8px',
-            border: '1px solid #FF3333',
-            textAlign: 'center',
-            animation: 'bezel-alert-pulse 2s infinite',
-          }}
-        >
-          <div
-            style={{
-              color: '#FF3333',
-              fontSize: '0.8rem',
-              fontWeight: 'bold',
-              letterSpacing: '0.15em',
-              marginBottom: 4,
-            }}
-          >
-            {UI.status.EMERGENCY_WARP}
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--color-dim)', marginBottom: 6 }}>
-            Teleport to home base —{' '}
-            {(() => {
-              const dist = Math.abs(position.x) + Math.abs(position.y);
-              if (dist <= EMERGENCY_WARP_FREE_RADIUS) return 'FREE';
-              const cost = (dist - EMERGENCY_WARP_FREE_RADIUS) * EMERGENCY_WARP_CREDIT_PER_SECTOR;
-              return `${cost} Credits`;
-            })()}
-          </div>
-          <button
-            className="vs-btn"
-            style={{ borderColor: '#FF3333', color: '#FF3333' }}
-            onClick={() => network.sendEmergencyWarp()}
-            disabled={jumpPending}
-          >
-            {btn('ACTIVATE EMERGENCY WARP')}
-          </button>
-        </div>
-      )}
-      <SlateControls />
     </div>
   );
 }

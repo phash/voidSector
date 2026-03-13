@@ -9,21 +9,22 @@ import type { Client } from 'colyseus';
 // --- Mock DB queries (must come before any imports that use them) ---
 vi.mock('../db/queries.js', () => ({
   getSector: vi.fn(),
-  getPlayerCargo: vi.fn(),
-  addToCargo: vi.fn(),
-  jettisonCargo: vi.fn(),
-  getCargoTotal: vi.fn(),
   upsertInventory: vi.fn(),
   deductInventory: vi.fn(),
   getInventory: vi.fn(),
   getCargoCapForPlayer: vi.fn(),
   transferInventoryItem: vi.fn(),
   getInventoryItem: vi.fn(),
+  getMiningStoryIndex: vi.fn().mockResolvedValue(0),
+  updateMiningStoryIndex: vi.fn().mockResolvedValue(undefined),
+  updateSectorResources: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../rooms/services/RedisAPStore.js', () => ({
   getMiningState: vi.fn(),
   saveMiningState: vi.fn(),
+  getMiningStoryCounter: vi.fn().mockResolvedValue(0),
+  setMiningStoryCounter: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../engine/commands.js', () => ({
@@ -56,10 +57,6 @@ vi.mock('../engine/inventoryService.js', async (importOriginal) => {
 
 import { MiningService } from '../rooms/services/MiningService.js';
 import {
-  addToCargo,
-  jettisonCargo,
-  getCargoTotal,
-  getPlayerCargo,
   upsertInventory,
   deductInventory,
   getInventory,
@@ -141,7 +138,6 @@ describe('MiningService.handleStopMine — inventory migration', () => {
     await svc.handleStopMine(client);
 
     expect(getResourceTotal).toHaveBeenCalledWith('user-123');
-    expect(getCargoTotal).not.toHaveBeenCalled();
   });
 
   it('uses addToInventory (not addToCargo) when resources are mined', async () => {
@@ -184,7 +180,6 @@ describe('MiningService.handleStopMine — inventory migration', () => {
     await svc.handleStopMine(client);
 
     expect(addToInventory).toHaveBeenCalledWith('user-123', 'resource', 'ore', 3);
-    expect(addToCargo).not.toHaveBeenCalled();
   });
 
   it('uses getCargoState (not getPlayerCargo) for cargoUpdate message', async () => {
@@ -223,7 +218,6 @@ describe('MiningService.handleStopMine — inventory migration', () => {
     await svc.handleStopMine(client);
 
     expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(getPlayerCargo).not.toHaveBeenCalled();
     expect(client.send).toHaveBeenCalledWith('cargoUpdate', expectedCargo);
   });
 });
@@ -250,7 +244,6 @@ describe('MiningService.handleJettison — inventory migration', () => {
     await svc.handleJettison(client, { resource: 'ore' });
 
     expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(getPlayerCargo).not.toHaveBeenCalled();
   });
 
   it('uses removeFromInventory (not jettisonCargo) to remove the resource', async () => {
@@ -271,7 +264,6 @@ describe('MiningService.handleJettison — inventory migration', () => {
     await svc.handleJettison(client, { resource: 'ore' });
 
     expect(removeFromInventory).toHaveBeenCalledWith('user-123', 'resource', 'ore', 10);
-    expect(jettisonCargo).not.toHaveBeenCalled();
   });
 
   it('sends cargoUpdate after jettison using getCargoState', async () => {
@@ -289,7 +281,6 @@ describe('MiningService.handleJettison — inventory migration', () => {
     await svc.handleJettison(client, { resource: 'ore' });
 
     expect(client.send).toHaveBeenCalledWith('cargoUpdate', afterCargo);
-    expect(getPlayerCargo).not.toHaveBeenCalled();
   });
 });
 
@@ -333,6 +324,5 @@ describe('MiningService.handleMine — inventory migration', () => {
     await svc.handleMine(client, { resource: 'ore' });
 
     expect(getResourceTotal).toHaveBeenCalledWith('user-123');
-    expect(getCargoTotal).not.toHaveBeenCalled();
   });
 });

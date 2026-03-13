@@ -1,12 +1,6 @@
 import { hashCoords } from './worldgen.js';
 import { generateDistressMessage } from './distressStories.js';
-import {
-  WORLD_SEED,
-  SCAN_EVENT_CHANCE,
-  QUADRANT_SIZE,
-  MODULES,
-  ARTEFACT_TYPES,
-} from '@void-sector/shared';
+import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULES } from '@void-sector/shared';
 import type { ScanEventType, SectorEnvironment } from '@void-sector/shared';
 
 const SCAN_EVENT_SALT = 5555;
@@ -26,12 +20,11 @@ const EVENT_TYPE_WEIGHTS: { type: ScanEventType; weight: number; immediate: bool
   { type: 'blueprint_find', weight: 0.1, immediate: false },
 ];
 
-/** Distance from nearest quadrant edge (0 = at edge). Uses centered quadrant layout. */
+/** Distance from nearest quadrant edge (0 = at edge) */
 function quadrantEdgeDistance(x: number, y: number): number {
-  const half = Math.floor(QUADRANT_SIZE / 2);
-  const posX = ((x + half) % QUADRANT_SIZE + QUADRANT_SIZE) % QUADRANT_SIZE;
-  const posY = ((y + half) % QUADRANT_SIZE + QUADRANT_SIZE) % QUADRANT_SIZE;
-  return Math.min(posX, QUADRANT_SIZE - posX, posY, QUADRANT_SIZE - posY);
+  const modX = ((x % QUADRANT_SIZE) + QUADRANT_SIZE) % QUADRANT_SIZE;
+  const modY = ((y % QUADRANT_SIZE) + QUADRANT_SIZE) % QUADRANT_SIZE;
+  return Math.min(modX, QUADRANT_SIZE - modX, modY, QUADRANT_SIZE - modY);
 }
 
 /**
@@ -88,15 +81,6 @@ export function checkScanEvent(
   return { hasEvent: false };
 }
 
-/**
- * Returns a deterministic ArtefactType for a given numeric seed.
- * Used to assign a type to found artefacts.
- */
-export function getArtefactTypeForSeed(seed: number): string {
-  const idx = Math.abs(seed) % ARTEFACT_TYPES.length;
-  return ARTEFACT_TYPES[idx];
-}
-
 function generateEventData(
   eventType: ScanEventType,
   sectorX: number,
@@ -122,15 +106,12 @@ function generateEventData(
         rewardXp: 15 + ((seed >>> 6) % 35),
         rewardRep: 5,
         rewardArtefact: (seed >>> 14) % 100 < 8 ? 1 : 0,
-        rewardArtefactType:
-          (seed >>> 14) % 100 < 8 ? getArtefactTypeForSeed(seed >>> 18) : undefined,
       };
     case 'artifact_find':
       return {
         rewardCredits: 50 + ((seed >>> 8) % 150),
         rewardRep: 10,
         rewardArtefact: (seed >>> 16) % 100 < 50 ? 1 : 0,
-        rewardArtefactType: getArtefactTypeForSeed(seed >>> 20),
       };
     case 'blueprint_find': {
       const researchModules = Object.values(MODULES).filter((m) => m.researchCost);

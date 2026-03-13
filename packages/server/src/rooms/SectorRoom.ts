@@ -5,7 +5,7 @@ const { Room, ServerError } = colyseus;
 import { SectorRoomState, PlayerSchema } from './schema/SectorState.js';
 import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
-import { calculateCurrentAP } from '../engine/ap.js';
+import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
@@ -67,19 +67,21 @@ import {
   getVisitedQuadrantSet,
   getAllAlienReputations,
   getInventory,
-  getResearchLabTier,
+  getMiningStoryIndex,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
 import {
   RECONNECTION_TIMEOUT_S,
-  FEATURE_HYPERDRIVE_V2,
   calculateShipStats,
+  calculateApRegen,
   createHyperdriveState,
   calculateCurrentCharge,
-  HULLS,
   STATION_REP_VISIT,
   COSMIC_FACTION_IDS,
+  getAcepLevel,
+  FUEL_MIN_TANK,
+  BASE_FUEL_CAPACITY,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -102,17 +104,12 @@ import type {
   GetStationNpcsMessage,
   AcceptQuestMessage,
   AbandonQuestMessage,
-  BattleActionMessage,
   CompleteScanEventMessage,
   RefuelMessage,
   SetBookmarkMessage,
   ClearBookmarkMessage,
   HyperJumpMessage,
-  HullType,
   ShipStats,
-  CombatV2State,
-  CombatV2ActionMessage,
-  CombatV2FleeMessage,
   ChatMessage,
   QuadrantControlState,
   NpcFleetState,
@@ -122,7 +119,8 @@ import type { ServiceContext } from './services/ServiceContext.js';
 import { NavigationService } from './services/NavigationService.js';
 import { ScanService } from './services/ScanService.js';
 import { CombatService } from './services/CombatService.js';
-import { MiningService } from './services/MiningService.js';
+import { MiningService, updateStoryProgress } from './services/MiningService.js';
+import { WreckService } from './services/WreckService.js';
 import { EconomyService } from './services/EconomyService.js';
 import { FactionService } from './services/FactionService.js';
 import { QuestService } from './services/QuestService.js';
@@ -135,6 +133,8 @@ import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
 import { StationProductionService } from './services/StationProductionService.js';
+import { RepairService } from './services/RepairService.js';
+import { TechTreeService } from './services/TechTreeService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -144,6 +144,7 @@ import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
 import { getDirectTradeService } from '../engine/directTradeService.js';
 import { logger } from '../utils/logger.js';
+import { captureError } from '../utils/errorLogTransport.js';
 
 interface SectorRoomOptions {
   quadrantX: number;
@@ -154,8 +155,6 @@ interface SectorRoomOptions {
 
 export class SectorRoom extends Room<SectorRoomState> {
   private clientShips = new Map<string, ShipStats>();
-  private clientHullTypes = new Map<string, HullType>();
-  private combatV2States = new Map<string, CombatV2State>();
   private autopilotTimers = new Map<string, ReturnType<typeof setInterval>>();
   private rateLimits = new Map<string, Map<string, number>>();
   private disposeCallbacks: Array<() => void> = [];
@@ -172,6 +171,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private scanning!: ScanService;
   private combat!: CombatService;
   private mining!: MiningService;
+  private wreckService!: WreckService;
   private economy!: EconomyService;
   private factions!: FactionService;
   private quests!: QuestService;
@@ -183,6 +183,8 @@ export class SectorRoom extends Room<SectorRoomState> {
   private storyChain!: StoryQuestChainService;
   private communityQuests!: CommunityQuestService;
   private stationProduction!: StationProductionService;
+  private repair!: RepairService;
+  private techTree!: TechTreeService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
 
   /** Get a player's current sector X coordinate */
@@ -211,7 +213,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   private getShipForClient(sessionId: string): ShipStats {
-    return this.clientShips.get(sessionId) ?? calculateShipStats('scout', []);
+    return this.clientShips.get(sessionId) ?? calculateShipStats([]);
   }
 
   private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
@@ -265,8 +267,6 @@ export class SectorRoom extends Room<SectorRoomState> {
       quadrantX: this.quadrantX,
       quadrantY: this.quadrantY,
       clientShips: this.clientShips,
-      clientHullTypes: this.clientHullTypes,
-      combatV2States: this.combatV2States,
       autopilotTimers: this.autopilotTimers,
       playerSectorData: this.playerSectorData,
       checkRate: this.checkRate.bind(this),
@@ -300,12 +300,20 @@ export class SectorRoom extends Room<SectorRoomState> {
       },
       disposeCallbacks: this.disposeCallbacks,
       roomId: this.roomId,
-      // These will be wired to WorldService/QuestService after instantiation
+      // These will be wired to WorldService/QuestService/CommunityQuestService after instantiation
       checkFirstContact: null as any,
       checkQuestProgress: null as any,
       checkAndEmitDistressCalls: null as any,
       applyReputationChange: null as any,
       applyXpGain: null as any,
+      contributeToCommunityQuest: null as any,
+      deductAP: async (playerId: string, cost: number): Promise<boolean> => {
+        const ap = await getAPState(playerId);
+        const newAP = spendAP(ap, cost);
+        if (!newAP) return false;
+        await saveAPState(playerId, newAP);
+        return true;
+      },
     };
 
     // Instantiate services
@@ -313,12 +321,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.scanning = new ScanService(this.serviceCtx);
     this.combat = new CombatService(this.serviceCtx);
     this.mining = new MiningService(this.serviceCtx);
+    this.wreckService = new WreckService(this.serviceCtx);
     this.economy = new EconomyService(this.serviceCtx);
     this.factions = new FactionService(this.serviceCtx);
     this.quests = new QuestService(this.serviceCtx);
     this.chat = new ChatService(this.serviceCtx);
     this.ships = new ShipService(this.serviceCtx);
     this.world = new WorldService(this.serviceCtx);
+    this.repair = new RepairService(this.serviceCtx);
+    this.techTree = new TechTreeService(this.serviceCtx);
     this.alienInteraction = new AlienInteractionService(this.serviceCtx);
     this.territory = new TerritoryService(this.serviceCtx);
     this.storyChain = new StoryQuestChainService();
@@ -334,6 +345,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.serviceCtx.checkFirstContact = this.world.checkFirstContact.bind(this.world);
     this.serviceCtx.checkAndEmitDistressCalls = this.world.checkAndEmitDistressCalls.bind(
       this.world,
+    );
+    this.serviceCtx.contributeToCommunityQuest = this.communityQuests.contribute.bind(
+      this.communityQuests,
     );
 
     // ── Navigation ──────────────────────────────────────────────────
@@ -379,6 +393,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       } catch (err) {
         logger.error({ err }, 'moveSector error');
+        captureError(err as Error, 'moveSector').catch(() => {});
         client.send('error', { code: 'MOVE_FAILED', message: 'Failed to move sector' });
       }
     });
@@ -396,20 +411,21 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       } catch (err) {
         logger.error({ err }, 'Jump unhandled error');
+        captureError(err as Error, 'handleJump').catch(() => {});
         client.send('jumpResult', { success: false, error: 'Server error' });
       }
     });
     this.onMessage('hyperJump', async (client, data: HyperJumpMessage) => {
       await this.navigation.handleHyperJump(client, data);
     });
-    this.onMessage('emergencyWarp', async (client) => {
-      await this.navigation.handleEmergencyWarp(client);
-    });
     this.onMessage('cancelAutopilot', async (client) => {
       await this.navigation.handleCancelAutopilot(client);
     });
     this.onMessage('startAutopilot', async (client, data) => {
       await this.navigation.handleStartAutopilot(client, data);
+    });
+    this.onMessage('startSlowFlight', async (client, data: { targetX: number; targetY: number }) => {
+      await this.navigation.handleSlowFlight(client, data);
     });
     this.onMessage('getAutopilotStatus', async (client) => {
       await this.navigation.handleGetAutopilotStatus(client);
@@ -421,6 +437,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         await this.scanning.handleLocalScan(client);
       } catch (err) {
         logger.error({ err }, 'localScan unhandled error');
+        captureError(err as Error, 'handleLocalScan').catch(() => {});
         client.send('localScanResult', { error: 'Server error' });
       }
     });
@@ -429,6 +446,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         await this.scanning.handleAreaScan(client);
       } catch (err) {
         logger.error({ err }, 'areaScan unhandled error');
+        captureError(err as Error, 'handleAreaScan').catch(() => {});
         client.send('scanResult', { sectors: [], error: 'Server error' });
       }
     });
@@ -437,26 +455,50 @@ export class SectorRoom extends Room<SectorRoomState> {
         await this.scanning.handleAreaScan(client);
       } catch (err) {
         logger.error({ err }, 'scan unhandled error');
+        captureError(err as Error, 'handleAreaScan').catch(() => {});
         client.send('scanResult', { sectors: [], error: 'Server error' });
       }
     });
-    this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
-      await this.scanning.handleCompleteScanEvent(client, data);
+    this.onMessage('completeScanEvent', (client, data: CompleteScanEventMessage) => {
+      this.scanning.handleCompleteScanEvent(client, data).catch((err) =>
+        logger.error({ err }, 'completeScanEvent error'),
+      );
     });
-    this.onMessage('salvageWreck', async (client, data: { wreckId: string }) => {
-      await this.scanning.handleSalvageWreck(client, data);
+    this.onMessage('salvageWreck', (client, data: { wreckId: string }) => {
+      this.scanning.handleSalvageWreck(client, data).catch((err) =>
+        logger.error({ err }, 'salvageWreck error'),
+      );
+    });
+
+    this.onMessage('investigateWreck', (client, data) => {
+      this.wreckService.handleInvestigate(client, data).catch((err) =>
+        logger.error({ err }, 'investigateWreck error'),
+      );
+    });
+
+    this.onMessage('startSalvage', (client, data) => {
+      this.wreckService.handleStartSalvage(client, data).catch((err) =>
+        logger.error({ err }, 'startSalvage error'),
+      );
+    });
+
+    this.onMessage('cancelSalvage', (client) => {
+      this.wreckService.handleCancelSalvage(client).catch((err) =>
+        logger.error({ err }, 'cancelSalvage error'),
+      );
+    });
+    this.onMessage('consumeWreckSlate', (client, data) => {
+      this.wreckService.handleConsumeSlate(client, data).catch((err) =>
+        logger.error({ err }, 'consumeWreckSlate error'),
+      );
+    });
+    this.onMessage('feedSlateToGate', (client, data) => {
+      this.wreckService.handleFeedSlateToGate(client, data).catch((err) =>
+        logger.error({ err }, 'feedSlateToGate error'),
+      );
     });
 
     // ── Combat ──────────────────────────────────────────────────────
-    this.onMessage('battleAction', async (client, data: BattleActionMessage) => {
-      await this.combat.handleBattleAction(client, data);
-    });
-    this.onMessage('combatV2Action', async (client, data: CombatV2ActionMessage) => {
-      await this.combat.handleCombatV2Action(client, data);
-    });
-    this.onMessage('combatV2Flee', async (client, data: CombatV2FleeMessage) => {
-      await this.combat.handleCombatV2Flee(client, data);
-    });
     this.onMessage('ejectPod', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleEjectPod(client, data);
     });
@@ -466,6 +508,19 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('repairStation', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleRepairStation(client, data);
     });
+    // Kampfsystem v1 — energy-based round combat
+    this.onMessage('combatInit', async (client, data) => {
+      await this.combat.handleCombatInit(client, data);
+    });
+    this.onMessage('combatRound', async (client, data) => {
+      await this.combat.handleCombatRound(client, data);
+    });
+    this.onMessage('repairModule', async (client, data: { moduleId: string }) => {
+      await this.repair.handleRepairModule(client, data);
+    });
+    this.onMessage('stationRepair', async (client, data) => {
+      await this.repair.handleStationRepair(client, data);
+    });
 
     // ── Mining ──────────────────────────────────────────────────────
     this.onMessage('mine', async (client, data: MineMessage) => {
@@ -473,6 +528,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('stopMine', async (client) => {
       await this.mining.handleStopMine(client);
+    });
+    this.onMessage('toggleMineAll', async (client, data: { mineAll: boolean }) => {
+      await this.mining.handleToggleMineAll(client, data);
     });
     this.onMessage('jettison', async (client, data: JettisonMessage) => {
       await this.mining.handleJettison(client, data);
@@ -654,19 +712,18 @@ export class SectorRoom extends Room<SectorRoomState> {
       const items = await getInventory(auth.userId);
       client.send('inventoryState', { items });
     });
-    this.onMessage('startResearch', (client, data) => this.ships.handleStartResearch(client, data));
-    this.onMessage('cancelResearch', (client, data) =>
-      this.ships.handleCancelResearch(client, data),
-    );
-    this.onMessage('claimResearch', (client, data) => this.ships.handleClaimResearch(client, data));
     this.onMessage('activateBlueprint', (client, data) =>
       this.ships.handleActivateBlueprint(client, data),
     );
-    this.onMessage('getResearchState', (client) => this.ships.handleGetResearchState(client));
     this.onMessage('craftModule', (client, data) => this.ships.handleCraftModule(client, data));
     this.onMessage('acepBoost', (client, data: { path: AcepPath }) =>
       this.ships.handleAcepBoost(client, data),
     );
+
+    // ── Tech Tree ───────────────────────────────────────────────────
+    this.onMessage('getTechTree', (client) => this.techTree.handleGetTechTree(client));
+    this.onMessage('researchTechNode', (client, data) => this.techTree.handleResearchNode(client, data));
+    this.onMessage('resetTechTree', (client) => this.techTree.handleResetTree(client));
 
     // ── World / Data Queries ────────────────────────────────────────
     this.onMessage('getAP', async (client) => {
@@ -711,6 +768,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('upgradeResearchLab', (client) => this.world.handleUpgradeResearchLab(client));
     this.onMessage('createSlate', async (client, data: CreateSlateMessage) => {
       await this.world.handleCreateSlate(client, data);
+    });
+    this.onMessage('createSlateFromScan', async (client) => {
+      await this.world.handleCreateSlateFromScan(client);
     });
     this.onMessage('activateSlate', async (client, data: ActivateSlateMessage) => {
       await this.world.handleActivateSlate(client, data);
@@ -891,6 +951,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         })
         .catch((err) => {
           logger.error({ err }, 'tradeRequest error');
+          captureError(err as Error, 'initiateTrade').catch(() => {});
           client.send('error', { code: 'TRADE_FAILED', message: 'Failed to start trade' });
         });
     });
@@ -931,6 +992,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         })
         .catch((err) => {
           logger.error({ err }, 'tradeConfirm error');
+          captureError(err as Error, 'confirmTrade').catch(() => {});
           client.send('error', {
             code: 'TRADE_CONFIRM_FAILED',
             message: 'Failed to confirm trade',
@@ -945,6 +1007,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         })
         .catch((err) => {
           logger.error({ err }, 'tradeCancel error');
+          captureError(err as Error, 'cancelTrade').catch(() => {});
         });
     });
 
@@ -952,7 +1015,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.clock.setInterval(() => {
       this.world
         .processTradeRoutes()
-        .catch((err) => logger.error({ err }, 'Trade routes tick error'));
+        .catch((err) => {
+          logger.error({ err }, 'Trade routes tick error');
+          captureError(err as Error, 'processTradeRoutes').catch(() => {});
+        });
     }, 60000);
 
     // ── Community Quest Rotation — every hour ────────────────────────
@@ -1139,46 +1205,53 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Load active ship (or create default scout on first login)
       let shipRecord = await getActiveShip(auth.userId);
       if (!shipRecord) {
-        shipRecord = await createShip(auth.userId, 'scout', 'AEGIS', HULLS.scout.baseFuel);
+        shipRecord = await createShip(auth.userId, 'AEGIS', BASE_FUEL_CAPACITY);
       }
-      const stats = calculateShipStats(shipRecord.hullType, shipRecord.modules);
+      const stats = calculateShipStats(shipRecord.modules);
       this.clientShips.set(client.sessionId, stats);
-      this.clientHullTypes.set(client.sessionId, shipRecord.hullType);
 
       // Send ship data to client
       const fuelState = await getFuelState(auth.userId);
       const acepXp = await getAcepXpSummary(shipRecord.id);
+      // Init fuel state in Redis; migrate stale pre-overhaul values (< FUEL_MIN_TANK)
+      const stale = fuelState !== null && fuelState < FUEL_MIN_TANK;
+      if (fuelState === null || stale) {
+        await saveFuelState(auth.userId, stats.fuelMax);
+      }
+      const fuelCurrent = fuelState === null || stale ? stats.fuelMax : fuelState;
+
       client.send('shipData', {
         id: shipRecord.id,
         ownerId: auth.userId,
-        hullType: shipRecord.hullType,
         name: shipRecord.name,
         modules: shipRecord.modules,
         stats,
-        fuel: fuelState ?? stats.fuelMax,
+        fuel: fuelCurrent,
         active: true,
         acepXp,
       });
-
-      // Init fuel state in Redis
-      if (fuelState === null) {
-        await saveFuelState(auth.userId, stats.fuelMax);
-      }
-      const fuelCurrent = fuelState ?? stats.fuelMax;
       client.send('fuelUpdate', { current: fuelCurrent, max: stats.fuelMax });
+
+      // Send mining story progress
+      const storyIndex = await getMiningStoryIndex(auth.userId);
+      client.send('miningStoryUpdate', { storyIndex });
 
       // Record discovery
       await addDiscovery(auth.userId, sectorX, sectorY);
 
-      // Send initial AP state
+      // Send initial AP state — recalculate regenPerSecond from current modules
       const ap = await getAPState(auth.userId);
-      const updated = calculateCurrentAP(ap);
+      const regenFromModules = calculateApRegen(shipRecord.modules);
+      const updated = calculateCurrentAP({ ...ap, regenPerSecond: regenFromModules });
       await saveAPState(auth.userId, updated);
       client.send('apUpdate', updated);
 
       // Send initial cargo
       const cargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', cargo);
+
+      // Send initial slates
+      await this.world.handleGetMySlates(client);
 
       // Send unified inventory state
       const inventoryItems = await getInventory(auth.userId);
@@ -1256,7 +1329,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const activeResearch2 = await getActiveResearch(auth.userId, 2);
       const wissen = await getWissen(auth.userId);
       const typedArtefacts = await getTypedArtefacts(auth.userId);
-      const labTier = await getResearchLabTier(auth.userId);
+      const labTier = getAcepLevel(acepXp.ausbau);
       client.send('researchState', {
         unlockedModules: researchData.unlockedModules,
         blueprints: researchData.blueprints,
@@ -1273,10 +1346,8 @@ export class SectorRoom extends Room<SectorRoomState> {
         recordVisit(sectorX, sectorY).catch(() => {});
         updatePlayerStationRep(auth.userId, sectorX, sectorY, STATION_REP_VISIT).catch(() => {});
 
-        // Auto-refuel at station when FEATURE_HYPERDRIVE_V2 is enabled
-        if (FEATURE_HYPERDRIVE_V2) {
-          await this.navigation.tryAutoRefuel(client, auth, stats);
-        }
+        // Auto-refuel at station
+        await this.navigation.tryAutoRefuel(client, auth, stats);
       }
 
       // Detect jumpgate in sector (also works for D-pad arrivals via cross-quadrant join)
@@ -1285,11 +1356,21 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Detect player-built jumpgate in sector
       await this.navigation.detectAndSendPlayerGate(client, sectorX, sectorY);
 
-      // Send initial hyperdrive state when V2 is enabled
-      if (FEATURE_HYPERDRIVE_V2 && stats.hyperdriveRange > 0) {
+      // Send initial hyperdrive state
+      if (stats.hyperdriveRange > 0) {
         let hdState = await getHyperdriveState(auth.userId);
         if (!hdState) {
           hdState = createHyperdriveState(stats);
+          await setHyperdriveState(auth.userId, hdState);
+        } else if (hdState.maxCharge !== stats.hyperdriveRange) {
+          // Balance update: rescale charge proportionally to new maxCharge
+          const ratio = hdState.maxCharge > 0 ? hdState.charge / hdState.maxCharge : 1;
+          hdState = {
+            ...hdState,
+            charge: Math.round(stats.hyperdriveRange * ratio),
+            maxCharge: stats.hyperdriveRange,
+            regenPerSecond: stats.hyperdriveRegen,
+          };
           await setHyperdriveState(auth.userId, hdState);
         }
         client.send('hyperdriveUpdate', {
@@ -1322,6 +1403,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         }
       } catch (err) {
         logger.error({ err }, 'Join autopilot resume error');
+        captureError(err as Error, 'autopilotResume').catch(() => {});
       }
 
       // Broadcast initial expansion state (filtered by visited quadrants for Fog-of-War)
@@ -1380,9 +1462,11 @@ export class SectorRoom extends Room<SectorRoomState> {
         );
       } catch (err) {
         logger.error({ err }, 'Join expansion state broadcast error');
+        captureError(err as Error, 'broadcastExpansionState').catch(() => {});
       }
     } catch (err) {
       logger.error({ err }, 'Join error');
+      captureError(err as Error, 'onJoin').catch(() => {});
       client.send('error', { code: 'JOIN_FAILED', message: 'Failed to join sector' });
       client.leave();
     }
@@ -1400,6 +1484,8 @@ export class SectorRoom extends Room<SectorRoomState> {
         const result = stopMining(mining, cargoSpace);
         if (result.mined > 0 && result.resource) {
           await addToInventory(auth.userId, 'resource', result.resource, result.mined);
+          // Story progress (fire and forget — player is leaving)
+          updateStoryProgress(auth.userId, result.mined).catch(() => {});
         }
         await saveMiningState(auth.userId, result.newState);
       }
@@ -1434,7 +1520,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
 
     this.clientShips.delete(client.sessionId);
-    this.clientHullTypes.delete(client.sessionId);
     this.rateLimits.delete(client.sessionId);
     this.playerSectorData.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
@@ -1447,6 +1532,8 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   async onDispose() {
+    this.mining.clearAllTimers();
+    this.wreckService.clearAllTimers();
     for (const cb of this.disposeCallbacks) {
       cb();
     }

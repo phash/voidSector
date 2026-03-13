@@ -12,6 +12,7 @@ import type {
 } from '@void-sector/shared';
 
 import { validateNpcTrade, validateTransfer, getReputationTier } from '../../engine/commands.js';
+import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
 import { getStationFaction } from '../../engine/npcgen.js';
 import {
   getOrInitStation,
@@ -26,6 +27,8 @@ import {
   getStationInventoryItem,
   upsertInventoryItem,
   getStationInventory,
+  getStationFuelAndGas,
+  deductStationFuelStock,
 } from '../../db/npcStationQueries.js';
 import {
   getOrCreateFactoryState,
@@ -51,14 +54,14 @@ import {
   getPlayerStructure,
   upgradeStructureTier,
   createTradeOrder,
-  findPlayerByUsername,
-  getPlayerBaseStructures,
   playerHasBaseAtSector,
+  getPlayerBaseStructures,
   getPlayerShips,
   getPlayerReputation,
   getPlayerStationRep,
   updatePlayerStationRep,
   getPlayerResearch,
+  getActiveShip,
 } from '../../db/queries.js';
 import {
   addToInventory,
@@ -79,6 +82,7 @@ import {
   REP_PRICE_MODIFIERS,
   getFuelRepPriceModifier,
   STATION_REP_TRADE,
+  getAcepLevel,
 } from '@void-sector/shared';
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
@@ -91,10 +95,12 @@ export class EconomyService {
 
   async sendNpcStationUpdate(client: Client, sx: number, sy: number): Promise<void> {
     const station = await getOrInitStation(sx, sy);
-    const inventory = await getStationInventory(sx, sy);
+    // fuel is handled separately via handleRefuel — exclude from trade inventory
+    const inventory = (await getStationInventory(sx, sy)).filter((i) => i.itemType !== 'fuel');
     const level = getStationLevel(station.xp);
+    const now = new Date();
     const items = inventory.map((item) => {
-      const currentStock = calculateCurrentStock(item);
+      const currentStock = calculateCurrentStock(item, now);
       const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
       const basePrice = NPC_PRICES[item.itemType as MineableResourceType] || 0;
       return {
@@ -105,13 +111,27 @@ export class EconomyService {
         sellPrice: Math.floor(calculatePrice(basePrice, stockRatio) * NPC_SELL_SPREAD),
       };
     });
+    // Snapshot calculated stock to DB so subsequent canSellToStation/canBuyFromStation
+    // calls don't drift due to time-based restock between display and trade (#237)
+    for (let i = 0; i < inventory.length; i++) {
+      const item = inventory[i];
+      const snapshotStock = items[i].stock;
+      if (item.stock !== snapshotStock) {
+        item.stock = snapshotStock;
+        item.lastUpdated = now.toISOString();
+        await upsertInventoryItem(item);
+      }
+    }
     const nextLevel = NPC_STATION_LEVELS.find((l) => l.xpThreshold > station.xp);
+    const { fuel: stationFuel, gas: stationGas } = await getStationFuelAndGas(sx, sy);
     client.send('npcStationUpdate', {
       level: level.level,
       name: level.name,
       xp: station.xp,
       nextLevelXp: nextLevel?.xpThreshold ?? station.xp,
       inventory: items,
+      stationFuel,
+      stationGas,
     });
   }
 
@@ -136,15 +156,14 @@ export class EconomyService {
     const auth = client.auth as AuthPayload;
     const { resource, amount, action } = data;
 
-    const player = await findPlayerByUsername(auth.username);
-    if (!player) return;
-
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const isHomeBase =
-      this.ctx._px(client.sessionId) === player.homeBase.x &&
-      this.ctx._py(client.sessionId) === player.homeBase.y;
-    if (!isStation && !isHomeBase) {
-      client.send('npcTradeResult', { success: false, error: 'Must be at a station or home base' });
+    const hasBase = await playerHasBaseAtSector(
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
+    if (!isStation && !hasBase) {
+      client.send('npcTradeResult', { success: false, error: 'Must be at a station or your base' });
       return;
     }
 
@@ -162,6 +181,8 @@ export class EconomyService {
       const sy = this.ctx._py(client.sessionId);
 
       if (action === 'sell') {
+        // Capture full-cargo state before selling (for ACEP XP)
+        const wasFullLoad = cargoTotal >= shipStats.cargoCap * 0.8;
         // Check cargo has enough
         if (cargo[resource as MineableResourceType] < amount) {
           client.send('npcTradeResult', {
@@ -188,10 +209,11 @@ export class EconomyService {
           client.send('npcTradeResult', { success: false, error: 'Cargo changed' });
           return;
         }
-        // Update station stock
+        // Update station stock — use calculated stock, not raw DB stock (#237)
         const invItem = await getStationInventoryItem(sx, sy, resource);
         if (invItem) {
-          invItem.stock = Math.min(invItem.stock + effectiveAmount, invItem.maxStock);
+          const currentStationStock = calculateCurrentStock(invItem);
+          invItem.stock = Math.min(currentStationStock + effectiveAmount, invItem.maxStock);
           invItem.lastUpdated = new Date().toISOString();
           await upsertInventoryItem(invItem);
         }
@@ -207,6 +229,10 @@ export class EconomyService {
         });
         client.send('creditsUpdate', { credits: newCredits });
         client.send('cargoUpdate', updatedCargo);
+        // ACEP: AUSBAU-XP for selling full cargo load (spec: +2 when ≥80% full)
+        if (wasFullLoad) {
+          addAcepXpForPlayer(auth.userId, 'ausbau', 2).catch(() => {});
+        }
         // Send station info update (rich format with inventory)
         await this.sendNpcStationUpdate(client, sx, sy);
       } else {
@@ -242,10 +268,11 @@ export class EconomyService {
           return;
         }
         await addToInventory(auth.userId, 'resource', resource, amount);
-        // Update station stock
+        // Update station stock — use calculated stock, not raw DB stock (#237)
         const invItem = await getStationInventoryItem(sx, sy, resource);
         if (invItem) {
-          invItem.stock = Math.max(invItem.stock - amount, 0);
+          const currentStationStock = calculateCurrentStock(invItem);
+          invItem.stock = Math.max(currentStationStock - amount, 0);
           invItem.lastUpdated = new Date().toISOString();
           await upsertInventoryItem(invItem);
         }
@@ -427,21 +454,17 @@ export class EconomyService {
     const auth = client.auth as AuthPayload;
     const { resource, amount, direction } = data;
 
-    const player = await findPlayerByUsername(auth.username);
-    if (!player) {
-      client.send('error', { code: 'NO_PLAYER', message: 'Player not found' });
-      return;
-    }
-    if (
-      this.ctx._px(client.sessionId) !== player.homeBase.x ||
-      this.ctx._py(client.sessionId) !== player.homeBase.y
-    ) {
-      client.send('transferResult', { success: false, error: 'Must be at home base' });
+    const hasBase = await playerHasBaseAtSector(
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
+    if (!hasBase) {
+      client.send('transferResult', { success: false, error: 'Must be at your base' });
       return;
     }
 
     const storageStruct = await getPlayerStructure(auth.userId, 'storage');
-    // Home base always provides basic tier 1 storage, even without a storage structure
     const storageTier = storageStruct?.tier ?? 1;
 
     const currentCargo = await getCargoState(auth.userId);
@@ -485,12 +508,12 @@ export class EconomyService {
 
     // Must be at a station or own base
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const hasBaseHere = await playerHasBaseAtSector(
+    const hasBase = await playerHasBaseAtSector(
       auth.userId,
       this.ctx._px(client.sessionId),
       this.ctx._py(client.sessionId),
     );
-    if (!isStation && !hasBaseHere) {
+    if (!isStation && !hasBase) {
       client.send('refuelResult', {
         success: false,
         error: 'Must be at a station or your base to refuel',
@@ -510,7 +533,20 @@ export class EconomyService {
     const amount = Math.min(data.amount, tankSpace);
 
     const playerShips = await getPlayerShips(auth.userId);
-    const isFreeRefuel = hasBaseHere && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
+    const isFreeRefuel = hasBase && !isStation && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
+
+    // Check station fuel stock — cap fill amount to what the station has available
+    let availableAmount = amount;
+    if (isStation && !isFreeRefuel) {
+      const sx = this.ctx._px(client.sessionId);
+      const sy = this.ctx._py(client.sessionId);
+      const { fuel: stationFuel } = await getStationFuelAndGas(sx, sy);
+      availableAmount = Math.min(amount, stationFuel);
+      if (availableAmount <= 0) {
+        client.send('refuelResult', { success: false, error: 'Station fuel depleted' });
+        return;
+      }
+    }
 
     // Apply reputation price modifier at stations -- use the better of station-rep vs faction-rep
     let priceModifier = 1.0;
@@ -535,7 +571,7 @@ export class EconomyService {
       priceModifier = Math.min(factionModifier, stationModifier);
     }
 
-    const cost = isFreeRefuel ? 0 : Math.ceil(amount * FUEL_COST_PER_UNIT * priceModifier);
+    const cost = isFreeRefuel ? 0 : Math.ceil(availableAmount * FUEL_COST_PER_UNIT * priceModifier);
 
     if (cost > 0) {
       const credits = await getPlayerCredits(auth.userId);
@@ -546,8 +582,14 @@ export class EconomyService {
       await deductCredits(auth.userId, cost);
     }
 
-    const newFuel = currentFuel + amount;
+    const newFuel = currentFuel + availableAmount;
     await saveFuelState(auth.userId, newFuel);
+
+    if (isStation && !isFreeRefuel) {
+      const sx = this.ctx._px(client.sessionId);
+      const sy = this.ctx._py(client.sessionId);
+      await deductStationFuelStock(sx, sy, availableAmount);
+    }
 
     const remainingCredits = await getPlayerCredits(auth.userId);
 
@@ -583,6 +625,13 @@ export class EconomyService {
 
     if (!data?.recipeId || typeof data.recipeId !== 'string') {
       client.send('factoryUpdate', { error: 'Invalid recipe ID' });
+      return;
+    }
+
+    const shipForFactory = await getActiveShip(auth.userId);
+    const acepXpFactory = shipForFactory ? await getAcepXpSummary(shipForFactory.id) : { ausbau: 0 };
+    if (getAcepLevel(acepXpFactory.ausbau) < 2) {
+      client.send('error', { code: 'FACTORY_LOCKED', message: 'Fabrik erfordert AUSBAU Level 2' });
       return;
     }
 

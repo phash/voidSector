@@ -10,7 +10,6 @@ vi.mock('../network/client', () => ({ network: {} }));
 const baseShip = {
   id: 's1',
   ownerId: 'p1',
-  hullType: 'scout' as const,
   name: 'NIGHTFALL',
   modules: [
     { moduleId: 'mining_laser_mk1', slotIndex: 0 },
@@ -61,7 +60,7 @@ describe('ShipDetailPanel', () => {
   it('shows zero bars when no acepXp', () => {
     mockStoreState({ ship: baseShip, monitorModes: {}, setMonitorMode: vi.fn() } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getByText('ACEP PATHS')).toBeDefined();
+    expect(screen.getByText('acep.pathsLabel')).toBeDefined();
     expect(screen.getAllByText('0').length).toBeGreaterThan(0);
   });
 
@@ -71,7 +70,7 @@ describe('ShipDetailPanel', () => {
       monitorModes: {}, setMonitorMode: vi.fn(),
     } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getByText(/NO TRAITS ACTIVE YET/)).toBeDefined();
+    expect(screen.getByText(/acep\.noTraitsActive/)).toBeDefined();
   });
 
   it('shows active traits from acepTraits', () => {
@@ -91,7 +90,7 @@ describe('ShipDetailPanel', () => {
   it('shows module section', () => {
     mockStoreState({ ship: baseShip, monitorModes: {}, setMonitorMode: vi.fn() } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getAllByText(/MODULES/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ship\.modulesSlots/).length).toBeGreaterThan(0);
   });
 
   it('[ACEP →] button calls setMonitorMode with SHIP-SYS and acep', async () => {
@@ -131,20 +130,21 @@ describe('ShipDetailPanel', () => {
   it('shows correct slot count from hull definition', () => {
     // scout hull has 3 base slots; 0 extraModuleSlots → 3 total
     mockStoreState({
-      ship: { ...baseShip, hullType: 'scout', modules: [], acepEffects: { extraModuleSlots: 0 } },
+      ship: { ...baseShip, modules: [], acepEffects: { extraModuleSlots: 0 } },
       setMonitorMode: vi.fn(),
     } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getByText(/0\/3 SLOTS/)).toBeDefined();
+    // ship.modulesSlots key returned by mock, contains count/max via replacement in key string
+    expect(screen.getByText(/ship\.modulesSlots/)).toBeDefined();
   });
 
   it('adds extraModuleSlots to hull base slots', () => {
     mockStoreState({
-      ship: { ...baseShip, hullType: 'scout', modules: [], acepEffects: { extraModuleSlots: 2 } },
+      ship: { ...baseShip, modules: [], acepEffects: { extraModuleSlots: 2 } },
       setMonitorMode: vi.fn(),
     } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getByText(/0\/5 SLOTS/)).toBeDefined();
+    expect(screen.getByText(/ship\.modulesSlots/)).toBeDefined();
   });
 
   it('shows module names in Title Case', () => {

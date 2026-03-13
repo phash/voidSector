@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
-import { btn } from '../ui-strings';
+import { btn } from '../ui-helpers';
 import { ProgramSelector } from './ProgramSelector';
 import { SettingsPanel } from './SettingsPanel';
 import { HardwareControls } from './HardwareControls';
@@ -16,16 +16,21 @@ import { MiningDetailPanel } from './MiningDetailPanel';
 import { QuestDetailPanel } from './QuestDetailPanel';
 import { FactionDetailPanel } from './FactionDetailPanel';
 import { ShipDetailPanel } from './ShipDetailPanel';
+import { AcepDetailPanel } from './AcepDetailPanel';
+import { WreckPanel } from './WreckPanel';
 import { SectorInfo, StatusBar } from './HUD';
 import { NavControls } from './NavControls';
-import { ShipStatusPanel } from './ShipStatusPanel';
+import { ShipBlock, CargoBlock } from './ShipBlock';
 import { CombatStatusPanel } from './CombatStatusPanel';
+import { SlateControls } from './SlateControls';
 import { CommsScreen } from './CommsScreen';
 import { PlayerContextMenu } from './PlayerContextMenu';
 import { StoryEventOverlay } from './overlays/StoryEventOverlay';
 import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
 import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
+import { LocalScanResultOverlay } from './overlays/LocalScanResultOverlay';
+import { getPhysicalCargoTotal } from '@void-sector/shared';
 
 interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
@@ -51,6 +56,8 @@ function getDetailForProgram(programId: string): ReactNode | null {
       return <FactionDetailPanel />;
     case 'SHIP-SYS':
       return <ShipDetailPanel />;
+    case 'ACEP':
+      return <AcepDetailPanel />;
     default:
       return null;
   }
@@ -64,7 +71,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   const cargoFullToastShown = useRef(false);
 
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const cargoTotal = getPhysicalCargoTotal(cargo);
 
   useEffect(() => {
     if (miningActive && cargoTotal >= cargoCap && !cargoFullToastShown.current) {
@@ -77,6 +84,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   }, [miningActive, cargoTotal, cargoCap, setActionError]);
 
   const activeProgram = useStore((s) => s.activeProgram);
+  const activeWreck = useStore((s) => s.activeWreck);
   const zoomLevel = useStore((s) => s.zoomLevel);
   const setZoomLevel = useStore((s) => s.setZoomLevel);
   const panOffset = useStore((s) => s.panOffset);
@@ -107,7 +115,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   };
 
   const mainContent = renderScreen(activeProgram);
-  const detailContent = getDetailForProgram(activeProgram);
+  const detailContent = activeWreck ? <WreckPanel /> : getDetailForProgram(activeProgram);
 
   return (
     <div className="cockpit-layout" data-testid="cockpit-layout">
@@ -178,12 +186,16 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       {/* Section 5: Navigation */}
       <div className="cockpit-sec5 cockpit-section">
         <div className="cockpit-monitor cockpit-nav-monitor">
-          <SectorInfo />
-          <StatusBar />
-          <NavControls />
-          <div className="cockpit-nav-panels">
-            <ShipStatusPanel />
+          <div className="nav-zone-a">
+            <SectorInfo />
+            <StatusBar />
+            <NavControls />
+          </div>
+          <div className="nav-zone-b">
+            <ShipBlock />
+            <CargoBlock />
             <CombatStatusPanel />
+            <SlateControls />
           </div>
         </div>
       </div>
@@ -198,6 +210,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
         </div>
       </div>
       <PlayerContextMenu />
+      <LocalScanResultOverlay />
       <StoryEventOverlay />
       <FirstContactNewsOverlay />
       <AlienEncounterToast />

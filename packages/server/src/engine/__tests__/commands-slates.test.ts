@@ -6,8 +6,8 @@ describe('validateCreateSlate', () => {
   const baseState = {
     ap: 5,
     scannerLevel: 1,
-    cargoTotal: 5,
-    cargoCap: 20,
+    slateCount: 2,
+    memory: 6,
   };
 
   it('rejects if not enough AP for sector slate', () => {
@@ -16,10 +16,10 @@ describe('validateCreateSlate', () => {
     expect(result.error).toContain('AP');
   });
 
-  it('rejects if cargo is full', () => {
-    const result = validateCreateSlate({ ...baseState, cargoTotal: 20, cargoCap: 20 }, 'sector');
+  it('rejects if memory is full', () => {
+    const result = validateCreateSlate({ ...baseState, slateCount: 6, memory: 6 }, 'sector');
     expect(result.valid).toBe(false);
-    expect(result.error).toContain('Cargo');
+    expect(result.error).toContain('Memory');
   });
 
   it('accepts valid sector slate', () => {

@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 
-const ONBOARDING_STEPS = [
-  { text: 'RADAR — Dein Universum. Klicke auf Sektoren für Details.', spotlight: 'cockpit-sec2' },
-  { text: 'D-PAD — Steuere dein Schiff. 1 AP pro Sprung.', spotlight: 'cockpit-sec5' },
-  { text: 'AP — Action Points: die Kern-Ressource. Sie regenerieren automatisch.', spotlight: null },
-  { text: 'ZIEL: Finde einen Asteroiden-Sektor und starte MINING.', spotlight: null },
-  { text: 'Kompendium [◈] für alle Details. Viel Erfolg, Pilot.', spotlight: 'compendium-btn' },
-];
-
 export function HelpOverlay() {
+  const { t } = useTranslation('ui');
+
+  const ONBOARDING_STEPS = [
+    { text: t('help.onboarding.radar'), spotlight: 'cockpit-sec2' },
+    { text: t('help.onboarding.dpad'), spotlight: 'cockpit-sec5' },
+    { text: t('help.onboarding.goal'), spotlight: null },
+    { text: t('help.onboarding.compendium'), spotlight: 'compendium-btn' },
+  ];
   const activeTip = useStore((s) => s.activeTip);
   const dismissTip = useStore((s) => s.dismissTip);
   const openCompendium = useStore((s) => s.openCompendium);
@@ -26,13 +27,6 @@ export function HelpOverlay() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [activeTip, dismissTip]);
-
-  // Auto-advance onboarding after 3s
-  useEffect(() => {
-    if (onboardingStep === null) return;
-    const timer = setTimeout(advanceOnboarding, 3000);
-    return () => clearTimeout(timer);
-  }, [onboardingStep, advanceOnboarding]);
 
   // Spotlight: box-shadow cutout on highlighted element
   useEffect(() => {
@@ -77,14 +71,14 @@ export function HelpOverlay() {
               onClick={skipOnboarding}
               style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontFamily: 'monospace', fontSize: '0.7rem' }}
             >
-              [ÜBERSPRINGEN]
+              {t('help.skip')}
             </button>
             <div style={{ color: '#555', fontSize: '0.7rem' }}>{onboardingStep + 1} / 5</div>
             <button
               onClick={(e) => { e.stopPropagation(); advanceOnboarding(); }}
               style={{ border: '1px solid var(--color-primary)', background: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontFamily: 'monospace', padding: '2px 8px' }}
             >
-              [WEITER]
+              {t('help.next')}
             </button>
           </div>
         </div>
@@ -110,7 +104,7 @@ export function HelpOverlay() {
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={dismissTip}
         style={{
           background: 'rgba(0, 0, 0, 0.92)',
           border: '1px solid var(--color-primary)',
@@ -134,7 +128,7 @@ export function HelpOverlay() {
           }}
         >
           <span>◈ {activeTip.title}</span>
-          <span style={{ fontSize: '0.65rem', color: 'var(--color-dim)' }}>HILFE</span>
+          <span style={{ fontSize: '0.65rem', color: 'var(--color-dim)' }}>{t('help.helpLabel')}</span>
         </div>
         <div
           style={{
@@ -148,7 +142,8 @@ export function HelpOverlay() {
         {activeTip.articleId && (
           <div style={{ marginTop: '10px' }}>
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 openCompendium(activeTip.articleId);
               }}
               data-testid="compendium-link"
@@ -163,7 +158,7 @@ export function HelpOverlay() {
                 padding: 0,
               }}
             >
-              MEHR IM KOMPENDIUM ▸
+              {t('help.moreInCompendium')}
             </button>
           </div>
         )}
@@ -176,7 +171,7 @@ export function HelpOverlay() {
             letterSpacing: '0.1em',
           }}
         >
-          [ESC / KLICK zum Schliessen]
+          {t('help.escToClose')}
         </div>
       </div>
     </div>

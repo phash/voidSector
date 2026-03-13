@@ -26,6 +26,8 @@ export interface QuadrantMapState {
   npcFleets?: NpcFleetState[];
   /** Fog-of-War: set of "qx:qy" keys the player has physically entered */
   visitedQuadrants?: Set<string>;
+  /** Void civilization: partial conquest progress per quadrant (0–100) */
+  voidQuadrantProgress?: Map<string, number>;
 }
 
 // ─── Expansion Warfare Overlay Helpers ───────────────────────────────────────
@@ -39,6 +41,7 @@ const FACTION_COLORS: Record<string, string> = {
   mycelians: 'rgba(68, 255, 136, 0.30)',
   mirror_minds: 'rgba(204, 136, 255, 0.30)',
   tourist_guild: 'rgba(255, 255, 68, 0.30)',
+  voids: 'rgba(5,5,8,0)', // handled separately
 };
 
 function getOverlayColor(qx: number, qy: number, controls: QuadrantControlState[]): string | null {
@@ -151,6 +154,34 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         if (overlayColor) {
           ctx.fillStyle = overlayColor;
           ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        }
+      }
+
+      // Void overlay (renders over faction colors)
+      if (ctrl?.controlling_faction === 'voids') {
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#050508';
+        ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        ctx.strokeStyle = '#aaaacc';
+        ctx.lineWidth = 1;
+        ctx.shadowColor = 'rgba(255,255,255,0.13)';
+        ctx.shadowBlur = 4;
+        ctx.strokeRect(cellX - CELL_W / 2 + 0.5, cellY - CELL_H / 2 + 0.5, CELL_W - 1, CELL_H - 1);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+
+      // Void quadrant in progress (partial conquest)
+      if (state.voidQuadrantProgress) {
+        const progressVal = state.voidQuadrantProgress.get(`${qx}:${qy}`);
+        if (progressVal !== undefined && progressVal > 0 && progressVal < 100) {
+          ctx.save();
+          ctx.globalAlpha = progressVal / 100;
+          ctx.fillStyle = '#050508';
+          ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+          ctx.globalAlpha = 1;
+          ctx.restore();
         }
       }
 

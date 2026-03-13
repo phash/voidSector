@@ -4,7 +4,8 @@ import { FabrikScreen } from './FabrikScreen';
 import { TradeScreen } from './TradeScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { generateStationName, innerCoord } from '@void-sector/shared';
-import { btn, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn } from '../ui-helpers';
 
 type TerminalProgram = 'fabrik' | 'handel' | 'quests';
 
@@ -19,6 +20,7 @@ const dimGreen = 'rgba(0,255,136,0.4)';
 const bg = '#050505';
 
 export function StationTerminalOverlay() {
+  const { t } = useTranslation('ui');
   const closeStationTerminal = useStore((s) => s.closeStationTerminal);
   const setStationProductionState = useStore((s) => s.setStationProductionState);
   const position = useStore((s) => s.position);
@@ -81,7 +83,7 @@ export function StationTerminalOverlay() {
             letterSpacing: '0.1em',
           }}
         >
-          {btn(UI.actions.UNDOCK)}
+          {btn(t('actions.undock'))}
         </button>
       </div>
 

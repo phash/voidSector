@@ -46,6 +46,21 @@ describe('mining engine', () => {
     expect(calculateMinedAmount(state, 50)).toBe(0);
   });
 
+  it('createMiningState has mineAll false by default', () => {
+    const state = createMiningState();
+    expect(state.mineAll).toBe(false);
+  });
+
+  it('startMining sets mineAll from parameter', () => {
+    const state = startMining('ore', 3, 5, 20, Date.now(), true);
+    expect(state.mineAll).toBe(true);
+  });
+
+  it('startMining defaults mineAll to false', () => {
+    const state = startMining('ore', 3, 5, 20);
+    expect(state.mineAll).toBe(false);
+  });
+
   it('stopMining returns mined amount and resets state', () => {
     const now = Date.now();
     const state = startMining('ore', 0, 0, 20, now - 10_000);

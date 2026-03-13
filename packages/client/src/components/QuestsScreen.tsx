@@ -5,7 +5,8 @@ import { innerCoord } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc, SectorData } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
 import { findNearestStation } from '../utils/sectorUtils';
-import { btn, btnDisabled, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn, btnDisabled } from '../ui-helpers';
 import { useConfirm } from '../hooks/useConfirm';
 
 const MAX_TRACKED = 5;
@@ -25,7 +26,61 @@ const QUEST_TYPE_LABELS: Record<string, string> = {
   war_support: 'WAR',
 };
 
+function getQuestTypeLabel(templateId: string): string {
+  const id = templateId ?? '';
+  // Check for known quest-type keywords anywhere in templateId
+  // (bounty templateIds start with faction: "pirates_bounty_chase")
+  if (id.includes('bounty')) return 'BOUNTY';
+  if (id.includes('diplomacy')) return 'DIPLOMACY';
+  if (id.includes('war_support')) return 'WAR';
+  // Fall back to first segment lookup
+  const first = id.split('_')[0];
+  return QUEST_TYPE_LABELS[first] || first.toUpperCase();
+}
+
+function questTypeBadge(templateId: string, color: string) {
+  const label = getQuestTypeLabel(templateId);
+  if (!label) return null;
+  return (
+    <span
+      style={{
+        color: `${color}80`,
+        fontSize: '0.5rem',
+        border: `1px solid ${color}40`,
+        padding: '0 3px',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function collapsedObjectiveSummary(
+  objectives: Array<{ type: string; description: string; resource?: string; amount?: number; progress?: number; fulfilled: boolean; targetX?: number; targetY?: number; currentHint?: string }>,
+): { text: string; done: boolean } | null {
+  const allDone = objectives.every((o) => o.fulfilled);
+  if (allDone) return { text: 'Alle Ziele erfüllt — Abgabe an Station', done: true };
+
+  const next = objectives.find((o) => !o.fulfilled);
+  if (!next) return null;
+
+  const parts: string[] = [];
+  if ((next.type === 'fetch' || next.type === 'delivery') && next.resource && next.amount != null) {
+    parts.push(`${next.resource.toUpperCase()} [${next.progress ?? 0}/${next.amount}]`);
+  } else if (next.type === 'bounty_trail' && next.currentHint) {
+    parts.push(next.currentHint);
+  } else {
+    parts.push(next.description);
+  }
+  if (next.targetX != null && next.targetY != null) {
+    parts.push(`→ (${innerCoord(next.targetX)}, ${innerCoord(next.targetY)})`);
+  }
+  return { text: `› ${parts.join(' | ')}`, done: false };
+}
+
 function JournalTab() {
+  const { t } = useTranslation('ui');
   const activeQuests = useStore((s) => s.activeQuests);
   const trackedQuests = useStore((s) => s.trackedQuests);
   const position = useStore((s) => s.position);
@@ -98,13 +153,13 @@ function JournalTab() {
               background: filterNearby ? '#FFB000' : '#1a1a1a',
               color: filterNearby ? '#000' : '#FFB000',
               border: '1px solid #FFB000',
-              padding: '1px 5px',
+              padding: '3px 6px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '0.65rem',
+              fontSize: '0.75rem',
             }}
           >
-            {filterNearby ? `[✓] ${UI.status.NEARBY}` : `[ ] ${UI.status.NEARBY}`}
+            {filterNearby ? `[✓] ${t('status.nearby')}` : `[ ] ${t('status.nearby')}`}
           </button>
           {filterNearby && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -121,8 +176,8 @@ function JournalTab() {
                   color: '#FFB000',
                   border: '1px solid rgba(255,176,0,0.4)',
                   fontFamily: 'inherit',
-                  fontSize: '0.65rem',
-                  padding: '1px 3px',
+                  fontSize: '0.75rem',
+                  padding: '3px 6px',
                 }}
               />
             </div>
@@ -138,11 +193,11 @@ function JournalTab() {
                 color: '#FFB000',
                 border: '1px solid rgba(255,176,0,0.4)',
                 fontFamily: 'inherit',
-                fontSize: '0.65rem',
-                padding: '1px 3px',
+                fontSize: '0.75rem',
+                padding: '3px 6px',
               }}
             >
-              <option value="">{UI.status.ALL_FACTIONS}</option>
+              <option value="">{t('status.allFactions')}</option>
               {factionIds.map((f) => (
                 <option key={f} value={f}>
                   {f.toUpperCase()}
@@ -159,11 +214,11 @@ function JournalTab() {
                 color: '#FFB000',
                 border: '1px solid rgba(255,176,0,0.4)',
                 fontFamily: 'inherit',
-                fontSize: '0.65rem',
-                padding: '1px 3px',
+                fontSize: '0.75rem',
+                padding: '3px 6px',
               }}
             >
-              <option value="">{UI.status.ALL_TYPES}</option>
+              <option value="">{t('status.allTypes')}</option>
               {questTypes.map((t) => (
                 <option key={t} value={t}>
                   {QUEST_TYPE_LABELS[t] ?? t.toUpperCase()}
@@ -183,13 +238,13 @@ function JournalTab() {
           letterSpacing: '0.05em',
         }}
       >
-        {UI.status.TRACKED}: {trackedQuests.length}/{MAX_TRACKED}
+        {t('status.tracked')}: {trackedQuests.length}/{MAX_TRACKED}
       </div>
 
       {/* Quest list */}
       {filtered.length === 0 && (
-        <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
-          {UI.empty.NO_QUESTS_FILTERED}
+        <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
+          {t('empty.noQuestsFiltered')}
         </div>
       )}
       {filtered.map((q) => {
@@ -240,7 +295,7 @@ function JournalTab() {
             <div
               style={{ color: 'rgba(255,176,0,0.45)', fontSize: '0.6rem', marginTop: 2 }}
             >
-              {doneCount}/{q.objectives.length} {UI.status.OBJECTIVES}
+              {doneCount}/{q.objectives.length} {t('status.objectives')}
               {q.npcFactionId && (
                 <span style={{ marginLeft: 6, opacity: 0.7 }}>
                   [{(q.npcFactionId as string).toUpperCase()}]
@@ -262,7 +317,7 @@ function StoryTab() {
   }, []);
 
   if (!progress) {
-    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>{UI.status.LOADING}</div>;
+    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>{t('status.loading')}</div>;
   }
 
   return (
@@ -388,6 +443,7 @@ function AlienRepTab() {
 }
 
 function CommunityTab() {
+  const { t } = useTranslation('ui');
   const quest = useStore((s) => s.activeCommunityQuest);
 
   useEffect(() => {
@@ -397,7 +453,7 @@ function CommunityTab() {
   if (!quest) {
     return (
       <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>
-        {UI.empty.NO_COMMUNITY_QUEST}
+        {t('empty.noCommunityQuest')}
       </div>
     );
   }
@@ -415,7 +471,7 @@ function CommunityTab() {
           color: 'var(--color-dim)',
           marginBottom: 12,
           lineHeight: 1.5,
-          fontSize: '0.65rem',
+          fontSize: '0.75rem',
         }}
       >
         {quest.description}
@@ -426,10 +482,10 @@ function CommunityTab() {
             display: 'flex',
             justifyContent: 'space-between',
             marginBottom: 4,
-            fontSize: '0.65rem',
+            fontSize: '0.75rem',
           }}
         >
-          <span style={{ color: 'var(--color-dim)' }}>{UI.status.PROGRESS}</span>
+          <span style={{ color: 'var(--color-dim)' }}>{t('status.progress')}</span>
           <span style={{ color: 'var(--color-primary)' }}>
             {(quest.currentCount ?? 0).toLocaleString()} / {(quest.targetCount ?? 0).toLocaleString()}
           </span>
@@ -438,12 +494,33 @@ function CommunityTab() {
           <div style={{ height: '100%', width: `${pct}%`, background: 'var(--color-primary)' }} />
         </div>
       </div>
-      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{UI.status.DEADLINE}: {deadline}</div>
+      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{t('status.deadline')}: {deadline}</div>
     </div>
   );
 }
 
+// Helper: Calculate which items will be jettisoned on quest abandon
+function getJettisonItems(objectives: any[]): string[] {
+  const items: string[] = [];
+
+  // Bounty: prisoner if combat objective was fulfilled
+  const combatObj = objectives?.find((o: any) => o.type === 'bounty_combat');
+  if (combatObj?.fulfilled) {
+    items.push('prisoner');
+  }
+
+  // Scan: data_slate if scan is done but not yet delivered
+  const scanDone = objectives?.some((o: any) => o.type === 'scan' && o.fulfilled);
+  const deliverDone = objectives?.some((o: any) => o.type === 'scan_deliver' && o.fulfilled);
+  if (scanDone && !deliverDone) {
+    items.push('data_slate');
+  }
+
+  return items;
+}
+
 export function QuestsScreen() {
+  const { t } = useTranslation('ui');
   const activeQuests = useStore((s) => s.activeQuests);
   const reputations = useStore((s) => s.reputations);
   const playerUpgrades = useStore((s) => s.playerUpgrades);
@@ -456,7 +533,8 @@ export function QuestsScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
-  const { confirm, isArmed } = useConfirm();
+  const setSelectedQuest = useStore((s) => s.setSelectedQuest);
+  const { confirm, isArmed, disarm } = useConfirm(null);
 
   const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'reputation' | 'story'>('auftraege');
   const [subFilter, setSubFilter] = useState<'all' | 'rescue'>('all');
@@ -479,6 +557,12 @@ export function QuestsScreen() {
     return () => window.removeEventListener('stationNpcsResult', handler);
   }, []);
 
+  // Filter out accepted quests from availableQuests when activeQuests changes
+  useEffect(() => {
+    const acceptedIds = new Set(activeQuests.map((q) => q.templateId).filter(Boolean));
+    setAvailableQuests((prev) => prev.filter((q) => !acceptedIds.has(q.templateId)));
+  }, [activeQuests]);
+
   const isAtStation = currentSector?.type === 'station';
 
   const tierColors: Record<string, string> = {
@@ -490,14 +574,14 @@ export function QuestsScreen() {
   };
 
   const tabLabels: Record<string, string> = {
-    auftraege: 'AUFTRÄGE',
-    verfuegbar: 'VERFÜGBAR',
-    reputation: 'REPUTATION',
-    story: 'STORY',
+    auftraege: t('tabs.active'),
+    verfuegbar: t('tabs.available'),
+    reputation: t('tabs.reputation'),
+    story: t('tabs.story'),
   };
 
   return (
-    <div style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
+    <div style={{ padding: '8px', fontFamily: 'monospace', fontSize: '0.6rem' }}>
       {navReturnProgram && (
         <button
           className="vs-btn"
@@ -579,7 +663,7 @@ export function QuestsScreen() {
                 ─── JOURNAL ({activeQuests.length}/3) ───
               </div>
               {activeQuests.length === 0 && (
-                <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
+                <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
                   KEINE AKTIVEN AUFTRÄGE
                 </div>
               )}
@@ -597,9 +681,9 @@ export function QuestsScreen() {
                       overflow: 'hidden',
                     }}
                   >
-                    {/* Header row — click to expand */}
+                    {/* Header row — click to expand and select for Sec 3 detail */}
                     <div
-                      onClick={() => setExpandedQuestId(isExpanded ? null : q.id)}
+                      onClick={() => { setExpandedQuestId(isExpanded ? null : q.id); setSelectedQuest(isExpanded ? null : q.id); }}
                       style={{
                         padding: '4px 6px',
                         cursor: 'pointer',
@@ -613,13 +697,32 @@ export function QuestsScreen() {
                         {allDone ? '[✓] ' : `[${doneCount}/${q.objectives.length}] `}
                         {q.title}
                         {hasTarget && (
-                          <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '9px' }}> ◎</span>
+                          <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '0.5rem' }}> ◎</span>
                         )}
                       </span>
-                      <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '9px' }}>
-                        {isExpanded ? '▲' : '▼'}
+                      <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {questTypeBadge(q.templateId, allDone ? '#00FF88' : '#FFB000')}
+                        <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.5rem' }}>
+                          {isExpanded ? '▲' : '▼'}
+                        </span>
                       </span>
                     </div>
+
+                    {!isExpanded && (() => {
+                      const summary = collapsedObjectiveSummary(q.objectives);
+                      if (!summary) return null;
+                      return (
+                        <div
+                          style={{
+                            padding: '0 8px 5px 20px',
+                            color: summary.done ? 'rgba(0,255,136,0.4)' : 'rgba(255,176,0,0.4)',
+                            fontSize: '0.5rem',
+                          }}
+                        >
+                          {summary.text}
+                        </div>
+                      );
+                    })()}
 
                     {/* Expanded journal entry */}
                     {isExpanded && (
@@ -629,7 +732,7 @@ export function QuestsScreen() {
                         <div
                           style={{
                             color: 'rgba(255,176,0,0.6)',
-                            fontSize: '10px',
+                            fontSize: '0.55rem',
                             marginBottom: '4px',
                           }}
                         >
@@ -641,16 +744,29 @@ export function QuestsScreen() {
                             style={{
                               color: obj.fulfilled ? '#00FF88' : 'rgba(255,176,0,0.7)',
                               paddingLeft: '6px',
-                              fontSize: '10px',
+                              fontSize: '0.55rem',
                               marginBottom: '2px',
                             }}
                           >
                             {obj.fulfilled ? '[x]' : '[ ]'} {obj.description}
-                            {obj.amount != null && obj.progress != null && (
+                            {/* fetch/delivery: resource progress */}
+                            {(obj.type === 'fetch' || obj.type === 'delivery') && obj.resource && obj.amount != null && (
+                              <span style={{ color: 'rgba(255,176,0,0.5)' }}>
+                                {' '}— {obj.resource.toUpperCase()} [{obj.progress ?? 0}/{obj.amount}]
+                              </span>
+                            )}
+                            {/* generic amount progress */}
+                            {obj.type !== 'fetch' && obj.type !== 'delivery' && obj.amount != null && obj.progress != null && (
                               <span style={{ color: 'rgba(255,176,0,0.4)' }}>
                                 {' '}
                                 ({obj.progress}/{obj.amount})
                               </span>
+                            )}
+                            {/* bounty trail hint */}
+                            {obj.type === 'bounty_trail' && !obj.fulfilled && obj.currentHint && (
+                              <div style={{ color: 'rgba(255,176,0,0.4)', paddingLeft: '12px', fontSize: '0.5rem' }}>
+                                ↳ {obj.currentHint}
+                              </div>
                             )}
                             {obj.targetX != null && obj.targetY != null && !obj.fulfilled && (
                               <span style={{ color: 'rgba(255,176,0,0.4)' }}>
@@ -663,7 +779,7 @@ export function QuestsScreen() {
                         <div
                           style={{
                             color: 'rgba(255,176,0,0.4)',
-                            fontSize: '9px',
+                            fontSize: '0.5rem',
                             marginTop: '4px',
                           }}
                         >
@@ -675,9 +791,17 @@ export function QuestsScreen() {
                           onClick={() => confirm(`abandon-${q.id}`, () => network.sendAbandonQuest(q.id))}
                           style={isArmed(`abandon-${q.id}`) ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
                         >
-                          {isArmed(`abandon-${q.id}`)
-                            ? btnDisabled(UI.actions.ABANDON, 'SURE?')
-                            : btn(UI.actions.ABANDON)}
+                          {isArmed(`abandon-${q.id}`) ? (
+                            (() => {
+                              const jettison = getJettisonItems(q.objectives);
+                              const jettisonText = jettison.length > 0
+                                ? `JETTISON: ${jettison.join(', ')}`
+                                : 'SURE?';
+                              return btnDisabled(t('actions.abandon'), jettisonText);
+                            })()
+                          ) : (
+                            btn(t('actions.abandon'))
+                          )}
                         </button>
                       </div>
                     )}
@@ -717,7 +841,7 @@ export function QuestsScreen() {
                         <div style={{ color: '#FF3333' }}>DISTRESS SIGNAL</div>
                         <div>RICHTUNG: {call.direction}</div>
                         <div>ENTFERNUNG: ~{call.estimatedDistance} SEKTOREN</div>
-                        <div style={{ fontSize: '10px', opacity: 0.5 }}>
+                        <div style={{ fontSize: '0.55rem', opacity: 0.5 }}>
                           Verfällt in {minutesLeft} min
                         </div>
                       </div>
@@ -744,12 +868,12 @@ export function QuestsScreen() {
                       }}
                     >
                       <div>{s.survivorCount} Überlebende</div>
-                      <div style={{ fontSize: '10px', opacity: 0.5 }}>
+                      <div style={{ fontSize: '0.55rem', opacity: 0.5 }}>
                         Geborgen bei ({innerCoord(s.sectorX)}, {innerCoord(s.sectorY)})
                       </div>
                     </div>
                   ))}
-                  <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px' }}>
+                  <div style={{ fontSize: '0.55rem', opacity: 0.6, marginTop: '4px' }}>
                     An einer Station abliefern für Belohnung
                   </div>
                 </div>
@@ -771,11 +895,14 @@ export function QuestsScreen() {
                 <div>NO QUESTS AVAILABLE</div>
                 <div style={{ fontSize: '0.7rem' }}>Dock at a station to find missions.</div>
                 {nearest && <div style={{ fontSize: '0.7rem' }}>Nearest: ({nearest.x}, {nearest.y})</div>}
+                <div style={{ fontSize: '0.6rem', color: '#888', marginTop: '6px', textAlign: 'center' }}>
+                  Different factions appear at<br />different stations. Navigate to<br />discover PIRATES, TRADERS, etc.
+                </div>
               </div>
             );
           })()}
           {isAtStation && stationNpcs.length === 0 && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>{UI.status.LOADING}</div>
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>{t('status.loading')}</div>
           )}
           {stationNpcs.map((npc) => (
             <div key={npc.id} style={{ color: '#00FF88', marginBottom: '2px' }}>
@@ -787,39 +914,99 @@ export function QuestsScreen() {
               <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>
                 AVAILABLE QUESTS:
               </div>
-              {availableQuests.map((q) => (
-                <div
-                  key={q.templateId}
-                  style={{
-                    border: '1px solid rgba(255,176,0,0.3)',
-                    padding: '4px',
-                    marginBottom: '4px',
-                  }}
-                >
-                  <div style={{ color: '#FFB000' }}>{q.title}</div>
-                  <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
-                    {q.description}
-                  </div>
-                  <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '10px' }}>
-                    +{q.rewards.credits} CR | +{q.rewards.xp} XP | +{q.rewards.reputation} REP
-                  </div>
-                  <button
-                    onClick={() => network.sendAcceptQuest(q.templateId, position.x, position.y)}
+              {availableQuests.map((q, idx) => {
+                const armKey = `accept-${idx}-${q.templateId}`;
+                const armed = isArmed(armKey);
+                return (
+                  <div
+                    key={`${idx}-${q.templateId}`}
                     style={{
-                      background: '#1a1a1a',
-                      color: '#00FF88',
-                      border: '1px solid #00FF88',
-                      padding: '1px 4px',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      fontSize: '10px',
-                      marginTop: '2px',
+                      border: `1px solid ${armed ? 'rgba(0,255,136,0.6)' : 'rgba(255,176,0,0.3)'}`,
+                      padding: '4px',
+                      marginBottom: '4px',
+                      background: armed ? 'rgba(0,255,136,0.05)' : 'transparent',
                     }}
                   >
-                    {btn(UI.actions.ACCEPT)}
-                  </button>
-                </div>
-              ))}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#FFB000' }}>{q.title}</span>
+                      {questTypeBadge(q.templateId, armed ? '#00FF88' : '#FFB000')}
+                    </div>
+                    <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
+                      {q.description}
+                    </div>
+                    {/* Confirmation preview: structured objectives + rewards */}
+                    {armed && (
+                      <div style={{ marginTop: '4px', borderTop: '1px solid rgba(0,255,136,0.2)', paddingTop: '4px' }}>
+                        <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginBottom: '3px' }}>
+                          ZIELE
+                        </div>
+                        {q.objectives?.map((obj, i) => (
+                          <div key={i} style={{ color: 'rgba(0,255,136,0.7)', fontSize: '0.5rem', paddingLeft: '6px' }}>
+                            › {obj.description}
+                            {obj.amount != null && ` (${obj.amount})`}
+                          </div>
+                        ))}
+                        <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginTop: '6px', marginBottom: '3px' }}>
+                          BELOHNUNG
+                        </div>
+                        <div style={{ color: '#00FF88', fontSize: '0.5rem', paddingLeft: '6px' }}>
+                          +{q.rewards.credits} CR | +{q.rewards.xp} XP
+                          {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
+                        </div>
+                      </div>
+                    )}
+                    {armed ? (
+                      <div style={{ marginTop: '6px', display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => { disarm(); network.sendAcceptQuest(q.templateId, position.x, position.y); }}
+                          style={{
+                            background: 'rgba(0,255,136,0.15)',
+                            color: '#00FF88',
+                            border: '1px solid #00FF88',
+                            padding: '3px 6px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.55rem',
+                            flex: 1,
+                          }}
+                        >
+                          [ANNEHMEN]
+                        </button>
+                        <button
+                          onClick={() => disarm()}
+                          style={{
+                            background: 'transparent',
+                            color: 'rgba(255,176,0,0.5)',
+                            border: '1px solid rgba(255,176,0,0.3)',
+                            padding: '3px 6px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.55rem',
+                          }}
+                        >
+                          [ABBRECHEN]
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => confirm(armKey, () => network.sendAcceptQuest(q.templateId, position.x, position.y))}
+                        style={{
+                          background: '#1a1a1a',
+                          color: '#00FF88',
+                          border: '1px solid rgba(0,255,136,0.5)',
+                          padding: '3px 6px',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: '0.55rem',
+                          marginTop: '2px',
+                        }}
+                      >
+                        {btn(t('actions.accept'))}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </>
           )}
           {isAtStation && stationNpcs.length > 0 && availableQuests.length === 0 && (
@@ -869,7 +1056,7 @@ export function QuestsScreen() {
                     }}
                   >
                     <div style={{ color: '#FF00FF' }}>{typeLabels[e.eventType] ?? e.eventType}</div>
-                    <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
+                    <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                       Sektor ({innerCoord(e.sectorX)}, {innerCoord(e.sectorY)})
                     </div>
                     <button
@@ -878,10 +1065,10 @@ export function QuestsScreen() {
                         background: '#1a1a1a',
                         color: '#00FF88',
                         border: '1px solid #00FF88',
-                        padding: '1px 4px',
+                        padding: '3px 6px',
                         cursor: 'pointer',
                         fontFamily: 'inherit',
-                        fontSize: '10px',
+                        fontSize: '0.55rem',
                         marginTop: '2px',
                       }}
                     >
@@ -920,7 +1107,7 @@ export function QuestsScreen() {
                     }}
                   />
                 </div>
-                <span style={{ color: 'rgba(255,176,0,0.6)', fontSize: '10px' }}>
+                <span style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                   {r.reputation}
                 </span>
               </div>

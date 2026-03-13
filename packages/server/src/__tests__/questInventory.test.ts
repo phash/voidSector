@@ -23,9 +23,6 @@ vi.mock('../engine/inventoryService.js', () => ({
 
 // --- Mock DB queries ---
 vi.mock('../db/queries.js', () => ({
-  // Legacy cargo fns — should NOT be called after migration
-  getPlayerCargo: vi.fn(),
-  deductCargo: vi.fn(),
   // Other queries QuestService needs
   getPlayerReputations: vi.fn().mockResolvedValue([]),
   getPlayerReputation: vi.fn().mockResolvedValue(0),
@@ -68,7 +65,7 @@ vi.mock('../engine/commands.js', () => ({
 }));
 
 import { QuestService } from '../rooms/services/QuestService.js';
-import { getPlayerCargo, deductCargo, getAcceptedQuestTemplateIds } from '../db/queries.js';
+import { getAcceptedQuestTemplateIds } from '../db/queries.js';
 import { getCargoState, removeFromInventory } from '../engine/inventoryService.js';
 import { generateStationQuests } from '../engine/questgen.js';
 
@@ -137,7 +134,6 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
     await svc.checkQuestProgress(client, 'user-123', 'arrive', { sectorX: 5, sectorY: 10 });
 
     expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(getPlayerCargo).not.toHaveBeenCalled();
   });
 
   it('uses removeFromInventory (not deductCargo) when deducting fetch resources', async () => {
@@ -162,7 +158,6 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
     await svc.checkQuestProgress(client, 'user-123', 'arrive', { sectorX: 5, sectorY: 10 });
 
     expect(removeFromInventory).toHaveBeenCalledWith('user-123', 'resource', 'ore', 5);
-    expect(deductCargo).not.toHaveBeenCalled();
   });
 
   it('sends cargoUpdate using getCargoState (not getPlayerCargo) after quest completion', async () => {
@@ -185,8 +180,6 @@ describe('QuestService.checkQuestProgress fetch quest — inventory migration', 
 
     // ctx.send is used in QuestService (not client.send)
     expect(ctx.send).toHaveBeenCalledWith(client, 'cargoUpdate', afterCargo);
-    expect(getPlayerCargo).not.toHaveBeenCalled();
-    expect(deductCargo).not.toHaveBeenCalled();
   });
 });
 

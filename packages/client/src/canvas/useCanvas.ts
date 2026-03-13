@@ -12,7 +12,7 @@ export function useCanvas(draw: DrawFn) {
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.floor(rect.width * dpr);
     canvas.height = Math.floor(rect.height * dpr);
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx?.scale(dpr, dpr);
   }, []);
 
@@ -28,14 +28,20 @@ export function useCanvas(draw: DrawFn) {
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
 
     let frameId: number;
     const render = () => {
       try {
+        // Get fresh context on every frame to avoid stale context errors
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return;
         draw(ctx);
       } catch (e) {
+        // Silently handle InvalidStateError and other transient errors
+        if (e instanceof Error && e.name === 'InvalidStateError') {
+          // Canvas context was invalidated, will recover on next frame
+          return;
+        }
         console.error('[radar] render exception:', e);
       }
       frameId = requestAnimationFrame(render);

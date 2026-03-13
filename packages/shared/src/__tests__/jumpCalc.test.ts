@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calcHyperjumpAP, calcHyperjumpFuel, getEngineSpeed } from '../jumpCalc.js';
 import { calculateShipStats } from '../shipCalculator.js';
-import { ENGINE_SPEED, HULLS } from '../constants.js';
+import { ENGINE_SPEED } from '../constants.js';
 
 describe('calcHyperjumpAP', () => {
   it('returns 5 AP at engine speed 1', () => {
@@ -91,51 +91,24 @@ describe('ENGINE_SPEED mapping', () => {
   });
 });
 
-describe('hull baseEngineSpeed values', () => {
-  it('scout has baseEngineSpeed 2', () => {
-    expect(HULLS.scout.baseEngineSpeed).toBe(2);
-  });
-
-  it('freighter has baseEngineSpeed 1', () => {
-    expect(HULLS.freighter.baseEngineSpeed).toBe(1);
-  });
-
-  it('cruiser has baseEngineSpeed 2', () => {
-    expect(HULLS.cruiser.baseEngineSpeed).toBe(2);
-  });
-
-  it('explorer has baseEngineSpeed 2', () => {
-    expect(HULLS.explorer.baseEngineSpeed).toBe(2);
-  });
-
-  it('battleship has baseEngineSpeed 1', () => {
-    expect(HULLS.battleship.baseEngineSpeed).toBe(1);
-  });
-});
-
 describe('calculateShipStats with engineSpeed', () => {
-  it('includes base engineSpeed for scout', () => {
-    const stats = calculateShipStats('scout', []);
+  it('includes BASE_ENGINE_SPEED with no modules', () => {
+    const stats = calculateShipStats([]);
     expect(stats.engineSpeed).toBe(2);
   });
 
   it('adds module engineSpeed bonus', () => {
-    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk2', slotIndex: 0 }]);
-    // scout base 2 + drive_mk2 engineSpeed 2 = 4
+    const stats = calculateShipStats([{ moduleId: 'drive_mk2', slotIndex: 0 }]);
+    // BASE_ENGINE_SPEED 2 + drive_mk2 engineSpeed 2 = 4
     expect(stats.engineSpeed).toBe(4);
   });
 
   it('clamps engineSpeed to max 5', () => {
-    const stats = calculateShipStats('scout', [
+    const stats = calculateShipStats([
       { moduleId: 'drive_mk3', slotIndex: 0 },
       { moduleId: 'drive_mk3', slotIndex: 1 },
     ]);
-    // scout base 2 + 3 + 3 = 8, clamped to 5
+    // BASE_ENGINE_SPEED 2 + 3 + 3 = 8, clamped to 5
     expect(stats.engineSpeed).toBe(5);
-  });
-
-  it('freighter with no modules has engineSpeed 1', () => {
-    const stats = calculateShipStats('freighter', []);
-    expect(stats.engineSpeed).toBe(1);
   });
 });

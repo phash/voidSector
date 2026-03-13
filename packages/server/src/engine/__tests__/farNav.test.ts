@@ -4,43 +4,38 @@ import {
   AUTOPILOT_STEP_MS,
   STALENESS_DIM_HOURS,
   STALENESS_FADE_DAYS,
-  SHIP_CLASSES,
 } from '@void-sector/shared';
 
 describe('Hyperjump Navigation', () => {
-  const scout = SHIP_CLASSES.aegis_scout_mk1;
-  const seeker = SHIP_CLASSES.void_seeker_mk2;
+  // Hardcoded values (all ships share same base values after hull removal)
+  const baseApPerJump = 1;
+  const baseFuelPerJump = 100;
 
   describe('cost calculations', () => {
-    it('calculates AP cost with discount for scout', () => {
+    it('calculates AP cost with discount', () => {
       const distance = 10;
-      const apCost = Math.ceil(distance * scout.apCostJump * HYPERJUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * baseApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(5);
     });
 
-    it('calculates AP cost with discount for seeker', () => {
+    it('calculates AP cost with higher base AP', () => {
       const distance = 7;
-      const apCost = Math.ceil(distance * seeker.apCostJump * HYPERJUMP_AP_DISCOUNT);
+      const higherApPerJump = 2;
+      const apCost = Math.ceil(distance * higherApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(7);
     });
 
     it('applies ceil to non-integer AP costs', () => {
       const distance = 3;
       // 3 * 1 * 0.5 = 1.5 -> ceil = 2
-      const apCost = Math.ceil(distance * scout.apCostJump * HYPERJUMP_AP_DISCOUNT);
+      const apCost = Math.ceil(distance * baseApPerJump * HYPERJUMP_AP_DISCOUNT);
       expect(apCost).toBe(2);
     });
 
-    it('calculates fuel cost for scout', () => {
+    it('calculates fuel cost', () => {
       const distance = 10;
-      const fuelCost = distance * scout.fuelPerJump;
-      expect(fuelCost).toBe(50);
-    });
-
-    it('calculates fuel cost for seeker', () => {
-      const distance = 10;
-      const fuelCost = distance * seeker.fuelPerJump;
-      expect(fuelCost).toBe(30);
+      const fuelCost = distance * baseFuelPerJump;
+      expect(fuelCost).toBe(1000); // 10 * 100
     });
   });
 

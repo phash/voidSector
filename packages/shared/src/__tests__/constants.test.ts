@@ -3,7 +3,6 @@ import {
   SECTOR_RESOURCE_YIELDS,
   SECTOR_TYPES,
   RESOURCE_TYPES,
-  SECTOR_WEIGHTS,
   AP_COSTS,
   AP_DEFAULTS,
   STRUCTURE_COSTS,
@@ -16,17 +15,6 @@ import {
 } from '../constants';
 
 describe('constants', () => {
-  it('sector weights sum to 1', () => {
-    const sum = Object.values(SECTOR_WEIGHTS).reduce((a, b) => a + b, 0);
-    expect(sum).toBeCloseTo(1.0);
-  });
-
-  it('every sector type has a weight', () => {
-    for (const type of SECTOR_TYPES) {
-      expect(SECTOR_WEIGHTS[type]).toBeDefined();
-    }
-  });
-
   it('AP defaults are sane', () => {
     expect(AP_DEFAULTS.max).toBeGreaterThan(0);
     expect(AP_DEFAULTS.regenPerSecond).toBeGreaterThan(0);
@@ -142,5 +130,19 @@ describe('constants', () => {
         }
       }
     });
+  });
+});
+
+import { MONITORS, COCKPIT_PROGRAMS, COCKPIT_PROGRAM_LABELS } from '../constants.js';
+
+describe('ACEP constants', () => {
+  it('MONITORS.ACEP exists', () => {
+    expect(MONITORS.ACEP).toBe('ACEP');
+  });
+  it('ACEP is in COCKPIT_PROGRAMS', () => {
+    expect(COCKPIT_PROGRAMS).toContain('ACEP');
+  });
+  it('COCKPIT_PROGRAM_LABELS has ACEP entry', () => {
+    expect(COCKPIT_PROGRAM_LABELS['ACEP']).toBe('ACEP');
   });
 });

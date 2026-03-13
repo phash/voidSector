@@ -45,14 +45,14 @@ export function BlueprintDialog() {
           padding: '16px',
           maxWidth: '380px',
           fontFamily: 'monospace',
-          fontSize: '12px',
+          fontSize: '0.65rem',
         }}
       >
         <div
           id="blueprint-title"
           style={{
             color: '#00BFFF',
-            fontSize: '14px',
+            fontSize: '0.75rem',
             marginBottom: '8px',
             textAlign: 'center',
             letterSpacing: '0.15em',
@@ -61,7 +61,7 @@ export function BlueprintDialog() {
           BLAUPAUSE GEFUNDEN
         </div>
 
-        <div style={{ color: '#00BFFF', textAlign: 'center', fontSize: '16px', margin: '12px 0' }}>
+        <div style={{ color: '#00BFFF', textAlign: 'center', fontSize: '0.85rem', margin: '12px 0' }}>
           {mod.name}
         </div>
 
@@ -77,7 +77,7 @@ export function BlueprintDialog() {
         <div
           style={{
             color: 'rgba(255,176,0,0.5)',
-            fontSize: '10px',
+            fontSize: '0.55rem',
             textAlign: 'center',
             marginBottom: '12px',
           }}
@@ -95,7 +95,7 @@ export function BlueprintDialog() {
               padding: '6px 12px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '12px',
+              fontSize: '0.65rem',
             }}
           >
             [AKTIVIEREN]
@@ -109,7 +109,7 @@ export function BlueprintDialog() {
               padding: '6px 12px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '12px',
+              fontSize: '0.65rem',
             }}
           >
             [SCHLIESSEN]

@@ -5,9 +5,11 @@ import {
   MAX_TRADE_ROUTES,
   TRADE_ROUTE_MIN_CYCLE,
   TRADE_ROUTE_MAX_CYCLE,
+  getPhysicalCargoTotal,
 } from '@void-sector/shared';
 import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
-import { btn, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn } from '../ui-helpers';
 import { InlineError } from './InlineError';
 import { findNearestStation } from '../utils/sectorUtils';
 
@@ -16,12 +18,13 @@ const btnStyle: React.CSSProperties = {
   border: '1px solid var(--color-primary)',
   color: 'var(--color-primary)',
   fontFamily: 'var(--font-mono)',
-  fontSize: '0.65rem',
+  fontSize: '0.75rem',
   padding: '3px 8px',
   cursor: 'pointer',
 };
 
 export function TradeScreen() {
+  const { t } = useTranslation('ui');
   const credits = useStore((s) => s.credits);
   const storage = useStore((s) => s.storage);
   const baseStructures = useStore((s) => s.baseStructures);
@@ -34,10 +37,15 @@ export function TradeScreen() {
   const position = useStore((s) => s.position);
   const discoveries = useStore((s) => s.discoveries);
   const homeBase = useStore((s) => s.homeBase);
+  const ship = useStore((s) => s.ship);
+  const npcStationData = useStore((s) => s.npcStationData);
   const kontorOrders = useStore((s) => s.kontorOrders);
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
+  const openStationTerminal = useStore((s) => s.openStationTerminal);
+  const tradeMessage = useStore((s) => s.tradeMessage);
+  const setTradeMessage = useStore((s) => s.setTradeMessage);
   const [amount, setAmount] = useState(1);
   const [tab, setTab] = useState<'market' | 'slates' | 'routes' | 'kontor'>('market');
 
@@ -45,9 +53,14 @@ export function TradeScreen() {
   const tier = tradingPost?.tier ?? 0;
 
   const isStation = currentSector?.type === 'station';
-  const isHomeBase = position.x === homeBase.x && position.y === homeBase.y;
-  const canTrade = isStation || isHomeBase;
+  const hasBase = baseStructures.some((s: any) => s.type === 'trading_post' || s.type === 'base');
+  const canTrade = isStation || hasBase;
   const hasKontorOrders = kontorOrders.length > 0;
+
+  useEffect(() => {
+    // Clear stale trade message when screen opens
+    setTradeMessage(null);
+  }, []);
 
   useEffect(() => {
     network.requestCredits();
@@ -86,6 +99,10 @@ export function TradeScreen() {
     color: active ? '#050505' : 'var(--color-primary)',
   });
 
+  // At stations: cargo-based trading, NPC tab only
+  // At home base: storage-based trading, all tabs based on trading post tier
+  const cargoCap = ship?.stats?.cargoCap ?? 5;
+  const cargoTotal = getPhysicalCargoTotal(cargo);
 
   return (
     <div
@@ -114,9 +131,12 @@ export function TradeScreen() {
       </div>
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
+        <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>
+          NPC {t('tabs.trade')}
+        </button>
         {!isStation && tier >= 2 && (
           <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>
-            {UI.tabs.MARKET}
+            {t('tabs.market')}
           </button>
         )}
         {!isStation && tier >= 2 && (
@@ -126,18 +146,18 @@ export function TradeScreen() {
         )}
         {!isStation && tier >= 3 && (
           <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>
-            {UI.tabs.ROUTES}
+            {t('tabs.routes')}
           </button>
         )}
         {hasKontorOrders && (
           <button style={tabStyle(tab === 'kontor')} onClick={() => setTab('kontor')}>
-            {UI.programs.TRADING_POST}
+            {t('programs.tradingPost')}
           </button>
         )}
       </div>
 
       <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
-        <label>{UI.status.AMOUNT}: </label>
+        <label>{t('status.amount')}: </label>
         <input
           type="number"
           min={1}
@@ -153,6 +173,335 @@ export function TradeScreen() {
           }}
         />
       </div>
+      {tab === 'npc' && tradeMessage && (
+        <div style={{
+          color: '#FFB000',
+          background: 'rgba(255,176,0,0.08)',
+          border: '1px solid rgba(255,176,0,0.4)',
+          padding: '4px 8px',
+          fontSize: '0.8rem',
+          marginBottom: '8px',
+          fontFamily: 'monospace',
+        }}>
+          {tradeMessage}
+        </div>
+      )}
+
+      {tab === 'npc' && (
+        <div>
+          {isStation && npcStationData ? (
+            <>
+              <div
+                style={{
+                  borderBottom: '1px solid var(--color-dim)',
+                  paddingBottom: '4px',
+                  marginBottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                }}
+              >
+                <span>
+                  {npcStationData.name.toUpperCase()} LV.{npcStationData.level} — XP:{' '}
+                  {npcStationData.xp}/{npcStationData.nextLevelXp}
+                </span>
+                <button
+                  style={{
+                    ...btnStyle,
+                    fontSize: '0.65rem',
+                    borderColor: '#00FF88',
+                    color: '#00FF88',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={openStationTerminal}
+                >
+                  [ANDOCKEN]
+                </button>
+              </div>
+              <div style={{ fontSize: '0.6rem', opacity: 0.45, marginBottom: 6, letterSpacing: '0.05em' }}>
+                * Preise dynamisch (abhängig vom Lagerbestand)
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '0 12px',
+                }}
+              >
+                {/* Left column: Station inventory */}
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.6rem',
+                      opacity: 0.5,
+                      marginBottom: 6,
+                      letterSpacing: '0.1em',
+                    }}
+                  >
+                    STATION LISTING
+                  </div>
+                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
+                    {npcStationData.inventory.map((item) => {
+                      const filled =
+                        item.maxStock > 0 ? Math.round((item.stock / item.maxStock) * 10) : 0;
+                      const empty = 10 - filled;
+                      const stockBar = '\u2588'.repeat(filled) + '\u2591'.repeat(empty);
+                      const outOfStock = item.stock < amount;
+                      const buyTotal = item.buyPrice * amount;
+                      const sellTotal = item.sellPrice * amount;
+                      return (
+                        <div
+                          key={item.itemType}
+                          style={{
+                            marginBottom: 8,
+                            borderBottom: '1px solid rgba(255,176,0,0.1)',
+                            paddingBottom: 6,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.7rem',
+                              marginBottom: 2,
+                            }}
+                          >
+                            {item.itemType.toUpperCase()}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '0.6rem',
+                              opacity: 0.6,
+                              letterSpacing: '0.05em',
+                              marginBottom: 3,
+                            }}
+                          >
+                            <span>{stockBar}</span>{' '}
+                            <span>{item.stock}/{item.maxStock}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {outOfStock ? (
+                              <span style={{ ...btnStyle, opacity: 0.3, cursor: 'default' }}>
+                                [UNAVAILABLE]
+                              </span>
+                            ) : (
+                              <button
+                                style={{ ...btnStyle, fontSize: '0.6rem' }}
+                                onClick={() => network.sendNpcTrade(item.itemType, amount, 'buy')}
+                              >
+                                BUY ({buyTotal}CR)
+                              </button>
+                            )}
+                            <button
+                              style={{ ...btnStyle, fontSize: '0.6rem' }}
+                              onClick={() => network.sendNpcTrade(item.itemType, amount, 'sell')}
+                            >
+                              SELL ({sellTotal}CR)
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Right column: Player cargo */}
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.6rem',
+                      opacity: 0.5,
+                      marginBottom: 6,
+                      letterSpacing: '0.1em',
+                    }}
+                  >
+                    ON BOARD ({cargoTotal}/{cargoCap})
+                  </div>
+                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
+                    {npcStationData.inventory.map((item) => {
+                      // itemType is always a resource key for NPC station inventory items
+                      const playerAmount =
+                        cargo[item.itemType as 'ore' | 'gas' | 'crystal'] ?? 0;
+                      const stationCapacityRemaining = item.maxStock - item.stock;
+                      const effectiveMax = Math.min(playerAmount, stationCapacityRemaining);
+                      const allLabel =
+                        effectiveMax < playerAmount
+                          ? `ALL (${playerAmount} → max ${effectiveMax})`
+                          : `ALL (${playerAmount})`;
+                      return (
+                        <div
+                          key={item.itemType}
+                          style={{
+                            marginBottom: 8,
+                            borderBottom: '1px solid rgba(255,176,0,0.1)',
+                            paddingBottom: 6,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.7rem',
+                              marginBottom: 2,
+                            }}
+                          >
+                            {item.itemType.toUpperCase()}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '0.85rem',
+                              color: 'var(--color-primary)',
+                            }}
+                          >
+                            {playerAmount}
+                            <span style={{ opacity: 0.4, fontSize: '0.65rem' }}> Cargo</span>
+                          </div>
+                          {effectiveMax > 0 && (
+                            <button
+                              data-testid={`sell-all-${item.itemType}`}
+                              style={{ ...btnStyle, fontSize: '0.65rem', opacity: 0.8, marginTop: 3 }}
+                              onClick={() => network.sendNpcTrade(item.itemType, effectiveMax, 'sell')}
+                            >
+                              {allLabel}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  borderBottom: '1px solid var(--color-dim)',
+                  paddingBottom: '4px',
+                  marginBottom: '8px',
+                }}
+              >
+                NPC PRICES (BUY / SELL)
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '0 12px',
+                }}
+              >
+                {/* Left column: NPC station prices */}
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.6rem',
+                      opacity: 0.5,
+                      marginBottom: 6,
+                      letterSpacing: '0.1em',
+                    }}
+                  >
+                    STATION
+                  </div>
+                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
+                    {(['ore', 'gas', 'crystal'] as const).map((res) => {
+                      const buyPrice = Math.ceil(NPC_PRICES[res] * NPC_BUY_SPREAD * amount);
+                      const sellPrice = Math.floor(NPC_PRICES[res] * NPC_SELL_SPREAD * amount);
+                      const playerAmount = isStation ? cargo[res] : storage[res];
+                      return (
+                        <div
+                          key={res}
+                          style={{
+                            marginBottom: 8,
+                            borderBottom: '1px solid rgba(255,176,0,0.1)',
+                            paddingBottom: 6,
+                          }}
+                        >
+                          <div style={{ fontSize: '0.75rem', marginBottom: 3 }}>
+                            {res.toUpperCase()}
+                          </div>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            <button
+                              style={{ ...btnStyle, fontSize: '0.6rem' }}
+                              onClick={() => network.sendNpcTrade(res, amount, 'buy')}
+                            >
+                              B ({buyPrice}CR)
+                            </button>
+                            <button
+                              style={{ ...btnStyle, fontSize: '0.6rem' }}
+                              onClick={() => network.sendNpcTrade(res, amount, 'sell')}
+                            >
+                              S ({sellPrice}CR)
+                            </button>
+                            {playerAmount > 0 && (
+                              <button
+                                style={{ ...btnStyle, fontSize: '0.65rem', opacity: 0.8 }}
+                                onClick={() => network.sendNpcTrade(res, playerAmount, 'sell')}
+                              >
+                                ALL ({playerAmount})
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Right column: Player storage/cargo */}
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.6rem',
+                      opacity: 0.5,
+                      marginBottom: 6,
+                      letterSpacing: '0.1em',
+                    }}
+                  >
+                    STORAGE
+                  </div>
+                  <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
+                    {(['ore', 'gas', 'crystal'] as const).map((res) => {
+                      const playerAmount = isStation ? cargo[res] : storage[res];
+                      return (
+                        <div
+                          key={res}
+                          style={{
+                            marginBottom: 8,
+                            borderBottom: '1px solid rgba(255,176,0,0.1)',
+                            paddingBottom: 6,
+                          }}
+                        >
+                          <div style={{ fontSize: '0.75rem', marginBottom: 3 }}>
+                            {res.toUpperCase()}
+                          </div>
+                          <div
+                            style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}
+                          >
+                            {playerAmount}
+                            <span style={{ opacity: 0.4, fontSize: '0.65rem' }}>
+                              {' '}
+                              {isStation ? 'Cargo' : 'Lager'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              {isStation ? (
+                <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+                  CARGO: ORE {cargo.ore} | GAS {cargo.gas} | CRYSTAL {cargo.crystal} | ART{' '}
+                  {cargo.artefact} ({cargoTotal}/{cargoCap})
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.65rem', opacity: 0.4, marginTop: 8 }}>
+                  STORAGE: ORE {storage.ore} | GAS {storage.gas} | CRYSTAL {storage.crystal} | ART{' '}
+                  {storage.artefact}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {tab === 'market' && !isStation && tier >= 2 && (
         <div>
           <div
@@ -240,7 +589,7 @@ export function TradeScreen() {
                   />
                   <button
                     className="vs-btn"
-                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                    style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                     onClick={() => {
                       const input = document.getElementById(
                         `slate-price-${slate.id}`,
@@ -275,7 +624,7 @@ export function TradeScreen() {
                 </span>
                 <button
                   className="vs-btn"
-                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   disabled={order.playerId === playerId}
                   onClick={() => network.sendAcceptSlateOrder(order.id)}
                 >

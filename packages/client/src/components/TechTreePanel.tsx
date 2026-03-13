@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULES, isModuleFreelyAvailable } from '@void-sector/shared';
@@ -40,46 +41,27 @@ function groupModulesByCategory(): Record<string, ModuleDefinition[]> {
 function getModuleStatus(
   mod: ModuleDefinition,
   research: ResearchState,
-): 'free' | 'unlocked' | 'blueprint' | 'locked' | 'researching' {
-  if (research.activeResearch?.moduleId === mod.id) return 'researching';
+): 'free' | 'unlocked' | 'blueprint' | 'locked' {
   if (isModuleFreelyAvailable(mod.id)) return 'free';
   if (research.unlockedModules.includes(mod.id)) return 'unlocked';
   if (research.blueprints.includes(mod.id)) return 'blueprint';
   return 'locked';
 }
 
-function formatCountdown(ms: number): string {
-  if (ms <= 0) return 'DONE';
-  const totalSec = Math.ceil(ms / 1000);
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}m ${s}s`;
-}
-
 export function TechTreePanel() {
+  const { t } = useTranslation('ui');
   const research = useStore((s) => s.research);
   const wissen = research.wissen ?? 0;
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const setSelectedTechModule = useStore((s) => s.setSelectedTechModule);
   const pushBreadcrumb = useStore((s) => s.pushBreadcrumb);
 
-  const [now, setNow] = useState(Date.now());
-
   useEffect(() => {
     network.requestResearchState();
+    network.getTechTree();
   }, []);
 
-  useEffect(() => {
-    if (!research.activeResearch) return;
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, [research.activeResearch]);
-
   const grouped = groupModulesByCategory();
-  const activeResearch = research.activeResearch;
-  const activeMod = activeResearch ? MODULES[activeResearch.moduleId] : null;
-  const remaining = activeResearch ? activeResearch.completesAt - now : 0;
-  const isComplete = activeResearch ? remaining <= 0 : false;
 
   return (
     <div
@@ -105,39 +87,11 @@ export function TechTreePanel() {
           alignItems: 'baseline',
         }}
       >
-        <span>TECH TREE / RESEARCH</span>
+        <span>{t('tech.techTree')}</span>
         <span style={{ color: '#FFB000', fontSize: '0.6rem', letterSpacing: '0.08em' }}>
-          ◈ WISSEN: {wissen}
+          &#x25C8; {t('tech.wissen', { n: wissen })}
         </span>
       </div>
-
-      {/* Active Research */}
-      {activeResearch && activeMod && (
-        <div
-          style={{
-            border: '1px solid var(--color-primary)',
-            padding: '4px 6px',
-            marginBottom: 6,
-            cursor: 'pointer',
-          }}
-          onClick={() => { pushBreadcrumb({ label: activeMod.name, program: 'TECH' }); setSelectedTechModule(activeMod.id); }}
-        >
-          <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem', letterSpacing: '0.1em' }}>
-            ACTIVE RESEARCH
-          </div>
-          <div style={{ marginTop: 2 }}>
-            {activeMod.name}
-            <span style={{ color: 'var(--color-dim)', marginLeft: 4 }}>T{activeMod.tier}</span>
-          </div>
-          <div style={{ marginTop: 2, fontSize: '0.55rem' }}>
-            {isComplete ? (
-              <span style={{ color: '#00FF88' }}>COMPLETED</span>
-            ) : (
-              <span style={{ color: '#FFB000' }}>{formatCountdown(remaining)}</span>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Module groups by category — compact clickable list */}
       {CATEGORY_ORDER.map((cat) => {
@@ -189,7 +143,6 @@ export function TechTreePanel() {
                     {status === 'free' && <span style={{ color: '#00FF88' }}>FREE</span>}
                     {status === 'unlocked' && <span style={{ color: '#00FF88' }}>&#x2713;</span>}
                     {status === 'blueprint' && <span style={{ color: '#00BFFF' }}>BP</span>}
-                    {status === 'researching' && <span style={{ color: '#FFB000' }}>&#x21BB;</span>}
                     {status === 'locked' && (
                       <span style={{ color: 'var(--color-dim)' }}>&#x1F512;</span>
                     )}

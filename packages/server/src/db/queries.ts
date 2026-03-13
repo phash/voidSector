@@ -1,12 +1,8 @@
-import { query } from './client.js';
+import { query, withTransaction } from './client.js';
 import type {
   SectorData,
   PlayerData,
-  CargoState,
-  ResourceType,
-  ShipClass,
   Bookmark,
-  HullType,
   ShipModule,
   ShipRecord,
   JumpGateMapEntry,
@@ -16,34 +12,31 @@ import type {
 import {
   SPAWN_CLUSTER_MAX_PLAYERS,
   SPAWN_CLUSTER_RADIUS,
-  RESOURCE_REGEN_PER_MINUTE,
-  CRYSTAL_REGEN_PER_MINUTE,
-  RESOURCE_REGEN_DELAY_MINUTES,
+  RESOURCE_REGEN_DELAY_TICKS,
+  RESOURCE_REGEN_INTERVAL_TICKS,
   calculateShipStats,
 } from '@void-sector/shared';
+import { getUniverseTickCount } from '../engine/universeBootstrap.js';
 
 export async function createPlayer(
   username: string,
   passwordHash: string,
-  homeBase: { x: number; y: number } = { x: 0, y: 0 },
 ): Promise<PlayerData> {
   const result = await query<{
     id: string;
     username: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    `INSERT INTO players (username, password_hash, home_base)
-     VALUES ($1, $2, $3)
-     RETURNING id, username, home_base, xp, level`,
-    [username, passwordHash, JSON.stringify(homeBase)],
+    `INSERT INTO players (username, password_hash)
+     VALUES ($1, $2)
+     RETURNING id, username, xp, level`,
+    [username, passwordHash],
   );
   const row = result.rows[0];
   return {
     id: row.id,
     username: row.username,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
@@ -51,25 +44,22 @@ export async function createPlayer(
 
 export async function createGuestPlayer(
   username: string,
-  homeBase: { x: number; y: number } = { x: 0, y: 0 },
 ): Promise<PlayerData> {
   const result = await query<{
     id: string;
     username: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    `INSERT INTO players (username, password_hash, home_base, is_guest, guest_created_at)
-     VALUES ($1, '', $2, TRUE, NOW())
-     RETURNING id, username, home_base, xp, level`,
-    [username, JSON.stringify(homeBase)],
+    `INSERT INTO players (username, password_hash, is_guest, guest_created_at)
+     VALUES ($1, '', TRUE, NOW())
+     RETURNING id, username, xp, level`,
+    [username],
   );
   const row = result.rows[0];
   return {
     id: row.id,
     username: row.username,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
@@ -89,11 +79,10 @@ export async function findPlayerByUsername(
     id: string;
     username: string;
     password_hash: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    'SELECT id, username, password_hash, home_base, xp, level FROM players WHERE LOWER(username) = LOWER($1)',
+    'SELECT id, username, password_hash, xp, level FROM players WHERE LOWER(username) = LOWER($1)',
     [username],
   );
   if (result.rows.length === 0) return null;
@@ -102,25 +91,30 @@ export async function findPlayerByUsername(
     id: row.id,
     username: row.username,
     passwordHash: row.password_hash,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
 }
 
-export async function getPlayerHomeBase(playerId: string): Promise<{ x: number; y: number }> {
-  const { rows } = await query<{ home_base: { x: number; y: number } }>(
-    'SELECT home_base FROM players WHERE id = $1',
+export async function getMiningStoryIndex(playerId: string): Promise<number> {
+  const { rows } = await query<{ mining_story_index: number }>(
+    'SELECT mining_story_index FROM players WHERE id = $1',
     [playerId],
   );
-  return rows[0]?.home_base ?? { x: 0, y: 0 };
+  return rows[0]?.mining_story_index ?? 0;
+}
+
+export async function updateMiningStoryIndex(playerId: string, index: number): Promise<void> {
+  await query(
+    'UPDATE players SET mining_story_index = $1 WHERE id = $2',
+    [index, playerId],
+  );
 }
 
 export async function getActiveShip(playerId: string): Promise<ShipRecord | null> {
   const { rows } = await query<{
     id: string;
     owner_id: string;
-    hull_type: string;
     name: string;
     modules: ShipModule[];
     fuel: number;
@@ -129,7 +123,7 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
     acep_generation: number;
     acep_traits: string[];
   }>(
-    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at,
+    `SELECT id, owner_id, name, modules, fuel, active, created_at,
             acep_generation, acep_traits
      FROM ships WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
     [playerId],
@@ -139,7 +133,6 @@ export async function getActiveShip(playerId: string): Promise<ShipRecord | null
   return {
     id: row.id,
     ownerId: row.owner_id,
-    hullType: row.hull_type as HullType,
     name: row.name,
     modules: row.modules,
     active: row.active,
@@ -153,7 +146,6 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
   const { rows } = await query<{
     id: string;
     owner_id: string;
-    hull_type: string;
     name: string;
     modules: ShipModule[];
     fuel: number;
@@ -162,7 +154,7 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
     acep_generation: number;
     acep_traits: string[];
   }>(
-    `SELECT id, owner_id, hull_type, name, modules, fuel, active, created_at,
+    `SELECT id, owner_id, name, modules, fuel, active, created_at,
             acep_generation, acep_traits
      FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
     [playerId],
@@ -170,7 +162,6 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
   return rows.map((row) => ({
     id: row.id,
     ownerId: row.owner_id,
-    hullType: row.hull_type as HullType,
     name: row.name,
     modules: row.modules,
     active: row.active,
@@ -182,24 +173,28 @@ export async function getPlayerShips(playerId: string): Promise<ShipRecord[]> {
 
 export async function createShip(
   playerId: string,
-  hullType: HullType,
   name: string,
   initialFuel: number,
 ): Promise<ShipRecord> {
   // Deactivate current active ship
   await query('UPDATE ships SET active = false WHERE owner_id = $1 AND active = true', [playerId]);
   const { rows } = await query<any>(
-    `INSERT INTO ships (owner_id, hull_type, name, fuel, active)
-     VALUES ($1, $2, $3, $4, true) RETURNING *`,
-    [playerId, hullType, name, initialFuel],
+    `INSERT INTO ships (owner_id, name, fuel, active)
+     VALUES ($1, $2, $3, true) RETURNING *`,
+    [playerId, name, initialFuel],
   );
   const row = rows[0];
+  // All new ships start with generator_mk1 + drive_mk1
+  const initialModules: ShipModule[] = [
+    { moduleId: 'generator_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
+    { moduleId: 'drive_mk1', slotIndex: 1, source: 'standard', powerLevel: 'high', currentHp: 20 },
+  ];
+  await query('UPDATE ships SET modules = $1 WHERE id = $2', [JSON.stringify(initialModules), row.id]);
   return {
     id: row.id,
     ownerId: row.owner_id,
-    hullType: row.hull_type as HullType,
     name: row.name,
-    modules: row.modules,
+    modules: initialModules,
     active: row.active,
     createdAt: row.created_at,
   };
@@ -231,40 +226,6 @@ export async function renameBase(playerId: string, name: string): Promise<void> 
   await query('UPDATE players SET base_name = $1 WHERE id = $2', [name.slice(0, 20), playerId]);
 }
 
-export async function getModuleInventory(playerId: string): Promise<string[]> {
-  const { rows } = await query<{ module_inventory: string[] }>(
-    'SELECT module_inventory FROM players WHERE id = $1',
-    [playerId],
-  );
-  return rows[0]?.module_inventory ?? [];
-}
-
-export async function addModuleToInventory(playerId: string, moduleId: string): Promise<void> {
-  await query(`UPDATE players SET module_inventory = module_inventory || $1::jsonb WHERE id = $2`, [
-    JSON.stringify(moduleId),
-    playerId,
-  ]);
-}
-
-export async function removeModuleFromInventory(
-  playerId: string,
-  moduleId: string,
-): Promise<boolean> {
-  // Remove first occurrence of moduleId from the JSONB array
-  const { rows } = await query<{ module_inventory: string[] }>(
-    'SELECT module_inventory FROM players WHERE id = $1',
-    [playerId],
-  );
-  const inv = rows[0]?.module_inventory ?? [];
-  const idx = inv.indexOf(moduleId);
-  if (idx === -1) return false;
-  inv.splice(idx, 1);
-  await query('UPDATE players SET module_inventory = $1 WHERE id = $2', [
-    JSON.stringify(inv),
-    playerId,
-  ]);
-  return true;
-}
 
 export async function getPlayerBaseName(playerId: string): Promise<string> {
   const { rows } = await query<{ base_name: string }>(
@@ -293,11 +254,12 @@ export async function getSector(x: number, y: number): Promise<SectorData | null
     environment: string;
     contents: string[];
     last_mined: string | null;
+    last_mined_tick: string | null;
     max_ore: number;
     max_gas: number;
     max_crystal: number;
   }>(
-    'SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents, last_mined, max_ore, max_gas, max_crystal FROM sectors WHERE x = $1 AND y = $2',
+    'SELECT x, y, type, seed, discovered_by, discovered_at, metadata, environment, contents, last_mined, last_mined_tick, max_ore, max_gas, max_crystal FROM sectors WHERE x = $1 AND y = $2',
     [x, y],
   );
   if (result.rows.length === 0) return null;
@@ -305,26 +267,26 @@ export async function getSector(x: number, y: number): Promise<SectorData | null
   const meta = row.metadata || {};
   let resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
 
-  // Apply resource regeneration if sector was mined (with 5-minute delay)
-  if (row.last_mined && (row.max_ore > 0 || row.max_gas > 0 || row.max_crystal > 0)) {
-    const elapsedMinutes = (Date.now() - Number(row.last_mined)) / 60000;
-    const regenMinutes = Math.max(0, elapsedMinutes - RESOURCE_REGEN_DELAY_MINUTES);
-    if (regenMinutes > 0) {
-      resources = {
-        ore: Math.min(
-          row.max_ore,
-          resources.ore + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE),
-        ),
-        gas: Math.min(
-          row.max_gas,
-          resources.gas + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE),
-        ),
-        crystal: Math.min(
-          row.max_crystal,
-          resources.crystal + Math.floor(regenMinutes * CRYSTAL_REGEN_PER_MINUTE),
-        ),
-      };
-    }
+  // Tick-based resource regeneration (per-resource independent)
+  const lastMinedTick = (meta.lastMinedTick as Record<string, number | null>) || {};
+  const currentTick = getUniverseTickCount();
+
+  if (row.max_ore > 0 || row.max_gas > 0 || row.max_crystal > 0) {
+    const regenResource = (current: number, max: number, resLastTick: number | null): number => {
+      if (resLastTick === null || max <= 0) return current;
+      const ticksSinceMined = currentTick - resLastTick;
+      if (ticksSinceMined <= RESOURCE_REGEN_DELAY_TICKS) return current;
+      const regen = Math.floor(
+        (ticksSinceMined - RESOURCE_REGEN_DELAY_TICKS) / RESOURCE_REGEN_INTERVAL_TICKS,
+      );
+      return Math.min(max, current + regen);
+    };
+
+    resources = {
+      ore: regenResource(resources.ore, row.max_ore, lastMinedTick.ore ?? null),
+      gas: regenResource(resources.gas, row.max_gas, lastMinedTick.gas ?? null),
+      crystal: regenResource(resources.crystal, row.max_crystal, lastMinedTick.crystal ?? null),
+    };
   }
 
   return {
@@ -335,7 +297,12 @@ export async function getSector(x: number, y: number): Promise<SectorData | null
     discoveredBy: row.discovered_by,
     discoveredAt: row.discovered_at,
     metadata: row.metadata,
-    resources,
+    resources: {
+      ...resources,
+      maxOre: row.max_ore,
+      maxGas: row.max_gas,
+      maxCrystal: row.max_crystal,
+    },
     environment: (row.environment ?? 'empty') as SectorData['environment'],
     contents: (row.contents ?? []) as SectorData['contents'],
   };
@@ -367,11 +334,19 @@ export async function updateSectorResources(
   x: number,
   y: number,
   resources: { ore: number; gas: number; crystal: number },
+  minedResource: string,
 ): Promise<void> {
+  const currentTick = getUniverseTickCount();
   await query(
-    `UPDATE sectors SET metadata = jsonb_set(COALESCE(metadata, '{}'), '{resources}', $3::jsonb), last_mined = $4
+    `UPDATE sectors SET
+       metadata = jsonb_set(
+         jsonb_set(COALESCE(metadata, '{}'), '{resources}', $3::jsonb),
+         '{lastMinedTick,${minedResource}}', $4::text::jsonb
+       ),
+       last_mined = $5,
+       last_mined_tick = $6
      WHERE x = $1 AND y = $2`,
-    [x, y, JSON.stringify(resources), Date.now()],
+    [x, y, JSON.stringify(resources), currentTick, Date.now(), currentTick],
   );
 }
 
@@ -425,51 +400,6 @@ export async function isRouteDiscovered(
   return result.rows.length > 0;
 }
 
-export async function getPlayerCargo(playerId: string): Promise<CargoState> {
-  const result = await query<{ resource: string; quantity: number }>(
-    'SELECT resource, quantity FROM cargo WHERE player_id = $1',
-    [playerId],
-  );
-  const cargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 };
-  for (const row of result.rows) {
-    if (row.resource in cargo) {
-      cargo[row.resource as ResourceType] = row.quantity;
-    }
-  }
-  const slateRow = result.rows.find((r) => r.resource === 'slate');
-  if (slateRow) cargo.slates = slateRow.quantity;
-  return cargo;
-}
-
-export async function addToCargo(
-  playerId: string,
-  resource: ResourceType,
-  amount: number,
-): Promise<void> {
-  await query(
-    `INSERT INTO cargo (player_id, resource, quantity)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (player_id, resource)
-     DO UPDATE SET quantity = cargo.quantity + $3`,
-    [playerId, resource, amount],
-  );
-}
-
-export async function jettisonCargo(playerId: string, resource: ResourceType): Promise<number> {
-  const result = await query<{ quantity: number }>(
-    `DELETE FROM cargo WHERE player_id = $1 AND resource = $2 RETURNING quantity`,
-    [playerId, resource],
-  );
-  return result.rows.length > 0 ? result.rows[0].quantity : 0;
-}
-
-export async function getCargoTotal(playerId: string): Promise<number> {
-  const result = await query<{ total: string }>(
-    'SELECT COALESCE(SUM(quantity), 0) as total FROM cargo WHERE player_id = $1',
-    [playerId],
-  );
-  return Number(result.rows[0].total);
-}
 
 export async function findNearbyCluster(x: number, y: number): Promise<any | null> {
   const { rows } = await query(
@@ -550,28 +480,13 @@ export async function getStructuresInRange(
 export async function getPlayerBaseStructures(playerId: string): Promise<any[]> {
   const { rows } = await query(
     `SELECT s.* FROM structures s
-     JOIN players p ON p.id = $1
      WHERE s.owner_id = $1
-       AND s.sector_x = (p.home_base->>'x')::int
-       AND s.sector_y = (p.home_base->>'y')::int
      ORDER BY s.created_at ASC`,
     [playerId],
   );
   return rows;
 }
 
-export async function deductCargo(
-  playerId: string,
-  resource: string,
-  amount: number,
-): Promise<boolean> {
-  const { rowCount } = await query(
-    `UPDATE cargo SET quantity = quantity - $3
-     WHERE player_id = $1 AND resource = $2 AND quantity >= $3`,
-    [playerId, resource, amount],
-  );
-  return (rowCount ?? 0) > 0;
-}
 
 export async function saveMessage(
   senderId: string,
@@ -714,11 +629,9 @@ export async function getPlayerStructure(
   type: string,
 ): Promise<{ id: string; tier: number; sector_x: number; sector_y: number } | null> {
   const { rows } = await query<{ id: string; tier: number; sector_x: number; sector_y: number }>(
-    `SELECT s.id, s.tier, s.sector_x, s.sector_y FROM structures s
-     JOIN players p ON p.id = $1
-     WHERE s.owner_id = $1 AND s.type = $2
-       AND s.sector_x = (p.home_base->>'x')::int
-       AND s.sector_y = (p.home_base->>'y')::int`,
+    `SELECT id, tier, sector_x, sector_y FROM structures
+     WHERE owner_id = $1 AND type = $2
+     LIMIT 1`,
     [playerId, type],
   );
   return rows[0] ?? null;
@@ -1221,6 +1134,20 @@ export async function insertQuest(
   return rows[0].id;
 }
 
+export async function getExpiredPlayerQuestsWithItems(): Promise<
+  { id: string; player_id: string; objectives: any[] }[]
+> {
+  const { rows } = await query(
+    `SELECT id, player_id, objectives FROM player_quests
+     WHERE status = 'active' AND expires_at < NOW()`,
+  );
+  return rows.map((r: any) => ({
+    id: r.id,
+    player_id: r.player_id,
+    objectives: typeof r.objectives === 'string' ? JSON.parse(r.objectives) : r.objectives,
+  }));
+}
+
 export async function updateQuestStatus(questId: string, status: string): Promise<boolean> {
   const result = await query(`UPDATE player_quests SET status = $2 WHERE id = $1`, [
     questId,
@@ -1326,24 +1253,6 @@ export async function completeScanEvent(eventId: string, playerId: string): Prom
   return (result.rowCount ?? 0) > 0;
 }
 
-// --- Phase 4: Battle Log ---
-
-export async function insertBattleLog(
-  playerId: string,
-  pirateLevel: number,
-  sectorX: number,
-  sectorY: number,
-  action: string,
-  outcome: string,
-  loot: Record<string, unknown> | null,
-): Promise<void> {
-  await query(
-    `INSERT INTO battle_log (player_id, pirate_level, sector_x, sector_y, action, outcome, loot)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [playerId, pirateLevel, sectorX, sectorY, action, outcome, loot ? JSON.stringify(loot) : null],
-  );
-}
-
 // --- Phase 4: XP / Level ---
 
 export async function addPlayerXp(
@@ -1421,7 +1330,8 @@ export async function setFactionRecruiting(
 export async function getJumpGate(sectorX: number, sectorY: number): Promise<any | null> {
   const { rows } = await query(
     `SELECT id, sector_x as "sectorX", sector_y as "sectorY", target_x as "targetX", target_y as "targetY",
-     gate_type as "gateType", requires_code as "requiresCode", requires_minigame as "requiresMinigame", access_code as "accessCode"
+     gate_type as "gateType", requires_code as "requiresCode", requires_minigame as "requiresMinigame", access_code as "accessCode",
+     owner_id as "ownerId"
      FROM jumpgates WHERE sector_x = $1 AND sector_y = $2`,
     [sectorX, sectorY],
   );
@@ -1993,26 +1903,26 @@ export async function getSectorsInRange(
     const meta = r.metadata || {};
     let resources = (meta.resources as SectorData['resources']) || { ore: 0, gas: 0, crystal: 0 };
 
-    // Apply resource regeneration if sector was mined (with 5-minute delay)
-    if (r.last_mined && (r.max_ore > 0 || r.max_gas > 0 || r.max_crystal > 0)) {
-      const elapsedMinutes = (Date.now() - Number(r.last_mined)) / 60000;
-      const regenMinutes = Math.max(0, elapsedMinutes - RESOURCE_REGEN_DELAY_MINUTES);
-      if (regenMinutes > 0) {
-        resources = {
-          ore: Math.min(
-            r.max_ore,
-            resources.ore + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE),
-          ),
-          gas: Math.min(
-            r.max_gas,
-            resources.gas + Math.floor(regenMinutes * RESOURCE_REGEN_PER_MINUTE),
-          ),
-          crystal: Math.min(
-            r.max_crystal,
-            resources.crystal + Math.floor(regenMinutes * CRYSTAL_REGEN_PER_MINUTE),
-          ),
-        };
-      }
+    // Tick-based resource regeneration (per-resource independent)
+    const lastMinedTick = (meta.lastMinedTick as Record<string, number | null>) || {};
+    const rangeTick = getUniverseTickCount();
+
+    if (r.max_ore > 0 || r.max_gas > 0 || r.max_crystal > 0) {
+      const regenResource = (current: number, max: number, resLastTick: number | null): number => {
+        if (resLastTick === null || max <= 0) return current;
+        const ticksSinceMined = rangeTick - resLastTick;
+        if (ticksSinceMined <= RESOURCE_REGEN_DELAY_TICKS) return current;
+        const regen = Math.floor(
+          (ticksSinceMined - RESOURCE_REGEN_DELAY_TICKS) / RESOURCE_REGEN_INTERVAL_TICKS,
+        );
+        return Math.min(max, current + regen);
+      };
+
+      resources = {
+        ore: regenResource(resources.ore, r.max_ore, lastMinedTick.ore ?? null),
+        gas: regenResource(resources.gas, r.max_gas, lastMinedTick.gas ?? null),
+        crystal: regenResource(resources.crystal, r.max_crystal, lastMinedTick.crystal ?? null),
+      };
     }
 
     return {
@@ -2023,7 +1933,12 @@ export async function getSectorsInRange(
       discoveredBy: r.discovered_by,
       discoveredAt: r.discovered_at,
       metadata: r.metadata ?? {},
-      resources,
+      resources: {
+        ...resources,
+        maxOre: r.max_ore,
+        maxGas: r.max_gas,
+        maxCrystal: r.max_crystal,
+      },
       environment: (r.environment ?? 'empty') as SectorData['environment'],
       contents: (r.contents ?? []) as SectorData['contents'],
     };
@@ -2127,36 +2042,6 @@ export async function insertStationBattleLog(
   );
 }
 
-export async function insertBattleLogV2(
-  playerId: string,
-  pirateLevel: number,
-  sectorX: number,
-  sectorY: number,
-  action: string,
-  outcome: string,
-  loot: Record<string, unknown> | null,
-  roundsPlayed: number,
-  roundDetails: unknown[],
-  playerHpEnd: number,
-): Promise<void> {
-  await query(
-    `INSERT INTO battle_log (player_id, pirate_level, sector_x, sector_y, action, outcome, loot, rounds_played, round_details, player_hp_end)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [
-      playerId,
-      pirateLevel,
-      sectorX,
-      sectorY,
-      action,
-      outcome,
-      loot ? JSON.stringify(loot) : null,
-      roundsPlayed,
-      JSON.stringify(roundDetails),
-      playerHpEnd,
-    ],
-  );
-}
-
 export async function getPlayerStructuresInSector(
   userId: string,
   sectorX: number,
@@ -2232,9 +2117,9 @@ export async function startActiveResearch(
 ): Promise<void> {
   await query(
     `INSERT INTO active_research (user_id, module_id, started_at, completes_at, slot)
-     VALUES ($1, $2, to_timestamp($3 / 1000.0), to_timestamp($4 / 1000.0), $5)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (user_id, slot) DO UPDATE
-     SET module_id = $2, started_at = to_timestamp($3 / 1000.0), completes_at = to_timestamp($4 / 1000.0)`,
+     SET module_id = $2, started_at = $3, completes_at = $4`,
     [userId, moduleId, startedAt, completesAt, slot],
   );
 }
@@ -3101,6 +2986,24 @@ export interface QuadrantControlRow {
   friction_score: number;
   station_tier: number;
   last_strategic_tick: Date | null;
+  void_cluster_id: string | null;
+}
+
+export interface VoidClusterRow {
+  id: string;
+  state: 'growing' | 'splitting' | 'dying';
+  size: number;
+  split_threshold: number;
+  spawned_at: Date;
+  origin_qx: number;
+  origin_qy: number;
+}
+
+export interface VoidClusterQuadrantRow {
+  cluster_id: string;
+  qx: number;
+  qy: number;
+  progress: number;
 }
 
 export interface NpcFleetRow {
@@ -3140,17 +3043,18 @@ export async function getQuadrantControl(
 export async function upsertQuadrantControl(data: {
   qx: number;
   qy: number;
-  controlling_faction: string;
+  controlling_faction: string | null;
   faction_shares: Record<string, number>;
   attack_value: number;
   defense_value: number;
   friction_score: number;
   station_tier: number;
+  void_cluster_id?: string | null;
 }): Promise<void> {
   await query(
     `INSERT INTO quadrant_control
-      (qx, qy, controlling_faction, faction_shares, attack_value, defense_value, friction_score, station_tier, last_strategic_tick)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+      (qx, qy, controlling_faction, faction_shares, attack_value, defense_value, friction_score, station_tier, void_cluster_id, last_strategic_tick)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
      ON CONFLICT (qx, qy) DO UPDATE SET
        controlling_faction = EXCLUDED.controlling_faction,
        faction_shares = EXCLUDED.faction_shares,
@@ -3158,6 +3062,7 @@ export async function upsertQuadrantControl(data: {
        defense_value = EXCLUDED.defense_value,
        friction_score = EXCLUDED.friction_score,
        station_tier = EXCLUDED.station_tier,
+       void_cluster_id = EXCLUDED.void_cluster_id,
        last_strategic_tick = NOW()`,
     [
       data.qx,
@@ -3168,6 +3073,7 @@ export async function upsertQuadrantControl(data: {
       data.defense_value,
       data.friction_score,
       data.station_tier,
+      data.void_cluster_id ?? null,
     ],
   );
 }
@@ -3294,20 +3200,21 @@ export async function deductInventory(
   itemId: string,
   amount: number,
 ): Promise<void> {
+  // Exact match: DELETE row directly (avoids CHECK violation on quantity > 0)
+  const del = await query(
+    `DELETE FROM inventory WHERE player_id = $1 AND item_type = $2 AND item_id = $3 AND quantity = $4
+     RETURNING id`,
+    [playerId, itemType, itemId, amount],
+  );
+  if (del.rows.length > 0) return;
+  // Surplus: decrement (quantity > amount, result always > 0)
   const res = await query<{ quantity: number }>(
     `UPDATE inventory SET quantity = quantity - $4
-     WHERE player_id = $1 AND item_type = $2 AND item_id = $3 AND quantity >= $4
+     WHERE player_id = $1 AND item_type = $2 AND item_id = $3 AND quantity > $4
      RETURNING quantity`,
     [playerId, itemType, itemId, amount],
   );
   if (res.rows.length === 0) throw new Error(`Insufficient ${itemType}:${itemId}`);
-  if (res.rows[0].quantity === 0) {
-    await query(`DELETE FROM inventory WHERE player_id = $1 AND item_type = $2 AND item_id = $3`, [
-      playerId,
-      itemType,
-      itemId,
-    ]);
-  }
 }
 
 export async function transferInventoryItem(
@@ -3322,13 +3229,13 @@ export async function transferInventoryItem(
 }
 
 export async function getCargoCapForPlayer(playerId: string): Promise<number> {
-  const res = await query<{ hull_type: string; modules: ShipModule[] }>(
-    `SELECT s.hull_type, s.modules FROM ships s WHERE s.owner_id = $1 AND s.active = TRUE LIMIT 1`,
+  const res = await query<{ modules: ShipModule[] }>(
+    `SELECT s.modules FROM ships s WHERE s.owner_id = $1 AND s.active = TRUE LIMIT 1`,
     [playerId],
   );
   const row = res.rows[0];
   if (!row) return 20;
-  const stats = calculateShipStats(row.hull_type as HullType, row.modules ?? []);
+  const stats = calculateShipStats(row.modules ?? []);
   return stats.cargoCap;
 }
 
@@ -3426,4 +3333,205 @@ export async function getVisitedQuadrantSet(playerId: string): Promise<Set<strin
     [playerId],
   );
   return new Set(rows.map((r) => `${r.qx}:${r.qy}`));
+}
+
+// --- Kampfsystem v1: combat_log ---
+
+export async function insertCombatLog(params: {
+  playerId: string;
+  quadrantX: number;
+  quadrantY: number;
+  sectorX: number;
+  sectorY: number;
+  enemyType: string;
+  enemyLevel: number;
+  outcome: string;
+  rounds: number;
+  playerHpEnd: number;
+  modulesDamaged: Array<{ moduleId: string; hpBefore: number; hpAfter: number }>;
+  loot: { credits?: number; ore?: number; crystal?: number };
+}): Promise<void> {
+  await query(
+    `INSERT INTO combat_log
+       (player_id, quadrant_x, quadrant_y, sector_x, sector_y,
+        enemy_type, enemy_level, outcome, rounds, player_hp_end,
+        modules_damaged, loot)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    [
+      params.playerId,
+      params.quadrantX,
+      params.quadrantY,
+      params.sectorX,
+      params.sectorY,
+      params.enemyType,
+      params.enemyLevel,
+      params.outcome,
+      params.rounds,
+      params.playerHpEnd,
+      JSON.stringify(params.modulesDamaged),
+      JSON.stringify(params.loot),
+    ],
+  );
+}
+
+// ─── Void Clusters ────────────────────────────────────────────────────────────
+
+export async function getVoidClusters(): Promise<VoidClusterRow[]> {
+  const res = await query<VoidClusterRow>('SELECT * FROM void_clusters');
+  return res.rows;
+}
+
+export async function getVoidClusterById(id: string): Promise<VoidClusterRow | null> {
+  const res = await query<VoidClusterRow>(
+    'SELECT * FROM void_clusters WHERE id = $1',
+    [id],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function upsertVoidCluster(cluster: VoidClusterRow): Promise<void> {
+  await query(
+    `INSERT INTO void_clusters (id, state, size, split_threshold, spawned_at, origin_qx, origin_qy)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (id) DO UPDATE SET
+       state = EXCLUDED.state,
+       size  = EXCLUDED.size`,
+    [
+      cluster.id,
+      cluster.state,
+      cluster.size,
+      cluster.split_threshold,
+      cluster.spawned_at,
+      cluster.origin_qx,
+      cluster.origin_qy,
+    ],
+  );
+}
+
+export async function deleteVoidCluster(id: string): Promise<void> {
+  await query('DELETE FROM void_clusters WHERE id = $1', [id]);
+}
+
+export async function getVoidClusterQuadrants(
+  clusterId: string,
+): Promise<VoidClusterQuadrantRow[]> {
+  const res = await query<VoidClusterQuadrantRow>(
+    'SELECT * FROM void_cluster_quadrants WHERE cluster_id = $1',
+    [clusterId],
+  );
+  return res.rows;
+}
+
+export async function upsertVoidClusterQuadrant(
+  clusterId: string,
+  qx: number,
+  qy: number,
+  progress: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO void_cluster_quadrants (cluster_id, qx, qy, progress)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (cluster_id, qx, qy) DO UPDATE SET progress = EXCLUDED.progress`,
+    [clusterId, qx, qy, progress],
+  );
+}
+
+export async function deleteVoidClusterQuadrant(
+  clusterId: string,
+  qx: number,
+  qy: number,
+): Promise<void> {
+  await query(
+    'DELETE FROM void_cluster_quadrants WHERE cluster_id = $1 AND qx = $2 AND qy = $3',
+    [clusterId, qx, qy],
+  );
+}
+
+/**
+ * Atomically replace frontier sectors for a specific cluster+quadrant.
+ * Deletes old rows for (clusterId, qx, qy), inserts new ones.
+ * All within a single transaction.
+ */
+export async function replaceVoidFrontierSectors(
+  clusterId: string,
+  qx: number,
+  qy: number,
+  sectors: Array<{ x: number; y: number }>,
+): Promise<void> {
+  await withTransaction(async (client) => {
+    const ox = qx * 10000;
+    const oy = qy * 10000;
+    await client.query(
+      `DELETE FROM void_frontier_sectors
+       WHERE cluster_id = $1 AND x >= $2 AND x < $3 AND y >= $4 AND y < $5`,
+      [clusterId, ox, ox + 10000, oy, oy + 10000],
+    );
+    if (sectors.length > 0) {
+      const values = sectors
+        .map((_, i) => `($1, $${i * 2 + 2}, $${i * 2 + 3})`)
+        .join(', ');
+      const params: (string | number)[] = [clusterId];
+      for (const s of sectors) {
+        params.push(s.x, s.y);
+      }
+      await client.query(
+        `INSERT INTO void_frontier_sectors (cluster_id, x, y) VALUES ${values}
+         ON CONFLICT DO NOTHING`,
+        params,
+      );
+    }
+  });
+}
+
+export async function deleteVoidFrontierSectorsForQuadrant(
+  clusterId: string,
+  qx: number,
+  qy: number,
+): Promise<void> {
+  const ox = qx * 10000;
+  const oy = qy * 10000;
+  await query(
+    `DELETE FROM void_frontier_sectors
+     WHERE cluster_id = $1 AND x >= $2 AND x < $3 AND y >= $4 AND y < $5`,
+    [clusterId, ox, ox + 10000, oy, oy + 10000],
+  );
+}
+
+export async function isVoidFrontierSector(x: number, y: number): Promise<boolean> {
+  const res = await query<{ exists: boolean }>(
+    'SELECT EXISTS(SELECT 1 FROM void_frontier_sectors WHERE x = $1 AND y = $2) AS exists',
+    [x, y],
+  );
+  return res.rows[0]?.exists ?? false;
+}
+
+export async function createVoidHive(
+  qx: number,
+  qy: number,
+  clusterId: string,
+): Promise<void> {
+  const id = `void_hive_${qx}_${qy}`;
+  const sx = qx * 10000 + 5000;
+  const sy = qy * 10000 + 5000;
+  await query(
+    `INSERT INTO void_hives (id, qx, qy, sector_x, sector_y, cluster_id)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (qx, qy) DO NOTHING`,
+    [id, qx, qy, sx, sy, clusterId],
+  );
+}
+
+export async function deleteVoidHive(qx: number, qy: number): Promise<void> {
+  await query('DELETE FROM void_hives WHERE qx = $1 AND qy = $2', [qx, qy]);
+}
+
+export async function getVoidHive(
+  qx: number,
+  qy: number,
+): Promise<{ id: string; sector_x: number; sector_y: number } | null> {
+  const res = await query<{ id: string; sector_x: number; sector_y: number }>(
+    'SELECT id, sector_x, sector_y FROM void_hives WHERE qx = $1 AND qy = $2',
+    [qx, qy],
+  );
+  return res.rows[0] ?? null;
 }

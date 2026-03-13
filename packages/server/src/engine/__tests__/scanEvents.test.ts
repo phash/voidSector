@@ -85,28 +85,30 @@ describe('scanEvents', () => {
   });
 
   describe('getEffectiveEventChance', () => {
-    // Origin (0,0) is at center of q0 with centered layout → far from any edge
-    // Sector at (half, 0) is exactly at the q0/q1 boundary → nearEdge
-    const half = Math.floor(QUADRANT_SIZE / 2);
+    // (250, 250): modX=250, edgeDist=250 → far from edge (>= 50)
+    // (0, 0): modX=0, edgeDist=0 → near edge (< 50)
+    const farCoord = 250;
+    const nearCoord = 0;
 
     it('empty sectors far from edges have lowest chance', () => {
-      const chance = getEffectiveEventChance('empty', 0, 0);
+      const chance = getEffectiveEventChance('empty', farCoord, farCoord);
       expect(chance).toBe(0.012);
     });
 
     it('empty sectors near quadrant edge have higher chance', () => {
-      const chance = getEffectiveEventChance('empty', half, 0);
+      const chance = getEffectiveEventChance('empty', nearCoord, nearCoord);
       expect(chance).toBe(0.03);
     });
 
     it('nebula sectors have high chance', () => {
-      const chance = getEffectiveEventChance('nebula', 0, 0);
+      const chance = getEffectiveEventChance('nebula', farCoord, farCoord);
       expect(chance).toBe(0.3);
     });
 
     it('nebula at quadrant edges has very high chance', () => {
-      const chance = getEffectiveEventChance('nebula', half, 0);
+      const chance = getEffectiveEventChance('nebula', nearCoord, nearCoord);
       expect(chance).toBe(0.95);
     });
   });
+
 });

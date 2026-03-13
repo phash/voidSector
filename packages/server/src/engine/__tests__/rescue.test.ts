@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { checkDistressCall, calculateRescueReward, canRescue } from '../rescue.js';
-import { RESCUE_REWARDS, SHIP_CLASSES } from '@void-sector/shared';
+import { RESCUE_REWARDS } from '@void-sector/shared';
 
 describe('Rescue System', () => {
   it('should check distress call chance (~0.5%)', () => {
@@ -25,15 +25,15 @@ describe('Rescue System', () => {
     expect(comm.credits).toBeGreaterThan(scan.credits);
   });
 
-  it('should check if rescue is possible (safeSlots)', () => {
-    const scout = SHIP_CLASSES.aegis_scout_mk1;
-    expect(canRescue(scout.safeSlots, 0)).toBe(true);
-    expect(canRescue(scout.safeSlots, 1)).toBe(false);
+  it('should check if rescue is possible (1 safe slot)', () => {
+    const safeSlots = 1; // scout hull
+    expect(canRescue(safeSlots, 0)).toBe(true);
+    expect(canRescue(safeSlots, 1)).toBe(false);
   });
 
-  it('void_seeker should have more safe slots', () => {
-    const seeker = SHIP_CLASSES.void_seeker_mk2;
-    expect(canRescue(seeker.safeSlots, 2)).toBe(true);
-    expect(canRescue(seeker.safeSlots, 3)).toBe(false);
+  it('explorer hull should support more safe slots', () => {
+    const safeSlots = 3; // explorer-tier hull with safe slot modules
+    expect(canRescue(safeSlots, 2)).toBe(true);
+    expect(canRescue(safeSlots, 3)).toBe(false);
   });
 });

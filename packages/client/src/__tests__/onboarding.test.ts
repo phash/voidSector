@@ -30,9 +30,9 @@ describe('onboarding', () => {
     expect(store.getState().onboardingStep).toBe(1);
   });
 
-  it('advanceOnboarding nach Step 4 schließt Onboarding', () => {
+  it('advanceOnboarding nach Step 3 schließt Onboarding', () => {
     const store = createStore(createHelpSlice);
-    for (let i = 0; i < 5; i++) store.getState().advanceOnboarding();
+    for (let i = 0; i < 4; i++) store.getState().advanceOnboarding();
     expect(store.getState().onboardingStep).toBeNull();
     expect(mockStorage['vs_first_run']).toBe('1');
   });

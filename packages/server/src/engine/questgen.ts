@@ -43,11 +43,15 @@ export function generateStationQuests(
   const questCount = 2 + ((baseSeed >>> 0) % 3);
   const quests: AvailableQuest[] = [];
 
-  for (let i = 0; i < Math.min(questCount, eligible.length); i++) {
+  const usedTemplateIds = new Set<string>();
+  const maxAttempts = eligible.length * 2;
+  for (let i = 0; quests.length < questCount && i < maxAttempts; i++) {
     const templateIdx = ((baseSeed >>> (i * 4)) >>> 0) % eligible.length;
     const template = eligible[templateIdx];
-    const npc = npcs[i % npcs.length];
-    const questSeed = hashCoords(stationX + i, stationY + dayOfYear, WORLD_SEED + QUEST_SEED_SALT);
+    if (usedTemplateIds.has(template.id)) continue;
+    usedTemplateIds.add(template.id);
+    const npc = npcs[quests.length % npcs.length];
+    const questSeed = hashCoords(stationX + quests.length, stationY + dayOfYear, WORLD_SEED + QUEST_SEED_SALT);
 
     const quest = fillQuestTemplate(template, questSeed, stationX, stationY, npc.name, faction);
     if (quest) quests.push(quest);
@@ -78,7 +82,7 @@ function fillQuestTemplate(
       .replace('{amount}', String(amount));
     objectives.push({
       type: 'fetch',
-      description: `${amount} ${resource}`,
+      description: `${amount} ${resource} zur Station (${stationX}:${stationY}) liefern`,
       resource,
       amount,
       progress: 0,
@@ -102,6 +106,28 @@ function fillQuestTemplate(
       progress: 0,
       fulfilled: false,
     });
+  }
+
+  if (template.type === 'bounty_chase') {
+    // Placeholder — real objectives generated at accept time in QuestService
+    description = description.replace('{targetName}', '???');
+    objectives.push(
+      {
+        type: 'bounty_trail',
+        description: 'Verfolge die Spur des Ziels',
+        fulfilled: false,
+      },
+      {
+        type: 'bounty_combat',
+        description: 'Schalte das Ziel aus',
+        fulfilled: false,
+      },
+      {
+        type: 'bounty_deliver',
+        description: 'Liefere den Gefangenen ab',
+        fulfilled: false,
+      },
+    );
   }
 
   if (
@@ -140,6 +166,17 @@ function fillQuestTemplate(
         description: `Ziel: (${targetX}, ${targetY})`,
         targetX,
         targetY,
+        fulfilled: false,
+      });
+    }
+
+    // Scan quests: add delivery objective — player must return data slate to station
+    if (template.type === 'scan') {
+      objectives.push({
+        type: 'scan_deliver',
+        description: `Data Slate zur Station (${stationX}:${stationY}) abliefern`,
+        stationX,
+        stationY,
         fulfilled: false,
       });
     }

@@ -3,7 +3,6 @@ import {
   SECTOR_COLORS,
   STALENESS_DIM_HOURS,
   STALENESS_FADE_DAYS,
-  HULL_RADAR_PATTERNS,
   innerCoord,
   getAcepRadarPattern,
   COSMIC_FACTION_COLORS,
@@ -14,7 +13,6 @@ import type {
   JumpGateInfo,
   JumpGateMapEntry,
   ScanEvent,
-  HullType,
   Bookmark,
   Quest,
   CivShip,
@@ -25,6 +23,9 @@ import { drawLongJumpCRTEffect } from './JumpAnimation';
 import { drawJumpGateLines, drawJumpGateIcons } from './jumpGateOverlay';
 
 export const BURST_DURATION = 1500;
+
+/** Default ship radar icon pattern (3×3 cross shape). */
+const DEFAULT_SHIP_RADAR_PATTERN = [[0,1,0],[1,1,1],[0,1,0]];
 
 const BOOKMARK_COLORS: Record<number, string> = {
   0: '#33FF33', // HOME — green
@@ -78,9 +79,7 @@ interface RadarState {
   knownJumpGates?: JumpGateMapEntry[];
   scanEvents?: ScanEvent[];
   discoveryTimestamps?: Record<string, number>;
-  hullType?: HullType;
   acepXp?: { ausbau: number; intel: number; kampf: number; explorer: number; total: number } | null;
-  homeBase?: { x: number; y: number };
   bookmarks?: Bookmark[];
   animTime?: number;
   scanBurstTimestamps?: Record<string, number>;
@@ -98,6 +97,13 @@ interface RadarState {
   trackedQuests?: TrackedQuest[];
   miningActive?: boolean;
   civShips?: CivShip[];
+  /** Set of "x,y" strings that are void frontier sectors */
+  voidFrontierSectors?: Set<string>;
+  /** True if the player's current quadrant is fully void */
+  quadrantIsVoid?: boolean;
+  /** Slow flight path from current position to target — drawn as dashed overlay */
+  slowFlightPath?: Array<{ x: number; y: number }>;
+  sectorWrecks?: Record<string, { tier: number; size: string }>;
 }
 
 function easeInOutCubic(t: number): number {
@@ -177,8 +183,20 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const sector = state.discoveries[key];
       const isPlayer = sx === state.position.x && sy === state.position.y;
       const isCenter = dx === 0 && dy === 0;
-      const hb = state.homeBase ?? { x: 0, y: 0 };
-      const isHome = sx === hb.x && sy === hb.y;
+      // Void frontier rendering — black fill with optional blue border
+      const isVoidFrontier = state.voidFrontierSectors?.has(`${sx},${sy}`) ?? false;
+      const isInVoidQuadrant = state.quadrantIsVoid ?? false;
+
+      if (isVoidFrontier || isInVoidQuadrant) {
+        ctx.fillStyle = '#050508';
+        ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        if (isVoidFrontier && !isInVoidQuadrant) {
+          ctx.strokeStyle = '#aaaacc';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        }
+        continue; // skip normal sector rendering
+      }
 
       // Staleness rendering — dim/fade old discoveries
       if (sector && !isPlayer) {
@@ -209,9 +227,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
       // Background highlight for non-empty discovered sectors (also shown when player is here)
       if (sector && sector.type !== 'empty') {
-        const sectorBgColor = isHome
-          ? SECTOR_COLORS.home_base
-          : (sector as any).environment === 'black_hole'
+        const sectorBgColor = (sector as any).environment === 'black_hole'
             ? '#1A1A1A'
             : (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty);
         const prevAlpha = ctx.globalAlpha;
@@ -299,12 +315,12 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const labelX = labelLeftAlign ? cellX - CELL_W / 2 + 3 : cellX;
 
       if (isPlayer) {
-        const ownHull = state.hullType ?? 'scout';
+        const defaultPattern = DEFAULT_SHIP_RADAR_PATTERN;
         // ACEP/3: use evolved icon when XP >= 20 (Tier 2+)
         const ownPattern =
           state.acepXp && state.acepXp.total >= 20
-            ? (getAcepRadarPattern(state.acepXp) ?? HULL_RADAR_PATTERNS[ownHull])
-            : HULL_RADAR_PATTERNS[ownHull];
+            ? (getAcepRadarPattern(state.acepXp) ?? defaultPattern)
+            : defaultPattern;
         const ownPixelSize = isDetailView ? Math.max(8, 2 + state.zoomLevel) : 2 + state.zoomLevel;
         // #155: animate ship icon from old position
         let iconX = cellX;
@@ -347,22 +363,18 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           }
           ctx.fillStyle = state.themeColor;
           ctx.textBaseline = 'bottom';
-          ctx.fillText(isHome ? 'HOME BASE' : 'YOU', labelX, cellY + CELL_H / 2 - 2);
+          ctx.fillText('YOU', labelX, cellY + CELL_H / 2 - 2);
         }
       } else if (sector) {
-        if (sector.type === 'empty' && (sector as any).environment !== 'black_hole' && !isHome) {
+        if (sector.type === 'empty' && (sector as any).environment !== 'black_hole') {
           // Empty sectors: just a small centered dot
           ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.3)');
           ctx.beginPath();
           ctx.arc(cellX, cellY, 2, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          const symbol = isHome
-            ? SYMBOLS.homeBase
-            : getSectorSymbol(sector.type, (sector as any).environment);
-          const sectorColor = isHome
-            ? SECTOR_COLORS.home_base
-            : (sector as any).environment === 'black_hole'
+          const symbol = getSectorSymbol(sector.type, (sector as any).environment);
+          const sectorColor = (sector as any).environment === 'black_hole'
               ? '#1A1A1A'
               : (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty);
           ctx.fillStyle = sectorColor;
@@ -374,9 +386,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
             ctx.fillStyle = sectorColor;
             ctx.textAlign = labelLeftAlign ? 'left' : 'center';
             ctx.textBaseline = 'bottom';
-            const label = isHome
-              ? 'HOME'
-              : getSectorLabel(sector.type, (sector as any).environment);
+            const label = getSectorLabel(sector.type, (sector as any).environment);
             ctx.fillText(label, labelX, cellY + CELL_H / 2 - 2);
           }
         }
@@ -546,6 +556,21 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         }
       }
 
+      // Draw wreck icon
+      if (state.sectorWrecks) {
+        const wkey = `${sx}:${sy}`;
+        const wreck = state.sectorWrecks[wkey];
+        if (wreck) {
+          ctx.save();
+          ctx.font = `${Math.floor(CELL_H * 0.55)}px 'Share Tech Mono', 'Courier New', monospace`;
+          ctx.fillStyle = 'rgba(255, 176, 0, 0.55)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('⊠', cellX, cellY);
+          ctx.restore();
+        }
+      }
+
       // Reset alpha after each cell (staleness rendering)
       ctx.globalAlpha = 1.0;
     }
@@ -592,7 +617,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
   // Draw other players — zoom >= 2
   if (state.zoomLevel >= 2) {
-    const otherPattern = HULL_RADAR_PATTERNS.scout;
+    const otherPattern = DEFAULT_SHIP_RADAR_PATTERN;
     const otherPixelSize = 1 + state.zoomLevel;
     const otherColor = '#FFDD22';
     const playerList = Object.values(state.players);
@@ -672,6 +697,11 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
+  } catch (error) {
+    // Log rendering error but don't crash
+    if (error instanceof Error) {
+      console.error('[radar] render exception:', error.message);
+    }
   } finally {
     // Guarantee ctx.restore() is called if ctx.save() was called, even on exception
     if (slideActive) {
@@ -790,6 +820,34 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
+  // --- Slow flight path overlay ---
+  if (state.slowFlightPath && state.slowFlightPath.length >= 2) {
+    const start = state.slowFlightPath[0];
+    const end = state.slowFlightPath[state.slowFlightPath.length - 1];
+
+    const startDx = start.x - viewX;
+    const startDy = start.y - viewY;
+    const endDx = end.x - viewX;
+    const endDy = end.y - viewY;
+
+    const x1 = gridCenterX + startDx * CELL_W;
+    const y1 = gridCenterY + startDy * CELL_H;
+    const x2 = gridCenterX + endDx * CELL_W;
+    const y2 = gridCenterY + endDy * CELL_H;
+
+    ctx.save();
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = state.themeColor;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
   // --- Coordinate frame (tightly wraps actual cells) ---
   const totalCellsW = (2 * radiusX + 1) * CELL_W;
   const totalCellsH = (2 * radiusY + 1) * CELL_H;
@@ -900,29 +958,39 @@ export function drawGlitchOverlay(
   height: number,
   intensity: number,
 ) {
-  // Scanline displacement
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const data = imageData.data;
-  for (let y = 0; y < height; y++) {
-    if (Math.random() < intensity * 0.3) {
-      const shift = Math.floor((Math.random() - 0.5) * intensity * 20);
-      const row = y * width * 4;
-      const temp = new Uint8ClampedArray(width * 4);
-      for (let x = 0; x < width; x++) {
-        const srcX = Math.max(0, Math.min(width - 1, x + shift));
-        temp.set(data.subarray(row + srcX * 4, row + srcX * 4 + 4), x * 4);
-      }
-      data.set(temp, row);
-    }
+  // Bounds check to prevent IndexSizeError
+  if (width <= 0 || height <= 0 || width > 32767 || height > 32767) {
+    return;
   }
-  ctx.putImageData(imageData, 0, 0);
 
-  // Static noise flash
-  if (intensity > 0.5) {
-    ctx.fillStyle = `rgba(255, 255, 255, ${(intensity - 0.5) * 0.1})`;
-    for (let i = 0; i < intensity * 50; i++) {
-      ctx.fillRect(Math.random() * width, Math.random() * height, 2, 1);
+  try {
+    // Scanline displacement
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    for (let y = 0; y < height; y++) {
+      if (Math.random() < intensity * 0.3) {
+        const shift = Math.floor((Math.random() - 0.5) * intensity * 20);
+        const row = y * width * 4;
+        const temp = new Uint8ClampedArray(width * 4);
+        for (let x = 0; x < width; x++) {
+          const srcX = Math.max(0, Math.min(width - 1, x + shift));
+          temp.set(data.subarray(row + srcX * 4, row + srcX * 4 + 4), x * 4);
+        }
+        data.set(temp, row);
+      }
     }
+    ctx.putImageData(imageData, 0, 0);
+
+    // Static noise flash
+    if (intensity > 0.5) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${(intensity - 0.5) * 0.1})`;
+      for (let i = 0; i < intensity * 50; i++) {
+        ctx.fillRect(Math.random() * width, Math.random() * height, 2, 1);
+      }
+    }
+  } catch (error) {
+    // Silently skip glitch overlay on error (prevents crash)
+    // This can happen with invalid canvas dimensions
   }
 }
 

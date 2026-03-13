@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { innerCoord } from '@void-sector/shared';
+import { innerCoord, calcHyperjumpFuel, BASE_FUEL_PER_JUMP } from '@void-sector/shared';
 
 /**
  * NavTargetPanel — coordinate input, bookmark selection, hyperjump toggle,
@@ -9,6 +10,7 @@ import { innerCoord } from '@void-sector/shared';
  * CRT-styled amber-on-dark monospace panel.
  */
 export function NavTargetPanel() {
+  const { t } = useTranslation('ui');
   const position = useStore((s) => s.position);
   const bookmarks = useStore((s) => s.bookmarks);
   const autopilot = useStore((s) => s.autopilot);
@@ -16,8 +18,12 @@ export function NavTargetPanel() {
   const navTarget = useStore((s) => s.navTarget);
   const fuel = useStore((s) => s.fuel);
   const ap = useStore((s) => s.ap);
+  const ship = useStore((s) => s.ship);
   const selectedSector = useStore((s) => s.selectedSector);
   const discoveries = useStore((s) => s.discoveries);
+  const wreckSlates = useStore((s) => s.wreckSlates);
+  const jumpGateInfo = useStore((s) => s.jumpGateInfo);
+  const isAtJumpgate = !!jumpGateInfo;
 
   const [inputX, setInputX] = useState('');
   const [inputY, setInputY] = useState('');
@@ -43,7 +49,8 @@ export function NavTargetPanel() {
 
   // Simple cost preview (client-side estimate)
   const estimatedAP = distance; // 1 AP per sector for normal mode
-  const estimatedFuel = useHyperjump ? Math.ceil(distance * 0.5) : 0;
+  const fuelPerJump = ship?.stats?.fuelPerJump ?? BASE_FUEL_PER_JUMP;
+  const estimatedFuel = useHyperjump ? calcHyperjumpFuel(fuelPerJump, distance) : 0;
   const estimatedTimeSec = useHyperjump ? Math.ceil(distance / 3) * 2 : distance * 3;
 
   const isTargetDiscovered = hasValidTarget && discoveries[`${targetX}:${targetY}`] !== undefined;
@@ -53,7 +60,7 @@ export function NavTargetPanel() {
     isTargetDiscovered &&
     !autopilot?.active &&
     (ap?.current ?? 0) >= 1 &&
-    (!useHyperjump || (fuel?.current ?? 0) >= 1);
+    (!useHyperjump || (fuel?.current ?? 0) >= estimatedFuel);
 
   const handleSetTarget = useCallback(() => {
     if (!hasValidTarget) return;
@@ -102,13 +109,13 @@ export function NavTargetPanel() {
               fontSize: '0.85rem',
             }}
           >
-            AUTOPILOT AKTIV
+            {t('nav.autopilotActive')}
           </div>
           <div style={{ fontSize: '0.8rem', marginBottom: 4 }}>
-            Ziel: ({innerCoord(autopilotStatus.targetX)}, {innerCoord(autopilotStatus.targetY)})
+            {t('nav.targetLabel')} ({innerCoord(autopilotStatus.targetX)}, {innerCoord(autopilotStatus.targetY)})
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-dim)', marginBottom: 8 }}>
-            Schritt {autopilotStatus.currentStep} / {autopilotStatus.totalSteps}
+            {t('nav.stepOf', { current: autopilotStatus.currentStep, total: autopilotStatus.totalSteps })}
           </div>
           {/* Progress bar */}
           <div style={progressBarOuterStyle}>
@@ -121,7 +128,7 @@ export function NavTargetPanel() {
             />
           </div>
           <button className="vs-btn" onClick={handleCancel} style={cancelBtnStyle}>
-            [ABBRECHEN]
+            {t('nav.cancel')}
           </button>
         </div>
       )}
@@ -137,10 +144,10 @@ export function NavTargetPanel() {
               fontSize: '0.85rem',
             }}
           >
-            AUTOPILOT PAUSIERT
+            {t('nav.autopilotPaused')}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-dim)', marginBottom: 4 }}>
-            Grund: {autopilotStatus?.pauseReason ?? 'unknown'}
+            {t('nav.reasonLabel')} {autopilotStatus?.pauseReason ?? 'unknown'}
           </div>
         </div>
       )}
@@ -226,7 +233,7 @@ export function NavTargetPanel() {
             </label>
             {useHyperjump && (
               <span style={{ color: '#00CCFF', fontSize: '0.7rem' }}>
-                Schneller, verbraucht Treibstoff
+                {t('nav.hyperjumpHint')}
               </span>
             )}
           </div>
@@ -234,12 +241,12 @@ export function NavTargetPanel() {
           {/* Cost preview */}
           {hasValidTarget && (
             <div style={costPreviewStyle}>
-              <div style={{ marginBottom: 2 }}>Distanz: {distance} Sektoren</div>
+              <div style={{ marginBottom: 2 }}>{t('nav.distanceSectors', { n: distance })}</div>
               <div>
-                AP: ~{estimatedAP} | Fuel: ~{estimatedFuel} | Zeit: ~{estimatedTimeSec}s
+                AP: ~{estimatedAP} | <span style={{ color: estimatedFuel > 0 ? ((fuel?.current ?? 0) >= estimatedFuel ? '#4ade80' : '#f87171') : undefined }}>Fuel: ~{estimatedFuel}</span> | Zeit: ~{estimatedTimeSec}s
               </div>
               {!isTargetDiscovered && (
-                <div style={{ color: '#FF3333', marginTop: 4 }}>Ziel nicht entdeckt!</div>
+                <div style={{ color: '#FF3333', marginTop: 4 }}>{t('nav.targetNotDiscovered')}</div>
               )}
             </div>
           )}
@@ -257,6 +264,30 @@ export function NavTargetPanel() {
             [ENGAGE]
           </button>
         </>
+      )}
+
+      {/* Slate Feed — only show if at jumpgate and has slates with jumpgate destinations */}
+      {isAtJumpgate && wreckSlates.filter((s) => s.hasJumpgate).length > 0 && (
+        <div style={{ marginTop: 8, borderTop: '1px solid var(--color-dim)', paddingTop: 8 }}>
+          <div style={{ color: 'var(--color-dim)', fontSize: '0.65rem', marginBottom: 4, letterSpacing: '0.1em' }}>
+            ◈ SLATE EINSPEISEN
+          </div>
+          {wreckSlates.filter((s) => s.hasJumpgate).map((slate) => (
+            <button
+              key={slate.id}
+              onClick={() => network.sendFeedSlateToGate(slate.id)}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                border: '1px solid var(--color-primary)',
+                background: 'none', color: 'var(--color-primary)',
+                fontFamily: 'var(--font-mono)', fontSize: '0.65rem',
+                cursor: 'pointer', padding: '2px 8px', marginBottom: 2,
+              }}
+            >
+              [{slate.sectorX}, {slate.sectorY}] SEKTOR
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

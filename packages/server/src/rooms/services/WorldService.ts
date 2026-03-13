@@ -47,7 +47,8 @@ import {
   generateQuadrantName,
 } from '../../engine/quadrantEngine.js';
 import {
-  JUMPGATE_FUEL_COST,
+  JUMPGATE_TRAVEL_COST_CREDITS,
+  PLAYER_GATE_TRAVEL_COST_CREDITS,
   JUMPGATE_BUILD_COST,
   JUMPGATE_UPGRADE_COSTS,
   JUMPGATE_DISTANCE_LIMITS,
@@ -147,6 +148,8 @@ import {
   depositResources,
 } from '../../db/constructionQueries.js';
 import type { ConstructionSite } from '../../db/constructionQueries.js';
+import { getWrecksInSector } from '../../engine/permadeathService.js';
+import { getUniverseTickCount } from '../../engine/universeBootstrap.js';
 
 function toConstructionSiteState(site: ConstructionSite): ConstructionSiteState {
   return {
@@ -291,6 +294,13 @@ export class WorldService {
       return;
     }
     const auth = client.auth as AuthPayload;
+
+    // Block building in anomaly sectors
+    const sectorType = this.ctx._pst(client.sessionId);
+    if (sectorType === 'anomaly') {
+      client.send('error', { code: 'BUILD_FAIL', message: 'Bauen in Anomalien nicht möglich' });
+      return;
+    }
 
     // Jumpgate goes into the jumpgates table, not structures — handle separately
     if (data.type === 'jumpgate') {
@@ -779,14 +789,12 @@ export class WorldService {
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
     const cargo = await getCargoState(auth.userId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
-
     const validation = validateCreateSlate(
       {
         ap: currentAP.current,
         scannerLevel: ship.scannerLevel,
-        cargoTotal,
-        cargoCap: ship.cargoCap,
+        slateCount: cargo.slates,
+        memory: ship.memory,
       },
       data.slateType,
     );
@@ -873,6 +881,57 @@ export class WorldService {
       ap: currentAP.current,
     });
     client.send('apUpdate', currentAP);
+  }
+
+  async handleCreateSlateFromScan(client: Client): Promise<void> {
+    if (rejectGuest(client, 'Scan-Slates erstellen')) return;
+    const auth = client.auth as AuthPayload;
+
+    // Memory check
+    const ship = this.ctx.getShipForClient(client.sessionId);
+    const cargo = await getCargoState(auth.userId);
+    if (cargo.slates >= ship.memory) {
+      client.send('slateFromScanResult', { success: false, error: 'MEMORY_FULL' });
+      return;
+    }
+
+    // Build sector data from server state (no trust on client data)
+    const sectorX = this.ctx._px(client.sessionId);
+    const sectorY = this.ctx._py(client.sessionId);
+    const sector = await getSector(sectorX, sectorY);
+    const resources = sector?.resources ?? { ore: 0, gas: 0, crystal: 0 };
+
+    // Derive structures
+    const structures: string[] = [];
+    if (sector?.type === 'station') structures.push('npc_station');
+    if (sector?.contents?.includes('ruin')) structures.push('ruin');
+    const jumpgate = await getPlayerJumpGate(sectorX, sectorY);
+    if (jumpgate) structures.push('jumpgate');
+
+    // Get wrecks
+    const wrecks = await getWrecksInSector(this.ctx.quadrantX, this.ctx.quadrantY, sectorX, sectorY);
+
+    const sectorData = [{
+      x: sectorX,
+      y: sectorY,
+      quadrantX: this.ctx.quadrantX,
+      quadrantY: this.ctx.quadrantY,
+      type: sector?.type ?? 'empty',
+      ore: resources.ore ?? 0,
+      gas: resources.gas ?? 0,
+      crystal: resources.crystal ?? 0,
+      structures,
+      wrecks: wrecks.map((w) => ({ playerName: w.playerName, tier: w.radarIconData?.tier ?? 1 })),
+      scannedAtTick: getUniverseTickCount(),
+    }];
+
+    // Create slate + add to cargo
+    await createDataSlate(auth.userId, 'scan', sectorData);
+    await addSlateToCargo(auth.userId);
+    const updatedCargo = await getCargoState(auth.userId);
+
+    client.send('slateFromScanResult', { success: true });
+    client.send('cargoUpdate', updatedCargo);
   }
 
   async handleActivateSlate(client: Client, data: ActivateSlateMessage): Promise<void> {
@@ -1025,7 +1084,8 @@ export class WorldService {
 
   async handleNpcBuyback(client: Client, data: NpcBuybackMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const tradingPost = await getPlayerStructure(auth.userId, 'trading_post');
+    // Check if player is at a station (NPC buyback is available at any station)
+    const isAtStation = this.ctx._pst(client.sessionId) === 'station';
     const slate = await getSlateById(data.slateId);
 
     if (!slate || slate.owner_id !== auth.userId || slate.status !== 'available') {
@@ -1034,7 +1094,7 @@ export class WorldService {
     }
 
     const sectorCount = (slate.sector_data as any[]).length;
-    const validation = validateNpcBuyback(!!tradingPost, sectorCount);
+    const validation = validateNpcBuyback(isAtStation, sectorCount);
     if (!validation.valid) {
       client.send('npcBuybackResult', { success: false, error: validation.error });
       return;
@@ -1089,9 +1149,8 @@ export class WorldService {
 
     const cargo = await getCargoState(auth.userId);
     const ship = this.ctx.getShipForClient(client.sessionId);
-    const cargoTotal = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
-    if (cargoTotal >= ship.cargoCap) {
-      client.send('error', { code: 'CARGO_FULL', message: 'No cargo space' });
+    if (cargo.slates >= ship.memory) {
+      client.send('error', { code: 'MEMORY_FULL', message: 'Memory full — no space for slate' });
       return;
     }
 
@@ -1138,23 +1197,25 @@ export class WorldService {
       return;
     }
 
-    // Deduct fuel
-    const currentFuel = await getFuelState(auth.userId);
-    if (currentFuel === null || currentFuel < JUMPGATE_FUEL_COST) {
-      client.send('useJumpGateResult', { success: false, error: 'Not enough fuel' });
+    // Deduct credits (player gates are cheaper)
+    const isPlayerGate = gate.ownerId != null;
+    const travelCost = isPlayerGate
+      ? PLAYER_GATE_TRAVEL_COST_CREDITS
+      : JUMPGATE_TRAVEL_COST_CREDITS;
+    const currentCredits = await getPlayerCredits(auth.userId);
+    if (currentCredits < travelCost) {
+      client.send('useJumpGateResult', { success: false, error: 'Not enough credits' });
       return;
     }
-    await saveFuelState(auth.userId, currentFuel - JUMPGATE_FUEL_COST);
+    await deductCredits(auth.userId, travelCost);
+    const updatedCredits = await getPlayerCredits(auth.userId);
 
     client.send('useJumpGateResult', {
       success: true,
       targetX: gate.targetX,
       targetY: gate.targetY,
-      fuel: {
-        current: currentFuel - JUMPGATE_FUEL_COST,
-        max: this.ctx.getShipForClient(client.sessionId).fuelMax,
-      },
     });
+    client.send('creditsUpdate', { credits: updatedCredits });
   }
 
   async handleFrequencyMatch(
@@ -1174,22 +1235,25 @@ export class WorldService {
       return;
     }
 
-    const currentFuel = await getFuelState(auth.userId);
-    if (currentFuel === null || currentFuel < JUMPGATE_FUEL_COST) {
-      client.send('useJumpGateResult', { success: false, error: 'Not enough fuel' });
+    // Deduct credits (player gates are cheaper)
+    const isPlayerGate = gate.ownerId != null;
+    const travelCost = isPlayerGate
+      ? PLAYER_GATE_TRAVEL_COST_CREDITS
+      : JUMPGATE_TRAVEL_COST_CREDITS;
+    const currentCredits = await getPlayerCredits(auth.userId);
+    if (currentCredits < travelCost) {
+      client.send('useJumpGateResult', { success: false, error: 'Not enough credits' });
       return;
     }
-    await saveFuelState(auth.userId, currentFuel - JUMPGATE_FUEL_COST);
+    await deductCredits(auth.userId, travelCost);
+    const updatedCredits = await getPlayerCredits(auth.userId);
 
     client.send('useJumpGateResult', {
       success: true,
       targetX: gate.targetX,
       targetY: gate.targetY,
-      fuel: {
-        current: currentFuel - JUMPGATE_FUEL_COST,
-        max: this.ctx.getShipForClient(client.sessionId).fuelMax,
-      },
     });
+    client.send('creditsUpdate', { credits: updatedCredits });
   }
 
   // ── Rescue Handlers ─────────────────────────────────────────────────
@@ -1590,6 +1654,8 @@ export class WorldService {
         });
         // ACEP: INTEL-XP for first quadrant discovery (spec: +20)
         addAcepXpForPlayer(auth.userId, 'intel', 20).catch(() => {});
+        // ACEP: EXPLORER-XP bonus for first quadrant discovery (spec: +50)
+        addAcepXpForPlayer(auth.userId, 'explorer', 50).catch(() => {});
         // Log world-first quadrant discovery
         logExpansionEvent('human', qx, qy, 'discovered').catch(() => {});
       } else {

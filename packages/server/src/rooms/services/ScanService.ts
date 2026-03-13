@@ -5,12 +5,12 @@ import type { CompleteScanEventMessage, SectorEnvironment } from '@void-sector/s
 
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
+import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import { calculateTraits } from '../../engine/traitCalculator.js';
 import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
 import { checkScanEvent } from '../../engine/scanEvents.js';
 import { generateSector } from '../../engine/worldgen.js';
-import { initCombatV2 } from '../../engine/combatV2.js';
 import { createPirateEncounter } from '../../engine/commands.js';
 import { getAPState, saveAPState } from './RedisAPStore.js';
 import {
@@ -34,16 +34,20 @@ import {
   addTypedArtefact,
   getAllQuadrantControls,
   addWissen,
+  getPlayerJumpGate,
+  getActiveQuests,
 } from '../../db/queries.js';
+import { getUniverseTickCount } from '../../engine/universeBootstrap.js';
 import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
 import { addToInventory, getInventoryItem, getCargoState } from '../../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
+import { getWreckAtSector } from '../../db/wreckQueries.js';
 import { redis } from './RedisAPStore.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
-import { AP_COSTS_LOCAL_SCAN, FEATURE_COMBAT_V2, MODULES } from '@void-sector/shared';
+import { AP_COSTS_LOCAL_SCAN, MODULES } from '@void-sector/shared';
 
 export const WISSEN_DAILY_CAP_BASE = 200;
 export const WISSEN_DAILY_CAP_FRONTIER = 300;
@@ -84,7 +88,12 @@ export class ScanService {
     const auth = client.auth as AuthPayload;
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-    const scannerLevel = this.ctx.getShipForClient(client.sessionId).scannerLevel;
+    const ship = this.ctx.getShipForClient(client.sessionId);
+    if (!ship) {
+      client.send('error', { code: 'SHIP_NOT_READY', message: 'Ship not ready — try again' });
+      return;
+    }
+    const scannerLevel = ship.scannerLevel;
 
     const result = validateLocalScan(currentAP, AP_COSTS_LOCAL_SCAN, scannerLevel);
     if (!result.valid) {
@@ -105,6 +114,18 @@ export class ScanService {
     const py = this.ctx._py(client.sessionId);
     const wrecks = await getWrecksInSector(this.ctx.quadrantX, this.ctx.quadrantY, px, py);
 
+    // Build structures list from sector data
+    const structures: string[] = [];
+    if (sectorData?.type === 'station') structures.push('npc_station');
+    if (sectorData?.contents?.includes('ruin')) structures.push('ruin');
+    const jumpgate = await getPlayerJumpGate(px, py);
+    if (jumpgate) structures.push('jumpgate');
+
+    const wreck = await getWreckAtSector(px, py);
+    const wreckInfo = wreck && wreck.status !== 'exhausted'
+      ? { wreckId: wreck.id, tier: wreck.tier, size: wreck.size, status: wreck.status }
+      : null;
+
     client.send('localScanResult', {
       resources,
       hiddenSignatures: result.hiddenSignatures,
@@ -115,6 +136,14 @@ export class ScanService {
         lastLogEntry: w.lastLogEntry,
         hasSalvage: w.salvageableModules.length > 0,
       })),
+      wreckInfo,
+      sectorX: px,
+      sectorY: py,
+      quadrantX: this.ctx.quadrantX,
+      quadrantY: this.ctx.quadrantY,
+      sectorType: sectorData?.type ?? 'empty',
+      structures,
+      universeTick: getUniverseTickCount(),
     });
     client.send('apUpdate', result.newAP!);
 
@@ -132,9 +161,13 @@ export class ScanService {
       sectorY: this.ctx._py(client.sessionId),
     });
 
+    // Community quest: auto-contribute scans
+    this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_scan').catch(() => {});
+
     // ACEP: INTEL-XP + personality comment for scanning (spec: +3 per scan)
     addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
     this._emitPersonalityComment(client, auth.userId, 'scan').catch(() => {});
+    awardWissenAndNotify(client, auth.userId, 2);  // +2 per scan
 
     // Wissen: +10 for normal sectors, +25 for special sectors (daily cap)
     {
@@ -179,7 +212,30 @@ export class ScanService {
         // ACEP: EXPLORER-XP for ancient ruin scan (spec: +15)
         addAcepXpForPlayer(auth.userId, 'explorer', 15).catch(() => {});
         this._emitPersonalityComment(client, auth.userId, 'scan_ruin').catch(() => {});
+        awardWissenAndNotify(client, auth.userId, 15);  // +15 for ancient ruin artefact
       }
+    }
+
+    // Bounty chase: exclusive spawn check (after normal scan events)
+    const bountyAmbushData = await checkBountyAmbush(
+      auth.userId,
+      this.ctx._px(client.sessionId),
+      this.ctx._py(client.sessionId),
+    );
+    if (bountyAmbushData) {
+      const bx = this.ctx._px(client.sessionId);
+      const by = this.ctx._py(client.sessionId);
+      // Set Redis dedup key (1h TTL)
+      redis.set(`bounty_spawn:${auth.userId}:${bx}:${by}`, '1', 'EX', 3600).catch(() => {});
+
+      client.send('bountyAmbush', {
+        questId: bountyAmbushData.questId,
+        targetName: bountyAmbushData.targetName,
+        targetLevel: bountyAmbushData.targetLevel,
+        sectorX: bx,
+        sectorY: by,
+      });
+      client.send('logEntry', `WARNUNG: ${bountyAmbushData.targetName} entdeckt!`);
     }
   }
 
@@ -296,6 +352,11 @@ export class ScanService {
       });
     }
 
+    // Community quest: auto-contribute scanned sectors
+    if (allCoords.length > 0) {
+      this.ctx.contributeToCommunityQuest(auth.userId, allCoords.length, 'community_scan').catch(() => {});
+    }
+
     // ACEP: INTEL-XP for area scan (discovering new sectors) (spec: +3)
     if (newSectors.length > 0) {
       addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
@@ -327,20 +388,10 @@ export class ScanService {
         const { qx: v2Qx, qy: v2Qy } = sectorToQuadrant(sector.x, sector.y);
         const v2Controls = await getAllQuadrantControls();
         if (!isFrontierQuadrant(v2Qx, v2Qy, v2Controls)) {
-          client.send('actionError', {
-            code: 'NO_PIRATES',
-            message: 'Dieser Sektor liegt tief im Zivilisationsgebiet. Keine Piraten mehr aktiv.',
-          });
+          client.send('logEntry', 'INFO: Dieser Sektor liegt tief im Zivilisationsgebiet. Keine Piraten aktiv.');
           continue;
         }
         client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
-        // Init combat v2 state
-        if (FEATURE_COMBAT_V2) {
-          const combatShip = this.ctx.getShipForClient(client.sessionId);
-          const combatState = initCombatV2(encounter, combatShip);
-          this.ctx.combatV2States.set(client.sessionId, combatState);
-          client.send('combatV2Init', { state: combatState });
-        }
         client.send('logEntry', `WARNUNG: Piraten-Hinterhalt bei (${sector.x}, ${sector.y})!`);
       } else {
         const eventId = await insertScanEvent(
@@ -371,6 +422,12 @@ export class ScanService {
             'logEntry',
             `${eventNames[eventResult.eventType] ?? 'Event'} entdeckt bei (${sector.x}, ${sector.y})`,
           );
+          // ACEP: INTEL-XP for anomaly/artefact scan events on discovery
+          if (eventResult.eventType === 'anomaly_reading') {
+            addAcepXpForPlayer(auth.userId, 'intel', 8).catch(() => {});
+          } else if (eventResult.eventType === 'artifact_find') {
+            addAcepXpForPlayer(auth.userId, 'intel', 15).catch(() => {});
+          }
         }
       }
     }
@@ -425,6 +482,10 @@ export class ScanService {
       const updatedCargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', updatedCargo);
       client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
+      // +5-15 depending on artefact type
+      const artefactType = scanEventData.rewardArtefactType as string | undefined;
+      const artefactWissen = artefactType && ['ancient_data', 'alien_tech'].includes(artefactType) ? 15 : !artefactType ? 5 : 10;
+      awardWissenAndNotify(client, auth.userId, artefactWissen);
     }
 
     // Handle blueprint find — stored in unified inventory (type='blueprint')
@@ -511,4 +572,41 @@ export class ScanService {
       client.send('logEntry', comment);
     }
   }
+}
+
+/**
+ * Check if a player has an active bounty_chase quest where:
+ * - bounty_trail is fulfilled
+ * - bounty_combat sector matches scanned sector
+ * - bounty_combat is NOT yet fulfilled
+ * - No Redis dedup key present
+ *
+ * Redis key: `bounty_spawn:{playerId}:{sectorX}:{sectorY}` (TTL 3600s)
+ * Returns ambush data or null.
+ */
+export async function checkBountyAmbush(
+  playerId: string,
+  sectorX: number,
+  sectorY: number,
+): Promise<{ questId: string; targetName: string; targetLevel: number } | null> {
+  const quests = await getActiveQuests(playerId);
+  for (const quest of quests) {
+    const objectives = quest.objectives as any[];
+    const trailObj = objectives.find((o: any) => o.type === 'bounty_trail');
+    const combatObj = objectives.find((o: any) => o.type === 'bounty_combat');
+    if (!trailObj?.fulfilled || !combatObj || combatObj.fulfilled) continue;
+    if (combatObj.sectorX !== sectorX || combatObj.sectorY !== sectorY) continue;
+
+    // Check Redis dedup key
+    const redisKey = `bounty_spawn:${playerId}:${sectorX}:${sectorY}`;
+    const exists = await redis.get(redisKey);
+    if (exists) continue;
+
+    return {
+      questId: quest.id,
+      targetName: combatObj.targetName,
+      targetLevel: combatObj.targetLevel,
+    };
+  }
+  return null;
 }

@@ -3,8 +3,8 @@ import {
   SECTOR_RESOURCE_YIELDS,
   ENVIRONMENT_WEIGHTS,
   CONTENT_WEIGHTS,
-  RESOURCE_REGEN_PER_MINUTE,
-  CRYSTAL_REGEN_PER_MINUTE,
+  RESOURCE_REGEN_DELAY_TICKS,
+  RESOURCE_REGEN_INTERVAL_TICKS,
 } from '@void-sector/shared';
 
 describe('worldgen rebalance (#113)', () => {
@@ -40,8 +40,7 @@ describe('worldgen rebalance (#113)', () => {
   });
 
   it('resource regen constants are positive', () => {
-    expect(RESOURCE_REGEN_PER_MINUTE).toBeGreaterThan(0);
-    expect(CRYSTAL_REGEN_PER_MINUTE).toBeGreaterThan(0);
-    expect(CRYSTAL_REGEN_PER_MINUTE).toBeLessThan(RESOURCE_REGEN_PER_MINUTE);
+    expect(RESOURCE_REGEN_DELAY_TICKS).toBeGreaterThan(0);
+    expect(RESOURCE_REGEN_INTERVAL_TICKS).toBeGreaterThan(0);
   });
 });

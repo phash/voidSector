@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { getStationArtwork } from '../assets/stations';
 import { getAlienArtwork } from '../assets/aliens';
@@ -105,20 +106,6 @@ const SECTOR_ART: Record<string, string[]> = {
     '  ·         ·     ·     ',
     '                         ',
   ],
-  home_base: [
-    '  ╔══════════════════╗  ',
-    '  ║  HOME BASE ALPHA ║  ',
-    '  ╠══════════════════╣  ',
-    '  ║  ╔═══╗  ╔═════╗  ║  ',
-    '  ║  ║HGR║  ║STORE║  ║  ',
-    '  ║  ╚═══╝  ╚═════╝  ║  ',
-    '  ╠══════════════════╣  ',
-    '  ║    ╔══════════╗   ║  ',
-    '  ║    ║ HOME CORE║   ║  ',
-    '  ║    ║  [ONLINE]║   ║  ',
-    '  ║    ╚══════════╝   ║  ',
-    '  ╚══════════════════╝  ',
-  ],
   ship: [
     '          ╱▲╲           ',
     '         ╱   ╲          ',
@@ -134,6 +121,7 @@ const SECTOR_ART: Record<string, string[]> = {
 };
 
 export function DetailViewOverlay() {
+  const { t } = useTranslation('ui');
   const detailView = useStore((s) => s.detailView);
   const setDetailView = useStore((s) => s.setDetailView);
 
@@ -143,7 +131,7 @@ export function DetailViewOverlay() {
   const artKey = isAncient ? 'ancient_station' : detailView.type;
   const art = SECTOR_ART[artKey] ?? SECTOR_ART.empty;
   const sectorType = isAncient
-    ? 'ANCIENT XENOSTATION'
+    ? t('detail.ancientXenostation')
     : detailView.type.toUpperCase().replace('_', ' ');
 
   // Resolve SVG artwork for stations and aliens

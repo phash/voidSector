@@ -3,7 +3,7 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
-import { UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
 
 const QUEST_TYPE_SHORT: Record<string, string> = {
   fetch: 'LFR',
@@ -21,6 +21,7 @@ const QUEST_TYPE_SHORT: Record<string, string> = {
 };
 
 function TrackedQuestPanel({ quest, onClose }: { quest: TrackedQuest; onClose?: () => void }) {
+  const { t } = useTranslation('ui');
   return (
     <div
       style={{
@@ -50,7 +51,7 @@ function TrackedQuestPanel({ quest, onClose }: { quest: TrackedQuest; onClose?: 
           fontSize: '0.75rem',
         }}
       >
-        [{quest.type.toUpperCase()}] {UI.status.TRACKED}
+        [{quest.type.toUpperCase()}] {t('status.tracked')}
       </div>
       <div style={{ color: '#FFB000', marginBottom: 4 }}>{quest.title}</div>
       {quest.description && (
@@ -60,7 +61,7 @@ function TrackedQuestPanel({ quest, onClose }: { quest: TrackedQuest; onClose?: 
       )}
       {quest.targetX != null && quest.targetY != null && (
         <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.75rem' }}>
-          {UI.status.TARGET}: ({innerCoord(quest.targetX)}, {innerCoord(quest.targetY)})
+          {t('status.target')}: ({innerCoord(quest.targetX)}, {innerCoord(quest.targetY)})
         </div>
       )}
       {onClose && (
@@ -77,7 +78,7 @@ function TrackedQuestPanel({ quest, onClose }: { quest: TrackedQuest; onClose?: 
             padding: 0,
           }}
         >
-          [{UI.actions.CLOSE}]
+          [{t('actions.close')}]
         </button>
       )}
     </div>
@@ -85,6 +86,7 @@ function TrackedQuestPanel({ quest, onClose }: { quest: TrackedQuest; onClose?: 
 }
 
 export function BookmarkBar() {
+  const { t } = useTranslation('ui');
   const bookmarks = useStore((s) => s.bookmarks);
   const trackedQuests = useStore((s) => s.trackedQuests);
   const position = useStore((s) => s.position);
@@ -127,14 +129,14 @@ export function BookmarkBar() {
     >
       <button
         className="vs-btn"
-        style={{ fontSize: '0.75rem', padding: '2px 4px' }}
+        style={{ fontSize: '0.75rem', padding: '4px 8px' }}
         onClick={() => jumpTo(0, 0)}
       >
         HOME
       </button>
       <button
         className="vs-btn"
-        style={{ fontSize: '0.75rem', padding: '2px 4px' }}
+        style={{ fontSize: '0.75rem', padding: '4px 8px' }}
         onClick={() => jumpTo(position.x, position.y)}
       >
         SHIP
@@ -153,7 +155,7 @@ export function BookmarkBar() {
               className="vs-btn"
               style={{
                 fontSize: '0.75rem',
-                padding: '2px 4px',
+                padding: '4px 8px',
                 opacity: bm ? 1 : 0.3,
                 width: '100%',
                 paddingRight: hoveredSlot === slotId && bm ? '18px' : '4px',
@@ -203,7 +205,7 @@ export function BookmarkBar() {
               letterSpacing: '0.1em',
             }}
           >
-            {UI.status.TRACKED}
+            {t('status.tracked')}
           </div>
           {trackedQuests.map((tq) => {
             const typeShort = QUEST_TYPE_SHORT[tq.type] ?? tq.type.slice(0, 3).toUpperCase();
@@ -211,7 +213,7 @@ export function BookmarkBar() {
             return (
               <div
                 key={tq.questId}
-                style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 2 }}
                 onMouseEnter={() => {
                   setHoveredSlot(slotId);
                   showQuestPanel(tq.questId);
@@ -230,41 +232,40 @@ export function BookmarkBar() {
                   }}
                   style={{
                     fontSize: '0.75rem',
-                    padding: '2px 4px',
+                    padding: '4px 8px',
                     borderColor: '#4488FF',
                     color: '#4488FF',
-                    width: '100%',
+                    flex: 1,
+                    minWidth: 0,
                     textAlign: 'left',
                     overflow: 'hidden',
                     whiteSpace: 'nowrap',
                     textOverflow: 'ellipsis',
-                    paddingRight: hoveredSlot === slotId ? '18px' : '4px',
                   }}
                   title={tq.title}
                 >
                   [{typeShort}] {tq.title}
                 </button>
-                {hoveredSlot === slotId && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      network.sendTrackQuest(tq.questId, false);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      right: 0,
-                      background: 'none',
-                      border: 'none',
-                      color: '#f44',
-                      cursor: 'pointer',
-                      fontFamily: 'monospace',
-                      fontSize: '0.75rem',
-                      padding: '0 2px',
-                    }}
-                  >
-                    [X]
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    network.sendTrackQuest(tq.questId, false);
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    width: 18,
+                    background: 'none',
+                    border: 'none',
+                    color: hoveredSlot === slotId ? '#f44' : 'transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'monospace',
+                    fontSize: '0.75rem',
+                    padding: 0,
+                  }}
+                  aria-label="Quest entfernen"
+                >
+                  ×
+                </button>
                 {questPanelSlot === tq.questId && <TrackedQuestPanel quest={tq} />}
               </div>
             );

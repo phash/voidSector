@@ -1,0 +1,495 @@
+Total messages: 127 (Errors: 123, Warnings: 3)
+Returning 123 messages for level "error"
+
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443
+[ERROR] [radar] render exception: InvalidStateError: Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+    at ES (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:56:78269)
+    at https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:154917
+    at a (https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1444:153156) @ https://fact-picked-src-random.trycloudflare.com/assets/index-TGqKinB0.js:1443

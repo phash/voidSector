@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: voidsector
       POSTGRES_PASSWORD: voidsector_dev
       POSTGRES_DB: voidsector
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,8 +16,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     restart: unless-stopped
 
   server:
@@ -32,7 +28,7 @@ services:
       DATABASE_URL: postgres://voidsector:voidsector_dev@postgres:5432/voidsector
       REDIS_URL: redis://redis:6379
       JWT_SECRET: voidsector-dev-secret
-      ADMIN_TOKEN: voidsector-admin-dev
+      ADMIN_TOKEN: vs-admin-2026
       PORT: "2567"
     depends_on:
       postgres:
@@ -53,7 +49,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --url http://client:3201
+    command: tunnel --no-autoupdate --url http://client:3201
     depends_on:
       - client
       - server

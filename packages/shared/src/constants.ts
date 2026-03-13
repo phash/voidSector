@@ -1,15 +1,14 @@
 import type {
   SectorType,
-  ShipClass,
   ResourceType,
   MineableResourceType,
   StructureType,
-  HullType,
-  HullDefinition,
   ModuleDefinition,
+  ModuleCategory,
   SectorEnvironment,
   SectorContent,
   ProductionRecipe,
+  WreckSize,
 } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
@@ -21,15 +20,6 @@ export const SECTOR_TYPES: SectorType[] = [
   'pirate',
 ];
 
-/** @deprecated Not used in worldgen. See CONTENT_WEIGHTS + ENVIRONMENT_WEIGHTS in packages/server/src/engine/worldgen.ts. */
-export const SECTOR_WEIGHTS: Record<SectorType, number> = {
-  empty: 0.55,
-  asteroid_field: 0.15,
-  nebula: 0.1,
-  anomaly: 0.08,
-  station: 0.05,
-  pirate: 0.07,
-};
 
 export const AP_DEFAULTS = {
   max: 100,
@@ -71,9 +61,8 @@ export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceT
 
 export const MINING_RATE_PER_SECOND = 1;
 
-export const RESOURCE_REGEN_PER_MINUTE = 1;
-export const CRYSTAL_REGEN_PER_MINUTE = 1 / 3;
-export const RESOURCE_REGEN_DELAY_MINUTES = 5;
+export const RESOURCE_REGEN_DELAY_TICKS = 50;
+export const RESOURCE_REGEN_INTERVAL_TICKS = 12; // 1 unit per 12 ticks (60s)
 
 export const RESOURCE_TYPES: MineableResourceType[] = ['ore', 'gas', 'crystal'];
 
@@ -109,70 +98,18 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
 
 // ── Research Lab / Wissen ─────────────────────────────────────────────
 
-/** Base Wissen generation per hour by research lab tier (1–5) */
-export const RESEARCH_LAB_WISSEN_RATE: Record<number, number> = {
-  1: 5, // Grundlabor
-  2: 12, // Forschungslabor
-  3: 25, // Analysestation
-  4: 45, // Forschungsturm
-  5: 80, // Observatorium
-};
-
-export const RESEARCH_LAB_NAMES: Record<number, string> = {
-  1: 'GRUNDLABOR',
-  2: 'FORSCHUNGSLABOR',
-  3: 'ANALYSESTATION',
-  4: 'FORSCHUNGSTURM',
-  5: 'OBSERVATORIUM',
+/** Lab tier Wissen multiplier for active generation (replaces passive tick) */
+export const LAB_WISSEN_MULTIPLIER: Record<number, number> = {
+  0: 1.0,
+  1: 1.5,
+  2: 2.0,
+  3: 3.0,
+  4: 4.0,
+  5: 5.0,
 };
 
 /** Maximum research lab tier */
 export const RESEARCH_LAB_MAX_TIER = 5;
-
-/** Lab tier required to research modules of each module tier */
-export const RESEARCH_LAB_TIER_FOR_MODULE_TIER: Record<number, number> = {
-  1: 1,
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-};
-
-/** Wissen multipliers by sector type/environment present in the station's sector */
-export const WISSEN_SECTOR_MULTIPLIERS: Record<string, number> = {
-  asteroid_field: 1.2,
-  nebula: 1.5,
-  anomaly: 2.0,
-  black_hole_adjacent: 2.5,
-  ancient_jumpgate: 5.0,
-};
-
-/** Base Wissen cost to research a module, by module tier */
-export const WISSEN_COST_BY_TIER: Record<number, number> = {
-  1: 100,
-  2: 300,
-  3: 800,
-  4: 2000,
-  5: 5000,
-};
-
-/** Required artefacts (matching module category) per module tier */
-export const ARTEFACT_REQUIRED_BY_TIER: Record<number, number> = {
-  1: 0,
-  2: 0,
-  3: 1,
-  4: 2,
-  5: 3,
-};
-
-/** Wissen cost reduction per matching artefact used */
-export const ARTEFACT_WISSEN_BONUS = 500;
-
-/** Research time reduction per matching artefact used (fraction, e.g. 0.1 = 10%) */
-export const ARTEFACT_TIME_BONUS_PER = 0.1;
-
-/** Maximum artefacts that can be used per research */
-export const MAX_ARTEFACTS_PER_RESEARCH = 3;
 
 /** Credits + material cost to upgrade research lab to the given tier */
 export const RESEARCH_LAB_UPGRADE_COSTS: Record<
@@ -329,6 +266,12 @@ export const SLATE_AREA_RADIUS: Record<number, number> = {
   3: 4,
 };
 
+export const BASE_SCANNER_MEMORY = 2;
+
+export function getPhysicalCargoTotal(cargo: { ore: number; gas: number; crystal: number; artefact: number }): number {
+  return cargo.ore + cargo.gas + cargo.crystal + cargo.artefact;
+}
+
 // --- Phase 4: NPC Ecosystem ---
 
 export const NPC_FACTION_WEIGHTS: Record<string, number> = {
@@ -379,12 +322,6 @@ export const PIRATE_BASE_HP = 20;
 export const PIRATE_HP_PER_LEVEL = 10;
 export const PIRATE_BASE_DAMAGE = 5;
 export const PIRATE_DAMAGE_PER_LEVEL = 3;
-
-// Combat v2 — Feature flag
-export const FEATURE_COMBAT_V2 = true;
-
-// Hyperdrive v2 — Feature flag (charge-based hyperdrive system)
-export const FEATURE_HYPERDRIVE_V2 = false;
 
 // Combat v2 — Tactic multipliers
 export const TACTIC_MODS: Record<string, { dmg: number; def: number }> = {
@@ -472,153 +409,189 @@ export const TRADING_POST_TIERS: Record<number, { name: string; upgradeCost: num
   3: { name: 'AUTO-TRADE', upgradeCost: 3000 },
 };
 
-// Ship class definitions (from visual reference material)
-export const SHIP_CLASSES: Record<
-  ShipClass,
-  {
-    name: string;
-    displayName: string;
-    jumpRange: number;
-    apCostJump: number;
-    fuelMax: number;
-    fuelPerJump: number;
-    cargoCap: number;
-    scannerLevel: number;
-    safeSlots: number;
-    commRange: number;
-  }
-> = {
-  aegis_scout_mk1: {
-    name: 'VOID SCOUT MK. I',
-    displayName: '"AEGIS"',
-    jumpRange: 4,
-    apCostJump: 1,
-    fuelMax: 100,
-    fuelPerJump: 5,
-    cargoCap: 5,
-    scannerLevel: 1,
-    safeSlots: 1,
-    commRange: 50,
-  },
-  void_seeker_mk2: {
-    name: 'VOID SEEKER MK. II',
-    displayName: '"HELIOS"',
-    jumpRange: 12,
-    apCostJump: 2,
-    fuelMax: 200,
-    fuelPerJump: 3,
-    cargoCap: 25,
-    scannerLevel: 3,
-    safeSlots: 3,
-    commRange: 200,
-  },
+
+// ─── ACEP SLOT SYSTEM ────────────────────────────────────────────────────────
+
+export const SPECIALIZED_SLOT_CATEGORIES: ModuleCategory[] = [
+  'generator', // slot 0
+  'drive',     // slot 1
+  'weapon',    // slot 2
+  'armor',     // slot 3
+  'shield',    // slot 4
+  'scanner',   // slot 5
+  'mining',    // slot 6
+  'cargo',     // slot 7
+];
+
+export const SPECIALIZED_SLOT_INDEX: Partial<Record<ModuleCategory, number>> = {
+  generator: 0,
+  drive:     1,
+  weapon:    2,
+  armor:     3,
+  shield:    4,
+  scanner:   5,
+  mining:    6,
+  cargo:     7,
+};
+
+export const UNIQUE_MODULE_CATEGORIES: ModuleCategory[] = ['shield', 'scanner'];
+export const DEFENSE_ONLY_CATEGORIES: ModuleCategory[] = ['defense', 'special'];
+
+/** ausbau-XP-Schwellwerte für Extra-Slot-Freischaltung */
+export const ACEP_EXTRA_SLOT_THRESHOLDS: number[] = [10, 25, 40, 50];
+
+// ─── ACEP LEVEL THRESHOLDS ───────────────────────────────────────────────────
+
+export const ACEP_LEVEL_THRESHOLDS: Record<number, number> = {
+  1: 0,
+  2: 8,
+  3: 18,
+  4: 32,
+  5: 50,
+};
+
+export const ACEP_LEVEL_MULTIPLIERS: Record<number, number> = {
+  1: 1.0,
+  2: 1.1,
+  3: 1.2,
+  4: 1.35,
+  5: 1.5,
+};
+
+/** Modul-HP pro Tier */
+export const MODULE_HP_BY_TIER: Record<number, number> = {
+  1: 20, 2: 35, 3: 55, 4: 80, 5: 110,
+};
+
+/** EP-Kosten pro Power-Level pro Modul-Kategorie (im Kampf) */
+export const MODULE_EP_COSTS: Partial<Record<ModuleCategory, Record<string, number>>> = {
+  weapon:  { off: 0, low: 2, mid: 4, high: 6 },
+  shield:  { off: 0, low: 1, mid: 2, high: 4 },
+  drive:   { off: 0, low: 2, mid: 4, high: 6 },
+  scanner: { off: 0, low: 1, mid: 2, high: 3 },
+  repair:  { off: 0, low: 1, mid: 2, high: 4 },
+};
+
+/** Basis AP/s des Schiffs ohne Generator */
+export const BASE_HULL_AP_REGEN = 0.08;
+
+/** Power-Level-Multiplikatoren für AP-Regen und EP-Output */
+export const POWER_LEVEL_MULTIPLIERS: Record<string, number> = {
+  off: 0.0, low: 0.4, mid: 0.7, high: 1.0,
 };
 
 // --- Phase 7: Ship Designer ---
-export const HULLS: Record<HullType, HullDefinition> = {
-  scout: {
-    name: 'VOID SCOUT',
-    size: 'small',
-    slots: 3,
-    baseFuel: 80,
-    baseCargo: 3,
-    baseJumpRange: 5,
-    baseApPerJump: 1,
-    baseFuelPerJump: 1,
-    baseHp: 50,
-    baseCommRange: 50,
-    baseScannerLevel: 1,
-    baseEngineSpeed: 2,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 1,
-    unlockCost: 0,
-  },
-  freighter: {
-    name: 'VOID FREIGHTER',
-    size: 'medium',
-    slots: 4,
-    baseFuel: 120,
-    baseCargo: 15,
-    baseJumpRange: 3,
-    baseApPerJump: 2,
-    baseFuelPerJump: 2,
-    baseHp: 80,
-    baseCommRange: 75,
-    baseScannerLevel: 1,
-    baseEngineSpeed: 1,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 3,
-    unlockCost: 500,
-  },
-  cruiser: {
-    name: 'VOID CRUISER',
-    size: 'medium',
-    slots: 4,
-    baseFuel: 150,
-    baseCargo: 8,
-    baseJumpRange: 4,
-    baseApPerJump: 1,
-    baseFuelPerJump: 1,
-    baseHp: 100,
-    baseCommRange: 100,
-    baseScannerLevel: 1,
-    baseEngineSpeed: 2,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 4,
-    unlockCost: 1000,
-  },
-  explorer: {
-    name: 'VOID EXPLORER',
-    size: 'large',
-    slots: 5,
-    baseFuel: 200,
-    baseCargo: 10,
-    baseJumpRange: 6,
-    baseApPerJump: 1,
-    baseFuelPerJump: 1,
-    baseHp: 70,
-    baseCommRange: 150,
-    baseScannerLevel: 2,
-    baseEngineSpeed: 2,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 5,
-    unlockCost: 2000,
-  },
-  battleship: {
-    name: 'VOID BATTLESHIP',
-    size: 'large',
-    slots: 5,
-    baseFuel: 180,
-    baseCargo: 5,
-    baseJumpRange: 2,
-    baseApPerJump: 2,
-    baseFuelPerJump: 3,
-    baseHp: 150,
-    baseCommRange: 75,
-    baseScannerLevel: 1,
-    baseEngineSpeed: 1,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 6,
-    unlockCost: 3000,
-  },
-};
-
 export const MODULES: Record<string, ModuleDefinition> = {
+  // === GENERATOR ===
+  generator_mk1: {
+    id: 'generator_mk1', category: 'generator', tier: 1,
+    name: 'FUSION CELL MK.I', displayName: 'FUSION MK.I',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 6, label: 'EP/Runde +6' },
+    secondaryEffects: [],
+    effects: { generatorEpPerRound: 6, apRegenPerSecond: 0.20 } as any,
+    cost: { credits: 150, ore: 15 },
+    maxHp: 20, isUnique: true, acepPaths: ['ausbau'] as any,
+  },
+  generator_mk2: {
+    id: 'generator_mk2', category: 'generator', tier: 2,
+    name: 'FUSION CELL MK.II', displayName: 'FUSION MK.II',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 9, label: 'EP/Runde +9' },
+    secondaryEffects: [],
+    effects: { generatorEpPerRound: 9, apRegenPerSecond: 0.30 } as any,
+    cost: { credits: 400, ore: 30, crystal: 5 },
+    maxHp: 35, isUnique: true, acepPaths: ['ausbau'] as any,
+    prerequisite: 'generator_mk1',
+  },
+  generator_mk3: {
+    id: 'generator_mk3', category: 'generator', tier: 3,
+    name: 'FUSION CELL MK.III', displayName: 'FUSION MK.III',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 12, label: 'EP/Runde +12' },
+    secondaryEffects: [],
+    effects: { generatorEpPerRound: 12, apRegenPerSecond: 0.50 } as any,
+    cost: { credits: 900, ore: 50, crystal: 15 },
+    maxHp: 55, isUnique: true, acepPaths: ['ausbau'] as any,
+    prerequisite: 'generator_mk2',
+  },
+  generator_mk4: {
+    id: 'generator_mk4', category: 'generator', tier: 4,
+    name: 'FUSION CELL MK.IV', displayName: 'FUSION MK.IV',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 15, label: 'EP/Runde +15' },
+    secondaryEffects: [{ stat: 'apRegenPerSecond', delta: 0.70, label: 'AP/s +0.70' }],
+    effects: { generatorEpPerRound: 15, apRegenPerSecond: 0.70 } as any,
+    cost: { credits: 2000, ore: 80, crystal: 30, artefact: 1 },
+    maxHp: 80, isUnique: true, acepPaths: ['ausbau'] as any,
+    prerequisite: 'generator_mk3',
+    researchCost: { wissen: 800, artefacts: { generator: 1 } } as any,
+    researchDurationMin: 12,
+  },
+  generator_mk5: {
+    id: 'generator_mk5', category: 'generator', tier: 5,
+    name: 'FUSION CELL MK.V', displayName: 'FUSION MK.V',
+    primaryEffect: { stat: 'generatorEpPerRound', delta: 18, label: 'EP/Runde +18' },
+    secondaryEffects: [{ stat: 'apRegenPerSecond', delta: 1.00, label: 'AP/s +1.00' }],
+    effects: { generatorEpPerRound: 18, apRegenPerSecond: 1.00 } as any,
+    cost: { credits: 4500, ore: 120, crystal: 60, artefact: 2 },
+    maxHp: 110, isUnique: true, acepPaths: ['ausbau'] as any,
+    prerequisite: 'generator_mk4',
+    researchCost: { wissen: 1500, artefacts: { generator: 3 } } as any,
+    researchDurationMin: 20,
+  },
+
+  // === REPAIR ===
+  repair_mk1: {
+    id: 'repair_mk1', category: 'repair', tier: 1,
+    name: 'REPAIR DRONE MK.I', displayName: 'REPAIR MK.I',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 2, label: 'Reparatur +2 HP/Runde' },
+    secondaryEffects: [],
+    effects: { repairHpPerRound: 2, repairHpPerSecond: 0.5 } as any,
+    cost: { credits: 200, ore: 20 },
+    maxHp: 20, acepPaths: ['ausbau'] as any,
+  },
+  repair_mk2: {
+    id: 'repair_mk2', category: 'repair', tier: 2,
+    name: 'REPAIR DRONE MK.II', displayName: 'REPAIR MK.II',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 4, label: 'Reparatur +4 HP/Runde' },
+    secondaryEffects: [],
+    effects: { repairHpPerRound: 4, repairHpPerSecond: 1.0 } as any,
+    cost: { credits: 500, ore: 40, crystal: 5 },
+    maxHp: 35, acepPaths: ['ausbau'] as any,
+    prerequisite: 'repair_mk1',
+  },
+  repair_mk3: {
+    id: 'repair_mk3', category: 'repair', tier: 3,
+    name: 'REPAIR DRONE MK.III', displayName: 'REPAIR MK.III',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 7, label: 'Reparatur +7 HP/Runde' },
+    secondaryEffects: [],
+    effects: { repairHpPerRound: 7, repairHpPerSecond: 2.0 } as any,
+    cost: { credits: 1200, ore: 60, crystal: 20 },
+    maxHp: 55, acepPaths: ['ausbau'] as any,
+    prerequisite: 'repair_mk2',
+  },
+  repair_mk4: {
+    id: 'repair_mk4', category: 'repair', tier: 4,
+    name: 'REPAIR DRONE MK.IV', displayName: 'REPAIR MK.IV',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 11, label: 'Reparatur +11 HP/Runde' },
+    secondaryEffects: [{ stat: 'repairHpPerSecond', delta: 3.5, label: 'Reparatur +3.5 HP/s' }],
+    effects: { repairHpPerRound: 11, repairHpPerSecond: 3.5 } as any,
+    cost: { credits: 2500, ore: 90, crystal: 40, artefact: 1 },
+    maxHp: 80, acepPaths: ['ausbau'] as any,
+    prerequisite: 'repair_mk3',
+    researchCost: { wissen: 800, artefacts: { repair: 1 } } as any,
+    researchDurationMin: 12,
+  },
+  repair_mk5: {
+    id: 'repair_mk5', category: 'repair', tier: 5,
+    name: 'REPAIR DRONE MK.V', displayName: 'REPAIR MK.V',
+    primaryEffect: { stat: 'repairHpPerRound', delta: 16, label: 'Reparatur +16 HP/Runde' },
+    secondaryEffects: [{ stat: 'repairHpPerSecond', delta: 5.0, label: 'Reparatur +5.0 HP/s' }],
+    effects: { repairHpPerRound: 16, repairHpPerSecond: 5.0 } as any,
+    cost: { credits: 5000, ore: 140, crystal: 70, artefact: 2 },
+    maxHp: 110, acepPaths: ['ausbau'] as any,
+    prerequisite: 'repair_mk4',
+    researchCost: { wissen: 1500, artefacts: { repair: 3 } } as any,
+    researchDurationMin: 20,
+  },
+
   // === DRIVE ===
   drive_mk1: {
     id: 'drive_mk1',
@@ -627,15 +600,20 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'ION DRIVE MK.I',
     displayName: 'ION MK.I',
     primaryEffect: { stat: 'jumpRange', delta: 1, label: 'Sprungweite +1' },
-    secondaryEffects: [{ stat: 'engineSpeed', delta: 1, label: 'Engine-Speed +1' }],
+    secondaryEffects: [
+      { stat: 'engineSpeed', delta: 1, label: 'Engine-Speed +1' },
+      { stat: 'fuelMax', delta: 2_000, label: 'Fuel-Tank +2.000' },
+    ],
     effects: {
       jumpRange: 1,
       engineSpeed: 1,
-      hyperdriveRange: 4,
+      hyperdriveRange: 16,
       hyperdriveSpeed: 2,
       hyperdriveRegen: 1.0,
+      fuelMax: 2_000,
     },
     cost: { credits: 100, ore: 10 },
+    acepPaths: ['ausbau', 'explorer'],
   },
   drive_mk2: {
     id: 'drive_mk2',
@@ -647,20 +625,23 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [
       { stat: 'engineSpeed', delta: 2, label: 'Engine-Speed +2' },
       { stat: 'apCostJump', delta: -0.2, label: 'AP/Sprung -0.2' },
+      { stat: 'fuelMax', delta: 4_000, label: 'Fuel-Tank +4.000' },
     ],
     effects: {
       jumpRange: 2,
       apCostJump: -0.2,
       engineSpeed: 2,
-      hyperdriveRange: 8,
+      hyperdriveRange: 32,
       hyperdriveSpeed: 3,
       hyperdriveRegen: 1.5,
       hyperdriveFuelEfficiency: 0.1,
+      fuelMax: 4_000,
     },
     cost: { credits: 300, ore: 20, crystal: 5 },
     researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'drive_mk1',
+    acepPaths: ['ausbau', 'explorer'],
   },
   drive_mk3: {
     id: 'drive_mk3',
@@ -672,20 +653,23 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [
       { stat: 'engineSpeed', delta: 3, label: 'Engine-Speed +3' },
       { stat: 'apCostJump', delta: -0.5, label: 'AP/Sprung -0.5' },
+      { stat: 'fuelMax', delta: 7_000, label: 'Fuel-Tank +7.000' },
     ],
     effects: {
       jumpRange: 3,
       apCostJump: -0.5,
       engineSpeed: 3,
-      hyperdriveRange: 16,
+      hyperdriveRange: 64,
       hyperdriveSpeed: 5,
       hyperdriveRegen: 2.0,
       hyperdriveFuelEfficiency: 0.2,
+      fuelMax: 7_000,
     },
     cost: { credits: 800, ore: 40, crystal: 15 },
     researchCost: { wissen: 800, artefacts: { drive: 1 } },
     researchDurationMin: 12,
     prerequisite: 'drive_mk2',
+    acepPaths: ['ausbau', 'explorer'],
   },
 
   // === CARGO ===
@@ -695,10 +679,11 @@ export const MODULES: Record<string, ModuleDefinition> = {
     tier: 1,
     name: 'CARGO BAY MK.I',
     displayName: 'CARGO MK.I',
-    primaryEffect: { stat: 'cargoCap', delta: 5, label: 'Frachtraum +5' },
+    primaryEffect: { stat: 'cargoCap', delta: 10, label: 'Frachtraum +10' },
     secondaryEffects: [],
-    effects: { cargoCap: 5 },
+    effects: { cargoCap: 10 },
     cost: { credits: 80 },
+    acepPaths: ['ausbau'],
   },
   cargo_mk2: {
     id: 'cargo_mk2',
@@ -706,13 +691,14 @@ export const MODULES: Record<string, ModuleDefinition> = {
     tier: 2,
     name: 'CARGO BAY MK.II',
     displayName: 'CARGO MK.II',
-    primaryEffect: { stat: 'cargoCap', delta: 12, label: 'Frachtraum +12' },
+    primaryEffect: { stat: 'cargoCap', delta: 24, label: 'Frachtraum +24' },
     secondaryEffects: [{ stat: 'safeSlotBonus', delta: 1, label: 'Safe-Slot +1' }],
-    effects: { cargoCap: 12, safeSlotBonus: 1 },
+    effects: { cargoCap: 24, safeSlotBonus: 1 },
     cost: { credits: 250, ore: 15 },
     researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'cargo_mk1',
+    acepPaths: ['ausbau'],
   },
   cargo_mk3: {
     id: 'cargo_mk3',
@@ -720,16 +706,17 @@ export const MODULES: Record<string, ModuleDefinition> = {
     tier: 3,
     name: 'CARGO BAY MK.III',
     displayName: 'CARGO MK.III',
-    primaryEffect: { stat: 'cargoCap', delta: 25, label: 'Frachtraum +25' },
+    primaryEffect: { stat: 'cargoCap', delta: 50, label: 'Frachtraum +50' },
     secondaryEffects: [
       { stat: 'safeSlotBonus', delta: 2, label: 'Safe-Slot +2' },
-      { stat: 'fuelMax', delta: 20, label: 'Fuel-Tank +20' },
+      { stat: 'fuelMax', delta: 2_000, label: 'Fuel-Tank +2.000' },
     ],
-    effects: { cargoCap: 25, safeSlotBonus: 2, fuelMax: 20 },
+    effects: { cargoCap: 50, safeSlotBonus: 2, fuelMax: 2_000 },
     cost: { credits: 600, ore: 30, gas: 10 },
     researchCost: { wissen: 800, artefacts: { cargo: 1 } },
     researchDurationMin: 10,
     prerequisite: 'cargo_mk2',
+    acepPaths: ['ausbau'],
   },
 
   // === SCANNER ===
@@ -740,9 +727,11 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'SCANNER MK.I',
     displayName: 'SCAN MK.I',
     primaryEffect: { stat: 'scannerLevel', delta: 1, label: 'Scan-Level +1' },
-    secondaryEffects: [],
-    effects: { scannerLevel: 1 },
+    secondaryEffects: [{ stat: 'memory', delta: 4, label: 'Memory +4' }],
+    effects: { scannerLevel: 1, memory: 4 },
     cost: { credits: 120, crystal: 5 },
+    acepPaths: ['intel'],
+    isUnique: true,
   },
   scanner_mk2: {
     id: 'scanner_mk2',
@@ -751,12 +740,17 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'SCANNER MK.II',
     displayName: 'SCAN MK.II',
     primaryEffect: { stat: 'scannerLevel', delta: 1, label: 'Scan-Level +1' },
-    secondaryEffects: [{ stat: 'commRange', delta: 50, label: 'Komm-Reichweite +50' }],
-    effects: { scannerLevel: 1, commRange: 50 },
+    secondaryEffects: [
+      { stat: 'commRange', delta: 50, label: 'Komm-Reichweite +50' },
+      { stat: 'memory', delta: 6, label: 'Memory +6' },
+    ],
+    effects: { scannerLevel: 1, commRange: 50, memory: 6 },
     cost: { credits: 350, crystal: 15 },
     researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'scanner_mk1',
+    acepPaths: ['intel'],
+    isUnique: true,
   },
   scanner_mk3: {
     id: 'scanner_mk3',
@@ -768,12 +762,15 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [
       { stat: 'commRange', delta: 100, label: 'Komm-Reichweite +100' },
       { stat: 'artefactChanceBonus', delta: 0.03, label: 'Artefakt-Chance +3%' },
+      { stat: 'memory', delta: 10, label: 'Memory +10' },
     ],
-    effects: { scannerLevel: 2, commRange: 100, artefactChanceBonus: 0.03 },
+    effects: { scannerLevel: 2, commRange: 100, artefactChanceBonus: 0.03, memory: 10 },
     cost: { credits: 900, crystal: 30, gas: 10 },
     researchCost: { wissen: 800, artefacts: { scanner: 1 } },
     researchDurationMin: 15,
     prerequisite: 'scanner_mk2',
+    acepPaths: ['intel'],
+    isUnique: true,
   },
 
   // === ARMOR ===
@@ -787,6 +784,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { hp: 25 },
     cost: { credits: 100, ore: 15 },
+    acepPaths: ['kampf'],
   },
   armor_mk2: {
     id: 'armor_mk2',
@@ -801,6 +799,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'armor_mk1',
+    acepPaths: ['kampf'],
   },
   armor_mk3: {
     id: 'armor_mk3',
@@ -815,6 +814,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 800, artefacts: { armor: 1 } },
     researchDurationMin: 12,
     prerequisite: 'armor_mk2',
+    acepPaths: ['kampf'],
   },
 
   // === WEAPONS ===
@@ -830,6 +830,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     cost: { credits: 150, crystal: 10 },
     researchCost: { wissen: 100 },
     researchDurationMin: 5,
+    acepPaths: ['kampf'],
   },
   laser_mk2: {
     id: 'laser_mk2',
@@ -844,6 +845,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 10,
     prerequisite: 'laser_mk1',
+    acepPaths: ['kampf'],
   },
   laser_mk3: {
     id: 'laser_mk3',
@@ -858,6 +860,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 800, artefacts: { weapon: 1 } },
     researchDurationMin: 18,
     prerequisite: 'laser_mk2',
+    acepPaths: ['kampf'],
   },
   railgun_mk1: {
     id: 'railgun_mk1',
@@ -872,6 +875,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 100 },
     researchDurationMin: 8,
     prerequisite: 'laser_mk1',
+    acepPaths: ['kampf'],
   },
   railgun_mk2: {
     id: 'railgun_mk2',
@@ -886,6 +890,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 15,
     prerequisite: 'railgun_mk1',
+    acepPaths: ['kampf'],
   },
   missile_mk1: {
     id: 'missile_mk1',
@@ -899,6 +904,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     cost: { credits: 250, ore: 20, crystal: 5 },
     researchCost: { wissen: 100 },
     researchDurationMin: 7,
+    acepPaths: ['kampf'],
   },
   missile_mk2: {
     id: 'missile_mk2',
@@ -913,6 +919,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 12,
     prerequisite: 'missile_mk1',
+    acepPaths: ['kampf'],
   },
   emp_array: {
     id: 'emp_array',
@@ -927,6 +934,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 12,
     prerequisite: 'laser_mk2',
+    acepPaths: ['kampf'],
   },
 
   // === SHIELDS ===
@@ -943,6 +951,8 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 100 },
     researchDurationMin: 7,
     prerequisite: 'armor_mk1',
+    acepPaths: ['kampf', 'ausbau'],
+    isUnique: true,
   },
   shield_mk2: {
     id: 'shield_mk2',
@@ -957,6 +967,8 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 15,
     prerequisite: 'shield_mk1',
+    acepPaths: ['kampf', 'ausbau'],
+    isUnique: true,
   },
   shield_mk3: {
     id: 'shield_mk3',
@@ -971,6 +983,8 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 800, artefacts: { shield: 1 } },
     researchDurationMin: 20,
     prerequisite: 'shield_mk2',
+    acepPaths: ['kampf', 'ausbau'],
+    isUnique: true,
   },
 
   // === DEFENSE ===
@@ -987,6 +1001,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 8,
     prerequisite: 'armor_mk2',
+    acepPaths: ['kampf'],
   },
   ecm_suite: {
     id: 'ecm_suite',
@@ -1001,6 +1016,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 10,
     prerequisite: 'scanner_mk2',
+    acepPaths: ['kampf'],
   },
 
   // === SPEZIAL-MODULE ===
@@ -1013,13 +1029,13 @@ export const MODULES: Record<string, ModuleDefinition> = {
     primaryEffect: { stat: 'jumpRange', delta: 6, label: 'Sprungweite +6' },
     secondaryEffects: [
       { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
-      { stat: 'fuelPerJump', delta: -3, label: 'Fuel/Sprung -3' },
+      { stat: 'fuelPerJump', delta: -30, label: 'Fuel/Sprung -30' },
     ],
     effects: {
       jumpRange: 6,
       engineSpeed: 5,
-      fuelPerJump: -3,
-      hyperdriveRange: 30,
+      fuelPerJump: -30,
+      hyperdriveRange: 96,
       hyperdriveSpeed: 8,
       hyperdriveRegen: 3.0,
       hyperdriveFuelEfficiency: 0.35,
@@ -1029,6 +1045,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchDurationMin: 30,
     prerequisite: 'drive_mk3',
     factionRequirement: { factionId: 'ancients', minTier: 'honored' },
+    acepPaths: ['ausbau', 'explorer'],
   },
   quantum_scanner: {
     id: 'quantum_scanner',
@@ -1040,12 +1057,15 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [
       { stat: 'commRange', delta: 200, label: 'Komm-Reichweite +200' },
       { stat: 'artefactChanceBonus', delta: 0.05, label: 'Artefakt-Chance +5%' },
+      { stat: 'memory', delta: 10, label: 'Memory +10' },
     ],
-    effects: { scannerLevel: 3, commRange: 200, artefactChanceBonus: 0.05 },
+    effects: { scannerLevel: 3, commRange: 200, artefactChanceBonus: 0.05, memory: 10 },
     cost: { credits: 1500, crystal: 50 },
     researchCost: { wissen: 800, artefacts: { scanner: 1 } },
     researchDurationMin: 25,
     prerequisite: 'scanner_mk3',
+    acepPaths: ['intel'],
+    isUnique: true,
   },
   nano_armor: {
     id: 'nano_armor',
@@ -1060,6 +1080,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 800, artefacts: { armor: 1 } },
     researchDurationMin: 30,
     prerequisite: 'armor_mk3',
+    acepPaths: ['kampf'],
   },
 
   // === MINING LASER ===
@@ -1073,6 +1094,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     secondaryEffects: [],
     effects: { miningBonus: 0.15 },
     cost: { credits: 100, ore: 10 },
+    acepPaths: ['ausbau'],
   },
   mining_laser_mk2: {
     id: 'mining_laser_mk2',
@@ -1087,6 +1109,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 300 },
     researchDurationMin: 5,
     prerequisite: 'mining_laser_mk1',
+    acepPaths: ['ausbau'],
   },
   mining_laser_mk3: {
     id: 'mining_laser_mk3',
@@ -1101,6 +1124,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 800, artefacts: { mining: 1 } },
     researchDurationMin: 10,
     prerequisite: 'mining_laser_mk2',
+    acepPaths: ['ausbau'],
   },
   mining_laser_mk4: {
     id: 'mining_laser_mk4',
@@ -1118,6 +1142,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 2000, artefacts: { mining: 2 } },
     researchDurationMin: 20,
     prerequisite: 'mining_laser_mk3',
+    acepPaths: ['ausbau'],
   },
   mining_laser_mk5: {
     id: 'mining_laser_mk5',
@@ -1135,6 +1160,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 5000, artefacts: { mining: 3 } },
     researchDurationMin: 35,
     prerequisite: 'mining_laser_mk4',
+    acepPaths: ['ausbau'],
   },
 
   // === DRIVE MK.IV & MK.V ===
@@ -1149,20 +1175,23 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 4, label: 'Engine-Speed +4' },
       { stat: 'hyperdriveRegen', delta: 2.5, label: 'Hyperdrive-Regen +2.5' },
       { stat: 'hyperdriveFuelEfficiency', delta: 0.3, label: 'Fuel-Effizienz +30%' },
+      { stat: 'fuelMax', delta: 12_000, label: 'Fuel-Tank +12.000' },
     ],
     effects: {
       jumpRange: 4,
       apCostJump: -0.7,
       engineSpeed: 4,
-      hyperdriveRange: 25,
+      hyperdriveRange: 128,
       hyperdriveSpeed: 6,
       hyperdriveRegen: 2.5,
       hyperdriveFuelEfficiency: 0.3,
+      fuelMax: 12_000,
     },
     cost: { credits: 2000, ore: 60, crystal: 30, artefact: 3 },
     researchCost: { wissen: 2000, artefacts: { drive: 2 } },
     researchDurationMin: 20,
     prerequisite: 'drive_mk3',
+    acepPaths: ['ausbau', 'explorer'],
   },
   drive_mk5: {
     id: 'drive_mk5',
@@ -1175,20 +1204,23 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
       { stat: 'hyperdriveRegen', delta: 4.0, label: 'Hyperdrive-Regen +4.0' },
       { stat: 'hyperdriveFuelEfficiency', delta: 0.5, label: 'Fuel-Effizienz +50%' },
+      { stat: 'fuelMax', delta: 18_000, label: 'Fuel-Tank +18.000' },
     ],
     effects: {
       jumpRange: 6,
       apCostJump: -1.0,
       engineSpeed: 5,
-      hyperdriveRange: 50,
+      hyperdriveRange: 256,
       hyperdriveSpeed: 10,
       hyperdriveRegen: 4.0,
       hyperdriveFuelEfficiency: 0.5,
+      fuelMax: 18_000,
     },
     cost: { credits: 5000, ore: 120, crystal: 60, artefact: 8 },
     researchCost: { wissen: 5000, artefacts: { drive: 3 } },
     researchDurationMin: 40,
     prerequisite: 'drive_mk4',
+    acepPaths: ['ausbau', 'explorer'],
   },
 
   // === SCANNER MK.IV & MK.V ===
@@ -1203,12 +1235,15 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'commRange', delta: 150, label: 'Komm-Reichweite +150' },
       { stat: 'artefactChanceBonus', delta: 0.05, label: 'Artefakt-Chance +5%' },
       { stat: 'miningBonus', delta: 0.1, label: 'Mining +10%' },
+      { stat: 'memory', delta: 14, label: 'Memory +14' },
     ],
-    effects: { scannerLevel: 3, commRange: 150, artefactChanceBonus: 0.05, miningBonus: 0.1 },
+    effects: { scannerLevel: 3, commRange: 150, artefactChanceBonus: 0.05, miningBonus: 0.1, memory: 14 },
     cost: { credits: 2000, crystal: 50, gas: 20, artefact: 2 },
     researchCost: { wissen: 2000, artefacts: { scanner: 2 } },
     researchDurationMin: 22,
     prerequisite: 'scanner_mk3',
+    acepPaths: ['intel'],
+    isUnique: true,
   },
   scanner_mk5: {
     id: 'scanner_mk5',
@@ -1221,12 +1256,15 @@ export const MODULES: Record<string, ModuleDefinition> = {
       { stat: 'commRange', delta: 250, label: 'Komm-Reichweite +250' },
       { stat: 'artefactChanceBonus', delta: 0.08, label: 'Artefakt-Chance +8%' },
       { stat: 'miningBonus', delta: 0.15, label: 'Mining +15%' },
+      { stat: 'memory', delta: 20, label: 'Memory +20' },
     ],
-    effects: { scannerLevel: 4, commRange: 250, artefactChanceBonus: 0.08, miningBonus: 0.15 },
+    effects: { scannerLevel: 4, commRange: 250, artefactChanceBonus: 0.08, miningBonus: 0.15, memory: 20 },
     cost: { credits: 5000, crystal: 100, gas: 40, artefact: 6 },
     researchCost: { wissen: 5000, artefacts: { scanner: 3 } },
     researchDurationMin: 35,
     prerequisite: 'scanner_mk4',
+    acepPaths: ['intel'],
+    isUnique: true,
   },
 
   // === ARMOR MK.IV & MK.V ===
@@ -1246,6 +1284,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 2000, artefacts: { armor: 2 } },
     researchDurationMin: 20,
     prerequisite: 'armor_mk3',
+    acepPaths: ['kampf'],
   },
   armor_mk5: {
     id: 'armor_mk5',
@@ -1263,6 +1302,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     researchCost: { wissen: 5000, artefacts: { armor: 3 } },
     researchDurationMin: 35,
     prerequisite: 'armor_mk4',
+    acepPaths: ['kampf'],
   },
 
   // === CARGO MK.IV & MK.V ===
@@ -1272,16 +1312,17 @@ export const MODULES: Record<string, ModuleDefinition> = {
     tier: 4,
     name: 'CARGO BAY MK.IV',
     displayName: 'CARGO MK.IV',
-    primaryEffect: { stat: 'cargoCap', delta: 40, label: 'Frachtraum +40' },
+    primaryEffect: { stat: 'cargoCap', delta: 80, label: 'Frachtraum +80' },
     secondaryEffects: [
       { stat: 'safeSlotBonus', delta: 3, label: 'Safe-Slot +3' },
-      { stat: 'fuelMax', delta: 40, label: 'Fuel-Tank +40' },
+      { stat: 'fuelMax', delta: 4_000, label: 'Fuel-Tank +4.000' },
     ],
-    effects: { cargoCap: 40, safeSlotBonus: 3, fuelMax: 40 },
+    effects: { cargoCap: 80, safeSlotBonus: 3, fuelMax: 4_000 },
     cost: { credits: 1500, ore: 50, gas: 20, artefact: 2 },
     researchCost: { wissen: 2000, artefacts: { cargo: 2 } },
     researchDurationMin: 18,
     prerequisite: 'cargo_mk3',
+    acepPaths: ['ausbau'],
   },
   cargo_mk5: {
     id: 'cargo_mk5',
@@ -1289,27 +1330,509 @@ export const MODULES: Record<string, ModuleDefinition> = {
     tier: 5,
     name: 'CARGO BAY MK.V',
     displayName: 'CARGO MK.V',
-    primaryEffect: { stat: 'cargoCap', delta: 60, label: 'Frachtraum +60' },
+    primaryEffect: { stat: 'cargoCap', delta: 120, label: 'Frachtraum +120' },
     secondaryEffects: [
       { stat: 'safeSlotBonus', delta: 5, label: 'Safe-Slot +5' },
-      { stat: 'fuelMax', delta: 80, label: 'Fuel-Tank +80' },
+      { stat: 'fuelMax', delta: 8_000, label: 'Fuel-Tank +8.000' },
     ],
-    effects: { cargoCap: 60, safeSlotBonus: 5, fuelMax: 80 },
+    effects: { cargoCap: 120, safeSlotBonus: 5, fuelMax: 8_000 },
     cost: { credits: 4000, ore: 100, gas: 40, artefact: 5 },
     researchCost: { wissen: 5000, artefacts: { cargo: 3 } },
     researchDurationMin: 30,
     prerequisite: 'cargo_mk4',
+    acepPaths: ['ausbau'],
+  },
+
+  // === FOUND-ONLY MODULES ===
+
+  // --- DRIVE (found) ---
+  pulse_drive: {
+    id: 'pulse_drive',
+    category: 'drive',
+    tier: 4,
+    name: 'PULSE DRIVE',
+    displayName: 'PULSE',
+    primaryEffect: { stat: 'jumpRange', delta: 6, label: 'Sprungweite +6' },
+    secondaryEffects: [{ stat: 'engineSpeed', delta: 4, label: 'Engine-Speed +4' }],
+    effects: { jumpRange: 6, engineSpeed: 4 },
+    cost: { credits: 0 },
+    acepPaths: ['ausbau', 'explorer'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'pulse_drive_overheat', description: 'Jeder 3. Sprung kostet 2× AP (Überhitzung)' }],
+  },
+  ghost_drive: {
+    id: 'ghost_drive',
+    category: 'drive',
+    tier: 3,
+    name: 'GHOST DRIVE',
+    displayName: 'GHOST',
+    primaryEffect: { stat: 'jumpRange', delta: -2, label: 'Sprungweite −2' },
+    secondaryEffects: [],
+    effects: { jumpRange: -2 },
+    cost: { credits: 0 },
+    acepPaths: ['explorer'],
+    isFoundOnly: true,
+    drawbacks: [
+      { stat: 'jumpRange', delta: -2, description: '−2 Sprungreichweite' },
+      { runtimeEffect: 'ghost_drive_no_hyperjump', description: 'Kein Hyperjump möglich' },
+    ],
+  },
+  rift_engine: {
+    id: 'rift_engine',
+    category: 'drive',
+    tier: 5,
+    name: 'RIFT ENGINE',
+    displayName: 'RIFT',
+    primaryEffect: { stat: 'jumpRange', delta: 8, label: 'Sprungweite +8' },
+    secondaryEffects: [{ stat: 'hyperdriveFuelEfficiency', delta: 1.0, label: 'Fuel-Effizienz +100%' }],
+    effects: { jumpRange: 8, hyperdriveFuelEfficiency: 1.0 },
+    cost: { credits: 0 },
+    acepPaths: ['ausbau', 'explorer'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'rift_engine_drift', description: '5% Chance: landet 1–2 Sektoren daneben' }],
+  },
+
+  // --- WEAPON (found) ---
+  ancient_lance: {
+    id: 'ancient_lance',
+    category: 'weapon',
+    tier: 5,
+    name: 'ANCIENT LANCE',
+    displayName: 'A.LANCE',
+    primaryEffect: { stat: 'weaponAttack', delta: 45, label: 'ATK +45' },
+    secondaryEffects: [{ stat: 'weaponPiercing', delta: 0.4, label: 'Panzerbrechend 40%' }],
+    effects: { weaponAttack: 45, weaponPiercing: 0.4, weaponType: 'laser' as any },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'ancient_lance_cooldown', description: 'Feuert nur jede 2. Runde (Ladezeit)' }],
+  },
+  void_ripper: {
+    id: 'void_ripper',
+    category: 'weapon',
+    tier: 4,
+    name: 'VOID RIPPER',
+    displayName: 'V.RIPPР',
+    primaryEffect: { stat: 'weaponAttack', delta: 35, label: 'ATK +35' },
+    secondaryEffects: [],
+    effects: { weaponAttack: 35, weaponType: 'railgun' as any },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'void_ripper_recoil', description: '−30 HP eigenes Schiff pro Abfeuern' }],
+  },
+  leech_cannon: {
+    id: 'leech_cannon',
+    category: 'weapon',
+    tier: 3,
+    name: 'LEECH CANNON',
+    displayName: 'LEECH',
+    primaryEffect: { stat: 'weaponAttack', delta: 20, label: 'ATK +20' },
+    secondaryEffects: [],
+    effects: { weaponAttack: 20, weaponType: 'missile' as any },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'leech_cannon_no_shield_dmg', description: 'Kein Schaden gegen Schildierte Ziele' }],
+  },
+  scrambler: {
+    id: 'scrambler',
+    category: 'weapon',
+    tier: 2,
+    name: 'SCRAMBLER',
+    displayName: 'SCRBLR',
+    primaryEffect: { stat: 'weaponAttack', delta: 5, label: 'ATK +5' },
+    secondaryEffects: [],
+    effects: { weaponAttack: 5, weaponType: 'emp' as any },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'scrambler_disable_special', description: 'Deaktiviert Gegner-Sonderaktionen für 2 Runden' }],
+  },
+
+  // --- ARMOR (found) ---
+  living_hull: {
+    id: 'living_hull',
+    category: 'armor',
+    tier: 4,
+    name: 'LIVING HULL',
+    displayName: 'L.HULL',
+    primaryEffect: { stat: 'hp', delta: 120, label: 'HP +120' },
+    secondaryEffects: [{ stat: 'damageMod', delta: -0.1, label: 'Schadensreduktion −10%' }],
+    effects: { hp: 120, damageMod: -0.1 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [
+      { stat: 'damageMod', delta: -0.1, description: '−10% Schadensreduktion im Kampf' },
+      { runtimeEffect: 'living_hull_regen', description: '+3 HP/s außerhalb von Kämpfen' },
+    ],
+  },
+  salvage_skin: {
+    id: 'salvage_skin',
+    category: 'armor',
+    tier: 3,
+    name: 'SALVAGE SKIN',
+    displayName: 'SALVAGE',
+    primaryEffect: { stat: 'hp', delta: 80, label: 'HP +80' },
+    secondaryEffects: [
+      { stat: 'damageMod', delta: -0.2, label: 'Schadensreduktion −20%' },
+      { stat: 'cargoCap', delta: -5, label: 'Frachtraum −5' },
+    ],
+    effects: { hp: 80, damageMod: -0.2, cargoCap: -5 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ stat: 'cargoCap', delta: -5, description: '−5 Frachtkapazität' }],
+  },
+  reactive_plating: {
+    id: 'reactive_plating',
+    category: 'armor',
+    tier: 3,
+    name: 'REACTIVE PLATING',
+    displayName: 'REACT.P',
+    primaryEffect: { stat: 'hp', delta: -40, label: 'HP −40' },
+    secondaryEffects: [],
+    effects: { hp: -40 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [
+      { stat: 'hp', delta: -40, description: '−40 HP (dünne Schicht)' },
+      { runtimeEffect: 'reactive_plating_atk_return', description: '10% Schadenrückgabe als Bonus-ATK' },
+    ],
+  },
+
+  // --- SHIELD found (isUnique) ---
+  mirror_shield: {
+    id: 'mirror_shield',
+    category: 'shield',
+    tier: 3,
+    name: 'MIRROR SHIELD',
+    displayName: 'MIRROR',
+    primaryEffect: { stat: 'shieldHp', delta: 80, label: 'Schild +80' },
+    secondaryEffects: [],
+    effects: { shieldHp: 80 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf', 'ausbau'],
+    isUnique: true,
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'mirror_shield_reflect', description: 'Reflektiert 20% Schaden zurück. Keine Resistenz.' }],
+  },
+  reactive_barrier: {
+    id: 'reactive_barrier',
+    category: 'shield',
+    tier: 3,
+    name: 'REACTIVE BARRIER',
+    displayName: 'R.BARR',
+    primaryEffect: { stat: 'shieldHp', delta: 60, label: 'Schild +60' },
+    secondaryEffects: [],
+    effects: { shieldHp: 60, shieldRegen: 0 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf', 'ausbau'],
+    isUnique: true,
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'reactive_barrier_late_activate', description: 'Schild aktiv erst bei HP < 50%' }],
+  },
+  parasite_shell: {
+    id: 'parasite_shell',
+    category: 'shield',
+    tier: 5,
+    name: 'PARASITE SHELL',
+    displayName: 'PARASH',
+    primaryEffect: { stat: 'shieldHp', delta: 200, label: 'Schild +200' },
+    secondaryEffects: [{ stat: 'shieldRegen', delta: 5, label: 'Schild-Regen +5' }],
+    effects: { shieldHp: 200, shieldRegen: 5 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf', 'ausbau'],
+    isUnique: true,
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'parasite_shell_fuel_drain', description: 'Verbraucht 1 Fuel pro Kampfrunde' }],
+  },
+
+  // --- SCANNER found (isUnique) ---
+  deep_whisper: {
+    id: 'deep_whisper',
+    category: 'scanner',
+    tier: 4,
+    name: 'DEEP WHISPER',
+    displayName: 'D.WHSP',
+    primaryEffect: { stat: 'scannerLevel', delta: 3, label: 'Scan-Level +3' },
+    secondaryEffects: [{ stat: 'artefactChanceBonus', delta: 0.12, label: 'Artefakt-Chance +12%' }],
+    effects: { scannerLevel: 3, artefactChanceBonus: 0.12 },
+    cost: { credits: 0 },
+    acepPaths: ['intel'],
+    isUnique: true,
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'deep_whisper_ap_cost', description: 'Scan-AP-Kosten +50%' }],
+  },
+  ghost_lens: {
+    id: 'ghost_lens',
+    category: 'scanner',
+    tier: 3,
+    name: 'GHOST LENS',
+    displayName: 'G.LENS',
+    primaryEffect: { stat: 'commRange', delta: 400, label: 'Komm-Reichweite +400' },
+    secondaryEffects: [],
+    effects: { commRange: 400 },
+    cost: { credits: 0 },
+    acepPaths: ['intel'],
+    isUnique: true,
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'ghost_lens_mutual', description: 'Eigene Position für andere sichtbar (Radius 8)' }],
+  },
+  war_scanner: {
+    id: 'war_scanner',
+    category: 'scanner',
+    tier: 3,
+    name: 'WAR SCANNER',
+    displayName: 'WAR SC',
+    primaryEffect: { stat: 'artefactChanceBonus', delta: 0, label: 'Kampf-Scanner' },
+    secondaryEffects: [{ stat: 'scannerLevel', delta: -2, label: 'Zivile Scans −2' }],
+    effects: { artefactChanceBonus: 0, scannerLevel: -2, memory: 0 },
+    cost: { credits: 0 },
+    acepPaths: ['intel', 'kampf'],
+    isUnique: true,
+    isFoundOnly: true,
+    drawbacks: [{ stat: 'scannerLevel', delta: -2, description: 'Zivile Scans −2 Radius' }],
+  },
+
+  // --- MINING (found) ---
+  void_drill: {
+    id: 'void_drill',
+    category: 'mining',
+    tier: 5,
+    name: 'VOID DRILL',
+    displayName: 'V.DRILL',
+    primaryEffect: { stat: 'miningBonus', delta: 5.0, label: 'Mining +500%' },
+    secondaryEffects: [],
+    effects: { miningBonus: 5.0 },
+    cost: { credits: 0 },
+    acepPaths: ['ausbau'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'void_drill_raubbau', description: 'Sektor-Yield sinkt 3× schneller' }],
+  },
+  crystal_leech: {
+    id: 'crystal_leech',
+    category: 'mining',
+    tier: 3,
+    name: 'CRYSTAL LEECH',
+    displayName: 'C.LEEC',
+    primaryEffect: { stat: 'miningBonus', delta: -0.3, label: 'Mining −30%' },
+    secondaryEffects: [],
+    effects: { miningBonus: -0.3 },
+    cost: { credits: 0 },
+    acepPaths: ['ausbau'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'crystal_leech_conversion', description: 'Ore → Crystal Konversion (10:1). Mining-Rate −30%' }],
+  },
+  swarm_harvester: {
+    id: 'swarm_harvester',
+    category: 'mining',
+    tier: 4,
+    name: 'SWARM HARVESTER',
+    displayName: 'SWARM',
+    primaryEffect: { stat: 'miningBonus', delta: 1.5, label: 'Mining +150%' },
+    secondaryEffects: [{ stat: 'cargoCap', delta: -5, label: 'Frachtraum −5' }],
+    effects: { miningBonus: 1.5, cargoCap: -5 },
+    cost: { credits: 0 },
+    acepPaths: ['ausbau'],
+    isFoundOnly: true,
+    drawbacks: [{ stat: 'cargoCap', delta: -5, description: '−5 cargoCap (Sortier-Overhead)' }],
+  },
+
+  // --- CARGO (found) ---
+  living_hold: {
+    id: 'living_hold',
+    category: 'cargo',
+    tier: 4,
+    name: 'LIVING HOLD',
+    displayName: 'L.HOLD',
+    primaryEffect: { stat: 'cargoCap', delta: 80, label: 'Frachtraum +80' },
+    secondaryEffects: [{ stat: 'hp', delta: -10, label: 'HP −10' }],
+    effects: { cargoCap: 80, hp: -10 },
+    cost: { credits: 0 },
+    acepPaths: ['ausbau'],
+    isFoundOnly: true,
+    drawbacks: [{ stat: 'hp', delta: -10, description: '−10 HP (Bio-Wachstum)' }],
+  },
+  compressed_vault: {
+    id: 'compressed_vault',
+    category: 'cargo',
+    tier: 4,
+    name: 'COMPRESSED VAULT',
+    displayName: 'C.VAULT',
+    primaryEffect: { stat: 'cargoCap', delta: 100, label: 'Frachtraum +100' },
+    secondaryEffects: [{ stat: 'safeSlotBonus', delta: 4, label: 'Safe-Slot +4' }],
+    effects: { cargoCap: 100, safeSlotBonus: 4 },
+    cost: { credits: 0 },
+    acepPaths: ['ausbau'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'compressed_vault_slow_transfer', description: 'Cargo-Transfer dauert 2× länger' }],
+  },
+  black_market_hold: {
+    id: 'black_market_hold',
+    category: 'cargo',
+    tier: 3,
+    name: 'BLACK MARKET HOLD',
+    displayName: 'BLK.HLD',
+    primaryEffect: { stat: 'cargoCap', delta: 20, label: 'Frachtraum +20' },
+    secondaryEffects: [],
+    effects: { cargoCap: 20 },
+    cost: { credits: 0 },
+    acepPaths: ['ausbau'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'black_market_hold_rep', description: 'Reputations-Gewinn −50% bei allen Fraktionen' }],
+  },
+
+  // --- DEFENSE (found) ---
+  null_field: {
+    id: 'null_field',
+    category: 'defense',
+    tier: 4,
+    name: 'NULL FIELD',
+    displayName: 'NULL',
+    primaryEffect: { stat: 'ecmReduction', delta: 0.8, label: 'ECM −80% feindl. Genauigkeit' },
+    secondaryEffects: [],
+    effects: { ecmReduction: 0.8 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'null_field_no_emp', description: 'Eigene EMP-Waffen deaktiviert' }],
+  },
+  bleed_emitter: {
+    id: 'bleed_emitter',
+    category: 'defense',
+    tier: 3,
+    name: 'BLEED EMITTER',
+    displayName: 'BLEED',
+    primaryEffect: { stat: 'commRange', delta: -50, label: 'Komm-Reichweite −50' },
+    secondaryEffects: [],
+    effects: { commRange: -50 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ stat: 'commRange', delta: -50, description: '−50 Kommunikationsreichweite' }],
+  },
+  terror_array: {
+    id: 'terror_array',
+    category: 'defense',
+    tier: 4,
+    name: 'TERROR ARRAY',
+    displayName: 'TERROR',
+    primaryEffect: { stat: 'pointDefense', delta: 2, label: 'Punkt-Verteidigung +2' },
+    secondaryEffects: [],
+    effects: { pointDefense: 2 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'terror_array_pirate_spawn', description: '+15% Piraten-Spawn in aktuellem Sektor' }],
+  },
+
+  // --- SPECIAL (found) ---
+  memory_core: {
+    id: 'memory_core',
+    category: 'special',
+    tier: 3,
+    name: 'MEMORY CORE',
+    displayName: 'MEM.COR',
+    primaryEffect: { stat: 'artefactChanceBonus', delta: 0, label: 'Spezialkern' },
+    secondaryEffects: [],
+    effects: {},
+    cost: { credits: 0 },
+    acepPaths: ['intel'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'memory_core_no_new_quadrant', description: 'Kann keine neuen Quadranten betreten' }],
+  },
+  ancient_seed: {
+    id: 'ancient_seed',
+    category: 'special',
+    tier: 5,
+    name: 'ANCIENT SEED',
+    displayName: 'ANC.SD',
+    primaryEffect: { stat: 'artefactChanceBonus', delta: 0.1, label: 'Artefakt-Chance +10%' },
+    secondaryEffects: [{ stat: 'miningBonus', delta: -0.2, label: 'Mining −20%' }],
+    effects: { artefactChanceBonus: 0.1, miningBonus: -0.2 },
+    cost: { credits: 0 },
+    acepPaths: ['explorer'],
+    isFoundOnly: true,
+    drawbacks: [{ stat: 'miningBonus', delta: -0.2, description: '−20% Mining-Rate' }],
+  },
+  echo_chamber: {
+    id: 'echo_chamber',
+    category: 'special',
+    tier: 4,
+    name: 'ECHO CHAMBER',
+    displayName: 'ECHO',
+    primaryEffect: { stat: 'artefactChanceBonus', delta: 0.05, label: 'Artefakt-Chance +5%' },
+    secondaryEffects: [],
+    effects: { artefactChanceBonus: 0.05 },
+    cost: { credits: 0 },
+    acepPaths: ['intel', 'kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'echo_chamber_loud', description: 'Schiff-Meldungen häufiger und intensiver' }],
+  },
+  pirate_transponder: {
+    id: 'pirate_transponder',
+    category: 'special',
+    tier: 5,
+    name: 'PIRATE TRANSPONDER',
+    displayName: 'PIR.TR',
+    primaryEffect: { stat: 'artefactChanceBonus', delta: 0, label: 'Piratensignal' },
+    secondaryEffects: [],
+    effects: {},
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'pirate_transponder_rep', description: 'Alle Fraktionen −30 Reputation sofort' }],
+  },
+
+  // === VOID MODULES (found-only, not researchable) ===
+  void_shield: {
+    id: 'void_shield',
+    category: 'shield',
+    tier: 5,
+    name: 'VOID SHIELD',
+    displayName: 'V.SHLD',
+    primaryEffect: { stat: 'shieldHp', delta: 0, label: 'Void-Schutz' },
+    secondaryEffects: [{ stat: 'defenseMultiplier', delta: -0.3, label: '-30% Abwehr vs kinetisch' }],
+    effects: { shieldHp: 0 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf', 'ausbau'],
+    isUnique: true,
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'void_shield_kinetic_weak', description: 'Schützt vor Void-Todeszonen. -30% Verteidigung vs kinetische Waffen.' }],
+  },
+  void_gun: {
+    id: 'void_gun',
+    category: 'weapon',
+    tier: 5,
+    name: 'VOID GUN',
+    displayName: 'V.GUN',
+    primaryEffect: { stat: 'weaponDamage', delta: 20, label: 'Schaden +20 (vs Void ×5)' },
+    secondaryEffects: [],
+    effects: { weaponAttack: 20 },
+    cost: { credits: 0 },
+    acepPaths: ['kampf'],
+    isFoundOnly: true,
+    drawbacks: [{ runtimeEffect: 'void_gun_bonus', description: 'Zerstört Void Hives. Maximale Wirkung gegen Void (×5 Schaden).' }],
   },
 };
 
-export const SECTOR_COLORS: Record<SectorType | 'home_base', string> = {
+// Backfill maxHp for all modules that don't have it set explicitly
+for (const mod of Object.values(MODULES)) {
+  if (mod.maxHp === undefined) {
+    (mod as any).maxHp = MODULE_HP_BY_TIER[mod.tier] ?? 20;
+  }
+}
+
+export const SECTOR_COLORS: Record<SectorType, string> = {
   empty: '#FFB000',
   asteroid_field: '#FF8C00',
   nebula: '#00BFFF',
   station: '#00FF88',
   anomaly: '#FF00FF',
   pirate: '#FF3333',
-  home_base: '#FFFFFF',
 };
 
 export const SPAWN_MIN_DISTANCE = 10_000_000;
@@ -1325,7 +1848,7 @@ export const NEBULA_ZONE_GRID = 250;   // was 5_000; 1-2 clusters per 500×500 q
 export const NEBULA_ZONE_CHANCE = 0.4; // 40% of centers activate → ~1.6 blobs per quadrant
 export const NEBULA_ZONE_MIN_RADIUS = 2.5; // was 3; ~20 sectors min (π×r²)
 export const NEBULA_ZONE_MAX_RADIUS = 8; // max radius → ~201 sectors per blob
-export const NEBULA_SAFE_ORIGIN = 200; // no nebula zones within this many sectors of origin
+export const NEBULA_SAFE_ORIGIN = 50; // no nebula zones within this many sectors of origin — reduced for better quest accessibility
 
 // Two-stage worldgen: environment weights (first roll).
 // Nebula is handled purely via zone system (NEBULA_ZONE_*) — no scattered random nebula.
@@ -1394,35 +1917,6 @@ export const NEBULA_SCANNER_MALUS = 1; // -1 sector scan range in nebula
 export const NEBULA_PIRATE_SPAWN_MODIFIER = 0.7; // -30% pirate spawn in nebula
 export const EMPTY_FUEL_MODIFIER = 0.8; // -20% fuel cost in empty space
 
-// Hull-specific pixel patterns for radar rendering (3x3 grids, 1 = filled pixel)
-export const HULL_RADAR_PATTERNS: Record<HullType, number[][]> = {
-  scout: [
-    [0, 1, 0],
-    [1, 1, 1],
-    [0, 1, 0],
-  ], // cross — nimble interceptor
-  freighter: [
-    [1, 1, 1],
-    [1, 1, 1],
-    [0, 1, 0],
-  ], // wide body + single thruster
-  cruiser: [
-    [1, 0, 1],
-    [1, 1, 1],
-    [0, 1, 0],
-  ], // spread wings + fuselage + tail
-  explorer: [
-    [0, 1, 0],
-    [0, 1, 0],
-    [1, 1, 1],
-  ], // tall forward sensor array
-  battleship: [
-    [1, 1, 1],
-    [1, 1, 1],
-    [1, 0, 1],
-  ], // heavy armored block + dual thrusters
-};
-
 // UI Symbols for grid rendering
 export const SYMBOLS = {
   ship: '\u25A0',
@@ -1435,7 +1929,6 @@ export const SYMBOLS = {
   pirate: '\u2620',
   player: '\u25C6',
   iron: '\u26CF',
-  homeBase: '\u2302',
   jumpgate: '\u25CE', // ◎
 } as const;
 
@@ -1463,7 +1956,6 @@ export const ENVIRONMENT_SYMBOLS: Record<SectorEnvironment, string> = {
 export const CONTENT_SYMBOLS: Partial<Record<SectorContent, string>> = {
   asteroid_field: '\u25C6', // ◆
   station: 'S',
-  home_base: 'H',
   player_base: 'B',
   anomaly: '\u25CA', // ◊
   pirate_zone: '\u2620', // ☠
@@ -1479,7 +1971,6 @@ export const CONTENT_COLORS: Partial<Record<SectorContent, string>> = {
   station: '#00FF88',
   anomaly: '#FF00FF',
   pirate_zone: '#FF3333',
-  home_base: '#FFFFFF',
   player_base: '#FFFFFF',
   meteor: '#FFD700',
   relic: '#CC44FF',
@@ -1514,6 +2005,7 @@ export const MONITORS = {
   TECH: 'TECH',
   QUAD_MAP: 'QUAD-MAP',
   NEWS: 'NEWS',
+  ACEP: 'ACEP',
 } as const;
 
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
@@ -1531,6 +2023,7 @@ export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.QUAD_MAP,
   MONITORS.NEWS,
   MONITORS.LOG,
+  MONITORS.ACEP,
 ];
 
 /** Labels for cockpit program buttons */
@@ -1547,14 +2040,40 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
   NEWS: 'NEWS',
   LOG: 'LOG',
   MODULES: 'MODULES',
-  HANGAR: 'HANGAR',
+  ACEP: 'ACEP',
 };
 
 // --- Phase 5: Deep Systems ---
 
 // Fuel
-export const FUEL_COST_PER_UNIT = 2;
+export const FUEL_COST_PER_UNIT = 0.1; // 0.1 credits per fuel unit (was 2)
+export const FUEL_MIN_TANK = 1_000; // minimum tank size regardless of hull+modules
 export const FREE_REFUEL_MAX_SHIPS = 3;
+
+// Base ship stats (replaces hull-specific values after hull system removal)
+export const BASE_FUEL_CAPACITY = 10_000;
+export const BASE_FUEL_PER_JUMP = 100;
+export const BASE_CARGO = 10;
+export const BASE_MODULE_SLOTS = 3;
+export const BASE_HP = 100;
+export const BASE_JUMP_RANGE = 5;
+export const BASE_ENGINE_SPEED = 2;
+export const BASE_COMM_RANGE = 100;
+export const BASE_SCANNER_LEVEL = 1;
+
+// Station fuel production
+export const STATION_FUEL_BASELINE_PER_TICK = 10; // fuel produced per tick without gas
+export const STATION_FUEL_GAS_RATE_PER_TICK = 100; // fuel produced per tick when gas available (before efficiency)
+export const STATION_FUEL_PER_GAS = 1; // GAS units consumed per gas-enhanced tick
+export const STATION_FUEL_MAX_STOCK = 50_000; // cap per station
+/** Efficiency multiplier per station level: level → rate multiplier (1.0 = 100 fuel/tick, 1.2 = 120 fuel/tick) */
+export const STATION_FUEL_LEVEL_EFFICIENCY: Record<number, number> = {
+  1: 1.0,
+  2: 1.2,
+  3: 1.4,
+  4: 1.6,
+  5: 2.0,
+};
 
 // Per-station reputation fuel price modifiers (more granular than faction REP_PRICE_MODIFIERS)
 // Takes a reputation score (-100..+100) and returns a price multiplier.
@@ -1600,6 +2119,8 @@ export const FACTION_UPGRADE_TIERS: Record<
 export const JUMPGATE_CHANCE = 0.005; // natural bidirectional/wormhole gates (1 in 200 sectors)
 export const JUMPGATE_SALT = 777;
 export const JUMPGATE_FUEL_COST = 1;
+export const JUMPGATE_TRAVEL_COST_CREDITS = 50; // credits to use a public jumpgate
+export const PLAYER_GATE_TRAVEL_COST_CREDITS = 25; // credits to use a player-built gate (cheaper)
 export const JUMPGATE_MIN_RANGE = 50;
 export const JUMPGATE_MAX_RANGE = 10000;
 export const JUMPGATE_CODE_LENGTH = 8;
@@ -1641,17 +2162,6 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 // Multi-content sectors
 export const SECTOR_MAX_FEATURES = 3;
 
-// Home base safe zone — no pirate spawns within this Manhattan distance
-export const HOME_BASE_SAFE_RADIUS = 5;
-
-// Emergency Warp (Notruf)
-/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
-export const EMERGENCY_WARP_FREE_RADIUS = 200; // free within 200 Manhattan distance of home base
-/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
-export const EMERGENCY_WARP_CREDIT_PER_SECTOR = 5; // credits per sector beyond free radius
-/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
-export const EMERGENCY_WARP_FUEL_GRANT = 10; // fuel granted after emergency warp
-export const FEATURE_EMERGENCY_WARP = false;
 
 // Hyperjump Navigation
 export const HYPERJUMP_AP_DISCOUNT = 0.5; // 50% AP cost for known routes (legacy)
@@ -1662,26 +2172,8 @@ export const HYPERJUMP_FUEL_PER_SECTOR = 1; // base fuel cost per sector of hype
 export const SCAN_FUEL_COST = 0; // scans are free (#94)
 export const MINE_FUEL_COST = 0; // mining is free (#94)
 
-// Ship purchasing — prices in credits per hull (separate from unlockCost which is initial unlock)
-export const HULL_PRICES: Record<HullType, number> = {
-  scout: 0,
-  freighter: 500,
-  cruiser: 1000,
-  explorer: 2000,
-  battleship: 3000,
-};
-
 // Only stations at this NPC level or above have a shipyard
 export const STATION_SHIPYARD_LEVEL_THRESHOLD = 3;
-
-// Hull-specific fuel multiplier for hyperjumps
-export const HULL_FUEL_MULTIPLIER: Record<HullType, number> = {
-  scout: 0.8,
-  freighter: 1.2,
-  cruiser: 1.0,
-  explorer: 0.9,
-  battleship: 1.5,
-};
 
 // Normal jump constants
 export const JUMP_NORMAL_AP_COST = 1;
@@ -2256,6 +2748,42 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     ],
   },
 };
+
+// ─── Wreck POI ────────────────────────────────────────────────────────────────
+
+export const WRECK_BASE_DIFFICULTY: Record<string, number> = {
+  resource: 0.20,
+  module: 0.50,
+  blueprint: 0.70,
+  data_slate: 0.65,
+  artefact: 0.90,  // artefacts are stored as resource but use this key for difficulty
+};
+
+export const WRECK_SALVAGE_DURATION_MS: Record<WreckSize, number> = {
+  small: 4000,
+  medium: 6000,
+  large: 8000,
+};
+
+export const WRECK_SIZE_ITEM_COUNT: Record<WreckSize, [number, number]> = {
+  small: [2, 3],
+  medium: [4, 6],
+  large: [7, 10],
+};
+
+export const WRECK_MAX_PER_QUADRANT = 2;
+export const WRECK_DIFFICULTY_FAIL_DELTA = 0.15;
+export const WRECK_DIFFICULTY_SUCCESS_DELTA = -0.10;
+export const WRECK_DIFFICULTY_MAX = 0.3;
+export const WRECK_DIFFICULTY_MIN = -0.3;
+export const WRECK_SLATE_CAP = 5;
+export const WRECK_EXPLORER_CHANCE_PER_XP = 0.005;  // +0.5% per explorer XP, max +25%
+export const WRECK_HELION_ARTEFACT_MIN_CHANCE = 0.35; // at explorer=50, artefacts min 35%
+export const WRECK_INVESTIGATE_AP_COST = 2;
+export const WRECK_SALVAGE_AP_COST = 3;
+export const WRECK_SLATE_SELL_BASE = 50;
+export const WRECK_SLATE_SELL_PER_TIER = 75;
+export const WRECK_SLATE_JUMPGATE_HUMANITY_TAX = 25;
 
 /** Get visual config for a race, or ancients-themed fallback. */
 export function getRaceVisual(raceId: AlienFactionId): RaceVisualConfig {

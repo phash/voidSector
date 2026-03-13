@@ -18,9 +18,6 @@ vi.mock('../engine/inventoryService.js', () => ({
 
 // --- Mock DB queries ---
 vi.mock('../db/queries.js', () => ({
-  // Legacy cargo fns — should NOT be called after migration
-  addToCargo: vi.fn(),
-  getPlayerCargo: vi.fn(),
   // Other queries ScanService needs
   getSector: vi.fn().mockResolvedValue({
     resources: { ore: 5, gas: 2, crystal: 1 },
@@ -47,10 +44,13 @@ vi.mock('../db/queries.js', () => ({
   recordAlienEncounter: vi.fn().mockResolvedValue(undefined),
   upsertInventory: vi.fn().mockResolvedValue(undefined),
   deductInventory: vi.fn().mockResolvedValue(undefined),
+  getPlayerJumpGate: vi.fn().mockResolvedValue(null),
   getInventory: vi.fn().mockResolvedValue([]),
   getCargoCapForPlayer: vi.fn().mockResolvedValue(50),
   transferInventoryItem: vi.fn().mockResolvedValue(undefined),
   getInventoryItem: vi.fn().mockResolvedValue(null),
+  addWissen: vi.fn().mockResolvedValue(undefined),
+  getActiveQuests: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('../engine/ap.js', () => ({
@@ -82,10 +82,6 @@ vi.mock('../engine/worldgen.js', () => ({
   }),
 }));
 
-vi.mock('../engine/combatV2.js', () => ({
-  initCombatV2: vi.fn().mockReturnValue({}),
-}));
-
 vi.mock('../engine/ancientRuinsService.js', () => ({
   resolveAncientRuinScan: vi.fn().mockReturnValue({
     fragmentIndex: 0,
@@ -98,6 +94,10 @@ vi.mock('../engine/ancientRuinsService.js', () => ({
 vi.mock('../engine/permadeathService.js', () => ({
   getWrecksInSector: vi.fn().mockResolvedValue([]),
   salvageWreckModule: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock('../db/wreckQueries.js', () => ({
+  getWreckAtSector: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('../engine/acepXpService.js', () => ({
@@ -113,13 +113,17 @@ vi.mock('../engine/personalityMessages.js', () => ({
   getPersonalityComment: vi.fn().mockReturnValue(null),
 }));
 
+vi.mock('../engine/universeBootstrap.js', () => ({
+  getUniverseTickCount: vi.fn().mockReturnValue(1000),
+}));
+
 vi.mock('../rooms/services/RedisAPStore.js', () => ({
   getAPState: vi.fn().mockResolvedValue({ current: 100, max: 100, lastTick: Date.now() }),
   saveAPState: vi.fn().mockResolvedValue(undefined),
+  redis: { get: vi.fn().mockResolvedValue(null), set: vi.fn().mockResolvedValue('OK') },
 }));
 
 import { ScanService } from '../rooms/services/ScanService.js';
-import { addToCargo, getPlayerCargo } from '../db/queries.js';
 import { addToInventory, getCargoState } from '../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../engine/ancientRuinsService.js';
 import { hasScannedRuin } from '../db/queries.js';
@@ -145,7 +149,7 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
     checkQuestProgress: vi.fn().mockResolvedValue(undefined),
     applyXpGain: vi.fn().mockResolvedValue(undefined),
     applyReputationChange: vi.fn().mockResolvedValue(undefined),
-    combatV2States: { set: vi.fn() },
+    contributeToCommunityQuest: vi.fn().mockResolvedValue(undefined),
     sendToPlayer: vi.fn(),
     send: vi.fn(),
     ...overrides,
@@ -190,7 +194,6 @@ describe('ScanService.handleLocalScan ruin artefact — inventory migration', ()
     await svc.handleLocalScan(client);
 
     expect(addToInventory).toHaveBeenCalledWith('user-123', 'resource', 'artefact', 1);
-    expect(addToCargo).not.toHaveBeenCalled();
   });
 
   it('uses getCargoState (not getPlayerCargo) for cargoUpdate after ruin scan', async () => {
@@ -220,7 +223,6 @@ describe('ScanService.handleLocalScan ruin artefact — inventory migration', ()
     await svc.handleLocalScan(client);
 
     expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(getPlayerCargo).not.toHaveBeenCalled();
     expect(client.send).toHaveBeenCalledWith('cargoUpdate', cargoState);
   });
 });
@@ -252,7 +254,6 @@ describe('ScanService.handleCompleteScanEvent artefact reward — inventory migr
     await svc.handleCompleteScanEvent(client, { eventId: 'evt-1' });
 
     expect(addToInventory).toHaveBeenCalledWith('user-123', 'resource', 'artefact', 1);
-    expect(addToCargo).not.toHaveBeenCalled();
   });
 
   it('uses getCargoState (not getPlayerCargo) for cargoUpdate after scan event', async () => {
@@ -278,7 +279,6 @@ describe('ScanService.handleCompleteScanEvent artefact reward — inventory migr
     await svc.handleCompleteScanEvent(client, { eventId: 'evt-1' });
 
     expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(getPlayerCargo).not.toHaveBeenCalled();
     expect(client.send).toHaveBeenCalledWith('cargoUpdate', cargoState);
   });
 });

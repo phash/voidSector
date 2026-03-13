@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { innerCoord } from '@void-sector/shared';
 
 export function BattleResultDialog() {
+  const { t } = useTranslation('ui');
   const lastBattleResult = useStore((s) => s.lastBattleResult);
   const setLastBattleResult = useStore((s) => s.setLastBattleResult);
 
@@ -10,11 +12,11 @@ export function BattleResultDialog() {
   const { encounter, result } = lastBattleResult;
 
   const outcomeLabels: Record<string, { label: string; color: string }> = {
-    victory: { label: 'SIEG', color: '#00FF88' },
-    defeat: { label: 'NIEDERLAGE', color: '#FF3333' },
-    escaped: { label: 'GEFLOHEN', color: '#FFB000' },
-    caught: { label: 'FLUCHT GESCHEITERT', color: '#FF3333' },
-    negotiated: { label: 'VERHANDELT', color: '#00BFFF' },
+    victory: { label: t('battle.outcomeVictory'), color: '#00FF88' },
+    defeat: { label: t('battle.outcomeDefeat'), color: '#FF3333' },
+    escaped: { label: t('battle.outcomeEscaped'), color: '#FFB000' },
+    caught: { label: t('battle.outcomeCaught'), color: '#FF3333' },
+    negotiated: { label: t('battle.outcomeNegotiated'), color: '#00BFFF' },
   };
 
   const { label, color } = outcomeLabels[result.outcome] ?? {
@@ -44,14 +46,14 @@ export function BattleResultDialog() {
           padding: '16px',
           maxWidth: '350px',
           fontFamily: 'monospace',
-          fontSize: '12px',
+          fontSize: '0.65rem',
           minWidth: '280px',
         }}
       >
         <div
           style={{
             color,
-            fontSize: '14px',
+            fontSize: '0.75rem',
             marginBottom: '12px',
             textAlign: 'center',
             letterSpacing: '0.15em',
@@ -62,9 +64,9 @@ export function BattleResultDialog() {
 
         <div style={{ color: '#FFB000', marginBottom: '12px', lineHeight: 1.8 }}>
           <div>
-            Sektor: ({innerCoord(encounter.sectorX)}, {innerCoord(encounter.sectorY)})
+            {t('battle.sectorLabel')} ({innerCoord(encounter.sectorX)}, {innerCoord(encounter.sectorY)})
           </div>
-          <div>Piraten-Level: {encounter.pirateLevel}</div>
+          <div>{t('battle.pirateLevel')}: {encounter.pirateLevel}</div>
         </div>
 
         {result.lootCredits != null && result.lootCredits > 0 && (
@@ -76,7 +78,7 @@ export function BattleResultDialog() {
         {result.lootResources &&
           Object.entries(result.lootResources).some(([, v]) => v && v > 0) && (
             <div style={{ marginBottom: '4px' }}>
-              <div style={{ color: '#00FF88', opacity: 0.7, fontSize: '10px' }}>BEUTE:</div>
+              <div style={{ color: '#00FF88', opacity: 0.7, fontSize: '0.55rem' }}>{t('combat.loot')}:</div>
               {Object.entries(result.lootResources).map(([res, amount]) =>
                 amount && amount > 0 ? (
                   <div key={res} style={{ color: '#00FF88' }}>
@@ -89,7 +91,7 @@ export function BattleResultDialog() {
 
         {result.cargoLost && Object.entries(result.cargoLost).some(([, v]) => v && v > 0) && (
           <div style={{ marginBottom: '4px' }}>
-            <div style={{ color: '#FF3333', opacity: 0.7, fontSize: '10px' }}>VERLUSTE:</div>
+            <div style={{ color: '#FF3333', opacity: 0.7, fontSize: '0.55rem' }}>{t('battle.losses')}</div>
             {Object.entries(result.cargoLost).map(([res, amount]) =>
               amount && amount > 0 ? (
                 <div key={res} style={{ color: '#FF3333' }}>
@@ -107,7 +109,7 @@ export function BattleResultDialog() {
         {result.repChange != null && result.repChange !== 0 && (
           <div style={{ color: result.repChange > 0 ? '#00FF88' : '#FF3333', marginBottom: '4px' }}>
             {result.repChange > 0 ? '+' : ''}
-            {result.repChange} PIRATEN-REP
+            {result.repChange} {t('battle.pirateRep')}
           </div>
         )}
 
@@ -122,11 +124,11 @@ export function BattleResultDialog() {
             padding: '8px',
             cursor: 'pointer',
             fontFamily: 'inherit',
-            fontSize: '12px',
+            fontSize: '0.65rem',
             letterSpacing: '0.1em',
           }}
         >
-          [BESTÄTIGEN]
+          {t('battle.confirm')}
         </button>
       </div>
     </div>

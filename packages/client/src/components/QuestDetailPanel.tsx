@@ -1,4 +1,6 @@
 import { useStore } from '../state/store';
+import { network } from '../network/client';
+import { WantedPoster } from './WantedPoster';
 
 const panelStyle: React.CSSProperties = {
   padding: '12px',
@@ -7,6 +9,15 @@ const panelStyle: React.CSSProperties = {
   fontSize: '0.7rem',
   height: '100%',
   overflow: 'auto',
+};
+
+const abandonBtnStyle: React.CSSProperties = {
+  marginTop: 12,
+  fontSize: '0.65rem',
+  display: 'block',
+  width: '100%',
+  borderColor: 'var(--color-danger)',
+  color: 'var(--color-danger)',
 };
 
 export function QuestDetailPanel() {
@@ -40,6 +51,53 @@ export function QuestDetailPanel() {
         }}
       >
         QUEST NOT FOUND
+      </div>
+    );
+  }
+
+  const trailObj = quest.objectives[0]?.type === 'bounty_trail' ? quest.objectives[0] : null;
+
+  if (trailObj) {
+    return (
+      <div style={panelStyle}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+          <WantedPoster
+            targetName={trailObj.targetName ?? '???'}
+            targetLevel={trailObj.targetLevel ?? 1}
+            reward={quest.rewards.credits ?? 0}
+          />
+          <div style={{ flex: 1, fontSize: '11px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#e8c040' }}>
+              {(trailObj.targetName ?? '???').toUpperCase()}
+            </div>
+            <div>Typ: Pirat Kl.{trailObj.targetLevel ?? '?'}</div>
+            <div>Von: {quest.npcName}</div>
+            <div>Belohnung: {(quest.rewards.credits ?? 0).toLocaleString('de-DE')}¢</div>
+            <div>XP: +{quest.rewards.xp ?? 0}</div>
+          </div>
+        </div>
+        {trailObj.currentHint && (
+          <div style={{ marginBottom: '8px', padding: '4px', border: '1px solid #333', fontSize: '10px' }}>
+            <span style={{ color: '#c8a020' }}>◈ HINWEIS</span>
+            <div style={{ marginTop: '2px', color: '#aaa' }}>{trailObj.currentHint}</div>
+          </div>
+        )}
+        <div style={{ fontSize: '0.6rem', letterSpacing: '0.1em', color: 'var(--color-dim)', marginBottom: 4 }}>
+          OBJECTIVES
+        </div>
+        {quest.objectives.map((obj, i) => (
+          <div key={i} style={{ marginBottom: 4, color: obj.fulfilled ? '#00FF88' : 'var(--color-primary)' }}>
+            <span>{obj.fulfilled ? '[x]' : '[ ]'} </span>
+            <span>{obj.description}</span>
+          </div>
+        ))}
+        <button
+          className="vs-btn"
+          style={abandonBtnStyle}
+          onClick={() => network.sendAbandonQuest(quest.id)}
+        >
+          [ABANDON]
+        </button>
       </div>
     );
   }
@@ -109,15 +167,8 @@ export function QuestDetailPanel() {
 
       <button
         className="vs-btn"
-        style={{
-          marginTop: 12,
-          fontSize: '0.65rem',
-          display: 'block',
-          width: '100%',
-          borderColor: 'var(--color-danger)',
-          color: 'var(--color-danger)',
-        }}
-        disabled
+        style={abandonBtnStyle}
+        onClick={() => network.sendAbandonQuest(quest.id)}
       >
         [ABANDON]
       </button>

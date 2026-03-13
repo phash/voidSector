@@ -127,6 +127,7 @@ export function validateMine(
   cargoCap: number,
   sectorX: number,
   sectorY: number,
+  mineAll: boolean = false,
 ): MineValidation {
   if (!['ore', 'gas', 'crystal'].includes(resource)) {
     return { valid: false, error: 'Invalid resource type' };
@@ -141,7 +142,7 @@ export function validateMine(
   if (cargoTotal >= cargoCap) {
     return { valid: false, error: 'Cargo hold is full' };
   }
-  const state = startMining(resource, sectorX, sectorY, sectorResources[mineableRes]);
+  const state = startMining(resource, sectorX, sectorY, sectorResources[mineableRes], Date.now(), mineAll);
   return { valid: true, state };
 }
 
@@ -317,8 +318,8 @@ export function validateNpcCargoTrade(
 interface CreateSlateState {
   ap: number;
   scannerLevel: number;
-  cargoTotal: number;
-  cargoCap: number;
+  slateCount: number;
+  memory: number;
 }
 
 interface CreateSlateResult {
@@ -336,8 +337,8 @@ export function validateCreateSlate(state: CreateSlateState, slateType: string):
     return { valid: false, error: `Not enough AP (need ${apCost}, have ${state.ap})` };
   }
 
-  if (state.cargoTotal >= state.cargoCap) {
-    return { valid: false, error: 'Cargo full — no space for slate' };
+  if (state.slateCount >= state.memory) {
+    return { valid: false, error: 'Memory full — no space for slate' };
   }
 
   const radius =

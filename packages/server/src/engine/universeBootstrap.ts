@@ -8,11 +8,14 @@ import { logger } from '../utils/logger.js';
 import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
 import { processCivTick } from './civShipService.js';
 import { processConstructionTick } from './constructionTickService.js';
+import { runStationFuelProductionTick } from './stationFuelEngine.js';
 
 dotenv.config();
 
 // Strategic tick fires every 12 universe ticks (12 × 5s = 60s)
 const STRATEGIC_TICK_INTERVAL = 12;
+// Fuel production tick fires every 2 universe ticks (2 × 5s = 10s)
+const FUEL_PRODUCTION_TICK_INTERVAL = 2;
 
 /** Singleton engine instance — set after startUniverseEngine() is called */
 let _engine: UniverseTickEngine | null = null;
@@ -44,6 +47,13 @@ export async function startUniverseEngine(): Promise<void> {
     // CivShips: move + broadcast every tick (5s)
     await processCivTick();
     await processConstructionTick();
+
+    // Fuel production tick (every 10 s) — must come BEFORE strategic tick early-return guard
+    if (result.tickCount % FUEL_PRODUCTION_TICK_INTERVAL === 0) {
+      runStationFuelProductionTick().catch((err) =>
+        logger.error({ err }, 'stationFuelProduction tick error'),
+      );
+    }
 
     if (result.tickCount % STRATEGIC_TICK_INTERVAL !== 0) return;
 

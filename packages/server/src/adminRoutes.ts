@@ -23,6 +23,9 @@ import {
   getAdminStoryById,
   getAdminQuadrantMap,
   getActiveFactionHomes,
+  getErrorLogs,
+  updateErrorLogStatus,
+  deleteErrorLog,
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput, AdminStoryInput } from './db/adminQueries.js';
 import type { AdminPlayerUpdateEvent } from './adminBus.js';
@@ -35,8 +38,16 @@ import {
   getConstructionSiteById,
   deleteConstructionSiteById,
 } from './db/constructionQueries.js';
-import { createStructure } from './db/queries.js';
+import {
+  createStructure,
+  upsertInventory,
+  getSector,
+  createDataSlate,
+  updateSlateOwner,
+  addSlateToCargo,
+} from './db/queries.js';
 import { constructionBus } from './constructionBus.js';
+import { MODULES, QUADRANT_SIZE } from '@void-sector/shared';
 
 export const adminRouter = Router();
 
@@ -149,13 +160,73 @@ adminRouter.patch('/players/:id/credits', async (req: Request, res: Response) =>
 
 adminRouter.patch('/players/:id/cargo', async (req: Request, res: Response) => {
   try {
-    const { resource, amount } = req.body;
-    if (typeof resource !== 'string' || !resource) {
-      res.status(400).json({ error: 'resource must be a non-empty string' });
+    // Accept either { resource, amount } (single) or { items: [...] } (batch)
+    type ItemEntry = { itemType?: string; itemId?: string; resource?: string; quantity?: number; amount?: number };
+    const items: ItemEntry[] = Array.isArray(req.body.items)
+      ? req.body.items
+      : [{ resource: req.body.resource, amount: req.body.amount }];
+
+    // Validate all items before hitting the DB
+    const cargoUpdate: Record<string, number> = {};
+    for (const item of items) {
+      const resource = item.itemId ?? item.resource ?? '';
+      const amount = item.quantity ?? item.amount ?? 0;
+      if (typeof resource !== 'string' || !resource) {
+        res.status(400).json({ error: 'Each item must have a resource/itemId string' });
+        return;
+      }
+      if (typeof amount !== 'number' || amount < 0) {
+        res.status(400).json({ error: 'Each item must have a non-negative quantity/amount' });
+        return;
+      }
+      cargoUpdate[resource] = Math.round(amount);
+    }
+
+    const player = await getPlayerById(req.params.id as string);
+    if (!player) {
+      res.status(404).json({ error: 'Player not found' });
       return;
     }
-    if (typeof amount !== 'number' || amount < 0) {
-      res.status(400).json({ error: 'amount must be a non-negative number' });
+
+    for (const [resource, amount] of Object.entries(cargoUpdate)) {
+      await adminSetCargoItem(req.params.id as string, resource, amount);
+    }
+
+    adminBus.playerUpdated({ playerId: req.params.id as string, updates: { cargo: cargoUpdate } });
+    await logAdminEvent('set_player_cargo', { playerId: req.params.id, items: cargoUpdate });
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, 'Admin set player cargo error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Catalog (for admin UI dropdowns) ────────────────────────────────
+
+adminRouter.get('/catalog', (_req: Request, res: Response) => {
+  const resources = ['ore', 'gas', 'crystal', 'artefact', 'fuel_cell',
+    'artefact_drive', 'artefact_cargo', 'artefact_scanner', 'artefact_armor',
+    'artefact_weapon', 'artefact_shield', 'artefact_defense', 'artefact_special',
+    'artefact_mining', 'artefact_generator', 'artefact_repair'];
+  const moduleIds = Object.keys(MODULES).sort();
+  res.json({ resources, modules: moduleIds, blueprints: moduleIds });
+});
+
+// ── Inventory (modules & blueprints) ────────────────────────────────
+
+adminRouter.patch('/players/:id/inventory', async (req: Request, res: Response) => {
+  try {
+    const { itemType, itemId, quantity } = req.body;
+    if (!['module', 'blueprint'].includes(itemType)) {
+      res.status(400).json({ error: 'itemType must be module or blueprint' });
+      return;
+    }
+    if (typeof itemId !== 'string' || !itemId) {
+      res.status(400).json({ error: 'itemId must be a non-empty string' });
+      return;
+    }
+    if (typeof quantity !== 'number' || quantity < 1) {
+      res.status(400).json({ error: 'quantity must be a positive number' });
       return;
     }
     const player = await getPlayerById(req.params.id as string);
@@ -163,13 +234,46 @@ adminRouter.patch('/players/:id/cargo', async (req: Request, res: Response) => {
       res.status(404).json({ error: 'Player not found' });
       return;
     }
-    await adminSetCargoItem(req.params.id as string, resource, Math.round(amount));
-    const cargoUpdate: Record<string, number> = { [resource]: Math.round(amount) };
-    adminBus.playerUpdated({ playerId: req.params.id as string, updates: { cargo: cargoUpdate } });
-    await logAdminEvent('set_player_cargo', { playerId: req.params.id, resource, amount });
+    await upsertInventory(req.params.id as string, itemType, itemId, Math.round(quantity));
+    await logAdminEvent('add_player_inventory', { playerId: req.params.id, itemType, itemId, quantity });
     res.json({ ok: true });
   } catch (err) {
-    logger.error({ err }, 'Admin set player cargo error');
+    logger.error({ err }, 'Admin add inventory error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Data Slates ──────────────────────────────────────────────────────
+
+adminRouter.post('/players/:id/slates', async (req: Request, res: Response) => {
+  try {
+    const { quadrantX, quadrantY, sectorX, sectorY } = req.body;
+    for (const [name, val] of Object.entries({ quadrantX, quadrantY, sectorX, sectorY })) {
+      if (typeof val !== 'number' || !Number.isInteger(val)) {
+        res.status(400).json({ error: `${name} must be an integer` });
+        return;
+      }
+    }
+    const player = await getPlayerById(req.params.id as string);
+    if (!player) {
+      res.status(404).json({ error: 'Player not found' });
+      return;
+    }
+    // Convert quadrant + inner sector coords to absolute
+    const absX = quadrantX * QUADRANT_SIZE + sectorX;
+    const absY = quadrantY * QUADRANT_SIZE + sectorY;
+    const sector = await getSector(absX, absY);
+    if (!sector) {
+      res.status(404).json({ error: `Sector (${absX}, ${absY}) not found in DB — visit it first to generate it` });
+      return;
+    }
+    const { id: slateId } = await createDataSlate(req.params.id as string, 'scanned_sector', [sector]);
+    await updateSlateOwner(slateId, req.params.id as string);
+    await addSlateToCargo(req.params.id as string, 1);
+    await logAdminEvent('give_player_slate', { playerId: req.params.id, quadrantX, quadrantY, sectorX, sectorY, absX, absY, slateId });
+    res.json({ ok: true, slateId, absX, absY });
+  } catch (err) {
+    logger.error({ err }, 'Admin give slate error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -486,6 +590,59 @@ adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: R
   } catch (err) {
     logger.error({ err }, 'Admin construction-sites POST complete error');
     res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+// ── Error Logs ──────────────────────────────────────────────────────
+
+adminRouter.get('/errors', async (req: Request, res: Response) => {
+  try {
+    const status = typeof req.query.status === 'string' ? req.query.status : 'new';
+    const errors = await getErrorLogs(status);
+    await logAdminEvent('list_errors', { status, count: errors.length });
+    res.json({ errors });
+  } catch (err) {
+    logger.error({ err }, 'Admin list errors');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.post('/errors/:id/ignore', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
+    const ok = await updateErrorLogStatus(id, 'ignored');
+    await logAdminEvent('ignore_error', { id });
+    res.json({ success: ok });
+  } catch (err) {
+    logger.error({ err }, 'Admin ignore error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.post('/errors/:id/resolve', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
+    const ok = await updateErrorLogStatus(id, 'resolved');
+    await logAdminEvent('resolve_error', { id });
+    res.json({ success: ok });
+  } catch (err) {
+    logger.error({ err }, 'Admin resolve error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.delete('/errors/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
+    const ok = await deleteErrorLog(id);
+    await logAdminEvent('delete_error', { id });
+    res.json({ success: ok });
+  } catch (err) {
+    logger.error({ err }, 'Admin delete error');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

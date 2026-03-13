@@ -13,9 +13,11 @@ import type {
   ReputationTier,
   NpcFactionId,
 } from '@void-sector/shared';
-import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES } from '@void-sector/shared';
+import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES, UNIVERSE_TICK_MS } from '@void-sector/shared';
+import { redis } from './RedisAPStore.js';
 import { generateStationNpcs, getStationFaction } from '../../engine/npcgen.js';
 import { generateStationQuests } from '../../engine/questgen.js';
+import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import { validateAcceptQuest, getReputationTier, calculateLevel } from '../../engine/commands.js';
 import {
   getPlayerReputations,
@@ -37,8 +39,38 @@ import {
   getAcceptedQuestTemplateIds,
   addWissen,
   getQuestById,
+  getCargoCapForPlayer,
 } from '../../db/queries.js';
-import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
+import {
+  getCargoState,
+  addToInventory,
+  removeFromInventory,
+  getInventoryItem,
+} from '../../engine/inventoryService.js';
+import { generateBountyTrail } from '../../engine/bountyQuestGen.js';
+import { hashCoords } from '../../engine/worldgen.js';
+import { QUEST_TEMPLATES } from '../../engine/questTemplates.js';
+
+// Douglas Adams-style jettison messages
+const JETTISON_MESSAGES = [
+  "So long, and thanks for all the cargo.",
+  "The universe is a big place. Your cargo just became someone else's problem.",
+  "Don't panic. Your cargo did.",
+  "This is Earth. Mostly harmless. Your cargo: definitely being harmful if dropped.",
+  "42 reasons why you shouldn't abandon quests. This wasn't one of them.",
+  "Your cargo has been jettisoned into the vast emptiness of space. Mostly harmless.",
+  "The Answer to Life, the Universe, and Everything is 42. Your cargo? Gone.",
+  "Space is big. Really big. Your cargo is now part of it.",
+  "You have just destroyed a perfectly good cargo. Well done.",
+  "The cargo was incinerated. Don't ask what's for dinner.",
+  "Goodbye, cargo. It was nice knowing you. Mostly.",
+  "Your cargo has entered the infinite improbability of being lost forever.",
+  "So this is it. We're really doing it. Jettisoning cargo. Brilliant.",
+];
+
+function getRandomJettisonMessage(): string {
+  return JETTISON_MESSAGES[Math.floor(Math.random() * JETTISON_MESSAGES.length)];
+}
 
 export class QuestService {
   constructor(private ctx: ServiceContext) {}
@@ -53,8 +85,19 @@ export class QuestService {
     const dayOfYear = Math.floor(Date.now() / 86400000);
     const allQuests = generateStationQuests(data.sectorX, data.sectorY, dayOfYear, tier);
     const acceptedIds = await getAcceptedQuestTemplateIds(auth.userId, data.sectorX, data.sectorY);
-    const quests =
+    const afterAccepted =
       acceptedIds.length > 0 ? allQuests.filter((q) => !acceptedIds.includes(q.templateId)) : allQuests;
+
+    // Filter out quests with an active Redis cooldown
+    const cooldownFiltered = await Promise.all(
+      afterAccepted.map(async (q) => {
+        const key = `quest_cooldown:${auth.userId}:${data.sectorX}:${data.sectorY}:${q.templateId}`;
+        const exists = await redis.get(key);
+        return exists ? null : q;
+      }),
+    );
+    const quests = cooldownFiltered.filter(Boolean) as typeof afterAccepted;
+
     this.ctx.send(client, 'stationNpcsResult', { npcs, quests });
   }
 
@@ -81,15 +124,84 @@ export class QuestService {
       return;
     }
 
+    let objectives = questTemplate.objectives;
+    let title = questTemplate.title;
+    let description = questTemplate.description;
+
+    // Fetch quest: check cargo capacity before accepting
+    const fetchObj = objectives.find((o) => o.type === 'fetch');
+    if (fetchObj?.amount) {
+      const [cargoState, cargoCap] = await Promise.all([
+        getCargoState(auth.userId),
+        getCargoCapForPlayer(auth.userId),
+      ]);
+      const currentUsed =
+        cargoState.ore + cargoState.gas + cargoState.crystal + cargoState.slates + cargoState.artefact;
+      if (currentUsed + fetchObj.amount > cargoCap) {
+        this.ctx.send(client, 'acceptQuestResult', {
+          success: false,
+          error: 'Zu wenig Laderaum für diese Quest',
+        });
+        return;
+      }
+    }
+
+    // Bounty chase: generate trail at accept time
+    if (objectives[0]?.type === 'bounty_trail') {
+      const origTemplate = QUEST_TEMPLATES.find((t) => t.id === data.templateId);
+      const [minLvl, maxLvl] = origTemplate?.targetLevelRange ?? [1, 3];
+      const levelSeed = hashCoords(data.stationX, data.stationY, dayOfYear);
+      const targetLevel = minLvl + (Math.abs(levelSeed) % (maxLvl - minLvl + 1));
+
+      const trail = generateBountyTrail(
+        data.stationX,
+        data.stationY,
+        targetLevel,
+        dayOfYear,
+      );
+
+      objectives = [
+        {
+          type: 'bounty_trail' as const,
+          description: 'Verfolge die Spur des Ziels',
+          fulfilled: false,
+          trail: trail.steps,
+          currentStep: 0,
+          targetName: trail.targetName,
+          targetLevel: trail.targetLevel,
+          currentHint: trail.steps[0]?.hint ?? '',
+        },
+        {
+          type: 'bounty_combat' as const,
+          description: `Schalte ${trail.targetName} aus`,
+          fulfilled: false,
+          sectorX: trail.combatX,
+          sectorY: trail.combatY,
+          targetName: trail.targetName,
+          targetLevel: trail.targetLevel,
+        },
+        {
+          type: 'bounty_deliver' as const,
+          description: 'Liefere den Gefangenen zur Auftrags-Station',
+          fulfilled: false,
+          stationX: data.stationX,
+          stationY: data.stationY,
+        },
+      ];
+
+      title = `Kopfgeld: ${trail.targetName}`;
+      description = description.replace('???', trail.targetName);
+    }
+
     const expiresAt = new Date(Date.now() + QUEST_EXPIRY_DAYS * 86400000);
     const questId = await insertQuest(
       auth.userId,
       data.templateId,
-      questTemplate.title,
-      questTemplate.description,
+      title,
+      description,
       data.stationX,
       data.stationY,
-      questTemplate.objectives,
+      objectives,
       questTemplate.rewards,
       expiresAt,
     );
@@ -99,16 +211,21 @@ export class QuestService {
       templateId: data.templateId,
       npcName: questTemplate.npcName,
       npcFactionId: questTemplate.npcFactionId,
-      title: questTemplate.title,
-      description: questTemplate.description,
+      title,
+      description,
       stationX: data.stationX,
       stationY: data.stationY,
-      objectives: questTemplate.objectives,
+      objectives,
       rewards: questTemplate.rewards,
       status: 'active',
       acceptedAt: Date.now(),
       expiresAt: expiresAt.getTime(),
     };
+
+    // Set Redis cooldown so this template won't reappear for 10 universe ticks
+    const cooldownKey = `quest_cooldown:${auth.userId}:${data.stationX}:${data.stationY}:${data.templateId}`;
+    const ttlSeconds = Math.ceil(UNIVERSE_TICK_MS * 10 / 1000);
+    redis.set(cooldownKey, '1', 'EX', ttlSeconds).catch(() => {});
 
     this.ctx.send(client, 'acceptQuestResult', { success: true, quest });
     this.ctx.send(client, 'logEntry', `Quest angenommen: ${quest.title}`);
@@ -116,12 +233,40 @@ export class QuestService {
 
   async handleAbandonQuest(client: Client, data: AbandonQuestMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
+
+    // Cleanup inventory items tied to this quest & track jettisoned items
+    const quest = await getQuestById(data.questId, auth.userId);
+    const jettisoned: string[] = [];
+
+    if (quest) {
+      const objectives = quest.objectives as any[];
+      // Bounty chase: remove prisoner if combat objective was fulfilled
+      const combatObj = objectives?.find((o: any) => o.type === 'bounty_combat');
+      if (combatObj?.fulfilled) {
+        await removeFromInventory(auth.userId, 'prisoner', quest.id, 1);
+        jettisoned.push('prisoner');
+      }
+      // Scan quest: remove data slate if scan is done but not yet delivered
+      const scanDone = objectives?.some((o: any) => o.type === 'scan' && o.fulfilled);
+      const deliverDone = objectives?.some((o: any) => o.type === 'scan_deliver' && o.fulfilled);
+      if (scanDone && !deliverDone) {
+        await removeFromInventory(auth.userId, 'data_slate', quest.id, 1);
+        jettisoned.push('data_slate');
+      }
+    }
+
     const updated = await updateQuestStatus(data.questId, 'abandoned');
     this.ctx.send(client, 'abandonQuestResult', {
       success: updated,
       error: updated ? undefined : 'Quest not found',
     });
     if (updated) {
+      // Send jettison notification if items were removed
+      if (jettisoned.length > 0) {
+        const jettisonMsg = getRandomJettisonMessage();
+        this.ctx.send(client, 'logEntry',
+          `QUEST ABGEBROCHEN — Ladung abgeworfen: ${jettisoned.join(', ')} • "${jettisonMsg}"`);
+      }
       await this.sendActiveQuests(client, auth.userId);
     }
   }
@@ -254,6 +399,10 @@ export class QuestService {
       }
       if (rewards.wissen) await addWissen(auth.userId, rewards.wissen);
 
+      // Wissen from quest completion, scaled by reward value
+      const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
+      awardWissenAndNotify(client, auth.userId, questWissen);
+
       this.ctx.send(client, 'questComplete', {
         id: row.id,
         title: row.title,
@@ -344,6 +493,28 @@ export class QuestService {
         ) {
           obj.fulfilled = true;
           updated = true;
+          // When all scan objectives in this quest are now fulfilled, issue a data slate
+          const allScansDone = objectives
+            .filter((o) => o.type === 'scan')
+            .every((o) => o.fulfilled);
+          if (allScansDone) {
+            await addToInventory(playerId, 'data_slate', row.id, 1);
+          }
+        }
+
+        // scan_deliver: player returns data slate to quest station
+        if (
+          obj.type === 'scan_deliver' &&
+          action === 'arrive' &&
+          obj.stationX === context.sectorX &&
+          obj.stationY === context.sectorY
+        ) {
+          const hasSlate = await getInventoryItem(playerId, 'data_slate', row.id);
+          if (hasSlate > 0) {
+            await removeFromInventory(playerId, 'data_slate', row.id, 1);
+            obj.fulfilled = true;
+            updated = true;
+          }
         }
 
         if (
@@ -376,6 +547,61 @@ export class QuestService {
         ) {
           obj.fulfilled = true;
           updated = true;
+        }
+
+        // bounty_trail: advance trail step on matching scan
+        if (
+          obj.type === 'bounty_trail' &&
+          action === 'scan' &&
+          Array.isArray(obj.trail) &&
+          obj.currentStep !== undefined
+        ) {
+          const currentTrailStep = obj.trail[obj.currentStep];
+          if (
+            currentTrailStep &&
+            currentTrailStep.x === context.sectorX &&
+            currentTrailStep.y === context.sectorY
+          ) {
+            obj.currentStep += 1;
+            const nextStep = obj.trail[obj.currentStep];
+            obj.currentHint = nextStep?.hint ?? `Das Ziel wartet auf dich!`;
+            if (obj.currentStep >= obj.trail.length) {
+              obj.fulfilled = true;
+            }
+            updated = true;
+            this.ctx.send(client, 'questProgress', {
+              questId: row.id,
+              objectives,
+              hint: obj.currentHint,
+            });
+          }
+        }
+
+        // bounty_combat: add prisoner to inventory on battle_won at combat sector
+        if (
+          obj.type === 'bounty_combat' &&
+          action === 'battle_won' &&
+          obj.sectorX === context.sectorX &&
+          obj.sectorY === context.sectorY
+        ) {
+          obj.fulfilled = true;
+          updated = true;
+          await addToInventory(playerId, 'prisoner', row.id, 1);
+        }
+
+        // bounty_deliver: check prisoner in inventory on arrive at station
+        if (
+          obj.type === 'bounty_deliver' &&
+          action === 'arrive' &&
+          obj.stationX === context.sectorX &&
+          obj.stationY === context.sectorY
+        ) {
+          const hasPrisoner = await getInventoryItem(playerId, 'prisoner', row.id);
+          if (hasPrisoner > 0) {
+            await removeFromInventory(playerId, 'prisoner', row.id, 1);
+            obj.fulfilled = true;
+            updated = true;
+          }
         }
       }
 
@@ -416,6 +642,10 @@ export class QuestService {
           if (rewards.wissen) {
             await addWissen(playerId, rewards.wissen);
           }
+
+          // Wissen from quest completion, scaled by reward value
+          const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
+          awardWissenAndNotify(client, playerId, questWissen);
 
           // Deduct fetch resources from cargo
           for (const obj of objectives) {

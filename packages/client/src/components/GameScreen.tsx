@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { CockpitLayout } from './CockpitLayout';
-import { btn, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn } from '../ui-helpers';
 import { RadarCanvas } from './RadarCanvas';
 import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
@@ -14,8 +15,9 @@ import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
 import { BattleDialog } from './BattleDialog';
 import { CombatV2Dialog } from './CombatV2Dialog';
+import { CombatDialog } from './CombatDialog';
 import { BattleResultDialog } from './BattleResultDialog';
-import { ModulePanel } from './ModulePanel';
+import { AcepProgram } from './AcepProgram';
 import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
@@ -31,15 +33,15 @@ import { MehrOverlay } from './MehrOverlay';
 import { StationTerminalOverlay } from './StationTerminalOverlay';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { useMobileTabs } from '../hooks/useMobileTabs';
+import { useMobileTabs, MOBILE_HOME_ID } from '../hooks/useMobileTabs';
+import { MobileDashboard } from './MobileDashboard';
+import { MobileNavTab } from './MobileNavTab';
+import { MobileMineTab } from './MobileMineTab';
 import { MONITORS } from '@void-sector/shared';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 // --- SHIP-SYS: Settings + Modules ---
 
-type ShipSysView = 'settings' | 'modules' | 'acep';
-
-const SHIP_SYS_MODES: ShipSysView[] = ['settings', 'modules'];
 
 const ACEP_PATHS = [
   { key: 'ausbau', label: 'AUSBAU', color: '#ffaa00', max: 50 },
@@ -178,6 +180,7 @@ function SettingsView() {
 }
 
 function TerritoryPanel() {
+  const { t } = useTranslation('ui');
   const q = useStore((s) => s.currentQuadrant);
   if (!q) return null;
   return (
@@ -211,7 +214,7 @@ function TerritoryPanel() {
             cursor: 'pointer',
           }}
         >
-          {btn(UI.actions.CLAIM)}
+          {btn(t('actions.claim'))}
         </button>
         <button
           onClick={() => network.requestMyTerritories()}
@@ -234,8 +237,6 @@ function TerritoryPanel() {
 }
 
 function ShipSysScreen() {
-  const view = (useStore((s) => s.monitorModes[MONITORS.SHIP_SYS]) ?? 'settings') as ShipSysView;
-
   useEffect(() => {
     network.sendGetShips(); // refresh acepXp + ship stats on open
   }, []);
@@ -243,13 +244,7 @@ function ShipSysScreen() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {view === 'settings' && <SettingsView />}
-        {view === 'modules' && <ModulePanel />}
-        {view === 'acep' && (
-          <div style={{ padding: '12px', color: '#555', fontSize: '0.8rem' }}>
-            ACEP — COMING SOON
-          </div>
-        )}
+        <SettingsView />
       </div>
     </div>
   );
@@ -354,8 +349,8 @@ function renderScreen(monitorId: string) {
       return <QuadMapScreen />;
     case MONITORS.NEWS:
       return <NewsScreen />;
-    case 'MODULES':
-      return <ModulePanel />;
+    case MONITORS.ACEP:
+      return <AcepProgram />;
     default:
       return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
@@ -390,6 +385,19 @@ function CockpitNavCom() {
   );
 }
 
+function renderMobileScreen(monitorId: string) {
+  switch (monitorId) {
+    case MOBILE_HOME_ID:
+      return <MobileDashboard />;
+    case MONITORS.NAV_COM:
+      return <MobileNavTab />;
+    case MONITORS.MINING:
+      return <MobileMineTab />;
+    default:
+      return renderScreen(monitorId);
+  }
+}
+
 /** Simplified renderScreen for cockpit layout — no embedded controls/details */
 function renderCockpitScreen(monitorId: string) {
   switch (monitorId) {
@@ -421,13 +429,22 @@ export function GameScreen() {
     document.documentElement.style.setProperty('--color-dim', profile.dim);
   }, [colorProfile]);
 
+  useEffect(() => {
+    // Only run on mobile viewports to avoid affecting desktop activeProgram logic
+    if (window.innerWidth >= 1024) return;
+    const mainTabIds = [MOBILE_HOME_ID, MONITORS.NAV_COM, MONITORS.MINING, MONITORS.QUESTS, '__MEHR__'];
+    if (!mainTabIds.includes(activeMonitor)) {
+      setActiveMonitor(MOBILE_HOME_ID);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Desktop layout (>= 1024px) */}
       <CockpitLayout renderScreen={renderCockpitScreen} />
 
       {/* Mobile content (< 1024px): full-screen active monitor */}
-      <div className="mobile-content">{renderScreen(activeMonitor)}</div>
+      <div className="mobile-content">{renderMobileScreen(activeMonitor)}</div>
 
       {/* Mobile tabs (< 1024px) — context-aware via useMobileTabs() */}
       <div className="mobile-tabs" data-testid="mobile-tabs">
@@ -458,6 +475,7 @@ export function GameScreen() {
       <MehrOverlay monitors={mehrMonitors} />
       <BattleDialog />
       <CombatV2Dialog />
+      <CombatDialog />
       <StationCombatOverlay />
       <BattleResultDialog />
       <BlueprintDialog />

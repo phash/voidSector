@@ -96,6 +96,16 @@ describe('Compendium Data', () => {
       }
     });
 
+    it("has an 'acep' category in COMPENDIUM_CATEGORIES", () => {
+      expect(COMPENDIUM_CATEGORIES.some((c) => c.id === 'acep')).toBe(true);
+    });
+
+    it("'acep' category has icon ⬟ and label ACEP", () => {
+      const cat = COMPENDIUM_CATEGORIES.find((c) => c.id === 'acep');
+      expect(cat?.icon).toBe('⬟');
+      expect(cat?.label).toBe('ACEP');
+    });
+
     it('every category has at least one article', () => {
       for (const cat of COMPENDIUM_CATEGORIES) {
         const articles = getArticlesByCategory(cat.id);
@@ -241,6 +251,47 @@ describe('Compendium Data', () => {
     it('handles partial matches', () => {
       const results = searchArticles('nav');
       expect(results.length).toBeGreaterThan(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // ACEP articles
+  // -------------------------------------------------------------------------
+
+  describe('ACEP articles', () => {
+    it("has article 'acep-monitor'", () => {
+      const a = getArticle('acep-monitor');
+      expect(a).toBeDefined();
+      expect(a?.category).toBe('acep');
+      expect(a?.body.length).toBeGreaterThan(100);
+    });
+
+    it("has article 'acep-slots'", () => {
+      const a = getArticle('acep-slots');
+      expect(a).toBeDefined();
+      expect(a?.category).toBe('acep');
+      expect(a?.body).toContain('AUSBAU-Level');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // article content updates
+  // -------------------------------------------------------------------------
+
+  describe('article content updates', () => {
+    it("monitore summary mentions 12 Programme", () => {
+      const a = getArticle('monitore');
+      expect(a?.summary).toContain('12 Programme');
+    });
+
+    it("monitore body mentions 12 Programme", () => {
+      const a = getArticle('monitore');
+      expect(a?.body).toContain('12 Programme');
+    });
+
+    it("monitore body has ACEP row", () => {
+      const a = getArticle('monitore');
+      expect(a?.body).toContain('ACEP');
     });
   });
 

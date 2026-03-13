@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import { QUADRANT_SIZE } from '@void-sector/shared';
+import { QUADRANT_SIZE, MODULES, MONITORS, getPhysicalCargoTotal } from '@void-sector/shared';
 import type {
   APState,
   SectorData,
@@ -32,8 +32,6 @@ import type {
   ConfigureRouteResultMessage,
   CreateCustomSlateMessage,
   Bookmark,
-  CombatV2State,
-  CombatV2RoundResult,
   StationCombatEvent,
   AdminMessage,
   AdminQuestNotification,
@@ -60,6 +58,12 @@ import type {
   CommunityQuestPayload,
   TrackedQuest,
 } from '../state/gameSlice';
+import type {
+  WreckInvestigatedPayload,
+  SalvageStartedPayload,
+  SalvageResultPayload,
+  WreckExhaustedPayload,
+} from '@void-sector/shared';
 
 /** Schema-level player object from Colyseus room state. */
 interface RoomPlayerSchema {
@@ -356,14 +360,28 @@ class GameNetwork {
           lastLogEntry: string | null;
           hasSalvage: boolean;
         }>;
+        wreckInfo?: WreckInfo;
+        sectorX?: number;
+        sectorY?: number;
+        quadrantX?: number;
+        quadrantY?: number;
+        sectorType?: string;
+        structures?: string[];
+        universeTick?: number;
       }) => {
         const store = useStore.getState();
         store.setScanPending(false);
+        if ((data as any).error) {
+          store.setActionError((data as any).error);
+          return;
+        }
         if (store.currentSector) {
           const updatedSector = { ...store.currentSector, resources: data.resources };
           store.setCurrentSector(updatedSector);
           store.addDiscoveries([updatedSector]);
         }
+        // Show scan result popup
+        store.setLocalScanResult(data);
         if (data.hiddenSignatures) {
           store.addLogEntry('UNKNOWN SIGNATURES DETECTED — SCANNER UPGRADE REQUIRED');
         }
@@ -378,6 +396,14 @@ class GameNetwork {
               `WRACK ENTDECKT: ${wreck.playerName} (T${wreck.radarIconData.tier}/${wreck.radarIconData.path})${salvageNote}`,
             );
           }
+        }
+        // Update wreck POI state for current sector
+        if (data.wreckInfo && data.sectorX !== undefined && data.sectorY !== undefined) {
+          const key = `${data.sectorX}:${data.sectorY}`;
+          store.setSectorWrecks({
+            ...store.sectorWrecks,
+            [key]: data.wreckInfo,
+          });
         }
         // Stats: count scan
         store.incrementStat('sectorsScanned');
@@ -432,6 +458,7 @@ class GameNetwork {
         'BUILD_FAIL',
         'INSUFFICIENT',
         'INVALID_INPUT',
+        'HYPERJUMP_FAIL',
       ];
       if (inlineCodes.some((c) => data.code.startsWith(c))) {
         store.setActionError(data);
@@ -443,6 +470,21 @@ class GameNetwork {
       } else {
         store.addLogEntry(`ERROR: ${data.message}`);
       }
+    });
+
+    room.onMessage('actionError', (data: { code: string; message: string } | string) => {
+      const store = useStore.getState();
+      if (typeof data === 'string') {
+        store.setActionError({ code: 'ACTION_ERROR', message: data });
+        store.addLogEntry(`FEHLER: ${data}`);
+      } else {
+        store.setActionError(data);
+        store.addLogEntry(`FEHLER: ${data.message}`);
+      }
+    });
+
+    room.onMessage('badgeAwarded', (data: { badgeType: string }) => {
+      useStore.getState().addLogEntry(`ABZEICHEN ERHALTEN: ${data.badgeType}`);
     });
 
     // Mining updates
@@ -461,9 +503,22 @@ class GameNetwork {
     // Cargo updates
     room.onMessage('cargoUpdate', (data: CargoState) => {
       useStore.getState().setCargo(data);
+      // Auto-stop mining when cargo is full
+      const state = useStore.getState();
+      if (state.mining?.active && state.ship) {
+        const cargoTotal = getPhysicalCargoTotal(data);
+        const cargoCap = state.ship.stats?.cargoCap ?? 0;
+        if (cargoCap > 0 && cargoTotal >= cargoCap) {
+          this.sendStopMine();
+        }
+      }
     });
 
-    // Ship data (new designer format: id, ownerId, hullType, name, modules, stats, fuel, active)
+    room.onMessage('miningStoryUpdate', (data: { storyIndex: number }) => {
+      useStore.getState().setMiningStoryIndex(data.storyIndex);
+    });
+
+    // Ship data (new designer format: id, ownerId, name, modules, stats, fuel, active)
     room.onMessage('shipData', (data: ClientShipData) => {
       useStore.getState().setShip(data);
     });
@@ -517,6 +572,7 @@ class GameNetwork {
           ship: { ...ship, modules: data.modules, stats: data.stats },
         });
       }
+      this.sendGetModuleInventory();
     });
 
     room.onMessage(
@@ -555,10 +611,7 @@ class GameNetwork {
       useStore.getState().setResearch({
         unlockedModules: data.unlockedModules ?? [],
         blueprints: data.blueprints ?? [],
-        activeResearch: data.activeResearch ?? null,
-        activeResearch2: data.activeResearch2 ?? null,
         wissen: data.wissen ?? 0,
-        wissenRate: data.wissenRate ?? 0,
       });
       if (data.typedArtefacts) {
         useStore.getState().setTypedArtefacts(data.typedArtefacts);
@@ -577,24 +630,8 @@ class GameNetwork {
             ...current,
             unlockedModules: data.unlockedModules,
             blueprints: data.blueprints ?? current.blueprints,
-            activeResearch:
-              data.activeResearch !== undefined ? data.activeResearch : current.activeResearch,
-            activeResearch2:
-              data.activeResearch2 !== undefined ? data.activeResearch2 : current.activeResearch2,
-            wissen: data.wissen !== undefined ? data.wissen : current.wissen,
-            wissenRate: data.wissenRate !== undefined ? data.wissenRate : current.wissenRate,
-          };
-        }
-        if (data.activeResearch !== undefined && !patch.research) {
-          patch.research = {
-            ...current,
-            activeResearch: data.activeResearch,
-            activeResearch2:
-              data.activeResearch2 !== undefined ? data.activeResearch2 : current.activeResearch2,
             wissen: data.wissen !== undefined ? data.wissen : current.wissen,
           };
-          // Artefacts were deducted by server — request fresh snapshot
-          this.requestResearchState();
         }
         if (data.activated) {
           patch.pendingBlueprint = null;
@@ -611,6 +648,18 @@ class GameNetwork {
           blueprints: [...current.blueprints, data.moduleId],
         },
         pendingBlueprint: data.moduleId,
+      });
+    });
+
+    // Tech tree (node-based)
+    room.onMessage('techTreeUpdate', (data) => {
+      useStore.getState().setTechTree(data);
+    });
+
+    room.onMessage('wissenUpdate', (data) => {
+      useStore.getState().setResearch({
+        ...useStore.getState().research,
+        wissen: data.wissen,
       });
     });
 
@@ -799,6 +848,16 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('slateFromScanResult', (data: { success: boolean; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('SCAN SLATE GESPEICHERT');
+        this.sectorRoom?.send('getMySlates');
+      } else {
+        store.addLogEntry(`SLATE FEHLER: ${data.error}`);
+      }
+    });
+
     room.onMessage('activateSlateResult', (data: any) => {
       const store = useStore.getState();
       if (data.success) {
@@ -817,6 +876,7 @@ class GameNetwork {
         store.setCredits(data.credits);
         this.sectorRoom?.send('getMySlates');
       } else {
+        store.setActionError({ code: 'SLATE_SELL_FAIL', message: data.error });
         store.addLogEntry(`VERKAUF FEHLGESCHLAGEN: ${data.error}`);
       }
     });
@@ -927,30 +987,111 @@ class GameNetwork {
       store.addLogEntry(`PIRATEN-HINTERHALT bei (${data.sectorX}, ${data.sectorY})!`);
     });
 
+    room.onMessage('bountyAmbush', (data: {
+      questId: string;
+      targetName: string;
+      targetLevel: number;
+      sectorX: number;
+      sectorY: number;
+    }) => {
+      const store = useStore.getState();
+      store.setBountyEncounter({
+        questId: data.questId,
+        targetName: data.targetName,
+        targetLevel: data.targetLevel,
+        sectorX: data.sectorX,
+        sectorY: data.sectorY,
+      });
+      store.addLogEntry(`KOPFGELD: ${data.targetName} bei (${data.sectorX}, ${data.sectorY}) entdeckt!`);
+    });
+
     room.onMessage('ancientRuinScan', (data) => {
       const store = useStore.getState();
       store.setActiveAncientRuinScan(data);
       store.addLogEntry(`ANCIENT RUIN — ${data.fragmentText.split('\n')[0]}`);
     });
 
-    room.onMessage('combatV2Init', (data: { state: CombatV2State }) => {
-      useStore.getState().setActiveCombatV2(data.state);
+    // ── Kampfsystem v1 — energy-based round combat ──────────────────────────
+    room.onMessage('combatInitResult', (data: { success: boolean; state?: any; error?: string }) => {
+      if (data.success && data.state) {
+        useStore.getState().setActiveCombat(data.state);
+      }
     });
 
-    room.onMessage('combatV2Result', (data: CombatV2RoundResult) => {
-      const store = useStore.getState();
-      if (data.state) {
-        store.setActiveCombatV2(data.state.status === 'active' ? data.state : null);
-      }
-      if (data.finalResult) {
-        const encounter = store.activeBattle ?? store.activeCombatV2?.encounter;
-        if (encounter) {
-          store.setLastBattleResult({ encounter, result: data.finalResult as any });
+    room.onMessage(
+      'combatRoundResult',
+      (data: { success: boolean; round?: any; state?: any; outcome?: string; loot?: any; error?: string }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`KAMPF FEHLER: ${data.error}`);
+          return;
         }
-        store.setActiveCombatV2(null);
-        store.setActiveBattle(null);
-      }
-    });
+        if (data.state) {
+          const newState = { ...data.state };
+          if (data.outcome && data.outcome !== 'ongoing') {
+            newState.outcome = data.outcome;
+            newState.loot = data.loot;
+          }
+          store.setActiveCombat(newState);
+        }
+      },
+    );
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ── RepairService — onboard module repair & station repair ───────────────
+    room.onMessage(
+      'repairModuleResult',
+      (data: {
+        success: boolean;
+        moduleId?: string;
+        newHp?: number;
+        maxHp?: number;
+        error?: string;
+      }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`REPAIR ERROR: ${data.error}`);
+          return;
+        }
+        // Update the module's currentHp in ship state
+        if (data.moduleId !== undefined && data.newHp !== undefined) {
+          const ship = store.ship;
+          if (ship) {
+            const updatedModules = ship.modules.map((m) =>
+              m.moduleId === data.moduleId ? { ...m, currentHp: data.newHp! } : m,
+            );
+            store.setShip({ ...ship, modules: updatedModules });
+          }
+        }
+      },
+    );
+
+    room.onMessage(
+      'stationRepairResult',
+      (data: {
+        success: boolean;
+        modulesRepaired?: number;
+        cost?: number;
+        error?: string;
+      }) => {
+        const store = useStore.getState();
+        if (!data.success) {
+          if (data.error) store.addLogEntry(`STATION REPAIR ERROR: ${data.error}`);
+          return;
+        }
+        // Restore all modules to full HP in ship state
+        const ship = store.ship;
+        if (ship) {
+          const updatedModules = ship.modules.map((m) => {
+            const def = MODULES[m.moduleId];
+            const maxHp = def?.maxHp ?? 20;
+            return { ...m, currentHp: maxHp };
+          });
+          store.setShip({ ...ship, modules: updatedModules });
+        }
+      },
+    );
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Permadeath: ship destroyed in combat → clear combat state, show notification
     room.onMessage(
@@ -1281,6 +1422,7 @@ class GameNetwork {
         totalSteps: number;
         costs?: { totalFuel: number; totalAP: number; estimatedTime: number };
         currentStep?: number;
+        source?: 'slow_flight';
       }) => {
         const store = useStore.getState();
         store.setAutopilot({
@@ -1298,6 +1440,9 @@ class GameNetwork {
           status: 'active',
           useHyperjump: false,
         });
+        if (data.source === 'slow_flight') {
+          store.setSlowFlightActive(true);
+        }
       },
     );
 
@@ -1331,36 +1476,47 @@ class GameNetwork {
       },
     );
 
-    room.onMessage('autopilotComplete', async (data: { x: number; y: number }) => {
-      const store = useStore.getState();
-      store.setAutopilot(null);
-      store.setAutopilotStatus(null);
-      store.setNavTarget(null);
-      if (data.x >= 0 && data.y >= 0) {
-        store.setPosition({ x: data.x, y: data.y });
-        store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);
-        // Join the destination sector room so subsequent moves work
-        try {
-          await this.joinSector(data.x, data.y);
-        } catch (err) {
-          store.addLogEntry(`Sector-Join nach Autopilot fehlgeschlagen: ${(err as Error).message}`);
+    room.onMessage(
+      'autopilotComplete',
+      async (data: { x: number; y: number; source?: 'slow_flight'; sector?: { type: string } }) => {
+        const store = useStore.getState();
+        store.setAutopilot(null);
+        store.setAutopilotStatus(null);
+        store.setNavTarget(null);
+        store.setSlowFlightActive(false);
+        if (data.x >= 0 && data.y >= 0) {
+          store.setPosition({ x: data.x, y: data.y });
+          store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);
+          // Auto-open MINING tab when slow flight arrives at an asteroid field
+          if (data.source === 'slow_flight' && data.sector?.type === 'asteroid_field') {
+            store.setActiveMonitor(MONITORS.MINING);
+          }
+          // Join the destination sector room so subsequent moves work
+          try {
+            await this.joinSector(data.x, data.y);
+          } catch (err) {
+            store.addLogEntry(
+              `Sector-Join nach Autopilot fehlgeschlagen: ${(err as Error).message}`,
+            );
+          }
+        } else {
+          // Cancelled: rejoin current sector from store.position
+          const pos = store.position;
+          store.addLogEntry('Autopilot abgebrochen.');
+          try {
+            await this.joinSector(pos.x, pos.y);
+          } catch {
+            // Best effort — already at current position room
+          }
         }
-      } else {
-        // Cancelled: rejoin current sector from store.position
-        const pos = store.position;
-        store.addLogEntry('Autopilot abgebrochen.');
-        try {
-          await this.joinSector(pos.x, pos.y);
-        } catch {
-          // Best effort — already at current position room
-        }
-      }
-      store.resetPan();
-    });
+        store.resetPan();
+      },
+    );
 
     room.onMessage('autopilotPaused', (data: { reason: string; currentStep: number }) => {
       const store = useStore.getState();
       const existing = store.autopilotStatus;
+      store.setSlowFlightActive(false);
       store.setAutopilotStatus({
         targetX: existing?.targetX ?? store.autopilot?.targetX ?? 0,
         targetY: existing?.targetY ?? store.autopilot?.targetY ?? 0,
@@ -1416,39 +1572,6 @@ class GameNetwork {
         });
         if (data.targetX !== undefined && data.targetY !== undefined) {
           store.setNavTarget({ x: data.targetX, y: data.targetY });
-        }
-      },
-    );
-
-    room.onMessage(
-      'emergencyWarpResult',
-      (data: {
-        success: boolean;
-        error?: string;
-        newSector?: SectorData;
-        fuelGranted?: number;
-        creditCost?: number;
-        credits?: number;
-      }) => {
-        if (data.success && data.newSector) {
-          const store = useStore.getState();
-          store.startJumpAnimation(0, 0);
-          const newSector = data.newSector;
-          const costMsg =
-            data.creditCost && data.creditCost > 0
-              ? ` (Kosten: ${data.creditCost} Credits)`
-              : ' (GRATIS)';
-          setTimeout(async () => {
-            store.addDiscoveries([newSector]);
-            store.addLogEntry(`NOTWARP zur Basis (${newSector.x}, ${newSector.y})${costMsg}`);
-            if (data.credits !== undefined) {
-              useStore.setState({ credits: data.credits });
-            }
-            await this.joinSector(newSector.x, newSector.y);
-            useStore.getState().clearJumpAnimation();
-          }, 800);
-        } else {
-          useStore.getState().addLogEntry(`Notwarp fehlgeschlagen: ${data.error}`);
         }
       },
     );
@@ -1515,8 +1638,14 @@ class GameNetwork {
 
     room.onMessage('quadrantInfo', (data: { qx: number; qy: number; name?: string | null }) => {
       const store = useStore.getState();
+      const prev = store.currentQuadrant;
       store.setCurrentQuadrant(data);
       store.addToStatSet('quadrantsVisited', `${data.qx}:${data.qy}`);
+      // Notify player when crossing into a new quadrant
+      if (prev && (prev.qx !== data.qx || prev.qy !== data.qy)) {
+        const label = data.name ? `${data.name} [${data.qx}:${data.qy}]` : `[${data.qx}:${data.qy}]`;
+        store.addLogEntry(`[NAV] Quadrant gewechselt: ${label}`);
+      }
     });
 
     room.onMessage('firstContact', (data: FirstContactEvent) => {
@@ -1652,6 +1781,41 @@ class GameNetwork {
       useStore.getState().setStationProductionState(data);
     });
 
+    // --- Wreck POI handlers ---
+
+    room.onMessage('wreckInvestigated', (data: WreckInvestigatedPayload) => {
+      useStore.getState().setActiveWreck(data);
+    });
+
+    room.onMessage('salvageStarted', (data: SalvageStartedPayload) => {
+      useStore.getState().setSalvageSession(data);
+    });
+
+    room.onMessage('salvageResult', (data: SalvageResultPayload) => {
+      useStore.getState().setSalvageSession(null);
+      if (data.cargoUpdate) {
+        useStore.getState().setCargo(data.cargoUpdate);
+      }
+    });
+
+    room.onMessage('wreckExhausted', (data: WreckExhaustedPayload) => {
+      const key = `${data.sectorX}:${data.sectorY}`;
+      const wrecks = { ...useStore.getState().sectorWrecks };
+      delete wrecks[key];
+      useStore.getState().setSectorWrecks(wrecks);
+      useStore.getState().setActiveWreck(null);
+      useStore.getState().setSalvageSession(null);
+    });
+
+    room.onMessage('slateConsumed', (data: { slateId: string; sectorX: number; sectorY: number; sectorType: string | null }) => {
+      useStore.getState().removeWreckSlate(data.slateId);
+      useStore.getState().addLogEntry(`DATA SLATE KONSUMIERT — Sektor (${data.sectorX}, ${data.sectorY}) aufgedeckt`);
+    });
+
+    room.onMessage('gateConnectionAdded', (data: { fromX: number; fromY: number; toX: number; toY: number }) => {
+      useStore.getState().addLogEntry(`JUMPGATE VERBUNDEN — Route zu (${data.toX}, ${data.toY}) hergestellt`);
+    });
+
     room.onLeave(async (code) => {
       if (this.intentionalLeave) {
         this.intentionalLeave = false;
@@ -1693,6 +1857,14 @@ class GameNetwork {
     }
     useStore.getState().setJumpPending(true);
     this.sectorRoom.send('jump', { targetX, targetY });
+  }
+
+  sendSlowFlight(targetX: number, targetY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('startSlowFlight', { targetX, targetY });
   }
 
   sendScan() {
@@ -1747,12 +1919,12 @@ class GameNetwork {
     this.sectorRoom.send('getDiscoveries', {});
   }
 
-  sendMine(resource: string) {
+  sendMine(resource: string, mineAll?: boolean) {
     if (!this.sectorRoom) {
       useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
       return;
     }
-    this.sectorRoom.send('mine', { resource });
+    this.sectorRoom.send('mine', { resource, mineAll: mineAll ?? false });
   }
 
   sendStopMine() {
@@ -1761,6 +1933,11 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('stopMine', {});
+  }
+
+  sendToggleMineAll(mineAll: boolean) {
+    if (!this.sectorRoom) return;
+    this.sectorRoom.send('toggleMineAll', { mineAll });
   }
 
   sendJettison(resource: string) {
@@ -1860,6 +2037,10 @@ class GameNetwork {
     this.sectorRoom?.send('createSlate', { slateType });
   }
 
+  sendCreateSlateFromScan() {
+    this.sectorRoom?.send('createSlateFromScan', {});
+  }
+
   requestMySlates() {
     this.sectorRoom?.send('getMySlates');
   }
@@ -1955,21 +2136,30 @@ class GameNetwork {
     this.sectorRoom.send('battleAction', { action, sectorX, sectorY });
   }
 
-  sendCombatV2Action(tactic: string, specialAction: string, sectorX: number, sectorY: number) {
+  // ── Kampfsystem v1 send methods ──────────────────────────────────────────
+
+  sendCombatInit(enemyType: string, enemyLevel: number, sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {
       useStore.getState().addLogEntry('NOT CONNECTED');
       return;
     }
-    this.sectorRoom.send('combatV2Action', { tactic, specialAction, sectorX, sectorY });
+    this.sectorRoom.send('combatInit', { enemyType, enemyLevel, sectorX, sectorY });
   }
 
-  sendCombatV2Flee(sectorX: number, sectorY: number) {
+  sendCombatRound(input: {
+    energyAllocations: Array<{ moduleId: string; category: string; powerLevel: 'off' | 'low' | 'mid' | 'high' }>;
+    primaryAction: { type: string; targetModuleId?: string; targetModuleCategory?: string };
+    reactionChoice?: { type: string };
+    ancientAbility?: { type: string };
+  }, sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {
       useStore.getState().addLogEntry('NOT CONNECTED');
       return;
     }
-    this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
+    this.sectorRoom.send('combatRound', { input, sectorX, sectorY });
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   sendEjectPod(sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {
@@ -2103,7 +2293,11 @@ class GameNetwork {
 
   // Hyperjump / Autopilot
   sendHyperJump(targetX: number, targetY: number) {
-    this.sectorRoom?.send('hyperJump', { targetX, targetY });
+    if (!this.sectorRoom) {
+      useStore.getState().setActionError({ code: 'HYPERJUMP_FAIL', message: 'Keine Verbindung — Seite neu laden' });
+      return;
+    }
+    this.sectorRoom.send('hyperJump', { targetX, targetY });
   }
 
   sendStartAutopilot(targetX: number, targetY: number, useHyperjump: boolean = false) {
@@ -2128,14 +2322,6 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('setAutoRefuel', { enabled, maxPricePerUnit });
-  }
-
-  sendEmergencyWarp() {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED — rejoin required');
-      return;
-    }
-    this.sectorRoom.send('emergencyWarp');
   }
 
   sendCreateCustomSlate(data: CreateCustomSlateMessage) {
@@ -2206,15 +2392,15 @@ class GameNetwork {
     this.sectorRoom?.send('getModuleInventory');
   }
 
-  // Tech-Baum: Research
-  sendStartResearch(moduleId: string, slot: 1 | 2 = 1, artefactsToUse?: Record<string, number>) {
-    this.sectorRoom?.send('startResearch', { moduleId, slot, artefactsToUse });
+  // Tech-Baum: Tech Tree (node-based)
+  getTechTree(): void {
+    this.sectorRoom?.send('getTechTree');
   }
-  sendCancelResearch(slot: 1 | 2 = 1) {
-    this.sectorRoom?.send('cancelResearch', { slot });
+  researchTechNode(nodeId: string): void {
+    this.sectorRoom?.send('researchTechNode', { nodeId });
   }
-  sendClaimResearch(slot: 1 | 2 = 1) {
-    this.sectorRoom?.send('claimResearch', { slot });
+  resetTechTree(): void {
+    this.sectorRoom?.send('resetTechTree');
   }
   sendActivateBlueprint(moduleId: string) {
     this.sectorRoom?.send('activateBlueprint', { moduleId });
@@ -2336,6 +2522,38 @@ class GameNetwork {
 
   sellToStation(itemId: string, quantity: number) {
     this.sectorRoom?.send('sellToStation', { itemId, quantity });
+  }
+
+  // ── RepairService ──────────────────────────────────────────────────────────
+
+  sendRepairModule(moduleId: string) {
+    this.sectorRoom?.send('repairModule', { moduleId });
+  }
+
+  sendStationRepair() {
+    this.sectorRoom?.send('stationRepair', {});
+  }
+
+  // --- Wreck POI ---
+
+  sendInvestigateWreck() {
+    this.sectorRoom?.send('investigateWreck', {});
+  }
+
+  sendStartSalvage(itemIndex: number) {
+    this.sectorRoom?.send('startSalvage', { itemIndex });
+  }
+
+  sendCancelSalvage() {
+    this.sectorRoom?.send('cancelSalvage', {});
+  }
+
+  sendConsumeWreckSlate(slateId: string) {
+    this.sectorRoom?.send('consumeWreckSlate', { slateId });
+  }
+
+  sendFeedSlateToGate(slateId: string) {
+    this.sectorRoom?.send('feedSlateToGate', { slateId });
   }
 }
 

@@ -7,6 +7,7 @@ import {
   completeCommunityQuest,
   contributeHumanityRep,
   addWissen,
+  recordNewsEvent,
   type CommunityAlienQuestRow,
 } from '../../db/queries.js';
 
@@ -69,9 +70,10 @@ export class CommunityQuestService {
     return getActiveCommunityAlienQuest();
   }
 
-  async contribute(playerId: string, amount: number): Promise<void> {
+  async contribute(playerId: string, amount: number, questType?: string): Promise<void> {
     const quest = await getActiveCommunityAlienQuest();
     if (!quest) return;
+    if (questType && quest.quest_type !== questType) return;
     await addCommunityQuestContribution(quest.id, playerId, amount);
     if (quest.current_count + amount >= quest.target_count) {
       const questCompleted = await completeCommunityQuest(quest.id);
@@ -101,5 +103,11 @@ export class CommunityQuestService {
       template.rewardType,
       Date.now() + SEVEN_DAYS_MS,
     );
+    recordNewsEvent({
+      eventType: 'community_quest_activated',
+      headline: `NEUE GEMEINSCHAFTS-QUEST: ${template.title}`,
+      summary: template.description,
+      eventData: { questType: template.questType, factionId: template.factionId, targetCount: template.targetCount },
+    }).catch(() => {});
   }
 }

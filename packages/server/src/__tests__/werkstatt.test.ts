@@ -14,7 +14,6 @@ vi.mock('../db/queries.js', () => ({
   deductCredits: vi.fn(),
   // ShipService deps (need stubs even if not called in craftModule path)
   getActiveShip: vi.fn(),
-  getPlayerHomeBase: vi.fn(),
   getPlayerShips: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
@@ -25,8 +24,6 @@ vi.mock('../db/queries.js', () => ({
   getActiveResearch: vi.fn(),
   startActiveResearch: vi.fn(),
   deleteActiveResearch: vi.fn(),
-  getPlayerCargo: vi.fn(),
-  deductCargo: vi.fn(),
   getPlayerReputations: vi.fn(),
   getStorageInventory: vi.fn(),
   upsertInventory: vi.fn(),
@@ -34,9 +31,6 @@ vi.mock('../db/queries.js', () => ({
   getInventoryItem: vi.fn(),
   transferInventoryItem: vi.fn(),
   getCargoCapForPlayer: vi.fn(),
-  getModuleInventory: vi.fn(),
-  addModuleToInventory: vi.fn(),
-  removeModuleFromInventory: vi.fn(),
 }));
 
 // ── Mock @void-sector/shared ──────────────────────────────────────────────────
@@ -45,25 +39,39 @@ vi.mock('@void-sector/shared', () => ({
     drive_mk2: {
       id: 'drive_mk2',
       name: 'ION DRIVE MK.II',
+      category: 'drive',
+      tier: 2,
       cost: { credits: 300, ore: 20, crystal: 5 },
     },
     scanner_mk2: {
       id: 'scanner_mk2',
       name: 'SCANNER MK.II',
+      category: 'scanner',
+      tier: 2,
       cost: { credits: 150 },
     },
     cargo_hold: {
       id: 'cargo_hold',
       name: 'CARGO HOLD',
+      category: 'cargo',
+      tier: 1,
       cost: { credits: 0 },
     },
   },
-  HULLS: {},
   calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
   validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
   isModuleUnlocked: vi.fn().mockReturnValue(true),
-  canStartResearch: vi.fn(),
   RESEARCH_TICK_MS: 60000,
+}));
+
+// ── Mock techTreeQueries ─────────────────────────────────────────────────────
+vi.mock('../db/techTreeQueries.js', () => ({
+  getOrCreateTechTree: vi.fn().mockResolvedValue({
+    player_id: 'player-1',
+    researched_nodes: {},
+    total_researched: 0,
+    last_reset_at: null,
+  }),
 }));
 
 // ── Mock engine deps ──────────────────────────────────────────────────────────
@@ -114,7 +122,6 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
     _py: vi.fn().mockReturnValue(0),
     _pst: vi.fn().mockReturnValue('station'),
     clientShips: new Map(),
-    clientHullTypes: new Map(),
     ...overrides,
   } as any;
 }

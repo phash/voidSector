@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { MODULES } from '../constants';
 import type { ModuleDefinition, ModuleTier } from '../types';
 
-const TIER_4_5_MODULES = Object.entries(MODULES).filter(([, m]) => m.tier === 4 || m.tier === 5);
+const TIER_4_5_MODULES = Object.entries(MODULES).filter(
+  ([, m]) => (m.tier === 4 || m.tier === 5) && !m.isFoundOnly,
+);
 
 const DRIVE_CHAIN = ['drive_mk1', 'drive_mk2', 'drive_mk3', 'drive_mk4', 'drive_mk5'];
 const SCANNER_CHAIN = ['scanner_mk1', 'scanner_mk2', 'scanner_mk3', 'scanner_mk4', 'scanner_mk5'];

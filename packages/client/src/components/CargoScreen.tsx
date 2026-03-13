@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { RESOURCE_TYPES } from '@void-sector/shared';
+import { RESOURCE_TYPES, getPhysicalCargoTotal } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
-import { btn, btnDisabled, UI } from '../ui-strings';
-import { useConfirm } from '../hooks/useConfirm';
+import { useTranslation } from 'react-i18next';
+import { btn } from '../ui-helpers';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
@@ -50,12 +50,13 @@ const tabBtnStyle = (active: boolean): React.CSSProperties => ({
   border: '1px solid var(--color-primary)',
   color: active ? '#050505' : 'var(--color-primary)',
   fontFamily: 'var(--font-mono)',
-  fontSize: '0.65rem',
+  fontSize: '0.75rem',
   padding: '3px 8px',
   cursor: 'pointer',
 });
 
 export function CargoScreen() {
+  const { t } = useTranslation('ui');
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const mySlates = useStore((s) => s.mySlates);
@@ -63,13 +64,26 @@ export function CargoScreen() {
   const alienCredits = useStore((s) => s.alienCredits);
   const inventory = useStore((s) => s.inventory);
   const cargoCap = ship?.stats?.cargoCap ?? 5;
-  const total = cargo.ore + cargo.gas + cargo.crystal + cargo.slates + cargo.artefact;
+  const total = getPhysicalCargoTotal(cargo);
 
-  const { confirm, isArmed } = useConfirm();
+  const [jettisoning, setJettisoning] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'resource' | 'module' | 'blueprint'>('resource');
+  const doJettison = (resource: string) => {
+    if (jettisoning) return;
+    setJettisoning(resource);
+    network.sendJettison(resource);
+    setTimeout(() => setJettisoning(null), 1000);
+  };
+
+  const [activeTab, setActiveTab] = useState<'resource' | 'module' | 'blueprint' | 'slates'>('resource');
+
+  const selectedSlateId = useStore((s) => s.selectedSlateId);
+  const setSelectedSlateId = useStore((s) => s.setSelectedSlateId);
+  const activeProgram = useStore((s) => s.activeProgram);
+  const memory = ship?.stats?.memory ?? 2;
 
   const resources = inventory.filter((i) => i.itemType === 'resource');
+  const dataSlates = inventory.filter((i) => i.itemType === 'data_slate');
   const modules = inventory.filter((i) => i.itemType === 'module');
   const blueprints = inventory.filter((i) => i.itemType === 'blueprint');
   const setActiveProgram = useStore((s) => s.setActiveProgram);
@@ -78,6 +92,18 @@ export function CargoScreen() {
     network.requestMySlates();
     network.requestInventory();
   }, []);
+
+  useEffect(() => {
+    if (activeProgram !== 'CARGO') {
+      setSelectedSlateId(null);
+    }
+  }, [activeProgram, setSelectedSlateId]);
+
+  useEffect(() => {
+    if (activeTab !== 'slates') {
+      setSelectedSlateId(null);
+    }
+  }, [activeTab, setSelectedSlateId]);
 
   return (
     <div
@@ -94,10 +120,6 @@ export function CargoScreen() {
         style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '12px' }}
       >
         CARGO HOLD
-      </div>
-
-      <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
-        VESSEL: {ship?.name ?? '---'}
       </div>
 
       <div
@@ -124,16 +146,22 @@ export function CargoScreen() {
           style={tabBtnStyle(activeTab === 'resource')}
           onClick={() => setActiveTab('resource')}
         >
-          {UI.tabs.RESOURCES}
+          {t('tabs.resources')}
         </button>
         <button style={tabBtnStyle(activeTab === 'module')} onClick={() => setActiveTab('module')}>
-          {UI.tabs.MODULES}
+          {t('tabs.modules')}
         </button>
         <button
           style={tabBtnStyle(activeTab === 'blueprint')}
           onClick={() => setActiveTab('blueprint')}
         >
-          {UI.tabs.BLUEPRINTS}
+          {t('tabs.blueprints')}
+        </button>
+        <button
+          style={tabBtnStyle(activeTab === 'slates')}
+          onClick={() => setActiveTab('slates')}
+        >
+          SLATES
         </button>
       </div>
 
@@ -152,7 +180,6 @@ export function CargoScreen() {
             <CargoBar label="ORE" value={cargo.ore} max={cargoCap} />
             <CargoBar label="GAS" value={cargo.gas} max={cargoCap} />
             <CargoBar label="CRYSTAL" value={cargo.crystal} max={cargoCap} />
-            <CargoBar label="SLATES" value={cargo.slates} max={cargoCap} />
             <CargoBar label="ARTEFAKT" value={cargo.artefact} max={cargoCap} />
           </div>
 
@@ -185,80 +212,41 @@ export function CargoScreen() {
             </div>
           )}
 
-          {cargo.slates > 0 && (
+          {dataSlates.length > 0 && (
             <div
               style={{
                 borderTop: '1px solid var(--color-dim)',
                 paddingTop: '8px',
-                marginBottom: '8px',
+                marginBottom: '16px',
+                fontSize: '0.8rem',
               }}
             >
-              <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '4px' }}>
-                DATA SLATES: {cargo.slates}
-              </div>
-              {mySlates.map((slate: DataSlate) => (
-                <div
-                  key={slate.id}
-                  style={{
-                    fontSize: '0.8rem',
-                    marginBottom: '4px',
-                    display: 'flex',
-                    gap: '4px',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <span style={{ opacity: 0.7 }}>
-                    [{slate.slateType === 'sector' ? 'S' : slate.slateType === 'area' ? 'A' : 'C'}]
-                    {slate.slateType === 'custom' && slate.customData
-                      ? ` ${slate.customData.label}`
-                      : ` ${slate.sectorData?.length ?? 0} Sektoren`}
-                  </span>
-                  <button
-                    className="vs-btn"
-                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-                    onClick={() => network.sendActivateSlate(slate.id)}
-                  >
-                    {btn(UI.actions.ACTIVATE)}
-                  </button>
-                  <button
-                    className="vs-btn"
-                    style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-                    onClick={() => network.sendNpcBuyback(slate.id)}
-                  >
-                    {btn('NPC SELL')}
-                  </button>
+              <div style={{ opacity: 0.6, marginBottom: 4 }}>DATA SLATES (QUEST):</div>
+              {dataSlates.map((item) => (
+                <div key={item.itemId} style={{ marginBottom: 2, color: '#c8a020' }}>
+                  ◈ DATA SLATE
                 </div>
               ))}
             </div>
           )}
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {RESOURCE_TYPES.map((res) => {
-              const key = `jettison-${res}`;
-              return (
+            {RESOURCE_TYPES.map((res) => (
                 <button
                   key={res}
                   className="vs-btn"
-                  disabled={cargo[res] <= 0}
-                  onClick={() => confirm(key, () => network.sendJettison(res))}
-                  style={isArmed(key) ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
+                  disabled={cargo[res] <= 0 || jettisoning === res}
+                  onClick={() => doJettison(res)}
                 >
-                  {isArmed(key)
-                    ? btnDisabled(`JETTISON ${res.toUpperCase()}`, 'SURE?')
-                    : btn(`JETTISON ${res.toUpperCase()}`)}
+                  {btn(`JETTISON ${res.toUpperCase()}`)}
                 </button>
-              );
-            })}
+              ))}
             <button
               className="vs-btn"
-              disabled={cargo.artefact <= 0}
-              onClick={() => confirm('jettison-artefact', () => network.sendJettison('artefact'))}
-              style={isArmed('jettison-artefact') ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
+              disabled={cargo.artefact <= 0 || jettisoning === 'artefact'}
+              onClick={() => doJettison('artefact')}
             >
-              {isArmed('jettison-artefact')
-                ? btnDisabled('JETTISON ARTEFACT', 'SURE?')
-                : btn('JETTISON ARTEFACT')}
+              {btn('JETTISON ARTEFACT')}
             </button>
           </div>
         </>
@@ -268,7 +256,7 @@ export function CargoScreen() {
       {activeTab === 'module' && (
         <div style={{ fontSize: '0.85rem' }}>
           {modules.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>{UI.empty.NO_MODULES}</div>
+            <div style={{ opacity: 0.4 }}>{t('empty.noModules')}</div>
           ) : (
             modules.map((item) => (
               <div
@@ -286,10 +274,10 @@ export function CargoScreen() {
                 </span>
                 <button
                   className="vs-btn"
-                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   onClick={() => network.sendInstallModule('', item.itemId, 0)}
                 >
-                  {btn(UI.actions.INSTALL)}
+                  {btn(t('actions.install'))}
                 </button>
               </div>
             ))
@@ -301,7 +289,7 @@ export function CargoScreen() {
       {activeTab === 'blueprint' && (
         <div style={{ fontSize: '0.85rem' }}>
           {blueprints.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>{UI.empty.NO_BLUEPRINTS}</div>
+            <div style={{ opacity: 0.4 }}>{t('empty.noBlueprints')}</div>
           ) : (
             blueprints.map((item) => (
               <div
@@ -320,14 +308,91 @@ export function CargoScreen() {
                 </span>
                 <button
                   className="vs-btn"
-                  style={{ fontSize: '0.75rem', padding: '2px 6px' }}
+                  style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   onClick={() => network.sendActivateBlueprint(item.itemId)}
                 >
-                  {btn(UI.actions.ACTIVATE)}
+                  {btn(t('actions.activate'))}
                 </button>
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* SLATES tab */}
+      {activeTab === 'slates' && (
+        <div>
+          <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
+            MEMORY: {cargo.slates}/{memory}
+            {cargo.slates > memory && (
+              <span style={{ color: '#FF3333', marginLeft: 8 }}>OVER CAPACITY</span>
+            )}
+          </div>
+          <div style={{
+            height: 6,
+            background: 'rgba(255,176,0,0.1)',
+            marginBottom: 8,
+            position: 'relative',
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${Math.min(100, (cargo.slates / Math.max(1, memory)) * 100)}%`,
+              background: cargo.slates > memory ? '#FF3333' : 'var(--color-primary)',
+              transition: 'width 0.3s',
+            }} />
+          </div>
+
+          {mySlates.length === 0 && (
+            <div style={{ opacity: 0.4, fontSize: '0.75rem' }}>Keine Data Slates</div>
+          )}
+
+          {mySlates.map((slate: DataSlate) => (
+            <div
+              key={slate.id}
+              style={{
+                fontSize: '0.8rem',
+                marginBottom: '6px',
+                padding: '4px 6px',
+                display: 'flex',
+                gap: '6px',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                cursor: 'pointer',
+                background: selectedSlateId === slate.id ? 'rgba(255,176,0,0.08)' : 'transparent',
+                border: selectedSlateId === slate.id ? '1px solid rgba(255,176,0,0.2)' : '1px solid transparent',
+              }}
+              onClick={() => setSelectedSlateId(selectedSlateId === slate.id ? null : slate.id)}
+            >
+              <span style={{ opacity: 0.7 }}>
+                [{slate.slateType === 'sector' ? 'S'
+                  : slate.slateType === 'area' ? 'A'
+                  : slate.slateType === 'scan' ? 'SC'
+                  : slate.slateType === 'jumpgate' ? 'JG'
+                  : 'C'}]
+                {slate.slateType === 'custom' && slate.customData
+                  ? ` ${slate.customData.label}`
+                  : slate.slateType === 'scan'
+                    ? ` Scan Q${(slate.sectorData?.[0] as any)?.quadrantX ?? '?'}:${(slate.sectorData?.[0] as any)?.quadrantY ?? '?'} (${slate.sectorData?.[0]?.x ?? '?'},${slate.sectorData?.[0]?.y ?? '?'})`
+                    : slate.slateType === 'jumpgate'
+                      ? ` Gate (${(slate.sectorData?.[0] as any)?.sectorX ?? '?'},${(slate.sectorData?.[0] as any)?.sectorY ?? '?'})`
+                      : ` ${t('slates.sektoren', { n: slate.sectorData?.length ?? 0 })}`}
+              </span>
+              <button
+                className="vs-btn"
+                style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                onClick={(e) => { e.stopPropagation(); network.sendActivateSlate(slate.id); }}
+              >
+                {btn(t('actions.activate'))}
+              </button>
+              <button
+                className="vs-btn"
+                style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                onClick={(e) => { e.stopPropagation(); network.sendNpcBuyback(slate.id); }}
+              >
+                {btn('NPC SELL')}
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>

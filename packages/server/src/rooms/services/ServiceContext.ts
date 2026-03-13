@@ -2,8 +2,6 @@ import type { Client } from 'colyseus';
 import type {
   SectorData,
   ShipStats,
-  HullType,
-  CombatV2State,
   NpcFactionId,
   ChatMessage,
 } from '@void-sector/shared';
@@ -19,8 +17,6 @@ export interface ServiceContext {
 
   // Per-player caches (Maps stored on room)
   clientShips: Map<string, ShipStats>;
-  clientHullTypes: Map<string, HullType>;
-  combatV2States: Map<string, CombatV2State>;
   autopilotTimers: Map<string, ReturnType<typeof setInterval>>;
   playerSectorData: Map<string, SectorData>;
 
@@ -75,4 +71,8 @@ export interface ServiceContext {
     client: Client,
   ) => Promise<void>;
   applyXpGain: (playerId: string, xp: number, client: Client) => Promise<void>;
+  contributeToCommunityQuest: (playerId: string, count: number, questType: string) => Promise<void>;
+
+  // AP management
+  deductAP: (playerId: string, cost: number) => Promise<boolean>;
 }
