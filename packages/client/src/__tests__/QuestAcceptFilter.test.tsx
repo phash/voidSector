@@ -72,7 +72,7 @@ describe('QuestsScreen quest filter after accept', () => {
     expect(mockActiveQuests).toHaveLength(0);
 
     // Click on VERFÜGBAR tab
-    const verfuegbarBtn = screen.getByRole('button', { name: 'VERFÜGBAR' });
+    const verfuegbarBtn = screen.getByRole('button', { name: 'tabs.available' });
     await user.click(verfuegbarBtn);
 
     // Simulate stationNpcsResult event with available quests
@@ -139,7 +139,7 @@ describe('QuestsScreen quest filter after accept', () => {
     const user = userEvent.setup();
     const { rerender } = render(<QuestsScreen />);
 
-    const verfuegbarBtn = screen.getByRole('button', { name: 'VERFÜGBAR' });
+    const verfuegbarBtn = screen.getByRole('button', { name: 'tabs.available' });
     await user.click(verfuegbarBtn);
 
     const availableQuestData: AvailableQuest[] = [

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { CockpitLayout } from './CockpitLayout';
-import { btn, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn } from '../ui-helpers';
 import { RadarCanvas } from './RadarCanvas';
 import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
@@ -179,6 +180,7 @@ function SettingsView() {
 }
 
 function TerritoryPanel() {
+  const { t } = useTranslation('ui');
   const q = useStore((s) => s.currentQuadrant);
   if (!q) return null;
   return (
@@ -212,7 +214,7 @@ function TerritoryPanel() {
             cursor: 'pointer',
           }}
         >
-          {btn(UI.actions.CLAIM)}
+          {btn(t('actions.claim'))}
         </button>
         <button
           onClick={() => network.requestMyTerritories()}

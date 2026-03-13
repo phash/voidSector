@@ -90,9 +90,9 @@ describe('NavControls', () => {
       autopilot: { targetX: 5, targetY: 3, remaining: 8, active: true },
     });
     render(<NavControls />);
-    expect(screen.getByText(/AUTOPILOT ACTIVE/)).toBeInTheDocument();
+    expect(screen.getByText(/status\.autopilotActive/)).toBeInTheDocument();
     expect(screen.getByText(/5, 3/)).toBeInTheDocument();
-    expect(screen.getByText(/CANCEL/)).toBeInTheDocument();
+    expect(screen.getByText(/actions\.cancel/)).toBeInTheDocument();
   });
 
   it('shows remaining jump count during autopilot', () => {
@@ -130,7 +130,7 @@ describe('NavControls', () => {
       autopilot: { targetX: 5, targetY: -3, remaining: 8, active: true },
     });
     render(<NavControls />);
-    await userEvent.click(screen.getByText('[CANCEL]'));
+    await userEvent.click(screen.getByText('[actions.cancel]'));
     expect(network.sendCancelAutopilot).toHaveBeenCalled();
   });
 
@@ -138,7 +138,7 @@ describe('NavControls', () => {
     mockStoreState({ autopilot: null });
     render(<NavControls />);
     expect(screen.getByText('↑')).toBeInTheDocument();
-    expect(screen.queryByText(/AUTOPILOT ACTIVE/)).toBeNull();
+    expect(screen.queryByText(/status\.autopilotActive/)).toBeNull();
   });
 
   it('shows normal controls when autopilot is inactive', () => {
@@ -147,7 +147,7 @@ describe('NavControls', () => {
     });
     render(<NavControls />);
     expect(screen.getByText('↑')).toBeInTheDocument();
-    expect(screen.queryByText(/AUTOPILOT ACTIVE/)).toBeNull();
+    expect(screen.queryByText(/status\.autopilotActive/)).toBeNull();
   });
 
   // --- Hyperdrive charge display ---

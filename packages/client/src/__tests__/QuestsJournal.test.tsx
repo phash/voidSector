@@ -126,7 +126,7 @@ describe('QuestsScreen — JOURNAL tab', () => {
       trackedQuests: [{ questId: 'q1', title: 'Erz-Lieferung', type: 'traders' }],
     });
     render(<QuestsScreen />);
-    expect(screen.getByText('TRACKED: 1/5')).toBeDefined();
+    expect(screen.getByText('status.tracked: 1/5')).toBeDefined();
   });
 
   it('shows type label for quest', async () => {
@@ -139,14 +139,14 @@ describe('QuestsScreen — JOURNAL tab', () => {
   it('shows nearby filter toggle', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
-    expect(screen.getByText('[ ] NEARBY')).toBeDefined();
+    expect(screen.getByText('[ ] status.nearby')).toBeDefined();
   });
 
   it('toggles nearby filter on click', async () => {
     mockStoreState({ activeQuests: [mockQuest] });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByText('[ ] NEARBY'));
-    expect(screen.getByText('[✓] NEARBY')).toBeDefined();
+    await userEvent.click(screen.getByText('[ ] status.nearby'));
+    expect(screen.getByText('[✓] status.nearby')).toBeDefined();
   });
 
   it('shows no quests message when filter removes all', async () => {
@@ -156,9 +156,9 @@ describe('QuestsScreen — JOURNAL tab', () => {
     });
     render(<QuestsScreen />);
     // Enable nearby filter with small radius
-    await userEvent.click(screen.getByText('[ ] NEARBY'));
+    await userEvent.click(screen.getByText('[ ] status.nearby'));
     // With radius 10 and player at (100,100), quest at (10,20) should be filtered out
     // distance = |10-100| + |20-100| = 90+80 = 170 > 10
-    expect(screen.getByText('NO QUESTS (FILTER ACTIVE)')).toBeDefined();
+    expect(screen.getByText('empty.noQuestsFiltered')).toBeDefined();
   });
 });

@@ -3,7 +3,8 @@ import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { RESOURCE_TYPES, innerCoord, getPhysicalCargoTotal } from '@void-sector/shared';
 import type { MineableResourceType } from '@void-sector/shared';
-import { btn, btnDisabled, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn, btnDisabled } from '../ui-helpers';
 import { InlineError } from './InlineError';
 
 function ResourceBar({ label, value, max, maxResource }: { label: string; value: number; max: number; maxResource?: number }) {
@@ -19,6 +20,7 @@ function ResourceBar({ label, value, max, maxResource }: { label: string; value:
 }
 
 export function MiningScreen() {
+  const { t } = useTranslation('ui');
   const mining = useStore((s) => s.mining);
   const currentSector = useStore((s) => s.currentSector);
   const position = useStore((s) => s.position);
@@ -158,7 +160,7 @@ export function MiningScreen() {
                 </div>
               </>
             ) : (
-              <div>STATUS: {UI.status.IDLE}</div>
+              <div>STATUS: {t('status.idle')}</div>
             )}
             <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>
               <span style={{ color: cargoBarColor }}>
@@ -179,9 +181,9 @@ export function MiningScreen() {
                 {mining?.active === true || resources[res] <= 0
                   ? btn(`MINE ${res.toUpperCase()}`)
                   : cargoFull
-                    ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.CARGO_FULL)
+                    ? btnDisabled(`MINE ${res.toUpperCase()}`, t('reasons.cargoFull'))
                     : apCurrent < 1
-                      ? btnDisabled(`MINE ${res.toUpperCase()}`, UI.reasons.NO_AP)
+                      ? btnDisabled(`MINE ${res.toUpperCase()}`, t('reasons.noAp'))
                       : btn(`MINE ${res.toUpperCase()}`)}
               </button>
             ))}
@@ -190,7 +192,7 @@ export function MiningScreen() {
               disabled={!mining?.active}
               onClick={() => network.sendStopMine()}
             >
-              {btn(UI.actions.STOP)}
+              {btn(t('actions.stop'))}
             </button>
             <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', cursor: 'pointer' }}>
               <input

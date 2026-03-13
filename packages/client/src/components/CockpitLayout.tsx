@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
-import { btn } from '../ui-strings';
+import { btn } from '../ui-helpers';
 import { ProgramSelector } from './ProgramSelector';
 import { SettingsPanel } from './SettingsPanel';
 import { HardwareControls } from './HardwareControls';
