@@ -148,6 +148,7 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
 
   const pct = site.progress;
   const canDeliver = amounts.ore + amounts.gas + amounts.crystal > 0;
+  const adminToken = localStorage.getItem('vs_admin_token');
 
   type ResKey = 'ore' | 'gas' | 'crystal';
   const rows: [string, ResKey, number][] = [
@@ -165,6 +166,15 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
   function deliver() {
     network.sendDepositConstruction(site.id, amounts.ore, amounts.gas, amounts.crystal);
     setAmounts({ ore: 0, gas: 0, crystal: 0 });
+  }
+
+  async function adminComplete() {
+    if (!adminToken) return;
+    const base = `${window.location.protocol}//${window.location.host}`;
+    await fetch(`${base}/admin/api/construction-sites/${encodeURIComponent(site.id)}/complete`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
   }
 
   return (
@@ -241,6 +251,15 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
             [LIEFERN]
           </button>
         </div>
+      )}
+      {adminToken && (
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.65rem', marginTop: 8, width: '100%', borderColor: '#ff4444', color: '#ff4444' }}
+          onClick={adminComplete}
+        >
+          [ADMIN: SOFORT VOLLENDEN]
+        </button>
       )}
     </div>
   );
