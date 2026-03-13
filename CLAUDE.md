@@ -29,6 +29,29 @@ cd packages/shared && npx vitest run    # ~205 tests
 cd packages/shared && npm run build
 ```
 
+## Docker Stack (Production)
+
+Full stack runs via `docker compose up -d` (postgres, redis, server, client, cloudflared).
+
+```bash
+sudo systemctl enable --now docker   # auto-start Docker on reboot (run once)
+docker compose up -d                 # start all services
+docker compose build <service>       # rebuild after code changes (e.g. client, server)
+```
+
+**Cloudflare Quick Tunnel** — URL changes on every restart:
+```bash
+docker compose logs cloudflared | grep trycloudflare   # get current public URL
+```
+
+**Admin API** — token is in `docker-compose.yml` env `ADMIN_TOKEN`:
+```bash
+# Default dev token: vs-admin-2026
+curl -H "Authorization: Bearer vs-admin-2026" http://localhost:2567/admin/api/stories
+```
+
+**DB Migrations**: auto-run on server startup. Next migration: **061**.
+
 ---
 
 ## Development Workflow
@@ -67,9 +90,9 @@ git push origin feat/<feature-name>
 
 ## DB Migrations
 
-`packages/server/src/db/migrations/` — **001–044**, auto-run on startup.
+`packages/server/src/db/migrations/` — **001–060**, auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` (idempotent).
-Next: **045**.
+Next: **061**.
 
 ---
 
@@ -97,7 +120,7 @@ Next: **045**.
 
 ---
 
-## Current State (2026-03-11)
+## Current State (2026-03-13)
 
 **Branch:** `master`
 
@@ -111,6 +134,7 @@ Next: **045**.
 - **Phase EW** ✅ (#206): frictionEngine, expansionEngine, warfareEngine, StrategicTickService, universeBootstrap
 - **ACEP** ✅: XP engine, 4 paths, traits, personality, permadeath, radar icon, 3-tab UI (ACEP · MODULE · SHOP) with Sec 3 detail panel (#265)
 - **Forschung & Wissen** ✅: Wissen-Ressource, typisierte Artefakte (9 Typen), Lab-Stufen 1–5, TechTreeCanvas, Migration 044
+- **Hull-Legacy-Cleanup** ✅ (#291, PR #303): HullType/HULLS/HULL_FUEL_MULTIPLIER removed, BASE_* constants, hyperjump V2 permanent, fuel bar UI, Migration 060
 
 ### Upcoming (in order)
 1. Wreck-POIs auf dem Radar
