@@ -47,6 +47,7 @@ export interface AcepEffects {
   ancientDetection: boolean; // reveals ancient ruin markers on radar
   anomalyChanceBonus: number; // extra probability for anomaly scan events: 0 – 0.1
   helionDecoderEnabled: boolean; // helion decoder without module at 50 XP
+  wreckDetection: boolean; // reveals Tier-4/5 wrecks on radar without local scan
 }
 
 /** Compute gameplay effects from current ACEP XP (pure, no DB call). */
@@ -74,6 +75,7 @@ export function getAcepEffects(xp: AcepXpSummary): AcepEffects {
     ancientDetection: e >= 25,
     anomalyChanceBonus: e * 0.002, // up to +0.1 at cap
     helionDecoderEnabled: e >= 50,
+    wreckDetection: e >= 25,
   };
 }
 

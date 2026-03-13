@@ -77,6 +77,7 @@ export interface ClientShipData {
     combatDamageBonus: number;
     ancientDetection: boolean;
     helionDecoderEnabled: boolean;
+    wreckDetection?: boolean;
   };
   acepGeneration?: number;
   acepTraits?: string[];
