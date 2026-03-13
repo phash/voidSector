@@ -90,6 +90,21 @@ export function ShopTab() {
       <div style={sectionHdr}>
         MODUL-SHOP <span style={{ color: '#4a9' }}>● AN STATION</span>
       </div>
+      {credits === 0 && (
+        <div style={{
+          padding: '8px 11px',
+          marginBottom: 10,
+          background: '#0a0a0a',
+          border: '1px solid #222',
+          fontSize: '0.75rem',
+          color: '#555',
+          lineHeight: 1.5,
+        }}>
+          Dein Kontostand ist 0. Das Universum begann ebenfalls mit nichts —
+          allerdings hatte es keine Kaufabsichten.<br />
+          <span style={{ color: '#444' }}>Credits: Scans · Quests · Bergbau · Handel</span>
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {availableModules.map((def: ModuleDefinition) => {
           const affordable = canAfford(def, credits, cargo);

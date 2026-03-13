@@ -155,7 +155,7 @@ export function StatusBar() {
               <SegmentedBar current={fuel.current} max={fuel.max} width={8} />
             </span>
             <span style={{ fontSize: '0.7rem', color: 'var(--color-dim)' }}>
-              SPD {ship?.stats.engineSpeed ?? 1}
+              SPD {ship?.stats.engineSpeed ?? 1} | {ship?.stats.fuelPerJump ?? '?'}/SEK
             </span>
           </>
         )}
