@@ -353,7 +353,7 @@ export interface GameSlice {
   credits: number;
   alienCredits: number;
   alienReputations: Record<string, number>;
-  humanityReps: Record<string, { repValue: number; tier: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH' }>;
+  humanityReps: Record<string, { repValue: number; tier: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH' }> | null;
 
   // Storage
   storage: StorageInventory;
@@ -748,7 +748,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   credits: 0,
   alienCredits: 0,
   alienReputations: {},
-  humanityReps: {},
+  humanityReps: null,
   storage: { ore: 0, gas: 0, crystal: 0, artefact: 0 },
   tradeOrders: [],
   myOrders: [],

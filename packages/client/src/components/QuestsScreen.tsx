@@ -310,6 +310,7 @@ function JournalTab() {
 }
 
 function StoryTab() {
+  const { t } = useTranslation('ui');
   const progress = useStore((s) => s.storyProgress);
 
   useEffect(() => {
@@ -416,7 +417,7 @@ function AlienRepTab() {
         GALACTIC HUMANITY REP
       </div>
       {Object.entries(FACTION_LABELS).map(([id, label]) => {
-        const entry = humanityReps[id];
+        const entry = humanityReps?.[id];
         if (!entry)
           return (
             <div
