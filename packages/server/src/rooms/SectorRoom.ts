@@ -1358,6 +1358,16 @@ export class SectorRoom extends Room<SectorRoomState> {
         if (!hdState) {
           hdState = createHyperdriveState(stats);
           await setHyperdriveState(auth.userId, hdState);
+        } else if (hdState.maxCharge !== stats.hyperdriveRange) {
+          // Balance update: rescale charge proportionally to new maxCharge
+          const ratio = hdState.maxCharge > 0 ? hdState.charge / hdState.maxCharge : 1;
+          hdState = {
+            ...hdState,
+            charge: Math.round(stats.hyperdriveRange * ratio),
+            maxCharge: stats.hyperdriveRange,
+            regenPerSecond: stats.hyperdriveRegen,
+          };
+          await setHyperdriveState(auth.userId, hdState);
         }
         client.send('hyperdriveUpdate', {
           charge: calculateCurrentCharge(hdState),

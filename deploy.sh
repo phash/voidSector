@@ -21,9 +21,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "╔══════════════════════════════════════╗"
-echo "║    voidSector Deploy                 ║"
-echo "╚══════════════════════════════════════╝"
+echo "── voidSector Deploy ────────────────────"
 echo "  keep-tunnel : $KEEP_TUNNEL"
 [[ -n "$BRANCH" ]] && echo "  branch      : $BRANCH"
 echo ""
@@ -82,31 +80,19 @@ ADMIN_TOKEN=$(awk -F': ' '/ADMIN_TOKEN/{gsub(/[[:space:]]/, "", $2); print $2}' 
 ADMIN_BASE="${URL:-http://localhost:3201}"
 
 echo ""
-echo "╔══════════════════════════════════════════════════════════╗"
-echo "║    voidSector — Zugangsdaten                             ║"
-echo "╠══════════════════════════════════════════════════════════╣"
+echo "── Zugangsdaten ─────────────────────────"
 if [[ -n "$URL" ]]; then
-  printf "║  URL:          %-43s║\n" "$URL"
+  echo "  URL:         $URL"
 else
-  printf "║  URL:          %-43s║\n" "(noch nicht verfügbar — siehe unten)"
+  echo "  URL:         (noch nicht verfügbar)"
+  echo "               docker compose logs cloudflared | grep trycloudflare"
 fi
-printf   "║  Admin-Token:  %-43s║\n" "$ADMIN_TOKEN"
-echo "╠══════════════════════════════════════════════════════════╣"
-echo "║  Admin-API:                                              ║"
-printf   "║    curl -H \"Authorization: Bearer %s\" \\\n" "$ADMIN_TOKEN"
-printf   "║    %s/admin/api/stories\n" "$ADMIN_BASE"
-echo "╚══════════════════════════════════════════════════════════╝"
-
-if [[ -z "$URL" ]]; then
-  echo ""
-  echo "  URL prüfen mit:"
-  echo "    docker compose logs cloudflared | grep trycloudflare"
-fi
-
+echo "  Admin-Token: $ADMIN_TOKEN"
+echo "  Admin-API:   curl -H \"Authorization: Bearer $ADMIN_TOKEN\" \\"
+echo "               $ADMIN_BASE/admin/api/stories"
 if [[ "$KEEP_TUNNEL" = false ]]; then
   echo ""
-  echo "  Tipp: Beim nächsten Deploy --keep-tunnel nutzen"
-  echo "  um diese URL zu behalten."
+  echo "  Tipp: --keep-tunnel beim nächsten Deploy = gleiche URL"
 fi
 
 echo ""
