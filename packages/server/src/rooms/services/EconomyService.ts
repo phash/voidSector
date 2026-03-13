@@ -95,7 +95,8 @@ export class EconomyService {
 
   async sendNpcStationUpdate(client: Client, sx: number, sy: number): Promise<void> {
     const station = await getOrInitStation(sx, sy);
-    const inventory = await getStationInventory(sx, sy);
+    // fuel is handled separately via handleRefuel — exclude from trade inventory
+    const inventory = (await getStationInventory(sx, sy)).filter((i) => i.itemType !== 'fuel');
     const level = getStationLevel(station.xp);
     const now = new Date();
     const items = inventory.map((item) => {
