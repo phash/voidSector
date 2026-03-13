@@ -68,7 +68,6 @@ export interface AdminPlayerFull extends AdminPlayer {
   cargo: Record<string, number>;
   ships: Array<{
     id: string;
-    hullType: string;
     name: string;
     active: boolean;
     modules: string[];
@@ -103,18 +102,16 @@ export async function getPlayerFullProfile(id: string): Promise<AdminPlayerFull 
 
   const shipsResult = await query<{
     id: string;
-    hull_type: string;
     name: string;
     active: boolean;
     modules: string[];
     fuel: number;
   }>(
-    `SELECT id, hull_type, name, active, modules, fuel FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
+    `SELECT id, name, active, modules, fuel FROM ships WHERE owner_id = $1 ORDER BY created_at ASC`,
     [id],
   );
   const ships = shipsResult.rows.map((s) => ({
     id: s.id,
-    hullType: s.hull_type,
     name: s.name,
     active: s.active,
     modules: s.modules ?? [],
