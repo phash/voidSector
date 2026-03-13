@@ -44,6 +44,7 @@ export function ShopTab() {
   const credits = useStore((s) => s.credits);
   const cargo = useStore((s) => s.cargo);
   const research = useStore((s) => s.research);
+  const techTree = useStore((s) => s.techTree);
   const currentSector = useStore((s) => s.currentSector);
   const baseStructures = useStore((s) => s.baseStructures);
   const setHovered = useStore((s) => s.setAcepHoveredModuleId);
@@ -71,8 +72,9 @@ export function ShopTab() {
     );
   }
 
+  const researchedNodes = techTree?.researchedNodes ?? {};
   const availableModules = Object.values(MODULES).filter(
-    (m) => !m.isFoundOnly && isModuleUnlocked(m.id, research),
+    (m) => !m.isFoundOnly && isModuleUnlocked(m.id, m, researchedNodes, research.blueprints),
   );
 
   return (

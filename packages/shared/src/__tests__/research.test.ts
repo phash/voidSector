@@ -1,38 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { isModuleFreelyAvailable, isModuleUnlocked, canStartResearch } from '../research';
-import {
-  MODULES,
-  WISSEN_COST_BY_TIER,
-  ARTEFACT_REQUIRED_BY_TIER,
-  MAX_ARTEFACTS_PER_RESEARCH,
-  WISSEN_SECTOR_MULTIPLIERS,
-} from '../constants';
+import { isModuleFreelyAvailable, isModuleUnlocked } from '../research';
+import { MODULES } from '../constants';
 import { ARTEFACT_TYPES, ARTEFACT_TYPE_FOR_CATEGORY } from '../types';
-import type { ResearchState } from '../types';
-
-function emptyResearch(): ResearchState {
-  return {
-    unlockedModules: [],
-    blueprints: [],
-    activeResearch: null,
-    activeResearch2: null,
-    wissen: 0,
-    wissenRate: 0,
-  };
-}
-
-/** Artefacts with plenty of every type */
-const PLENTY_ARTEFACTS: Partial<Record<string, number>> = {
-  drive: 99,
-  cargo: 99,
-  scanner: 99,
-  armor: 99,
-  weapon: 99,
-  shield: 99,
-  defense: 99,
-  special: 99,
-  mining: 99,
-};
 
 describe('isModuleFreelyAvailable', () => {
   it('returns true for tier-1 base modules without researchCost', () => {
@@ -55,169 +24,68 @@ describe('isModuleFreelyAvailable', () => {
 
 describe('isModuleUnlocked', () => {
   it('freely available modules are always unlocked', () => {
-    expect(isModuleUnlocked('drive_mk1', emptyResearch())).toBe(true);
-    expect(isModuleUnlocked('cargo_mk1', emptyResearch())).toBe(true);
-  });
-
-  it('researched modules are unlocked', () => {
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk2'] };
-    expect(isModuleUnlocked('drive_mk2', rs)).toBe(true);
+    expect(isModuleUnlocked('drive_mk1', { category: 'drive', tier: 1 }, {}, [])).toBe(true);
+    expect(isModuleUnlocked('cargo_mk1', { category: 'cargo', tier: 1 }, {}, [])).toBe(true);
   });
 
   it('blueprint modules are unlocked', () => {
-    const rs: ResearchState = { ...emptyResearch(), blueprints: ['void_drive'] };
-    expect(isModuleUnlocked('void_drive', rs)).toBe(true);
+    expect(
+      isModuleUnlocked('void_drive', { category: 'drive', tier: 3 }, {}, ['void_drive']),
+    ).toBe(true);
   });
 
-  it('locked modules are not unlocked', () => {
-    expect(isModuleUnlocked('drive_mk2', emptyResearch())).toBe(false);
-    expect(isModuleUnlocked('void_drive', emptyResearch())).toBe(false);
-  });
-});
-
-describe('canStartResearch', () => {
-  it('allows research when prereq met and resources available', () => {
-    // drive_mk2: tier 2, requires lab 2, 300 wissen, no artefacts
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 300 };
-    const result = canStartResearch('drive_mk2', rs, {}, 2);
-    expect(result.valid).toBe(true);
+  it('locked modules are not unlocked with empty tech tree', () => {
+    expect(isModuleUnlocked('drive_mk2', { category: 'drive', tier: 2 }, {}, [])).toBe(false);
+    expect(isModuleUnlocked('void_drive', { category: 'drive', tier: 3 }, {}, [])).toBe(false);
   });
 
-  it('rejects when prerequisite not met', () => {
-    // drive_mk3 requires drive_mk2 which is NOT freely available
-    const rs: ResearchState = { ...emptyResearch(), wissen: 99999 };
-    const result = canStartResearch('drive_mk3', rs, PLENTY_ARTEFACTS, 3);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Prerequisite');
+  it('tier-2 module unlocks when branch level >= 1', () => {
+    // explorer branch level 1 → unlocked tier 2
+    const researchedNodes = { explorer: 1 };
+    expect(
+      isModuleUnlocked('drive_mk2', { category: 'drive', tier: 2 }, researchedNodes, []),
+    ).toBe(true);
   });
 
-  it('rejects when already unlocked', () => {
-    const rs: ResearchState = {
-      ...emptyResearch(),
-      unlockedModules: ['drive_mk1', 'drive_mk2'],
-      wissen: 99999,
-    };
-    const result = canStartResearch('drive_mk2', rs, {}, 2);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Already unlocked');
+  it('tier-3 module requires branch level >= 2', () => {
+    const nodes1 = { explorer: 1 };
+    expect(
+      isModuleUnlocked('drive_mk3', { category: 'drive', tier: 3 }, nodes1, []),
+    ).toBe(false);
+    const nodes2 = { explorer: 2 };
+    expect(
+      isModuleUnlocked('drive_mk3', { category: 'drive', tier: 3 }, nodes2, []),
+    ).toBe(true);
   });
 
-  it('rejects when research slot 1 already busy', () => {
-    const rs: ResearchState = {
-      unlockedModules: ['drive_mk1'],
-      blueprints: [],
-      activeResearch: { moduleId: 'cargo_mk2', startedAt: 1000, completesAt: 2000 },
-      activeResearch2: null,
-      wissen: 99999,
-      wissenRate: 0,
-    };
-    const result = canStartResearch('drive_mk2', rs, {}, 2, 1);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('slot 1 already busy');
+  it('special category modules cannot be unlocked by tech tree (no branch mapping)', () => {
+    const nodes = { ausbau: 5, intel: 5, kampf: 5, explorer: 5 };
+    expect(
+      isModuleUnlocked('some_special', { category: 'special', tier: 2 }, nodes, []),
+    ).toBe(false);
   });
 
-  it('rejects slot 2 when lab tier < 3', () => {
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 99999 };
-    const result = canStartResearch('drive_mk2', rs, {}, 2, 2);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Slot 2 requires');
+  it('ausbau branch unlocks shield, armor, cargo, mining, defense, generator, repair', () => {
+    const nodes = { ausbau: 2 };
+    for (const cat of ['shield', 'armor', 'cargo', 'mining', 'defense', 'generator', 'repair']) {
+      expect(
+        isModuleUnlocked(`test_${cat}`, { category: cat, tier: 3 }, nodes, []),
+      ).toBe(true);
+    }
   });
 
-  it('rejects slot 2 when slot 2 already busy', () => {
-    const rs: ResearchState = {
-      unlockedModules: ['drive_mk1'],
-      blueprints: [],
-      activeResearch: null,
-      activeResearch2: { moduleId: 'cargo_mk2', startedAt: 1000, completesAt: 2000 },
-      wissen: 99999,
-      wissenRate: 0,
-    };
-    const result = canStartResearch('drive_mk2', rs, {}, 3, 2);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('slot 2 already busy');
+  it('kampf branch unlocks weapon category', () => {
+    const nodes = { kampf: 1 };
+    expect(
+      isModuleUnlocked('laser_mk2', { category: 'weapon', tier: 2 }, nodes, []),
+    ).toBe(true);
   });
 
-  it('allows slot 2 when lab tier >= 3 and slot is free', () => {
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 300 };
-    const result = canStartResearch('drive_mk2', rs, {}, 3, 2);
-    expect(result.valid).toBe(true);
-  });
-
-  it('rejects when lab tier too low', () => {
-    // drive_mk2 requires lab tier 2; labTier = 1
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 99999 };
-    const result = canStartResearch('drive_mk2', rs, {}, 1);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Requires');
-  });
-
-  it('rejects when artefact_drive is insufficient', () => {
-    // drive_mk3: tier 3, requires 1 drive artefact
-    const rs: ResearchState = {
-      ...emptyResearch(),
-      unlockedModules: ['drive_mk1', 'drive_mk2'],
-      wissen: 99999,
-    };
-    const result = canStartResearch('drive_mk3', rs, { drive: 0 }, 3);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('artefact');
-  });
-
-  it('rejects freely available modules', () => {
-    const result = canStartResearch('drive_mk1', emptyResearch(), {}, 1);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('does not require research');
-  });
-
-  it('rejects when faction requirement not met', () => {
-    // void_drive: tier 3, requires ancients honored, prereq drive_mk3
-    const rs: ResearchState = {
-      ...emptyResearch(),
-      unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
-      wissen: 99999,
-    };
-    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Faction requirement');
-  });
-
-  it('rejects when faction tier too low', () => {
-    const rs: ResearchState = {
-      ...emptyResearch(),
-      unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
-      wissen: 99999,
-    };
-    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, {
-      ancients: 'friendly',
-    });
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Faction requirement');
-  });
-
-  it('allows when faction requirement met', () => {
-    const rs: ResearchState = {
-      ...emptyResearch(),
-      unlockedModules: ['drive_mk1', 'drive_mk2', 'drive_mk3'],
-      wissen: 99999,
-    };
-    const result = canStartResearch('void_drive', rs, PLENTY_ARTEFACTS, 3, 1, {
-      ancients: 'honored',
-    });
-    expect(result.valid).toBe(true);
-  });
-
-  it('rejects when not enough wissen', () => {
-    // drive_mk2 costs 300 wissen
-    const rs: ResearchState = { ...emptyResearch(), unlockedModules: ['drive_mk1'], wissen: 100 };
-    const result = canStartResearch('drive_mk2', rs, {}, 2);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Wissen');
-  });
-
-  it('rejects unknown module', () => {
-    const result = canStartResearch('nonexistent', emptyResearch(), {}, 1);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Unknown');
+  it('intel branch unlocks scanner category', () => {
+    const nodes = { intel: 1 };
+    expect(
+      isModuleUnlocked('scanner_mk2', { category: 'scanner', tier: 2 }, nodes, []),
+    ).toBe(true);
   });
 });
 
@@ -273,32 +141,6 @@ describe('ArtefactType', () => {
     expect(Object.keys(ARTEFACT_TYPE_FOR_CATEGORY)).toHaveLength(11);
     expect(ARTEFACT_TYPE_FOR_CATEGORY['drive']).toBe('drive');
     expect(ARTEFACT_TYPE_FOR_CATEGORY['mining']).toBe('mining');
-  });
-});
-
-describe('Wissen constants', () => {
-  it('WISSEN_COST_BY_TIER covers tiers 1-5', () => {
-    for (let t = 1; t <= 5; t++) {
-      expect(WISSEN_COST_BY_TIER[t]).toBeGreaterThan(0);
-    }
-  });
-
-  it('costs increase with tier', () => {
-    for (let t = 1; t < 5; t++) {
-      expect(WISSEN_COST_BY_TIER[t + 1]).toBeGreaterThan(WISSEN_COST_BY_TIER[t]);
-    }
-  });
-
-  it('T1-T2 require no artefacts, T3-T5 require some', () => {
-    expect(ARTEFACT_REQUIRED_BY_TIER[1]).toBe(0);
-    expect(ARTEFACT_REQUIRED_BY_TIER[2]).toBe(0);
-    expect(ARTEFACT_REQUIRED_BY_TIER[3]).toBeGreaterThan(0);
-    expect(ARTEFACT_REQUIRED_BY_TIER[5]).toBe(MAX_ARTEFACTS_PER_RESEARCH);
-  });
-
-  it('ancient_jumpgate has highest multiplier', () => {
-    const max = Math.max(...Object.values(WISSEN_SECTOR_MULTIPLIERS));
-    expect(WISSEN_SECTOR_MULTIPLIERS['ancient_jumpgate']).toBe(max);
   });
 });
 

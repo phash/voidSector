@@ -5,6 +5,7 @@ import type { CompleteScanEventMessage, SectorEnvironment } from '@void-sector/s
 
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
+import { awardWissen } from '../../engine/wissenService.js';
 import { calculateTraits } from '../../engine/traitCalculator.js';
 import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
@@ -154,6 +155,7 @@ export class ScanService {
     // ACEP: INTEL-XP + personality comment for scanning (spec: +3 per scan)
     addAcepXpForPlayer(auth.userId, 'intel', 3).catch(() => {});
     this._emitPersonalityComment(client, auth.userId, 'scan').catch(() => {});
+    awardWissen(auth.userId, 2).catch(() => {});  // +2 per scan
 
     // Wissen: +10 for normal sectors, +25 for special sectors (daily cap)
     {
@@ -198,6 +200,7 @@ export class ScanService {
         // ACEP: EXPLORER-XP for ancient ruin scan (spec: +15)
         addAcepXpForPlayer(auth.userId, 'explorer', 15).catch(() => {});
         this._emitPersonalityComment(client, auth.userId, 'scan_ruin').catch(() => {});
+        awardWissen(auth.userId, 15).catch(() => {});  // +15 for ancient ruin artefact
       }
     }
 
@@ -470,6 +473,10 @@ export class ScanService {
       const updatedCargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', updatedCargo);
       client.send('logEntry', 'ARTEFAKT GEFUNDEN! +1 \u273B');
+      // +5-15 depending on artefact type
+      const artefactType = scanEventData.rewardArtefactType as string | undefined;
+      const artefactWissen = artefactType && ['ancient_data', 'alien_tech'].includes(artefactType) ? 15 : !artefactType ? 5 : 10;
+      awardWissen(auth.userId, artefactWissen).catch(() => {});
     }
 
     // Handle blueprint find — stored in unified inventory (type='blueprint')

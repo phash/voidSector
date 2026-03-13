@@ -10,4 +10,6 @@ export {
 } from './jumpCalc.js';
 export { createHyperdriveState, calculateCurrentCharge, spendCharge } from './hyperdriveCalc.js';
 export { generateStationName } from './stationNames.js';
-export { isModuleFreelyAvailable, isModuleUnlocked, canStartResearch } from './research.js';
+export { isModuleFreelyAvailable, isModuleUnlocked } from './research.js';
+export * from './techTree.js';
+export * from './techTreeEffects.js';

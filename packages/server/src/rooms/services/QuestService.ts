@@ -17,6 +17,7 @@ import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES, UNIVERSE_TICK_MS } from '@void-sec
 import { redis } from './RedisAPStore.js';
 import { generateStationNpcs, getStationFaction } from '../../engine/npcgen.js';
 import { generateStationQuests } from '../../engine/questgen.js';
+import { awardWissen } from '../../engine/wissenService.js';
 import { validateAcceptQuest, getReputationTier, calculateLevel } from '../../engine/commands.js';
 import {
   getPlayerReputations,
@@ -398,6 +399,10 @@ export class QuestService {
       }
       if (rewards.wissen) await addWissen(auth.userId, rewards.wissen);
 
+      // Wissen from quest completion, scaled by reward value
+      const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
+      awardWissen(auth.userId, questWissen).catch(() => {});
+
       this.ctx.send(client, 'questComplete', {
         id: row.id,
         title: row.title,
@@ -637,6 +642,10 @@ export class QuestService {
           if (rewards.wissen) {
             await addWissen(playerId, rewards.wissen);
           }
+
+          // Wissen from quest completion, scaled by reward value
+          const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
+          awardWissen(playerId, questWissen).catch(() => {});
 
           // Deduct fetch resources from cargo
           for (const obj of objectives) {

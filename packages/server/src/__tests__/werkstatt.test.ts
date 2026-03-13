@@ -39,16 +39,22 @@ vi.mock('@void-sector/shared', () => ({
     drive_mk2: {
       id: 'drive_mk2',
       name: 'ION DRIVE MK.II',
+      category: 'drive',
+      tier: 2,
       cost: { credits: 300, ore: 20, crystal: 5 },
     },
     scanner_mk2: {
       id: 'scanner_mk2',
       name: 'SCANNER MK.II',
+      category: 'scanner',
+      tier: 2,
       cost: { credits: 150 },
     },
     cargo_hold: {
       id: 'cargo_hold',
       name: 'CARGO HOLD',
+      category: 'cargo',
+      tier: 1,
       cost: { credits: 0 },
     },
   },
@@ -56,8 +62,17 @@ vi.mock('@void-sector/shared', () => ({
   calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
   validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
   isModuleUnlocked: vi.fn().mockReturnValue(true),
-  canStartResearch: vi.fn(),
   RESEARCH_TICK_MS: 60000,
+}));
+
+// ── Mock techTreeQueries ─────────────────────────────────────────────────────
+vi.mock('../db/techTreeQueries.js', () => ({
+  getOrCreateTechTree: vi.fn().mockResolvedValue({
+    player_id: 'player-1',
+    researched_nodes: {},
+    total_researched: 0,
+    last_reset_at: null,
+  }),
 }));
 
 // ── Mock engine deps ──────────────────────────────────────────────────────────
