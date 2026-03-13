@@ -25,7 +25,7 @@ const QUEST_ROTATION: Array<{
     title: 'Das Große Kartenprojekt',
     description:
       'Alle Piloten: Scannt gemeinsam 100.000 Sektoren. Die Archivare teilen ihr Archiv.',
-    targetCount: 100000,
+    targetCount: 1000,
     rewardType: 'archivist_star_charts',
   },
   {
@@ -33,7 +33,7 @@ const QUEST_ROTATION: Array<{
     questType: 'community_delivery',
     title: 'Stabilisiertes Wurmloch-Netz',
     description: 'Baut gemeinsam 500 Jumpgates. Das Konsortium eröffnet eine Exklusivhandelsroute.',
-    targetCount: 500,
+    targetCount: 5,
     rewardType: 'consortium_trade_route',
   },
   {
@@ -42,7 +42,7 @@ const QUEST_ROTATION: Array<{
     title: 'Erste Galaktische Olympiade',
     description:
       'Schließt gemeinsam 10.000 Touristengilde-Quests ab. Menschheit wird offizielle Touristenattraktion.',
-    targetCount: 10000,
+    targetCount: 100,
     rewardType: 'tourist_attraction_badge',
   },
   {
@@ -50,7 +50,7 @@ const QUEST_ROTATION: Array<{
     questType: 'community_alien_interaction',
     title: 'Interstellare Botschaft',
     description: 'Führt gemeinsam 50.000 positive Alien-Interaktionen durch. Alle Alien-Reps +10.',
-    targetCount: 50000,
+    targetCount: 500,
     rewardType: 'all_alien_rep_bonus',
   },
 ];
