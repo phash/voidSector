@@ -40,10 +40,10 @@ beforeEach(() => {
 describe('AcepTab', () => {
   it('renders all 4 XP path labels', () => {
     render(<AcepTab />);
-    expect(screen.getByText('AUSBAU')).toBeInTheDocument();
-    expect(screen.getByText('INTEL')).toBeInTheDocument();
-    expect(screen.getByText('KAMPF')).toBeInTheDocument();
-    expect(screen.getByText('EXPLR')).toBeInTheDocument();
+    expect(screen.getByText('acep.paths.ausbau')).toBeInTheDocument();
+    expect(screen.getByText('acep.paths.intel')).toBeInTheDocument();
+    expect(screen.getByText('acep.paths.kampf')).toBeInTheDocument();
+    expect(screen.getByText('acep.paths.explorer')).toBeInTheDocument();
   });
 
   it('renders total XP budget', () => {
@@ -53,20 +53,20 @@ describe('AcepTab', () => {
 
   it('renders active effects', () => {
     render(<AcepTab />);
-    expect(screen.getByText(/Modul-Slots/)).toBeInTheDocument();
-    expect(screen.getByText(/Mining/)).toBeInTheDocument();
-    expect(screen.getByText(/Scan-Radius/)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.effects\.extraModuleSlots/)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.effects\.miningBonus/)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.effects\.scanRadiusBonus/)).toBeInTheDocument();
   });
 
   it('renders traits', () => {
     render(<AcepTab />);
-    expect(screen.getByText(/CAUTIOUS/i)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.traits\.cautious\.label/i)).toBeInTheDocument();
   });
 
   it('renders ship name with rename button', () => {
     render(<AcepTab />);
     expect(screen.getByText('Test Ship')).toBeInTheDocument();
-    expect(screen.getByText(/UMBENENNEN/i)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.rename/i)).toBeInTheDocument();
   });
 
   it('boost button calls sendAcepBoost when enabled', () => {
@@ -80,13 +80,13 @@ describe('AcepTab', () => {
 
   it('rename button shows input field', () => {
     render(<AcepTab />);
-    fireEvent.click(screen.getByText(/UMBENENNEN/i));
+    fireEvent.click(screen.getByText(/acep\.rename/i));
     expect(screen.getByPlaceholderText('Name...')).toBeInTheDocument();
   });
 
   it('typing in rename input and pressing Enter calls sendRenameShip', () => {
     render(<AcepTab />);
-    fireEvent.click(screen.getByText(/UMBENENNEN/i));
+    fireEvent.click(screen.getByText(/acep\.rename/i));
     const input = screen.getByPlaceholderText('Name...');
     fireEvent.change(input, { target: { value: 'New Name' } });
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -95,10 +95,10 @@ describe('AcepTab', () => {
 
   it('typing in rename input and clicking OK calls sendRenameShip', () => {
     render(<AcepTab />);
-    fireEvent.click(screen.getByText(/UMBENENNEN/i));
+    fireEvent.click(screen.getByText(/acep\.rename/i));
     const input = screen.getByPlaceholderText('Name...');
     fireEvent.change(input, { target: { value: 'Another Name' } });
-    fireEvent.click(screen.getByText('OK'));
+    fireEvent.click(screen.getByText('actions.ok'));
     expect(network.sendRenameShip).toHaveBeenCalledWith('ship-1', 'Another Name');
   });
 
@@ -112,7 +112,7 @@ describe('AcepTab', () => {
   it('renders fallback when no ship', () => {
     mockStoreState({ ship: null });
     render(<AcepTab />);
-    expect(screen.getByText(/KEIN SCHIFF/i)).toBeInTheDocument();
+    expect(screen.getByText(/ship\.noShip/i)).toBeInTheDocument();
   });
 
   it('renders cargo effect when cargoMultiplier > 1', () => {
@@ -121,6 +121,6 @@ describe('AcepTab', () => {
       credits: 500, research: { wissen: 10 } as any,
     });
     render(<AcepTab />);
-    expect(screen.getByText(/20% Cargo/)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.effects\.cargoMultiplier/)).toBeInTheDocument();
   });
 });

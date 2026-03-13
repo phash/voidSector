@@ -6,7 +6,7 @@ describe('calculateShipStats', () => {
   it('returns base stats with no modules', () => {
     const stats = calculateShipStats([]);
     expect(stats.fuelMax).toBe(10_000);
-    expect(stats.cargoCap).toBe(3);
+    expect(stats.cargoCap).toBe(10);
     expect(stats.jumpRange).toBe(5);
     expect(stats.apCostJump).toBe(1);
     expect(stats.hp).toBe(100);
@@ -19,7 +19,7 @@ describe('calculateShipStats', () => {
       { moduleId: 'cargo_mk1', slotIndex: 1 },
     ]);
     expect(stats.jumpRange).toBe(7); // 5 + 2
-    expect(stats.cargoCap).toBe(8); // 3 + 5
+    expect(stats.cargoCap).toBe(20); // 10 + 10
     expect(stats.apCostJump).toBe(0.8); // 1 - 0.2
   });
 
@@ -43,7 +43,7 @@ describe('calculateShipStats', () => {
     const stats = calculateShipStats([]);
     expect(stats.fuelMax).toBe(10_000);
     expect(stats.hp).toBe(100);
-    expect(stats.cargoCap).toBe(3);
+    expect(stats.cargoCap).toBe(10);
   });
 
   it('should include fuelPerJump in calculated stats', () => {

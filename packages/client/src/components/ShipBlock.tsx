@@ -25,7 +25,6 @@ function HpBar({ current, max }: { current: number; max: number }) {
 
 export function ShipBlock() {
   const ship             = useStore((s) => s.ship);
-  const setActiveProgram = useStore((s) => s.setActiveProgram);
   const [renaming, setRenaming]   = useState(false);
   const [nameInput, setNameInput] = useState('');
   const escapeRef = useRef(false);
@@ -96,13 +95,6 @@ export function ShipBlock() {
             {shipName}
           </span>
         )}
-        <button
-          style={{ background: 'transparent', border: 'none', ...mono, color: 'var(--color-dim)', cursor: 'pointer', padding: '0 2px', textDecoration: 'underline' }}
-          onClick={() => setActiveProgram('HANGAR')}
-          title="Open HANGAR program"
-        >
-          [HANGAR ▶]
-        </button>
       </div>
       <div style={dim}>
         HP: {totalCurrentHp}/{totalMaxHp}{' '}

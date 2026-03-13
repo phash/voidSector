@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { SPECIALIZED_SLOT_CATEGORIES, MODULES, getExtraSlotCount, validateModuleInstall } from '@void-sector/shared';
@@ -32,6 +33,7 @@ const btnPrimary: React.CSSProperties = {
 };
 
 export function ModuleTab() {
+  const { t } = useTranslation('ui');
   const ship = useStore((s) => s.ship);
   const moduleInventory = useStore((s) => s.moduleInventory);
   const setHovered = useStore((s) => s.setAcepHoveredModuleId);
@@ -44,7 +46,7 @@ export function ModuleTab() {
   if (!ship) {
     return (
       <div style={{ padding: 14, fontFamily: 'var(--font-mono)', fontSize: '1rem', opacity: 0.4 }}>
-        KEIN SCHIFF
+        {t('ship.noShip')}
       </div>
     );
   }
@@ -95,7 +97,7 @@ export function ModuleTab() {
 
   return (
     <div style={{ padding: '14px', fontFamily: 'var(--font-mono)', fontSize: '1rem', overflow: 'auto', height: '100%' }}>
-      <div style={sectionHdr}>INSTALLIERT ({installedCount}/{totalSlots} Slots)</div>
+      <div style={sectionHdr}>{t('module.installed', { count: installedCount, total: totalSlots })}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
         {slots.map(({ index, label, module }) => {
           const def = module ? MODULES[module.moduleId] : null;
@@ -134,7 +136,7 @@ export function ModuleTab() {
                 </>
               ) : isCompatible ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  <span style={{ color: 'var(--color-primary)', fontSize: '0.9rem' }}>[{label}] — kompatibel</span>
+                  <span style={{ color: 'var(--color-primary)', fontSize: '0.9rem' }}>[{label}] — {t('module.compatible')}</span>
                   <button
                     style={btnPrimary}
                     onClick={() => handleInstall(index)}
@@ -143,7 +145,7 @@ export function ModuleTab() {
                   </button>
                 </div>
               ) : (
-                <span style={{ color: '#444', fontSize: '0.9rem' }}>[{label}] — leer</span>
+                <span style={{ color: '#444', fontSize: '0.9rem' }}>[{label}] — {t('module.empty')}</span>
               )}
             </div>
           );
@@ -151,9 +153,9 @@ export function ModuleTab() {
       </div>
 
       <div style={{ borderTop: '1px solid #333', paddingTop: 12 }}>
-        <div style={sectionHdr}>INVENTAR — {moduleInventory.length} Module</div>
+        <div style={sectionHdr}>{t('module.inventory', { count: moduleInventory.length })}</div>
         {moduleInventory.length === 0 ? (
-          <div style={{ color: '#444', fontSize: '0.9rem', opacity: 0.6 }}>LEER</div>
+          <div style={{ color: '#444', fontSize: '0.9rem', opacity: 0.6 }}>{t('module.inventoryEmpty')}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {moduleInventory.map((moduleId, idx) => {
@@ -182,7 +184,7 @@ export function ModuleTab() {
                     <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 2 }}>{def.primaryEffect.label}</div>
                   </div>
                   <span style={{ color: isSelected ? 'var(--color-primary)' : '#666', fontSize: '0.8rem' }}>
-                    {isSelected ? '▶ WÄHLE SLOT' : 'AUSWÄHLEN'}
+                    {isSelected ? t('module.selectSlot') : t('module.select')}
                   </span>
                 </div>
               );

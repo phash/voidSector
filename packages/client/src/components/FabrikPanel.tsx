@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 
@@ -43,6 +44,7 @@ const btnStyle: React.CSSProperties = {
 };
 
 export function FabrikPanel() {
+  const { t } = useTranslation('ui');
   const inventory = useStore((s) => s.inventory);
   const ship = useStore((s) => s.ship);
 
@@ -53,9 +55,9 @@ export function FabrikPanel() {
   return (
     <div style={panelStyle}>
       {/* Craft from blueprints */}
-      <div style={{ ...headerStyle, marginTop: 0 }}>HERSTELLEN</div>
+      <div style={{ ...headerStyle, marginTop: 0 }}>{t('fabrik.craft')}</div>
       {blueprints.length === 0 ? (
-        <div style={{ opacity: 0.4 }}>KEINE BLAUPAUSEN</div>
+        <div style={{ opacity: 0.4 }}>{t('fabrik.noBlueprints')}</div>
       ) : (
         blueprints.map((bp) => (
           <div key={bp.itemId} style={rowStyle}>
@@ -66,14 +68,14 @@ export function FabrikPanel() {
                 onClick={() => network.sendActivateBlueprint(bp.itemId)}
                 title="Blaupause aktivieren (Forschungsbaum)"
               >
-                [AKTIVIEREN]
+                {t('fabrik.activate')}
               </button>
               <button
                 style={btnStyle}
                 onClick={() => network.sendCraftModule(bp.itemId)}
                 title="Modul herstellen"
               >
-                [HERSTELLEN]
+                {t('fabrik.manufacture')}
               </button>
             </div>
           </div>
@@ -83,7 +85,7 @@ export function FabrikPanel() {
       {/* Install cargo modules */}
       {cargoModules.length > 0 && (
         <>
-          <div style={headerStyle}>AUS CARGO INSTALLIEREN</div>
+          <div style={headerStyle}>{t('fabrik.fromCargo')}</div>
           {cargoModules.map((m) => (
             <div key={m.itemId} style={rowStyle}>
               <span>
@@ -94,7 +96,7 @@ export function FabrikPanel() {
                 disabled={installedIds.has(m.itemId)}
                 onClick={() => network.sendInstallModule('', m.itemId, 0)}
               >
-                {installedIds.has(m.itemId) ? '[EINGEBAUT]' : '[INSTALLIEREN]'}
+                {installedIds.has(m.itemId) ? t('fabrik.installed') : t('fabrik.install')}
               </button>
             </div>
           ))}
@@ -103,7 +105,7 @@ export function FabrikPanel() {
 
       {blueprints.length === 0 && cargoModules.length === 0 && (
         <div style={{ opacity: 0.4, marginTop: 8 }}>
-          KEINE MODULE ODER BLAUPAUSEN IM CARGO
+          {t('fabrik.noModulesOrBlueprints')}
         </div>
       )}
     </div>

@@ -88,7 +88,7 @@ describe('MiningScreen', () => {
 
   it('shows STOP button disabled when mining is NOT active', () => {
     render(<MiningScreen />);
-    const stopBtn = screen.getByText('[STOP]').closest('button');
+    const stopBtn = screen.getByText('[actions.stop]').closest('button');
     expect(stopBtn).toBeDisabled();
   });
 
@@ -106,7 +106,7 @@ describe('MiningScreen', () => {
       },
     });
     render(<MiningScreen />);
-    const stopBtn = screen.getByText('[STOP]').closest('button');
+    const stopBtn = screen.getByText('[actions.stop]').closest('button');
     expect(stopBtn).not.toBeDisabled();
   });
 
@@ -124,7 +124,7 @@ describe('MiningScreen', () => {
       },
     });
     render(<MiningScreen />);
-    await userEvent.click(screen.getByText('[STOP]'));
+    await userEvent.click(screen.getByText('[actions.stop]'));
     expect(network.sendStopMine).toHaveBeenCalled();
   });
 
@@ -149,6 +149,6 @@ describe('MiningScreen', () => {
 
   it('displays IDLE status when not mining', () => {
     render(<MiningScreen />);
-    expect(screen.getByText(/IDLE/)).toBeInTheDocument();
+    expect(screen.getByText(/status\.idle/)).toBeInTheDocument();
   });
 });

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 
@@ -57,6 +58,7 @@ function ResourceCard({ resource, current, max, miningActive, miningResource }: 
 }
 
 export function MobileMineTab() {
+  const { t } = useTranslation('ui');
   const currentSector = useStore((s) => s.currentSector);
   const mining = useStore((s) => s.mining);
   const cargo = useStore((s) => s.cargo);
@@ -72,7 +74,7 @@ export function MobileMineTab() {
     return (
       <div className="mobile-mine-tab">
         <div className="mobile-mine-no-sector">
-          Kein Mining in diesem Sektor
+          {t('mobile.noMiningInSector')}
         </div>
       </div>
     );
@@ -114,7 +116,7 @@ export function MobileMineTab() {
 
       {/* Cargo inline */}
       <div className="mobile-mine-cargo-row">
-        <span>CARGO: {used} / {cap}</span>
+        <span>{t('mobile.cargo')} {used} / {cap}</span>
       </div>
 
       {/* Mine-All */}
@@ -123,9 +125,9 @@ export function MobileMineTab() {
           <button
             className="mobile-mine-all-btn"
             onClick={() => network.sendMine(firstAvailable, true)}
-            aria-label="ALLE ABBAUEN"
+            aria-label={t('mobile.mineAll')}
           >
-            &#9654; ALLE ABBAUEN
+            {t('mobile.mineAll')}
           </button>
         </div>
       )}

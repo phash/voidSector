@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULES, isModuleUnlocked } from '@void-sector/shared';
@@ -31,16 +32,19 @@ function canAfford(def: ModuleDefinition, credits: number, cargo: CargoState): b
   return true;
 }
 
-function costLabel(def: ModuleDefinition): string {
+// costLabel is a pure helper used only in ShopTab display — no i18n needed here
+// as resource names in cost strings are formatted inline
+function costLabel(def: ModuleDefinition, tFn: (k: string) => string): string {
   const parts: string[] = [`${def.cost.credits} CR`];
-  if (def.cost.ore !== undefined) parts.push(`${def.cost.ore} Erz`);
-  if (def.cost.gas !== undefined) parts.push(`${def.cost.gas} Gas`);
-  if (def.cost.crystal !== undefined) parts.push(`${def.cost.crystal} Kristall`);
-  if (def.cost.artefact !== undefined) parts.push(`${def.cost.artefact} Artefakt`);
+  if (def.cost.ore !== undefined) parts.push(`${def.cost.ore} ${tFn('resources.ore')}`);
+  if (def.cost.gas !== undefined) parts.push(`${def.cost.gas} ${tFn('resources.gas')}`);
+  if (def.cost.crystal !== undefined) parts.push(`${def.cost.crystal} ${tFn('resources.crystal')}`);
+  if (def.cost.artefact !== undefined) parts.push(`${def.cost.artefact} ${tFn('resources.artefact')}`);
   return parts.join(' + ');
 }
 
 export function ShopTab() {
+  const { t } = useTranslation('ui');
   const credits = useStore((s) => s.credits);
   const cargo = useStore((s) => s.cargo);
   const research = useStore((s) => s.research);
@@ -56,7 +60,7 @@ export function ShopTab() {
   if (!atStation) {
     return (
       <div style={{ padding: '14px', fontFamily: 'var(--font-mono)', fontSize: '1rem' }}>
-        <div style={sectionHdr}>MODUL-SHOP</div>
+        <div style={sectionHdr}>{t('shop.moduleShop')}</div>
         <div
           style={{
             padding: '9px 11px',
@@ -66,7 +70,7 @@ export function ShopTab() {
             color: '#555',
           }}
         >
-          Modul-Shop nur an Station oder Home Base verfügbar
+          {t('shop.onlyAtStation')}
         </div>
       </div>
     );
@@ -88,8 +92,23 @@ export function ShopTab() {
       }}
     >
       <div style={sectionHdr}>
-        MODUL-SHOP <span style={{ color: '#4a9' }}>● AN STATION</span>
+        {t('shop.moduleShop')} <span style={{ color: '#4a9' }}>● {t('shop.atStation')}</span>
       </div>
+      {credits === 0 && (
+        <div style={{
+          padding: '8px 11px',
+          marginBottom: 10,
+          background: '#0a0a0a',
+          border: '1px solid #222',
+          fontSize: '0.75rem',
+          color: '#555',
+          lineHeight: 1.5,
+        }}>
+          Dein Kontostand ist 0. Das Universum begann ebenfalls mit nichts —
+          allerdings hatte es keine Kaufabsichten.<br />
+          <span style={{ color: '#444' }}>Credits: Scans · Quests · Bergbau · Handel</span>
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {availableModules.map((def: ModuleDefinition) => {
           const affordable = canAfford(def, credits, cargo);
@@ -111,7 +130,7 @@ export function ShopTab() {
                   {def.displayName ?? def.name}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 3 }}>
-                  {def.primaryEffect.label} · {costLabel(def)}
+                  {def.primaryEffect.label} · {costLabel(def, t)}
                 </div>
               </div>
               <button
@@ -123,7 +142,7 @@ export function ShopTab() {
                 disabled={!affordable}
                 onClick={() => network.sendBuyModule(def.id)}
               >
-                [KAUFEN]
+                {t('shop.buy')}
               </button>
             </div>
           );

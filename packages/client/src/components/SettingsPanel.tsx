@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { COLOR_PROFILES } from '../styles/themes';
 import type { ColorProfileName } from '../styles/themes';
@@ -12,7 +13,14 @@ const inlineInput: React.CSSProperties = {
   padding: '2px 4px',
 };
 
+const hdrStyle: React.CSSProperties = {
+  color: 'var(--color-dim)',
+  fontSize: '0.75rem',
+  marginBottom: 4,
+};
+
 export const SettingsPanel: React.FC = () => {
+  const { t, i18n } = useTranslation('ui');
   const username = useStore((s) => s.username);
   const colorProfile = useStore((s) => s.colorProfile);
   const setColorProfile = useStore((s) => s.setColorProfile);
@@ -31,15 +39,15 @@ export const SettingsPanel: React.FC = () => {
 
   return (
     <div className="settings-panel">
-      <div className="settings-header">EINSTELLUNGEN</div>
+      <div className="settings-header">{t('settings.settings')}</div>
 
       <div className="settings-row">
-        <span className="settings-label">PILOT</span>
+        <span className="settings-label">{t('settings.pilot')}</span>
         <span>{username ?? '—'}</span>
       </div>
 
       <div className="settings-row">
-        <span className="settings-label">FARBE</span>
+        <span className="settings-label">{t('settings.color')}</span>
         <select
           value={colorProfile}
           onChange={(e) => setColorProfile(e.target.value as ColorProfileName)}
@@ -55,7 +63,7 @@ export const SettingsPanel: React.FC = () => {
       </div>
 
       <div className="settings-row">
-        <span className="settings-label">HELLIGKEIT</span>
+        <span className="settings-label">{t('settings.brightness')}</span>
         <input
           type="range"
           className="settings-slider"
@@ -69,15 +77,45 @@ export const SettingsPanel: React.FC = () => {
         <span>{brightness.toFixed(1)}</span>
       </div>
 
+      <div style={{ marginTop: 12 }}>
+        <div style={hdrStyle}>{t('settings.language')}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => i18n.changeLanguage('de')}
+            style={{
+              background: i18n.language === 'de' ? 'rgba(255,176,0,0.15)' : 'transparent',
+              color: i18n.language === 'de' ? 'var(--color-primary)' : '#666',
+              border: '1px solid #333',
+              padding: '4px 12px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+            }}
+          >DE</button>
+          <button
+            onClick={() => i18n.changeLanguage('en')}
+            style={{
+              background: i18n.language === 'en' ? 'rgba(255,176,0,0.15)' : 'transparent',
+              color: i18n.language === 'en' ? 'var(--color-primary)' : '#666',
+              border: '1px solid #333',
+              padding: '4px 12px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+            }}
+          >EN</button>
+        </div>
+      </div>
+
       <div className="settings-row">
         <button className="vs-btn-sm" onClick={() => openCompendium()} data-testid="kompendium-btn">
-          ◈ KOMPENDIUM
+          {t('settings.compendium')}
         </button>
       </div>
 
       <div className="settings-row">
         <button className="vs-btn-sm vs-btn-danger" onClick={handleLogout}>
-          LOGOUT
+          {t('settings.logout')}
         </button>
       </div>
     </div>

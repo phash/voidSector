@@ -74,7 +74,7 @@ describe('SettingsPanel', () => {
   it('renders kompendium button', () => {
     render(<SettingsPanel />);
     expect(screen.getByTestId('kompendium-btn')).toBeInTheDocument();
-    expect(screen.getByText('◈ KOMPENDIUM')).toBeInTheDocument();
+    expect(screen.getByText('settings.compendium')).toBeInTheDocument();
   });
 
   it('clicking kompendium button calls openCompendium', async () => {
@@ -94,13 +94,19 @@ describe('SettingsPanel', () => {
 
   it('renders logout button', () => {
     render(<SettingsPanel />);
-    expect(screen.getByText('LOGOUT')).toBeInTheDocument();
+    expect(screen.getByText('settings.logout')).toBeInTheDocument();
+  });
+
+  it('renders language toggle buttons', () => {
+    render(<SettingsPanel />);
+    expect(screen.getByText('DE')).toBeInTheDocument();
+    expect(screen.getByText('EN')).toBeInTheDocument();
   });
 
   it('clicking logout clears vs_token from localStorage', async () => {
     storage['vs_token'] = 'some-token';
     render(<SettingsPanel />);
-    await userEvent.click(screen.getByText('LOGOUT'));
+    await userEvent.click(screen.getByText('settings.logout'));
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('vs_token');
     expect(reloadMock).toHaveBeenCalled();
   });

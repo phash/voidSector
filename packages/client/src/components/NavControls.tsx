@@ -1,6 +1,7 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { btn, btnDisabled, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn, btnDisabled } from '../ui-helpers';
 import {
   AP_COSTS,
   AP_COSTS_LOCAL_SCAN,
@@ -9,6 +10,7 @@ import {
 } from '@void-sector/shared';
 
 export function NavControls() {
+  const { t } = useTranslation('ui');
   const position = useStore((s) => s.position);
   const jumpPending = useStore((s) => s.jumpPending);
   const ap = useStore((s) => s.ap);
@@ -24,14 +26,14 @@ export function NavControls() {
         <div
           style={{ color: '#FFB000', fontSize: '0.9rem', letterSpacing: '0.15em', marginBottom: 8 }}
         >
-          {UI.status.AUTOPILOT_ACTIVE}
+          {t('status.autopilotActive')}
         </div>
         <div style={{ fontSize: '0.8rem', marginBottom: 8 }}>
           TARGET: ({innerCoord(autopilot.targetX)}, {innerCoord(autopilot.targetY)}) | REMAINING:{' '}
           {autopilot.remaining}
         </div>
         <button className="vs-btn" onClick={() => network.sendCancelAutopilot()}>
-          {btn(UI.actions.CANCEL)}
+          {btn(t('actions.cancel'))}
         </button>
       </div>
     );
@@ -68,9 +70,9 @@ export function NavControls() {
             style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
           >
             {isMining
-              ? btnDisabled('↑', UI.reasons.MINING_ACTIVE)
+              ? btnDisabled('↑', t('reasons.miningActive'))
               : !canJump
-                ? btnDisabled('↑', UI.reasons.NO_AP)
+                ? btnDisabled('↑', t('reasons.noAp'))
                 : '↑'}
           </button>
           <div style={{ display: 'flex', gap: 4 }}>
@@ -82,9 +84,9 @@ export function NavControls() {
               style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               {isMining
-                ? btnDisabled('←', UI.reasons.MINING_ACTIVE)
+                ? btnDisabled('←', t('reasons.miningActive'))
                 : !canJump
-                  ? btnDisabled('←', UI.reasons.NO_AP)
+                  ? btnDisabled('←', t('reasons.noAp'))
                   : '←'}
             </button>
             <button
@@ -95,9 +97,9 @@ export function NavControls() {
               style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               {isMining
-                ? btnDisabled('↓', UI.reasons.MINING_ACTIVE)
+                ? btnDisabled('↓', t('reasons.miningActive'))
                 : !canJump
-                  ? btnDisabled('↓', UI.reasons.NO_AP)
+                  ? btnDisabled('↓', t('reasons.noAp'))
                   : '↓'}
             </button>
             <button
@@ -108,9 +110,9 @@ export function NavControls() {
               style={isMining ? miningDisabledStyle : !canJump ? insufficientStyle : undefined}
             >
               {isMining
-                ? btnDisabled('→', UI.reasons.MINING_ACTIVE)
+                ? btnDisabled('→', t('reasons.miningActive'))
                 : !canJump
-                  ? btnDisabled('→', UI.reasons.NO_AP)
+                  ? btnDisabled('→', t('reasons.noAp'))
                   : '→'}
             </button>
           </div>
@@ -131,9 +133,9 @@ export function NavControls() {
             }
           >
             {isMining
-              ? btnDisabled(UI.actions.SCAN, UI.reasons.MINING_ACTIVE)
+              ? btnDisabled(t('actions.scan'), t('reasons.miningActive'))
               : !canLocalScan
-                ? btnDisabled(UI.actions.SCAN, UI.reasons.AP_COST(AP_COSTS_LOCAL_SCAN))
+                ? btnDisabled(t('actions.scan'), t('reasons.apCost', { n: AP_COSTS_LOCAL_SCAN }))
                 : btn('LOCAL SCAN')}
           </button>
           <button
@@ -150,9 +152,9 @@ export function NavControls() {
             }
           >
             {isMining
-              ? btnDisabled(UI.actions.SCAN, UI.reasons.MINING_ACTIVE)
+              ? btnDisabled(t('actions.scan'), t('reasons.miningActive'))
               : !canAreaScan
-                ? btnDisabled(UI.actions.SCAN, UI.reasons.AP_COST(AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3))
+                ? btnDisabled(t('actions.scan'), t('reasons.apCost', { n: AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3 }))
                 : btn('AREA SCAN')}
           </button>
         </div>
@@ -191,7 +193,7 @@ export function NavControls() {
             letterSpacing: '0.15em',
           }}
         >
-          {UI.status.MINING_LOCKED}
+          {t('status.miningLocked')}
         </div>
       )}
     </div>

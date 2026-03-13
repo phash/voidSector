@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../../state/store';
 import { network } from '../../network/client';
-import { UI } from '../../ui-strings';
+import { useTranslation } from 'react-i18next';
 
 const FACTION_COLORS: Record<string, string> = {
   archivists: '#88ffcc',
@@ -18,6 +18,7 @@ const FACTION_COLORS: Record<string, string> = {
 };
 
 export function AlienEncounterToast() {
+  const { t } = useTranslation('ui');
   const encounter = useStore((s) => s.alienEncounterEvent);
   const setEncounter = useStore((s) => s.setAlienEncounterEvent);
 
@@ -108,7 +109,7 @@ export function AlienEncounterToast() {
               cursor: 'pointer',
             }}
           >
-            {encounter.acceptLabel ?? UI.actions.ACCEPT}
+            {encounter.acceptLabel ?? t('actions.accept')}
           </button>
         </div>
       )}

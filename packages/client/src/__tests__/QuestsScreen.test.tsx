@@ -116,7 +116,7 @@ describe('QuestsScreen', () => {
       ],
     });
     render(<QuestsScreen />);
-    await userEvent.click(screen.getByText('REPUTATION'));
+    await userEvent.click(screen.getByText('tabs.reputation'));
     expect(screen.getByText(/TRADERS.*FRIENDLY/)).toBeDefined();
   });
 
@@ -136,7 +136,7 @@ describe('QuestsScreen', () => {
     });
     render(<QuestsScreen />);
     // AlienRepTab is now inside the REPUTATION tab
-    await userEvent.click(screen.getByText('REPUTATION'));
+    await userEvent.click(screen.getByText('tabs.reputation'));
     expect(screen.getByText('MY ALIEN REPUTATIONS')).toBeDefined();
     expect(screen.getByText('GALACTIC HUMANITY REP')).toBeDefined();
   });
@@ -174,10 +174,10 @@ describe('QuestsScreen', () => {
     // AUFTRÄGE tab is active by default — quest must be expanded first to see the abandon button
     await userEvent.click(screen.getAllByText(/Test Quest/)[0]);
     // First click: arm the button (shows SURE? state)
-    await userEvent.click(screen.getByText('[ABANDON]'));
+    await userEvent.click(screen.getByText('[actions.abandon]'));
     expect(network.sendAbandonQuest).not.toHaveBeenCalled();
     // Second click: confirm and execute
-    await userEvent.click(screen.getByText('[ABANDON — SURE?]'));
+    await userEvent.click(screen.getByText('[actions.abandon — SURE?]'));
     expect(network.sendAbandonQuest).toHaveBeenCalledWith('q1');
   });
 
@@ -259,7 +259,7 @@ describe('QuestsScreen', () => {
     });
     render(<QuestsScreen />);
     // Switch to VERFÜGBAR tab
-    await userEvent.click(screen.getByText('VERFÜGBAR'));
+    await userEvent.click(screen.getByText('tabs.available'));
 
     // Simulate stationNpcsResult event to populate available quests
     await act(async () => {
@@ -286,7 +286,7 @@ describe('QuestsScreen', () => {
     });
 
     // Click accept to arm
-    await userEvent.click(screen.getByText('[ACCEPT]'));
+    await userEvent.click(screen.getByText('[actions.accept]'));
 
     // Armed state shows structured sections
     expect(screen.getByText('ZIELE')).toBeDefined();

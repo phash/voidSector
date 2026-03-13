@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import {
@@ -10,6 +11,7 @@ import {
 import type { DataSlate } from '@void-sector/shared';
 
 export function SlateControls() {
+  const { t } = useTranslation('ui');
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const mySlates = useStore((s) => s.mySlates);
@@ -37,13 +39,13 @@ export function SlateControls() {
       }}
     >
       <div style={{ opacity: 0.6, letterSpacing: '0.1em', marginBottom: 3 }}>
-        ── KARTEN ── {cargo.slates}/{memory}
+        ── {t('slates.karten')} ── {cargo.slates}/{memory}
         {cargo.slates > memory && <span style={{ color: '#FF3333' }}> !</span>}
       </div>
 
       {cargo.slates > 0 && (
         <div style={{ marginBottom: 4 }}>
-          <div style={{ opacity: 0.6, marginBottom: 2 }}>DATA SLATES: {cargo.slates}</div>
+          <div style={{ opacity: 0.6, marginBottom: 2 }}>{t('slates.dataSlates')}: {cargo.slates}</div>
           {mySlates.map((slate: DataSlate) => (
             <div
               key={slate.id}
@@ -63,21 +65,21 @@ export function SlateControls() {
                   : 'C'}]
                 {slate.slateType === 'custom' && slate.customData
                   ? ` ${slate.customData.label}`
-                  : ` ${slate.sectorData?.length ?? 0} Sektoren`}
+                  : ` ${t('slates.sektoren', { n: slate.sectorData?.length ?? 0 })}`}
               </span>
               <button
                 className="vs-btn"
                 style={{ fontSize: '0.55rem', padding: '4px 8px' }}
                 onClick={() => network.sendActivateSlate(slate.id)}
               >
-                [AKT]
+                {t('slates.activate')}
               </button>
               <button
                 className="vs-btn"
                 style={{ fontSize: '0.55rem', padding: '4px 8px' }}
                 onClick={() => network.sendNpcBuyback(slate.id)}
               >
-                [NPC]
+                {t('slates.npcSell')}
               </button>
             </div>
           ))}
@@ -91,7 +93,7 @@ export function SlateControls() {
           disabled={memoryFull}
           onClick={() => network.sendCreateSlate('sector')}
         >
-          [SEKTOR {SLATE_AP_COST_SECTOR}AP]
+          {t('slates.sektor', { cost: SLATE_AP_COST_SECTOR })}
         </button>
         <button
           className="vs-btn"
@@ -99,7 +101,7 @@ export function SlateControls() {
           disabled={memoryFull}
           onClick={() => network.sendCreateSlate('area')}
         >
-          [GEBIET]
+          {t('slates.gebiet')}
         </button>
         <button
           className="vs-btn"
@@ -107,7 +109,7 @@ export function SlateControls() {
           disabled={memoryFull}
           onClick={() => setShowCustomForm(!showCustomForm)}
         >
-          [DISK {CUSTOM_SLATE_AP_COST}AP/{CUSTOM_SLATE_CREDIT_COST}CR]
+          {t('slates.disk', { ap: CUSTOM_SLATE_AP_COST, cr: CUSTOM_SLATE_CREDIT_COST })}
         </button>
       </div>
 
@@ -119,17 +121,17 @@ export function SlateControls() {
             marginBottom: 4,
           }}
         >
-          <div style={{ marginBottom: 3, opacity: 0.6 }}>NEUE DATENDISK</div>
+          <div style={{ marginBottom: 3, opacity: 0.6 }}>{t('slates.newDataDisk')}</div>
           <input
             className="vs-input"
-            placeholder="Label (max 32)"
+            placeholder={t('slates.label')}
             value={customLabel}
             onChange={(e) => setCustomLabel(e.target.value.slice(0, 32))}
             style={{ width: '100%', marginBottom: 3 }}
           />
           <textarea
             className="vs-input"
-            placeholder="Notizen (max 500)"
+            placeholder={t('slates.notes')}
             value={customNotes}
             onChange={(e) => setCustomNotes(e.target.value.slice(0, CUSTOM_SLATE_MAX_NOTES_LENGTH))}
             style={{ width: '100%', height: 48, resize: 'vertical', marginBottom: 3 }}
@@ -149,14 +151,14 @@ export function SlateControls() {
                 setShowCustomForm(false);
               }}
             >
-              [ERSTELLEN]
+              {t('slates.create')}
             </button>
             <button
               className="vs-btn"
               style={{ fontSize: '0.55rem', padding: '4px 8px' }}
               onClick={() => setShowCustomForm(false)}
             >
-              [ABB]
+              {t('slates.cancel')}
             </button>
           </div>
         </div>

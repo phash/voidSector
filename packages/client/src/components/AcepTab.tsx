@@ -1,23 +1,24 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import type { AcepPath } from '@void-sector/shared';
 import { getAcepBoostCost } from '@void-sector/shared';
 
-const PATHS: Array<{ key: AcepPath; label: string; color: string }> = [
-  { key: 'ausbau',   label: 'AUSBAU', color: '#FFB000' },
-  { key: 'intel',    label: 'INTEL',  color: '#4af' },
-  { key: 'kampf',    label: 'KAMPF',  color: '#f44' },
-  { key: 'explorer', label: 'EXPLR',  color: '#4fa' },
+const PATHS: Array<{ key: AcepPath; labelKey: string; color: string }> = [
+  { key: 'ausbau',   labelKey: 'acep.paths.ausbau',   color: '#FFB000' },
+  { key: 'intel',    labelKey: 'acep.paths.intel',     color: '#4af' },
+  { key: 'kampf',    labelKey: 'acep.paths.kampf',     color: '#f44' },
+  { key: 'explorer', labelKey: 'acep.paths.explorer',  color: '#4fa' },
 ];
 
-const TRAIT_LABELS: Record<string, string> = {
-  veteran:           'VETERAN',
-  curious:           'CURIOUS',
-  reckless:          'RECKLESS',
-  cautious:          'CAUTIOUS',
-  'ancient-touched': 'ANCIENT',
-  scarred:           'SCARRED',
+const TRAIT_LABEL_KEYS: Record<string, string> = {
+  veteran:           'acep.traits.veteran.label',
+  curious:           'acep.traits.curious.label',
+  reckless:          'acep.traits.reckless.label',
+  cautious:          'acep.traits.cautious.label',
+  'ancient-touched': 'acep.traits.ancientTouched.label',
+  scarred:           'acep.traits.scarred.label',
 };
 
 const btnStyle: React.CSSProperties = {
@@ -47,6 +48,7 @@ const barTrack: React.CSSProperties = {
 };
 
 export function AcepTab() {
+  const { t } = useTranslation('ui');
   const ship = useStore((s) => s.ship);
   const credits = useStore((s) => s.credits ?? 0);
   const wissen = useStore((s) => s.research.wissen ?? 0);
@@ -56,7 +58,7 @@ export function AcepTab() {
   if (!ship) {
     return (
       <div style={{ padding: 14, fontFamily: 'var(--font-mono)', fontSize: '1rem', opacity: 0.4 }}>
-        KEIN SCHIFF
+        {t('ship.noShip')}
       </div>
     );
   }
@@ -76,13 +78,13 @@ export function AcepTab() {
 
   const activeEffects: string[] = [];
   if (effects) {
-    if (effects.extraModuleSlots > 0) activeEffects.push(`+${effects.extraModuleSlots} Modul-Slots`);
-    if (effects.scanRadiusBonus > 0) activeEffects.push(`+${effects.scanRadiusBonus} Scan-Radius`);
-    if (effects.miningBonus > 0) activeEffects.push(`+${Math.round(effects.miningBonus * 100)}% Mining`);
-    if (effects.combatDamageBonus > 0) activeEffects.push(`+${Math.round(effects.combatDamageBonus * 100)}% Schaden`);
-    if (effects.cargoMultiplier > 1) activeEffects.push(`+${Math.round((effects.cargoMultiplier - 1) * 100)}% Cargo`);
-    if (effects.ancientDetection) activeEffects.push('Ancient-Erkennung');
-    if (effects.helionDecoderEnabled) activeEffects.push('Helion-Decoder');
+    if (effects.extraModuleSlots > 0) activeEffects.push(t('acep.effects.extraModuleSlots', { n: effects.extraModuleSlots }));
+    if (effects.scanRadiusBonus > 0) activeEffects.push(t('acep.effects.scanRadiusBonus', { n: effects.scanRadiusBonus }));
+    if (effects.miningBonus > 0) activeEffects.push(t('acep.effects.miningBonus', { pct: Math.round(effects.miningBonus * 100) }));
+    if (effects.combatDamageBonus > 0) activeEffects.push(t('acep.effects.combatDamageBonus', { pct: Math.round(effects.combatDamageBonus * 100) }));
+    if (effects.cargoMultiplier > 1) activeEffects.push(t('acep.effects.cargoMultiplier', { pct: Math.round((effects.cargoMultiplier - 1) * 100) }));
+    if (effects.ancientDetection) activeEffects.push(t('acep.effects.ancientDetection'));
+    if (effects.helionDecoderEnabled) activeEffects.push(t('acep.effects.helionDecoder'));
   }
 
   return (
@@ -110,31 +112,31 @@ export function AcepTab() {
               autoFocus
               placeholder="Name..."
             />
-            <button style={btnStyle} onClick={() => handleRename(ship.id)}>OK</button>
+            <button style={btnStyle} onClick={() => handleRename(ship.id)}>{t('actions.ok')}</button>
             <button style={btnStyle} onClick={() => setRenamingShipId(null)}>X</button>
           </span>
         ) : (
           <button style={btnStyle} onClick={() => { setRenamingShipId(ship.id); setRenameValue(ship.name); }}>
-            UMBENENNEN
+            {t('acep.rename')}
           </button>
         )}
       </div>
 
       {/* XP paths */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <div style={sectionHdr}>ENTWICKLUNGSPFADE</div>
+        <div style={sectionHdr}>{t('acep.developmentPaths')}</div>
         <div style={{ color: '#555', fontSize: '0.85rem' }}>
-          GESAMT: {xp.total ?? 0}/100
+          {t('acep.total')}: {xp.total ?? 0}/100
         </div>
       </div>
-      {PATHS.map(({ key, label, color }) => {
+      {PATHS.map(({ key, labelKey, color }) => {
         const pathXp = xp[key] ?? 0;
         const cost = getAcepBoostCost(pathXp);
         const canBoost = cost !== null && credits >= cost.credits && wissen >= cost.wissen && xp.total < 100;
         return (
           <div key={key} style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ color }}>{label}</span>
+              <span style={{ color }}>{t(labelKey)}</span>
               <span style={{ color: '#888', fontSize: '0.95rem' }}>{pathXp}/50 · Lv{Math.floor(pathXp / 10)}</span>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -165,7 +167,7 @@ export function AcepTab() {
       {/* Active effects */}
       <>
         <div style={{ borderTop: '1px solid #333', paddingTop: 12, ...sectionHdr }}>
-          AKTIVE EFFEKTE
+          {t('acep.activeEffects')}
         </div>
         {activeEffects.length > 0 && (
           <div style={{ fontSize: '0.9rem', color: '#ccc', lineHeight: 1.9, marginBottom: 12 }}>
@@ -176,15 +178,15 @@ export function AcepTab() {
 
       {/* Traits */}
       <>
-        <div style={{ borderTop: '1px solid #333', paddingTop: 12, ...sectionHdr }}>TRAITS</div>
+        <div style={{ borderTop: '1px solid #333', paddingTop: 12, ...sectionHdr }}>{t('acep.traits')}</div>
         {traits.length > 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {traits.map((t) => (
+            {traits.map((trait) => (
               <span
-                key={t}
+                key={trait}
                 style={{ border: '1px solid #4a9', color: '#4a9', padding: '4px 10px', fontSize: '0.88rem' }}
               >
-                {TRAIT_LABELS[t] ?? t.toUpperCase()}
+                {t(TRAIT_LABEL_KEYS[trait] ?? 'acep.traits.veteran.label') ?? trait.toUpperCase()}
               </span>
             ))}
           </div>

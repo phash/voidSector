@@ -48,7 +48,7 @@ describe('ModuleTab', () => {
 
   it('renders empty slots as leer', () => {
     render(<ModuleTab />);
-    const leer = screen.getAllByText(/] — leer/i);
+    const leer = screen.getAllByText(/] — module\.empty/i);
     expect(leer.length).toBeGreaterThan(0);
   });
 
@@ -61,7 +61,7 @@ describe('ModuleTab', () => {
 
   it('shows LEER when inventory is empty', () => {
     render(<ModuleTab />);
-    expect(screen.getByText('LEER')).toBeInTheDocument();
+    expect(screen.getByText('module.inventoryEmpty')).toBeInTheDocument();
   });
 
   it('renders inventory item with select prompt', () => {
@@ -71,7 +71,7 @@ describe('ModuleTab', () => {
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<ModuleTab />);
-    expect(screen.getByText('AUSWÄHLEN')).toBeInTheDocument();
+    expect(screen.getByText('module.select')).toBeInTheDocument();
   });
 
   it('selecting inventory module highlights compatible slots with [+] button', () => {
@@ -82,12 +82,12 @@ describe('ModuleTab', () => {
     });
     render(<ModuleTab />);
     // Click module in inventory to select it
-    fireEvent.click(screen.getByText('AUSWÄHLEN'));
-    // Drive slot (index 1) should now show [+] and "kompatibel"
+    fireEvent.click(screen.getByText('module.select'));
+    // Drive slot (index 1) should now show [+] and "compatible"
     expect(screen.getByText('[+]')).toBeInTheDocument();
-    expect(screen.getByText(/kompatibel/)).toBeInTheDocument();
-    // Inventory should now show "WÄHLE SLOT"
-    expect(screen.getByText(/WÄHLE SLOT/)).toBeInTheDocument();
+    expect(screen.getByText(/module\.compatible/)).toBeInTheDocument();
+    // Inventory should now show selectSlot key
+    expect(screen.getByText(/module\.selectSlot/)).toBeInTheDocument();
   });
 
   it('clicking [+] on a compatible slot calls sendInstallModule', () => {
@@ -98,7 +98,7 @@ describe('ModuleTab', () => {
     });
     render(<ModuleTab />);
     // Select module
-    fireEvent.click(screen.getByText('AUSWÄHLEN'));
+    fireEvent.click(screen.getByText('module.select'));
     // Click install on compatible slot
     fireEvent.click(screen.getByText('[+]'));
     expect(network.sendInstallModule).toHaveBeenCalledWith('ship-1', 'drive_mk1', 1);

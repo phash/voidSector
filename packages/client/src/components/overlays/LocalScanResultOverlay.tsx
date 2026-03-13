@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../state/store';
 import { network } from '../../network/client';
 
 export function LocalScanResultOverlay() {
+  const { t } = useTranslation('ui');
   const result = useStore((s) => s.localScanResult);
   const setLocalScanResult = useStore((s) => s.setLocalScanResult);
   const cargo = useStore((s) => s.cargo);
@@ -64,9 +66,9 @@ export function LocalScanResultOverlay() {
           display: 'flex',
           justifyContent: 'space-between',
         }}>
-          <span>◈ SCAN ERGEBNIS</span>
+          <span>◈ {t('scan.scanResult')}</span>
           <span style={{ color: 'var(--color-dim)' }}>
-            LOCAL SCAN{universeTick != null ? ` · TICK ${universeTick}` : ''}
+            {t('scan.localScan')}{universeTick != null ? ` · TICK ${universeTick}` : ''}
           </span>
         </div>
 
@@ -74,11 +76,11 @@ export function LocalScanResultOverlay() {
         {sectorX != null && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
             <div style={{ padding: '4px 8px', border: '1px solid rgba(255,176,0,0.15)' }}>
-              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>QUADRANT</div>
+              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{t('scan.quadrant')}</div>
               <div style={{ color: 'var(--color-primary)', fontSize: '0.75rem' }}>Q {quadrantX}:{quadrantY}</div>
             </div>
             <div style={{ padding: '4px 8px', border: '1px solid rgba(255,176,0,0.15)' }}>
-              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>SEKTOR</div>
+              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{t('scan.sector')}</div>
               <div style={{ color: 'var(--color-primary)', fontSize: '0.75rem' }}>({sectorX}, {sectorY})</div>
             </div>
           </div>
@@ -88,11 +90,11 @@ export function LocalScanResultOverlay() {
         {sectorType && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
             <div style={{ padding: '4px 8px', border: '1px solid rgba(255,176,0,0.15)' }}>
-              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>SEKTORTYP</div>
+              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{t('scan.sectorType')}</div>
               <div style={{ color: 'var(--color-primary)', fontSize: '0.75rem' }}>{sectorType.toUpperCase()}</div>
             </div>
             <div style={{ padding: '4px 8px', border: '1px solid rgba(255,176,0,0.15)' }}>
-              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>STRUKTUREN</div>
+              <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{t('scan.structures')}</div>
               <div style={{ color: '#4a9', fontSize: '0.75rem' }}>
                 {structures && structures.length > 0 ? structures.join(', ') : '—'}
               </div>
@@ -103,7 +105,7 @@ export function LocalScanResultOverlay() {
         {/* Resources */}
         <div style={{ marginBottom: '12px' }}>
           <div style={{ color: 'var(--color-dim)', marginBottom: '6px', letterSpacing: '0.1em' }}>
-            RESSOURCEN
+            {t('scan.resources')}
           </div>
           {hasResources ? (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
@@ -126,11 +128,11 @@ export function LocalScanResultOverlay() {
                 </div>
               )}
               {!resources.ore && !resources.gas && !resources.crystal && (
-                <div style={{ gridColumn: '1/-1', color: 'var(--color-dim)' }}>— keine —</div>
+                <div style={{ gridColumn: '1/-1', color: 'var(--color-dim)' }}>{t('scan.noResources')}</div>
               )}
             </div>
           ) : (
-            <div style={{ color: 'var(--color-dim)' }}>— keine Ressourcen —</div>
+            <div style={{ color: 'var(--color-dim)' }}>{t('scan.noResourcesLong')}</div>
           )}
         </div>
 
@@ -138,7 +140,7 @@ export function LocalScanResultOverlay() {
         {hasWrecks && (
           <div style={{ marginBottom: '12px' }}>
             <div style={{ color: 'var(--color-dim)', marginBottom: '6px', letterSpacing: '0.1em' }}>
-              WRACKS ENTDECKT
+              {t('scan.wrecksFound')}
             </div>
             {wrecks!.map((wreck) => (
               <div key={wreck.id} style={{
@@ -153,7 +155,7 @@ export function LocalScanResultOverlay() {
                     T{wreck.radarIconData.tier} / {wreck.radarIconData.path}
                   </span>
                   {wreck.hasSalvage && (
-                    <span style={{ color: '#4a9', marginLeft: 6, fontSize: '0.65rem' }}>[BERGBAR]</span>
+                    <span style={{ color: '#4a9', marginLeft: 6, fontSize: '0.65rem' }}>{t('scan.salvageable')}</span>
                   )}
                 </div>
                 {wreck.lastLogEntry && (
@@ -175,7 +177,7 @@ export function LocalScanResultOverlay() {
             fontSize: '0.7rem',
             marginBottom: '12px',
           }}>
-            ⚠ UNBEKANNTE SIGNATUREN — SCANNER-UPGRADE ERFORDERLICH
+            {t('scan.unknownSignatures')}
           </div>
         )}
 
@@ -195,7 +197,7 @@ export function LocalScanResultOverlay() {
               letterSpacing: '0.1em',
             }}
           >
-            {slateSaved ? '✓ SLATE GESPEICHERT' : memoryFull ? '[SLATE] MEMORY VOLL' : '[SAVE TO SLATE]'}
+            {slateSaved ? t('scan.slateSaved') : memoryFull ? t('scan.slateMemoryFull') : t('scan.saveToSlate')}
           </button>
           <button
             onClick={() => setLocalScanResult(null)}
@@ -210,7 +212,7 @@ export function LocalScanResultOverlay() {
               letterSpacing: '0.1em',
             }}
           >
-            [SCHLIESSEN]
+            {t('scan.close')}
           </button>
         </div>
       </div>

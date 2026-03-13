@@ -53,20 +53,6 @@ describe('ShipBlock', () => {
     expect(screen.getByText('Astral Hawk')).toBeInTheDocument();
   });
 
-  it('renders [HANGAR ▶] button', () => {
-    render(<ShipBlock />);
-    expect(screen.getByText('[HANGAR ▶]')).toBeInTheDocument();
-  });
-
-  it('[HANGAR ▶] sets activeProgram to HANGAR', async () => {
-    const user = userEvent.setup();
-    const setActiveProgram = vi.fn();
-    mockStoreState({ ship: baseShip, setActiveProgram });
-    render(<ShipBlock />);
-    await user.click(screen.getByText('[HANGAR ▶]'));
-    expect(setActiveProgram).toHaveBeenCalledWith('HANGAR');
-  });
-
   it('shows HP bar based on module HP when modules present', () => {
     mockStoreState({
       ship: {

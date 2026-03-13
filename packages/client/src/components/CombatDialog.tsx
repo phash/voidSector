@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULE_EP_COSTS, MODULE_HP_BY_TIER } from '@void-sector/shared';
@@ -55,6 +56,7 @@ function HpBar({
   color: string;
   name: string;
 }) {
+  const { t } = useTranslation('ui');
   const pct = max > 0 ? Math.max(0, current / max) : 0;
   const barWidth = 18;
   const filled = Math.round(pct * barWidth);
@@ -62,11 +64,11 @@ function HpBar({
   return (
     <div
       role="meter"
-      aria-label={`${name} Trefferpunkte`}
+      aria-label={t('combat.hpLabel', { name })}
       aria-valuenow={current}
       aria-valuemin={0}
       aria-valuemax={max}
-      aria-valuetext={`${current} von ${max}`}
+      aria-valuetext={t('combat.hpValueText', { current, max })}
       style={{
         fontFamily: 'var(--font-mono)',
         fontSize: '0.68rem',

@@ -11,7 +11,8 @@ import {
   getPhysicalCargoTotal,
 } from '@void-sector/shared';
 import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
-import { btn, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn } from '../ui-helpers';
 import { InlineError } from './InlineError';
 import { findNearestStation } from '../utils/sectorUtils';
 
@@ -28,6 +29,7 @@ const btnStyle: React.CSSProperties = {
 const NPC_COLUMN_MAX_HEIGHT = 240;
 
 export function TradeScreen() {
+  const { t } = useTranslation('ui');
   const credits = useStore((s) => s.credits);
   const storage = useStore((s) => s.storage);
   const cargo = useStore((s) => s.cargo);
@@ -138,11 +140,11 @@ export function TradeScreen() {
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>
-          NPC {UI.tabs.TRADE}
+          NPC {t('tabs.trade')}
         </button>
         {!isStation && tier >= 2 && (
           <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>
-            {UI.tabs.MARKET}
+            {t('tabs.market')}
           </button>
         )}
         {!isStation && tier >= 2 && (
@@ -152,18 +154,18 @@ export function TradeScreen() {
         )}
         {!isStation && tier >= 3 && (
           <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>
-            {UI.tabs.ROUTES}
+            {t('tabs.routes')}
           </button>
         )}
         {hasKontorOrders && (
           <button style={tabStyle(tab === 'kontor')} onClick={() => setTab('kontor')}>
-            {UI.programs.TRADING_POST}
+            {t('programs.tradingPost')}
           </button>
         )}
       </div>
 
       <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
-        <label>{UI.status.AMOUNT}: </label>
+        <label>{t('status.amount')}: </label>
         <input
           type="number"
           min={1}

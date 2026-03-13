@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULES, getDamageState } from '@void-sector/shared';
@@ -12,12 +13,12 @@ const DAMAGE_STATE_COLORS = {
   destroyed: '#ff4136',
 };
 
-const DAMAGE_STATE_LABELS = {
-  intact:    'INTAKT',
-  light:     'LEICHT',
-  heavy:     'SCHWER',
-  destroyed: 'ZERSTÖRT',
-};
+const DAMAGE_STATE_KEYS = {
+  intact:    'repair.damageState.intact',
+  light:     'repair.damageState.light',
+  heavy:     'repair.damageState.heavy',
+  destroyed: 'repair.damageState.destroyed',
+} as const;
 
 /**
  * Resource cost to repair one damage bracket (mirrors RepairService.calculateRepairCost).
@@ -93,6 +94,7 @@ const btnStationStyle: React.CSSProperties = {
 // ─── RepairPanel ──────────────────────────────────────────────────────────────
 
 export function RepairPanel() {
+  const { t } = useTranslation('ui');
   const ship          = useStore((s) => s.ship);
   const cargo         = useStore((s) => s.cargo);
   const credits       = useStore((s) => s.credits);
@@ -105,7 +107,7 @@ export function RepairPanel() {
   if (!ship) {
     return (
       <div style={{ padding: '8px', ...dimStyle, opacity: 0.5 }}>
-        NO SHIP DATA
+        {t('ship.noShipData')}
       </div>
     );
   }
@@ -147,7 +149,7 @@ export function RepairPanel() {
     // Clear busy after a short delay (result handled by message handler)
     setTimeout(() => {
       setBusy(null);
-      setRepairResult('Modul erfolgreich repariert');
+      setRepairResult(t('repair.success'));
       setTimeout(() => setRepairResult(null), 3000);
     }, 2000);
   }
@@ -170,28 +172,28 @@ export function RepairPanel() {
       </div>
 
       {/* Repair Module Status */}
-      <div style={hdrStyle}>REPARATUR-SYSTEM</div>
+      <div style={hdrStyle}>{t('repair.repairSystem')}</div>
       {repairModEntry && repairModDef ? (
         <div style={{ marginBottom: 6 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={dimStyle}>DRONE</span>
+            <span style={dimStyle}>{t('repair.drone')}</span>
             <span style={{ color: repairModDestroyed ? DAMAGE_STATE_COLORS.destroyed : '#00ff41' }}>
-              {repairModDef.displayName ?? repairModDef.name} (T{repairTier})
+              {t('repair.droneName', { name: repairModDef.displayName ?? repairModDef.name, tier: repairTier })}
             </span>
           </div>
           {repairModDestroyed && (
             <div style={{ color: DAMAGE_STATE_COLORS.destroyed, fontSize: '0.55rem', marginTop: 2 }}>
-              REPARATUR-DROHNE ZERSTÖRT — kann nicht verwendet werden
+              {t('repair.droneDestroyed')}
             </div>
           )}
           {repairTier < 3 && !repairModDestroyed && (
             <div style={{ ...dimStyle, fontSize: '0.55rem', marginTop: 2 }}>
-              Tier {repairTier}: kann nur LEICHT → INTAKT reparieren
+              {t('repair.tierLimited', { tier: repairTier })}
             </div>
           )}
           {repairTier >= 3 && !repairModDestroyed && (
             <div style={{ ...dimStyle, fontSize: '0.55rem', marginTop: 2 }}>
-              Tier {repairTier}: kann alle Schadensstufen reparieren
+              {t('repair.tierFull', { tier: repairTier })}
             </div>
           )}
         </div>
@@ -200,24 +202,24 @@ export function RepairPanel() {
           data-testid="no-repair-module"
           style={{ color: DAMAGE_STATE_COLORS.destroyed, fontSize: '0.6rem', marginBottom: 6 }}
         >
-          KEIN REPARATUR-MODUL INSTALLIERT
+          {t('repair.noRepairModule')}
         </div>
       )}
 
       {/* Station Repair */}
       {isAtStation && (
         <>
-          <div style={hdrStyle}>STATIONS-REPARATUR</div>
+          <div style={hdrStyle}>{t('repair.stationRepair')}</div>
           {hasModuleDamage ? (
             <div style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={dimStyle}>KOSTEN</span>
+                <span style={dimStyle}>{t('repair.cost')}</span>
                 <span style={{ color: credits >= stationRepairCost ? '#00ff41' : DAMAGE_STATE_COLORS.heavy }}>
                   {stationRepairCost} CR
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={dimStyle}>VERFÜGBAR</span>
+                <span style={dimStyle}>{t('repair.available')}</span>
                 <span>{credits} CR</span>
               </div>
               <button
@@ -231,19 +233,19 @@ export function RepairPanel() {
                 onClick={handleStationRepair}
                 disabled={stationBusy || credits < stationRepairCost}
               >
-                {stationBusy ? '[REPARIERE...]' : '[VOLLREPARATUR — ALLE MODULE]'}
+                {stationBusy ? t('repair.repairing') : t('repair.fullRepair')}
               </button>
             </div>
           ) : (
-            <div style={{ ...dimStyle, marginBottom: 8 }}>Alle Module intakt — keine Kosten</div>
+            <div style={{ ...dimStyle, marginBottom: 8 }}>{t('repair.allIntact')}</div>
           )}
         </>
       )}
 
       {/* Module List */}
-      <div style={hdrStyle}>MODULE</div>
+      <div style={hdrStyle}>{t('repair.modules')}</div>
       {installedModules.length === 0 ? (
-        <div style={{ ...dimStyle, opacity: 0.5 }}>Keine Module installiert</div>
+        <div style={{ ...dimStyle, opacity: 0.5 }}>{t('repair.noModules')}</div>
       ) : (
         installedModules.map((m) => {
           const def      = MODULES[m.moduleId];
@@ -291,7 +293,7 @@ export function RepairPanel() {
                   data-testid={`damage-state-${m.moduleId}`}
                   style={{ color: stateColor, fontSize: '0.6rem', fontWeight: 'bold' }}
                 >
-                  {DAMAGE_STATE_LABELS[dmgState]}
+                  {t(DAMAGE_STATE_KEYS[dmgState])}
                 </span>
               </div>
 
@@ -342,26 +344,26 @@ export function RepairPanel() {
                         onClick={() => handleRepairModule(m.moduleId)}
                         disabled={!!busy || !canAfford}
                       >
-                        {busy === m.moduleId ? '[REPARIERE...]' : '[REPARIEREN]'}
+                        {busy === m.moduleId ? t('repair.repairing') : t('repair.doRepair')}
                       </button>
                       <span style={dimStyle}>
-                        {cost.ore > 0 && `${cost.ore} Erz`}
+                        {cost.ore > 0 && `${cost.ore} ${t('resources.ore')}`}
                         {cost.ore > 0 && cost.crystal > 0 && ' + '}
-                        {cost.crystal > 0 && `${cost.crystal} Kristall`}
+                        {cost.crystal > 0 && `${cost.crystal} ${t('resources.crystal')}`}
                       </span>
                       {!canAfford && (
                         <span style={{ color: DAMAGE_STATE_COLORS.heavy, fontSize: '0.55rem' }}>
-                          FEHLT
+                          {t('repair.missing')}
                         </span>
                       )}
                     </>
                   ) : (
                     <span style={{ ...dimStyle, fontSize: '0.55rem' }}>
                       {!repairModEntry
-                        ? '— kein Reparatur-Modul'
+                        ? t('repair.noRepairModuleShort')
                         : repairModDestroyed
-                        ? '— Reparatur-Drohne zerstört'
-                        : `— benötigt T3 Drohne (${DAMAGE_STATE_LABELS[dmgState]})`}
+                        ? t('repair.droneDestroyedShort')
+                        : t('repair.needsT3Drone', { state: t(DAMAGE_STATE_KEYS[dmgState]) })}
                     </span>
                   )}
                 </div>

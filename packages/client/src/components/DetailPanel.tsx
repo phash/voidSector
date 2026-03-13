@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import {
@@ -71,6 +72,7 @@ function RefuelPanel({
   fuel: { current: number; max: number };
   isFreeRefuel: boolean;
 }) {
+  const { t } = useTranslation('ui');
   const [amount, setAmount] = useState(Math.ceil(fuel.max - fuel.current));
   const reputations = useStore((s) => s.reputations);
   const currentSector = useStore((s) => s.currentSector);
@@ -89,7 +91,7 @@ function RefuelPanel({
   return (
     <div style={{ marginTop: 8, border: '1px solid var(--color-dim)', padding: '6px 8px' }}>
       <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', marginBottom: 4 }}>
-        REFUEL — {isFreeRefuel ? 'GRATIS' : `${unitCost} CR/u (${repTier.toUpperCase()})`}
+        {t('detail.refuelLabel', { price: isFreeRefuel ? t('status.free') : `${unitCost} ${t('detail.crPerUnit')} (${repTier.toUpperCase()})` })}
       </div>
       <input
         type="range"
@@ -108,14 +110,14 @@ function RefuelPanel({
         }}
       >
         <span>+{amount} FUEL</span>
-        <span>{totalCost > 0 ? `${totalCost} CR` : 'GRATIS'}</span>
+        <span>{totalCost > 0 ? `${totalCost} CR` : t('status.free')}</span>
       </div>
       <button
         className="vs-btn"
         style={{ width: '100%', marginTop: 4, fontSize: '0.75rem' }}
         onClick={() => network.sendRefuel(amount)}
       >
-        [REFUEL]
+        {t('detail.refuel')}
       </button>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULES, isModuleFreelyAvailable } from '@void-sector/shared';
@@ -29,6 +30,7 @@ const btnStyle: React.CSSProperties = {
 };
 
 export function TechDetailPanel() {
+  const { t } = useTranslation('ui');
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const research = useStore((s) => s.research);
   const currentSector = useStore((s) => s.currentSector);
@@ -46,7 +48,7 @@ export function TechDetailPanel() {
           marginTop: 24,
         }}
       >
-        MODUL AUSWÄHLEN
+        {t('tech.selectModule')}
       </div>
     );
   }
@@ -103,7 +105,7 @@ export function TechDetailPanel() {
             marginBottom: 2,
           }}
         >
-          EFFEKTE
+          {t('tech.effects')}
         </div>
         <div style={{ color: 'var(--color-primary)' }}>{mod.primaryEffect.label}</div>
         {mod.secondaryEffects.map((eff, i) => (
@@ -116,7 +118,7 @@ export function TechDetailPanel() {
       {/* Prerequisite */}
       {prerequisiteMod && (
         <div style={{ marginBottom: 6 }}>
-          <span style={{ color: 'var(--color-dim)' }}>VORAUSSETZUNG: </span>
+          <span style={{ color: 'var(--color-dim)' }}>{t('tech.prerequisite')}: </span>
           <span
             style={{
               color: research.unlockedModules.includes(prerequisiteMod.id) ? '#00FF88' : '#FF3333',
@@ -138,7 +140,7 @@ export function TechDetailPanel() {
               marginBottom: 2,
             }}
           >
-            FORSCHUNGSKOSTEN
+            {t('tech.researchCost')}
           </div>
           <div>{costLine(mod.researchCost)}</div>
         </div>
@@ -154,7 +156,7 @@ export function TechDetailPanel() {
             marginBottom: 2,
           }}
         >
-          KAUFPREIS
+          {t('tech.purchasePrice')}
         </div>
         <div>{costLine(mod.cost)}</div>
       </div>
@@ -164,30 +166,30 @@ export function TechDetailPanel() {
         {(isFree || isUnlocked) && (
           <div>
             <div style={{ color: '#00FF88', marginBottom: 4 }}>
-              {isFree ? 'FREI VERFÜGBAR' : 'ERFORSCHT'}
+              {isFree ? t('tech.freeAvailable') : t('tech.researched')}
             </div>
             {canShop && (
               <button style={btnStyle} onClick={() => network.sendBuyModule(mod.id)}>
-                [KAUFEN — {costLine(mod.cost)}]
+                {t('tech.buy', { cost: costLine(mod.cost) })}
               </button>
             )}
             {!canShop && (
               <div style={{ color: 'var(--color-dim)', fontSize: '0.55rem' }}>
-                KAUF NUR AN STATION ODER BASIS
+                {t('tech.onlyAtStationOrBase')}
               </div>
             )}
           </div>
         )}
         {hasBP && !isUnlocked && (
           <div style={{ marginBottom: 6 }}>
-            <div style={{ color: '#00BFFF', marginBottom: 4 }}>BLAUPAUSE VORHANDEN</div>
+            <div style={{ color: '#00BFFF', marginBottom: 4 }}>{t('tech.blueprintAvailable')}</div>
             <button style={btnStyle} onClick={() => network.sendActivateBlueprint(mod.id)}>
-              [BLAUPAUSE AKTIVIEREN]
+              {t('tech.activateBlueprint')}
             </button>
           </div>
         )}
         {!isFree && !isUnlocked && !hasBP && mod.researchCost && (
-          <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>GESPERRT</div>
+          <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>{t('tech.locked')}</div>
         )}
       </div>
     </div>

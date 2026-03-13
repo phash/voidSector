@@ -22,7 +22,7 @@ describe('TechTreePanel', () => {
       position: { x: 0, y: 0 },
     });
     render(<TechTreePanel />);
-    expect(screen.getByText(/TECH/i)).toBeInTheDocument();
+    expect(screen.getByText(/tech\.techTree/i)).toBeInTheDocument();
   });
 
   it('shows freely available modules', () => {

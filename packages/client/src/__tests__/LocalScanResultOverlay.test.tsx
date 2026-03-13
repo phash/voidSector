@@ -46,15 +46,15 @@ describe('LocalScanResultOverlay', () => {
 
   it('shows SAVE TO SLATE button', () => {
     render(<LocalScanResultOverlay />);
-    expect(screen.getByText(/SAVE TO SLATE/)).toBeTruthy();
+    expect(screen.getByText('scan.saveToSlate')).toBeTruthy();
   });
 
   it('disables button and shows SLATE GESPEICHERT after click', () => {
     render(<LocalScanResultOverlay />);
-    const btn = screen.getByText(/SAVE TO SLATE/);
+    const btn = screen.getByText('scan.saveToSlate');
     fireEvent.click(btn);
     expect(mockSendCreateSlateFromScan).toHaveBeenCalledOnce();
-    expect(screen.getByText(/SLATE GESPEICHERT/)).toBeTruthy();
+    expect(screen.getByText('scan.slateSaved')).toBeTruthy();
   });
 
   it('shows MEMORY VOLL when memory is full', () => {
@@ -63,6 +63,6 @@ describe('LocalScanResultOverlay', () => {
       ship: { stats: { cargoCap: 20, memory: 2 } } as any,
     });
     render(<LocalScanResultOverlay />);
-    expect(screen.getByText(/MEMORY VOLL/)).toBeTruthy();
+    expect(screen.getByText('scan.slateMemoryFull')).toBeTruthy();
   });
 });
