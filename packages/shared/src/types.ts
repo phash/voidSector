@@ -33,6 +33,63 @@ export interface InventoryItem {
   quantity: number;
 }
 
+export type WreckSize = 'small' | 'medium' | 'large';
+export type WreckStatus = 'intact' | 'investigated' | 'exhausted';
+
+export interface WreckItem {
+  itemType: 'resource' | 'module' | 'blueprint' | 'data_slate';
+  // Artefacts: itemType='resource', itemId='artefact_drive'|'artefact_cargo' etc.
+  itemId: string;
+  quantity: number;
+  baseDifficulty: number;  // 0.0–1.0
+  salvaged: boolean;       // true after any attempt (success or fail)
+}
+
+export interface WreckInfo {
+  wreckId: string;
+  tier: number;
+  size: WreckSize;
+  status: WreckStatus;
+}
+
+export interface WreckSlateMetadata {
+  id: string;
+  playerId: string;
+  sectorX: number;
+  sectorY: number;
+  sectorType: string | null;
+  hasJumpgate: boolean;
+  wreckTier: number;
+}
+
+// Server → Client events
+export interface WreckInvestigatedPayload {
+  wreckId: string;
+  items: WreckItem[];
+  size: WreckSize;
+  tier: number;
+}
+
+export interface SalvageStartedPayload {
+  wreckId: string;
+  itemIndex: number;
+  duration: number;
+  chance: number;
+}
+
+export interface SalvageResultPayload {
+  success: boolean;
+  item: WreckItem;
+  cargoUpdate?: CargoState;
+  newModifier: number;
+}
+
+export interface WreckExhaustedPayload {
+  wreckId: string;
+  sectorX: number;
+  sectorY: number;
+}
+
 export type ArtefactType =
   | 'drive'
   | 'cargo'
