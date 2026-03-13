@@ -408,7 +408,6 @@ export interface GameSlice {
   shipList: (ShipRecord & { stats: ShipStats })[];
   moduleInventory: string[];
   baseName: string;
-  homeBase: { x: number; y: number };
 
   // Research / Tech tree
   research: ResearchState;
@@ -628,7 +627,6 @@ export interface GameSlice {
   setShipList: (ships: (ShipRecord & { stats: ShipStats })[]) => void;
   setModuleInventory: (modules: string[]) => void;
   setBaseName: (name: string) => void;
-  setHomeBase: (coords: { x: number; y: number }) => void;
   setResearch: (research: ResearchState) => void;
   setTypedArtefacts: (artefacts: Record<string, number>) => void;
   setLabTier: (tier: number) => void;
@@ -759,7 +757,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   shipList: [],
   moduleInventory: [],
   baseName: '',
-  homeBase: { x: 0, y: 0 },
   research: {
     unlockedModules: [],
     blueprints: [],
@@ -965,7 +962,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setShipList: (shipList) => set({ shipList }),
   setModuleInventory: (moduleInventory) => set({ moduleInventory }),
   setBaseName: (baseName) => set({ baseName }),
-  setHomeBase: (homeBase) => set({ homeBase }),
   setResearch: (research) => set({ research }),
   setTypedArtefacts: (artefacts) => set({ typedArtefacts: artefacts }),
   setLabTier: (tier) => set({ labTier: tier }),

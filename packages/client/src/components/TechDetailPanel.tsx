@@ -56,6 +56,7 @@ export function TechDetailPanel() {
 
   const isAtStation = currentSector?.type === 'station';
   const hasBase = baseStructures.some((s: any) => s.type === 'base');
+  const isAtHome = hasBase;
   const canShop = isAtStation || hasBase;
 
   const isFree = isModuleFreelyAvailable(mod.id);

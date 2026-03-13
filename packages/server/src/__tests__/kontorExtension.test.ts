@@ -17,14 +17,12 @@ vi.mock('../db/client.js', () => ({
 }));
 
 // ─── Mock queries.js (deductCargo, addCredits, etc.) ─────────────────────────
-const mockDeductCargo = vi.fn();
 const mockAddCredits = vi.fn();
 const mockGetPlayerCredits = vi.fn();
 const mockDeductCredits = vi.fn();
 const mockTransferInventoryItem = vi.fn();
 
 vi.mock('../db/queries.js', () => ({
-  deductCargo: mockDeductCargo,
   addCredits: mockAddCredits,
   getPlayerCredits: mockGetPlayerCredits,
   deductCredits: mockDeductCredits,
@@ -207,8 +205,6 @@ describe('kontorEngine — fillKontorOrder uses transferInventoryItem not deduct
       1,
     );
 
-    // deductCargo must NOT be called
-    expect(mockDeductCargo).not.toHaveBeenCalled();
   });
 
   it('calls transferInventoryItem for resource orders (backward compat)', async () => {
@@ -249,7 +245,6 @@ describe('kontorEngine — fillKontorOrder uses transferInventoryItem not deduct
       'ore',
       5,
     );
-    expect(mockDeductCargo).not.toHaveBeenCalled();
   });
 
   it('returns error when transferInventoryItem throws (insufficient inventory)', async () => {
@@ -279,6 +274,5 @@ describe('kontorEngine — fillKontorOrder uses transferInventoryItem not deduct
     const result = await fillKontorOrder('ord-fail', 'seller-3', 1);
 
     expect(result.success).toBe(false);
-    expect(mockDeductCargo).not.toHaveBeenCalled();
   });
 });

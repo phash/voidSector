@@ -19,7 +19,6 @@ describe('TechTreePanel', () => {
         blueprints: [],
         wissen: 0,
       },
-      homeBase: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
     });
     render(<TechTreePanel />);
@@ -33,7 +32,6 @@ describe('TechTreePanel', () => {
         blueprints: [],
         wissen: 0,
       },
-      homeBase: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
     });
     render(<TechTreePanel />);

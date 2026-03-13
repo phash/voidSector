@@ -67,7 +67,6 @@ import {
   getVisitedQuadrantSet,
   getAllAlienReputations,
   getInventory,
-  getPlayerHomeBase,
   getMiningStoryIndex,
 } from '../db/queries.js';
 import { getQuadrant } from '../db/quadrantQueries.js';
@@ -408,9 +407,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('hyperJump', async (client, data: HyperJumpMessage) => {
       await this.navigation.handleHyperJump(client, data);
-    });
-    this.onMessage('emergencyWarp', async (client) => {
-      await this.navigation.handleEmergencyWarp(client);
     });
     this.onMessage('cancelAutopilot', async (client) => {
       await this.navigation.handleCancelAutopilot(client);
@@ -1275,10 +1271,6 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Send bookmarks
       const bookmarks = await getPlayerBookmarks(auth.userId);
       client.send('bookmarksUpdate', { bookmarks });
-
-      // Send homeBase coords so client can gate free refuel / homeBase label correctly
-      const homeBase = await getPlayerHomeBase(auth.userId);
-      client.send('homeBaseUpdate', { homeBase });
 
       // Send all discoveries for hyperjump map
       const allDiscoveries = await getPlayerDiscoveries(auth.userId);

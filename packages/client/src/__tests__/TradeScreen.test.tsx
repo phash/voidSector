@@ -46,9 +46,9 @@ describe('TradeScreen', () => {
     expect(screen.getByText(/NO TRADING AVAILABLE/)).toBeTruthy();
   });
 
-  it('shows NPC trade at home base without trading post', () => {
+  it('shows NPC trade at player base without trading post', () => {
     mockStoreState({
-      baseStructures: [],
+      baseStructures: [{ id: 'b1', type: 'base', tier: 1, sector_x: 0, sector_y: 0 }],
       position: { x: 0, y: 0 },
       credits: 100,
       storage: { ore: 10, gas: 5, crystal: 2, artefact: 0 },

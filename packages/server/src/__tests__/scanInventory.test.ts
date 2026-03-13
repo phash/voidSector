@@ -18,9 +18,6 @@ vi.mock('../engine/inventoryService.js', () => ({
 
 // --- Mock DB queries ---
 vi.mock('../db/queries.js', () => ({
-  // Legacy cargo fns — should NOT be called after migration
-  addToCargo: vi.fn(),
-  getPlayerCargo: vi.fn(),
   // Other queries ScanService needs
   getSector: vi.fn().mockResolvedValue({
     resources: { ore: 5, gas: 2, crystal: 1 },
@@ -123,7 +120,6 @@ vi.mock('../rooms/services/RedisAPStore.js', () => ({
 }));
 
 import { ScanService } from '../rooms/services/ScanService.js';
-import { addToCargo, getPlayerCargo } from '../db/queries.js';
 import { addToInventory, getCargoState } from '../engine/inventoryService.js';
 import { resolveAncientRuinScan } from '../engine/ancientRuinsService.js';
 import { hasScannedRuin } from '../db/queries.js';
@@ -194,7 +190,6 @@ describe('ScanService.handleLocalScan ruin artefact — inventory migration', ()
     await svc.handleLocalScan(client);
 
     expect(addToInventory).toHaveBeenCalledWith('user-123', 'resource', 'artefact', 1);
-    expect(addToCargo).not.toHaveBeenCalled();
   });
 
   it('uses getCargoState (not getPlayerCargo) for cargoUpdate after ruin scan', async () => {
@@ -224,7 +219,6 @@ describe('ScanService.handleLocalScan ruin artefact — inventory migration', ()
     await svc.handleLocalScan(client);
 
     expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(getPlayerCargo).not.toHaveBeenCalled();
     expect(client.send).toHaveBeenCalledWith('cargoUpdate', cargoState);
   });
 });
@@ -256,7 +250,6 @@ describe('ScanService.handleCompleteScanEvent artefact reward — inventory migr
     await svc.handleCompleteScanEvent(client, { eventId: 'evt-1' });
 
     expect(addToInventory).toHaveBeenCalledWith('user-123', 'resource', 'artefact', 1);
-    expect(addToCargo).not.toHaveBeenCalled();
   });
 
   it('uses getCargoState (not getPlayerCargo) for cargoUpdate after scan event', async () => {
@@ -282,7 +275,6 @@ describe('ScanService.handleCompleteScanEvent artefact reward — inventory migr
     await svc.handleCompleteScanEvent(client, { eventId: 'evt-1' });
 
     expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(getPlayerCargo).not.toHaveBeenCalled();
     expect(client.send).toHaveBeenCalledWith('cargoUpdate', cargoState);
   });
 });

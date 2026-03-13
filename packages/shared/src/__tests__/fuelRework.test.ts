@@ -5,7 +5,6 @@ import {
   HULL_FUEL_MULTIPLIER,
   SCAN_FUEL_COST,
   MINE_FUEL_COST,
-  FEATURE_EMERGENCY_WARP,
   HULLS,
 } from '../constants.js';
 import type { AutoRefuelConfig, HullType } from '../types.js';
@@ -23,10 +22,6 @@ describe('Fuel Rework (#94)', () => {
 
     it('should set mine fuel cost to 0', () => {
       expect(MINE_FUEL_COST).toBe(0);
-    });
-
-    it('should disable emergency warp via feature flag', () => {
-      expect(FEATURE_EMERGENCY_WARP).toBe(false);
     });
 
     it('should define hull fuel multipliers for all hull types', () => {

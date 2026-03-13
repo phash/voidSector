@@ -295,6 +295,13 @@ export class WorldService {
     }
     const auth = client.auth as AuthPayload;
 
+    // Block building in anomaly sectors
+    const sectorType = this.ctx._pst(client.sessionId);
+    if (sectorType === 'anomaly') {
+      client.send('error', { code: 'BUILD_FAIL', message: 'Bauen in Anomalien nicht möglich' });
+      return;
+    }
+
     // Jumpgate goes into the jumpgates table, not structures — handle separately
     if (data.type === 'jumpgate') {
       await this.handleBuildJumpgate(client, auth);

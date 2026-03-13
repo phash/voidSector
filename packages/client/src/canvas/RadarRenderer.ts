@@ -80,7 +80,6 @@ interface RadarState {
   discoveryTimestamps?: Record<string, number>;
   hullType?: HullType;
   acepXp?: { ausbau: number; intel: number; kampf: number; explorer: number; total: number } | null;
-  homeBase?: { x: number; y: number };
   bookmarks?: Bookmark[];
   animTime?: number;
   scanBurstTimestamps?: Record<string, number>;
@@ -183,9 +182,6 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const sector = state.discoveries[key];
       const isPlayer = sx === state.position.x && sy === state.position.y;
       const isCenter = dx === 0 && dy === 0;
-      const hb = state.homeBase ?? { x: 0, y: 0 };
-      const isHome = sx === hb.x && sy === hb.y;
-
       // Void frontier rendering — black fill with optional blue border
       const isVoidFrontier = state.voidFrontierSectors?.has(`${sx},${sy}`) ?? false;
       const isInVoidQuadrant = state.quadrantIsVoid ?? false;
@@ -230,9 +226,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
       // Background highlight for non-empty discovered sectors (also shown when player is here)
       if (sector && sector.type !== 'empty') {
-        const sectorBgColor = isHome
-          ? SECTOR_COLORS.home_base
-          : (sector as any).environment === 'black_hole'
+        const sectorBgColor = (sector as any).environment === 'black_hole'
             ? '#1A1A1A'
             : (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty);
         const prevAlpha = ctx.globalAlpha;
@@ -368,22 +362,18 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           }
           ctx.fillStyle = state.themeColor;
           ctx.textBaseline = 'bottom';
-          ctx.fillText(isHome ? 'HOME BASE' : 'YOU', labelX, cellY + CELL_H / 2 - 2);
+          ctx.fillText('YOU', labelX, cellY + CELL_H / 2 - 2);
         }
       } else if (sector) {
-        if (sector.type === 'empty' && (sector as any).environment !== 'black_hole' && !isHome) {
+        if (sector.type === 'empty' && (sector as any).environment !== 'black_hole') {
           // Empty sectors: just a small centered dot
           ctx.fillStyle = state.dimColor.replace(/[\d.]+\)$/, '0.3)');
           ctx.beginPath();
           ctx.arc(cellX, cellY, 2, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          const symbol = isHome
-            ? SYMBOLS.homeBase
-            : getSectorSymbol(sector.type, (sector as any).environment);
-          const sectorColor = isHome
-            ? SECTOR_COLORS.home_base
-            : (sector as any).environment === 'black_hole'
+          const symbol = getSectorSymbol(sector.type, (sector as any).environment);
+          const sectorColor = (sector as any).environment === 'black_hole'
               ? '#1A1A1A'
               : (SECTOR_COLORS[sector.type as keyof typeof SECTOR_COLORS] ?? SECTOR_COLORS.empty);
           ctx.fillStyle = sectorColor;
@@ -395,9 +385,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
             ctx.fillStyle = sectorColor;
             ctx.textAlign = labelLeftAlign ? 'left' : 'center';
             ctx.textBaseline = 'bottom';
-            const label = isHome
-              ? 'HOME'
-              : getSectorLabel(sector.type, (sector as any).environment);
+            const label = getSectorLabel(sector.type, (sector as any).environment);
             ctx.fillText(label, labelX, cellY + CELL_H / 2 - 2);
           }
         }

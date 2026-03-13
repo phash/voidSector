@@ -82,7 +82,7 @@ export default config({
         res.json({
           token: result.token,
           player: result.player,
-          lastPosition: lastPos ?? { x: result.player.homeBase.x, y: result.player.homeBase.y },
+          lastPosition: lastPos ?? { x: 0, y: 0 },
         });
       } catch (err) {
         logger.error({ err }, 'Login error');
@@ -96,7 +96,7 @@ export default config({
         res.json({
           token: result.token,
           player: result.player,
-          lastPosition: { x: result.player.homeBase.x, y: result.player.homeBase.y },
+          lastPosition: { x: 0, y: 0 },
         });
       } catch (err) {
         logger.error({ err }, 'Guest login error');

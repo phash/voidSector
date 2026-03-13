@@ -14,7 +14,6 @@ vi.mock('../db/queries.js', () => ({
   deductCredits: vi.fn(),
   // ShipService deps (need stubs even if not called in craftModule path)
   getActiveShip: vi.fn(),
-  getPlayerHomeBase: vi.fn(),
   getPlayerShips: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
@@ -25,8 +24,6 @@ vi.mock('../db/queries.js', () => ({
   getActiveResearch: vi.fn(),
   startActiveResearch: vi.fn(),
   deleteActiveResearch: vi.fn(),
-  getPlayerCargo: vi.fn(),
-  deductCargo: vi.fn(),
   getPlayerReputations: vi.fn(),
   getStorageInventory: vi.fn(),
   upsertInventory: vi.fn(),
@@ -34,9 +31,6 @@ vi.mock('../db/queries.js', () => ({
   getInventoryItem: vi.fn(),
   transferInventoryItem: vi.fn(),
   getCargoCapForPlayer: vi.fn(),
-  getModuleInventory: vi.fn(),
-  addModuleToInventory: vi.fn(),
-  removeModuleFromInventory: vi.fn(),
 }));
 
 // ── Mock @void-sector/shared ──────────────────────────────────────────────────

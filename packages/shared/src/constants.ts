@@ -21,15 +21,6 @@ export const SECTOR_TYPES: SectorType[] = [
   'pirate',
 ];
 
-/** @deprecated Not used in worldgen. See CONTENT_WEIGHTS + ENVIRONMENT_WEIGHTS in packages/server/src/engine/worldgen.ts. */
-export const SECTOR_WEIGHTS: Record<SectorType, number> = {
-  empty: 0.55,
-  asteroid_field: 0.15,
-  nebula: 0.1,
-  anomaly: 0.08,
-  station: 0.05,
-  pirate: 0.07,
-};
 
 export const AP_DEFAULTS = {
   max: 100,
@@ -422,47 +413,6 @@ export const TRADING_POST_TIERS: Record<number, { name: string; upgradeCost: num
   3: { name: 'AUTO-TRADE', upgradeCost: 3000 },
 };
 
-// Ship class definitions (from visual reference material)
-export const SHIP_CLASSES: Record<
-  string,
-  {
-    name: string;
-    displayName: string;
-    jumpRange: number;
-    apCostJump: number;
-    fuelMax: number;
-    fuelPerJump: number;
-    cargoCap: number;
-    scannerLevel: number;
-    safeSlots: number;
-    commRange: number;
-  }
-> = {
-  aegis_scout_mk1: {
-    name: 'VOID SCOUT MK. I',
-    displayName: '"AEGIS"',
-    jumpRange: 4,
-    apCostJump: 1,
-    fuelMax: 100,
-    fuelPerJump: 5,
-    cargoCap: 5,
-    scannerLevel: 1,
-    safeSlots: 1,
-    commRange: 50,
-  },
-  void_seeker_mk2: {
-    name: 'VOID SEEKER MK. II',
-    displayName: '"HELIOS"',
-    jumpRange: 12,
-    apCostJump: 2,
-    fuelMax: 200,
-    fuelPerJump: 3,
-    cargoCap: 25,
-    scannerLevel: 3,
-    safeSlots: 3,
-    commRange: 200,
-  },
-};
 
 // ─── ACEP SLOT SYSTEM ────────────────────────────────────────────────────────
 
@@ -1983,14 +1933,13 @@ for (const mod of Object.values(MODULES)) {
   }
 }
 
-export const SECTOR_COLORS: Record<SectorType | 'home_base', string> = {
+export const SECTOR_COLORS: Record<SectorType, string> = {
   empty: '#FFB000',
   asteroid_field: '#FF8C00',
   nebula: '#00BFFF',
   station: '#00FF88',
   anomaly: '#FF00FF',
   pirate: '#FF3333',
-  home_base: '#FFFFFF',
 };
 
 export const SPAWN_MIN_DISTANCE = 10_000_000;
@@ -2116,7 +2065,6 @@ export const SYMBOLS = {
   pirate: '\u2620',
   player: '\u25C6',
   iron: '\u26CF',
-  homeBase: '\u2302',
   jumpgate: '\u25CE', // ◎
 } as const;
 
@@ -2144,7 +2092,6 @@ export const ENVIRONMENT_SYMBOLS: Record<SectorEnvironment, string> = {
 export const CONTENT_SYMBOLS: Partial<Record<SectorContent, string>> = {
   asteroid_field: '\u25C6', // ◆
   station: 'S',
-  home_base: 'H',
   player_base: 'B',
   anomaly: '\u25CA', // ◊
   pirate_zone: '\u2620', // ☠
@@ -2160,7 +2107,6 @@ export const CONTENT_COLORS: Partial<Record<SectorContent, string>> = {
   station: '#00FF88',
   anomaly: '#FF00FF',
   pirate_zone: '#FF3333',
-  home_base: '#FFFFFF',
   player_base: '#FFFFFF',
   meteor: '#FFD700',
   relic: '#CC44FF',
@@ -2342,17 +2288,6 @@ export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 // Multi-content sectors
 export const SECTOR_MAX_FEATURES = 3;
 
-// Home base safe zone — no pirate spawns within this Manhattan distance
-export const HOME_BASE_SAFE_RADIUS = 5;
-
-// Emergency Warp (Notruf)
-/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
-export const EMERGENCY_WARP_FREE_RADIUS = 200; // free within 200 Manhattan distance of home base
-/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
-export const EMERGENCY_WARP_CREDIT_PER_SECTOR = 5; // credits per sector beyond free radius
-/** @deprecated Emergency warp disabled — use FEATURE_EMERGENCY_WARP flag */
-export const EMERGENCY_WARP_FUEL_GRANT = 10; // fuel granted after emergency warp
-export const FEATURE_EMERGENCY_WARP = false;
 
 // Hyperjump Navigation
 export const HYPERJUMP_AP_DISCOUNT = 0.5; // 50% AP cost for known routes (legacy)

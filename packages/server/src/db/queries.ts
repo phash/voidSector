@@ -2,8 +2,6 @@ import { query, withTransaction } from './client.js';
 import type {
   SectorData,
   PlayerData,
-  CargoState,
-  ResourceType,
   Bookmark,
   HullType,
   ShipModule,
@@ -24,25 +22,22 @@ import { getUniverseTickCount } from '../engine/universeBootstrap.js';
 export async function createPlayer(
   username: string,
   passwordHash: string,
-  homeBase: { x: number; y: number } = { x: 0, y: 0 },
 ): Promise<PlayerData> {
   const result = await query<{
     id: string;
     username: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    `INSERT INTO players (username, password_hash, home_base)
-     VALUES ($1, $2, $3)
-     RETURNING id, username, home_base, xp, level`,
-    [username, passwordHash, JSON.stringify(homeBase)],
+    `INSERT INTO players (username, password_hash)
+     VALUES ($1, $2)
+     RETURNING id, username, xp, level`,
+    [username, passwordHash],
   );
   const row = result.rows[0];
   return {
     id: row.id,
     username: row.username,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
@@ -50,25 +45,22 @@ export async function createPlayer(
 
 export async function createGuestPlayer(
   username: string,
-  homeBase: { x: number; y: number } = { x: 0, y: 0 },
 ): Promise<PlayerData> {
   const result = await query<{
     id: string;
     username: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    `INSERT INTO players (username, password_hash, home_base, is_guest, guest_created_at)
-     VALUES ($1, '', $2, TRUE, NOW())
-     RETURNING id, username, home_base, xp, level`,
-    [username, JSON.stringify(homeBase)],
+    `INSERT INTO players (username, password_hash, is_guest, guest_created_at)
+     VALUES ($1, '', TRUE, NOW())
+     RETURNING id, username, xp, level`,
+    [username],
   );
   const row = result.rows[0];
   return {
     id: row.id,
     username: row.username,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
@@ -88,11 +80,10 @@ export async function findPlayerByUsername(
     id: string;
     username: string;
     password_hash: string;
-    home_base: { x: number; y: number };
     xp: number;
     level: number;
   }>(
-    'SELECT id, username, password_hash, home_base, xp, level FROM players WHERE LOWER(username) = LOWER($1)',
+    'SELECT id, username, password_hash, xp, level FROM players WHERE LOWER(username) = LOWER($1)',
     [username],
   );
   if (result.rows.length === 0) return null;
@@ -101,18 +92,9 @@ export async function findPlayerByUsername(
     id: row.id,
     username: row.username,
     passwordHash: row.password_hash,
-    homeBase: row.home_base,
     xp: row.xp,
     level: row.level,
   };
-}
-
-export async function getPlayerHomeBase(playerId: string): Promise<{ x: number; y: number }> {
-  const { rows } = await query<{ home_base: { x: number; y: number } }>(
-    'SELECT home_base FROM players WHERE id = $1',
-    [playerId],
-  );
-  return rows[0]?.home_base ?? { x: 0, y: 0 };
 }
 
 export async function getMiningStoryIndex(playerId: string): Promise<number> {
@@ -250,40 +232,6 @@ export async function renameBase(playerId: string, name: string): Promise<void> 
   await query('UPDATE players SET base_name = $1 WHERE id = $2', [name.slice(0, 20), playerId]);
 }
 
-export async function getModuleInventory(playerId: string): Promise<string[]> {
-  const { rows } = await query<{ module_inventory: string[] }>(
-    'SELECT module_inventory FROM players WHERE id = $1',
-    [playerId],
-  );
-  return rows[0]?.module_inventory ?? [];
-}
-
-export async function addModuleToInventory(playerId: string, moduleId: string): Promise<void> {
-  await query(`UPDATE players SET module_inventory = module_inventory || $1::jsonb WHERE id = $2`, [
-    JSON.stringify(moduleId),
-    playerId,
-  ]);
-}
-
-export async function removeModuleFromInventory(
-  playerId: string,
-  moduleId: string,
-): Promise<boolean> {
-  // Remove first occurrence of moduleId from the JSONB array
-  const { rows } = await query<{ module_inventory: string[] }>(
-    'SELECT module_inventory FROM players WHERE id = $1',
-    [playerId],
-  );
-  const inv = rows[0]?.module_inventory ?? [];
-  const idx = inv.indexOf(moduleId);
-  if (idx === -1) return false;
-  inv.splice(idx, 1);
-  await query('UPDATE players SET module_inventory = $1 WHERE id = $2', [
-    JSON.stringify(inv),
-    playerId,
-  ]);
-  return true;
-}
 
 export async function getPlayerBaseName(playerId: string): Promise<string> {
   const { rows } = await query<{ base_name: string }>(
@@ -458,51 +406,6 @@ export async function isRouteDiscovered(
   return result.rows.length > 0;
 }
 
-export async function getPlayerCargo(playerId: string): Promise<CargoState> {
-  const result = await query<{ resource: string; quantity: number }>(
-    'SELECT resource, quantity FROM cargo WHERE player_id = $1',
-    [playerId],
-  );
-  const cargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 };
-  for (const row of result.rows) {
-    if (row.resource in cargo) {
-      cargo[row.resource as ResourceType] = row.quantity;
-    }
-  }
-  const slateRow = result.rows.find((r) => r.resource === 'slate');
-  if (slateRow) cargo.slates = slateRow.quantity;
-  return cargo;
-}
-
-export async function addToCargo(
-  playerId: string,
-  resource: ResourceType,
-  amount: number,
-): Promise<void> {
-  await query(
-    `INSERT INTO cargo (player_id, resource, quantity)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (player_id, resource)
-     DO UPDATE SET quantity = cargo.quantity + $3`,
-    [playerId, resource, amount],
-  );
-}
-
-export async function jettisonCargo(playerId: string, resource: ResourceType): Promise<number> {
-  const result = await query<{ quantity: number }>(
-    `DELETE FROM cargo WHERE player_id = $1 AND resource = $2 RETURNING quantity`,
-    [playerId, resource],
-  );
-  return result.rows.length > 0 ? result.rows[0].quantity : 0;
-}
-
-export async function getCargoTotal(playerId: string): Promise<number> {
-  const result = await query<{ total: string }>(
-    'SELECT COALESCE(SUM(quantity), 0) as total FROM cargo WHERE player_id = $1',
-    [playerId],
-  );
-  return Number(result.rows[0].total);
-}
 
 export async function findNearbyCluster(x: number, y: number): Promise<any | null> {
   const { rows } = await query(
@@ -583,28 +486,13 @@ export async function getStructuresInRange(
 export async function getPlayerBaseStructures(playerId: string): Promise<any[]> {
   const { rows } = await query(
     `SELECT s.* FROM structures s
-     JOIN players p ON p.id = $1
      WHERE s.owner_id = $1
-       AND s.sector_x = (p.home_base->>'x')::int
-       AND s.sector_y = (p.home_base->>'y')::int
      ORDER BY s.created_at ASC`,
     [playerId],
   );
   return rows;
 }
 
-export async function deductCargo(
-  playerId: string,
-  resource: string,
-  amount: number,
-): Promise<boolean> {
-  const { rowCount } = await query(
-    `UPDATE cargo SET quantity = quantity - $3
-     WHERE player_id = $1 AND resource = $2 AND quantity >= $3`,
-    [playerId, resource, amount],
-  );
-  return (rowCount ?? 0) > 0;
-}
 
 export async function saveMessage(
   senderId: string,
@@ -747,11 +635,9 @@ export async function getPlayerStructure(
   type: string,
 ): Promise<{ id: string; tier: number; sector_x: number; sector_y: number } | null> {
   const { rows } = await query<{ id: string; tier: number; sector_x: number; sector_y: number }>(
-    `SELECT s.id, s.tier, s.sector_x, s.sector_y FROM structures s
-     JOIN players p ON p.id = $1
-     WHERE s.owner_id = $1 AND s.type = $2
-       AND s.sector_x = (p.home_base->>'x')::int
-       AND s.sector_y = (p.home_base->>'y')::int`,
+    `SELECT id, tier, sector_x, sector_y FROM structures
+     WHERE owner_id = $1 AND type = $2
+     LIMIT 1`,
     [playerId, type],
   );
   return rows[0] ?? null;
