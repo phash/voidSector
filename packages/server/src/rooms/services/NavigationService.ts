@@ -165,9 +165,11 @@ export class NavigationService {
     returnInfo = false,
   ): Promise<import('@void-sector/shared').JumpGateInfo | null> {
     const isAncient = checkAncientJumpGate(sectorX, sectorY);
-    if (!isAncient && !checkJumpGate(sectorX, sectorY)) return null;
+    const isNatural = isAncient || checkJumpGate(sectorX, sectorY);
 
+    // Check DB first — admin-created gates exist here even if they don't pass the natural hash check
     let gate = await getJumpGate(sectorX, sectorY);
+    if (!gate && !isNatural) return null;
     if (!gate) {
       const gateData = generateGateTarget(sectorX, sectorY, isAncient);
       const gateId = `gate_${sectorX}_${sectorY}`;

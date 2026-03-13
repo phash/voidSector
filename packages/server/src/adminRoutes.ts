@@ -269,7 +269,7 @@ adminRouter.post('/players/:id/slates', async (req: Request, res: Response) => {
       res.status(404).json({ error: `Sector (${absX}, ${absY}) not found in DB — visit it first to generate it` });
       return;
     }
-    const { id: slateId } = await createDataSlate(req.params.id as string, 'scanned_sector', [sector]);
+    const { id: slateId } = await createDataSlate(req.params.id as string, 'sector', [sector]);
     await updateSlateOwner(slateId, req.params.id as string);
     await addSlateToCargo(req.params.id as string, 1);
     await logAdminEvent('give_player_slate', { playerId: req.params.id, quadrantX, quadrantY, sectorX, sectorY, absX, absY, slateId });
@@ -640,6 +640,14 @@ adminRouter.post('/structures/station', async (req: Request, res: Response) => {
       `INSERT INTO sectors (x, y, type, seed) VALUES ($1, $2, 'station', 0)
        ON CONFLICT (x, y) DO UPDATE SET type = 'station'`,
       [sectorX, sectorY],
+    );
+    const qx = Math.floor(sectorX / QUADRANT_SIZE);
+    const qy = Math.floor(sectorY / QUADRANT_SIZE);
+    await query(
+      `INSERT INTO quadrant_control (qx, qy, controlling_faction)
+       VALUES ($1, $2, 'humans')
+       ON CONFLICT (qx, qy) DO UPDATE SET controlling_faction = 'humans'`,
+      [qx, qy],
     );
     await logAdminEvent('create_human_station', { sectorX, sectorY });
     logger.info({ sectorX, sectorY }, 'Admin created human station');
