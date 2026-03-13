@@ -11,7 +11,7 @@ import { MINING_RATE_PER_SECOND } from '@void-sector/shared';
 
 import { validateMine, validateJettison } from '../../engine/commands.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
-import { awardWissen } from '../../engine/wissenService.js';
+import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import { stopMining } from '../../engine/mining.js';
 import { getMiningState, saveMiningState, getMiningStoryCounter, setMiningStoryCounter } from './RedisAPStore.js';
 import { getSector, updateSectorResources, getMiningStoryIndex, updateMiningStoryIndex } from '../../db/queries.js';
@@ -118,7 +118,7 @@ export class MiningService {
       if (miningXp > 0) {
         addAcepXpForPlayer(playerId, 'ausbau', miningXp).catch(() => {});
       }
-      awardWissen(playerId, 1).catch(() => {});  // +1 per mining load
+      awardWissenAndNotify(client, playerId, 1);  // +1 per mining load
     }
     // Deplete sector resources regardless of cargo (result.mined could be 0 if cargo full)
     if (result.resource && mining.sectorYield > 0) {
@@ -289,7 +289,7 @@ export class MiningService {
       if (miningXp > 0) {
         addAcepXpForPlayer(auth.userId, 'ausbau', miningXp).catch(() => {});
       }
-      awardWissen(auth.userId, 1).catch(() => {});  // +1 per mining load
+      awardWissenAndNotify(client, auth.userId, 1);  // +1 per mining load
     }
 
     await saveMiningState(auth.userId, result.newState);

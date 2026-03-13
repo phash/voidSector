@@ -5,7 +5,7 @@ import type { CombatState, RoundInput, EnemyModule } from '../../engine/combatTy
 
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
 import { getAcepEffects } from '../../engine/acepXpService.js';
-import { awardWissen } from '../../engine/wissenService.js';
+import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import { calculateTraits } from '../../engine/traitCalculator.js';
 import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { destroyShipAndCreateLegacy, ejectPod } from '../../engine/permadeathService.js';
@@ -257,7 +257,7 @@ export class CombatService {
       addAcepXpForPlayer(playerId, 'kampf', 10).catch(() => {});
       this._emitPersonalityComment(client, playerId, 'combat_victory').catch(() => {});
       const npcWissen = Math.min(8, Math.max(3, Math.ceil(state.enemyLevel / 2)));
-      awardWissen(playerId, npcWissen).catch(() => {});  // +3-8 depending on enemy strength
+      awardWissenAndNotify(client, playerId, npcWissen);  // +3-8 depending on enemy strength
 
       client.send('logEntry', `SIEG! ${state.enemyType} besiegt. +${loot.credits ?? 0} CR`);
     } else if (outcome === 'defeat') {

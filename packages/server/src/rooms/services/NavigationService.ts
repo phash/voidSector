@@ -4,7 +4,7 @@ import type { AuthPayload } from '../../auth.js';
 import type { JumpMessage, HyperJumpMessage, ShipStats } from '@void-sector/shared';
 import { isInt, rejectGuest, MAX_COORD } from './utils.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
-import { awardWissen } from '../../engine/wissenService.js';
+import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import { logger } from '../../utils/logger.js';
 
 import { generateSector } from '../../engine/worldgen.js';
@@ -150,7 +150,7 @@ export class NavigationService {
     // Quadrant first-contact detection
     await this.ctx.checkFirstContact(client, auth, sectorX, sectorY);
 
-    awardWissen(auth.userId, 1).catch(() => {});  // +1 per new sector
+    awardWissenAndNotify(client, auth.userId, 1);  // +1 per new sector
   }
 
   /**
@@ -361,7 +361,7 @@ export class NavigationService {
     // Quadrant first-contact detection
     await this.ctx.checkFirstContact(client, auth, targetX, targetY);
 
-    awardWissen(auth.userId, 1).catch(() => {});  // +1 per new sector
+    awardWissenAndNotify(client, auth.userId, 1);  // +1 per new sector
 
     // Record quadrant discovery news event on cross-quadrant jump
     if (crossQuadrant) {
@@ -375,7 +375,7 @@ export class NavigationService {
         eventData: { fromQuadrant: { qx: curQx, qy: curQy }, toQuadrant: { qx: tgtQx, qy: tgtQy } },
       }).catch(() => {});
       // ACEP: EXPLORER-XP (+50) for world-first quadrant discovery is handled in WorldService.checkFirstContact
-      awardWissen(auth.userId, 5).catch(() => {});  // +5 per quadrant change
+      awardWissenAndNotify(client, auth.userId, 5);  // +5 per quadrant change
     }
   }
 
@@ -1356,7 +1356,7 @@ export class NavigationService {
     if (!pgSectorAlreadyKnown) {
       addAcepXpForPlayer(auth.userId, 'explorer', 10).catch(() => {});
     }
-    awardWissen(auth.userId, 1).catch(() => {});  // +1 per new sector
+    awardWissenAndNotify(client, auth.userId, 1);  // +1 per new sector
 
     // Check cross-quadrant
     const { qx: curQx, qy: curQy } = sectorToQuadrant(sx, sy);
@@ -1397,7 +1397,7 @@ export class NavigationService {
     await this.ctx.checkFirstContact(client, auth, targetX, targetY);
 
     if (crossQuadrant) {
-      awardWissen(auth.userId, 5).catch(() => {});  // +5 per quadrant change
+      awardWissenAndNotify(client, auth.userId, 5);  // +5 per quadrant change
     }
 
     logger.info(

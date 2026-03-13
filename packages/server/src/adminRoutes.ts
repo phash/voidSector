@@ -152,24 +152,40 @@ adminRouter.patch('/players/:id/credits', async (req: Request, res: Response) =>
 
 adminRouter.patch('/players/:id/cargo', async (req: Request, res: Response) => {
   try {
-    const { resource, amount } = req.body;
-    if (typeof resource !== 'string' || !resource) {
-      res.status(400).json({ error: 'resource must be a non-empty string' });
-      return;
+    // Accept either { resource, amount } (single) or { items: [...] } (batch)
+    type ItemEntry = { itemType?: string; itemId?: string; resource?: string; quantity?: number; amount?: number };
+    const items: ItemEntry[] = Array.isArray(req.body.items)
+      ? req.body.items
+      : [{ resource: req.body.resource, amount: req.body.amount }];
+
+    // Validate all items before hitting the DB
+    const cargoUpdate: Record<string, number> = {};
+    for (const item of items) {
+      const resource = item.itemId ?? item.resource ?? '';
+      const amount = item.quantity ?? item.amount ?? 0;
+      if (typeof resource !== 'string' || !resource) {
+        res.status(400).json({ error: 'Each item must have a resource/itemId string' });
+        return;
+      }
+      if (typeof amount !== 'number' || amount < 0) {
+        res.status(400).json({ error: 'Each item must have a non-negative quantity/amount' });
+        return;
+      }
+      cargoUpdate[resource] = Math.round(amount);
     }
-    if (typeof amount !== 'number' || amount < 0) {
-      res.status(400).json({ error: 'amount must be a non-negative number' });
-      return;
-    }
+
     const player = await getPlayerById(req.params.id as string);
     if (!player) {
       res.status(404).json({ error: 'Player not found' });
       return;
     }
-    await adminSetCargoItem(req.params.id as string, resource, Math.round(amount));
-    const cargoUpdate: Record<string, number> = { [resource]: Math.round(amount) };
+
+    for (const [resource, amount] of Object.entries(cargoUpdate)) {
+      await adminSetCargoItem(req.params.id as string, resource, amount);
+    }
+
     adminBus.playerUpdated({ playerId: req.params.id as string, updates: { cargo: cargoUpdate } });
-    await logAdminEvent('set_player_cargo', { playerId: req.params.id, resource, amount });
+    await logAdminEvent('set_player_cargo', { playerId: req.params.id, items: cargoUpdate });
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, 'Admin set player cargo error');
