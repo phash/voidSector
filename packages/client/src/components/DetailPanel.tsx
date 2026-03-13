@@ -76,6 +76,7 @@ function RefuelPanel({
   const [amount, setAmount] = useState(Math.ceil(fuel.max - fuel.current));
   const reputations = useStore((s) => s.reputations);
   const currentSector = useStore((s) => s.currentSector);
+  const npcStationData = useStore((s) => s.npcStationData);
 
   // Reputation-based pricing
   const sectorFaction = (currentSector as any)?.faction;
@@ -88,10 +89,20 @@ function RefuelPanel({
   const totalCost = isFreeRefuel ? 0 : Math.ceil(amount * FUEL_COST_PER_UNIT * priceModifier);
   const tankSpace = Math.ceil(fuel.max - fuel.current);
 
+  const stationFuel = npcStationData?.stationFuel ?? 0;
+  const stationGas = npcStationData?.stationGas ?? 0;
+  const gasMode = stationGas >= 1;
+
   return (
     <div style={{ marginTop: 8, border: '1px solid var(--color-dim)', padding: '6px 8px' }}>
       <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', marginBottom: 4 }}>
         {t('detail.refuelLabel', { price: isFreeRefuel ? t('status.free') : `${unitCost} ${t('detail.crPerUnit')} (${repTier.toUpperCase()})` })}
+      </div>
+      <div style={{ fontSize: '0.65rem', color: 'var(--color-dim)', marginBottom: 4, display: 'flex', gap: 8 }}>
+        <span>BESTAND: {stationFuel.toLocaleString()} FUEL</span>
+        <span style={{ color: gasMode ? '#00FF88' : 'var(--color-dim)' }}>
+          GAS: {stationGas} {gasMode ? '▲ BOOST' : ''}
+        </span>
       </div>
       <input
         type="range"

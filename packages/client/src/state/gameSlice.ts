@@ -435,6 +435,8 @@ export interface GameSlice {
       buyPrice: number;
       sellPrice: number;
     }>;
+    stationFuel: number;
+    stationGas: number;
   } | null;
 
   // Factory

@@ -122,12 +122,15 @@ export class EconomyService {
       }
     }
     const nextLevel = NPC_STATION_LEVELS.find((l) => l.xpThreshold > station.xp);
+    const { fuel: stationFuel, gas: stationGas } = await getStationFuelAndGas(sx, sy);
     client.send('npcStationUpdate', {
       level: level.level,
       name: level.name,
       xp: station.xp,
       nextLevelXp: nextLevel?.xpThreshold ?? station.xp,
       inventory: items,
+      stationFuel,
+      stationGas,
     });
   }
 
