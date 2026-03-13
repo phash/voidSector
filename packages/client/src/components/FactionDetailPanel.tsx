@@ -101,9 +101,9 @@ function FactionRecruitPanel() {
     return () => clearInterval(t);
   }, [recruitingFactions.length]);
 
-  const repEntries = Object.values(humanityReps);
-  const totalRep = repEntries.reduce((sum, e) => sum + e.repValue, 0);
-  const repTier = repEntries.length > 0 ? getRepTier(totalRep) : null;
+  const repEntries = humanityReps ? Object.values(humanityReps) : null;
+  const totalRep = repEntries ? repEntries.reduce((sum, e) => sum + e.repValue, 0) : 0;
+  const repTier = repEntries ? getRepTier(totalRep) : null;
   const currentCard = recruitingFactions[cardIdx] ?? null;
 
   return (
