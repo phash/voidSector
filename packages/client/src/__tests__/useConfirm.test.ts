@@ -53,6 +53,18 @@ describe('useConfirm', () => {
     expect(result.current.isArmed('key-b')).toBe(false);
   });
 
+  it('does not auto-reset when timeout is null', () => {
+    const callback = vi.fn();
+    const { result } = renderHook(() => useConfirm(null));
+
+    act(() => { result.current.confirm('test-key', callback); });
+    expect(result.current.isArmed('test-key')).toBe(true);
+
+    act(() => { vi.advanceTimersByTime(60000); });
+    expect(result.current.isArmed('test-key')).toBe(true);
+    expect(callback).not.toHaveBeenCalled();
+  });
+
   it('arming new key disarms previous key', () => {
     const { result } = renderHook(() => useConfirm());
 
