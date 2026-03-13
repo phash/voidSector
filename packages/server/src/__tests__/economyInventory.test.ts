@@ -47,6 +47,7 @@ vi.mock('../db/npcStationQueries.js', () => ({
   getStationInventoryItem: vi.fn().mockResolvedValue(null),
   upsertInventoryItem: vi.fn().mockResolvedValue(undefined),
   getStationInventory: vi.fn().mockResolvedValue([]),
+  getStationFuelAndGas: vi.fn().mockResolvedValue({ fuel: 10000, gas: 0 }),
 }));
 
 vi.mock('../engine/npcStationEngine.js', () => ({

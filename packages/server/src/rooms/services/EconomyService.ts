@@ -95,7 +95,8 @@ export class EconomyService {
 
   async sendNpcStationUpdate(client: Client, sx: number, sy: number): Promise<void> {
     const station = await getOrInitStation(sx, sy);
-    const inventory = await getStationInventory(sx, sy);
+    // fuel is handled separately via handleRefuel — exclude from trade inventory
+    const inventory = (await getStationInventory(sx, sy)).filter((i) => i.itemType !== 'fuel');
     const level = getStationLevel(station.xp);
     const now = new Date();
     const items = inventory.map((item) => {
@@ -122,12 +123,15 @@ export class EconomyService {
       }
     }
     const nextLevel = NPC_STATION_LEVELS.find((l) => l.xpThreshold > station.xp);
+    const { fuel: stationFuel, gas: stationGas } = await getStationFuelAndGas(sx, sy);
     client.send('npcStationUpdate', {
       level: level.level,
       name: level.name,
       xp: station.xp,
       nextLevelXp: nextLevel?.xpThreshold ?? station.xp,
       inventory: items,
+      stationFuel,
+      stationGas,
     });
   }
 
@@ -529,7 +533,7 @@ export class EconomyService {
     const amount = Math.min(data.amount, tankSpace);
 
     const playerShips = await getPlayerShips(auth.userId);
-    const isFreeRefuel = isHomeBase && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
+    const isFreeRefuel = hasBase && !isStation && playerShips.length <= FREE_REFUEL_MAX_SHIPS;
 
     // Check station fuel stock — cap fill amount to what the station has available
     let availableAmount = amount;
