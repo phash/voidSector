@@ -19,6 +19,7 @@ import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
 import { VoidLifecycleService } from './voidLifecycleService.js';
 import { tickWreckSpawns } from './wreckSpawnEngine.js';
+import { ConquestEngine } from './conquestEngine.js';
 
 const AGGRESSION_MUL = parseFloat(process.env.ALIEN_AGGRESSION_MUL ?? '1');
 const EXPANSION_RATE_MUL = parseFloat(process.env.ALIEN_EXPANSION_RATE_MUL ?? '1');
@@ -30,6 +31,7 @@ export class StrategicTickService {
   private tickCount = 0;
   private factionConfig: FactionConfigService;
   private voidLifecycle: VoidLifecycleService;
+  private conquestEngine = new ConquestEngine();
 
   constructor(private redis: Redis) {
     this.factionConfig = new FactionConfigService();
@@ -79,10 +81,15 @@ export class StrategicTickService {
     // 2. Alien expansion into unclaimed space
     await this.processAlienExpansion(allControls);
 
-    // 3. Void civilization lifecycle
+    // 3. Player station conquest
+    await this.conquestEngine.tick().catch((err) =>
+      logger.error({ err }, 'ConquestEngine tick error'),
+    );
+
+    // 4. Void civilization lifecycle
     await this.voidLifecycle.tick();
 
-    // 4. Cleanup expired quest items (prisoner, data_slate)
+    // 5. Cleanup expired quest items (prisoner, data_slate)
     await this.cleanupExpiredQuestItems();
 
     this.tickCount++;
