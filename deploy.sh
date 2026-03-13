@@ -78,7 +78,8 @@ for i in {1..15}; do
   sleep 2
 done
 
-ADMIN_TOKEN=$(grep -E 'ADMIN_TOKEN' docker-compose.yml | head -1 | sed 's/.*ADMIN_TOKEN: *//')
+ADMIN_TOKEN=$(awk -F': ' '/ADMIN_TOKEN/{gsub(/[[:space:]]/, "", $2); print $2}' docker-compose.yml | head -1)
+ADMIN_BASE="${URL:-http://localhost:3201}"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
@@ -91,8 +92,9 @@ else
 fi
 printf   "║  Admin-Token:  %-43s║\n" "$ADMIN_TOKEN"
 echo "╠══════════════════════════════════════════════════════════╣"
-echo "║  Admin-API:  curl -H \"Authorization: Bearer \$TOKEN\" \\   ║"
-echo "║              http://localhost:2567/admin/api/stories     ║"
+echo "║  Admin-API:                                              ║"
+printf   "║    curl -H \"Authorization: Bearer %s\" \\\n" "$ADMIN_TOKEN"
+printf   "║    %s/admin/api/stories\n" "$ADMIN_BASE"
 echo "╚══════════════════════════════════════════════════════════╝"
 
 if [[ -z "$URL" ]]; then
