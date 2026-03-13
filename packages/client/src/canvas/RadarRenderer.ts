@@ -561,11 +561,13 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         const wkey = `${sx}:${sy}`;
         const wreck = state.sectorWrecks[wkey];
         if (wreck) {
-          ctx.font = `${Math.floor(CELL_H * 0.55)}px monospace`;
+          ctx.save();
+          ctx.font = `${Math.floor(CELL_H * 0.55)}px 'Share Tech Mono', 'Courier New', monospace`;
           ctx.fillStyle = 'rgba(255, 176, 0, 0.55)';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('⊠', cellX, cellY);
+          ctx.restore();
         }
       }
 
