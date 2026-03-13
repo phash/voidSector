@@ -923,7 +923,7 @@ export function QuestsScreen() {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: '#FFB000' }}>{q.title}</span>
-                      {armed && questTypeBadge(q.templateId, '#00FF88')}
+                      {questTypeBadge(q.templateId, armed ? '#00FF88' : '#FFB000')}
                     </div>
                     <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                       {q.description}
@@ -934,7 +934,7 @@ export function QuestsScreen() {
                         <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginBottom: '3px' }}>
                           ZIELE
                         </div>
-                        {q.objectives?.map((obj: any, i: number) => (
+                        {q.objectives?.map((obj, i) => (
                           <div key={i} style={{ color: 'rgba(0,255,136,0.7)', fontSize: '0.5rem', paddingLeft: '6px' }}>
                             › {obj.description}
                             {obj.amount != null && ` (${obj.amount})`}
