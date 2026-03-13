@@ -25,6 +25,59 @@ const QUEST_TYPE_LABELS: Record<string, string> = {
   war_support: 'WAR',
 };
 
+function getQuestTypeLabel(templateId: string): string {
+  const id = templateId ?? '';
+  // Check for known quest-type keywords anywhere in templateId
+  // (bounty templateIds start with faction: "pirates_bounty_chase")
+  if (id.includes('bounty')) return 'BOUNTY';
+  if (id.includes('diplomacy')) return 'DIPLOMACY';
+  if (id.includes('war_support')) return 'WAR';
+  // Fall back to first segment lookup
+  const first = id.split('_')[0];
+  return QUEST_TYPE_LABELS[first] || first.toUpperCase();
+}
+
+function questTypeBadge(templateId: string, color: string) {
+  const label = getQuestTypeLabel(templateId);
+  if (!label) return null;
+  return (
+    <span
+      style={{
+        color: `${color}80`,
+        fontSize: '0.5rem',
+        border: `1px solid ${color}40`,
+        padding: '0 3px',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function collapsedObjectiveSummary(
+  objectives: Array<{ type: string; description: string; resource?: string; amount?: number; progress?: number; fulfilled: boolean; targetX?: number; targetY?: number; currentHint?: string }>,
+): { text: string; done: boolean } | null {
+  const allDone = objectives.every((o) => o.fulfilled);
+  if (allDone) return { text: 'Alle Ziele erfüllt — Abgabe an Station', done: true };
+
+  const next = objectives.find((o) => !o.fulfilled);
+  if (!next) return null;
+
+  const parts: string[] = [];
+  if ((next.type === 'fetch' || next.type === 'delivery') && next.resource && next.amount != null) {
+    parts.push(`${next.resource.toUpperCase()} [${next.progress ?? 0}/${next.amount}]`);
+  } else if (next.type === 'bounty_trail' && next.currentHint) {
+    parts.push(next.currentHint);
+  } else {
+    parts.push(next.description);
+  }
+  if (next.targetX != null && next.targetY != null) {
+    parts.push(`→ (${innerCoord(next.targetX)}, ${innerCoord(next.targetY)})`);
+  }
+  return { text: `› ${parts.join(' | ')}`, done: false };
+}
+
 function JournalTab() {
   const activeQuests = useStore((s) => s.activeQuests);
   const trackedQuests = useStore((s) => s.trackedQuests);
@@ -642,10 +695,29 @@ export function QuestsScreen() {
                           <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '0.5rem' }}> ◎</span>
                         )}
                       </span>
-                      <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.5rem' }}>
-                        {isExpanded ? '▲' : '▼'}
+                      <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {questTypeBadge(q.templateId, allDone ? '#00FF88' : '#FFB000')}
+                        <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.5rem' }}>
+                          {isExpanded ? '▲' : '▼'}
+                        </span>
                       </span>
                     </div>
+
+                    {!isExpanded && (() => {
+                      const summary = collapsedObjectiveSummary(q.objectives);
+                      if (!summary) return null;
+                      return (
+                        <div
+                          style={{
+                            padding: '0 8px 5px 20px',
+                            color: summary.done ? 'rgba(0,255,136,0.4)' : 'rgba(255,176,0,0.4)',
+                            fontSize: '0.5rem',
+                          }}
+                        >
+                          {summary.text}
+                        </div>
+                      );
+                    })()}
 
                     {/* Expanded journal entry */}
                     {isExpanded && (
