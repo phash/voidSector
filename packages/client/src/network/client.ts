@@ -1637,8 +1637,14 @@ class GameNetwork {
 
     room.onMessage('quadrantInfo', (data: { qx: number; qy: number; name?: string | null }) => {
       const store = useStore.getState();
+      const prev = store.currentQuadrant;
       store.setCurrentQuadrant(data);
       store.addToStatSet('quadrantsVisited', `${data.qx}:${data.qy}`);
+      // Notify player when crossing into a new quadrant
+      if (prev && (prev.qx !== data.qx || prev.qy !== data.qy)) {
+        const label = data.name ? `${data.name} [${data.qx}:${data.qy}]` : `[${data.qx}:${data.qy}]`;
+        store.addLogEntry(`[NAV] Quadrant gewechselt: ${label}`);
+      }
     });
 
     room.onMessage('firstContact', (data: FirstContactEvent) => {

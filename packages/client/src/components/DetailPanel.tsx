@@ -992,7 +992,7 @@ export function DetailPanel() {
                   freeSlot,
                   selectedSector.x,
                   selectedSector.y,
-                  sector?.type || '',
+                  `${(sector?.type || 'sector').toUpperCase()} (${selectedSector.x},${selectedSector.y})`,
                 );
               }
             }}
