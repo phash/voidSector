@@ -265,8 +265,10 @@ function drawNode(
 
   // Apply glow for researched nodes
   if (style.glow === true) {
+    // Shield ("glow") nodes get a stronger frame glow
+    const isGlowNode = node.id.includes('schild');
     ctx.shadowColor = branchColor;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = isGlowNode ? 24 : 12;
   }
 
   // Draw shape based on node type
@@ -317,6 +319,22 @@ function drawNode(
     }
   }
 
+  // Module/spec icons: draw icon on left, shift text right
+  const iconCat = (node.type === 'module' || node.type === 'specialization')
+    ? getIconCategory(node.id)
+    : null;
+
+  if (iconCat) {
+    // Icon sits in the left 22 px of the node; turn off shadow so it doesn't bleed into the icon
+    ctx.shadowBlur = 0;
+    drawModuleIcon(ctx, iconCat, x - 32, y, nodeColor);
+    // Restore glow for text
+    if (style.glow === true) {
+      ctx.shadowColor = branchColor;
+      ctx.shadowBlur = node.id.includes('schild') ? 24 : 12;
+    }
+  }
+
   // Node label
   ctx.font = node.type === 'leaf'
     ? '9px "Courier New", monospace'
@@ -327,22 +345,25 @@ function drawNode(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const label = node.name.length > 14 ? node.name.substring(0, 13) + '\u2026' : node.name;
+  const maxChars = iconCat ? 9 : 14;
+  const label = node.name.length > maxChars ? node.name.substring(0, maxChars - 1) + '\u2026' : node.name;
+  // Shift text right when icon is present
+  const labelX = iconCat ? x + 10 : x;
 
   if (node.type === 'leaf') {
     ctx.fillText(label, x, y);
   } else if (node.type === 'specialization') {
-    ctx.fillText(label, x, y + 4);
+    ctx.fillText(label, labelX, y + 4);
   } else {
-    ctx.fillText(label, x, y);
+    ctx.fillText(label, labelX, y);
   }
 
   // Strikethrough for exclusive_blocked
   if (style.strikethrough) {
     const textW = ctx.measureText(label).width;
     ctx.beginPath();
-    ctx.moveTo(x - textW / 2 - 2, y + (node.type === 'specialization' ? 4 : 0));
-    ctx.lineTo(x + textW / 2 + 2, y + (node.type === 'specialization' ? 4 : 0));
+    ctx.moveTo(labelX - textW / 2 - 2, y + (node.type === 'specialization' ? 4 : 0));
+    ctx.lineTo(labelX + textW / 2 + 2, y + (node.type === 'specialization' ? 4 : 0));
     ctx.strokeStyle = '#884444';
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -364,6 +385,178 @@ function drawNode(
         ctx.stroke();
       }
     }
+  }
+
+  ctx.restore();
+}
+
+// --- Module icon category resolver ---
+
+function getIconCategory(nodeId: string): string | null {
+  if (nodeId.includes('mining'))                       return 'mining';
+  if (nodeId.includes('scanner') || nodeId.includes('sensor')) return 'scanner';
+  if (nodeId.includes('antrieb') || nodeId.includes('treibstoff') || nodeId.includes('nav')) return 'drive';
+  if (nodeId.includes('schild'))                       return 'glow';
+  if (nodeId.includes('defense') || nodeId.includes('cargo') || nodeId.includes('labor')) return 'defense';
+  if (nodeId.includes('laser') || nodeId.includes('missile') || nodeId.includes('railgun')) return 'weapon';
+  return null;
+}
+
+// Draws a small ~12-px icon at (cx, cy).
+function drawModuleIcon(
+  ctx: CanvasRenderingContext2D,
+  category: string,
+  cx: number,
+  cy: number,
+  color: string,
+) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 1.2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  switch (category) {
+
+    case 'mining': {
+      // Laser beam (upper-left → lower-right) hitting an asteroid dot, sparks at impact
+      const lx1 = cx - 9, ly1 = cy - 6, lx2 = cx + 2, ly2 = cy + 3;
+      ctx.beginPath();
+      ctx.moveTo(lx1, ly1);
+      ctx.lineTo(lx2, ly2);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Impact dot (molten rock)
+      ctx.beginPath();
+      ctx.arc(lx2 + 1, ly2 + 1, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      // Melt sparks
+      ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(lx2 + 2, ly2 + 2); ctx.lineTo(cx + 8, cy + 1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(lx2 + 2, ly2 + 2); ctx.lineTo(cx + 6, cy + 7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(lx2 + 2, ly2 + 2); ctx.lineTo(cx + 9, cy + 5); ctx.stroke();
+      break;
+    }
+
+    case 'scanner': {
+      // Satellite dish: parabolic bowl opening upward, mast, signal rays from focal point
+      // Bowl arc (opens upward)
+      ctx.beginPath();
+      ctx.arc(cx, cy + 4, 8, Math.PI * 1.1, Math.PI * 1.9);
+      ctx.stroke();
+      // Mast (vertical line from bowl center down)
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + 4);
+      ctx.lineTo(cx, cy + 9);
+      ctx.stroke();
+      // Focal point above bowl
+      const fx = cx, fy = cy - 4;
+      ctx.beginPath();
+      ctx.arc(fx, fy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      // Signal rays (two arcs widening outward from focal point)
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.arc(fx, fy, 5, -Math.PI * 0.55, -Math.PI * 0.1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(fx, fy, 8, -Math.PI * 0.55, -Math.PI * 0.1);
+      ctx.stroke();
+      break;
+    }
+
+    case 'drive': {
+      // Rocket thruster pointing RIGHT: trapezoidal body, exhaust cone left, thrust arrow right
+      // Body (trapezoid, narrow right)
+      ctx.beginPath();
+      ctx.moveTo(cx - 2, cy - 5);
+      ctx.lineTo(cx + 6, cy - 3);
+      ctx.lineTo(cx + 6, cy + 3);
+      ctx.lineTo(cx - 2, cy + 5);
+      ctx.closePath();
+      ctx.stroke();
+      // Exhaust cone (V-shape on the left)
+      ctx.beginPath();
+      ctx.moveTo(cx - 2, cy - 4);
+      ctx.lineTo(cx - 9, cy);
+      ctx.lineTo(cx - 2, cy + 4);
+      ctx.stroke();
+      // Thrust direction arrow (right side)
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(cx + 6, cy);
+      ctx.lineTo(cx + 10, cy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + 8, cy - 2);
+      ctx.lineTo(cx + 10, cy);
+      ctx.lineTo(cx + 8, cy + 2);
+      ctx.stroke();
+      break;
+    }
+
+    case 'glow': {
+      // Shield hexagon outline — the node border glow is handled in drawNode
+      ctx.beginPath();
+      ctx.moveTo(cx,       cy - 8);
+      ctx.lineTo(cx + 7,   cy - 4);
+      ctx.lineTo(cx + 7,   cy + 4);
+      ctx.lineTo(cx,       cy + 9);
+      ctx.lineTo(cx - 7,   cy + 4);
+      ctx.lineTo(cx - 7,   cy - 4);
+      ctx.closePath();
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+      // Inner vertical divider (classic shield detail)
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 5);
+      ctx.lineTo(cx, cy + 5);
+      ctx.stroke();
+      break;
+    }
+
+    case 'defense': {
+      // Spaceship armor: two offset angular plates
+      // Back plate (larger, slightly offset)
+      ctx.beginPath();
+      ctx.moveTo(cx - 5, cy - 7);
+      ctx.lineTo(cx + 4, cy - 5);
+      ctx.lineTo(cx + 5, cy + 2);
+      ctx.lineTo(cx - 4, cy + 5);
+      ctx.closePath();
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      // Front plate (smaller, offset right-down)
+      ctx.beginPath();
+      ctx.moveTo(cx - 1, cy - 4);
+      ctx.lineTo(cx + 7, cy - 2);
+      ctx.lineTo(cx + 7, cy + 5);
+      ctx.lineTo(cx,     cy + 7);
+      ctx.closePath();
+      ctx.stroke();
+      break;
+    }
+
+    case 'weapon': {
+      // Targeting crosshair
+      const r = 6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(cx - 10, cy); ctx.lineTo(cx - r - 1, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + r + 1, cy); ctx.lineTo(cx + 10, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy - r - 1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy + r + 1); ctx.lineTo(cx, cy + 10); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+
+    default:
+      break;
   }
 
   ctx.restore();
