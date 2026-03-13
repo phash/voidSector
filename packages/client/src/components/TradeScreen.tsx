@@ -9,6 +9,7 @@ import {
   NPC_PRICES,
   NPC_BUY_SPREAD,
   NPC_SELL_SPREAD,
+  MODULES,
 } from '@void-sector/shared';
 
 const NPC_COLUMN_MAX_HEIGHT = '220px';
@@ -53,7 +54,8 @@ export function TradeScreen() {
   const tradeMessage = useStore((s) => s.tradeMessage);
   const setTradeMessage = useStore((s) => s.setTradeMessage);
   const [amount, setAmount] = useState(1);
-  const [tab, setTab] = useState<'market' | 'slates' | 'routes' | 'kontor'>('market');
+  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
+  const [npcSubTab, setNpcSubTab] = useState<'resources' | 'modules'>('resources');
 
   const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
   const tier = tradingPost?.tier ?? 0;
@@ -138,7 +140,7 @@ export function TradeScreen() {
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>
-          NPC {t('tabs.trade')}
+          {isStation ? 'KONTOR' : `NPC ${t('tabs.trade')}`}
         </button>
         {!isStation && tier >= 2 && (
           <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>
@@ -228,6 +230,14 @@ export function TradeScreen() {
               <div style={{ fontSize: '0.6rem', opacity: 0.45, marginBottom: 6, letterSpacing: '0.05em' }}>
                 * Preise dynamisch (abhängig vom Lagerbestand)
               </div>
+              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                <button style={tabStyle(npcSubTab === 'resources')} onClick={() => setNpcSubTab('resources')}>
+                  RESSOURCEN
+                </button>
+                <button style={tabStyle(npcSubTab === 'modules')} onClick={() => setNpcSubTab('modules')}>
+                  MODULE
+                </button>
+              </div>
               <div
                 style={{
                   display: 'grid',
@@ -248,7 +258,9 @@ export function TradeScreen() {
                     STATION LISTING
                   </div>
                   <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
-                    {npcStationData.inventory.map((item) => {
+                    {npcStationData.inventory.filter((item) =>
+                      npcSubTab === 'modules' ? item.itemType in MODULES : !(item.itemType in MODULES)
+                    ).map((item) => {
                       const filled =
                         item.maxStock > 0 ? Math.round((item.stock / item.maxStock) * 10) : 0;
                       const empty = 10 - filled;
@@ -323,7 +335,9 @@ export function TradeScreen() {
                     ON BOARD ({cargoTotal}/{cargoCap})
                   </div>
                   <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
-                    {npcStationData.inventory.map((item) => {
+                    {npcStationData.inventory.filter((item) =>
+                      npcSubTab === 'modules' ? item.itemType in MODULES : !(item.itemType in MODULES)
+                    ).map((item) => {
                       // itemType is always a resource key for NPC station inventory items
                       const playerAmount =
                         cargo[item.itemType as 'ore' | 'gas' | 'crystal'] ?? 0;

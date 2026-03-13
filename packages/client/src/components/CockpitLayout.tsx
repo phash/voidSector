@@ -20,7 +20,7 @@ import { AcepDetailPanel } from './AcepDetailPanel';
 import { WreckPanel } from './WreckPanel';
 import { SectorInfo, StatusBar } from './HUD';
 import { NavControls } from './NavControls';
-import { ShipBlock, CargoBlock } from './ShipBlock';
+import { ShipBlock, CargoBlock, StatsBlock } from './ShipBlock';
 import { CombatStatusPanel } from './CombatStatusPanel';
 import { SlateControls } from './SlateControls';
 import { CommsScreen } from './CommsScreen';
@@ -195,6 +195,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
           <div className="nav-zone-b">
             <ShipBlock />
             <CargoBlock />
+            <StatsBlock />
             <CombatStatusPanel />
             <SlateControls />
           </div>

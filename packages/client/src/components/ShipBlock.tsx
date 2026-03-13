@@ -104,6 +104,24 @@ export function ShipBlock() {
   );
 }
 
+export function StatsBlock() {
+  const ship = useStore((s) => s.ship);
+  if (!ship) return null;
+  const { stats } = ship;
+  return (
+    <div className="nav-block">
+      <div className="nav-block-header">── COCKPIT ──</div>
+      <div style={dim}>FUEL MAX: <span style={{ color: 'var(--color-primary)' }}>{stats.fuelMax.toLocaleString()}</span></div>
+      <div style={dim}>CARGO MAX: <span style={{ color: 'var(--color-primary)' }}>{stats.cargoCap}</span></div>
+      <div style={dim}>JUMP RANGE: <span style={{ color: 'var(--color-primary)' }}>{stats.jumpRange}</span></div>
+      {(stats as any).hyperdriveRange > 0 && (
+        <div style={dim}>HYPER: <span style={{ color: '#4488FF' }}>{(stats as any).hyperdriveRange} CHG</span></div>
+      )}
+      <div style={dim}>SCANNER: <span style={{ color: 'var(--color-primary)' }}>LV.{stats.scannerLevel}</span></div>
+    </div>
+  );
+}
+
 export function CargoBlock() {
   const cargo            = useStore((s) => s.cargo);
   const ship             = useStore((s) => s.ship);
