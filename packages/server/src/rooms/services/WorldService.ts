@@ -1670,4 +1670,12 @@ export class WorldService {
       logger.error({ err }, 'checkFirstContact error');
     }
   }
+
+  /** Send existing construction site at the current sector to a joining client. */
+  async sendConstructionSiteOnJoin(client: Client, sectorX: number, sectorY: number): Promise<void> {
+    const site = await getConstructionSite(sectorX, sectorY);
+    if (site) {
+      client.send('constructionSiteCreated', { site: toConstructionSiteState(site) });
+    }
+  }
 }

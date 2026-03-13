@@ -1188,6 +1188,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Send sector data to client
       client.send('sectorData', sectorData);
 
+      // Send existing construction site at this sector (if any)
+      await this.world.sendConstructionSiteOnJoin(client, sectorX, sectorY);
+
       // Send quadrant info (name + coords)
       const quadrantData = await getQuadrant(this.quadrantX, this.quadrantY);
       client.send('quadrantInfo', {
