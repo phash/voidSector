@@ -1427,7 +1427,7 @@ export class SectorRoom extends Room<SectorRoomState> {
             const isAlien = alienFactionIds.has(r.controlling_faction);
             const controlling_faction =
               isAlien && !contactedAlienIds.has(r.controlling_faction)
-                ? 'human'
+                ? 'humans'
                 : r.controlling_faction;
             return {
               qx: r.qx,
