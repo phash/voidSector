@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { useStore } from '../state/store';
 import { MODULES, calculateShipStats } from '@void-sector/shared';
 import type { ShipStats } from '@void-sector/shared';
+import { ModuleArtwork } from './ModuleArtwork';
 
 const TRAIT_INFO: Record<string, { label: string; desc: string }> = {
   veteran:           { label: 'VETERAN',  desc: 'Kampferprobt. Hohe KAMPF-Erfahrung.' },
@@ -124,6 +125,7 @@ export function AcepDetailPanel() {
 
   return (
     <div style={{ padding: 14, fontFamily: 'var(--font-mono)', fontSize: '0.9rem', overflow: 'auto', height: '100%' }}>
+      <ModuleArtwork category={def.category} tier={def.tier} />
       <div style={{ color: 'var(--color-primary)', fontSize: '1rem', marginBottom: 4 }}>{def.displayName ?? def.name}</div>
       <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: 12 }}>[{def.category.toUpperCase()}]</div>
 
