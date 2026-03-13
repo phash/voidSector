@@ -168,6 +168,47 @@ export function LocalScanResultOverlay() {
           </div>
         )}
 
+        {/* Salvageable Wreck */}
+        {result.wreckInfo && (
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ color: 'var(--color-dim)', marginBottom: '6px', letterSpacing: '0.1em' }}>
+              WRACK
+            </div>
+            <div style={{
+              padding: '6px 8px',
+              border: '1px solid rgba(255,176,0,0.3)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.7rem',
+            }}>
+              <span>
+                <span style={{ color: 'var(--color-primary)' }}>⊠ WRACK-{result.wreckInfo.tier}</span>
+                <span style={{ color: 'var(--color-dim)', marginLeft: 8 }}>
+                  [{result.wreckInfo.size.toUpperCase()}]
+                </span>
+              </span>
+              <button
+                onClick={() => {
+                  network.sendInvestigateWreck();
+                  setLocalScanResult(null);
+                }}
+                style={{
+                  border: '1px solid var(--color-primary)',
+                  background: 'none',
+                  color: 'var(--color-primary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.65rem',
+                  cursor: 'pointer',
+                  padding: '2px 8px',
+                }}
+              >
+                [UNTERSUCHEN]
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Hidden signatures */}
         {hiddenSignatures && (
           <div style={{

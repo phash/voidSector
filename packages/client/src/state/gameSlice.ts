@@ -342,6 +342,7 @@ export interface GameSlice {
     sectorType?: string;
     structures?: string[];
     universeTick?: number;
+    wreckInfo?: { wreckId: string; tier: number; size: string; status: string } | null;
   } | null;
 
   // Base
