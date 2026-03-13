@@ -371,6 +371,7 @@
   "settings.pilot": "PILOT",
   "settings.color": "COLOR",
   "settings.brightness": "BRIGHTNESS",
+  "settings.language": "LANGUAGE",
   "settings.compendium": "◈ COMPENDIUM",
   "settings.logout": "LOGOUT",
 

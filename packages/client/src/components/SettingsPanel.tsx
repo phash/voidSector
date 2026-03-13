@@ -13,8 +13,14 @@ const inlineInput: React.CSSProperties = {
   padding: '2px 4px',
 };
 
+const hdrStyle: React.CSSProperties = {
+  color: 'var(--color-dim)',
+  fontSize: '0.75rem',
+  marginBottom: 4,
+};
+
 export const SettingsPanel: React.FC = () => {
-  const { t } = useTranslation('ui');
+  const { t, i18n } = useTranslation('ui');
   const username = useStore((s) => s.username);
   const colorProfile = useStore((s) => s.colorProfile);
   const setColorProfile = useStore((s) => s.setColorProfile);
@@ -69,6 +75,36 @@ export const SettingsPanel: React.FC = () => {
           data-testid="brightness-slider"
         />
         <span>{brightness.toFixed(1)}</span>
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <div style={hdrStyle}>{t('settings.language')}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => i18n.changeLanguage('de')}
+            style={{
+              background: i18n.language === 'de' ? 'rgba(255,176,0,0.15)' : 'transparent',
+              color: i18n.language === 'de' ? 'var(--color-primary)' : '#666',
+              border: '1px solid #333',
+              padding: '4px 12px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+            }}
+          >DE</button>
+          <button
+            onClick={() => i18n.changeLanguage('en')}
+            style={{
+              background: i18n.language === 'en' ? 'rgba(255,176,0,0.15)' : 'transparent',
+              color: i18n.language === 'en' ? 'var(--color-primary)' : '#666',
+              border: '1px solid #333',
+              padding: '4px 12px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+            }}
+          >EN</button>
+        </div>
       </div>
 
       <div className="settings-row">

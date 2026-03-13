@@ -375,7 +375,7 @@ export function CargoScreen() {
                     ? ` Scan Q${(slate.sectorData?.[0] as any)?.quadrantX ?? '?'}:${(slate.sectorData?.[0] as any)?.quadrantY ?? '?'} (${slate.sectorData?.[0]?.x ?? '?'},${slate.sectorData?.[0]?.y ?? '?'})`
                     : slate.slateType === 'jumpgate'
                       ? ` Gate (${(slate.sectorData?.[0] as any)?.sectorX ?? '?'},${(slate.sectorData?.[0] as any)?.sectorY ?? '?'})`
-                      : ` ${slate.sectorData?.length ?? 0} Sektoren`}
+                      : ` ${t('slates.sektoren', { n: slate.sectorData?.length ?? 0 })}`}
               </span>
               <button
                 className="vs-btn"
