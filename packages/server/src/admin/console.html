@@ -952,6 +952,12 @@ expiresDays: 14"></textarea>
             </div>
           </div>
 
+          <!-- Faction filter -->
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--amber-dim);letter-spacing:.1em">ZIVILISATION:</span>
+            <div id="str-faction-filter" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+          </div>
+
           <!-- Stations list -->
           <div>
             <div class="section-title">STATIONEN (civ_stations)</div>
@@ -2935,6 +2941,9 @@ expiresDays: 14"></textarea>
   // ── STRUKTUREN ────────────────────────────────────────────────────
 
   var QUADRANT_SIZE = 500;
+  var strAllStations = [];
+  var strAllGates = [];
+  var strFactionFilter = null; // null = all
 
   // Recompute absolute coords whenever quadrant/sector inputs change
   ['str-qx','str-qy','str-sx','str-sy'].forEach(function(id) {
@@ -2953,11 +2962,44 @@ expiresDays: 14"></textarea>
 
   function loadStructures() {
     api('GET', '/structures/overview').then(function(data) {
-      renderStations(data.stations || []);
-      renderJumpgates(data.jumpgates || []);
+      strAllStations = data.stations || [];
+      strAllGates = data.jumpgates || [];
+      buildFactionFilter(strAllStations);
+      applyStrFilter();
     }).catch(function(err) {
       if (err.message !== 'Unauthorized') toast('Fehler beim Laden der Strukturen: ' + err.message, 'error');
     });
+  }
+
+  function buildFactionFilter(stations) {
+    var container = document.getElementById('str-faction-filter');
+    clearChildren(container);
+    var factions = ['all'].concat(
+      stations.map(function(s) { return s.faction; })
+        .filter(function(f, i, a) { return a.indexOf(f) === i; })
+        .sort()
+    );
+    factions.forEach(function(f) {
+      var btn = document.createElement('button');
+      btn.className = 'btn' + (f === 'all' && strFactionFilter === null ? ' active' : '') +
+                      (f !== 'all' && f === strFactionFilter ? ' active' : '');
+      btn.textContent = f === 'all' ? 'ALLE' : f.toUpperCase();
+      btn.style.cssText = 'font-size:9px;padding:2px 7px';
+      btn.addEventListener('click', function() {
+        strFactionFilter = f === 'all' ? null : f;
+        buildFactionFilter(strAllStations);
+        applyStrFilter();
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  function applyStrFilter() {
+    var filtered = strFactionFilter
+      ? strAllStations.filter(function(s) { return s.faction === strFactionFilter; })
+      : strAllStations;
+    renderStations(filtered);
+    renderJumpgates(strAllGates);
   }
 
   function renderStations(stations) {
