@@ -57,7 +57,6 @@ vi.mock('@void-sector/shared', () => ({
     scanner_mk3: { id: 'scanner_mk3', name: 'Scanner MK3', researchCost: { credits: 200 } },
     drive_mk2: { id: 'drive_mk2', name: 'Drive MK2', researchCost: { credits: 100 } },
   },
-  HULLS: {},
   calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
   validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
   isModuleUnlocked: vi.fn().mockReturnValue(true),
@@ -152,7 +151,6 @@ function makeShipCtx(overrides: Record<string, unknown> = {}) {
     _py: vi.fn().mockReturnValue(0),
     _pst: vi.fn().mockReturnValue('station'),
     clientShips: new Map(),
-    clientHullTypes: new Map(),
     ...overrides,
   } as any;
 }

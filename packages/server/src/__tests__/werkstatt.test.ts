@@ -52,7 +52,6 @@ vi.mock('@void-sector/shared', () => ({
       cost: { credits: 0 },
     },
   },
-  HULLS: {},
   calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
   validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
   isModuleUnlocked: vi.fn().mockReturnValue(true),
@@ -108,7 +107,6 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
     _py: vi.fn().mockReturnValue(0),
     _pst: vi.fn().mockReturnValue('station'),
     clientShips: new Map(),
-    clientHullTypes: new Map(),
     ...overrides,
   } as any;
 }
