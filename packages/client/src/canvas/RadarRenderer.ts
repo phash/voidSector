@@ -24,6 +24,9 @@ import { drawJumpGateLines, drawJumpGateIcons } from './jumpGateOverlay';
 
 export const BURST_DURATION = 1500;
 
+/** Default ship radar icon pattern (3×3 cross shape). */
+const DEFAULT_SHIP_RADAR_PATTERN = [[0,1,0],[1,1,1],[0,1,0]];
+
 const BOOKMARK_COLORS: Record<number, string> = {
   0: '#33FF33', // HOME — green
   1: '#FF6644', // Slot 1 — red-orange
@@ -311,7 +314,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const labelX = labelLeftAlign ? cellX - CELL_W / 2 + 3 : cellX;
 
       if (isPlayer) {
-        const defaultPattern = [[0,1,0],[1,1,1],[0,1,0]];
+        const defaultPattern = DEFAULT_SHIP_RADAR_PATTERN;
         // ACEP/3: use evolved icon when XP >= 20 (Tier 2+)
         const ownPattern =
           state.acepXp && state.acepXp.total >= 20
@@ -598,7 +601,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
   // Draw other players — zoom >= 2
   if (state.zoomLevel >= 2) {
-    const otherPattern = [[0,1,0],[1,1,1],[0,1,0]];
+    const otherPattern = DEFAULT_SHIP_RADAR_PATTERN;
     const otherPixelSize = 1 + state.zoomLevel;
     const otherColor = '#FFDD22';
     const playerList = Object.values(state.players);

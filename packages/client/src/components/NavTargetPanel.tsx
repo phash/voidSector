@@ -238,7 +238,7 @@ export function NavTargetPanel() {
             <div style={costPreviewStyle}>
               <div style={{ marginBottom: 2 }}>Distanz: {distance} Sektoren</div>
               <div>
-                AP: ~{estimatedAP} | <span style={{ color: (fuel?.current ?? 0) >= estimatedFuel ? '#4ade80' : '#f87171' }}>Fuel: ~{estimatedFuel}</span> | Zeit: ~{estimatedTimeSec}s
+                AP: ~{estimatedAP} | <span style={{ color: estimatedFuel > 0 ? ((fuel?.current ?? 0) >= estimatedFuel ? '#4ade80' : '#f87171') : undefined }}>Fuel: ~{estimatedFuel}</span> | Zeit: ~{estimatedTimeSec}s
               </div>
               {!isTargetDiscovered && (
                 <div style={{ color: '#FF3333', marginTop: 4 }}>Ziel nicht entdeckt!</div>
