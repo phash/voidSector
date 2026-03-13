@@ -12,7 +12,7 @@ export function useCanvas(draw: DrawFn) {
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.floor(rect.width * dpr);
     canvas.height = Math.floor(rect.height * dpr);
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx?.scale(dpr, dpr);
   }, []);
 
@@ -33,7 +33,7 @@ export function useCanvas(draw: DrawFn) {
     const render = () => {
       try {
         // Get fresh context on every frame to avoid stale context errors
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return;
         draw(ctx);
       } catch (e) {
