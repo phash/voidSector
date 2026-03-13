@@ -71,6 +71,7 @@ import {
   getMiningStoryIndex,
 } from '../db/queries.js';
 import { getQuadrant, addPlayerKnownQuadrant } from '../db/quadrantQueries.js';
+import { civQueries } from '../db/civQueries.js';
 import { query } from '../db/client.js';
 import {
   RECONNECTION_TIMEOUT_S,
@@ -83,6 +84,7 @@ import {
   getAcepLevel,
   FUEL_MIN_TANK,
   BASE_FUEL_CAPACITY,
+  CONQUEST_POOL_MAX,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -1010,6 +1012,30 @@ export class SectorRoom extends Room<SectorRoomState> {
           logger.error({ err }, 'tradeCancel error');
           captureError(err as Error, 'cancelTrade').catch(() => {});
         });
+    });
+
+    // ── Conquest Pool Deposit ────────────────────────────────────────
+    this.onMessage('STATION_DEPOSIT_CONQUEST', async (client, msg: { stationId: number; amount: number }) => {
+      const amount = Math.max(0, Math.floor(Number(msg.amount) || 0));
+      if (amount <= 0) return;
+
+      const station = await civQueries.getStationById(msg.stationId);
+      if (!station || station.mode === 'factory') {
+        client.send('actionError', { code: 'CONQUEST_NOT_ACTIVE', message: 'Station nicht im Conquest-Modus.' });
+        return;
+      }
+
+      const remaining = CONQUEST_POOL_MAX - station.conquest_pool;
+      const actual = Math.min(amount, remaining);
+      if (actual <= 0) {
+        client.send('actionError', { code: 'CONQUEST_POOL_FULL', message: 'Conquest-Pool bereits voll.' });
+        return;
+      }
+
+      const newPool = await civQueries.depositConquestPool(msg.stationId, actual, CONQUEST_POOL_MAX);
+      client.send('CONQUEST_POOL_UPDATED', { stationId: msg.stationId, newPool, newMode: station.mode });
+      const auth = client.auth as AuthPayload;
+      logger.info({ playerId: auth.userId, stationId: msg.stationId, deposited: actual, newPool }, 'conquest pool deposit');
     });
 
     // ── Trade Route Processing Interval ─────────────────────────────

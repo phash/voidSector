@@ -13,6 +13,8 @@ import {
   STRUCTURE_COSTS,
   STRUCTURE_AP_COSTS,
   JUMPGATE_BUILD_COST,
+  CONQUEST_POOL_MAX,
+  CONQUEST_RATE,
 } from '@void-sector/shared';
 import type { ChatChannel, ConstructionSiteState, DataSlate } from '@void-sector/shared';
 import { network } from '../network/client';
@@ -296,6 +298,7 @@ export function DetailPanel() {
   const activeProgram = useStore((s) => s.activeProgram);
   const selectedSlateId = useStore((s) => s.selectedSlateId);
   const mySlates = useStore((s) => s.mySlates);
+  const quadrantControls = useStore((s) => s.quadrantControls);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
 
@@ -503,6 +506,36 @@ export function DetailPanel() {
             FACTION: {(sector as any).faction ?? 'INDEPENDENT'}
           </div>
         )}
+        {sector.type === 'station' && (() => {
+          const stationFaction = (sector as any).faction as string | undefined;
+          if (!stationFaction) return null;
+          const sx = selectedSector?.x ?? 0;
+          const sy = selectedSector?.y ?? 0;
+          const qx = Math.floor((sx + 250) / 500);
+          const qy = Math.floor((sy + 250) / 500);
+          const qc = quadrantControls?.find((q) => q.qx === qx && q.qy === qy);
+          const share = qc?.faction_shares?.[stationFaction];
+          if (share === undefined || share >= 100) {
+            return (
+              <div style={{ marginTop: 4, marginBottom: 8, color: '#00FF88', fontSize: '0.7rem', letterSpacing: '0.1em' }}>
+                ✓ FABRIK-MODUS
+              </div>
+            );
+          }
+          return (
+            <div style={{ marginTop: 8, marginBottom: 8, borderTop: '1px solid #FF880044', paddingTop: 8 }}>
+              <div style={{ color: '#FF8800', fontSize: '0.7rem', letterSpacing: '0.12em', marginBottom: 6 }}>
+                ▶ CONQUEST MODE
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: 2 }}>
+                FORTSCHRITT: {Math.floor(share)} / 100
+              </div>
+              <div style={{ background: '#111', height: 6, marginBottom: 8 }}>
+                <div style={{ background: '#FF8800', height: '100%', width: `${Math.min(100, share)}%` }} />
+              </div>
+            </div>
+          );
+        })()}
         {isPlayerHere && fuel && fuel.current < fuel.max && isStation && (
           <RefuelPanel fuel={fuel} isFreeRefuel={isFreeRefuel} />
         )}

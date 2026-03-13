@@ -33,7 +33,7 @@ export interface QuadrantMapState {
 // ─── Expansion Warfare Overlay Helpers ───────────────────────────────────────
 
 const FACTION_COLORS: Record<string, string> = {
-  human: 'rgba(64, 128, 255, 0.30)',
+  humans: 'rgba(64, 128, 255, 0.30)',
   kthari: 'rgba(255, 68, 68, 0.30)',
   silent_swarm: 'rgba(255, 136, 68, 0.30)',
   archivists: 'rgba(136, 255, 204, 0.30)',
@@ -43,6 +43,20 @@ const FACTION_COLORS: Record<string, string> = {
   tourist_guild: 'rgba(255, 255, 68, 0.30)',
   voids: 'rgba(5,5,8,0)', // handled separately
 };
+
+export function getMixedFactionColors(
+  shares: Record<string, number>,
+): { color: string; fraction: number }[] {
+  const total = Object.values(shares).reduce((s, v) => s + v, 0);
+  if (total <= 0) return [];
+  return Object.entries(shares)
+    .filter(([, v]) => v / total >= 0.05)
+    .map(([faction, v]) => ({
+      color: FACTION_COLORS[faction] ?? 'rgba(128,128,128,0.3)',
+      fraction: v / total,
+    }))
+    .sort((a, b) => b.fraction - a.fraction);
+}
 
 function getOverlayColor(qx: number, qy: number, controls: QuadrantControlState[]): string | null {
   const ctrl = controls.find((c) => c.qx === qx && c.qy === qy);
@@ -146,14 +160,24 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
       }
 
-      // Expansion warfare: controlling faction color overlay
+      // Expansion warfare: controlling faction color overlay (mixed shares)
       const controls = state.quadrantControls;
       const ctrl = controls?.find((c) => c.qx === qx && c.qy === qy) ?? null;
       if (ctrl) {
-        const overlayColor = getOverlayColor(qx, qy, controls!);
-        if (overlayColor) {
-          ctx.fillStyle = overlayColor;
+        const mixedColors = getMixedFactionColors(
+          ctrl.faction_shares ?? { [ctrl.controlling_faction]: 100 },
+        );
+        if (mixedColors.length === 1) {
+          ctx.fillStyle = mixedColors[0].color;
           ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
+        } else if (mixedColors.length > 1) {
+          let offsetX = cellX - CELL_W / 2;
+          for (const { color, fraction } of mixedColors) {
+            const segW = CELL_W * fraction;
+            ctx.fillStyle = color;
+            ctx.fillRect(offsetX, cellY - CELL_H / 2, segW, CELL_H);
+            offsetX += segW;
+          }
         }
       }
 

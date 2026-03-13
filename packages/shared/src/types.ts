@@ -1477,9 +1477,25 @@ export interface CivStation {
   has_shipyard: boolean;
   has_warehouse: boolean;
   has_kontor: boolean;
+  mode: 'conquest' | 'factory' | 'battle';
+  conquest_pool: number;
+  level: number;
 }
 
 export interface WarTickerEvent {
   message: string;
   ts: number; // unix timestamp ms
+}
+
+// Conquest Messages: Client -> Server
+export interface StationDepositConquestMessage {
+  stationId: number;
+  amount: number;
+}
+
+// Conquest Messages: Server -> Client
+export interface ConquestPoolUpdatedMessage {
+  stationId: number;
+  newPool: number;
+  newMode: string;
 }

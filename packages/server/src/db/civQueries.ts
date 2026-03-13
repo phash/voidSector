@@ -6,11 +6,15 @@ export const civQueries = {
     const res = await query<{
       id: number; sector_x: number; sector_y: number; faction: string;
       has_shipyard: boolean; has_warehouse: boolean; has_kontor: boolean;
+      mode: string; conquest_pool: number; level: number;
     }>('SELECT * FROM civ_stations ORDER BY id');
     return res.rows.map((r) => ({
       id: r.id, sector_x: r.sector_x, sector_y: r.sector_y,
       faction: r.faction, has_shipyard: r.has_shipyard,
       has_warehouse: r.has_warehouse, has_kontor: r.has_kontor,
+      mode: (r.mode ?? 'factory') as CivStation['mode'],
+      conquest_pool: r.conquest_pool ?? 0,
+      level: r.level ?? 1,
     }));
   },
 
@@ -18,11 +22,15 @@ export const civQueries = {
     const res = await query<{
       id: number; sector_x: number; sector_y: number; faction: string;
       has_shipyard: boolean; has_warehouse: boolean; has_kontor: boolean;
+      mode: string; conquest_pool: number; level: number;
     }>('SELECT * FROM civ_stations WHERE faction = $1', [faction]);
     return res.rows.map((r) => ({
       id: r.id, sector_x: r.sector_x, sector_y: r.sector_y,
       faction: r.faction, has_shipyard: r.has_shipyard,
       has_warehouse: r.has_warehouse, has_kontor: r.has_kontor,
+      mode: (r.mode ?? 'factory') as CivStation['mode'],
+      conquest_pool: r.conquest_pool ?? 0,
+      level: r.level ?? 1,
     }));
   },
 
@@ -116,5 +124,52 @@ export const civQueries = {
       [home_x, home_y],
     );
     return parseInt(res.rows[0].count, 10);
+  },
+
+  // --- Conquest queries ---
+
+  async getConquestStations(): Promise<Array<{
+    id: number; sector_x: number; sector_y: number;
+    faction: string; mode: string; conquest_pool: number; level: number;
+  }>> {
+    const res = await query<{
+      id: number; sector_x: number; sector_y: number;
+      faction: string; mode: string; conquest_pool: number; level: number;
+    }>(`SELECT id, sector_x, sector_y, faction, mode, conquest_pool, level
+        FROM civ_stations WHERE mode != 'factory'`);
+    return res.rows;
+  },
+
+  async getStationById(id: number): Promise<{
+    id: number; sector_x: number; sector_y: number;
+    faction: string; mode: string; conquest_pool: number; level: number;
+  } | null> {
+    const res = await query<{
+      id: number; sector_x: number; sector_y: number;
+      faction: string; mode: string; conquest_pool: number; level: number;
+    }>('SELECT id, sector_x, sector_y, faction, mode, conquest_pool, level FROM civ_stations WHERE id = $1', [id]);
+    return res.rows[0] ?? null;
+  },
+
+  async updateStationMode(id: number, mode: string): Promise<void> {
+    await query('UPDATE civ_stations SET mode = $1 WHERE id = $2', [mode, id]);
+  },
+
+  async drainConquestPool(id: number, amount: number): Promise<void> {
+    await query(
+      'UPDATE civ_stations SET conquest_pool = GREATEST(0, conquest_pool - $1) WHERE id = $2',
+      [amount, id],
+    );
+  },
+
+  async depositConquestPool(id: number, amount: number, maxPool: number): Promise<number> {
+    const res = await query<{ conquest_pool: number }>(
+      `UPDATE civ_stations
+       SET conquest_pool = LEAST($3, conquest_pool + $1)
+       WHERE id = $2
+       RETURNING conquest_pool`,
+      [amount, id, maxPool],
+    );
+    return res.rows[0]?.conquest_pool ?? 0;
   },
 };
