@@ -8,6 +8,7 @@ import { findNearestStation } from '../utils/sectorUtils';
 import { useTranslation } from 'react-i18next';
 import { btn, btnDisabled } from '../ui-helpers';
 import { useConfirm } from '../hooks/useConfirm';
+import { InlineError } from './InlineError';
 
 const MAX_TRACKED = 5;
 
@@ -923,6 +924,7 @@ export function QuestsScreen() {
       {/* VERFÜGBAR tab: station + community + events */}
       {tab === 'verfuegbar' && (
         <div>
+          <InlineError codes={['QUEST_ERROR']} />
           {/* Station quests */}
           <div style={{ color: '#FFB000', marginBottom: '4px' }}>--- STATION ---</div>
           {!isAtStation && (() => {

@@ -930,6 +930,7 @@ class GameNetwork {
         store.addLogEntry(`Quest angenommen: ${data.quest.title}`);
       } else {
         store.addLogEntry(`Quest-Fehler: ${data.error}`);
+        store.setActionError({ code: 'QUEST_ERROR', message: data.error });
       }
     });
 
