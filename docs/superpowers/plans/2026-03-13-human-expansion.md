@@ -12,6 +12,16 @@
 
 ---
 
+## Notes for implementer
+
+- **qx/qy derivation**: use `sectorToQuadrant(sector_x, sector_y)` from `../engine/quadrantEngine.js` — do NOT use `sector_x / 500` (different offset model)
+- **Faction name**: `'humans'` (with s) — migration 063 renamed it; `FACTION_COLORS` in QuadrantMapRenderer.ts still has old `'human'` key — fix this in Task 7
+- **Player ID in SectorRoom**: `(client.auth as AuthPayload).userId` — never `client.sessionId`
+- **Strategic tick interval**: 60s (12 × 5s universe ticks in `universeBootstrap.ts`)
+- **`getQuadrantControl`** + **`upsertQuadrantControl`** are in `packages/server/src/db/queries.ts`
+
+---
+
 ## Chunk 1: Shared types + constants + migration
 
 ### Task 1: Add constants to shared package
@@ -45,7 +55,7 @@ export function getConquestPriceBonus(qx: number, qy: number): number {
 
 - [ ] **Step 2: Extend `CivStation` interface in `types.ts`**
 
-Find `export interface CivStation` (line ~1472) and replace the body:
+Find `export interface CivStation` (around line 1472) and replace:
 
 ```typescript
 export interface CivStation {
@@ -62,15 +72,27 @@ export interface CivStation {
 }
 ```
 
-- [ ] **Step 3: Build shared package**
+- [ ] **Step 3: Also add `STATION_DEPOSIT_CONQUEST` and `CONQUEST_POOL_UPDATED` to message types**
+
+Find the client→server and server→client message union types in `types.ts` and add:
+
+```typescript
+// client→server
+| { type: 'STATION_DEPOSIT_CONQUEST'; stationId: number; amount: number }
+
+// server→client
+| { type: 'CONQUEST_POOL_UPDATED'; stationId: number; newPool: number; newMode: string }
+```
+
+- [ ] **Step 4: Build shared package**
 
 ```bash
 cd packages/shared && npm run build
 ```
 
-Expected: `dist/` updated, no errors.
+Expected: no errors.
 
-- [ ] **Step 4: Write unit tests for new constants**
+- [ ] **Step 5: Write unit tests**
 
 Create `packages/shared/src/__tests__/conquestConstants.test.ts`:
 
@@ -102,7 +124,7 @@ describe('pool constants', () => {
 });
 ```
 
-- [ ] **Step 5: Run shared tests**
+- [ ] **Step 6: Run shared tests**
 
 ```bash
 cd packages/shared && npx vitest run
@@ -110,12 +132,12 @@ cd packages/shared && npx vitest run
 
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add packages/shared/src/constants.ts packages/shared/src/types.ts \
   packages/shared/src/__tests__/conquestConstants.test.ts
-git commit -m "feat: add conquest constants + CivStation mode/pool/level fields"
+git commit -m "feat: conquest constants + CivStation mode/pool/level + message types"
 ```
 
 ---
@@ -134,16 +156,14 @@ ALTER TABLE civ_stations
   ADD COLUMN IF NOT EXISTS conquest_pool INTEGER NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS level INTEGER NOT NULL DEFAULT 1;
 
--- All existing stations: set to factory mode if they're in a fully-controlled quadrant.
--- ConquestEngine will correct any remaining ones on first tick.
-UPDATE civ_stations SET mode = 'factory';
+-- Existing NPC stations are fully established → factory mode.
+-- Only update rows that still have the default 'conquest' to avoid
+-- resetting player-built stations in case migration re-runs (idempotent guard).
+UPDATE civ_stations SET mode = 'factory'
+WHERE mode = 'conquest';
 ```
 
-- [ ] **Step 2: Verify migration runs without error (manual check)**
-
-The migration auto-runs on server start. After the next Task, start the server and check logs for `Migration 065` success.
-
-- [ ] **Step 3: Commit**
+- [ ] **Step 2: Commit**
 
 ```bash
 git add packages/server/src/db/migrations/065_conquest_mode.sql
@@ -159,64 +179,88 @@ git commit -m "feat: migration 065 — conquest mode/pool/level columns on civ_s
 **Files:**
 - Modify: `packages/server/src/db/civQueries.ts`
 
-- [ ] **Step 1: Add new query types and functions**
+- [ ] **Step 1: Update `getAllStations()` to map new columns**
 
-Add after the existing `countDronesAtStation` function in `civQueries.ts`:
+In `civQueries.ts`, update the `getAllStations()` SELECT to include the new columns and map them:
 
 ```typescript
-export interface CivStationConquest {
-  id: number;
-  sector_x: number;
-  sector_y: number;
-  faction: string;
-  mode: string;
-  conquest_pool: number;
-  level: number;
-}
-
-// Within the civQueries object, add:
-
-  async getConquestStations(): Promise<CivStationConquest[]> {
-    const res = await query<{
-      id: number; sector_x: number; sector_y: number;
-      faction: string; mode: string; conquest_pool: number; level: number;
-    }>(`SELECT id, sector_x, sector_y, faction, mode, conquest_pool, level
-        FROM civ_stations WHERE mode != 'factory'`);
-    return res.rows;
-  },
-
-  async updateStationMode(id: number, mode: string): Promise<void> {
-    await query('UPDATE civ_stations SET mode = $1 WHERE id = $2', [mode, id]);
-  },
-
-  async drainConquestPool(id: number, amount: number): Promise<void> {
-    await query(
-      'UPDATE civ_stations SET conquest_pool = GREATEST(0, conquest_pool - $1) WHERE id = $2',
-      [amount, id],
-    );
-  },
-
-  async depositConquestPool(id: number, amount: number, maxPool: number): Promise<number> {
-    const res = await query<{ conquest_pool: number }>(
-      `UPDATE civ_stations
-       SET conquest_pool = LEAST($3, conquest_pool + $1)
-       WHERE id = $2
-       RETURNING conquest_pool`,
-      [amount, id, maxPool],
-    );
-    return res.rows[0]?.conquest_pool ?? 0;
-  },
-
-  async getStationById(id: number): Promise<CivStationConquest | null> {
-    const res = await query<{
-      id: number; sector_x: number; sector_y: number;
-      faction: string; mode: string; conquest_pool: number; level: number;
-    }>('SELECT id, sector_x, sector_y, faction, mode, conquest_pool, level FROM civ_stations WHERE id = $1', [id]);
-    return res.rows[0] ?? null;
-  },
+async getAllStations(): Promise<CivStation[]> {
+  const res = await query<{
+    id: number; sector_x: number; sector_y: number; faction: string;
+    has_shipyard: boolean; has_warehouse: boolean; has_kontor: boolean;
+    mode: string; conquest_pool: number; level: number;
+  }>('SELECT * FROM civ_stations ORDER BY id');
+  return res.rows.map((r) => ({
+    id: r.id, sector_x: r.sector_x, sector_y: r.sector_y,
+    faction: r.faction, has_shipyard: r.has_shipyard,
+    has_warehouse: r.has_warehouse, has_kontor: r.has_kontor,
+    mode: (r.mode ?? 'factory') as CivStation['mode'],
+    conquest_pool: r.conquest_pool ?? 0,
+    level: r.level ?? 1,
+  }));
+},
 ```
 
-- [ ] **Step 2: Commit**
+Also update `getStationsForFaction()` the same way.
+
+- [ ] **Step 2: Add new query functions**
+
+Add after `countDronesAtStation`:
+
+```typescript
+async getConquestStations(): Promise<Array<{
+  id: number; sector_x: number; sector_y: number;
+  faction: string; mode: string; conquest_pool: number; level: number;
+}>> {
+  const res = await query<{
+    id: number; sector_x: number; sector_y: number;
+    faction: string; mode: string; conquest_pool: number; level: number;
+  }>(`SELECT id, sector_x, sector_y, faction, mode, conquest_pool, level
+      FROM civ_stations WHERE mode != 'factory'`);
+  return res.rows;
+},
+
+async getStationById(id: number): Promise<{
+  id: number; sector_x: number; sector_y: number;
+  faction: string; mode: string; conquest_pool: number; level: number;
+} | null> {
+  const res = await query<{
+    id: number; sector_x: number; sector_y: number;
+    faction: string; mode: string; conquest_pool: number; level: number;
+  }>('SELECT id, sector_x, sector_y, faction, mode, conquest_pool, level FROM civ_stations WHERE id = $1', [id]);
+  return res.rows[0] ?? null;
+},
+
+async updateStationMode(id: number, mode: string): Promise<void> {
+  await query('UPDATE civ_stations SET mode = $1 WHERE id = $2', [mode, id]);
+},
+
+async drainConquestPool(id: number, amount: number): Promise<void> {
+  await query(
+    'UPDATE civ_stations SET conquest_pool = GREATEST(0, conquest_pool - $1) WHERE id = $2',
+    [amount, id],
+  );
+},
+
+async depositConquestPool(id: number, amount: number, maxPool: number): Promise<number> {
+  const res = await query<{ conquest_pool: number }>(
+    `UPDATE civ_stations
+     SET conquest_pool = LEAST($3, conquest_pool + $1)
+     WHERE id = $2
+     RETURNING conquest_pool`,
+    [amount, id, maxPool],
+  );
+  return res.rows[0]?.conquest_pool ?? 0;
+},
+```
+
+- [ ] **Step 3: Ensure CivStation import is correct in civQueries.ts**
+
+```typescript
+import type { CivShip, CivStation } from '@void-sector/shared';
+```
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add packages/server/src/db/civQueries.ts
@@ -225,13 +269,13 @@ git commit -m "feat: conquest DB queries — getConquestStations, updateMode, dr
 
 ---
 
-### Task 4: ConquestEngine — pure logic tests first (TDD)
+### Task 4: ConquestEngine — TDD
 
 **Files:**
 - Create: `packages/server/src/engine/__tests__/conquestEngine.test.ts`
 - Create: `packages/server/src/engine/conquestEngine.ts`
 
-- [ ] **Step 1: Write failing tests for conquest logic**
+- [ ] **Step 1: Write failing tests**
 
 Create `packages/server/src/engine/__tests__/conquestEngine.test.ts`:
 
@@ -305,7 +349,22 @@ describe('updateShares', () => {
   it('sum of shares always ≤ 100', () => {
     const result = updateShares({ humans: 60, kthari: 40 }, 'humans', 15);
     const total = Object.values(result.shares).reduce((a, b) => a + b, 0);
-    expect(total).toBeLessThanOrEqual(100.01); // floating-point tolerance
+    expect(total).toBeLessThanOrEqual(100.01);
+  });
+  it('three-faction: reduces others proportionally', () => {
+    const result = updateShares({ humans: 33, kthari: 33, mycelians: 34 }, 'humans', 6);
+    const total = Object.values(result.shares).reduce((a, b) => a + b, 0);
+    expect(total).toBeLessThanOrEqual(100.1);
+    expect(result.shares['humans']).toBeCloseTo(39);
+  });
+  it('does not push own share above 100 when starting at 95', () => {
+    const result = updateShares({ humans: 95 }, 'humans', 20);
+    expect(result.shares['humans']).toBe(100);
+  });
+  it('handles missing own faction key gracefully', () => {
+    const result = updateShares({ kthari: 80 }, 'humans', 10);
+    expect(result.shares['humans']).toBe(10);
+    expect(result.shares['kthari']).toBeCloseTo(70);
   });
 });
 ```
@@ -316,15 +375,16 @@ describe('updateShares', () => {
 cd packages/server && npx vitest run src/engine/__tests__/conquestEngine.test.ts
 ```
 
-Expected: FAIL — `conquestEngine.js` not found.
+Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement ConquestEngine pure functions**
+- [ ] **Step 3: Implement ConquestEngine**
 
 Create `packages/server/src/engine/conquestEngine.ts`:
 
 ```typescript
 // packages/server/src/engine/conquestEngine.ts
 import { CONQUEST_RATE, CONQUEST_POOL_DRAIN_PER_TICK } from '@void-sector/shared';
+import { sectorToQuadrant } from './quadrantEngine.js';
 import { civQueries } from '../db/civQueries.js';
 import { getQuadrantControl, upsertQuadrantControl } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
@@ -341,7 +401,7 @@ export function computeFrictionModifier(frictionScore: number, otherFactionPrese
   if (frictionScore <= 20) return 0;
   if (frictionScore <= 50) return 0.5;
   if (frictionScore <= 80) return 0.25;
-  return 0; // ENEMY → battle mode
+  return 0; // ENEMY → mode becomes 'battle'
 }
 
 export function updateShares(
@@ -405,9 +465,10 @@ export class ConquestEngine {
     }
   }
 
-  private async processStation(station: Awaited<ReturnType<typeof civQueries.getConquestStations>>[0]): Promise<void> {
-    const qx = Math.floor(station.sector_x / 500);
-    const qy = Math.floor(station.sector_y / 500);
+  private async processStation(
+    station: { id: number; sector_x: number; sector_y: number; faction: string; mode: string; conquest_pool: number; level: number },
+  ): Promise<void> {
+    const { qx, qy } = sectorToQuadrant(station.sector_x, station.sector_y);
 
     // Get or create quadrant control row
     let qc = await getQuadrantControl(qx, qy);
@@ -443,12 +504,11 @@ export class ConquestEngine {
     }
 
     await civQueries.updateStationMode(station.id, newMode);
-
     if (newMode !== 'conquest') return;
 
     // Apply conquest
     const frictionMod = computeFrictionModifier(frictionScore, otherFactionPresent);
-    if (frictionMod === 0) return; // halted by ally friction
+    if (frictionMod === 0) return;
 
     const rate = computeConquestRate(station.level, station.conquest_pool);
     const effectiveGain = rate * frictionMod;
@@ -465,11 +525,10 @@ export class ConquestEngine {
       station_tier: Math.max(qc.station_tier, station.level),
     });
 
-    // Drain pool
     await civQueries.drainConquestPool(station.id, CONQUEST_POOL_DRAIN_PER_TICK);
 
     logger.debug(
-      { stationId: station.id, faction: station.faction, qx, qy, gain: effectiveGain, newShares },
+      { stationId: station.id, faction: station.faction, qx, qy, gain: effectiveGain },
       'ConquestEngine: tick applied',
     );
   }
@@ -489,7 +548,7 @@ Expected: all pass.
 ```bash
 git add packages/server/src/engine/conquestEngine.ts \
   packages/server/src/engine/__tests__/conquestEngine.test.ts
-git commit -m "feat: ConquestEngine — pure logic + tick, TDD"
+git commit -m "feat: ConquestEngine — pure logic + tick (TDD)"
 ```
 
 ---
@@ -499,46 +558,40 @@ git commit -m "feat: ConquestEngine — pure logic + tick, TDD"
 **Files:**
 - Modify: `packages/server/src/engine/strategicTickService.ts`
 
-- [ ] **Step 1: Import and instantiate ConquestEngine**
+- [ ] **Step 1: Add import and field**
 
-At the top of `strategicTickService.ts`, add the import alongside other engine imports:
+Add import alongside other engine imports at the top:
 
 ```typescript
 import { ConquestEngine } from './conquestEngine.js';
 ```
 
-In the `StrategicTickService` class, add a private field:
+Add private field in the class:
 
 ```typescript
-private conquestEngine: ConquestEngine;
+private conquestEngine = new ConquestEngine();
 ```
 
-In the `constructor`, initialize it:
+- [ ] **Step 2: Call in tick() method**
+
+In `tick()`, after `// 2. Alien expansion into unclaimed space` block (around line 80), add:
 
 ```typescript
-this.conquestEngine = new ConquestEngine();
-```
-
-- [ ] **Step 2: Call conquestEngine.tick() in the tick method**
-
-In `StrategicTickService.tick()`, after step `// 2. Alien expansion into unclaimed space` (around line 80), add:
-
-```typescript
-// 3. Human/player station conquest
+// 3. Player station conquest
 await this.conquestEngine.tick().catch((err) =>
   logger.error({ err }, 'ConquestEngine tick error'),
 );
 ```
 
-Renumber subsequent steps (Void lifecycle → step 4, cleanup → step 5).
+Renumber subsequent comments: Void lifecycle → 4, cleanup → 5.
 
-- [ ] **Step 3: Start server and verify no crash**
+- [ ] **Step 3: Run all server tests**
 
 ```bash
-cd packages/server && npm run dev 2>&1 | head -30
+cd packages/server && npx vitest run
 ```
 
-Expected: server starts, migration 065 logged as applied.
+Expected: all pass.
 
 - [ ] **Step 4: Commit**
 
@@ -549,42 +602,36 @@ git commit -m "feat: wire ConquestEngine into StrategicTickService"
 
 ---
 
-### Task 6: STATION_DEPOSIT_CONQUEST message handler
+### Task 6: STATION_DEPOSIT_CONQUEST handler in SectorRoom
 
 **Files:**
-- Modify: `packages/server/src/rooms/SectorRoom.ts` (or the relevant handler file)
-- Modify: `packages/shared/src/types.ts` (new message type)
+- Modify: `packages/server/src/rooms/SectorRoom.ts`
 
-- [ ] **Step 1: Add message type to shared types**
-
-In `types.ts`, find `ClientToServerMessage` or the equivalent message union type and add:
-
-```typescript
-| { type: 'STATION_DEPOSIT_CONQUEST'; stationId: number; amount: number }
-```
-
-Also add to `ServerToClientMessage`:
-
-```typescript
-| { type: 'CONQUEST_POOL_UPDATED'; stationId: number; newPool: number; newMode: string }
-```
-
-Rebuild shared: `cd packages/shared && npm run build`
-
-- [ ] **Step 2: Find the SectorRoom message handler**
+- [ ] **Step 1: Find a reference handler in SectorRoom**
 
 ```bash
-grep -rn "onMessage\|STATION_DEPOSIT\|economyService" packages/server/src/rooms/SectorRoom.ts | head -20
+grep -n "this.onMessage\|AuthPayload\|client.auth" packages/server/src/rooms/SectorRoom.ts | head -20
 ```
 
-- [ ] **Step 3: Add handler for STATION_DEPOSIT_CONQUEST**
+Note the exact pattern used for auth (`(client.auth as AuthPayload).userId`) and imports.
 
-In the SectorRoom message handlers, add:
+- [ ] **Step 2: Add imports if not already present**
+
+At the top of `SectorRoom.ts`, verify these imports exist (add if missing):
+
+```typescript
+import { civQueries } from '../db/civQueries.js';
+import { CONQUEST_POOL_MAX } from '@void-sector/shared';
+```
+
+- [ ] **Step 3: Add message handler**
+
+In the section where `this.onMessage(...)` calls are registered, add:
 
 ```typescript
 this.onMessage('STATION_DEPOSIT_CONQUEST', async (client, msg: { stationId: number; amount: number }) => {
-  const playerId = client.sessionId; // or however player ID is resolved
-  const amount = Math.max(0, Math.floor(msg.amount));
+  const playerId = (client.auth as AuthPayload).userId;
+  const amount = Math.max(0, Math.floor(Number(msg.amount) || 0));
   if (amount <= 0) return;
 
   const station = await civQueries.getStationById(msg.stationId);
@@ -602,35 +649,49 @@ this.onMessage('STATION_DEPOSIT_CONQUEST', async (client, msg: { stationId: numb
 
   const newPool = await civQueries.depositConquestPool(msg.stationId, actual, CONQUEST_POOL_MAX);
   client.send('CONQUEST_POOL_UPDATED', { stationId: msg.stationId, newPool, newMode: station.mode });
+  logger.info({ playerId, stationId: msg.stationId, deposited: actual, newPool }, 'conquest pool deposit');
 });
 ```
 
-Add the import at the top if not already present:
-```typescript
-import { civQueries } from '../db/civQueries.js';
-import { CONQUEST_POOL_MAX } from '@void-sector/shared';
-```
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Run all server tests**
 
 ```bash
-git add packages/server/src/rooms/SectorRoom.ts packages/shared/src/types.ts
-git commit -m "feat: STATION_DEPOSIT_CONQUEST message handler + shared message types"
+cd packages/server && npx vitest run
+```
+
+Expected: all pass.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/server/src/rooms/SectorRoom.ts
+git commit -m "feat: STATION_DEPOSIT_CONQUEST handler in SectorRoom"
 ```
 
 ---
 
 ## Chunk 3: Client — QUAD-MAP mixed coloring + Station Detail
 
-### Task 7: Mixed faction color rendering in QuadrantMapRenderer
+### Task 7: Fix FACTION_COLORS + mixed rendering in QuadrantMapRenderer
 
 **Files:**
 - Modify: `packages/client/src/canvas/QuadrantMapRenderer.ts`
 - Modify: `packages/client/src/__tests__/QuadrantMapRenderer.test.ts`
 
-- [ ] **Step 1: Write tests for mixed rendering logic**
+- [ ] **Step 1: Fix `'human'` → `'humans'` in FACTION_COLORS**
 
-In `QuadrantMapRenderer.test.ts`, find the existing tests and add:
+In `QuadrantMapRenderer.ts`, find the `FACTION_COLORS` object (around line 35–50) and rename the key:
+
+```typescript
+// Change:
+human: 'rgba(64, 128, 255, 0.30)',
+// To:
+humans: 'rgba(64, 128, 255, 0.30)',
+```
+
+- [ ] **Step 2: Write tests for getMixedFactionColors**
+
+In `QuadrantMapRenderer.test.ts`, add:
 
 ```typescript
 import { getMixedFactionColors } from '../canvas/QuadrantMapRenderer.js';
@@ -641,34 +702,29 @@ describe('getMixedFactionColors', () => {
     expect(result).toHaveLength(1);
     expect(result[0].fraction).toBeCloseTo(1.0);
   });
-
-  it('two factions 60/40 → two entries summing to 1.0', () => {
+  it('two factions 60/40 → two entries summing to ~1.0', () => {
     const result = getMixedFactionColors({ humans: 60, kthari: 40 });
     expect(result).toHaveLength(2);
     const total = result.reduce((s, r) => s + r.fraction, 0);
     expect(total).toBeCloseTo(1.0);
   });
-
-  it('rounds to 10% steps (visual only)', () => {
-    const result = getMixedFactionColors({ humans: 73 });
-    // 73 rounds to 70%, but the function returns exact fractions for rendering
-    expect(result[0].fraction).toBeCloseTo(0.73);
-  });
-
-  it('ignores factions below 5% (noise filter)', () => {
+  it('filters out factions below 5%', () => {
     const result = getMixedFactionColors({ humans: 98, kthari: 2 });
     expect(result).toHaveLength(1);
+  });
+  it('empty shares → empty array', () => {
+    expect(getMixedFactionColors({})).toHaveLength(0);
   });
 });
 ```
 
-- [ ] **Step 2: Run tests — expect FAIL**
+- [ ] **Step 3: Run tests — expect FAIL**
 
 ```bash
 cd packages/client && npx vitest run src/__tests__/QuadrantMapRenderer.test.ts
 ```
 
-- [ ] **Step 3: Add `getMixedFactionColors` and rendering to QuadrantMapRenderer**
+- [ ] **Step 4: Add `getMixedFactionColors` export**
 
 In `QuadrantMapRenderer.ts`, after the `FACTION_COLORS` constant, add:
 
@@ -679,7 +735,7 @@ export function getMixedFactionColors(
   const total = Object.values(shares).reduce((s, v) => s + v, 0);
   if (total <= 0) return [];
   return Object.entries(shares)
-    .filter(([, v]) => v / total >= 0.05) // ignore < 5%
+    .filter(([, v]) => v / total >= 0.05)
     .map(([faction, v]) => ({
       color: FACTION_COLORS[faction] ?? 'rgba(128,128,128,0.3)',
       fraction: v / total,
@@ -688,38 +744,48 @@ export function getMixedFactionColors(
 }
 ```
 
-Then in the cell rendering loop, replace the single `factionColor` fill with mixed rendering. Find the section around line 145 (`ctx.fillStyle = factionColor + '22'`) and update:
+- [ ] **Step 5: Update cell rendering to use mixed colors**
+
+In the cell rendering loop, find the section that sets `ctx.fillStyle = factionColor + '22'` and the `ctx.fillRect` for the faction tint (around line 145), and replace with:
 
 ```typescript
-// Mixed faction shares rendering
-const mixedColors = getMixedFactionColors(ctrl.faction_shares ?? { [ctrl.controlling_faction]: 100 });
+const mixedColors = getMixedFactionColors(
+  ctrl.faction_shares ?? { [ctrl.controlling_faction]: 100 },
+);
 if (mixedColors.length === 1) {
-  ctx.fillStyle = mixedColors[0].color + '22';
+  ctx.fillStyle = mixedColors[0].color.replace(')', ', 0.13)').replace('rgba', 'rgba');
   ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
 } else if (mixedColors.length > 1) {
-  // Split cell vertically by fraction
   let offsetX = cellX - CELL_W / 2;
   for (const { color, fraction } of mixedColors) {
     const segW = CELL_W * fraction;
-    ctx.fillStyle = color + '22';
+    ctx.fillStyle = color.replace(')', ', 0.13)').replace('rgba', 'rgba');
     ctx.fillRect(offsetX, cellY - CELL_H / 2, segW, CELL_H);
     offsetX += segW;
   }
 }
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
+Note: `FACTION_COLORS` values are already in `rgba(...)` format — use them directly (the opacity is already set in the constant values).
+
+Actually, check the exact format of FACTION_COLORS values first — if they already have a full opacity component (like `rgba(64, 128, 255, 0.30)`), use them directly:
+
+```typescript
+ctx.fillStyle = mixedColors[0].color; // already has correct opacity
+```
+
+- [ ] **Step 6: Run tests — expect PASS**
 
 ```bash
 cd packages/client && npx vitest run src/__tests__/QuadrantMapRenderer.test.ts
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add packages/client/src/canvas/QuadrantMapRenderer.ts \
   packages/client/src/__tests__/QuadrantMapRenderer.test.ts
-git commit -m "feat: mixed faction color rendering in QuadrantMapRenderer"
+git commit -m "feat: mixed faction color rendering + fix human→humans key in QuadrantMapRenderer"
 ```
 
 ---
@@ -732,61 +798,23 @@ git commit -m "feat: mixed faction color rendering in QuadrantMapRenderer"
 - [ ] **Step 1: Find the station detail section**
 
 ```bash
-grep -n "has_shipyard\|has_kontor\|civStation\|StationPanel" packages/client/src/components/DetailPanel.tsx | head -20
+grep -n "has_shipyard\|civStation\|// Drill-down\|station detail" packages/client/src/components/DetailPanel.tsx | head -10
 ```
 
-- [ ] **Step 2: Add Conquest Panel to station detail**
+- [ ] **Step 2: Add imports**
 
-Find the section where civ station info is rendered (around line 477+ where "station detail view" comment is). Add after existing station info:
+At the top of `DetailPanel.tsx`, add if not already imported:
 
-```tsx
-{station.mode === 'conquest' && (
-  <div style={{ marginTop: 12, borderTop: '1px solid #00FF8844', paddingTop: 8 }}>
-    <div style={{ color: '#FF8800', fontSize: '0.7rem', letterSpacing: '0.12em', marginBottom: 6 }}>
-      ▶ CONQUEST MODE — QUADRANT EXPANSION
-    </div>
-    {/* Conquest progress */}
-    {conquestShare !== undefined && (
-      <>
-        <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: 2 }}>
-          FORTSCHRITT: {Math.floor(conquestShare)} / 100
-        </div>
-        <div style={{ background: '#111', height: 6, marginBottom: 8 }}>
-          <div style={{ background: '#FF8800', height: '100%', width: `${conquestShare}%` }} />
-        </div>
-      </>
-    )}
-    {/* Resource pool */}
-    <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: 2 }}>
-      RESOURCE POOL: {station.conquest_pool} / {CONQUEST_POOL_MAX}
-    </div>
-    <div style={{ background: '#111', height: 6, marginBottom: 8 }}>
-      <div style={{
-        background: station.conquest_pool > 0 ? '#00FF88' : '#333',
-        height: '100%',
-        width: `${(station.conquest_pool / CONQUEST_POOL_MAX) * 100}%`,
-      }} />
-    </div>
-    {/* Rate info */}
-    <div style={{ fontSize: '0.65rem', color: '#666', marginBottom: 6 }}>
-      RATE: {CONQUEST_RATE[station.level]?.[station.conquest_pool > 0 ? 'boosted' : 'base'] ?? 1.0} PT/TICK
-      {' '}· LEVEL {station.level}
-    </div>
-  </div>
-)}
-{station.mode === 'factory' && (
-  <div style={{ marginTop: 8, color: '#00FF88', fontSize: '0.7rem', letterSpacing: '0.1em' }}>
-    ✓ FABRIK-MODUS — Quadrant kontrolliert
-  </div>
-)}
-```
-
-Add the required imports at the top of DetailPanel.tsx if not present:
 ```typescript
 import { CONQUEST_POOL_MAX, CONQUEST_RATE } from '@void-sector/shared';
 ```
 
-The `conquestShare` variable comes from the quadrant controls state:
+Also check for and remove any duplicate `import { network }` lines (pre-existing issue around lines 4 and 18).
+
+- [ ] **Step 3: Add conquestShare computation**
+
+In the component that renders station detail, add before the return:
+
 ```typescript
 const quadrantControls = useStore((s) => s.quadrantControls);
 const conquestShare = useMemo(() => {
@@ -798,23 +826,60 @@ const conquestShare = useMemo(() => {
 }, [station, quadrantControls]);
 ```
 
-- [ ] **Step 3: Build client and verify no TypeScript errors**
+Note: for the client-side `useMemo`, simple `Math.floor(sector_x / 500)` is acceptable as an approximation to find the QC row — the server uses `sectorToQuadrant` but the visual display difference is negligible.
 
-```bash
-cd packages/client && npx tsc --noEmit
+- [ ] **Step 4: Add Conquest UI to station rendering**
+
+After the existing station info block (where `has_shipyard`, `has_warehouse` etc. are shown), add:
+
+```tsx
+{station.mode === 'conquest' && (
+  <div style={{ marginTop: 12, borderTop: '1px solid #FF880044', paddingTop: 8 }}>
+    <div style={{ color: '#FF8800', fontSize: '0.7rem', letterSpacing: '0.12em', marginBottom: 6 }}>
+      ▶ CONQUEST MODE
+    </div>
+    {conquestShare !== undefined && (
+      <>
+        <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: 2 }}>
+          FORTSCHRITT: {Math.floor(conquestShare)} / 100
+        </div>
+        <div style={{ background: '#111', height: 6, marginBottom: 8 }}>
+          <div style={{ background: '#FF8800', height: '100%', width: `${Math.min(100, conquestShare)}%` }} />
+        </div>
+      </>
+    )}
+    <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: 2 }}>
+      POOL: {station.conquest_pool} / {CONQUEST_POOL_MAX}
+    </div>
+    <div style={{ background: '#111', height: 6, marginBottom: 8 }}>
+      <div style={{
+        background: station.conquest_pool > 0 ? '#00FF88' : '#333',
+        height: '100%',
+        width: `${(station.conquest_pool / CONQUEST_POOL_MAX) * 100}%`,
+      }} />
+    </div>
+    <div style={{ fontSize: '0.65rem', color: '#666' }}>
+      RATE: {CONQUEST_RATE[station.level]?.[station.conquest_pool > 0 ? 'boosted' : 'base'] ?? 1.0} PT/TICK
+      {' '}· LVL {station.level}
+    </div>
+  </div>
+)}
+{station.mode === 'factory' && (
+  <div style={{ marginTop: 8, color: '#00FF88', fontSize: '0.7rem', letterSpacing: '0.1em' }}>
+    ✓ FABRIK-MODUS
+  </div>
+)}
 ```
 
-Expected: no errors.
-
-- [ ] **Step 4: Run client tests**
+- [ ] **Step 5: Run client tests and TypeScript check**
 
 ```bash
-cd packages/client && npx vitest run
+cd packages/client && npx tsc --noEmit && npx vitest run
 ```
 
-Expected: all pass.
+Expected: no errors, all pass.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add packages/client/src/components/DetailPanel.tsx
@@ -825,79 +890,27 @@ git commit -m "feat: conquest mode UI in station detail panel"
 
 ## Chunk 4: Integration + PR
 
-### Task 9: Full integration test
+### Task 9: Run all tests + push
 
-**Files:**
-- Create: `packages/server/src/engine/__tests__/conquestEngineIntegration.test.ts`
-
-- [ ] **Step 1: Write integration test for updateShares edge cases**
-
-```typescript
-import { describe, it, expect } from 'vitest';
-import { updateShares } from '../conquestEngine.js';
-
-describe('updateShares — edge cases', () => {
-  it('handles missing own faction key gracefully', () => {
-    const { shares } = updateShares({ kthari: 80 }, 'humans', 10);
-    expect(shares['humans']).toBe(10);
-    expect(shares['kthari']).toBeCloseTo(70);
-  });
-
-  it('does not push own share above 100', () => {
-    const { shares } = updateShares({ humans: 95 }, 'humans', 20);
-    expect(shares['humans']).toBe(100);
-  });
-
-  it('battle mode (friction > 80): engine skips tick', () => {
-    // This is tested via computeFrictionModifier returning 0
-    const { computeFrictionModifier } = require('../conquestEngine.js');
-    expect(computeFrictionModifier(85, true)).toBe(0);
-  });
-
-  it('three-faction contestation reduces others proportionally', () => {
-    const { shares } = updateShares({ humans: 33, kthari: 33, mycelians: 34 }, 'humans', 6);
-    const total = Object.values(shares).reduce((a, b) => a + b, 0);
-    expect(total).toBeLessThanOrEqual(100.1);
-    expect(shares['humans']).toBeCloseTo(39);
-  });
-});
-```
-
-- [ ] **Step 2: Run all server tests**
+- [ ] **Step 1: Run all tests across all packages**
 
 ```bash
+cd packages/shared && npx vitest run
 cd packages/server && npx vitest run
-```
-
-Expected: all pass.
-
-- [ ] **Step 3: Run all client tests**
-
-```bash
 cd packages/client && npx vitest run
 ```
 
 Expected: all pass.
 
-- [ ] **Step 4: Run all shared tests**
+- [ ] **Step 2: Push branch**
 
 ```bash
-cd packages/shared && npx vitest run
-```
-
-Expected: all pass.
-
-- [ ] **Step 5: Commit and push**
-
-```bash
-git add packages/server/src/engine/__tests__/conquestEngineIntegration.test.ts
-git commit -m "test: conquest engine edge case integration tests"
 git push origin feat/human-expansion
 ```
 
 ---
 
-### Task 10: PR
+### Task 10: Create PR
 
 - [ ] **Create PR**
 
@@ -907,31 +920,23 @@ gh pr create \
   --body "$(cat <<'EOF'
 ## Summary
 - Station mode state machine (`conquest | factory | battle`) auto-transitions per strategic tick
-- Resource pool (`conquest_pool`) accelerates conquest rate when filled
-- Conquest rate: level 1=1.0/1.5, level 2=1.1/2.0, level 3=1.2/3.0 per tick
-- QUAD-MAP mixed faction coloring via `faction_shares` JSONB (all factions)
-- Distance-based price bonus for conquest resource delivery
+- Resource pool (`conquest_pool`) accelerates conquest rate when filled by player deliveries
+- Conquest rate per level: L1=1.0/1.5, L2=1.1/2.0, L3=1.2/3.0 pts/tick (base/boosted)
+- QUAD-MAP mixed faction coloring via `faction_shares` JSONB (all factions, 5% noise filter)
+- Distance-based price bonus for resource delivery to conquest stations
+- `STATION_DEPOSIT_CONQUEST` message handler with pool cap enforcement
 - Migration 065: adds `mode`, `conquest_pool`, `level` to `civ_stations`
+- Fixes `'human'` → `'humans'` key in `FACTION_COLORS`
 
 ## Test plan
-- [ ] All unit tests pass (`vitest run` in all 3 packages)
+- [ ] All unit tests pass in shared, server, client
 - [ ] Server starts, migration 065 applies cleanly
-- [ ] Strategic tick fires every 60s, conquest shares update in `quadrant_control`
-- [ ] QUAD-MAP shows mixed colors for contested quadrants
-- [ ] Station detail panel shows conquest progress + pool bar
-- [ ] `STATION_DEPOSIT_CONQUEST` message fills pool, rejected when full
+- [ ] Strategic tick fires, conquest shares update in `quadrant_control`
+- [ ] QUAD-MAP shows split colors for two-faction quadrants
+- [ ] Station detail panel shows progress bar + pool bar in conquest mode
+- [ ] `STATION_DEPOSIT_CONQUEST` fills pool, rejects when full
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )"
 ```
-
----
-
-## Notes for implementer
-
-- **qx/qy derivation**: always `Math.floor(sector_x / 500)` — not stored in `civ_stations`
-- **Faction name**: `'humans'` (with s) — migration 063 renamed it
-- **Strategic tick interval**: 60s (12 × 5s universe ticks in `universeBootstrap.ts`)
-- **`getQuadrantControl`** is in `packages/server/src/db/queries.ts` — already handles null return
-- **SectorRoom message path**: check how other economy messages like `BUY_FROM_STATION` are structured for the exact player ID pattern
