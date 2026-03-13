@@ -2046,7 +2046,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
 // --- Phase 5: Deep Systems ---
 
 // Fuel
-export const FUEL_COST_PER_UNIT = 0.1; // 0.1 credits per fuel unit (was 2)
+export const FUEL_COST_PER_UNIT = 0.01; // 0.01 credits per fuel unit → 100 fuel = 1 credit
 export const FUEL_MIN_TANK = 1_000; // minimum tank size regardless of hull+modules
 export const FREE_REFUEL_MAX_SHIPS = 3;
 

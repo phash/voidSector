@@ -73,7 +73,7 @@ function RefuelPanel({
   isFreeRefuel: boolean;
 }) {
   const { t } = useTranslation('ui');
-  const [amount, setAmount] = useState(Math.ceil(fuel.max - fuel.current));
+  const [amount, setAmount] = useState(Math.max(100, Math.floor((fuel.max - fuel.current) / 100) * 100));
   const reputations = useStore((s) => s.reputations);
   const currentSector = useStore((s) => s.currentSector);
   const npcStationData = useStore((s) => s.npcStationData);
@@ -106,8 +106,9 @@ function RefuelPanel({
       </div>
       <input
         type="range"
-        min={1}
-        max={tankSpace}
+        min={100}
+        max={Math.max(100, Math.floor(tankSpace / 100) * 100)}
+        step={100}
         value={amount}
         onChange={(e) => setAmount(Number(e.target.value))}
         style={{ width: '100%', accentColor: 'var(--color-primary)' }}

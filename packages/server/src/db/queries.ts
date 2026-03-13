@@ -2151,12 +2151,20 @@ export async function addWissen(userId: string, amount: number): Promise<void> {
 export async function deductWissen(userId: string, amount: number): Promise<boolean> {
   const { rows } = await query<{ wissen: number }>(
     `UPDATE player_research
-     SET wissen = wissen - $2
+     SET wissen = wissen - $2, wissen_spent = wissen_spent + $2
      WHERE user_id = $1 AND wissen >= $2
      RETURNING wissen`,
     [userId, amount],
   );
   return rows.length > 0;
+}
+
+export async function getWissenSpent(userId: string): Promise<number> {
+  const { rows } = await query<{ wissen_spent: number }>(
+    'SELECT COALESCE(wissen_spent, 0) AS wissen_spent FROM player_research WHERE user_id = $1',
+    [userId],
+  );
+  return rows[0]?.wissen_spent ?? 0;
 }
 
 // ── Typed Artefacts ──────────────────────────────────────────────────────

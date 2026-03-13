@@ -51,7 +51,9 @@ export function AcepTab() {
   const { t } = useTranslation('ui');
   const ship = useStore((s) => s.ship);
   const credits = useStore((s) => s.credits ?? 0);
-  const wissen = useStore((s) => s.research.wissen ?? 0);
+  const research = useStore((s) => s.research);
+  const wissen = research.wissen ?? 0;
+  const wissenSpent = research.wissenSpent ?? 0;
   const [renamingShipId, setRenamingShipId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
@@ -128,6 +130,9 @@ export function AcepTab() {
         <div style={{ color: '#555', fontSize: '0.85rem' }}>
           {t('acep.total')}: {xp.total ?? 0}/100
         </div>
+      </div>
+      <div style={{ color: '#bb44ff', fontSize: '0.75rem', marginBottom: 8, letterSpacing: '0.06em' }}>
+        WISSEN: {wissen} / [ {wissenSpent} ]
       </div>
       {PATHS.map(({ key, labelKey, color }) => {
         const pathXp = xp[key] ?? 0;
