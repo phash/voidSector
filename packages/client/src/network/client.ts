@@ -1784,6 +1784,14 @@ class GameNetwork {
       useStore.getState().removeConstructionSite(data.siteId);
     });
 
+    room.onMessage('structureBuilt', (data: { sectorX: number; sectorY: number }) => {
+      const key = `${data.sectorX}:${data.sectorY}`;
+      const existing = useStore.getState().discoveries[key];
+      if (existing) {
+        useStore.getState().addDiscoveries([{ ...existing, type: 'station' }]);
+      }
+    });
+
     room.onMessage('warTicker', (data: WarTickerEvent) => {
       useStore.getState().addWarTickerEvent(data);
     });
