@@ -9,6 +9,7 @@ import {
   getActiveDrawbacks,
   isModuleUnlocked,
   MODULES,
+  MODULE_HP_BY_TIER,
 } from '@void-sector/shared';
 import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import {
@@ -86,10 +87,12 @@ export class ShipService {
       return;
     }
     await removeFromInventory(auth.userId, 'module', data.moduleId, 1);
-    // Install — source defaults to 'standard' (inventory-tracked source TBD)
+    // Install — initialize currentHp to maxHp so the MODULE tab shows a full HP bar
+    const modDef = MODULES[data.moduleId];
+    const maxHp = modDef?.maxHp ?? MODULE_HP_BY_TIER[modDef?.tier ?? 1] ?? 20;
     const newModules: ShipModule[] = [
       ...ship.modules,
-      { moduleId: data.moduleId, slotIndex: data.slotIndex, source: 'standard' as const },
+      { moduleId: data.moduleId, slotIndex: data.slotIndex, source: 'standard' as const, currentHp: maxHp },
     ];
     await updateShipModules(ship.id, newModules);
     // Recalculate stats and collect active drawbacks

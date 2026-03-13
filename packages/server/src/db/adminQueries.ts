@@ -143,12 +143,15 @@ export async function adminSetCargoItem(
   amount: number,
 ): Promise<void> {
   if (amount <= 0) {
-    await query(`DELETE FROM cargo WHERE player_id = $1 AND resource = $2`, [id, resource]);
+    await query(
+      `DELETE FROM inventory WHERE player_id = $1 AND item_type = 'resource' AND item_id = $2`,
+      [id, resource],
+    );
   } else {
     await query(
-      `INSERT INTO cargo (player_id, resource, quantity)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (player_id, resource)
+      `INSERT INTO inventory (player_id, item_type, item_id, quantity)
+       VALUES ($1, 'resource', $2, $3)
+       ON CONFLICT (player_id, item_type, item_id)
        DO UPDATE SET quantity = $3`,
       [id, resource, amount],
     );
