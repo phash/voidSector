@@ -12,9 +12,6 @@ import {
   canStartResearch,
   getAcepLevel,
   MODULES,
-  HULLS,
-  HULL_PRICES,
-  STATION_SHIPYARD_LEVEL_THRESHOLD,
   MAX_ARTEFACTS_PER_RESEARCH,
   ARTEFACT_WISSEN_BONUS,
   ARTEFACT_TIME_BONUS_PER,
@@ -67,7 +64,7 @@ export class ShipService {
         const acepXp = await getAcepXpSummary(s.id);
         return {
           ...s,
-          stats: calculateShipStats(s.hullType, s.modules, acepXp),
+          stats: calculateShipStats(s.modules, acepXp),
           acepXp,
           acepEffects: getAcepEffects(acepXp),
           acepTraits: s.acepTraits,
@@ -87,7 +84,6 @@ export class ShipService {
     // Fetch ACEP XP for slot validation and stat calculation
     const acepXp = await getAcepXpSummary(ship.id);
     const validation = validateModuleInstall(
-      ship.hullType,
       ship.modules,
       data.moduleId,
       data.slotIndex,
@@ -111,7 +107,7 @@ export class ShipService {
     ];
     await updateShipModules(ship.id, newModules);
     // Recalculate stats and collect active drawbacks
-    const newStats = calculateShipStats(ship.hullType, newModules, acepXp);
+    const newStats = calculateShipStats(newModules, acepXp);
     const drawbacks = getActiveDrawbacks(newModules);
     this.ctx.clientShips.set(client.sessionId, newStats);
     client.send('moduleInstalled', { modules: newModules, stats: newStats, drawbacks });
@@ -133,7 +129,7 @@ export class ShipService {
     await addToInventory(auth.userId, 'module', mod.moduleId, 1);
     // Recalculate stats with ACEP XP
     const acepXp = await getAcepXpSummary(ship.id);
-    const newStats = calculateShipStats(ship.hullType, newModules, acepXp);
+    const newStats = calculateShipStats(newModules, acepXp);
     this.ctx.clientShips.set(client.sessionId, newStats);
     client.send('moduleRemoved', {
       modules: newModules,

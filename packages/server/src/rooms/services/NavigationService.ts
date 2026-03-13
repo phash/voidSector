@@ -68,11 +68,9 @@ import {
 import {
   JUMP_NORMAL_AP_COST,
   JUMP_NORMAL_MAX_RANGE,
-  FEATURE_HYPERDRIVE_V2,
   AUTOPILOT_STEP_MS,
-  HYPERJUMP_FUEL_PER_SECTOR,
   HYPERJUMP_PIRATE_FUEL_PENALTY,
-  HULL_FUEL_MULTIPLIER,
+  BASE_FUEL_PER_JUMP,
   FUEL_COST_PER_UNIT,
   REP_PRICE_MODIFIERS,
   getFuelRepPriceModifier,
@@ -138,10 +136,8 @@ export class NavigationService {
     if (sectorData.type === 'station') {
       recordVisit(sectorX, sectorY).catch(() => {});
       updatePlayerStationRep(auth.userId, sectorX, sectorY, STATION_REP_VISIT).catch(() => {});
-      if (FEATURE_HYPERDRIVE_V2) {
-        const ship = this.ctx.getShipForClient(client.sessionId);
-        await this.tryAutoRefuel(client, auth, ship);
-      }
+      const ship = this.ctx.getShipForClient(client.sessionId);
+      await this.tryAutoRefuel(client, auth, ship);
     }
 
     // Check for JumpGate at this sector
@@ -501,299 +497,176 @@ export class NavigationService {
 
     // Get ship stats
     const ship = this.ctx.getShipForClient(client.sessionId);
-    const hullType = this.ctx.clientHullTypes.get(client.sessionId) ?? 'scout';
 
-    if (FEATURE_HYPERDRIVE_V2) {
-      // ── Hyperdrive V2: charge-gated jumps ──
+    // ── Hyperdrive V2: charge-gated jumps ──
 
-      // Require a drive module (hyperdriveRange > 0)
-      if (ship.hyperdriveRange <= 0) {
-        client.send('error', { code: 'HYPERJUMP_FAIL', message: 'No hyperdrive installed' });
-        return;
-      }
-
-      // Get or init hyperdrive state from Redis
-      let hdState = await getHyperdriveState(auth.userId);
-      if (!hdState) {
-        hdState = createHyperdriveState(ship);
-        await setHyperdriveState(auth.userId, hdState);
-      }
-
-      // Calculate current charge (lazy regen)
-      const now = Date.now();
-      const currentCharge = calculateCurrentCharge(hdState, now);
-
-      // Check charge covers distance
-      if (distance > currentCharge) {
-        client.send('error', {
-          code: 'HYPERJUMP_FAIL',
-          message: `Insufficient hyperdrive charge (need ${distance}, have ${Math.floor(currentCharge)})`,
-        });
-        return;
-      }
-
-      // Fuel cost: V2 formula with hull multiplier and drive efficiency
-      const hullMult = HULL_FUEL_MULTIPLIER[hullType] ?? 1.0;
-      const fuelCost = calcHyperjumpFuelV2(
-        HYPERJUMP_FUEL_PER_SECTOR,
-        distance,
-        hullMult,
-        ship.hyperdriveFuelEfficiency,
-      );
-
-      // Apply pirate zone fuel penalty
-      const isPirate =
-        sourceSector?.contents?.includes('pirate_zone') ||
-        targetSectorNebula?.contents?.includes('pirate_zone');
-      const finalFuelCost = isPirate
-        ? Math.ceil(fuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY)
-        : fuelCost;
-
-      // Validate AP
-      const apCost = calcHyperjumpAP(ship.engineSpeed);
-      const ap = await getAPState(auth.userId);
-      const updated = calculateCurrentAP(ap);
-      if (updated.current < apCost) {
-        client.send('error', {
-          code: 'HYPERJUMP_FAIL',
-          message: `Not enough AP (need ${apCost}, have ${updated.current})`,
-        });
-        return;
-      }
-
-      // Validate fuel
-      const currentFuel = await getFuelState(auth.userId);
-      if (currentFuel === null || currentFuel < finalFuelCost) {
-        client.send('error', {
-          code: 'HYPERJUMP_FAIL',
-          message: `Not enough fuel (need ${finalFuelCost}, have ${currentFuel ?? 0})`,
-        });
-        return;
-      }
-
-      // Spend charge
-      const newHdState = spendCharge(hdState, distance, now);
-      if (!newHdState) {
-        client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Hyperdrive charge spend failed' });
-        return;
-      }
-      await setHyperdriveState(auth.userId, newHdState);
-
-      // Deduct AP upfront
-      const newAP = { ...updated, current: updated.current - apCost };
-      await saveAPState(auth.userId, newAP);
-      client.send('apUpdate', newAP);
-
-      // Deduct fuel upfront
-      const newFuel = currentFuel - finalFuelCost;
-      await saveFuelState(auth.userId, newFuel);
-      client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
-
-      // Send hyperdrive state update to client
-      client.send('hyperdriveUpdate', {
-        charge: newHdState.charge,
-        maxCharge: newHdState.maxCharge,
-        regenPerSecond: newHdState.regenPerSecond,
-        lastTick: newHdState.lastTick,
-      });
-
-      // Build step list (Manhattan path: X first, then Y)
-      // Use hyperdriveSpeed for autopilot tick rate
-      const autopilotMs =
-        ship.hyperdriveSpeed > 0
-          ? Math.max(20, Math.floor(AUTOPILOT_STEP_MS / ship.hyperdriveSpeed))
-          : AUTOPILOT_STEP_MS;
-      const steps: { x: number; y: number }[] = [];
-      let cx = pos.x;
-      let cy = pos.y;
-      const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
-      const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
-      for (let i = 0; i < Math.abs(dx); i++) {
-        cx += stepX;
-        steps.push({ x: cx, y: cy });
-      }
-      for (let i = 0; i < Math.abs(dy); i++) {
-        cy += stepY;
-        steps.push({ x: cx, y: cy });
-      }
-
-      // Start autopilot
-      let stepIndex = 0;
-      client.send('autopilotStart', { targetX, targetY, totalSteps: steps.length });
-
-      const timer = setInterval(async () => {
-        try {
-          if (stepIndex >= steps.length) {
-            clearInterval(timer);
-            this.ctx.autopilotTimers.delete(client.sessionId);
-            await savePlayerPosition(auth.userId, targetX, targetY);
-            await addDiscovery(auth.userId, targetX, targetY);
-            const hjPlayer = this.ctx.state.players.get(client.sessionId);
-            if (hjPlayer) {
-              hjPlayer.x = targetX;
-              hjPlayer.y = targetY;
-            }
-            let targetSector = await getSector(targetX, targetY);
-            if (!targetSector) {
-              {
-                const { qx, qy } = sectorToQuadrant(targetX, targetY);
-                const _controls = await getAllQuadrantControls();
-                targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
-              }
-              await saveSector(targetSector);
-            }
-            this.ctx.playerSectorData.set(client.sessionId, targetSector);
-            client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
-            await this.ctx.checkFirstContact(client, auth, targetX, targetY);
-
-            // Auto-refuel at station if enabled
-            if (targetSector.contents?.includes('station') || targetSector.type === 'station') {
-              await this.tryAutoRefuel(client, auth, ship);
-            }
-            return;
-          }
-          const step = steps[stepIndex];
-          await savePlayerPosition(auth.userId, step.x, step.y);
-          await addDiscovery(auth.userId, step.x, step.y);
-          const hjStepPlayer = this.ctx.state.players.get(client.sessionId);
-          if (hjStepPlayer) {
-            hjStepPlayer.x = step.x;
-            hjStepPlayer.y = step.y;
-          }
-          stepIndex++;
-          client.send('autopilotUpdate', {
-            x: step.x,
-            y: step.y,
-            remaining: steps.length - stepIndex,
-          });
-        } catch (err) {
-          logger.error({ err }, 'Hyperjump autopilot step error');
-          clearInterval(timer);
-          this.ctx.autopilotTimers.delete(client.sessionId);
-          client.send('autopilotComplete', { x: -1, y: -1 });
-        }
-      }, autopilotMs);
-
-      this.ctx.autopilotTimers.set(client.sessionId, timer);
-    } else {
-      // ── Legacy hyperjump (V1) ──
-
-      // Calculate costs with engine-speed-based AP and distance-scaled fuel
-      const apCost = calcHyperjumpAP(ship.engineSpeed);
-      const baseFuelCost = calcHyperjumpFuel(ship.fuelPerJump, distance);
-
-      // Apply pirate zone fuel penalty if source or target is pirate zone
-      const isPirate =
-        sourceSector?.contents?.includes('pirate_zone') ||
-        targetSectorNebula?.contents?.includes('pirate_zone');
-      const fuelCost = isPirate
-        ? Math.ceil(baseFuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY)
-        : baseFuelCost;
-
-      // Validate AP
-      const ap = await getAPState(auth.userId);
-      const updated = calculateCurrentAP(ap);
-      if (updated.current < apCost) {
-        client.send('error', {
-          code: 'HYPERJUMP_FAIL',
-          message: `Not enough AP (need ${apCost}, have ${updated.current})`,
-        });
-        return;
-      }
-
-      // Validate fuel
-      const currentFuel = await getFuelState(auth.userId);
-      if (currentFuel === null || currentFuel < fuelCost) {
-        client.send('error', {
-          code: 'HYPERJUMP_FAIL',
-          message: `Not enough fuel (need ${fuelCost}, have ${currentFuel ?? 0})`,
-        });
-        return;
-      }
-
-      // Deduct AP upfront
-      const newAP = { ...updated, current: updated.current - apCost };
-      await saveAPState(auth.userId, newAP);
-      client.send('apUpdate', newAP);
-
-      // Deduct fuel upfront
-      const newFuel = currentFuel - fuelCost;
-      await saveFuelState(auth.userId, newFuel);
-      client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
-
-      // Build step list (Manhattan path: X first, then Y)
-      const steps: { x: number; y: number }[] = [];
-      let cx = pos.x;
-      let cy = pos.y;
-      const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
-      const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
-      for (let i = 0; i < Math.abs(dx); i++) {
-        cx += stepX;
-        steps.push({ x: cx, y: cy });
-      }
-      for (let i = 0; i < Math.abs(dy); i++) {
-        cy += stepY;
-        steps.push({ x: cx, y: cy });
-      }
-
-      // Start autopilot
-      let stepIndex = 0;
-      client.send('autopilotStart', { targetX, targetY, totalSteps: steps.length });
-
-      const timer = setInterval(async () => {
-        try {
-          if (stepIndex >= steps.length) {
-            clearInterval(timer);
-            this.ctx.autopilotTimers.delete(client.sessionId);
-            // Save final position and record discovery
-            await savePlayerPosition(auth.userId, targetX, targetY);
-            await addDiscovery(auth.userId, targetX, targetY);
-            const v1Player = this.ctx.state.players.get(client.sessionId);
-            if (v1Player) {
-              v1Player.x = targetX;
-              v1Player.y = targetY;
-            }
-            // Load or generate target sector
-            let targetSector = await getSector(targetX, targetY);
-            if (!targetSector) {
-              {
-                const { qx, qy } = sectorToQuadrant(targetX, targetY);
-                const _controls = await getAllQuadrantControls();
-                targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
-              }
-              await saveSector(targetSector);
-            }
-            this.ctx.playerSectorData.set(client.sessionId, targetSector);
-            client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
-            // Quadrant first-contact detection after hyperjump completes
-            await this.ctx.checkFirstContact(client, auth, targetX, targetY);
-            return;
-          }
-          const step = steps[stepIndex];
-          // Save position and record discovery for intermediate step
-          await savePlayerPosition(auth.userId, step.x, step.y);
-          await addDiscovery(auth.userId, step.x, step.y);
-          const v1StepPlayer = this.ctx.state.players.get(client.sessionId);
-          if (v1StepPlayer) {
-            v1StepPlayer.x = step.x;
-            v1StepPlayer.y = step.y;
-          }
-          stepIndex++;
-          client.send('autopilotUpdate', {
-            x: step.x,
-            y: step.y,
-            remaining: steps.length - stepIndex,
-          });
-        } catch (err) {
-          logger.error({ err }, 'Hyperjump V1 autopilot step error');
-          clearInterval(timer);
-          this.ctx.autopilotTimers.delete(client.sessionId);
-          client.send('autopilotComplete', { x: -1, y: -1 });
-        }
-      }, AUTOPILOT_STEP_MS);
-
-      this.ctx.autopilotTimers.set(client.sessionId, timer);
+    // Require a drive module (hyperdriveRange > 0)
+    if (ship.hyperdriveRange <= 0) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'No hyperdrive installed' });
+      return;
     }
+
+    // Get or init hyperdrive state from Redis
+    let hdState = await getHyperdriveState(auth.userId);
+    if (!hdState) {
+      hdState = createHyperdriveState(ship);
+      await setHyperdriveState(auth.userId, hdState);
+    }
+
+    // Calculate current charge (lazy regen)
+    const now = Date.now();
+    const currentCharge = calculateCurrentCharge(hdState, now);
+
+    // Check charge covers distance
+    if (distance > currentCharge) {
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: `Insufficient hyperdrive charge (need ${distance}, have ${Math.floor(currentCharge)})`,
+      });
+      return;
+    }
+
+    // Fuel cost: V2 formula with drive efficiency
+    const fuelCost = calcHyperjumpFuelV2(
+      BASE_FUEL_PER_JUMP,
+      distance,
+      ship.hyperdriveFuelEfficiency,
+    );
+
+    // Apply pirate zone fuel penalty
+    const isPirate =
+      sourceSector?.contents?.includes('pirate_zone') ||
+      targetSectorNebula?.contents?.includes('pirate_zone');
+    const finalFuelCost = isPirate
+      ? Math.ceil(fuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY)
+      : fuelCost;
+
+    // Validate AP
+    const apCost = calcHyperjumpAP(ship.engineSpeed);
+    const ap = await getAPState(auth.userId);
+    const updated = calculateCurrentAP(ap);
+    if (updated.current < apCost) {
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: `Not enough AP (need ${apCost}, have ${updated.current})`,
+      });
+      return;
+    }
+
+    // Validate fuel
+    const currentFuel = await getFuelState(auth.userId);
+    if (currentFuel === null || currentFuel < finalFuelCost) {
+      client.send('error', {
+        code: 'HYPERJUMP_FAIL',
+        message: `Not enough fuel (need ${finalFuelCost}, have ${currentFuel ?? 0})`,
+      });
+      return;
+    }
+
+    // Spend charge
+    const newHdState = spendCharge(hdState, distance, now);
+    if (!newHdState) {
+      client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Hyperdrive charge spend failed' });
+      return;
+    }
+    await setHyperdriveState(auth.userId, newHdState);
+
+    // Deduct AP upfront
+    const newAP = { ...updated, current: updated.current - apCost };
+    await saveAPState(auth.userId, newAP);
+    client.send('apUpdate', newAP);
+
+    // Deduct fuel upfront
+    const newFuel = currentFuel - finalFuelCost;
+    await saveFuelState(auth.userId, newFuel);
+    client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
+
+    // Send hyperdrive state update to client
+    client.send('hyperdriveUpdate', {
+      charge: newHdState.charge,
+      maxCharge: newHdState.maxCharge,
+      regenPerSecond: newHdState.regenPerSecond,
+      lastTick: newHdState.lastTick,
+    });
+
+    // Build step list (Manhattan path: X first, then Y)
+    // Use hyperdriveSpeed for autopilot tick rate
+    const autopilotMs =
+      ship.hyperdriveSpeed > 0
+        ? Math.max(20, Math.floor(AUTOPILOT_STEP_MS / ship.hyperdriveSpeed))
+        : AUTOPILOT_STEP_MS;
+    const steps: { x: number; y: number }[] = [];
+    let cx = pos.x;
+    let cy = pos.y;
+    const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+    const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+    for (let i = 0; i < Math.abs(dx); i++) {
+      cx += stepX;
+      steps.push({ x: cx, y: cy });
+    }
+    for (let i = 0; i < Math.abs(dy); i++) {
+      cy += stepY;
+      steps.push({ x: cx, y: cy });
+    }
+
+    // Start autopilot
+    let stepIndex = 0;
+    client.send('autopilotStart', { targetX, targetY, totalSteps: steps.length });
+
+    const timer = setInterval(async () => {
+      try {
+        if (stepIndex >= steps.length) {
+          clearInterval(timer);
+          this.ctx.autopilotTimers.delete(client.sessionId);
+          await savePlayerPosition(auth.userId, targetX, targetY);
+          await addDiscovery(auth.userId, targetX, targetY);
+          const hjPlayer = this.ctx.state.players.get(client.sessionId);
+          if (hjPlayer) {
+            hjPlayer.x = targetX;
+            hjPlayer.y = targetY;
+          }
+          let targetSector = await getSector(targetX, targetY);
+          if (!targetSector) {
+            {
+              const { qx, qy } = sectorToQuadrant(targetX, targetY);
+              const _controls = await getAllQuadrantControls();
+              targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+            }
+            await saveSector(targetSector);
+          }
+          this.ctx.playerSectorData.set(client.sessionId, targetSector);
+          client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
+          await this.ctx.checkFirstContact(client, auth, targetX, targetY);
+
+          // Auto-refuel at station
+          if (targetSector.contents?.includes('station') || targetSector.type === 'station') {
+            await this.tryAutoRefuel(client, auth, ship);
+          }
+          return;
+        }
+        const step = steps[stepIndex];
+        await savePlayerPosition(auth.userId, step.x, step.y);
+        await addDiscovery(auth.userId, step.x, step.y);
+        const hjStepPlayer = this.ctx.state.players.get(client.sessionId);
+        if (hjStepPlayer) {
+          hjStepPlayer.x = step.x;
+          hjStepPlayer.y = step.y;
+        }
+        stepIndex++;
+        client.send('autopilotUpdate', {
+          x: step.x,
+          y: step.y,
+          remaining: steps.length - stepIndex,
+        });
+      } catch (err) {
+        logger.error({ err }, 'Hyperjump autopilot step error');
+        clearInterval(timer);
+        this.ctx.autopilotTimers.delete(client.sessionId);
+        client.send('autopilotComplete', { x: -1, y: -1 });
+      }
+    }, autopilotMs);
+
+    this.ctx.autopilotTimers.set(client.sessionId, timer);
   }
 
   async handleCancelAutopilot(client: Client): Promise<void> {
@@ -1136,11 +1009,8 @@ export class NavigationService {
           // Quadrant first-contact detection
           await this.ctx.checkFirstContact(client, auth, target.x, target.y);
 
-          // Auto-refuel at station if FEATURE_HYPERDRIVE_V2 is enabled
-          if (
-            FEATURE_HYPERDRIVE_V2 &&
-            (targetSector.contents?.includes('station') || targetSector.type === 'station')
-          ) {
+          // Auto-refuel at station
+          if (targetSector.contents?.includes('station') || targetSector.type === 'station') {
             await this.tryAutoRefuel(client, auth, ship);
           }
           return;
@@ -1152,15 +1022,11 @@ export class NavigationService {
 
         // Determine the next segment
         let hyperdriveCharge = 0;
-        if (useHyperjump && FEATURE_HYPERDRIVE_V2) {
+        if (useHyperjump) {
           const hdState = await getHyperdriveState(auth.userId);
           if (hdState) {
             hyperdriveCharge = calculateCurrentCharge(hdState);
           }
-        } else if (useHyperjump) {
-          // V1: treat charge as remaining fuel
-          const fuel = await getFuelState(auth.userId);
-          hyperdriveCharge = fuel ?? 0;
         }
 
         const segment = getNextSegment(
@@ -1196,17 +1062,7 @@ export class NavigationService {
 
         let fuelCost = 0;
         if (segment.isHyperjump) {
-          const segHullType = this.ctx.clientHullTypes.get(client.sessionId) ?? 'scout';
-          const hullMul = HULL_FUEL_MULTIPLIER[segHullType] ?? 1.0;
-          fuelCost = Math.max(
-            1,
-            Math.ceil(
-              HYPERJUMP_FUEL_PER_SECTOR *
-                segment.moves.length *
-                hullMul *
-                (1 - ship.hyperdriveFuelEfficiency),
-            ),
-          );
+          fuelCost = calcHyperjumpFuelV2(BASE_FUEL_PER_JUMP, segment.moves.length, ship.hyperdriveFuelEfficiency);
 
           const currentFuel = await getFuelState(auth.userId);
           if (currentFuel === null || currentFuel < fuelCost) {
@@ -1232,7 +1088,7 @@ export class NavigationService {
         }
 
         // Spend hyperdrive charge if V2
-        if (segment.isHyperjump && FEATURE_HYPERDRIVE_V2) {
+        if (segment.isHyperjump) {
           const hdState = await getHyperdriveState(auth.userId);
           if (hdState) {
             const now = Date.now();
@@ -1292,7 +1148,6 @@ export class NavigationService {
 
   /**
    * Auto-refuel at a station: top up fuel to max using credits.
-   * Only runs when FEATURE_HYPERDRIVE_V2 is enabled.
    * Applies the better of station-rep vs faction-rep price modifier.
    */
   async tryAutoRefuel(client: Client, auth: AuthPayload, ship: ShipStats): Promise<void> {

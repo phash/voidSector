@@ -29,7 +29,6 @@ function makeCtx(): any {
     quadrantX: 0,
     quadrantY: 0,
     clientShips: new Map(),
-    clientHullTypes: new Map(),
     autopilotTimers: new Map(),
     playerSectorData: new Map(),
     checkRate: () => true,

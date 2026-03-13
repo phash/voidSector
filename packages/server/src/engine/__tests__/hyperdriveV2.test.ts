@@ -4,7 +4,7 @@ import {
   calculateCurrentCharge,
   spendCharge,
   calcHyperjumpFuelV2,
-  HYPERJUMP_FUEL_PER_SECTOR,
+  BASE_FUEL_PER_JUMP,
   FUEL_COST_PER_UNIT,
   HYPERJUMP_PIRATE_FUEL_PENALTY,
   calcHyperjumpAP,
@@ -228,9 +228,9 @@ describe('Hyperdrive V2 — Charge System', () => {
 
   describe('V2 fuel calculation', () => {
     it('calculates base fuel cost for hyperjump', () => {
-      // cost = ceil(1 * 10 * (1 - 0)) = 10
-      const cost = calcHyperjumpFuelV2(HYPERJUMP_FUEL_PER_SECTOR, 10, 0);
-      expect(cost).toBe(10);
+      // cost = ceil(100 * 10 * (1 - 0)) = 1000
+      const cost = calcHyperjumpFuelV2(BASE_FUEL_PER_JUMP, 10, 0);
+      expect(cost).toBe(1000);
     });
 
     it('applies drive efficiency to reduce cost', () => {
@@ -252,7 +252,7 @@ describe('Hyperdrive V2 — Charge System', () => {
     });
 
     it('pirate fuel penalty multiplies the V2 cost', () => {
-      const baseCost = calcHyperjumpFuelV2(HYPERJUMP_FUEL_PER_SECTOR, 10, 0);
+      const baseCost = calcHyperjumpFuelV2(BASE_FUEL_PER_JUMP, 10, 0);
       const pirateCost = Math.ceil(baseCost * HYPERJUMP_PIRATE_FUEL_PENALTY);
       expect(pirateCost).toBeGreaterThan(baseCost);
       expect(pirateCost).toBe(Math.ceil(baseCost * 1.5));

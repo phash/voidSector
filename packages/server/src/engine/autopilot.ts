@@ -1,10 +1,10 @@
 import type { Coords, ShipStats } from '@void-sector/shared';
 import {
-  HYPERJUMP_FUEL_PER_SECTOR,
-  HULL_FUEL_MULTIPLIER,
+  BASE_FUEL_PER_JUMP,
   HYPERJUMP_BASE_AP,
   HYPERJUMP_AP_PER_SPEED,
   HYPERJUMP_MIN_AP,
+  calcHyperjumpFuelV2,
 } from '@void-sector/shared';
 
 /**
@@ -195,12 +195,8 @@ export function calculateAutopilotCosts(
   const speed = Math.max(1, shipStats.engineSpeed);
   const numBatches = Math.ceil(totalSteps / speed);
 
-  // Fuel: total fuel cost based on hull multiplier and efficiency
-  const hullType = getHullTypeFromStats(shipStats);
-  const hullMul = hullType ? HULL_FUEL_MULTIPLIER[hullType] : 1.0;
-  const rawFuel =
-    HYPERJUMP_FUEL_PER_SECTOR * totalSteps * hullMul * (1 - shipStats.hyperdriveFuelEfficiency);
-  const totalFuel = Math.max(1, Math.ceil(rawFuel));
+  // Fuel: total fuel cost using V2 formula
+  const totalFuel = calcHyperjumpFuelV2(BASE_FUEL_PER_JUMP, totalSteps, shipStats.hyperdriveFuelEfficiency);
 
   // AP: one AP charge per batch
   const apPerBatch = Math.max(HYPERJUMP_MIN_AP, HYPERJUMP_BASE_AP - speed * HYPERJUMP_AP_PER_SPEED);
@@ -211,20 +207,6 @@ export function calculateAutopilotCosts(
   const estimatedTime = numBatches * tickMs;
 
   return { totalFuel, totalAP, estimatedTime };
-}
-
-/**
- * Infer hull type from ship stats for fuel multiplier lookup.
- * Matches against base stats; returns null if unknown.
- */
-function getHullTypeFromStats(stats: ShipStats): keyof typeof HULL_FUEL_MULTIPLIER | null {
-  // Best-effort match by checking fuelMax ranges
-  // This is a heuristic; in practice the server knows the hull type
-  for (const [hull, mul] of Object.entries(HULL_FUEL_MULTIPLIER)) {
-    if (mul === 1.0 && stats.fuelMax >= 140 && stats.fuelMax <= 160)
-      return hull as keyof typeof HULL_FUEL_MULTIPLIER;
-  }
-  return null;
 }
 
 // --- Segment Extraction ---

@@ -19,7 +19,7 @@ vi.mock('../db/queries.js', () => ({
   getResearchLabTier: vi.fn().mockResolvedValue(1), // old fn — must NOT be called
   getTypedArtefacts: vi.fn().mockResolvedValue({}),
   getPlayerReputations: vi.fn().mockResolvedValue([]),
-  getActiveShip: vi.fn().mockResolvedValue({ id: 'ship-1', hullType: 'scout', modules: [] }),
+  getActiveShip: vi.fn().mockResolvedValue({ id: 'ship-1', modules: [] }),
   getPlayerShips: vi.fn().mockResolvedValue([]),
   updateShipModules: vi.fn().mockResolvedValue(undefined),
   renameShip: vi.fn().mockResolvedValue(undefined),

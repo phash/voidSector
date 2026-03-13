@@ -125,19 +125,16 @@ describe('inventory queries', () => {
     ]);
   });
 
-  it('getCargoCapForPlayer queries hull_type+modules and computes cargoCap via calculateShipStats', async () => {
+  it('getCargoCapForPlayer queries modules and computes cargoCap via calculateShipStats', async () => {
     const { query, getCargoCapForPlayer } = await freshImports();
-    // scout hull with no modules has baseCargo of 3 (from HULLS constant)
+    // no modules -> base cargoCap of 3
     vi.mocked(query).mockResolvedValueOnce({
-      rows: [{ hull_type: 'scout', modules: [] }],
+      rows: [{ modules: [] }],
     } as any);
     const cap = await getCargoCapForPlayer('player1');
-    // Verify the query selects hull_type and modules (not the dropped cargo_cap column)
-    expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('hull_type'), [
-      'player1',
-    ]);
+    // Verify the query selects modules
     expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('modules'), ['player1']);
-    // scout baseCargo = 3, no module bonuses
+    // base cargoCap = 3, no module bonuses
     expect(cap).toBe(3);
   });
 

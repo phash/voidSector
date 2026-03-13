@@ -2,7 +2,6 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createPlayer, createGuestPlayer, findPlayerByUsername } from './db/queries.js';
-import { generateSpawnPosition, assignToCluster } from './engine/spawn.js';
 import type { PlayerData } from '@void-sector/shared';
 
 if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
@@ -22,9 +21,7 @@ export async function register(
   password: string,
 ): Promise<{ player: PlayerData; token: string }> {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-  const spawnPos = generateSpawnPosition();
-  const cluster = await assignToCluster(spawnPos.x, spawnPos.y);
-  const player = await createPlayer(username, passwordHash, { x: cluster.x, y: cluster.y });
+  const player = await createPlayer(username, passwordHash);
   const token = jwt.sign(
     { userId: player.id, username: player.username } satisfies AuthPayload,
     JWT_SECRET,
@@ -55,9 +52,7 @@ export async function login(
 export async function loginAsGuest(): Promise<{ player: PlayerData; token: string }> {
   const hex = crypto.randomBytes(4).toString('hex').toUpperCase();
   const username = `GAST-${hex}`;
-  const spawnPos = generateSpawnPosition();
-  const cluster = await assignToCluster(spawnPos.x, spawnPos.y);
-  const player = await createGuestPlayer(username, { x: cluster.x, y: cluster.y });
+  const player = await createGuestPlayer(username);
   const token = jwt.sign(
     { userId: player.id, username: player.username, isGuest: true } satisfies AuthPayload,
     JWT_SECRET,

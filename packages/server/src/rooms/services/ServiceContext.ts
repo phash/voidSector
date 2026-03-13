@@ -2,7 +2,6 @@ import type { Client } from 'colyseus';
 import type {
   SectorData,
   ShipStats,
-  HullType,
   NpcFactionId,
   ChatMessage,
 } from '@void-sector/shared';
@@ -18,7 +17,6 @@ export interface ServiceContext {
 
   // Per-player caches (Maps stored on room)
   clientShips: Map<string, ShipStats>;
-  clientHullTypes: Map<string, HullType>;
   autopilotTimers: Map<string, ReturnType<typeof setInterval>>;
   playerSectorData: Map<string, SectorData>;
 
