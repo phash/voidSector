@@ -266,7 +266,7 @@ export const SLATE_AREA_RADIUS: Record<number, number> = {
   3: 4,
 };
 
-export const BASE_SCANNER_MEMORY = 2;
+export const BASE_SCANNER_MEMORY = 10;
 
 export function getPhysicalCargoTotal(cargo: { ore: number; gas: number; crystal: number; artefact: number }): number {
   return cargo.ore + cargo.gas + cargo.crystal + cargo.artefact;
