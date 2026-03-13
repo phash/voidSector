@@ -119,10 +119,10 @@ function pickItemType(tier: number): WreckItem['itemType'] {
   } else if (tier === 3) {
     return r < 0.40 ? 'resource' : r < 0.65 ? 'module' : r < 0.85 ? 'blueprint' : 'data_slate';
   } else if (tier === 4) {
-    return r < 0.25 ? 'resource' : r < 0.50 ? 'module' : r < 0.70 ? 'blueprint' : r < 0.85 ? 'data_slate' : 'resource';
+    return r < 0.25 ? 'resource' : r < 0.50 ? 'module' : r < 0.70 ? 'blueprint' : r < 0.85 ? 'data_slate' : 'module';
   } else {
     // tier 5
-    return r < 0.20 ? 'resource' : r < 0.40 ? 'blueprint' : r < 0.65 ? 'data_slate' : 'resource';
+    return r < 0.20 ? 'resource' : r < 0.40 ? 'module' : r < 0.60 ? 'blueprint' : r < 0.80 ? 'data_slate' : 'module';
   }
 }
 
@@ -132,9 +132,10 @@ export function calcSalvageChance(
   explorerXp: number,
   helionDecoder = false,
 ): number {
+  const clampedModifier = Math.max(WRECK_DIFFICULTY_MIN, Math.min(WRECK_DIFFICULTY_MAX, modifier));
   const base = 1.0 - baseDifficulty;
   const explorerBonus = Math.min(explorerXp * WRECK_EXPLORER_CHANCE_PER_XP, 0.25);
-  const modBonus = modifier * 0.15;
+  const modBonus = clampedModifier * 0.15;
   const chance = base + explorerBonus - modBonus;
   const clamped = Math.max(0.05, Math.min(0.95, chance));
   if (helionDecoder && baseDifficulty === WRECK_BASE_DIFFICULTY['artefact']) {
