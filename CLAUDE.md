@@ -52,6 +52,11 @@ curl -H "Authorization: Bearer vs-admin-2026" http://localhost:2567/admin/api/st
 
 **DB Migrations**: auto-run on server startup. Next migration: **061**.
 
+**DB queries (Docker)**: `psql -U postgres` fails — use env vars:
+```bash
+docker exec voidsector-postgres-1 bash -c 'psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT 1"'
+```
+
 ---
 
 ## Development Workflow
@@ -100,7 +105,7 @@ Next: **061**.
 
 | Section | ID | Content |
 |---------|-----|---------|
-| Sec 1 | `cockpit-sec1` | Program Selector (12 programs: NAV-COM, RADAR, SCAN, MINING, TRADE, CARGO, QUESTS, FACTION, HANGAR, TECH, QUAD-MAP, TV) |
+| Sec 1 | `cockpit-sec1` | Program Selector (11 programs: NAV-COM, RADAR, SCAN, MINING, TRADE, CARGO, QUESTS, FACTION, TECH, QUAD-MAP, TV) |
 | Sec 2 | `cockpit-sec2` | Main Monitor — RadarCanvas or program content |
 | Sec 3 | `cockpit-sec3` | Detail Monitor — context panel per program |
 | Sec 4 | `cockpit-sec4` | Settings (ShipStatus + CombatStatus + Settings) |
@@ -116,7 +121,9 @@ Next: **061**.
 - **Spawn**: new players spawn within **radius 5 of (0,0)** — coords x∈[1,5], y∈[1,5] (`engine/spawn.ts`)
 - **Rooms**: per-quadrant. Intra-quadrant: `moveSector` message. Cross-quadrant: full leave/join
 - **Errors**: server sends `{ code, message }` → client logs + sets `actionError` for `InlineError`
+  - Some services send plain string, others send `{ code, message }` — client handler must handle both
 - **Tests**: Vitest everywhere. Client: jsdom + RTL + jest-canvas-mock (jest-shim.ts)
+- **vitest EACCES** on `node_modules/.vite/vitest/results.json` after client tests — benign permission error, check `Test Files X passed` line instead
 
 ---
 
@@ -135,6 +142,7 @@ Next: **061**.
 - **ACEP** ✅: XP engine, 4 paths, traits, personality, permadeath, radar icon, 3-tab UI (ACEP · MODULE · SHOP) with Sec 3 detail panel (#265)
 - **Forschung & Wissen** ✅: Wissen-Ressource, typisierte Artefakte (9 Typen), Lab-Stufen 1–5, TechTreeCanvas, Migration 044
 - **Hull-Legacy-Cleanup** ✅ (#291, PR #303): HullType/HULLS/HULL_FUEL_MULTIPLIER removed, BASE_* constants, hyperjump V2 permanent, fuel bar UI, Migration 060
+- **Playtest fixes** ✅: HANGAR removed, actionError/badgeAwarded handlers, drive_mk1 starter, willReadFrequently canvas, BASE_CARGO=10, cargo modules doubled, shop help text, HUD fuel rate, AcepDetailPanel module delta fix
 
 ### Upcoming (in order)
 1. Wreck-POIs auf dem Radar
