@@ -127,15 +127,15 @@ describe('inventory queries', () => {
 
   it('getCargoCapForPlayer queries modules and computes cargoCap via calculateShipStats', async () => {
     const { query, getCargoCapForPlayer } = await freshImports();
-    // no modules -> base cargoCap of 3
+    // no modules -> base cargoCap of 10
     vi.mocked(query).mockResolvedValueOnce({
       rows: [{ modules: [] }],
     } as any);
     const cap = await getCargoCapForPlayer('player1');
     // Verify the query selects modules
     expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('modules'), ['player1']);
-    // base cargoCap = 3, no module bonuses
-    expect(cap).toBe(3);
+    // base cargoCap = 10, no module bonuses
+    expect(cap).toBe(10);
   });
 
   it('getCargoCapForPlayer returns 20 as default when no ship found', async () => {
