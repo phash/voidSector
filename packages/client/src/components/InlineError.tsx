@@ -17,7 +17,7 @@ export function InlineError({ codes, style, autoClearMs = 4000 }: InlineErrorPro
   const setActionError = useStore((s) => s.setActionError);
 
   const visible =
-    actionError !== null && (!codes || codes.some((c) => actionError.code.startsWith(c)));
+    actionError !== null && (!codes || codes.some((c) => (actionError.code ?? '').startsWith(c)));
 
   useEffect(() => {
     if (!visible) return;
