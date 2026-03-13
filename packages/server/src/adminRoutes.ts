@@ -46,6 +46,8 @@ import {
   updateSlateOwner,
   addSlateToCargo,
 } from './db/queries.js';
+import { query } from './db/client.js';
+import { civQueries } from './db/civQueries.js';
 import { constructionBus } from './constructionBus.js';
 import { MODULES, QUADRANT_SIZE } from '@void-sector/shared';
 
@@ -589,6 +591,95 @@ adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: R
     res.json({ success: true });
   } catch (err) {
     logger.error({ err }, 'Admin construction-sites POST complete error');
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+// ── Structures Overview ─────────────────────────────────────────────
+
+adminRouter.get('/structures/overview', async (_req: Request, res: Response) => {
+  try {
+    const stations = await civQueries.getAllStations();
+    const { rows: jumpgates } = await query<{
+      id: string; sector_x: number; sector_y: number;
+      target_x: number; target_y: number; gate_type: string;
+      owner_id: string | null; toll_credits: number;
+      level_connection: number; level_distance: number;
+      built_at: string | null; owner_name: string | null;
+    }>(
+      `SELECT g.id, g.sector_x, g.sector_y, g.target_x, g.target_y,
+              g.gate_type, g.owner_id::text, g.toll_credits,
+              g.level_connection, g.level_distance, g.built_at,
+              p.username AS owner_name
+       FROM jumpgates g
+       LEFT JOIN players p ON p.id = g.owner_id
+       ORDER BY g.sector_x, g.sector_y`,
+    );
+    res.json({ stations, jumpgates });
+  } catch (err) {
+    logger.error({ err }, 'Admin structures overview GET error');
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+adminRouter.post('/structures/station', async (req: Request, res: Response) => {
+  try {
+    const { sectorX, sectorY, hasShipyard, hasWarehouse, hasKontor } = req.body as {
+      sectorX: number; sectorY: number;
+      hasShipyard?: boolean; hasWarehouse?: boolean; hasKontor?: boolean;
+    };
+    if (typeof sectorX !== 'number' || typeof sectorY !== 'number') {
+      res.status(400).json({ error: 'sectorX and sectorY required' });
+      return;
+    }
+    await civQueries.upsertStation(
+      sectorX, sectorY, 'humans',
+      hasShipyard ?? true, hasWarehouse ?? true, hasKontor ?? false,
+    );
+    await query(
+      `INSERT INTO sectors (x, y, type, seed) VALUES ($1, $2, 'station', 0)
+       ON CONFLICT (x, y) DO UPDATE SET type = 'station'`,
+      [sectorX, sectorY],
+    );
+    await logAdminEvent('create_human_station', { sectorX, sectorY });
+    logger.info({ sectorX, sectorY }, 'Admin created human station');
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, 'Admin create station error');
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+adminRouter.post('/structures/jumpgate', async (req: Request, res: Response) => {
+  try {
+    const { sectorX, sectorY, targetX, targetY, gateType } = req.body as {
+      sectorX: number; sectorY: number;
+      targetX?: number; targetY?: number; gateType?: string;
+    };
+    if (typeof sectorX !== 'number' || typeof sectorY !== 'number') {
+      res.status(400).json({ error: 'sectorX and sectorY required' });
+      return;
+    }
+    const id = `system_${sectorX}_${sectorY}`;
+    const tx = targetX ?? sectorX;
+    const ty = targetY ?? sectorY;
+    const gt = gateType === 'wormhole' ? 'wormhole' : 'bidirectional';
+    await query(
+      `INSERT INTO jumpgates (id, sector_x, sector_y, target_x, target_y, gate_type)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (sector_x, sector_y) DO NOTHING`,
+      [id, sectorX, sectorY, tx, ty, gt],
+    );
+    await query(
+      `INSERT INTO sectors (x, y, type, seed) VALUES ($1, $2, 'jumpgate', 0)
+       ON CONFLICT (x, y) DO UPDATE SET type = 'jumpgate'`,
+      [sectorX, sectorY],
+    );
+    await logAdminEvent('create_jumpgate', { sectorX, sectorY, targetX: tx, targetY: ty, gateType: gt });
+    logger.info({ sectorX, sectorY }, 'Admin created jumpgate');
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, 'Admin create jumpgate error');
     res.status(500).json({ error: 'Internal error' });
   }
 });
