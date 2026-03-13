@@ -70,6 +70,25 @@ export class CommunityQuestService {
     return getActiveCommunityAlienQuest();
   }
 
+  async getActivePayload(): Promise<{
+    id: number; title: string; description: string | null;
+    targetCount: number; currentCount: number;
+    rewardType: string | null; expiresAt: number | null; status: string;
+  } | null> {
+    const row = await getActiveCommunityAlienQuest();
+    if (!row) return null;
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      targetCount: row.target_count,
+      currentCount: row.current_count,
+      rewardType: row.reward_type,
+      expiresAt: row.expires_at,
+      status: row.status,
+    };
+  }
+
   async contribute(playerId: string, amount: number, questType?: string): Promise<void> {
     const quest = await getActiveCommunityAlienQuest();
     if (!quest) return;

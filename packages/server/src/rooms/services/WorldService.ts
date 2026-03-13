@@ -1652,6 +1652,8 @@ export class WorldService {
           message: `[${quadrant.name}] charted by ${auth.username}`,
           type: 'quadrant_discovery',
         });
+        // Add to player's known quadrants
+        await addPlayerKnownQuadrant(auth.userId, qx, qy);
         // ACEP: INTEL-XP for first quadrant discovery (spec: +20)
         addAcepXpForPlayer(auth.userId, 'intel', 20).catch(() => {});
         // ACEP: EXPLORER-XP bonus for first quadrant discovery (spec: +50)

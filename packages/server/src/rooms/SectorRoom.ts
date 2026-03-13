@@ -69,7 +69,7 @@ import {
   getInventory,
   getMiningStoryIndex,
 } from '../db/queries.js';
-import { getQuadrant } from '../db/quadrantQueries.js';
+import { getQuadrant, addPlayerKnownQuadrant } from '../db/quadrantQueries.js';
 import { query } from '../db/client.js';
 import {
   RECONNECTION_TIMEOUT_S,
@@ -889,7 +889,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     this.onMessage('getActiveCommunityQuest', async (client) => {
-      const quest = await this.communityQuests.getActive().catch(() => null);
+      const quest = await this.communityQuests.getActivePayload().catch(() => null);
       client.send('activeCommunityQuest', { quest });
     });
 
@@ -898,7 +898,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       if (!auth?.userId) return;
       const amount = Math.max(1, Math.min(data.amount ?? 1, 100)); // cap at 100 per contribution
       await this.communityQuests.contribute(auth.userId, amount).catch(() => {});
-      const quest = await this.communityQuests.getActive().catch(() => null);
+      const quest = await this.communityQuests.getActivePayload().catch(() => null);
       client.send('activeCommunityQuest', { quest });
     });
 
@@ -1201,6 +1201,8 @@ export class SectorRoom extends Room<SectorRoomState> {
 
       // Record quadrant visit for Fog-of-War
       await recordQuadrantVisit(auth.userId, this.quadrantX, this.quadrantY);
+      // Ensure starting quadrant is in player's known quadrant list
+      await addPlayerKnownQuadrant(auth.userId, this.quadrantX, this.quadrantY);
 
       // Save position
       await savePlayerPosition(auth.userId, sectorX, sectorY);
