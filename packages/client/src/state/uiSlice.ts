@@ -90,6 +90,10 @@ export interface UISlice {
   openContextMenu: (playerId: string, playerName: string, x: number, y: number) => void;
   closeContextMenu: () => void;
 
+  // Area scan summary notification
+  areaScanSummary: { sectorsScanned: number; newSectors: number; notable: string[] } | null;
+  setAreaScanSummary: (summary: { sectorsScanned: number; newSectors: number; notable: string[] } | null) => void;
+
   // Station terminal
   stationTerminalOpen: boolean;
   openStationTerminal: () => void;
@@ -203,6 +207,9 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   setAcepActiveTab: (tab) => set({ acepActiveTab: tab }),
   setAcepHoveredModuleId: (id) => set({ acepHoveredModuleId: id }),
   setSelectedSlateId: (id) => set({ selectedSlateId: id }),
+
+  areaScanSummary: null,
+  setAreaScanSummary: (summary) => set({ areaScanSummary: summary }),
 
   stationTerminalOpen: false,
   openStationTerminal: () => set({ stationTerminalOpen: true }),

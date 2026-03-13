@@ -317,7 +317,7 @@ class GameNetwork {
     );
 
     // Scan result (area scan)
-    room.onMessage('scanResult', (data: { sectors: SectorData[]; apRemaining: number }) => {
+    room.onMessage('scanResult', (data: { sectors: SectorData[]; apRemaining: number; sharedByScan?: boolean }) => {
       const store = useStore.getState();
       // Don't clear scan animation immediately — let it finish naturally
       store.setScanPending(false);
@@ -336,6 +336,23 @@ class GameNetwork {
       store.addLogEntry(`Scan complete: ${data.sectors.length} sectors revealed`);
       // Stats: count area scan
       store.incrementStat('sectorsScanned');
+      // Area scan summary notification
+      if (!data.sharedByScan) {
+        const notable: string[] = [];
+        const pirateCount = data.sectors.filter((s) => s.type === 'pirate').length;
+        const stationCount = data.sectors.filter((s) => s.type === 'station').length;
+        const anomalyCount = data.sectors.filter((s) => s.type === 'anomaly').length;
+        const wreckCount = data.sectors.filter((s) => (s.contents ?? []).includes('wreck')).length;
+        if (pirateCount > 0) notable.push(`${pirateCount} Piraten`);
+        if (stationCount > 0) notable.push(`${stationCount} Station${stationCount > 1 ? 'en' : ''}`);
+        if (anomalyCount > 0) notable.push(`${anomalyCount} Anomalie${anomalyCount > 1 ? 'n' : ''}`);
+        if (wreckCount > 0) notable.push(`${wreckCount} Wrack${wreckCount > 1 ? 's' : ''}`);
+        store.setAreaScanSummary({
+          sectorsScanned: data.sectors.length,
+          newSectors: burstKeys.length,
+          notable,
+        });
+      }
       // Alert LOG if interesting sectors found
       const hasInteresting = data.sectors.some(
         (s) => s.type === 'pirate' || s.type === 'anomaly' || s.type === 'station',
@@ -927,7 +944,7 @@ class GameNetwork {
       const store = useStore.getState();
       if (data.success && data.quest) {
         store.setActiveQuests([...store.activeQuests, data.quest]);
-        store.addLogEntry(`Quest angenommen: ${data.quest.title}`);
+        // Note: server already sends logEntry "Quest angenommen: ..." via ctx.send — no duplicate here
       } else {
         store.addLogEntry(`Quest-Fehler: ${data.error}`);
         store.setActionError({ code: 'QUEST_ERROR', message: data.error });

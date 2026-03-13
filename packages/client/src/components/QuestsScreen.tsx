@@ -12,6 +12,14 @@ import { InlineError } from './InlineError';
 
 const MAX_TRACKED = 5;
 
+const NPC_FACTION_LABELS: Record<string, string> = {
+  independent: 'SOLO',
+  traders: 'HÄNDLER',
+  scientists: 'FORSCHER',
+  pirates: 'PIRATEN',
+  ancients: 'ANCIENTS',
+};
+
 const QUEST_TYPE_LABELS: Record<string, string> = {
   fetch: 'DELIVERY',
   scan: 'SCAN',
@@ -201,7 +209,7 @@ function JournalTab() {
               <option value="">{t('status.allFactions')}</option>
               {factionIds.map((f) => (
                 <option key={f} value={f}>
-                  {f.toUpperCase()}
+                  {NPC_FACTION_LABELS[f] ?? f.toUpperCase()}
                 </option>
               ))}
             </select>
