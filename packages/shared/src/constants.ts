@@ -2789,3 +2789,22 @@ export const WRECK_SLATE_JUMPGATE_HUMANITY_TAX = 25;
 export function getRaceVisual(raceId: AlienFactionId): RaceVisualConfig {
   return RACE_VISUAL_CONFIGS[raceId] ?? RACE_VISUAL_CONFIGS.ancients;
 }
+
+// ─── Conquest ──────────────────────────────────────────────────────────────
+
+export const CONQUEST_POOL_DRAIN_PER_TICK = 50;
+export const CONQUEST_POOL_MAX = 500;
+
+export const CONQUEST_RATE: Record<number, { base: number; boosted: number }> = {
+  1: { base: 1.0, boosted: 1.5 },
+  2: { base: 1.1, boosted: 2.0 },
+  3: { base: 1.2, boosted: 3.0 },
+};
+
+export function getConquestPriceBonus(qx: number, qy: number): number {
+  const dist = Math.floor(Math.sqrt(qx * qx + qy * qy));
+  if (dist <= 10) return dist;
+  if (dist <= 50) return 10 + (dist - 10) * 2;
+  if (dist <= 100) return 90 + (dist - 50) * 3;
+  return 240 + (dist - 100) * 5;
+}
