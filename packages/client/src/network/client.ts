@@ -370,6 +370,10 @@ class GameNetwork {
       }) => {
         const store = useStore.getState();
         store.setScanPending(false);
+        if ((data as any).error) {
+          store.setActionError((data as any).error);
+          return;
+        }
         if (store.currentSector) {
           const updatedSector = { ...store.currentSector, resources: data.resources };
           store.setCurrentSector(updatedSector);
