@@ -151,4 +151,23 @@ describe('MiningScreen', () => {
     render(<MiningScreen />);
     expect(screen.getByText(/status\.idle/)).toBeInTheDocument();
   });
+
+  it('does not crash when resource value exceeds maxResource (anomaly mineAll race condition)', () => {
+    // Anomaly: ore=5 but maxOre=3 (can happen during mineAll chain transition)
+    // Without clamping, filled=17 → repeat(-7) → RangeError
+    mockStoreState({
+      currentSector: {
+        x: 0, y: 0,
+        type: 'anomaly' as const,
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['anomaly' as const],
+        resources: { ore: 5, gas: 3, crystal: 20, maxOre: 3, maxGas: 3, maxCrystal: 20 },
+      },
+    });
+    expect(() => render(<MiningScreen />)).not.toThrow();
+  });
 });
