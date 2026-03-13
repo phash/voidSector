@@ -388,10 +388,7 @@ export class ScanService {
         const { qx: v2Qx, qy: v2Qy } = sectorToQuadrant(sector.x, sector.y);
         const v2Controls = await getAllQuadrantControls();
         if (!isFrontierQuadrant(v2Qx, v2Qy, v2Controls)) {
-          client.send('actionError', {
-            code: 'NO_PIRATES',
-            message: 'Dieser Sektor liegt tief im Zivilisationsgebiet. Keine Piraten mehr aktiv.',
-          });
+          client.send('logEntry', 'INFO: Dieser Sektor liegt tief im Zivilisationsgebiet. Keine Piraten aktiv.');
           continue;
         }
         client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
