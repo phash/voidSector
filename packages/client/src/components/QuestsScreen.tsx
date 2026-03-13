@@ -533,6 +533,7 @@ export function QuestsScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
+  const setSelectedQuest = useStore((s) => s.setSelectedQuest);
   const { confirm, isArmed, disarm } = useConfirm(null);
 
   const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'reputation' | 'story'>('auftraege');
@@ -680,9 +681,9 @@ export function QuestsScreen() {
                       overflow: 'hidden',
                     }}
                   >
-                    {/* Header row — click to expand */}
+                    {/* Header row — click to expand and select for Sec 3 detail */}
                     <div
-                      onClick={() => setExpandedQuestId(isExpanded ? null : q.id)}
+                      onClick={() => { setExpandedQuestId(isExpanded ? null : q.id); setSelectedQuest(isExpanded ? null : q.id); }}
                       style={{
                         padding: '4px 6px',
                         cursor: 'pointer',
@@ -913,11 +914,12 @@ export function QuestsScreen() {
               <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>
                 AVAILABLE QUESTS:
               </div>
-              {availableQuests.map((q) => {
-                const armed = isArmed(`accept-${q.templateId}`);
+              {availableQuests.map((q, idx) => {
+                const armKey = `accept-${idx}-${q.templateId}`;
+                const armed = isArmed(armKey);
                 return (
                   <div
-                    key={q.templateId}
+                    key={`${idx}-${q.templateId}`}
                     style={{
                       border: `1px solid ${armed ? 'rgba(0,255,136,0.6)' : 'rgba(255,176,0,0.3)'}`,
                       padding: '4px',
@@ -987,7 +989,7 @@ export function QuestsScreen() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => confirm(`accept-${q.templateId}`, () => network.sendAcceptQuest(q.templateId, position.x, position.y))}
+                        onClick={() => confirm(armKey, () => network.sendAcceptQuest(q.templateId, position.x, position.y))}
                         style={{
                           background: '#1a1a1a',
                           color: '#00FF88',

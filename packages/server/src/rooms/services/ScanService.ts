@@ -88,7 +88,12 @@ export class ScanService {
     const auth = client.auth as AuthPayload;
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-    const scannerLevel = this.ctx.getShipForClient(client.sessionId).scannerLevel;
+    const ship = this.ctx.getShipForClient(client.sessionId);
+    if (!ship) {
+      client.send('error', { code: 'SHIP_NOT_READY', message: 'Ship not ready — try again' });
+      return;
+    }
+    const scannerLevel = ship.scannerLevel;
 
     const result = validateLocalScan(currentAP, AP_COSTS_LOCAL_SCAN, scannerLevel);
     if (!result.valid) {
