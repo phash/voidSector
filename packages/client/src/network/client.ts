@@ -359,7 +359,7 @@ class GameNetwork {
           lastLogEntry: string | null;
           hasSalvage: boolean;
         }>;
-        wreckInfo?: any;
+        wreckInfo?: WreckInfo;
         sectorX?: number;
         sectorY?: number;
         quadrantX?: number;
