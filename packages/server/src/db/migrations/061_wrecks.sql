@@ -6,10 +6,10 @@ CREATE TABLE IF NOT EXISTS wrecks (
   sector_x INTEGER NOT NULL,
   sector_y INTEGER NOT NULL,
   tier INTEGER NOT NULL DEFAULT 1,
-  size TEXT NOT NULL DEFAULT 'small',
+  size TEXT NOT NULL DEFAULT 'small' CHECK (size IN ('small', 'medium', 'large')),
   items JSONB NOT NULL DEFAULT '[]',
   difficulty_modifier FLOAT NOT NULL DEFAULT 0.0,
-  status TEXT NOT NULL DEFAULT 'intact',
+  status TEXT NOT NULL DEFAULT 'intact' CHECK (status IN ('intact', 'investigated', 'exhausted')),
   spawned_at TIMESTAMPTZ DEFAULT NOW(),
   exhausted_at TIMESTAMPTZ
 );
