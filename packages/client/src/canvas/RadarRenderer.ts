@@ -16,6 +16,7 @@ import type {
   Bookmark,
   Quest,
   CivShip,
+  ConstructionSiteState,
 } from '@void-sector/shared';
 import type { PlayerPresence, TrackedQuest } from '../state/gameSlice';
 import type { JumpAnimationState } from './JumpAnimation';
@@ -104,6 +105,7 @@ interface RadarState {
   /** Slow flight path from current position to target — drawn as dashed overlay */
   slowFlightPath?: Array<{ x: number; y: number }>;
   sectorWrecks?: Record<string, { tier: number; size: string }>;
+  constructionSites?: ConstructionSiteState[];
 }
 
 function easeInOutCubic(t: number): number {
@@ -286,6 +288,20 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.strokeStyle = `rgba(0,120,255,${alpha})`;
           ctx.lineWidth = 2;
           ctx.strokeRect(cellX - CELL_W / 2 + 3, cellY - CELL_H / 2 + 3, CELL_W - 6, CELL_H - 6);
+        }
+      }
+
+      // Construction site marker: cyan pulsing ⚙ dot for sectors with an active construction site
+      if (state.constructionSites && !isPlayer) {
+        const hasSite = state.constructionSites.some((c) => c.sectorX === sx && c.sectorY === sy);
+        if (hasSite) {
+          const t = state.animTime ?? 0;
+          const alpha = 0.5 + 0.5 * Math.sin(t / 800);
+          ctx.fillStyle = `rgba(0,255,200,${alpha})`;
+          ctx.font = `${coordSize}px 'Share Tech Mono', monospace`;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'top';
+          ctx.fillText('⚙', cellX + CELL_W / 2 - 2, cellY - CELL_H / 2 + 2);
         }
       }
 

@@ -263,14 +263,16 @@ function JournalTab() {
         const typePrefix = (q.templateId as string)?.split('_')[0] ?? '';
         const typeLabel = QUEST_TYPE_LABELS[typePrefix] ?? typePrefix.toUpperCase();
         const canTrack = isTracked || trackedQuests.length < MAX_TRACKED;
+        const stateColor = allDone ? '#00FF88' : '#4488FF';
+        const stateLabel = allDone ? 'ABGABE' : 'IN ARBEIT';
         return (
           <div
             key={q.id}
             style={{
-              border: `1px solid ${isTracked ? 'rgba(0,120,255,0.6)' : 'rgba(255,176,0,0.25)'}`,
+              border: `1px solid ${allDone ? 'rgba(0,255,136,0.5)' : isTracked ? 'rgba(68,136,255,0.6)' : 'rgba(255,176,0,0.25)'}`,
               marginBottom: 4,
               padding: '4px 6px',
-              background: isTracked ? 'rgba(0,60,180,0.06)' : 'transparent',
+              background: allDone ? 'rgba(0,255,136,0.04)' : isTracked ? 'rgba(0,60,180,0.06)' : 'transparent',
             }}
           >
             <div
@@ -302,11 +304,24 @@ function JournalTab() {
               </button>
             </div>
             <div
-              style={{ color: 'rgba(255,176,0,0.45)', fontSize: '0.6rem', marginTop: 2 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.6rem', marginTop: 2 }}
             >
-              {doneCount}/{q.objectives.length} {t('status.objectives')}
+              <span
+                style={{
+                  color: stateColor,
+                  border: `1px solid ${stateColor}`,
+                  padding: '0 3px',
+                  letterSpacing: '0.05em',
+                  opacity: 0.9,
+                }}
+              >
+                {stateLabel}
+              </span>
+              <span style={{ color: 'rgba(255,176,0,0.45)' }}>
+                {doneCount}/{q.objectives.length} {t('status.objectives')}
+              </span>
               {q.npcFactionId && (
-                <span style={{ marginLeft: 6, opacity: 0.7 }}>
+                <span style={{ color: 'rgba(255,176,0,0.45)', opacity: 0.7 }}>
                   [{(q.npcFactionId as string).toUpperCase()}]
                 </span>
               )}
