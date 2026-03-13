@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QuestsScreen } from '../components/QuestsScreen';
 import { mockStoreState } from '../test/mockStore';
@@ -249,6 +249,58 @@ describe('QuestsScreen', () => {
     expect(screen.getByText('BOUNTY')).toBeDefined();
     expect(screen.getByText(/Eliminate Rexx/)).toBeDefined();
     expect(screen.getByText(/42.*17/)).toBeDefined();
+  });
+
+  it('shows structured armed preview with cancel button for available quest', async () => {
+    mockStoreState({
+      activeQuests: [],
+      currentSector: { type: 'station', x: 5, y: 5 },
+      position: { x: 5, y: 5 },
+    });
+    render(<QuestsScreen />);
+    // Switch to VERFÜGBAR tab
+    await userEvent.click(screen.getByText('VERFÜGBAR'));
+
+    // Simulate stationNpcsResult event to populate available quests
+    await act(async () => {
+      const event = new CustomEvent('stationNpcsResult', {
+        detail: {
+          npcs: [{ id: 'n1', name: 'Zar', factionId: 'traders' }],
+          quests: [
+            {
+              templateId: 'fetch_gas_1',
+              npcName: 'Zar',
+              npcFactionId: 'traders',
+              title: 'Gas Delivery',
+              description: 'Deliver gas to station',
+              objectives: [
+                { type: 'fetch', description: 'Collect GAS', resource: 'gas', amount: 3, fulfilled: false },
+              ],
+              rewards: { credits: 27, xp: 11, reputation: 5 },
+              requiredTier: 'neutral',
+            },
+          ],
+        },
+      });
+      window.dispatchEvent(event);
+    });
+
+    // Click accept to arm
+    await userEvent.click(screen.getByText('[ACCEPT]'));
+
+    // Armed state shows structured sections
+    expect(screen.getByText('ZIELE')).toBeDefined();
+    expect(screen.getByText('BELOHNUNG')).toBeDefined();
+
+    // Cancel button visible
+    expect(screen.getByText('[ABBRECHEN]')).toBeDefined();
+
+    // Click cancel to disarm
+    await userEvent.click(screen.getByText('[ABBRECHEN]'));
+    expect(network.sendAcceptQuest).not.toHaveBeenCalled();
+
+    // Armed state gone — sections no longer visible
+    expect(screen.queryByText('ZIELE')).toBeNull();
   });
 
   it('shows completed hint for fully fulfilled quest in collapsed state', () => {

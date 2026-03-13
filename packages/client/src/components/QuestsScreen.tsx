@@ -529,7 +529,7 @@ export function QuestsScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
-  const { confirm, isArmed } = useConfirm();
+  const { confirm, isArmed, disarm } = useConfirm();
 
   const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'reputation' | 'story'>('auftraege');
   const [subFilter, setSubFilter] = useState<'all' | 'rescue'>('all');
@@ -921,45 +921,83 @@ export function QuestsScreen() {
                       background: armed ? 'rgba(0,255,136,0.05)' : 'transparent',
                     }}
                   >
-                    <div style={{ color: '#FFB000' }}>{q.title}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#FFB000' }}>{q.title}</span>
+                      {armed && questTypeBadge(q.templateId, '#00FF88')}
+                    </div>
                     <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                       {q.description}
                     </div>
-                    {/* Confirmation preview: objectives + rewards */}
+                    {/* Confirmation preview: structured objectives + rewards */}
                     {armed && (
                       <div style={{ marginTop: '4px', borderTop: '1px solid rgba(0,255,136,0.2)', paddingTop: '4px' }}>
+                        <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginBottom: '3px' }}>
+                          ZIELE
+                        </div>
                         {q.objectives?.map((obj: any, i: number) => (
-                          <div key={i} style={{ color: 'rgba(0,255,136,0.7)', fontSize: '0.5rem' }}>
+                          <div key={i} style={{ color: 'rgba(0,255,136,0.7)', fontSize: '0.5rem', paddingLeft: '6px' }}>
                             › {obj.description}
                             {obj.amount != null && ` (${obj.amount})`}
                           </div>
                         ))}
-                        <div style={{ color: '#00FF88', fontSize: '0.5rem', marginTop: '2px' }}>
-                          BELOHNUNG: +{q.rewards.credits} CR | +{q.rewards.xp} XP
+                        <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginTop: '6px', marginBottom: '3px' }}>
+                          BELOHNUNG
+                        </div>
+                        <div style={{ color: '#00FF88', fontSize: '0.5rem', paddingLeft: '6px' }}>
+                          +{q.rewards.credits} CR | +{q.rewards.xp} XP
                           {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
                         </div>
                       </div>
                     )}
-                    {!armed && (
-                      <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
-                        +{q.rewards.credits} CR | +{q.rewards.xp} XP | +{q.rewards.reputation} REP
+                    {armed ? (
+                      <div style={{ marginTop: '6px', display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => { disarm(); network.sendAcceptQuest(q.templateId, position.x, position.y); }}
+                          style={{
+                            background: 'rgba(0,255,136,0.15)',
+                            color: '#00FF88',
+                            border: '1px solid #00FF88',
+                            padding: '3px 6px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.55rem',
+                            flex: 1,
+                          }}
+                        >
+                          [ANNEHMEN]
+                        </button>
+                        <button
+                          onClick={() => disarm()}
+                          style={{
+                            background: 'transparent',
+                            color: 'rgba(255,176,0,0.5)',
+                            border: '1px solid rgba(255,176,0,0.3)',
+                            padding: '3px 6px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.55rem',
+                          }}
+                        >
+                          [ABBRECHEN]
+                        </button>
                       </div>
+                    ) : (
+                      <button
+                        onClick={() => confirm(`accept-${q.templateId}`, () => network.sendAcceptQuest(q.templateId, position.x, position.y))}
+                        style={{
+                          background: '#1a1a1a',
+                          color: '#00FF88',
+                          border: '1px solid rgba(0,255,136,0.5)',
+                          padding: '3px 6px',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: '0.55rem',
+                          marginTop: '2px',
+                        }}
+                      >
+                        {btn(UI.actions.ACCEPT)}
+                      </button>
                     )}
-                    <button
-                      onClick={() => confirm(`accept-${q.templateId}`, () => network.sendAcceptQuest(q.templateId, position.x, position.y))}
-                      style={{
-                        background: armed ? 'rgba(0,255,136,0.15)' : '#1a1a1a',
-                        color: '#00FF88',
-                        border: `1px solid ${armed ? '#00FF88' : 'rgba(0,255,136,0.5)'}`,
-                        padding: '3px 6px',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        fontSize: '0.55rem',
-                        marginTop: '2px',
-                      }}
-                    >
-                      {armed ? btnDisabled(UI.actions.ACCEPT, 'BESTÄTIGEN?') : btn(UI.actions.ACCEPT)}
-                    </button>
                   </div>
                 );
               })}
