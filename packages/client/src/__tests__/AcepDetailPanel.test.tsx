@@ -85,4 +85,33 @@ describe('AcepDetailPanel', () => {
     expect(screen.getByText(/100 CR/)).toBeInTheDocument();
     expect(screen.getByText(/Erz/)).toBeInTheDocument();
   });
+
+  it('MODULE tab with hover renders ModuleArtwork canvas', () => {
+    const shipWithModule = {
+      ...mockShip,
+      modules: [{ moduleId: 'drive_mk1', slotIndex: 0, currentHp: 20, source: 'standard' as const }],
+    };
+    mockStoreState({ ship: shipWithModule as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'drive_mk1' });
+    const { container } = render(<AcepDetailPanel />);
+    const canvas = container.querySelector('canvas');
+    expect(canvas).toBeTruthy();
+    expect(canvas!.style.width).toBe('48px');
+  });
+
+  it('SHOP tab with hover renders ModuleArtwork canvas', () => {
+    mockStoreState({
+      ship: mockShip as any,
+      acepActiveTab: 'shop' as const,
+      acepHoveredModuleId: 'drive_mk1',
+      currentSector: { type: 'station' } as any,
+    });
+    const { container } = render(<AcepDetailPanel />);
+    const canvas = container.querySelector('canvas');
+    expect(canvas).toBeTruthy();
+  });
+
+  it('ACEP tab does not render ModuleArtwork canvas', () => {
+    const { container } = render(<AcepDetailPanel />);
+    expect(container.querySelector('canvas')).toBeNull();
+  });
 });
