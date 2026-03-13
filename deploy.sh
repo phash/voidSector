@@ -104,8 +104,7 @@ else
   echo "               docker compose logs cloudflared | grep trycloudflare"
 fi
 echo "  Admin-Token: $ADMIN_TOKEN"
-echo "  Admin-API:   curl -H \"Authorization: Bearer $ADMIN_TOKEN\" \\"
-echo "               $ADMIN_BASE/admin/api/stories"
+echo "  Admin-API:   $ADMIN_BASE/admin/api/stories"
 if [[ "$KEEP_TUNNEL" = false ]]; then
   echo ""
   echo "  Tipp: --keep-tunnel beim nächsten Deploy = gleiche URL"
