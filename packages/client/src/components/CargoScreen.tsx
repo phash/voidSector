@@ -4,7 +4,8 @@ import { network } from '../network/client';
 import { RESOURCE_TYPES, getPhysicalCargoTotal } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
-import { btn, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn } from '../ui-helpers';
 
 function CargoBar({ label, value, max }: { label: string; value: number; max: number }) {
   const width = 10;
@@ -55,6 +56,7 @@ const tabBtnStyle = (active: boolean): React.CSSProperties => ({
 });
 
 export function CargoScreen() {
+  const { t } = useTranslation('ui');
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const mySlates = useStore((s) => s.mySlates);
@@ -144,16 +146,16 @@ export function CargoScreen() {
           style={tabBtnStyle(activeTab === 'resource')}
           onClick={() => setActiveTab('resource')}
         >
-          {UI.tabs.RESOURCES}
+          {t('tabs.resources')}
         </button>
         <button style={tabBtnStyle(activeTab === 'module')} onClick={() => setActiveTab('module')}>
-          {UI.tabs.MODULES}
+          {t('tabs.modules')}
         </button>
         <button
           style={tabBtnStyle(activeTab === 'blueprint')}
           onClick={() => setActiveTab('blueprint')}
         >
-          {UI.tabs.BLUEPRINTS}
+          {t('tabs.blueprints')}
         </button>
         <button
           style={tabBtnStyle(activeTab === 'slates')}
@@ -254,7 +256,7 @@ export function CargoScreen() {
       {activeTab === 'module' && (
         <div style={{ fontSize: '0.85rem' }}>
           {modules.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>{UI.empty.NO_MODULES}</div>
+            <div style={{ opacity: 0.4 }}>{t('empty.noModules')}</div>
           ) : (
             modules.map((item) => (
               <div
@@ -275,7 +277,7 @@ export function CargoScreen() {
                   style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   onClick={() => network.sendInstallModule('', item.itemId, 0)}
                 >
-                  {btn(UI.actions.INSTALL)}
+                  {btn(t('actions.install'))}
                 </button>
               </div>
             ))
@@ -287,7 +289,7 @@ export function CargoScreen() {
       {activeTab === 'blueprint' && (
         <div style={{ fontSize: '0.85rem' }}>
           {blueprints.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>{UI.empty.NO_BLUEPRINTS}</div>
+            <div style={{ opacity: 0.4 }}>{t('empty.noBlueprints')}</div>
           ) : (
             blueprints.map((item) => (
               <div
@@ -309,7 +311,7 @@ export function CargoScreen() {
                   style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                   onClick={() => network.sendActivateBlueprint(item.itemId)}
                 >
-                  {btn(UI.actions.ACTIVATE)}
+                  {btn(t('actions.activate'))}
                 </button>
               </div>
             ))
@@ -373,14 +375,14 @@ export function CargoScreen() {
                     ? ` Scan Q${(slate.sectorData?.[0] as any)?.quadrantX ?? '?'}:${(slate.sectorData?.[0] as any)?.quadrantY ?? '?'} (${slate.sectorData?.[0]?.x ?? '?'},${slate.sectorData?.[0]?.y ?? '?'})`
                     : slate.slateType === 'jumpgate'
                       ? ` Gate (${(slate.sectorData?.[0] as any)?.sectorX ?? '?'},${(slate.sectorData?.[0] as any)?.sectorY ?? '?'})`
-                      : ` ${slate.sectorData?.length ?? 0} Sektoren`}
+                      : ` ${t('slates.sektoren', { n: slate.sectorData?.length ?? 0 })}`}
               </span>
               <button
                 className="vs-btn"
                 style={{ fontSize: '0.75rem', padding: '4px 8px' }}
                 onClick={(e) => { e.stopPropagation(); network.sendActivateSlate(slate.id); }}
               >
-                {btn(UI.actions.ACTIVATE)}
+                {btn(t('actions.activate'))}
               </button>
               <button
                 className="vs-btn"

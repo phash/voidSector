@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { MODULES, isModuleFreelyAvailable } from '@void-sector/shared';
@@ -48,6 +49,7 @@ function getModuleStatus(
 }
 
 export function TechTreePanel() {
+  const { t } = useTranslation('ui');
   const research = useStore((s) => s.research);
   const wissen = research.wissen ?? 0;
   const selectedModuleId = useStore((s) => s.selectedTechModule);
@@ -85,9 +87,9 @@ export function TechTreePanel() {
           alignItems: 'baseline',
         }}
       >
-        <span>TECH TREE / RESEARCH</span>
+        <span>{t('tech.techTree')}</span>
         <span style={{ color: '#FFB000', fontSize: '0.6rem', letterSpacing: '0.08em' }}>
-          &#x25C8; WISSEN: {wissen}
+          &#x25C8; {t('tech.wissen', { n: wissen })}
         </span>
       </div>
 

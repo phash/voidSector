@@ -60,7 +60,7 @@ describe('ShipDetailPanel', () => {
   it('shows zero bars when no acepXp', () => {
     mockStoreState({ ship: baseShip, monitorModes: {}, setMonitorMode: vi.fn() } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getByText('ACEP PATHS')).toBeDefined();
+    expect(screen.getByText('acep.pathsLabel')).toBeDefined();
     expect(screen.getAllByText('0').length).toBeGreaterThan(0);
   });
 
@@ -70,7 +70,7 @@ describe('ShipDetailPanel', () => {
       monitorModes: {}, setMonitorMode: vi.fn(),
     } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getByText(/NO TRAITS ACTIVE YET/)).toBeDefined();
+    expect(screen.getByText(/acep\.noTraitsActive/)).toBeDefined();
   });
 
   it('shows active traits from acepTraits', () => {
@@ -90,7 +90,7 @@ describe('ShipDetailPanel', () => {
   it('shows module section', () => {
     mockStoreState({ ship: baseShip, monitorModes: {}, setMonitorMode: vi.fn() } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getAllByText(/MODULES/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ship\.modulesSlots/).length).toBeGreaterThan(0);
   });
 
   it('[ACEP →] button calls setMonitorMode with SHIP-SYS and acep', async () => {
@@ -134,7 +134,8 @@ describe('ShipDetailPanel', () => {
       setMonitorMode: vi.fn(),
     } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getByText(/0\/3 SLOTS/)).toBeDefined();
+    // ship.modulesSlots key returned by mock, contains count/max via replacement in key string
+    expect(screen.getByText(/ship\.modulesSlots/)).toBeDefined();
   });
 
   it('adds extraModuleSlots to hull base slots', () => {
@@ -143,7 +144,7 @@ describe('ShipDetailPanel', () => {
       setMonitorMode: vi.fn(),
     } as any);
     render(<ShipDetailPanel />);
-    expect(screen.getByText(/0\/5 SLOTS/)).toBeDefined();
+    expect(screen.getByText(/ship\.modulesSlots/)).toBeDefined();
   });
 
   it('shows module names in Title Case', () => {

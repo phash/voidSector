@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { SectorArtwork } from './SectorArtwork';
 
@@ -11,6 +12,7 @@ const panelStyle: React.CSSProperties = {
 };
 
 export function TradeDetailPanel() {
+  const { t } = useTranslation('ui');
   const currentSector = useStore((s) => s.currentSector);
   const npcStationData = useStore((s) => s.npcStationData);
   const cargo = useStore((s) => s.cargo);
@@ -27,7 +29,7 @@ export function TradeDetailPanel() {
           marginTop: 24,
         }}
       >
-        KEIN HANDEL VERFÜGBAR
+        {t('trade.noTradeAvailable')}
       </div>
     );
   }
@@ -59,7 +61,7 @@ export function TradeDetailPanel() {
           marginBottom: 4,
         }}
       >
-        ANGEBOT
+        {t('trade.angebot')}
       </div>
 
       {npcStationData.inventory.map((item) => (
@@ -73,13 +75,13 @@ export function TradeDetailPanel() {
         >
           <div>{item.itemType.toUpperCase()}</div>
           <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>
-            KAUF: {item.buyPrice} CR | VERKAUF: {item.sellPrice} CR
+            {t('trade.kauf')}: {item.buyPrice} CR | {t('trade.verkauf')}: {item.sellPrice} CR
           </div>
           <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>
-            LAGER: {item.stock}/{item.maxStock}
+            {t('trade.lager')}: {item.stock}/{item.maxStock}
           </div>
           <div style={{ fontSize: '0.6rem' }}>
-            FRACHT: {cargo[item.itemType as keyof typeof cargo] ?? 0}
+            {t('trade.fracht')}: {cargo[item.itemType as keyof typeof cargo] ?? 0}
           </div>
         </div>
       ))}

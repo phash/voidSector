@@ -159,7 +159,7 @@ describe('CargoScreen', () => {
     // Slate content moved to SLATES tab — switch to it first
     await userEvent.click(screen.getByText('SLATES'));
     expect(screen.getByText(/MEMORY: 2/)).toBeDefined();
-    expect(screen.getByText(/\[ACTIVATE\]/)).toBeDefined();
+    expect(screen.getByText(/\[actions\.activate\]/)).toBeDefined();
   });
 
   it('does not show create slate buttons (moved to SlateControls)', () => {

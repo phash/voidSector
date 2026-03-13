@@ -134,8 +134,8 @@ describe('CockpitLayout', () => {
 
   it('renders SettingsPanel in section 4', () => {
     render(<CockpitLayout renderScreen={mockRenderScreen} />);
-    // SettingsPanel renders the "EINSTELLUNGEN" header
-    expect(screen.getByText('EINSTELLUNGEN')).toBeInTheDocument();
+    // SettingsPanel renders the settings header (i18n key)
+    expect(screen.getByText('settings.settings')).toBeInTheDocument();
   });
 
   it('renders hardware controls strips', () => {

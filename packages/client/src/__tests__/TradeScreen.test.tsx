@@ -171,7 +171,7 @@ describe('TradeScreen', () => {
       myOrders: [],
     });
     render(<TradeScreen />);
-    expect(screen.getByText('MARKET')).toBeTruthy();
+    expect(screen.getByText('tabs.market')).toBeTruthy();
   });
 
   it('hides market tab at tier 1 at home base', () => {
@@ -181,7 +181,7 @@ describe('TradeScreen', () => {
       storage: { ore: 0, gas: 0, crystal: 0, artefact: 0 },
     });
     render(<TradeScreen />);
-    expect(screen.queryByText('MARKET')).toBeNull();
+    expect(screen.queryByText('tabs.market')).toBeNull();
   });
 
   it('hides market/slates/routes tabs at station', () => {
@@ -218,8 +218,8 @@ describe('TradeScreen', () => {
       },
     });
     render(<TradeScreen />);
-    expect(screen.queryByText('MARKET')).toBeNull();
-    expect(screen.queryByText('ROUTES')).toBeNull();
+    expect(screen.queryByText('tabs.market')).toBeNull();
+    expect(screen.queryByText('tabs.routes')).toBeNull();
   });
 
   it('shows TRADING POST tab when kontorOrders are present at station', () => {
@@ -267,7 +267,7 @@ describe('TradeScreen', () => {
       ],
     });
     render(<TradeScreen />);
-    expect(screen.getByText('TRADING POST')).toBeTruthy();
+    expect(screen.getByText('programs.tradingPost')).toBeTruthy();
   });
 
   it('hides TRADING POST tab when no kontorOrders', () => {
@@ -305,7 +305,7 @@ describe('TradeScreen', () => {
       kontorOrders: [],
     });
     render(<TradeScreen />);
-    expect(screen.queryByText('TRADING POST')).toBeNull();
+    expect(screen.queryByText('programs.tradingPost')).toBeNull();
   });
 
   it('sell-all button sends full playerAmount when station has sufficient capacity (#237)', () => {
@@ -474,7 +474,7 @@ describe('TradeScreen', () => {
       ],
     });
     render(<TradeScreen />);
-    const kontorTab = screen.getByText('TRADING POST');
+    const kontorTab = screen.getByText('programs.tradingPost');
     fireEvent.click(kontorTab);
     const sellButtons = screen.getAllByText('SELL');
     expect(sellButtons[0]).toHaveProperty('disabled', true);

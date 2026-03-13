@@ -58,7 +58,7 @@ describe('MonitorBezel', () => {
       </MonitorBezel>,
     );
     await userEvent.click(screen.getByText('[?]'));
-    expect(screen.getByText('RADAR LEGEND')).toBeInTheDocument();
+    expect(screen.getByText('legend.radarLegend')).toBeInTheDocument();
   });
 
   it('renders LEDs from useMonitorLeds hook', () => {

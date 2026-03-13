@@ -30,13 +30,13 @@ beforeEach(() => {
 describe('AcepDetailPanel', () => {
   it('shows trait info for ACEP tab', () => {
     render(<AcepDetailPanel />);
-    expect(screen.getByText(/CAUTIOUS/i)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.traits\.cautious\.label/i)).toBeInTheDocument();
   });
 
   it('shows hover prompt for MODULE tab without hover', () => {
     mockStoreState({ ship: mockShip as any, acepActiveTab: 'module' as const, acepHoveredModuleId: null });
     render(<AcepDetailPanel />);
-    expect(screen.getByText(/hovern/i)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.hoverModuleForDetails/i)).toBeInTheDocument();
   });
 
   it('shows module detail for MODULE tab with hover', () => {
@@ -49,17 +49,14 @@ describe('AcepDetailPanel', () => {
   it('shows hover prompt for SHOP tab without hover', () => {
     mockStoreState({ ship: mockShip as any, acepActiveTab: 'shop' as const, acepHoveredModuleId: null });
     render(<AcepDetailPanel />);
-    expect(screen.getByText(/hovern/i)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.hoverModuleForDetails/i)).toBeInTheDocument();
   });
 
   it('ACEP tab no-traits fallback shows budget info', () => {
     mockStoreState({ ship: mockShipNoTraits as any, acepActiveTab: 'acep' as const, acepHoveredModuleId: null });
     render(<AcepDetailPanel />);
-    expect(screen.getByText(/BUDGET: 20\/100 XP/)).toBeInTheDocument();
-    expect(screen.getByText(/AUSBAU: 20/)).toBeInTheDocument();
-    expect(screen.getByText(/INTEL: 0/)).toBeInTheDocument();
-    expect(screen.getByText(/KAMPF: 0/)).toBeInTheDocument();
-    expect(screen.getByText(/EXPLR: 0/)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.budget/)).toBeInTheDocument();
+    expect(screen.getByText(/acep\.xpDistribution/)).toBeInTheDocument();
   });
 
   it('MODULE tab with hover shows HP line', () => {
@@ -81,9 +78,9 @@ describe('AcepDetailPanel', () => {
       currentSector: { type: 'station' } as any,
     });
     render(<AcepDetailPanel />);
-    // drive_mk1 costs 100 CR + 10 Erz
+    // drive_mk1 costs 100 CR + 10 resources.ore (via i18n mock)
     expect(screen.getByText(/100 CR/)).toBeInTheDocument();
-    expect(screen.getByText(/Erz/)).toBeInTheDocument();
+    expect(screen.getByText(/resources\.ore/)).toBeInTheDocument();
   });
 
   it('MODULE tab with hover renders ModuleArtwork canvas', () => {

@@ -5,7 +5,8 @@ import { innerCoord } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc, SectorData } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
 import { findNearestStation } from '../utils/sectorUtils';
-import { btn, btnDisabled, UI } from '../ui-strings';
+import { useTranslation } from 'react-i18next';
+import { btn, btnDisabled } from '../ui-helpers';
 import { useConfirm } from '../hooks/useConfirm';
 
 const MAX_TRACKED = 5;
@@ -79,6 +80,7 @@ function collapsedObjectiveSummary(
 }
 
 function JournalTab() {
+  const { t } = useTranslation('ui');
   const activeQuests = useStore((s) => s.activeQuests);
   const trackedQuests = useStore((s) => s.trackedQuests);
   const position = useStore((s) => s.position);
@@ -157,7 +159,7 @@ function JournalTab() {
               fontSize: '0.75rem',
             }}
           >
-            {filterNearby ? `[✓] ${UI.status.NEARBY}` : `[ ] ${UI.status.NEARBY}`}
+            {filterNearby ? `[✓] ${t('status.nearby')}` : `[ ] ${t('status.nearby')}`}
           </button>
           {filterNearby && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -195,7 +197,7 @@ function JournalTab() {
                 padding: '3px 6px',
               }}
             >
-              <option value="">{UI.status.ALL_FACTIONS}</option>
+              <option value="">{t('status.allFactions')}</option>
               {factionIds.map((f) => (
                 <option key={f} value={f}>
                   {f.toUpperCase()}
@@ -216,7 +218,7 @@ function JournalTab() {
                 padding: '3px 6px',
               }}
             >
-              <option value="">{UI.status.ALL_TYPES}</option>
+              <option value="">{t('status.allTypes')}</option>
               {questTypes.map((t) => (
                 <option key={t} value={t}>
                   {QUEST_TYPE_LABELS[t] ?? t.toUpperCase()}
@@ -236,13 +238,13 @@ function JournalTab() {
           letterSpacing: '0.05em',
         }}
       >
-        {UI.status.TRACKED}: {trackedQuests.length}/{MAX_TRACKED}
+        {t('status.tracked')}: {trackedQuests.length}/{MAX_TRACKED}
       </div>
 
       {/* Quest list */}
       {filtered.length === 0 && (
         <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
-          {UI.empty.NO_QUESTS_FILTERED}
+          {t('empty.noQuestsFiltered')}
         </div>
       )}
       {filtered.map((q) => {
@@ -293,7 +295,7 @@ function JournalTab() {
             <div
               style={{ color: 'rgba(255,176,0,0.45)', fontSize: '0.6rem', marginTop: 2 }}
             >
-              {doneCount}/{q.objectives.length} {UI.status.OBJECTIVES}
+              {doneCount}/{q.objectives.length} {t('status.objectives')}
               {q.npcFactionId && (
                 <span style={{ marginLeft: 6, opacity: 0.7 }}>
                   [{(q.npcFactionId as string).toUpperCase()}]
@@ -315,7 +317,7 @@ function StoryTab() {
   }, []);
 
   if (!progress) {
-    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>{UI.status.LOADING}</div>;
+    return <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>{t('status.loading')}</div>;
   }
 
   return (
@@ -441,6 +443,7 @@ function AlienRepTab() {
 }
 
 function CommunityTab() {
+  const { t } = useTranslation('ui');
   const quest = useStore((s) => s.activeCommunityQuest);
 
   useEffect(() => {
@@ -450,7 +453,7 @@ function CommunityTab() {
   if (!quest) {
     return (
       <div style={{ color: 'var(--color-dim)', fontSize: '0.7rem', padding: 8 }}>
-        {UI.empty.NO_COMMUNITY_QUEST}
+        {t('empty.noCommunityQuest')}
       </div>
     );
   }
@@ -482,7 +485,7 @@ function CommunityTab() {
             fontSize: '0.75rem',
           }}
         >
-          <span style={{ color: 'var(--color-dim)' }}>{UI.status.PROGRESS}</span>
+          <span style={{ color: 'var(--color-dim)' }}>{t('status.progress')}</span>
           <span style={{ color: 'var(--color-primary)' }}>
             {(quest.currentCount ?? 0).toLocaleString()} / {(quest.targetCount ?? 0).toLocaleString()}
           </span>
@@ -491,7 +494,7 @@ function CommunityTab() {
           <div style={{ height: '100%', width: `${pct}%`, background: 'var(--color-primary)' }} />
         </div>
       </div>
-      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{UI.status.DEADLINE}: {deadline}</div>
+      <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>{t('status.deadline')}: {deadline}</div>
     </div>
   );
 }
@@ -517,6 +520,7 @@ function getJettisonItems(objectives: any[]): string[] {
 }
 
 export function QuestsScreen() {
+  const { t } = useTranslation('ui');
   const activeQuests = useStore((s) => s.activeQuests);
   const reputations = useStore((s) => s.reputations);
   const playerUpgrades = useStore((s) => s.playerUpgrades);
@@ -569,10 +573,10 @@ export function QuestsScreen() {
   };
 
   const tabLabels: Record<string, string> = {
-    auftraege: 'AUFTRÄGE',
-    verfuegbar: 'VERFÜGBAR',
-    reputation: 'REPUTATION',
-    story: 'STORY',
+    auftraege: t('tabs.active'),
+    verfuegbar: t('tabs.available'),
+    reputation: t('tabs.reputation'),
+    story: t('tabs.story'),
   };
 
   return (
@@ -792,10 +796,10 @@ export function QuestsScreen() {
                               const jettisonText = jettison.length > 0
                                 ? `JETTISON: ${jettison.join(', ')}`
                                 : 'SURE?';
-                              return btnDisabled(UI.actions.ABANDON, jettisonText);
+                              return btnDisabled(t('actions.abandon'), jettisonText);
                             })()
                           ) : (
-                            btn(UI.actions.ABANDON)
+                            btn(t('actions.abandon'))
                           )}
                         </button>
                       </div>
@@ -897,7 +901,7 @@ export function QuestsScreen() {
             );
           })()}
           {isAtStation && stationNpcs.length === 0 && (
-            <div style={{ color: 'rgba(255,176,0,0.5)' }}>{UI.status.LOADING}</div>
+            <div style={{ color: 'rgba(255,176,0,0.5)' }}>{t('status.loading')}</div>
           )}
           {stationNpcs.map((npc) => (
             <div key={npc.id} style={{ color: '#00FF88', marginBottom: '2px' }}>
@@ -995,7 +999,7 @@ export function QuestsScreen() {
                           marginTop: '2px',
                         }}
                       >
-                        {btn(UI.actions.ACCEPT)}
+                        {btn(t('actions.accept'))}
                       </button>
                     )}
                   </div>

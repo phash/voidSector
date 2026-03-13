@@ -34,21 +34,21 @@ describe('MobileDashboard', () => {
 
   it('renders the MINING card', () => {
     render(<MobileDashboard />);
-    expect(screen.getByText(/MINING/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/mobile\.mining/i).length).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows INAKTIV when mining is not active', () => {
+  it('shows miningInactive key when mining is not active', () => {
     render(<MobileDashboard />);
-    expect(screen.getByText(/INAKTIV/i)).toBeInTheDocument();
+    expect(screen.getByText(/mobile\.miningInactive/i)).toBeInTheDocument();
   });
 
-  it('shows AKTIV and resource name when mining is active', () => {
+  it('shows miningActive key when mining is active', () => {
     mockStoreState({
       ...baseState,
       mining: { active: true, resource: 'ore', rate: 1, sectorYield: 10, startedAt: Date.now() },
     } as any);
     render(<MobileDashboard />);
-    expect(screen.getByText(/AKTIV/i)).toBeInTheDocument();
+    expect(screen.getByText(/mobile\.miningActive/i)).toBeInTheDocument();
   });
 
   it('renders the CARGO card with used/cap', () => {
@@ -70,7 +70,7 @@ describe('MobileDashboard', () => {
       autopilot: { active: true, targetX: 8, targetY: 5, remaining: 3 },
     } as any);
     render(<MobileDashboard />);
-    expect(screen.getByText(/SLOW FLIGHT/i)).toBeInTheDocument();
+    expect(screen.getByText(/mobile\.slowFlight/i)).toBeInTheDocument();
     expect(screen.getByText(/8\s*\/\s*5/)).toBeInTheDocument();
   });
 
@@ -80,13 +80,13 @@ describe('MobileDashboard', () => {
       bookmarks: [{ slot: 1, sectorX: 10, sectorY: 7, label: 'Asteroid 1' }],
     } as any);
     render(<MobileDashboard />);
-    expect(screen.getByText(/NÄCHSTES ZIEL/i)).toBeInTheDocument();
+    expect(screen.getByText(/mobile\.nextDest/i)).toBeInTheDocument();
     expect(screen.getByText(/Asteroid 1/i)).toBeInTheDocument();
   });
 
   it('does not render next destination card when no bookmarks', () => {
     render(<MobileDashboard />);
-    expect(screen.queryByText(/NÄCHSTES ZIEL/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/mobile\.nextDest/i)).not.toBeInTheDocument();
   });
 
   it('renders AP bar', () => {

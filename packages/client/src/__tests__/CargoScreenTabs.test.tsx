@@ -31,9 +31,9 @@ describe('CargoScreen inventory tabs', () => {
 
   it('renders RESOURCES, MODULES, BLUEPRINTS, SLATES tabs', () => {
     render(<CargoScreen />);
-    expect(screen.getByText('RESOURCES')).toBeDefined();
-    expect(screen.getByText('MODULES')).toBeDefined();
-    expect(screen.getByText('BLUEPRINTS')).toBeDefined();
+    expect(screen.getByText('tabs.resources')).toBeDefined();
+    expect(screen.getByText('tabs.modules')).toBeDefined();
+    expect(screen.getByText('tabs.blueprints')).toBeDefined();
     expect(screen.getByText('SLATES')).toBeDefined();
   });
 
@@ -44,14 +44,14 @@ describe('CargoScreen inventory tabs', () => {
 
   it('MODULES tab shows empty state when no modules', async () => {
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('MODULES'));
-    expect(screen.getByText(/NO MODULES/)).toBeDefined();
+    await userEvent.click(screen.getByText('tabs.modules'));
+    expect(screen.getByText(/empty.noModules/)).toBeDefined();
   });
 
   it('BLUEPRINTS tab shows empty state when no blueprints', async () => {
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('BLUEPRINTS'));
-    expect(screen.getByText(/NO BLUEPRINTS/)).toBeDefined();
+    await userEvent.click(screen.getByText('tabs.blueprints'));
+    expect(screen.getByText(/empty.noBlueprints/)).toBeDefined();
   });
 
   it('MODULES tab shows module with INSTALL button', async () => {
@@ -60,9 +60,9 @@ describe('CargoScreen inventory tabs', () => {
       inventory: [{ itemType: 'module', itemId: 'drive_mk2', quantity: 1 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('MODULES'));
+    await userEvent.click(screen.getByText('tabs.modules'));
     expect(screen.getByText(/DRIVE_MK2/)).toBeDefined();
-    expect(screen.getByText('[INSTALL]')).toBeDefined();
+    expect(screen.getByText('[actions.install]')).toBeDefined();
   });
 
   it('BLUEPRINTS tab shows blueprint with ACTIVATE button (CRAFT moved to FabrikPanel)', async () => {
@@ -71,10 +71,10 @@ describe('CargoScreen inventory tabs', () => {
       inventory: [{ itemType: 'blueprint', itemId: 'shield_mk1', quantity: 2 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('BLUEPRINTS'));
+    await userEvent.click(screen.getByText('tabs.blueprints'));
     expect(screen.getByText(/SHIELD_MK1/)).toBeDefined();
-    expect(screen.getByText('[ACTIVATE]')).toBeDefined();
-    expect(screen.queryByText('[CRAFT]')).toBeNull();
+    expect(screen.getByText('[actions.activate]')).toBeDefined();
+    expect(screen.queryByText('[actions.craft]')).toBeNull();
   });
 
   it('INSTALL calls sendInstallModule', async () => {
@@ -83,8 +83,8 @@ describe('CargoScreen inventory tabs', () => {
       inventory: [{ itemType: 'module', itemId: 'laser_mk1', quantity: 1 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('MODULES'));
-    await userEvent.click(screen.getByText('[INSTALL]'));
+    await userEvent.click(screen.getByText('tabs.modules'));
+    await userEvent.click(screen.getByText('[actions.install]'));
     expect(network.sendInstallModule).toHaveBeenCalled();
   });
 
@@ -94,8 +94,8 @@ describe('CargoScreen inventory tabs', () => {
       inventory: [{ itemType: 'blueprint', itemId: 'engine_blueprint', quantity: 1 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('BLUEPRINTS'));
-    expect(screen.queryByText('[CRAFT]')).toBeNull();
+    await userEvent.click(screen.getByText('tabs.blueprints'));
+    expect(screen.queryByText('[actions.craft]')).toBeNull();
   });
 
   it('ACTIVATE on blueprint calls sendActivateBlueprint', async () => {
@@ -104,8 +104,8 @@ describe('CargoScreen inventory tabs', () => {
       inventory: [{ itemType: 'blueprint', itemId: 'cannon_blueprint', quantity: 1 }],
     });
     render(<CargoScreen />);
-    await userEvent.click(screen.getByText('BLUEPRINTS'));
-    await userEvent.click(screen.getByText('[ACTIVATE]'));
+    await userEvent.click(screen.getByText('tabs.blueprints'));
+    await userEvent.click(screen.getByText('[actions.activate]'));
     expect(network.sendActivateBlueprint).toHaveBeenCalledWith('cannon_blueprint');
   });
 

@@ -81,13 +81,13 @@ describe('MobileMineTab', () => {
 
   it('renders Mine-All button', () => {
     render(<MobileMineTab />);
-    expect(screen.getByRole('button', { name: /ALLE ABBAUEN/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /mobile\.mineAll/i })).toBeInTheDocument();
   });
 
   it('Mine-All calls sendMine with mineAll=true', async () => {
     const { network } = await import('../network/client');
     render(<MobileMineTab />);
-    await userEvent.click(screen.getByRole('button', { name: /ALLE ABBAUEN/i }));
+    await userEvent.click(screen.getByRole('button', { name: /mobile\.mineAll/i }));
     expect(network.sendMine).toHaveBeenCalledWith(expect.any(String), true);
   });
 
@@ -97,7 +97,7 @@ describe('MobileMineTab', () => {
       currentSector: { ...asteroidSector, type: 'station', resources: undefined },
     } as any);
     render(<MobileMineTab />);
-    expect(screen.getByText(/kein mining/i)).toBeInTheDocument();
+    expect(screen.getByText(/mobile\.noMiningInSector/i)).toBeInTheDocument();
   });
 
   it('disables MINE button when resource is depleted (value 0)', () => {

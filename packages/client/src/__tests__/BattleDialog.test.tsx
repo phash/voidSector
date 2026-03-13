@@ -34,8 +34,8 @@ describe('BattleDialog', () => {
       },
     });
     render(<BattleDialog />);
-    expect(screen.getByText(/PIRATEN-KONTAKT/)).toBeDefined();
-    expect(screen.getByText(/Piraten-Level: 3/)).toBeDefined();
+    expect(screen.getByText(/battle\.pirateContact/)).toBeDefined();
+    expect(screen.getByText(/battle\.pirateLevel/)).toBeDefined();
     expect(screen.getByText(/\[KAMPF\]/)).toBeDefined();
     expect(screen.getByText(/\[FLUCHT\]/)).toBeDefined();
   });
