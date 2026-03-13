@@ -567,6 +567,7 @@ button.success:hover {
     <div class="tab" data-tab="stories">Stories</div>
     <div class="tab" data-tab="quadmap">QUAD-MAP</div>
     <div class="tab" data-tab="construction">BAUSTELLEN</div>
+    <div class="tab" data-tab="structures">STRUKTUREN</div>
     <div class="tab" data-tab="errors">ERRORS <span id="errors-badge" style="display:none;background:#ff4444;color:#fff;border-radius:10px;padding:0 5px;font-size:10px;margin-left:4px;vertical-align:middle"></span></div>
   </div>
 
@@ -905,6 +906,88 @@ expiresDays: 14"></textarea>
       </table>
     </div>
 
+    <!-- ── STRUKTUREN Tab ─────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-structures">
+      <div style="display:flex;gap:16px;height:100%">
+
+        <!-- Left: list + create form -->
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">
+
+          <!-- Create form -->
+          <div class="stat-card" style="padding:12px">
+            <div class="section-title" style="margin-bottom:8px">STRUKTUR ERSTELLEN (humans)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <label style="font-size:10px;color:var(--amber-dim)">QUADRANT X</label>
+                <input id="str-qx" type="number" value="0" style="width:60px;background:transparent;border:1px solid var(--amber-dim);color:var(--amber-full);padding:3px 6px;font-family:inherit;font-size:11px">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <label style="font-size:10px;color:var(--amber-dim)">QUADRANT Y</label>
+                <input id="str-qy" type="number" value="0" style="width:60px;background:transparent;border:1px solid var(--amber-dim);color:var(--amber-full);padding:3px 6px;font-family:inherit;font-size:11px">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <label style="font-size:10px;color:var(--amber-dim)">SEKTOR X</label>
+                <input id="str-sx" type="number" value="0" style="width:60px;background:transparent;border:1px solid var(--amber-dim);color:var(--amber-full);padding:3px 6px;font-family:inherit;font-size:11px">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <label style="font-size:10px;color:var(--amber-dim)">SEKTOR Y</label>
+                <input id="str-sy" type="number" value="0" style="width:60px;background:transparent;border:1px solid var(--amber-dim);color:var(--amber-full);padding:3px 6px;font-family:inherit;font-size:11px">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <label style="font-size:10px;color:var(--amber-dim)">TYP</label>
+                <select id="str-type" style="background:transparent;border:1px solid var(--amber-dim);color:var(--amber-full);padding:3px 6px;font-family:inherit;font-size:11px">
+                  <option value="station">Station</option>
+                  <option value="jumpgate">Jumpgate</option>
+                </select>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <label style="font-size:10px;color:var(--amber-dim)">ABS X</label>
+                <input id="str-abs-x" type="text" readonly value="0" style="width:60px;background:rgba(0,0,0,0.3);border:1px solid #333;color:#888;padding:3px 6px;font-family:inherit;font-size:11px">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <label style="font-size:10px;color:var(--amber-dim)">ABS Y</label>
+                <input id="str-abs-y" type="text" readonly value="0" style="width:60px;background:rgba(0,0,0,0.3);border:1px solid #333;color:#888;padding:3px 6px;font-family:inherit;font-size:11px">
+              </div>
+              <button class="btn success" onclick="createStructureAdmin()" style="align-self:flex-end">ERSTELLEN</button>
+            </div>
+          </div>
+
+          <!-- Stations list -->
+          <div>
+            <div class="section-title">STATIONEN (civ_stations)</div>
+            <div id="str-stations-empty" class="empty-state" style="display:none">Keine Stationen.</div>
+            <table class="data-table" id="str-stations-table">
+              <thead><tr>
+                <th>ID</th><th>Sektor</th><th>Fraktion</th><th>Shipyard</th><th>Warehouse</th><th>Kontor</th>
+              </tr></thead>
+              <tbody id="str-stations-list"></tbody>
+            </table>
+          </div>
+
+          <!-- Jumpgates list -->
+          <div style="margin-top:12px">
+            <div class="section-title">JUMPGATES</div>
+            <div id="str-gates-empty" class="empty-state" style="display:none">Keine Jumpgates.</div>
+            <table class="data-table" id="str-gates-table">
+              <thead><tr>
+                <th>ID</th><th>Sektor</th><th>Ziel</th><th>Typ</th><th>Besitzer</th><th>Toll</th><th>LvConn</th><th>LvDist</th>
+              </tr></thead>
+              <tbody id="str-gates-list"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: detail panel -->
+        <div id="str-detail" style="width:280px;flex-shrink:0;display:none">
+          <div class="stat-card" style="padding:12px">
+            <div class="section-title" style="margin-bottom:8px" id="str-detail-title">DETAIL</div>
+            <div id="str-detail-body" style="font-size:11px;line-height:1.8"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <div class="tab-panel" id="panel-errors">
       <div style="margin-bottom:8px;display:flex;gap:6px;">
         <button class="btn" onclick="loadErrors('new')">NEW</button>
@@ -1107,6 +1190,7 @@ expiresDays: 14"></textarea>
     else if (name === 'stats') loadStats();
     else if (name === 'stories') loadStories();
     else if (name === 'construction') loadConstructionSites();
+    else if (name === 'structures') loadStructures();
     else if (name === 'quadmap') {
       initQmapCanvas();
       if (qmapData.length === 0) fetchQmapData();
@@ -2846,6 +2930,113 @@ expiresDays: 14"></textarea>
     api('DELETE', '/errors/' + encodeURIComponent(id)).then(function() {
       loadErrors(currentErrorFilter);
     }).catch(function(err) { toast('Error: ' + err.message, 'error'); });
+  }
+
+  // ── STRUKTUREN ────────────────────────────────────────────────────
+
+  var QUADRANT_SIZE = 500;
+
+  // Recompute absolute coords whenever quadrant/sector inputs change
+  ['str-qx','str-qy','str-sx','str-sy'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateStrAbsCoords);
+  });
+
+  function updateStrAbsCoords() {
+    var qx = parseInt(document.getElementById('str-qx').value) || 0;
+    var qy = parseInt(document.getElementById('str-qy').value) || 0;
+    var sx = parseInt(document.getElementById('str-sx').value) || 0;
+    var sy = parseInt(document.getElementById('str-sy').value) || 0;
+    document.getElementById('str-abs-x').value = String(qx * QUADRANT_SIZE + sx);
+    document.getElementById('str-abs-y').value = String(qy * QUADRANT_SIZE + sy);
+  }
+
+  function loadStructures() {
+    api('GET', '/structures/overview').then(function(data) {
+      renderStations(data.stations || []);
+      renderJumpgates(data.jumpgates || []);
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Fehler beim Laden der Strukturen: ' + err.message, 'error');
+    });
+  }
+
+  function renderStations(stations) {
+    var tbody = document.getElementById('str-stations-list');
+    var empty = document.getElementById('str-stations-empty');
+    clearChildren(tbody);
+    if (stations.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    stations.forEach(function(s) {
+      var tr = el('tr', { style: { cursor: 'pointer' } });
+      tr.appendChild(el('td', null, String(s.id)));
+      tr.appendChild(el('td', null, s.sector_x + ', ' + s.sector_y));
+      tr.appendChild(el('td', null, esc(s.faction)));
+      tr.appendChild(el('td', { style: { color: s.has_shipyard ? '#4a9' : '#555' } }, s.has_shipyard ? '✓' : '—'));
+      tr.appendChild(el('td', { style: { color: s.has_warehouse ? '#4a9' : '#555' } }, s.has_warehouse ? '✓' : '—'));
+      tr.appendChild(el('td', { style: { color: s.has_kontor ? '#4a9' : '#555' } }, s.has_kontor ? '✓' : '—'));
+      tr.addEventListener('click', function() { showStrDetail('STATION', s); });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderJumpgates(gates) {
+    var tbody = document.getElementById('str-gates-list');
+    var empty = document.getElementById('str-gates-empty');
+    clearChildren(tbody);
+    if (gates.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    gates.forEach(function(g) {
+      var tr = el('tr', { style: { cursor: 'pointer' } });
+      tr.appendChild(el('td', null, esc(g.id)));
+      tr.appendChild(el('td', null, g.sector_x + ', ' + g.sector_y));
+      tr.appendChild(el('td', null, g.target_x + ', ' + g.target_y));
+      tr.appendChild(el('td', null, esc(g.gate_type)));
+      tr.appendChild(el('td', null, esc(g.owner_name || g.owner_id || '—')));
+      tr.appendChild(el('td', null, String(g.toll_credits || 0)));
+      tr.appendChild(el('td', null, String(g.level_connection || 1)));
+      tr.appendChild(el('td', null, String(g.level_distance || 1)));
+      tr.addEventListener('click', function() { showStrDetail('JUMPGATE', g); });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function showStrDetail(type, obj) {
+    var panel = document.getElementById('str-detail');
+    var title = document.getElementById('str-detail-title');
+    var body = document.getElementById('str-detail-body');
+    title.textContent = type + ' — ' + (type === 'STATION' ? obj.sector_x + ', ' + obj.sector_y : obj.id);
+    clearChildren(body);
+    Object.entries(obj).forEach(function(pair) {
+      var row = el('div', { style: { display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #222', paddingBottom: '2px' } });
+      row.appendChild(el('span', { style: { color: 'var(--amber-dim)', marginRight: '8px' } }, String(pair[0])));
+      row.appendChild(el('span', { style: { color: 'var(--amber-full)', wordBreak: 'break-all', textAlign: 'right' } }, pair[1] === null ? '—' : String(pair[1])));
+      body.appendChild(row);
+    });
+    panel.style.display = 'block';
+  }
+
+  function createStructureAdmin() {
+    var qx = parseInt(document.getElementById('str-qx').value) || 0;
+    var qy = parseInt(document.getElementById('str-qy').value) || 0;
+    var sx = parseInt(document.getElementById('str-sx').value) || 0;
+    var sy = parseInt(document.getElementById('str-sy').value) || 0;
+    var type = document.getElementById('str-type').value;
+    var absX = qx * QUADRANT_SIZE + sx;
+    var absY = qy * QUADRANT_SIZE + sy;
+
+    if (type === 'station') {
+      if (!confirm('Station (humans) bei (' + absX + ', ' + absY + ') erstellen?')) return;
+      api('POST', '/structures/station', { sectorX: absX, sectorY: absY }).then(function() {
+        toast('Station erstellt bei (' + absX + ', ' + absY + ')!', 'success');
+        loadStructures();
+      }).catch(function(err) { toast('Fehler: ' + err.message, 'error'); });
+    } else {
+      if (!confirm('Jumpgate bei (' + absX + ', ' + absY + ') erstellen?')) return;
+      api('POST', '/structures/jumpgate', { sectorX: absX, sectorY: absY }).then(function() {
+        toast('Jumpgate erstellt bei (' + absX + ', ' + absY + ')!', 'success');
+        loadStructures();
+      }).catch(function(err) { toast('Fehler: ' + err.message, 'error'); });
+    }
   }
 
 })();
