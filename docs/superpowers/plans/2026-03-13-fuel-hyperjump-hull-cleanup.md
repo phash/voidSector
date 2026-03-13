@@ -347,11 +347,18 @@ Delete these three items from `packages/shared/src/types.ts`:
 
 - [ ] **Step 2: Remove from `constants.ts`**
 
-Delete from `packages/shared/src/constants.ts`:
+First, find all references to `HULL_PRICES` to ensure no business logic depends on it:
+```bash
+grep -rn "HULL_PRICES" packages/server/src packages/client/src packages/shared/src
+```
+Fix or remove any usages found before deleting.
+
+Then delete from `packages/shared/src/constants.ts`:
 - `export const FEATURE_HYPERDRIVE_V2 = false;` (single line, ~line 380)
 - The entire `HULLS` constant (~lines 540–641, 106 lines)
 - The entire `HULL_PRICES` constant (~6 lines)
 - The entire `HULL_FUEL_MULTIPLIER` constant (~7 lines)
+- The entire `HULL_RADAR_PATTERNS` constant (~line 2080, `Record<HullType, number[][]>`)
 - The `HullType` import at the top of `constants.ts` if present
 
 - [ ] **Step 3: Build shared**
@@ -575,6 +582,18 @@ if (segment.isHyperjump && FEATURE_HYPERDRIVE_V2) {
 if (segment.isHyperjump) {
 ```
 
+**Site E — around line 141 (station visit, auto-refuel guard):**
+```typescript
+// Before:
+if (FEATURE_HYPERDRIVE_V2) {
+  const ship = this.ctx.getShipForClient(client.sessionId);
+  await this.tryAutoRefuel(client, auth, ship);
+}
+// After (unconditional, spec: "Auto-Refuel-Logik bei Station bleibt aktiv"):
+const ship = this.ctx.getShipForClient(client.sessionId);
+await this.tryAutoRefuel(client, auth, ship);
+```
+
 Remove the `FEATURE_HYPERDRIVE_V2` import from `NavigationService.ts`.
 
 - [ ] **Step 5: `SectorRoom.ts` — activate hyperjump (resolve FEATURE_HYPERDRIVE_V2 sites)**
@@ -769,9 +788,18 @@ validateModuleInstall(ship.modules, selectedModuleId, slot.index, acepXp)
 - [ ] **Step 8: `RadarRenderer.ts` and `RadarCanvas.tsx`**
 
 In `RadarRenderer.ts`:
-- Line 17: remove `HullType` from the import
+- Line 17: remove `HullType` from the import; also remove `HULL_RADAR_PATTERNS` from the constants import
 - Line 81: remove `hullType?: HullType;` from the state interface
-- Line 317: replace `const ownHull = state.hullType ?? 'scout';` — the `ownHull` variable is likely used for something visual (check what it's used for immediately after line 317 and either hardcode the visual value or remove the logic if it was only hull-dependent)
+- Line 317: `const ownHull = state.hullType ?? 'scout'` is used to look up `HULL_RADAR_PATTERNS[ownHull]` for the player ship's radar icon shape. Replace the lookup with the hardcoded scout pattern (all ships now share one shape):
+  ```typescript
+  // Before:
+  const ownHull = state.hullType ?? 'scout';
+  // ... HULL_RADAR_PATTERNS[ownHull] used below
+
+  // After: remove ownHull variable; replace HULL_RADAR_PATTERNS[ownHull] with:
+  const radarPattern = [[0,1,0],[1,1,1],[0,1,0]];
+  ```
+- Also check line ~604 where `HULL_RADAR_PATTERNS.scout` may be used for other-player icons — replace with the same hardcoded pattern.
 
 In `RadarCanvas.tsx`:
 - Line 74: remove `hullType: state.ship?.hullType,` from the props/state passed to the renderer.
@@ -822,7 +850,7 @@ const mockShip: ClientShipData = { id: '1', hullType: 'scout', name: 'AEGIS', ..
 const mockShip: ClientShipData = { id: '1', name: 'AEGIS', ... };
 ```
 
-Expected files to fix: `ShipStatusPanel.test.tsx`, `ShipDetailPanel.test.tsx`, `AcepDetailPanel.test.tsx`, `ModuleTab.test.tsx`, possibly others.
+Expected files to fix (non-exhaustive — the grep will find all): `ShipStatusPanel.test.tsx`, `ShipDetailPanel.test.tsx`, `AcepDetailPanel.test.tsx`, `ModuleTab.test.tsx`, `AcepProgram.test.tsx`, `AcepTab.test.tsx`, `CargoScreen.test.tsx`, `ShipBlock.test.tsx`, `ShopTab.test.tsx`, `NavTargetLine.test.ts`, `TradeScreen.test.tsx`.
 
 - [ ] **Step 12: Run client tests**
 
@@ -858,7 +886,7 @@ Expected: all green (~205 shared, ~973 server, ~499 client).
 - [ ] **Step 2: Verify no hull references remain**
 
 ```bash
-grep -r "HullType\|HULLS\|HULL_FUEL_MULTIPLIER\|FEATURE_HYPERDRIVE_V2\|hull_type\|hullType" \
+grep -r "HullType\|HULLS\|HULL_FUEL_MULTIPLIER\|HULL_RADAR_PATTERNS\|HULL_PRICES\|FEATURE_HYPERDRIVE_V2\|hull_type\|hullType" \
   packages/shared/src packages/server/src packages/client/src \
   --include="*.ts" --include="*.tsx" \
   --exclude-dir=__tests__ | grep -v ".d.ts" | grep -v "node_modules"
