@@ -30,5 +30,6 @@ WHERE faction_shares ? 'human';
 -- 4. Update the column default
 ALTER TABLE quadrant_control ALTER COLUMN controlling_faction SET DEFAULT 'humans';
 
--- 5. Update expansion_log (column is 'faction', not 'faction_id')
+-- 5. Update expansion_log if it exists (column is named 'faction', not 'faction_id')
+-- 5. Update expansion_log if it exists (column is named 'faction', not 'faction_id')
 UPDATE expansion_log SET faction = 'humans' WHERE faction = 'human';
