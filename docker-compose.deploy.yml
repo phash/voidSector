@@ -1,0 +1,17 @@
+# docker-compose.deploy.yml — Testserver-Overrides
+#
+# Wird von deploy.sh zusätzlich geladen.
+# Weicht auf alternative Host-Ports aus, damit kein Konflikt
+# mit anderen laufenden Diensten entsteht.
+#
+#   Postgres: Host 5433 → Container 5432
+#   Redis:    Host 6380 → Container 6379
+
+services:
+  postgres:
+    ports:
+      - "5433:5432"
+
+  redis:
+    ports:
+      - "6380:6379"
