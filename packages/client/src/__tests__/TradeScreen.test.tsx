@@ -326,7 +326,7 @@ describe('TradeScreen', () => {
         artefact_defense: 0, artefact_special: 0, artefact_mining: 0,
       },
       ship: {
-        id: 's1', ownerId: 'p1', hullType: 'scout' as const,
+        id: 's1', ownerId: 'p1',
         name: 'Test', modules: [], active: true, fuel: 10,
         stats: { cargoCap: 50, fuelMax: 50, jumpRange: 3, apCostJump: 1, fuelPerJump: 1, hp: 100, commRange: 50, scannerLevel: 2, damageMod: 0, shieldHp: 0, shieldRegen: 0, weaponAttack: 0, weaponType: 'none' as const, weaponPiercing: 0, pointDefense: 0, ecmReduction: 0, engineSpeed: 3, artefactChanceBonus: 0, safeSlotBonus: 0, hyperdriveRange: 0, hyperdriveSpeed: 0, hyperdriveRegen: 0, hyperdriveFuelEfficiency: 0, miningBonus: 0 },
       },
@@ -365,7 +365,7 @@ describe('TradeScreen', () => {
         artefact_defense: 0, artefact_special: 0, artefact_mining: 0,
       },
       ship: {
-        id: 's1', ownerId: 'p1', hullType: 'scout' as const,
+        id: 's1', ownerId: 'p1',
         name: 'Test', modules: [], active: true, fuel: 10,
         stats: { cargoCap: 50, fuelMax: 50, jumpRange: 3, apCostJump: 1, fuelPerJump: 1, hp: 100, commRange: 50, scannerLevel: 2, damageMod: 0, shieldHp: 0, shieldRegen: 0, weaponAttack: 0, weaponType: 'none' as const, weaponPiercing: 0, pointDefense: 0, ecmReduction: 0, engineSpeed: 3, artefactChanceBonus: 0, safeSlotBonus: 0, hyperdriveRange: 0, hyperdriveSpeed: 0, hyperdriveRegen: 0, hyperdriveFuelEfficiency: 0, miningBonus: 0 },
       },
@@ -403,7 +403,7 @@ describe('TradeScreen', () => {
         artefact_defense: 0, artefact_special: 0, artefact_mining: 0,
       },
       ship: {
-        id: 's1', ownerId: 'p1', hullType: 'scout' as const,
+        id: 's1', ownerId: 'p1',
         name: 'Test', modules: [], active: true, fuel: 10,
         stats: { cargoCap: 50, fuelMax: 50, jumpRange: 3, apCostJump: 1, fuelPerJump: 1, hp: 100, commRange: 50, scannerLevel: 2, damageMod: 0, shieldHp: 0, shieldRegen: 0, weaponAttack: 0, weaponType: 'none' as const, weaponPiercing: 0, pointDefense: 0, ecmReduction: 0, engineSpeed: 3, artefactChanceBonus: 0, safeSlotBonus: 0, hyperdriveRange: 0, hyperdriveSpeed: 0, hyperdriveRegen: 0, hyperdriveFuelEfficiency: 0, miningBonus: 0 },
       },

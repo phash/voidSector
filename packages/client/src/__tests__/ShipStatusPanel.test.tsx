@@ -42,7 +42,6 @@ const baseStats = {
 const baseShip = {
   id: 'ship-1',
   ownerId: 'player-1',
-  hullType: 'scout' as const,
   name: 'Astral Hawk',
   modules: [],
   stats: baseStats,

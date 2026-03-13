@@ -1,6 +1,6 @@
 // packages/client/src/components/ShipDetailPanel.tsx
 import { useStore } from '../state/store';
-import { MONITORS, HULLS } from '@void-sector/shared';
+import { MONITORS, BASE_MODULE_SLOTS } from '@void-sector/shared';
 
 const ACEP_DETAIL_PATHS = [
   { key: 'ausbau'   as const, label: 'CNST', color: '#ffaa00' },
@@ -36,7 +36,7 @@ export function ShipDetailPanel() {
   const xp = ship.acepXp;
   const traits = ship.acepTraits ?? [];
   const installedModules = ship.modules ?? [];
-  const baseSlots = HULLS[ship.hullType]?.slots ?? 3;
+  const baseSlots = BASE_MODULE_SLOTS;
   const extraSlots = ship.acepEffects?.extraModuleSlots ?? 0;
   const maxSlots = baseSlots + extraSlots;
   const freeSlots = maxSlots - installedModules.length;

@@ -34,7 +34,6 @@ describe('Resource indicator dots on radar', () => {
       jumpGateInfo: null,
       scanEvents: [],
       discoveryTimestamps: {},
-      hullType: 'scout' as const,
       bookmarks: [],
       animTime: 0,
       navTarget: null,

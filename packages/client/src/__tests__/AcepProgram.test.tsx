@@ -16,7 +16,7 @@ vi.mock('../network/client', () => ({
 import { AcepProgram } from '../components/AcepProgram';
 
 const mockShip = {
-  id: 'ship-1', name: 'Test Ship', hullType: 'scout' as const,
+  id: 'ship-1', name: 'Test Ship',
   modules: [],
   acepXp: { ausbau: 5, intel: 0, kampf: 0, explorer: 0, total: 5 },
   acepEffects: { extraModuleSlots: 0, cargoMultiplier: 1, miningBonus: 0, scanRadiusBonus: 0, combatDamageBonus: 0, ancientDetection: false, helionDecoderEnabled: false },

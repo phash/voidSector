@@ -32,7 +32,6 @@ import type {
   ShipRecord,
   ShipStats,
   ShipModule,
-  HullType,
   CombatV2State,
   StationDefense,
   StationCombatEvent,
@@ -64,7 +63,6 @@ export interface QuestCompleteEntry {
 export interface ClientShipData {
   id: string;
   ownerId: string;
-  hullType: HullType;
   name: string;
   modules: ShipModule[];
   stats: ShipStats;

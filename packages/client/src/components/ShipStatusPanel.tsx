@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { HULLS } from '@void-sector/shared';
 
 const mono = { fontFamily: 'var(--font-mono)', fontSize: '0.55rem' };
 const dim  = { ...mono, color: 'var(--color-dim)' };
@@ -28,8 +27,7 @@ export function ShipStatusPanel() {
     return <div style={{ padding: '4px 8px', ...dim, opacity: 0.5 }}>NO SHIP DATA</div>;
   }
 
-  const { id: shipId, name: shipName, hullType, stats, acepXp: xp } = ship;
-  const hull = HULLS[hullType];
+  const { id: shipId, name: shipName, stats, acepXp: xp } = ship;
 
   function startRename() {
     setNameInput(shipName);
@@ -87,7 +85,6 @@ export function ShipStatusPanel() {
           {shipName}
         </div>
       )}
-      <div style={{ ...dim, marginBottom: 6 }}>{hull?.name ?? hullType.toUpperCase()}</div>
 
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
@@ -131,7 +128,6 @@ export function ShipStatusPanel() {
             ['SPEED',      stats.engineSpeed],
             ['SCANNER',    stats.scannerLevel],
             ['JUMP RANGE', stats.jumpRange],
-            ['FUEL',       fuel ? `${fuel.current}/${fuel.max}` : `—/${stats.fuelMax}`],
           ] as [string, string | number][]).map(([label, val]) => (
             <div key={label} style={row}>
               <span style={dim}>{label}</span>
@@ -139,6 +135,35 @@ export function ShipStatusPanel() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Fuel section */}
+      {tab === 'stats' && (
+        <>
+          <div style={hdr}>FUEL</div>
+          <div style={row}>
+            <span style={dim}>TANK</span>
+            <span style={pri}>
+              {fuel ? fuel.current.toLocaleString() : '—'}
+              <span style={{ opacity: 0.4 }}> / {(fuel?.max ?? stats.fuelMax).toLocaleString()}</span>
+            </span>
+          </div>
+          {fuel && (
+            <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, margin: '2px 0 4px' }}>
+              <div style={{
+                height: '100%',
+                width: `${Math.min(100, Math.round((fuel.current / fuel.max) * 100))}%`,
+                background: 'linear-gradient(90deg, #f97316, #fb923c)',
+                borderRadius: 2,
+                transition: 'width 0.3s',
+              }} />
+            </div>
+          )}
+          <div style={row}>
+            <span style={dim}>COST/SEKTOR</span>
+            <span style={pri}>{stats.fuelPerJump}</span>
+          </div>
+        </>
       )}
 
       {/* Hyperdrive charge */}

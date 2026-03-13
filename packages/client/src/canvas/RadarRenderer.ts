@@ -3,7 +3,6 @@ import {
   SECTOR_COLORS,
   STALENESS_DIM_HOURS,
   STALENESS_FADE_DAYS,
-  HULL_RADAR_PATTERNS,
   innerCoord,
   getAcepRadarPattern,
   COSMIC_FACTION_COLORS,
@@ -14,7 +13,6 @@ import type {
   JumpGateInfo,
   JumpGateMapEntry,
   ScanEvent,
-  HullType,
   Bookmark,
   Quest,
   CivShip,
@@ -78,7 +76,6 @@ interface RadarState {
   knownJumpGates?: JumpGateMapEntry[];
   scanEvents?: ScanEvent[];
   discoveryTimestamps?: Record<string, number>;
-  hullType?: HullType;
   acepXp?: { ausbau: number; intel: number; kampf: number; explorer: number; total: number } | null;
   bookmarks?: Bookmark[];
   animTime?: number;
@@ -314,12 +311,12 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       const labelX = labelLeftAlign ? cellX - CELL_W / 2 + 3 : cellX;
 
       if (isPlayer) {
-        const ownHull = state.hullType ?? 'scout';
+        const defaultPattern = [[0,1,0],[1,1,1],[0,1,0]];
         // ACEP/3: use evolved icon when XP >= 20 (Tier 2+)
         const ownPattern =
           state.acepXp && state.acepXp.total >= 20
-            ? (getAcepRadarPattern(state.acepXp) ?? HULL_RADAR_PATTERNS[ownHull])
-            : HULL_RADAR_PATTERNS[ownHull];
+            ? (getAcepRadarPattern(state.acepXp) ?? defaultPattern)
+            : defaultPattern;
         const ownPixelSize = isDetailView ? Math.max(8, 2 + state.zoomLevel) : 2 + state.zoomLevel;
         // #155: animate ship icon from old position
         let iconX = cellX;
@@ -601,7 +598,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
 
   // Draw other players — zoom >= 2
   if (state.zoomLevel >= 2) {
-    const otherPattern = HULL_RADAR_PATTERNS.scout;
+    const otherPattern = [[0,1,0],[1,1,1],[0,1,0]];
     const otherPixelSize = 1 + state.zoomLevel;
     const otherColor = '#FFDD22';
     const playerList = Object.values(state.players);

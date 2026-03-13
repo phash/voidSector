@@ -15,7 +15,6 @@ import { AcepTab } from '../components/AcepTab';
 const mockShip = {
   id: 'ship-1',
   name: 'Test Ship',
-  hullType: 'scout' as const,
   modules: [],
   acepXp: { ausbau: 20, intel: 0, kampf: 0, explorer: 0, total: 20 },
   acepEffects: {

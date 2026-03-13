@@ -10,7 +10,6 @@ vi.mock('../network/client', () => ({ network: {} }));
 const baseShip = {
   id: 's1',
   ownerId: 'p1',
-  hullType: 'scout' as const,
   name: 'NIGHTFALL',
   modules: [
     { moduleId: 'mining_laser_mk1', slotIndex: 0 },
@@ -131,7 +130,7 @@ describe('ShipDetailPanel', () => {
   it('shows correct slot count from hull definition', () => {
     // scout hull has 3 base slots; 0 extraModuleSlots → 3 total
     mockStoreState({
-      ship: { ...baseShip, hullType: 'scout', modules: [], acepEffects: { extraModuleSlots: 0 } },
+      ship: { ...baseShip, modules: [], acepEffects: { extraModuleSlots: 0 } },
       setMonitorMode: vi.fn(),
     } as any);
     render(<ShipDetailPanel />);
@@ -140,7 +139,7 @@ describe('ShipDetailPanel', () => {
 
   it('adds extraModuleSlots to hull base slots', () => {
     mockStoreState({
-      ship: { ...baseShip, hullType: 'scout', modules: [], acepEffects: { extraModuleSlots: 2 } },
+      ship: { ...baseShip, modules: [], acepEffects: { extraModuleSlots: 2 } },
       setMonitorMode: vi.fn(),
     } as any);
     render(<ShipDetailPanel />);

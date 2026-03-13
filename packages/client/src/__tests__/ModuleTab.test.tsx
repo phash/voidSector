@@ -16,7 +16,6 @@ import { ModuleTab } from '../components/ModuleTab';
 const mockShip = {
   id: 'ship-1',
   name: 'Test Ship',
-  hullType: 'scout' as const,
   modules: [
     { slotIndex: 0, moduleId: 'generator_mk2', currentHp: 2, maxHp: 3, source: 'standard' as const },
   ],

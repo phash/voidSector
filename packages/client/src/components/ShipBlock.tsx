@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { HULLS, getPhysicalCargoTotal, MODULES } from '@void-sector/shared';
+import { getPhysicalCargoTotal, MODULES } from '@void-sector/shared';
 
 const mono = { fontFamily: 'var(--font-mono)', fontSize: '0.55rem' };
 const dim  = { ...mono, color: 'var(--color-dim)' };
@@ -39,8 +39,7 @@ export function ShipBlock() {
     );
   }
 
-  const { id: shipId, name: shipName, hullType, stats, modules } = ship;
-  const hull = HULLS[hullType];
+  const { id: shipId, name: shipName, stats, modules } = ship;
 
   // Aggregate HP from modules; fall back to stats.hp when no modules or all modules have 0 maxHp
   const modulesMaxHp = modules.reduce((s, m) => {
@@ -97,7 +96,6 @@ export function ShipBlock() {
             {shipName}
           </span>
         )}
-        <span style={dim}>[{hull?.name ?? hullType.toUpperCase()}]</span>
         <button
           style={{ background: 'transparent', border: 'none', ...mono, color: 'var(--color-dim)', cursor: 'pointer', padding: '0 2px', textDecoration: 'underline' }}
           onClick={() => setActiveProgram('HANGAR')}
