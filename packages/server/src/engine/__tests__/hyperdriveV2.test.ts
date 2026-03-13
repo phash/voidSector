@@ -4,10 +4,8 @@ import {
   calculateCurrentCharge,
   spendCharge,
   calcHyperjumpFuelV2,
-  HULL_FUEL_MULTIPLIER,
   HYPERJUMP_FUEL_PER_SECTOR,
   FUEL_COST_PER_UNIT,
-  FEATURE_HYPERDRIVE_V2,
   HYPERJUMP_PIRATE_FUEL_PENALTY,
   calcHyperjumpAP,
 } from '@void-sector/shared';
@@ -45,16 +43,6 @@ function mockShipStats(overrides: Partial<ShipStats> = {}): ShipStats {
 }
 
 describe('Hyperdrive V2 — Charge System', () => {
-  describe('FEATURE_HYPERDRIVE_V2 constant', () => {
-    it('should be defined as a boolean', () => {
-      expect(typeof FEATURE_HYPERDRIVE_V2).toBe('boolean');
-    });
-
-    it('should be false by default (feature flag off)', () => {
-      expect(FEATURE_HYPERDRIVE_V2).toBe(false);
-    });
-  });
-
   describe('createHyperdriveState', () => {
     it('creates state from ship stats with full charge', () => {
       const stats = mockShipStats({ hyperdriveRange: 10, hyperdriveRegen: 1.5 });
@@ -240,52 +228,31 @@ describe('Hyperdrive V2 — Charge System', () => {
 
   describe('V2 fuel calculation', () => {
     it('calculates base fuel cost for hyperjump', () => {
-      // cost = ceil(1 * 10 * 1.0 * (1 - 0)) = 10
-      const cost = calcHyperjumpFuelV2(HYPERJUMP_FUEL_PER_SECTOR, 10, 1.0, 0);
+      // cost = ceil(1 * 10 * (1 - 0)) = 10
+      const cost = calcHyperjumpFuelV2(HYPERJUMP_FUEL_PER_SECTOR, 10, 0);
       expect(cost).toBe(10);
     });
 
-    it('applies hull multiplier (scout is cheaper)', () => {
-      const scoutCost = calcHyperjumpFuelV2(
-        HYPERJUMP_FUEL_PER_SECTOR,
-        10,
-        HULL_FUEL_MULTIPLIER.scout,
-        0,
-      );
-      const battleshipCost = calcHyperjumpFuelV2(
-        HYPERJUMP_FUEL_PER_SECTOR,
-        10,
-        HULL_FUEL_MULTIPLIER.battleship,
-        0,
-      );
-      expect(scoutCost).toBeLessThan(battleshipCost);
-    });
-
     it('applies drive efficiency to reduce cost', () => {
-      const noDrive = calcHyperjumpFuelV2(1, 10, 1.0, 0);
-      const withDrive = calcHyperjumpFuelV2(1, 10, 1.0, 0.5);
+      const noDrive = calcHyperjumpFuelV2(1, 10, 0);
+      const withDrive = calcHyperjumpFuelV2(1, 10, 0.5);
       expect(withDrive).toBeLessThan(noDrive);
     });
 
     it('minimum fuel cost is 1', () => {
       // Very high efficiency with short distance
-      const cost = calcHyperjumpFuelV2(1, 1, 0.8, 0.99);
+      const cost = calcHyperjumpFuelV2(1, 1, 0.99);
       expect(cost).toBe(1);
     });
 
     it('scales linearly with distance', () => {
-      const cost5 = calcHyperjumpFuelV2(1, 5, 1.0, 0);
-      const cost10 = calcHyperjumpFuelV2(1, 10, 1.0, 0);
+      const cost5 = calcHyperjumpFuelV2(1, 5, 0);
+      const cost10 = calcHyperjumpFuelV2(1, 10, 0);
       expect(cost10).toBe(cost5 * 2);
     });
 
     it('pirate fuel penalty multiplies the V2 cost', () => {
-      const baseCost = calcHyperjumpFuelV2(
-        HYPERJUMP_FUEL_PER_SECTOR,
-        10,
-        HULL_FUEL_MULTIPLIER.scout,
-        0,
-      );
+      const baseCost = calcHyperjumpFuelV2(HYPERJUMP_FUEL_PER_SECTOR, 10, 0);
       const pirateCost = Math.ceil(baseCost * HYPERJUMP_PIRATE_FUEL_PENALTY);
       expect(pirateCost).toBeGreaterThan(baseCost);
       expect(pirateCost).toBe(Math.ceil(baseCost * 1.5));
@@ -399,22 +366,6 @@ describe('Hyperdrive V2 — Charge System', () => {
       };
 
       expect(deserialized).toEqual(state);
-    });
-  });
-
-  describe('hull fuel multiplier integration', () => {
-    it('all hull types have a defined multiplier', () => {
-      const hullTypes = ['scout', 'freighter', 'cruiser', 'explorer', 'battleship'] as const;
-      for (const hull of hullTypes) {
-        expect(HULL_FUEL_MULTIPLIER[hull]).toBeDefined();
-        expect(HULL_FUEL_MULTIPLIER[hull]).toBeGreaterThan(0);
-      }
-    });
-
-    it('scout has the lowest fuel multiplier', () => {
-      expect(HULL_FUEL_MULTIPLIER.scout).toBe(0.8);
-      expect(HULL_FUEL_MULTIPLIER.scout).toBeLessThan(HULL_FUEL_MULTIPLIER.freighter);
-      expect(HULL_FUEL_MULTIPLIER.scout).toBeLessThan(HULL_FUEL_MULTIPLIER.battleship);
     });
   });
 

@@ -3,8 +3,6 @@ import type {
   ResourceType,
   MineableResourceType,
   StructureType,
-  HullType,
-  HullDefinition,
   ModuleDefinition,
   ModuleCategory,
   SectorEnvironment,
@@ -376,9 +374,6 @@ export const PIRATE_HP_PER_LEVEL = 10;
 export const PIRATE_BASE_DAMAGE = 5;
 export const PIRATE_DAMAGE_PER_LEVEL = 3;
 
-// Hyperdrive v2 — Feature flag (charge-based hyperdrive system)
-export const FEATURE_HYPERDRIVE_V2 = false;
-
 // Combat v2 — Tactic multipliers
 export const TACTIC_MODS: Record<string, { dmg: number; def: number }> = {
   assault: { dmg: 1.3, def: 0.8 },
@@ -537,109 +532,6 @@ export const POWER_LEVEL_MULTIPLIERS: Record<string, number> = {
 };
 
 // --- Phase 7: Ship Designer ---
-export const HULLS: Record<HullType, HullDefinition> = {
-  scout: {
-    name: 'VOID SCOUT',
-    size: 'small',
-    slots: 3,
-    baseFuel: 10_000,
-    baseCargo: 3,
-    baseJumpRange: 5,
-    baseApPerJump: 1,
-    baseFuelPerJump: 100,
-    baseHp: 50,
-    baseCommRange: 50,
-    baseScannerLevel: 1,
-    baseEngineSpeed: 2,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 1,
-    unlockCost: 0,
-  },
-  freighter: {
-    name: 'VOID FREIGHTER',
-    size: 'medium',
-    slots: 4,
-    baseFuel: 10_000,
-    baseCargo: 15,
-    baseJumpRange: 3,
-    baseApPerJump: 2,
-    baseFuelPerJump: 100,
-    baseHp: 80,
-    baseCommRange: 75,
-    baseScannerLevel: 1,
-    baseEngineSpeed: 1,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 3,
-    unlockCost: 500,
-  },
-  cruiser: {
-    name: 'VOID CRUISER',
-    size: 'medium',
-    slots: 4,
-    baseFuel: 10_000,
-    baseCargo: 8,
-    baseJumpRange: 4,
-    baseApPerJump: 1,
-    baseFuelPerJump: 100,
-    baseHp: 100,
-    baseCommRange: 100,
-    baseScannerLevel: 1,
-    baseEngineSpeed: 2,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 4,
-    unlockCost: 1000,
-  },
-  explorer: {
-    name: 'VOID EXPLORER',
-    size: 'large',
-    slots: 5,
-    baseFuel: 10_000,
-    baseCargo: 10,
-    baseJumpRange: 6,
-    baseApPerJump: 1,
-    baseFuelPerJump: 100,
-    baseHp: 70,
-    baseCommRange: 150,
-    baseScannerLevel: 2,
-    baseEngineSpeed: 2,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 5,
-    unlockCost: 2000,
-  },
-  battleship: {
-    name: 'VOID BATTLESHIP',
-    size: 'large',
-    slots: 5,
-    baseFuel: 10_000,
-    baseCargo: 5,
-    baseJumpRange: 2,
-    baseApPerJump: 2,
-    baseFuelPerJump: 100,
-    baseHp: 150,
-    baseCommRange: 75,
-    baseScannerLevel: 1,
-    baseEngineSpeed: 1,
-    baseHyperdriveRange: 0,
-    baseHyperdriveSpeed: 0,
-    baseHyperdriveRegen: 0,
-    baseHyperdriveFuelEfficiency: 0,
-    unlockLevel: 6,
-    unlockCost: 3000,
-  },
-};
-
 export const MODULES: Record<string, ModuleDefinition> = {
   // === GENERATOR ===
   generator_mk1: {
@@ -2076,35 +1968,6 @@ export const NEBULA_SCANNER_MALUS = 1; // -1 sector scan range in nebula
 export const NEBULA_PIRATE_SPAWN_MODIFIER = 0.7; // -30% pirate spawn in nebula
 export const EMPTY_FUEL_MODIFIER = 0.8; // -20% fuel cost in empty space
 
-// Hull-specific pixel patterns for radar rendering (3x3 grids, 1 = filled pixel)
-export const HULL_RADAR_PATTERNS: Record<HullType, number[][]> = {
-  scout: [
-    [0, 1, 0],
-    [1, 1, 1],
-    [0, 1, 0],
-  ], // cross — nimble interceptor
-  freighter: [
-    [1, 1, 1],
-    [1, 1, 1],
-    [0, 1, 0],
-  ], // wide body + single thruster
-  cruiser: [
-    [1, 0, 1],
-    [1, 1, 1],
-    [0, 1, 0],
-  ], // spread wings + fuselage + tail
-  explorer: [
-    [0, 1, 0],
-    [0, 1, 0],
-    [1, 1, 1],
-  ], // tall forward sensor array
-  battleship: [
-    [1, 1, 1],
-    [1, 1, 1],
-    [1, 0, 1],
-  ], // heavy armored block + dual thrusters
-};
-
 // UI Symbols for grid rendering
 export const SYMBOLS = {
   ship: '\u25A0',
@@ -2361,26 +2224,8 @@ export const HYPERJUMP_FUEL_PER_SECTOR = 1; // base fuel cost per sector of hype
 export const SCAN_FUEL_COST = 0; // scans are free (#94)
 export const MINE_FUEL_COST = 0; // mining is free (#94)
 
-// Ship purchasing — prices in credits per hull (separate from unlockCost which is initial unlock)
-export const HULL_PRICES: Record<HullType, number> = {
-  scout: 0,
-  freighter: 500,
-  cruiser: 1000,
-  explorer: 2000,
-  battleship: 3000,
-};
-
 // Only stations at this NPC level or above have a shipyard
 export const STATION_SHIPYARD_LEVEL_THRESHOLD = 3;
-
-// Hull-specific fuel multiplier for hyperjumps
-export const HULL_FUEL_MULTIPLIER: Record<HullType, number> = {
-  scout: 0.8,
-  freighter: 1.2,
-  cruiser: 1.0,
-  explorer: 0.9,
-  battleship: 1.5,
-};
 
 // Normal jump constants
 export const JUMP_NORMAL_AP_COST = 1;

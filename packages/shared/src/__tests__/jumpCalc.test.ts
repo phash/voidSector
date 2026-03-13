@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calcHyperjumpAP, calcHyperjumpFuel, getEngineSpeed } from '../jumpCalc.js';
 import { calculateShipStats } from '../shipCalculator.js';
-import { ENGINE_SPEED, HULLS } from '../constants.js';
+import { ENGINE_SPEED } from '../constants.js';
 
 describe('calcHyperjumpAP', () => {
   it('returns 5 AP at engine speed 1', () => {
@@ -88,28 +88,6 @@ describe('ENGINE_SPEED mapping', () => {
     expect(ENGINE_SPEED.drive_mk2).toBe(3);
     expect(ENGINE_SPEED.drive_mk3).toBe(4);
     expect(ENGINE_SPEED.void_drive).toBe(5);
-  });
-});
-
-describe('hull baseEngineSpeed values', () => {
-  it('scout has baseEngineSpeed 2', () => {
-    expect(HULLS.scout.baseEngineSpeed).toBe(2);
-  });
-
-  it('freighter has baseEngineSpeed 1', () => {
-    expect(HULLS.freighter.baseEngineSpeed).toBe(1);
-  });
-
-  it('cruiser has baseEngineSpeed 2', () => {
-    expect(HULLS.cruiser.baseEngineSpeed).toBe(2);
-  });
-
-  it('explorer has baseEngineSpeed 2', () => {
-    expect(HULLS.explorer.baseEngineSpeed).toBe(2);
-  });
-
-  it('battleship has baseEngineSpeed 1', () => {
-    expect(HULLS.battleship.baseEngineSpeed).toBe(1);
   });
 });
 
