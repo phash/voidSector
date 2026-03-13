@@ -114,28 +114,23 @@ describe('hull baseEngineSpeed values', () => {
 });
 
 describe('calculateShipStats with engineSpeed', () => {
-  it('includes base engineSpeed for scout', () => {
-    const stats = calculateShipStats('scout', []);
+  it('includes BASE_ENGINE_SPEED with no modules', () => {
+    const stats = calculateShipStats([]);
     expect(stats.engineSpeed).toBe(2);
   });
 
   it('adds module engineSpeed bonus', () => {
-    const stats = calculateShipStats('scout', [{ moduleId: 'drive_mk2', slotIndex: 0 }]);
-    // scout base 2 + drive_mk2 engineSpeed 2 = 4
+    const stats = calculateShipStats([{ moduleId: 'drive_mk2', slotIndex: 0 }]);
+    // BASE_ENGINE_SPEED 2 + drive_mk2 engineSpeed 2 = 4
     expect(stats.engineSpeed).toBe(4);
   });
 
   it('clamps engineSpeed to max 5', () => {
-    const stats = calculateShipStats('scout', [
+    const stats = calculateShipStats([
       { moduleId: 'drive_mk3', slotIndex: 0 },
       { moduleId: 'drive_mk3', slotIndex: 1 },
     ]);
-    // scout base 2 + 3 + 3 = 8, clamped to 5
+    // BASE_ENGINE_SPEED 2 + 3 + 3 = 8, clamped to 5
     expect(stats.engineSpeed).toBe(5);
-  });
-
-  it('freighter with no modules has engineSpeed 1', () => {
-    const stats = calculateShipStats('freighter', []);
-    expect(stats.engineSpeed).toBe(1);
   });
 });

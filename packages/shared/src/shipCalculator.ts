@@ -1,5 +1,4 @@
 import {
-  HULLS,
   MODULES,
   ACEP_LEVEL_THRESHOLDS,
   ACEP_LEVEL_MULTIPLIERS,
@@ -11,8 +10,16 @@ import {
   POWER_LEVEL_MULTIPLIERS,
   BASE_SCANNER_MEMORY,
   FUEL_MIN_TANK,
+  BASE_FUEL_CAPACITY,
+  BASE_FUEL_PER_JUMP,
+  BASE_CARGO,
+  BASE_HP,
+  BASE_JUMP_RANGE,
+  BASE_ENGINE_SPEED,
+  BASE_COMM_RANGE,
+  BASE_SCANNER_LEVEL,
 } from './constants.js';
-import type { HullType, ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
+import type { ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
 
 /** Returns ACEP level (1–5) for a given XP value. */
 export function getAcepLevel(xp: number): number {
@@ -31,22 +38,19 @@ export function getExtraSlotCount(ausbauXp: number): number {
 }
 
 export function calculateShipStats(
-  hullType: HullType,
   modules: ShipModule[],
   acepXp?: AcepXpSnapshot,
 ): ShipStats {
-  const hull = HULLS[hullType];
   const stats: ShipStats = {
-    fuelMax: hull.baseFuel,
-    cargoCap: hull.baseCargo,
-    jumpRange: hull.baseJumpRange,
-    apCostJump: hull.baseApPerJump,
-    fuelPerJump: hull.baseFuelPerJump,
-    hp: hull.baseHp,
-    commRange: hull.baseCommRange,
-    scannerLevel: hull.baseScannerLevel,
+    fuelMax: BASE_FUEL_CAPACITY,
+    cargoCap: BASE_CARGO,
+    jumpRange: BASE_JUMP_RANGE,
+    apCostJump: 1,
+    fuelPerJump: BASE_FUEL_PER_JUMP,
+    hp: BASE_HP,
+    commRange: BASE_COMM_RANGE,
+    scannerLevel: BASE_SCANNER_LEVEL,
     damageMod: 1.0,
-    // Combat v2
     shieldHp: 0,
     shieldRegen: 0,
     weaponAttack: 0,
@@ -54,14 +58,13 @@ export function calculateShipStats(
     weaponPiercing: 0,
     pointDefense: 0,
     ecmReduction: 0,
-    engineSpeed: hull.baseEngineSpeed,
+    engineSpeed: BASE_ENGINE_SPEED,
     artefactChanceBonus: 0,
     safeSlotBonus: 0,
-    // Hyperdrive
-    hyperdriveRange: hull.baseHyperdriveRange,
-    hyperdriveSpeed: hull.baseHyperdriveSpeed,
-    hyperdriveRegen: hull.baseHyperdriveRegen,
-    hyperdriveFuelEfficiency: hull.baseHyperdriveFuelEfficiency,
+    hyperdriveRange: 0,
+    hyperdriveSpeed: 0,
+    hyperdriveRegen: 0,
+    hyperdriveFuelEfficiency: 0,
     miningBonus: 0,
     generatorEpPerRound: 0,
     repairHpPerRound: 0,
@@ -119,7 +122,6 @@ export function calculateShipStats(
 }
 
 export function validateModuleInstall(
-  hullType: HullType,
   currentModules: ShipModule[],
   moduleId: string,
   slotIndex: number,
