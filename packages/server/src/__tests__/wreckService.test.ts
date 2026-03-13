@@ -244,4 +244,59 @@ describe('WreckService.handleConsumeSlate', () => {
 
     expect(client.send).toHaveBeenCalledWith('actionError', expect.objectContaining({ code: 'SLATE_NOT_FOUND' }));
   });
+
+  it('sends actionError NOT_OWNER when slate belongs to another player', async () => {
+    vi.mocked(wreckQueries.getWreckSlateMetadata).mockResolvedValue({
+      id: 'slate-uuid',
+      playerId: 'other-player',
+      sectorX: 100,
+      sectorY: 200,
+      sectorType: 'asteroid',
+      hasJumpgate: false,
+      wreckTier: 2,
+    });
+
+    const ctx = makeCtx();
+    const service = new WreckService(ctx as any);
+    const client = makeClient('p1');
+
+    await service.handleConsumeSlate(client as any, { slateId: 'slate-uuid' });
+
+    expect(client.send).toHaveBeenCalledWith('actionError', expect.objectContaining({ code: 'NOT_OWNER' }));
+  });
+});
+
+describe('WreckService.handleFeedSlateToGate', () => {
+  it('sends actionError NO_GATE when sector has no jumpgate', async () => {
+    vi.mocked(queries.getSector).mockResolvedValue(null);
+
+    const ctx = makeCtx();
+    const service = new WreckService(ctx as any);
+    const client = makeClient();
+
+    await service.handleFeedSlateToGate(client as any, { slateId: 'slate-1' });
+
+    expect(client.send).toHaveBeenCalledWith('actionError', expect.objectContaining({ code: 'NO_GATE' }));
+  });
+
+  it('sends actionError NOT_OWNER when slate belongs to another player', async () => {
+    vi.mocked(queries.getSector).mockResolvedValue({ jumpgate: true } as any);
+    vi.mocked(wreckQueries.getWreckSlateMetadata).mockResolvedValue({
+      id: 'slate-1',
+      playerId: 'other-player',
+      sectorX: 100,
+      sectorY: 200,
+      sectorType: 'unknown',
+      hasJumpgate: true,
+      wreckTier: 5,
+    });
+
+    const ctx = makeCtx();
+    const service = new WreckService(ctx as any);
+    const client = makeClient('p1');
+
+    await service.handleFeedSlateToGate(client as any, { slateId: 'slate-1' });
+
+    expect(client.send).toHaveBeenCalledWith('actionError', expect.objectContaining({ code: 'NOT_OWNER' }));
+  });
 });

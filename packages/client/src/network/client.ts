@@ -1796,8 +1796,8 @@ class GameNetwork {
       useStore.getState().addLogEntry(`DATA SLATE KONSUMIERT — Sektor (${data.sectorX}, ${data.sectorY}) aufgedeckt`);
     });
 
-    room.onMessage('gateConnectionAdded', (_data: unknown) => {
-      // Jumpgate added — radar will update on next sector data sync
+    room.onMessage('gateConnectionAdded', (data: { fromX: number; fromY: number; toX: number; toY: number }) => {
+      useStore.getState().addLogEntry(`JUMPGATE VERBUNDEN — Route zu (${data.toX}, ${data.toY}) hergestellt`);
     });
 
     room.onLeave(async (code) => {

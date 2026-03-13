@@ -273,10 +273,18 @@ export class WreckService {
   }
 
   async handleConsumeSlate(client: Client, data: { slateId: string }): Promise<void> {
+    if (!this.ctx.checkRate(client.sessionId, 'consumeSlate', 2000)) {
+      client.send('actionError', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const meta = await getWreckSlateMetadata(data.slateId);
     if (!meta) {
       client.send('actionError', { code: 'SLATE_NOT_FOUND', message: 'Slate nicht gefunden' });
+      return;
+    }
+    if (meta.playerId !== auth.userId) {
+      client.send('actionError', { code: 'NOT_OWNER', message: 'Nicht dein Slate' });
       return;
     }
 
@@ -300,6 +308,10 @@ export class WreckService {
   }
 
   async handleFeedSlateToGate(client: Client, data: { slateId: string }): Promise<void> {
+    if (!this.ctx.checkRate(client.sessionId, 'feedSlate', 2000)) {
+      client.send('actionError', { code: 'RATE_LIMIT', message: 'Too fast' });
+      return;
+    }
     const auth = client.auth as AuthPayload;
     const sectorX = this.ctx._px(client.sessionId);
     const sectorY = this.ctx._py(client.sessionId);
@@ -313,6 +325,10 @@ export class WreckService {
     const meta = await getWreckSlateMetadata(data.slateId);
     if (!meta?.hasJumpgate) {
       client.send('actionError', { code: 'NO_JUMPGATE_IN_SLATE', message: 'Slate enthält kein Jumpgate-Sektor' });
+      return;
+    }
+    if (meta.playerId !== auth.userId) {
+      client.send('actionError', { code: 'NOT_OWNER', message: 'Nicht dein Slate' });
       return;
     }
 
