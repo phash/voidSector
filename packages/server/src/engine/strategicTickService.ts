@@ -18,6 +18,7 @@ import { findAllBorderPairs, getExpansionTarget } from './expansionEngine.js';
 import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
 import { VoidLifecycleService } from './voidLifecycleService.js';
+import { tickWreckSpawns } from './wreckSpawnEngine.js';
 
 const AGGRESSION_MUL = parseFloat(process.env.ALIEN_AGGRESSION_MUL ?? '1');
 const EXPANSION_RATE_MUL = parseFloat(process.env.ALIEN_EXPANSION_RATE_MUL ?? '1');
@@ -26,6 +27,7 @@ const EXPANSION_RATE_MUL = parseFloat(process.env.ALIEN_EXPANSION_RATE_MUL ?? '1
 export type RepStore = Map<string, number>;
 
 export class StrategicTickService {
+  private tickCount = 0;
   private factionConfig: FactionConfigService;
   private voidLifecycle: VoidLifecycleService;
 
@@ -82,6 +84,13 @@ export class StrategicTickService {
 
     // 4. Cleanup expired quest items (prisoner, data_slate)
     await this.cleanupExpiredQuestItems();
+
+    this.tickCount++;
+    if (this.tickCount % 10 === 0) {
+      await tickWreckSpawns().catch((err) =>
+        logger.error({ err }, 'tickWreckSpawns error'),
+      );
+    }
   }
 
   private async cleanupExpiredQuestItems(): Promise<void> {

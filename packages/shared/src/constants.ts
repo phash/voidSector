@@ -8,6 +8,7 @@ import type {
   SectorEnvironment,
   SectorContent,
   ProductionRecipe,
+  WreckSize,
 } from './types.js';
 
 export const SECTOR_TYPES: SectorType[] = [
@@ -2747,6 +2748,42 @@ export const RACE_VISUAL_CONFIGS: Record<AlienFactionId, RaceVisualConfig> = {
     ],
   },
 };
+
+// ─── Wreck POI ────────────────────────────────────────────────────────────────
+
+export const WRECK_BASE_DIFFICULTY: Record<string, number> = {
+  resource: 0.20,
+  module: 0.50,
+  blueprint: 0.70,
+  data_slate: 0.65,
+  artefact: 0.90,  // artefacts are stored as resource but use this key for difficulty
+};
+
+export const WRECK_SALVAGE_DURATION_MS: Record<WreckSize, number> = {
+  small: 4000,
+  medium: 6000,
+  large: 8000,
+};
+
+export const WRECK_SIZE_ITEM_COUNT: Record<WreckSize, [number, number]> = {
+  small: [2, 3],
+  medium: [4, 6],
+  large: [7, 10],
+};
+
+export const WRECK_MAX_PER_QUADRANT = 2;
+export const WRECK_DIFFICULTY_FAIL_DELTA = 0.15;
+export const WRECK_DIFFICULTY_SUCCESS_DELTA = -0.10;
+export const WRECK_DIFFICULTY_MAX = 0.3;
+export const WRECK_DIFFICULTY_MIN = -0.3;
+export const WRECK_SLATE_CAP = 5;
+export const WRECK_EXPLORER_CHANCE_PER_XP = 0.005;  // +0.5% per explorer XP, max +25%
+export const WRECK_HELION_ARTEFACT_MIN_CHANCE = 0.35; // at explorer=50, artefacts min 35%
+export const WRECK_INVESTIGATE_AP_COST = 2;
+export const WRECK_SALVAGE_AP_COST = 3;
+export const WRECK_SLATE_SELL_BASE = 50;
+export const WRECK_SLATE_SELL_PER_TIER = 75;
+export const WRECK_SLATE_JUMPGATE_HUMANITY_TAX = 25;
 
 /** Get visual config for a race, or ancients-themed fallback. */
 export function getRaceVisual(raceId: AlienFactionId): RaceVisualConfig {

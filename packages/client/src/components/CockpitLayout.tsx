@@ -17,6 +17,7 @@ import { QuestDetailPanel } from './QuestDetailPanel';
 import { FactionDetailPanel } from './FactionDetailPanel';
 import { ShipDetailPanel } from './ShipDetailPanel';
 import { AcepDetailPanel } from './AcepDetailPanel';
+import { WreckPanel } from './WreckPanel';
 import { SectorInfo, StatusBar } from './HUD';
 import { NavControls } from './NavControls';
 import { ShipBlock, CargoBlock } from './ShipBlock';
@@ -83,6 +84,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   }, [miningActive, cargoTotal, cargoCap, setActionError]);
 
   const activeProgram = useStore((s) => s.activeProgram);
+  const activeWreck = useStore((s) => s.activeWreck);
   const zoomLevel = useStore((s) => s.zoomLevel);
   const setZoomLevel = useStore((s) => s.setZoomLevel);
   const panOffset = useStore((s) => s.panOffset);
@@ -113,7 +115,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   };
 
   const mainContent = renderScreen(activeProgram);
-  const detailContent = getDetailForProgram(activeProgram);
+  const detailContent = activeWreck ? <WreckPanel /> : getDetailForProgram(activeProgram);
 
   return (
     <div className="cockpit-layout" data-testid="cockpit-layout">

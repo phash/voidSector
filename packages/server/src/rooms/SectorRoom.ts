@@ -5,7 +5,7 @@ const { Room, ServerError } = colyseus;
 import { SectorRoomState, PlayerSchema } from './schema/SectorState.js';
 import { verifyToken, type AuthPayload } from '../auth.js';
 import { generateSector } from '../engine/worldgen.js';
-import { calculateCurrentAP } from '../engine/ap.js';
+import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
@@ -120,6 +120,7 @@ import { NavigationService } from './services/NavigationService.js';
 import { ScanService } from './services/ScanService.js';
 import { CombatService } from './services/CombatService.js';
 import { MiningService, updateStoryProgress } from './services/MiningService.js';
+import { WreckService } from './services/WreckService.js';
 import { EconomyService } from './services/EconomyService.js';
 import { FactionService } from './services/FactionService.js';
 import { QuestService } from './services/QuestService.js';
@@ -169,6 +170,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private scanning!: ScanService;
   private combat!: CombatService;
   private mining!: MiningService;
+  private wreckService!: WreckService;
   private economy!: EconomyService;
   private factions!: FactionService;
   private quests!: QuestService;
@@ -303,6 +305,13 @@ export class SectorRoom extends Room<SectorRoomState> {
       applyReputationChange: null as any,
       applyXpGain: null as any,
       contributeToCommunityQuest: null as any,
+      deductAP: async (playerId: string, cost: number): Promise<boolean> => {
+        const ap = await getAPState(playerId);
+        const newAP = spendAP(ap, cost);
+        if (!newAP) return false;
+        await saveAPState(playerId, newAP);
+        return true;
+      },
     };
 
     // Instantiate services
@@ -310,6 +319,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.scanning = new ScanService(this.serviceCtx);
     this.combat = new CombatService(this.serviceCtx);
     this.mining = new MiningService(this.serviceCtx);
+    this.wreckService = new WreckService(this.serviceCtx);
     this.economy = new EconomyService(this.serviceCtx);
     this.factions = new FactionService(this.serviceCtx);
     this.quests = new QuestService(this.serviceCtx);
@@ -445,11 +455,43 @@ export class SectorRoom extends Room<SectorRoomState> {
         client.send('scanResult', { sectors: [], error: 'Server error' });
       }
     });
-    this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
-      await this.scanning.handleCompleteScanEvent(client, data);
+    this.onMessage('completeScanEvent', (client, data: CompleteScanEventMessage) => {
+      this.scanning.handleCompleteScanEvent(client, data).catch((err) =>
+        logger.error({ err }, 'completeScanEvent error'),
+      );
     });
-    this.onMessage('salvageWreck', async (client, data: { wreckId: string }) => {
-      await this.scanning.handleSalvageWreck(client, data);
+    this.onMessage('salvageWreck', (client, data: { wreckId: string }) => {
+      this.scanning.handleSalvageWreck(client, data).catch((err) =>
+        logger.error({ err }, 'salvageWreck error'),
+      );
+    });
+
+    this.onMessage('investigateWreck', (client, data) => {
+      this.wreckService.handleInvestigate(client, data).catch((err) =>
+        logger.error({ err }, 'investigateWreck error'),
+      );
+    });
+
+    this.onMessage('startSalvage', (client, data) => {
+      this.wreckService.handleStartSalvage(client, data).catch((err) =>
+        logger.error({ err }, 'startSalvage error'),
+      );
+    });
+
+    this.onMessage('cancelSalvage', (client) => {
+      this.wreckService.handleCancelSalvage(client).catch((err) =>
+        logger.error({ err }, 'cancelSalvage error'),
+      );
+    });
+    this.onMessage('consumeWreckSlate', (client, data) => {
+      this.wreckService.handleConsumeSlate(client, data).catch((err) =>
+        logger.error({ err }, 'consumeWreckSlate error'),
+      );
+    });
+    this.onMessage('feedSlateToGate', (client, data) => {
+      this.wreckService.handleFeedSlateToGate(client, data).catch((err) =>
+        logger.error({ err }, 'feedSlateToGate error'),
+      );
     });
 
     // ── Combat ──────────────────────────────────────────────────────
@@ -1477,6 +1519,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   async onDispose() {
     this.mining.clearAllTimers();
+    this.wreckService.clearAllTimers();
     for (const cb of this.disposeCallbacks) {
       cb();
     }

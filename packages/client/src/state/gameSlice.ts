@@ -48,6 +48,13 @@ import type {
   InventoryItem,
   ConstructionSiteState,
   QuestRewards,
+  WreckInfo,
+  WreckInvestigatedPayload,
+  SalvageStartedPayload,
+  WreckSlateMetadata,
+  WreckItem,
+  SalvageResultPayload,
+  WreckExhaustedPayload,
 } from '@void-sector/shared';
 
 export interface QuestCompleteEntry {
@@ -77,6 +84,7 @@ export interface ClientShipData {
     combatDamageBonus: number;
     ancientDetection: boolean;
     helionDecoderEnabled: boolean;
+    wreckDetection?: boolean;
   };
   acepGeneration?: number;
   acepTraits?: string[];
@@ -334,6 +342,7 @@ export interface GameSlice {
     sectorType?: string;
     structures?: string[];
     universeTick?: number;
+    wreckInfo?: { wreckId: string; tier: number; size: string; status: string } | null;
   } | null;
 
   // Base
@@ -553,6 +562,12 @@ export interface GameSlice {
   // Trade feedback (partial sell message)
   tradeMessage: string | null;
 
+  // Wreck POI state
+  sectorWrecks: Record<string, WreckInfo>;        // key: "x:y"
+  activeWreck: WreckInvestigatedPayload | null;
+  salvageSession: SalvageStartedPayload | null;
+  wreckSlates: WreckSlateMetadata[];
+
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
   clearAuth: () => void;
@@ -673,6 +688,12 @@ export interface GameSlice {
   setConstructionSites: (sites: ConstructionSiteState[]) => void;
   upsertConstructionSite: (site: ConstructionSiteState) => void;
   removeConstructionSite: (siteId: string) => void;
+  setSectorWrecks: (wrecks: Record<string, WreckInfo>) => void;
+  setActiveWreck: (wreck: WreckInvestigatedPayload | null) => void;
+  setSalvageSession: (session: SalvageStartedPayload | null) => void;
+  setWreckSlates: (slates: WreckSlateMetadata[]) => void;
+  addWreckSlate: (meta: WreckSlateMetadata) => void;
+  removeWreckSlate: (slateId: string) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -799,6 +820,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   techTree: null,
   constructionSites: [],
   tradeMessage: null,
+  sectorWrecks: {},
+  activeWreck: null,
+  salvageSession: null,
+  wreckSlates: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -1038,4 +1063,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   removeConstructionSite: (siteId) => set((s) => ({
     constructionSites: s.constructionSites.filter((c) => c.id !== siteId),
   })),
+  setSectorWrecks: (sectorWrecks) => set({ sectorWrecks }),
+  setActiveWreck: (activeWreck) => set({ activeWreck }),
+  setSalvageSession: (salvageSession) => set({ salvageSession }),
+  setWreckSlates: (wreckSlates) => set({ wreckSlates }),
+  addWreckSlate: (meta) => set((s) => ({ wreckSlates: [...s.wreckSlates, meta] })),
+  removeWreckSlate: (slateId) => set((s) => ({ wreckSlates: s.wreckSlates.filter((m) => m.id !== slateId) })),
 });

@@ -57,6 +57,12 @@ import type {
   CommunityQuestPayload,
   TrackedQuest,
 } from '../state/gameSlice';
+import type {
+  WreckInvestigatedPayload,
+  SalvageStartedPayload,
+  SalvageResultPayload,
+  WreckExhaustedPayload,
+} from '@void-sector/shared';
 
 /** Schema-level player object from Colyseus room state. */
 interface RoomPlayerSchema {
@@ -353,6 +359,7 @@ class GameNetwork {
           lastLogEntry: string | null;
           hasSalvage: boolean;
         }>;
+        wreckInfo?: WreckInfo;
         sectorX?: number;
         sectorY?: number;
         quadrantX?: number;
@@ -384,6 +391,14 @@ class GameNetwork {
               `WRACK ENTDECKT: ${wreck.playerName} (T${wreck.radarIconData.tier}/${wreck.radarIconData.path})${salvageNote}`,
             );
           }
+        }
+        // Update wreck POI state for current sector
+        if (data.wreckInfo && data.sectorX !== undefined && data.sectorY !== undefined) {
+          const key = `${data.sectorX}:${data.sectorY}`;
+          store.setSectorWrecks({
+            ...store.sectorWrecks,
+            [key]: data.wreckInfo,
+          });
         }
         // Stats: count scan
         store.incrementStat('sectorsScanned');
@@ -1750,6 +1765,41 @@ class GameNetwork {
       room.send('getInventory');
     });
 
+    // --- Wreck POI handlers ---
+
+    room.onMessage('wreckInvestigated', (data: WreckInvestigatedPayload) => {
+      useStore.getState().setActiveWreck(data);
+    });
+
+    room.onMessage('salvageStarted', (data: SalvageStartedPayload) => {
+      useStore.getState().setSalvageSession(data);
+    });
+
+    room.onMessage('salvageResult', (data: SalvageResultPayload) => {
+      useStore.getState().setSalvageSession(null);
+      if (data.cargoUpdate) {
+        useStore.getState().setCargo(data.cargoUpdate);
+      }
+    });
+
+    room.onMessage('wreckExhausted', (data: WreckExhaustedPayload) => {
+      const key = `${data.sectorX}:${data.sectorY}`;
+      const wrecks = { ...useStore.getState().sectorWrecks };
+      delete wrecks[key];
+      useStore.getState().setSectorWrecks(wrecks);
+      useStore.getState().setActiveWreck(null);
+      useStore.getState().setSalvageSession(null);
+    });
+
+    room.onMessage('slateConsumed', (data: { slateId: string; sectorX: number; sectorY: number; sectorType: string | null }) => {
+      useStore.getState().removeWreckSlate(data.slateId);
+      useStore.getState().addLogEntry(`DATA SLATE KONSUMIERT — Sektor (${data.sectorX}, ${data.sectorY}) aufgedeckt`);
+    });
+
+    room.onMessage('gateConnectionAdded', (data: { fromX: number; fromY: number; toX: number; toY: number }) => {
+      useStore.getState().addLogEntry(`JUMPGATE VERBUNDEN — Route zu (${data.toX}, ${data.toY}) hergestellt`);
+    });
+
     room.onLeave(async (code) => {
       if (this.intentionalLeave) {
         this.intentionalLeave = false;
@@ -2452,6 +2502,28 @@ class GameNetwork {
 
   sendStationRepair() {
     this.sectorRoom?.send('stationRepair', {});
+  }
+
+  // --- Wreck POI ---
+
+  sendInvestigateWreck() {
+    this.sectorRoom?.send('investigateWreck', {});
+  }
+
+  sendStartSalvage(itemIndex: number) {
+    this.sectorRoom?.send('startSalvage', { itemIndex });
+  }
+
+  sendCancelSalvage() {
+    this.sectorRoom?.send('cancelSalvage', {});
+  }
+
+  sendConsumeWreckSlate(slateId: string) {
+    this.sectorRoom?.send('consumeWreckSlate', { slateId });
+  }
+
+  sendFeedSlateToGate(slateId: string) {
+    this.sectorRoom?.send('feedSlateToGate', { slateId });
   }
 }
 
