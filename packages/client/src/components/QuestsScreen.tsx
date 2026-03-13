@@ -25,6 +25,59 @@ const QUEST_TYPE_LABELS: Record<string, string> = {
   war_support: 'WAR',
 };
 
+function getQuestTypeLabel(templateId: string): string {
+  const id = templateId ?? '';
+  // Check for known quest-type keywords anywhere in templateId
+  // (bounty templateIds start with faction: "pirates_bounty_chase")
+  if (id.includes('bounty')) return 'BOUNTY';
+  if (id.includes('diplomacy')) return 'DIPLOMACY';
+  if (id.includes('war_support')) return 'WAR';
+  // Fall back to first segment lookup
+  const first = id.split('_')[0];
+  return QUEST_TYPE_LABELS[first] || first.toUpperCase();
+}
+
+function questTypeBadge(templateId: string, color: string) {
+  const label = getQuestTypeLabel(templateId);
+  if (!label) return null;
+  return (
+    <span
+      style={{
+        color: `${color}80`,
+        fontSize: '0.5rem',
+        border: `1px solid ${color}40`,
+        padding: '0 3px',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function collapsedObjectiveSummary(
+  objectives: Array<{ type: string; description: string; resource?: string; amount?: number; progress?: number; fulfilled: boolean; targetX?: number; targetY?: number; currentHint?: string }>,
+): { text: string; done: boolean } | null {
+  const allDone = objectives.every((o) => o.fulfilled);
+  if (allDone) return { text: 'Alle Ziele erfüllt — Abgabe an Station', done: true };
+
+  const next = objectives.find((o) => !o.fulfilled);
+  if (!next) return null;
+
+  const parts: string[] = [];
+  if ((next.type === 'fetch' || next.type === 'delivery') && next.resource && next.amount != null) {
+    parts.push(`${next.resource.toUpperCase()} [${next.progress ?? 0}/${next.amount}]`);
+  } else if (next.type === 'bounty_trail' && next.currentHint) {
+    parts.push(next.currentHint);
+  } else {
+    parts.push(next.description);
+  }
+  if (next.targetX != null && next.targetY != null) {
+    parts.push(`→ (${innerCoord(next.targetX)}, ${innerCoord(next.targetY)})`);
+  }
+  return { text: `› ${parts.join(' | ')}`, done: false };
+}
+
 function JournalTab() {
   const activeQuests = useStore((s) => s.activeQuests);
   const trackedQuests = useStore((s) => s.trackedQuests);
@@ -476,7 +529,7 @@ export function QuestsScreen() {
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
-  const { confirm, isArmed } = useConfirm();
+  const { confirm, isArmed, disarm } = useConfirm();
 
   const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'reputation' | 'story'>('auftraege');
   const [subFilter, setSubFilter] = useState<'all' | 'rescue'>('all');
@@ -642,10 +695,29 @@ export function QuestsScreen() {
                           <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '0.5rem' }}> ◎</span>
                         )}
                       </span>
-                      <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.5rem' }}>
-                        {isExpanded ? '▲' : '▼'}
+                      <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        {questTypeBadge(q.templateId, allDone ? '#00FF88' : '#FFB000')}
+                        <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.5rem' }}>
+                          {isExpanded ? '▲' : '▼'}
+                        </span>
                       </span>
                     </div>
+
+                    {!isExpanded && (() => {
+                      const summary = collapsedObjectiveSummary(q.objectives);
+                      if (!summary) return null;
+                      return (
+                        <div
+                          style={{
+                            padding: '0 8px 5px 20px',
+                            color: summary.done ? 'rgba(0,255,136,0.4)' : 'rgba(255,176,0,0.4)',
+                            fontSize: '0.5rem',
+                          }}
+                        >
+                          {summary.text}
+                        </div>
+                      );
+                    })()}
 
                     {/* Expanded journal entry */}
                     {isExpanded && (
@@ -849,45 +921,83 @@ export function QuestsScreen() {
                       background: armed ? 'rgba(0,255,136,0.05)' : 'transparent',
                     }}
                   >
-                    <div style={{ color: '#FFB000' }}>{q.title}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#FFB000' }}>{q.title}</span>
+                      {questTypeBadge(q.templateId, armed ? '#00FF88' : '#FFB000')}
+                    </div>
                     <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                       {q.description}
                     </div>
-                    {/* Confirmation preview: objectives + rewards */}
+                    {/* Confirmation preview: structured objectives + rewards */}
                     {armed && (
                       <div style={{ marginTop: '4px', borderTop: '1px solid rgba(0,255,136,0.2)', paddingTop: '4px' }}>
-                        {q.objectives?.map((obj: any, i: number) => (
-                          <div key={i} style={{ color: 'rgba(0,255,136,0.7)', fontSize: '0.5rem' }}>
+                        <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginBottom: '3px' }}>
+                          ZIELE
+                        </div>
+                        {q.objectives?.map((obj, i) => (
+                          <div key={i} style={{ color: 'rgba(0,255,136,0.7)', fontSize: '0.5rem', paddingLeft: '6px' }}>
                             › {obj.description}
                             {obj.amount != null && ` (${obj.amount})`}
                           </div>
                         ))}
-                        <div style={{ color: '#00FF88', fontSize: '0.5rem', marginTop: '2px' }}>
-                          BELOHNUNG: +{q.rewards.credits} CR | +{q.rewards.xp} XP
+                        <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginTop: '6px', marginBottom: '3px' }}>
+                          BELOHNUNG
+                        </div>
+                        <div style={{ color: '#00FF88', fontSize: '0.5rem', paddingLeft: '6px' }}>
+                          +{q.rewards.credits} CR | +{q.rewards.xp} XP
                           {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
                         </div>
                       </div>
                     )}
-                    {!armed && (
-                      <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.55rem' }}>
-                        +{q.rewards.credits} CR | +{q.rewards.xp} XP | +{q.rewards.reputation} REP
+                    {armed ? (
+                      <div style={{ marginTop: '6px', display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => { disarm(); network.sendAcceptQuest(q.templateId, position.x, position.y); }}
+                          style={{
+                            background: 'rgba(0,255,136,0.15)',
+                            color: '#00FF88',
+                            border: '1px solid #00FF88',
+                            padding: '3px 6px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.55rem',
+                            flex: 1,
+                          }}
+                        >
+                          [ANNEHMEN]
+                        </button>
+                        <button
+                          onClick={() => disarm()}
+                          style={{
+                            background: 'transparent',
+                            color: 'rgba(255,176,0,0.5)',
+                            border: '1px solid rgba(255,176,0,0.3)',
+                            padding: '3px 6px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.55rem',
+                          }}
+                        >
+                          [ABBRECHEN]
+                        </button>
                       </div>
+                    ) : (
+                      <button
+                        onClick={() => confirm(`accept-${q.templateId}`, () => network.sendAcceptQuest(q.templateId, position.x, position.y))}
+                        style={{
+                          background: '#1a1a1a',
+                          color: '#00FF88',
+                          border: '1px solid rgba(0,255,136,0.5)',
+                          padding: '3px 6px',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: '0.55rem',
+                          marginTop: '2px',
+                        }}
+                      >
+                        {btn(UI.actions.ACCEPT)}
+                      </button>
                     )}
-                    <button
-                      onClick={() => confirm(`accept-${q.templateId}`, () => network.sendAcceptQuest(q.templateId, position.x, position.y))}
-                      style={{
-                        background: armed ? 'rgba(0,255,136,0.15)' : '#1a1a1a',
-                        color: '#00FF88',
-                        border: `1px solid ${armed ? '#00FF88' : 'rgba(0,255,136,0.5)'}`,
-                        padding: '3px 6px',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        fontSize: '0.55rem',
-                        marginTop: '2px',
-                      }}
-                    >
-                      {armed ? btnDisabled(UI.actions.ACCEPT, 'BESTÄTIGEN?') : btn(UI.actions.ACCEPT)}
-                    </button>
                   </div>
                 );
               })}

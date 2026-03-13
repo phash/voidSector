@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QuestsScreen } from '../components/QuestsScreen';
 import { mockStoreState } from '../test/mockStore';
@@ -179,5 +179,158 @@ describe('QuestsScreen', () => {
     // Second click: confirm and execute
     await userEvent.click(screen.getByText('[ABANDON — SURE?]'));
     expect(network.sendAbandonQuest).toHaveBeenCalledWith('q1');
+  });
+
+  it('shows quest-type badge and collapsed objective summary for active quest', () => {
+    mockStoreState({
+      activeQuests: [
+        {
+          id: 'q1',
+          templateId: 'fetch_gas_1',
+          npcName: 'Zar',
+          npcFactionId: 'traders',
+          title: 'Gas Delivery',
+          description: 'Deliver gas',
+          stationX: 10,
+          stationY: 20,
+          objectives: [
+            {
+              type: 'fetch',
+              description: 'Collect GAS',
+              resource: 'gas',
+              amount: 3,
+              progress: 1,
+              fulfilled: false,
+            },
+          ],
+          rewards: { credits: 30, xp: 10, reputation: 5 },
+          status: 'active',
+          acceptedAt: Date.now(),
+          expiresAt: Date.now() + 86400000,
+        },
+      ],
+    });
+    render(<QuestsScreen />);
+    expect(screen.getAllByText('DELIVERY').length).toBeGreaterThan(0);
+    expect(screen.getByText(/GAS \[1\/3\]/)).toBeDefined();
+  });
+
+  it('shows BOUNTY badge for bounty_chase quest and target coords in summary', () => {
+    mockStoreState({
+      activeQuests: [
+        {
+          id: 'q3',
+          templateId: 'pirates_bounty_chase_1',
+          npcName: 'Blackbeard',
+          npcFactionId: 'pirates',
+          title: 'Hunt Rexx',
+          description: 'Track and eliminate',
+          stationX: 10,
+          stationY: 10,
+          objectives: [
+            { type: 'bounty_trail', description: 'Follow trail', fulfilled: true },
+            {
+              type: 'bounty_combat',
+              description: 'Eliminate Rexx',
+              targetX: 42,
+              targetY: 17,
+              fulfilled: false,
+            },
+            { type: 'bounty_deliver', description: 'Return proof', fulfilled: false },
+          ],
+          rewards: { credits: 150, xp: 30, reputation: 10 },
+          status: 'active',
+          acceptedAt: Date.now(),
+          expiresAt: Date.now() + 86400000,
+        },
+      ],
+    });
+    render(<QuestsScreen />);
+    expect(screen.getByText('BOUNTY')).toBeDefined();
+    expect(screen.getByText(/Eliminate Rexx/)).toBeDefined();
+    expect(screen.getByText(/42.*17/)).toBeDefined();
+  });
+
+  it('shows structured armed preview with cancel button for available quest', async () => {
+    mockStoreState({
+      activeQuests: [],
+      currentSector: { type: 'station', x: 5, y: 5 },
+      position: { x: 5, y: 5 },
+    });
+    render(<QuestsScreen />);
+    // Switch to VERFÜGBAR tab
+    await userEvent.click(screen.getByText('VERFÜGBAR'));
+
+    // Simulate stationNpcsResult event to populate available quests
+    await act(async () => {
+      const event = new CustomEvent('stationNpcsResult', {
+        detail: {
+          npcs: [{ id: 'n1', name: 'Zar', factionId: 'traders' }],
+          quests: [
+            {
+              templateId: 'fetch_gas_1',
+              npcName: 'Zar',
+              npcFactionId: 'traders',
+              title: 'Gas Delivery',
+              description: 'Deliver gas to station',
+              objectives: [
+                { type: 'fetch', description: 'Collect GAS', resource: 'gas', amount: 3, fulfilled: false },
+              ],
+              rewards: { credits: 27, xp: 11, reputation: 5 },
+              requiredTier: 'neutral',
+            },
+          ],
+        },
+      });
+      window.dispatchEvent(event);
+    });
+
+    // Click accept to arm
+    await userEvent.click(screen.getByText('[ACCEPT]'));
+
+    // Armed state shows structured sections
+    expect(screen.getByText('ZIELE')).toBeDefined();
+    expect(screen.getByText('BELOHNUNG')).toBeDefined();
+
+    // Cancel button visible
+    expect(screen.getByText('[ABBRECHEN]')).toBeDefined();
+
+    // Click cancel to disarm
+    await userEvent.click(screen.getByText('[ABBRECHEN]'));
+    expect(network.sendAcceptQuest).not.toHaveBeenCalled();
+
+    // Armed state gone — sections no longer visible
+    expect(screen.queryByText('ZIELE')).toBeNull();
+  });
+
+  it('shows completed hint for fully fulfilled quest in collapsed state', () => {
+    mockStoreState({
+      activeQuests: [
+        {
+          id: 'q2',
+          templateId: 'scan_sector_1',
+          npcName: 'Dr. X',
+          npcFactionId: 'scientists',
+          title: 'Scan Mission',
+          description: 'Scan sectors',
+          stationX: 5,
+          stationY: 5,
+          objectives: [
+            {
+              type: 'scan',
+              description: 'Scan target',
+              fulfilled: true,
+            },
+          ],
+          rewards: { credits: 20, xp: 8, reputation: 3 },
+          status: 'active',
+          acceptedAt: Date.now(),
+          expiresAt: Date.now() + 86400000,
+        },
+      ],
+    });
+    render(<QuestsScreen />);
+    expect(screen.getAllByText('SCAN').length).toBeGreaterThan(0);
+    expect(screen.getByText(/Alle Ziele erfüllt/)).toBeDefined();
   });
 });
