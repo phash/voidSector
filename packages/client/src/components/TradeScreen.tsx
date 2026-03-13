@@ -6,7 +6,12 @@ import {
   TRADE_ROUTE_MIN_CYCLE,
   TRADE_ROUTE_MAX_CYCLE,
   getPhysicalCargoTotal,
+  NPC_PRICES,
+  NPC_BUY_SPREAD,
+  NPC_SELL_SPREAD,
 } from '@void-sector/shared';
+
+const NPC_COLUMN_MAX_HEIGHT = '220px';
 import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-sector/shared';
 import { useTranslation } from 'react-i18next';
 import { btn } from '../ui-helpers';
@@ -38,6 +43,7 @@ export function TradeScreen() {
   const discoveries = useStore((s) => s.discoveries);
   const homeBase = useStore((s) => s.homeBase);
   const ship = useStore((s) => s.ship);
+  const cargo = useStore((s) => s.cargo);
   const npcStationData = useStore((s) => s.npcStationData);
   const kontorOrders = useStore((s) => s.kontorOrders);
   const navReturnProgram = useStore((s) => s.navReturnProgram);

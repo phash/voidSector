@@ -117,7 +117,8 @@ describe('FactionDetailPanel — State A (member)', () => {
 describe('FactionDetailPanel — State B (non-member)', () => {
   beforeEach(() => { vi.clearAllMocks(); noFactionState(); });
 
-  it('shows LOADING when humanityReps empty', () => {
+  it('shows LOADING when humanityReps is null', () => {
+    noFactionState({ humanityReps: null });
     render(<FactionDetailPanel />);
     expect(screen.getByText(/HUMANITY REP: LOADING/)).toBeDefined();
   });
