@@ -92,10 +92,10 @@ export function AcepDetailPanel() {
   const currentModules = ship.modules ?? [];
   const withoutModule = currentModules.filter((m) => m.moduleId !== hoveredId);
   const statsWithout = calculateShipStats(withoutModule, acepXp);
-  const statsCandidate =
-    activeTab === 'shop'
-      ? calculateShipStats([...withoutModule, { moduleId: hoveredId, slotIndex: 99, source: 'standard' as const }], acepXp)
-      : calculateShipStats(currentModules, acepXp);
+  const statsCandidate = calculateShipStats(
+    [...withoutModule, { moduleId: hoveredId, slotIndex: 99, source: 'standard' as const }],
+    acepXp,
+  );
 
   const deltas = STAT_LABELS
     .map(({ key, label, format }) => {
