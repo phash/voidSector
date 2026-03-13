@@ -10,6 +10,7 @@ import {
   quadrantAtPoint,
   sectorToQuadrantCoords,
   drawQuadrantMap,
+  getMixedFactionColors,
 } from '../canvas/QuadrantMapRenderer';
 
 describe('QuadrantMapRenderer', () => {
@@ -166,6 +167,31 @@ describe('QuadrantMapRenderer', () => {
       expect(QUAD_FRAME_LEFT).toBeGreaterThan(0);
       expect(QUAD_FRAME_BOTTOM).toBeGreaterThan(0);
       expect(QUAD_FRAME_PAD).toBeGreaterThan(0);
+    });
+  });
+
+  describe('getMixedFactionColors', () => {
+    it('single faction at 100% → one color entry', () => {
+      const result = getMixedFactionColors({ humans: 100 });
+      expect(result).toHaveLength(1);
+      expect(result[0].fraction).toBeCloseTo(1.0);
+    });
+    it('two factions 60/40 → two entries summing to ~1.0', () => {
+      const result = getMixedFactionColors({ humans: 60, kthari: 40 });
+      expect(result).toHaveLength(2);
+      const total = result.reduce((s, r) => s + r.fraction, 0);
+      expect(total).toBeCloseTo(1.0);
+    });
+    it('filters out factions below 5%', () => {
+      const result = getMixedFactionColors({ humans: 98, kthari: 2 });
+      expect(result).toHaveLength(1);
+    });
+    it('empty shares → empty array', () => {
+      expect(getMixedFactionColors({})).toHaveLength(0);
+    });
+    it('sorted by fraction descending', () => {
+      const result = getMixedFactionColors({ humans: 30, kthari: 70 });
+      expect(result[0].fraction).toBeGreaterThan(result[1].fraction);
     });
   });
 
