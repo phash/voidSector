@@ -10,7 +10,7 @@ import {
   isModuleUnlocked,
   MODULES,
 } from '@void-sector/shared';
-import { awardWissen } from '../../engine/wissenService.js';
+import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import {
   getAcepXpSummary,
   getAcepEffects,
@@ -264,7 +264,7 @@ export class ShipService {
 
     client.send('craftResult', { success: true, moduleId: data.moduleId });
     client.send('logEntry', `HERGESTELLT: ${mod.name ?? data.moduleId}`);
-    awardWissen(auth.userId, 3).catch(() => {});  // +3 per craft
+    awardWissenAndNotify(client, auth.userId, 3);  // +3 per craft
   }
 
   async handleActivateBlueprint(client: Client, data: { moduleId: string }): Promise<void> {
