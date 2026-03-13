@@ -629,6 +629,7 @@ class GameNetwork {
         unlockedModules: data.unlockedModules ?? [],
         blueprints: data.blueprints ?? [],
         wissen: data.wissen ?? 0,
+        wissenSpent: data.wissenSpent ?? 0,
       });
       if (data.typedArtefacts) {
         useStore.getState().setTypedArtefacts(data.typedArtefacts);

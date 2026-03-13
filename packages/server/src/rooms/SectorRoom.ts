@@ -52,6 +52,7 @@ import {
   getPlayerResearch,
   getActiveResearch,
   getWissen,
+  getWissenSpent,
   getTypedArtefacts,
   getActiveAutopilotRoute,
   pauseAutopilotRoute,
@@ -1333,6 +1334,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const activeResearch = await getActiveResearch(auth.userId, 1);
       const activeResearch2 = await getActiveResearch(auth.userId, 2);
       const wissen = await getWissen(auth.userId);
+      const wissenSpent = await getWissenSpent(auth.userId);
       const typedArtefacts = await getTypedArtefacts(auth.userId);
       const labTier = getAcepLevel(acepXp.ausbau);
       client.send('researchState', {
@@ -1341,6 +1343,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         activeResearch,
         activeResearch2,
         wissen,
+        wissenSpent,
         wissenRate: 0,
         typedArtefacts,
         labTier,

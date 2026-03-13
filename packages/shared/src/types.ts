@@ -1228,6 +1228,7 @@ export interface ResearchState {
   unlockedModules: string[];
   blueprints: string[];
   wissen?: number;
+  wissenSpent?: number;
 }
 
 // --- Admin Messages ---

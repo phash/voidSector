@@ -949,6 +949,7 @@ export function TechTreeCanvas() {
           </span>
           <span style={{ fontSize: '0.65rem', color: '#888' }}>
             WISSEN: <span style={{ color: '#bb44ff' }}>{wissen.toLocaleString()}</span>
+            {' / [ '}<span style={{ color: '#7744aa' }}>{(research.wissenSpent ?? 0).toLocaleString()}</span>{' ]'}
             {' /// '}
             ERFORSCHT: {totalResearched}
             {' /// '}

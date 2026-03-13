@@ -1339,26 +1339,42 @@ expiresDays: 14"></textarea>
       panel.appendChild(shipsSection);
 
       // Edit: Position
+      var QSIZE = 500;
+      var curQX = Math.floor((p.positionX + Math.floor(QSIZE/2)) / QSIZE);
+      var curQY = Math.floor((p.positionY + Math.floor(QSIZE/2)) / QSIZE);
+      var curSX = p.positionX - curQX * QSIZE;
+      var curSY = p.positionY - curQY * QSIZE;
+
       var editPos = el('div', { style: 'margin-top:14px;border-top:1px solid #333;padding-top:10px' });
       editPos.appendChild(el('h4', { style: 'margin:0 0 6px' }, 'Edit Position'));
-      var posRow = el('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' });
-      var inputPX = el('input', { type: 'number', value: String(p.positionX), style: 'width:80px', placeholder: 'X' });
-      var inputPY = el('input', { type: 'number', value: String(p.positionY), style: 'width:80px', placeholder: 'Y' });
-      var btnPos = el('button', null, 'Set Position');
-      btnPos.addEventListener('click', function() {
-        var x = parseInt(inputPX.value, 10);
-        var y = parseInt(inputPY.value, 10);
-        if (isNaN(x) || isNaN(y)) { toast('Invalid coordinates', 'error'); return; }
-        api('PATCH', '/players/' + encodeURIComponent(p.id) + '/position', { x: x, y: y }).then(function() {
-          toast('Position updated', 'success');
+
+      // Quadrant + inner sector inputs
+      var quadRow = el('div', { style: 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px' });
+      var inputQX = el('input', { type: 'number', value: String(curQX), style: 'width:60px', placeholder: 'Q.X' });
+      var inputQY = el('input', { type: 'number', value: String(curQY), style: 'width:60px', placeholder: 'Q.Y' });
+      var inputSX = el('input', { type: 'number', value: String(curSX), style: 'width:60px', placeholder: 'S.X' });
+      var inputSY = el('input', { type: 'number', value: String(curSY), style: 'width:60px', placeholder: 'S.Y' });
+      var btnPosQ = el('button', null, 'Set');
+      btnPosQ.addEventListener('click', function() {
+        var qx = parseInt(inputQX.value, 10);
+        var qy = parseInt(inputQY.value, 10);
+        var sx = parseInt(inputSX.value, 10);
+        var sy = parseInt(inputSY.value, 10);
+        if ([qx,qy,sx,sy].some(isNaN)) { toast('Invalid coordinates', 'error'); return; }
+        var globalX = qx * QSIZE + sx;
+        var globalY = qy * QSIZE + sy;
+        api('PATCH', '/players/' + encodeURIComponent(p.id) + '/position', { x: globalX, y: globalY }).then(function() {
+          toast('Position → Q(' + qx + ',' + qy + ') S(' + sx + ',' + sy + ') = (' + globalX + ',' + globalY + ')', 'success');
         }).catch(function(err) { toast('Error: ' + err.message, 'error'); });
       });
-      posRow.appendChild(el('span', { style: 'color:#aaa;font-size:12px' }, 'X:'));
-      posRow.appendChild(inputPX);
-      posRow.appendChild(el('span', { style: 'color:#aaa;font-size:12px' }, 'Y:'));
-      posRow.appendChild(inputPY);
-      posRow.appendChild(btnPos);
-      editPos.appendChild(posRow);
+      quadRow.appendChild(el('span', { style: 'color:#aaa;font-size:11px' }, 'Quad:'));
+      quadRow.appendChild(inputQX);
+      quadRow.appendChild(inputQY);
+      quadRow.appendChild(el('span', { style: 'color:#aaa;font-size:11px' }, 'Sektor:'));
+      quadRow.appendChild(inputSX);
+      quadRow.appendChild(inputSY);
+      quadRow.appendChild(btnPosQ);
+      editPos.appendChild(quadRow);
       panel.appendChild(editPos);
 
       // Edit: Credits

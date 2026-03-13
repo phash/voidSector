@@ -89,7 +89,7 @@ export function TechTreePanel() {
       >
         <span>{t('tech.techTree')}</span>
         <span style={{ color: '#FFB000', fontSize: '0.6rem', letterSpacing: '0.08em' }}>
-          &#x25C8; {t('tech.wissen', { n: wissen })}
+          &#x25C8; WISSEN: {wissen} / [ {research.wissenSpent ?? 0} ]
         </span>
       </div>
 
