@@ -455,11 +455,15 @@ export class SectorRoom extends Room<SectorRoomState> {
         client.send('scanResult', { sectors: [], error: 'Server error' });
       }
     });
-    this.onMessage('completeScanEvent', async (client, data: CompleteScanEventMessage) => {
-      await this.scanning.handleCompleteScanEvent(client, data);
+    this.onMessage('completeScanEvent', (client, data: CompleteScanEventMessage) => {
+      this.scanning.handleCompleteScanEvent(client, data).catch((err) =>
+        logger.error({ err }, 'completeScanEvent error'),
+      );
     });
-    this.onMessage('salvageWreck', async (client, data: { wreckId: string }) => {
-      await this.scanning.handleSalvageWreck(client, data);
+    this.onMessage('salvageWreck', (client, data: { wreckId: string }) => {
+      this.scanning.handleSalvageWreck(client, data).catch((err) =>
+        logger.error({ err }, 'salvageWreck error'),
+      );
     });
 
     this.onMessage('investigateWreck', (client, data) => {
