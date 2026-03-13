@@ -5,11 +5,9 @@ import { mockStoreState } from '../test/mockStore';
 
 vi.mock('../network/client', () => ({
   network: {
-    sendStartResearch: vi.fn(),
-    sendCancelResearch: vi.fn(),
-    sendClaimResearch: vi.fn(),
     sendActivateBlueprint: vi.fn(),
     requestResearchState: vi.fn(),
+    getTechTree: vi.fn(),
   },
 }));
 
@@ -19,10 +17,7 @@ describe('TechTreePanel', () => {
       research: {
         unlockedModules: [],
         blueprints: [],
-        activeResearch: null,
-        activeResearch2: null,
         wissen: 0,
-        wissenRate: 0,
       },
       position: { x: 0, y: 0 },
     });
@@ -30,37 +25,12 @@ describe('TechTreePanel', () => {
     expect(screen.getByText(/TECH/i)).toBeInTheDocument();
   });
 
-  it('shows active research progress', () => {
-    mockStoreState({
-      research: {
-        unlockedModules: [],
-        blueprints: [],
-        activeResearch: {
-          moduleId: 'drive_mk2',
-          startedAt: Date.now() - 60000,
-          completesAt: Date.now() + 240000,
-        },
-        activeResearch2: null,
-        wissen: 0,
-        wissenRate: 0,
-      },
-      position: { x: 0, y: 0 },
-    });
-    render(<TechTreePanel />);
-    expect(screen.getByText('ACTIVE RESEARCH')).toBeInTheDocument();
-    // drive_mk2 appears in the active research section and the list
-    expect(screen.getAllByText(/ION DRIVE MK\.II/).length).toBeGreaterThanOrEqual(1);
-  });
-
   it('shows freely available modules', () => {
     mockStoreState({
       research: {
         unlockedModules: [],
         blueprints: [],
-        activeResearch: null,
-        activeResearch2: null,
         wissen: 0,
-        wissenRate: 0,
       },
       position: { x: 0, y: 0 },
     });

@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { StrategicTickService } from '../engine/strategicTickService.js';
 
-// Mock wissenTickHandler to avoid real DB connection
-vi.mock('../engine/wissenTickHandler.js', () => ({
-  processWissenTick: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Mock all DB queries
 vi.mock('../db/queries.js', () => ({
   getAllQuadrantControls: vi.fn(),

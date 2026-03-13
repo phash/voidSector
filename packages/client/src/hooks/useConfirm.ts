@@ -23,5 +23,10 @@ export function useConfirm(timeout = 3000) {
 
   const isArmed = (key: string) => pending === key;
 
-  return { confirm, isArmed };
+  const disarm = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setPending(null);
+  };
+
+  return { confirm, isArmed, disarm };
 }
