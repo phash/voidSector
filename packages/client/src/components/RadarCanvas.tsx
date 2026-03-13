@@ -82,6 +82,7 @@ export function RadarCanvas({ onSectorTap }: RadarCanvasProps = {}) {
       trackedQuests: state.trackedQuests,
       miningActive: !!state.mining?.active,
       civShips: state.civShips,
+      sectorWrecks: state.sectorWrecks,
       slowFlightPath:
         state.slowFlightActive && state.autopilot?.active
           ? [

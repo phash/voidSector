@@ -103,6 +103,7 @@ interface RadarState {
   quadrantIsVoid?: boolean;
   /** Slow flight path from current position to target — drawn as dashed overlay */
   slowFlightPath?: Array<{ x: number; y: number }>;
+  sectorWrecks?: Record<string, { tier: number; size: string }>;
 }
 
 function easeInOutCubic(t: number): number {
@@ -552,6 +553,19 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           ctx.globalAlpha = burstAlpha * 0.8;
           ctx.strokeRect(cellX - CELL_W / 2 + 2, cellY - CELL_H / 2 + 2, CELL_W - 4, CELL_H - 4);
           ctx.restore();
+        }
+      }
+
+      // Draw wreck icon
+      if (state.sectorWrecks) {
+        const wkey = `${sx}:${sy}`;
+        const wreck = state.sectorWrecks[wkey];
+        if (wreck) {
+          ctx.font = `${Math.floor(CELL_H * 0.55)}px monospace`;
+          ctx.fillStyle = 'rgba(255, 176, 0, 0.55)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('⊠', cellX, cellY);
         }
       }
 
