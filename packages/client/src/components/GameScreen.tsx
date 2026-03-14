@@ -18,6 +18,7 @@ import { CombatV2Dialog } from './CombatV2Dialog';
 import { CombatDialog } from './CombatDialog';
 import { BattleResultDialog } from './BattleResultDialog';
 import { AcepProgram } from './AcepProgram';
+import { FriendsScreen } from './FriendsScreen';
 import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
@@ -351,6 +352,8 @@ function renderScreen(monitorId: string) {
       return <NewsScreen />;
     case MONITORS.ACEP:
       return <AcepProgram />;
+    case MONITORS.FRIENDS:
+      return <FriendsScreen />;
     default:
       return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
