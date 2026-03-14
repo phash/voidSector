@@ -296,6 +296,8 @@ export function DetailPanel() {
   const activeQuests = useStore((s) => s.activeQuests);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const constructionSites = useStore((s) => s.constructionSites);
+  const credits = useStore((s) => s.credits);
+  const cargo = useStore((s) => s.cargo);
   const openStationTerminal = useStore((s) => s.openStationTerminal);
   const breadcrumbStack = useStore((s) => s.breadcrumbStack);
   const activeProgram = useStore((s) => s.activeProgram);
@@ -962,35 +964,76 @@ export function DetailPanel() {
                 BAUEN
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div>
-                  <button
-                    className="vs-btn"
-                    onClick={() => network.sendBuildStation()}
-                    style={{ fontSize: '0.7rem' }}
-                  >
-                    [STATION BAUEN]
-                  </button>
-                  <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
-                    {STATION_BUILD_COSTS[1].credits} CR ·{' '}
-                    {STATION_BUILD_COSTS[1].crystal} CRYSTAL ·{' '}
-                    {STATION_BUILD_COSTS[1].artefact} ARTEFAKT
-                  </div>
-                </div>
-                {!playerGateInfo && (
-                  <div>
-                    <button
-                      className="vs-btn"
-                      onClick={() => network.sendBuild('jumpgate')}
-                      style={{ fontSize: '0.7rem' }}
-                    >
-                      [BUILD JUMPGATE]
-                    </button>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
-                      {JUMPGATE_BUILD_COST.credits} CR · {JUMPGATE_BUILD_COST.crystal} CRYSTAL ·{' '}
-                      {JUMPGATE_BUILD_COST.artefact} ARTEFAKT · {STRUCTURE_AP_COSTS.jumpgate} AP
+                {(() => {
+                  const stCost = STATION_BUILD_COSTS[1];
+                  const stMissing: string[] = [];
+                  if (credits < stCost.credits)
+                    stMissing.push(`${stCost.credits - credits} CR fehlen`);
+                  if ((cargo.crystal ?? 0) < stCost.crystal)
+                    stMissing.push(`${stCost.crystal - (cargo.crystal ?? 0)} CRYSTAL fehlen`);
+                  if ((cargo.artefact ?? 0) < stCost.artefact)
+                    stMissing.push(`${stCost.artefact - (cargo.artefact ?? 0)} ARTEFAKT fehlen`);
+                  const canBuildSt = stMissing.length === 0;
+                  return (
+                    <div>
+                      <button
+                        className="vs-btn"
+                        onClick={() => network.sendBuildStation()}
+                        style={{
+                          fontSize: '0.7rem',
+                          opacity: canBuildSt ? 1 : 0.4,
+                          cursor: canBuildSt ? 'pointer' : 'not-allowed',
+                        }}
+                        disabled={!canBuildSt}
+                      >
+                        [STATION BAUEN]
+                      </button>
+                      <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
+                        {stCost.credits} CR · {stCost.crystal} CRYSTAL · {stCost.artefact} ARTEFAKT
+                      </div>
+                      {!canBuildSt && (
+                        <div style={{ fontSize: '0.6rem', color: '#FF3333', marginTop: 1 }}>
+                          {stMissing.join(' · ')}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
+                {!playerGateInfo && (() => {
+                  const missing: string[] = [];
+                  if (credits < JUMPGATE_BUILD_COST.credits)
+                    missing.push(`${JUMPGATE_BUILD_COST.credits - credits} CR fehlen`);
+                  if ((cargo.crystal ?? 0) < JUMPGATE_BUILD_COST.crystal)
+                    missing.push(`${JUMPGATE_BUILD_COST.crystal - (cargo.crystal ?? 0)} CRYSTAL fehlen`);
+                  if ((cargo.artefact ?? 0) < JUMPGATE_BUILD_COST.artefact)
+                    missing.push(`${JUMPGATE_BUILD_COST.artefact - (cargo.artefact ?? 0)} ARTEFAKT fehlen`);
+                  const canBuild = missing.length === 0;
+                  return (
+                    <div>
+                      <button
+                        className="vs-btn"
+                        onClick={() => network.sendBuild('jumpgate')}
+                        style={{
+                          fontSize: '0.7rem',
+                          opacity: canBuild ? 1 : 0.4,
+                          cursor: canBuild ? 'pointer' : 'not-allowed',
+                        }}
+                        disabled={!canBuild}
+                      >
+                        [BUILD JUMPGATE]
+                      </button>
+                      <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
+                        {JUMPGATE_BUILD_COST.credits} CR · {JUMPGATE_BUILD_COST.crystal} CRYSTAL ·{' '}
+                        {JUMPGATE_BUILD_COST.artefact} ARTEFAKT · {STRUCTURE_AP_COSTS.jumpgate} AP
+                      </div>
+                      {!canBuild && (
+                        <div style={{ fontSize: '0.6rem', color: '#FF3333', marginTop: 1 }}>
+                          {missing.join(' · ')}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ) : null}

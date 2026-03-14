@@ -63,6 +63,7 @@ export declare const JUMPGATE_UPGRADE_COSTS: Record<string, Record<string, numbe
 export declare const JUMPGATE_DISTANCE_LIMITS: Record<number, number>;
 export declare const JUMPGATE_CONNECTION_LIMITS: Record<number, number>;
 export declare const JUMPGATE_MAX_CHAIN_HOPS = 10;
+export declare const JUMPGATE_MAX_PER_QUADRANT = 4;
 export declare const NPC_PRICES: Record<MineableResourceType, number>;
 export declare const NPC_BUY_SPREAD = 1.2;
 export declare const NPC_SELL_SPREAD = 0.8;
