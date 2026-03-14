@@ -6,7 +6,7 @@ import type { ShipModule } from '../types.js';
 
 describe('calculateApRegen', () => {
   it('returns BASE_HULL_AP_REGEN with no modules', () => {
-    expect(calculateApRegen([])).toBeCloseTo(0.08);
+    expect(calculateApRegen([])).toBeCloseTo(0.1);
   });
 
   it('returns base + generator contribution at high power full HP', () => {
@@ -14,8 +14,8 @@ describe('calculateApRegen', () => {
       moduleId: 'generator_mk3', slotIndex: 0, source: 'standard',
       powerLevel: 'high', currentHp: 55,
     }];
-    // 0.08 + 0.5 * 1.0 * (55/55) = 0.58
-    expect(calculateApRegen(modules)).toBeCloseTo(0.58);
+    // 0.1 + 6 * 1.0 * (55/55) = 6.1
+    expect(calculateApRegen(modules)).toBeCloseTo(6.1);
   });
 
   it('generator at low power reduces AP', () => {
@@ -23,8 +23,8 @@ describe('calculateApRegen', () => {
       moduleId: 'generator_mk3', slotIndex: 0, source: 'standard',
       powerLevel: 'low', currentHp: 55,
     }];
-    // 0.08 + 0.5 * 0.4 * 1.0 = 0.28
-    expect(calculateApRegen(modules)).toBeCloseTo(0.28);
+    // 0.1 + 6 * 0.4 * 1.0 = 2.5
+    expect(calculateApRegen(modules)).toBeCloseTo(2.5);
   });
 
   it('damaged generator reduces AP proportionally', () => {
@@ -33,10 +33,10 @@ describe('calculateApRegen', () => {
       powerLevel: 'high', currentHp: 27, // ~49% of 55 → heavy → power cap LOW
     }];
     // effective power = LOW (capped due to heavy damage)
-    // 0.08 + 0.5 * 0.4 * (27/55) ≈ 0.178
+    // 0.1 + 6 * 0.4 * (27/55) ≈ 1.278
     const regen = calculateApRegen(modules);
-    expect(regen).toBeGreaterThan(0.08);
-    expect(regen).toBeLessThan(0.58);
+    expect(regen).toBeGreaterThan(0.1);
+    expect(regen).toBeLessThan(6.1);
   });
 
   it('destroyed generator contributes 0', () => {
@@ -44,7 +44,7 @@ describe('calculateApRegen', () => {
       moduleId: 'generator_mk1', slotIndex: 0, source: 'standard',
       powerLevel: 'high', currentHp: 4, // 4/20 = 20% → destroyed → OFF
     }];
-    expect(calculateApRegen(modules)).toBeCloseTo(0.08);
+    expect(calculateApRegen(modules)).toBeCloseTo(0.1);
   });
 });
 

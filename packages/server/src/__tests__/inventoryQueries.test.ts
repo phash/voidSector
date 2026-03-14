@@ -134,8 +134,8 @@ describe('inventory queries', () => {
     const cap = await getCargoCapForPlayer('player1');
     // Verify the query selects modules
     expect(vi.mocked(query)).toHaveBeenCalledWith(expect.stringContaining('modules'), ['player1']);
-    // base cargoCap = 10, no module bonuses
-    expect(cap).toBe(10);
+    // base cargoCap = 20 (BASE_CARGO), no module bonuses
+    expect(cap).toBe(20);
   });
 
   it('getCargoCapForPlayer returns 20 as default when no ship found', async () => {

@@ -226,13 +226,16 @@ export class ShipService {
       return;
     }
 
-    // Check recipe: either researched OR has blueprint in inventory
-    const [research, bpQty] = await Promise.all([
+    // Check recipe: either researched OR has blueprint + required tech tree tier
+    const [research, bpQty, techTree] = await Promise.all([
       getPlayerResearch(auth.userId),
       getInventoryItem(auth.userId, 'blueprint', data.moduleId),
+      getOrCreateTechTree(auth.userId),
     ]);
 
-    const hasRecipe = research.unlockedModules.includes(data.moduleId) || bpQty >= 1;
+    const blueprints = bpQty >= 1 ? [data.moduleId] : [];
+    const hasRecipe = research.unlockedModules.includes(data.moduleId) ||
+      isModuleUnlocked(data.moduleId, mod, techTree.researched_nodes, blueprints);
     if (!hasRecipe) {
       client.send('craftResult', { success: false, error: 'No recipe available' });
       return;

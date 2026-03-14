@@ -8,7 +8,7 @@ export function isModuleFreelyAvailable(moduleId: string): boolean {
   return !mod.researchCost;
 }
 
-/** Returns true if a module is unlocked (freely available, blueprint, or tech-tree tier) */
+/** Returns true if a module is unlocked (freely available, blueprint + tier, or tech-tree tier) */
 export function isModuleUnlocked(
   moduleId: string,
   mod: { category: string; tier: number },
@@ -16,15 +16,24 @@ export function isModuleUnlocked(
   blueprints: string[],
 ): boolean {
   if (isModuleFreelyAvailable(moduleId)) return true;
-  if (blueprints.includes(moduleId)) return true;
+
+  const hasBP = blueprints.includes(moduleId);
+  const branchForCategory = getCategoryBranch(mod.category);
+
+  // Special-category modules have no tech-tree branch — blueprint is the only path
+  if (!branchForCategory) return hasBP;
 
   // Check tech tree tier unlock
   const effects = getTechTreeEffects(researchedNodes);
-  const branchForCategory = getCategoryBranch(mod.category);
-  if (branchForCategory) {
-    const unlockedTier = effects.unlockedTiers[branchForCategory] ?? 1;
-    return mod.tier <= unlockedTier;
-  }
+  const unlockedTier = effects.unlockedTiers[branchForCategory] ?? 1;
+  const tierSatisfied = mod.tier <= unlockedTier;
+
+  // Blueprint grants recipe but still requires the tier to be unlocked
+  if (hasBP && tierSatisfied) return true;
+
+  // Full tech-tree unlock (tier satisfied via branch research)
+  if (tierSatisfied) return true;
+
   return false;
 }
 

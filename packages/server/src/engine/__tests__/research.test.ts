@@ -18,9 +18,16 @@ describe('research flow integration', () => {
     expect(isModuleUnlocked('drive_mk2', driveMk2, { explorer: 1 }, [])).toBe(true);
   });
 
-  it('blueprint unlocks module without tech tree', () => {
+  it('blueprint alone does NOT unlock module without tech tree tier', () => {
     const scannerMk3 = MODULES['scanner_mk3'];
-    expect(isModuleUnlocked('scanner_mk3', scannerMk3, {}, ['scanner_mk3'])).toBe(true);
+    // Blueprint without required tier → NOT unlocked
+    expect(isModuleUnlocked('scanner_mk3', scannerMk3, {}, ['scanner_mk3'])).toBe(false);
+  });
+
+  it('blueprint + required tech tree tier unlocks module', () => {
+    const scannerMk3 = MODULES['scanner_mk3'];
+    // intel branch level 2 → unlocked tier 3; blueprint provides the recipe
+    expect(isModuleUnlocked('scanner_mk3', scannerMk3, { intel: 2 }, ['scanner_mk3'])).toBe(true);
   });
 
   it('all research modules have valid prerequisites', () => {

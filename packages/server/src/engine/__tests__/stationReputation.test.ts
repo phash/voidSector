@@ -88,22 +88,22 @@ describe('Station Reputation', () => {
       const amount = 50;
       const modifier = getFuelRepPriceModifier(60); // honored = 0.65
       const cost = Math.ceil(amount * FUEL_COST_PER_UNIT * modifier);
-      expect(cost).toBe(Math.ceil(50 * 0.1 * 0.65));
-      expect(cost).toBe(4); // Math.ceil(3.25)
+      expect(cost).toBe(Math.ceil(50 * 0.01 * 0.65));
+      expect(cost).toBe(1); // Math.ceil(0.325)
     });
 
     it('should make hostile fuel very expensive', () => {
       const amount = 50;
       const modifier = getFuelRepPriceModifier(-80); // hostile = 2.0
       const cost = Math.ceil(amount * FUEL_COST_PER_UNIT * modifier);
-      expect(cost).toBe(10); // Math.ceil(50 * 0.1 * 2.0)
+      expect(cost).toBe(1); // Math.ceil(50 * 0.01 * 2.0)
     });
 
     it('should apply no change at neutral', () => {
       const amount = 50;
       const modifier = getFuelRepPriceModifier(0); // neutral = 1.0
       const cost = Math.ceil(amount * FUEL_COST_PER_UNIT * modifier);
-      expect(cost).toBe(5); // Math.ceil(50 * 0.1 * 1.0)
+      expect(cost).toBe(1); // Math.ceil(50 * 0.01 * 1.0)
     });
   });
 

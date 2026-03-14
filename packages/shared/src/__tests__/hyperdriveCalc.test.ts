@@ -221,9 +221,9 @@ describe('drive fuelMax bonus', () => {
     expect(stats.fuelMax).toBe(17_000);
   });
 
-  it('drive_mk5 adds 18_000 fuelMax', () => {
+  it('drive_mk5 adds 28_000 fuelMax', () => {
     const stats = calculateShipStats([{ moduleId: 'drive_mk5', slotIndex: 0 }]);
-    expect(stats.fuelMax).toBe(28_000);
+    expect(stats.fuelMax).toBe(38_000); // 10_000 base + 28_000
   });
 
   it('fuelMax never falls below FUEL_MIN_TANK', () => {

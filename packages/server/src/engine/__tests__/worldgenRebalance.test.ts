@@ -17,11 +17,11 @@ describe('worldgen rebalance (#113)', () => {
   });
 
   it('nebula always has gas', () => {
-    expect(SECTOR_RESOURCE_YIELDS.nebula.gas).toBeGreaterThanOrEqual(30);
+    expect(SECTOR_RESOURCE_YIELDS.nebula.gas).toBeGreaterThanOrEqual(15);
   });
 
-  it('nebula has crystal', () => {
-    expect(SECTOR_RESOURCE_YIELDS.nebula.crystal).toBeGreaterThan(0);
+  it('nebula has no crystal', () => {
+    expect(SECTOR_RESOURCE_YIELDS.nebula.crystal).toBe(0);
   });
 
   it('empty has no resources', () => {

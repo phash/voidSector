@@ -60,7 +60,10 @@ vi.mock('@void-sector/shared', () => ({
   },
   calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
   validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
-  isModuleUnlocked: vi.fn().mockReturnValue(true),
+  isModuleUnlocked: vi.fn().mockImplementation(
+    (_id: string, _mod: unknown, _nodes: unknown, blueprints: string[]) =>
+      blueprints.length > 0,
+  ),
   RESEARCH_TICK_MS: 60000,
 }));
 
