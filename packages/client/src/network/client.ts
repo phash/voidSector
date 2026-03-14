@@ -256,8 +256,9 @@ class GameNetwork {
       const store = useStore.getState();
       store.setCurrentSector(sector);
       store.addDiscoveries([sector]);
-      // Clear player gate info — server will re-send if new sector has a gate
+      // Clear player gate/station info — server will re-send if new sector has one
       store.setPlayerGateInfo(null);
+      useStore.setState({ playerStationInfo: null });
       // Sector type help tips
       if (sector.type === 'nebula') store.showTip('first_nebula');
       else if (sector.type === 'station') store.showTip('first_station');
@@ -1280,6 +1281,11 @@ class GameNetwork {
         useStore.getState().setPlayerGateInfo(data);
       },
     );
+
+    // Player station info (sent when entering a sector with a player station)
+    room.onMessage('playerStationInfo', (data: any) => {
+      useStore.setState({ playerStationInfo: data ?? null });
+    });
 
     // Player gate travel result
     room.onMessage(

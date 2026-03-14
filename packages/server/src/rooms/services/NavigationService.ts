@@ -55,6 +55,7 @@ import {
   recordNewsEvent,
   getAllQuadrantControls,
 } from '../../db/queries.js';
+import { getPlayerStationAt } from '../../db/stationQueries.js';
 import { civQueries } from '../../db/civQueries.js';
 import {
   getAPState,
@@ -160,6 +161,9 @@ export class NavigationService {
 
     // Check for player-built JumpGate at this sector
     await this.detectAndSendPlayerGate(client, sectorX, sectorY);
+
+    // Check for player station at this sector
+    await this.detectAndSendPlayerStation(client, auth.userId, sectorX, sectorY);
 
     // Quadrant first-contact detection
     await this.ctx.checkFirstContact(client, auth, sectorX, sectorY);
@@ -1241,6 +1245,30 @@ export class NavigationService {
         linkedGates: links,
       },
       destinations,
+    });
+  }
+
+  /**
+   * Detect player-owned station at sector and send info to client.
+   */
+  async detectAndSendPlayerStation(client: Client, userId: string, sectorX: number, sectorY: number): Promise<void> {
+    const station = await getPlayerStationAt(sectorX, sectorY);
+    if (!station) {
+      client.send('playerStationInfo', null);
+      return;
+    }
+    client.send('playerStationInfo', {
+      id: station.id,
+      ownerId: station.owner_id,
+      sectorX: station.sector_x,
+      sectorY: station.sector_y,
+      quadrantX: station.quadrant_x,
+      quadrantY: station.quadrant_y,
+      level: station.level,
+      factoryLevel: station.factory_level,
+      cargoLevel: station.cargo_level,
+      cargoContents: station.cargo_contents,
+      createdAt: new Date(station.created_at).getTime(),
     });
   }
 

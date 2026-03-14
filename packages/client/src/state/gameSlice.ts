@@ -506,6 +506,9 @@ export interface GameSlice {
   // Player Gates
   playerGateInfo: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null;
 
+  // Player Stations
+  playerStationInfo: any | null;
+
   // Quadrant system
   knownQuadrants: Array<{
     qx: number;
@@ -826,6 +829,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   playerStats: loadPlayerStats(),
   shipMoveAnimation: null,
   playerGateInfo: null,
+  playerStationInfo: null,
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,
