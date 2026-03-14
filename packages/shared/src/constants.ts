@@ -2804,6 +2804,8 @@ export const CONQUEST_RATE: Record<number, { base: number; boosted: number }> = 
   3: { base: 1.2, boosted: 3.0 },
 };
 
+export const HYPERDRIVE_CHARGE_PER_GAS = 4; // 1 GAS from cargo → 4 hyperdrive charge
+
 export function getConquestPriceBonus(qx: number, qy: number): number {
   const dist = Math.floor(Math.sqrt(qx * qx + qy * qy));
   if (dist <= 10) return dist;
