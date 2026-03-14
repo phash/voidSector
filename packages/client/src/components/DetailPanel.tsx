@@ -163,7 +163,8 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
   const maxCredits  = Math.min(playerCredits,       remainCredits);
   const maxArtefact = Math.min(cargo.artefact ?? 0, remainArtefact);
 
-  const pct = site.progress;
+  const duration = Math.max(1, site.neededOre + site.neededGas + site.neededCrystal + site.neededArtefact);
+  const pctValue = Math.min(100, Math.round((site.progress / duration) * 100));
   const canDeliver = amounts.ore + amounts.gas + amounts.crystal + amounts.credits + amounts.artefact > 0;
   const adminToken = localStorage.getItem('vs_admin_token');
 
@@ -218,10 +219,10 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
 
       {/* Progress bar */}
       <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', marginBottom: 2 }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: 'var(--color-primary)', transition: 'width 0.5s' }} />
+        <div style={{ height: '100%', width: `${pctValue}%`, background: 'var(--color-primary)', transition: 'width 0.5s' }} />
       </div>
       <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginBottom: 6 }}>
-        {pct}/100 Ticks
+        {site.progress}/{duration}s ({pctValue}%)
       </div>
 
       {/* Resource status */}

@@ -49,6 +49,7 @@ import {
 import { query } from './db/client.js';
 import { civQueries } from './db/civQueries.js';
 import { constructionBus } from './constructionBus.js';
+import { completeConstruction as completeConstructionFn } from './engine/constructionTickService.js';
 import { MODULES, QUADRANT_SIZE } from '@void-sector/shared';
 import { STORY_CHAPTERS } from './engine/storyQuestChain.js';
 import { getStoryProgress, upsertStoryProgress } from './db/queries.js';
@@ -604,11 +605,10 @@ adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: R
       return;
     }
     try {
-      await createStructure(site.owner_id, site.type, site.sector_x, site.sector_y);
+      await completeConstructionFn(site);
       await deleteConstructionSiteById(site.id);
     } catch (err: any) {
       if (err.code !== '23505') throw err;
-      // Duplicate structure — delete site anyway and treat as success
       await deleteConstructionSiteById(site.id);
     }
     await logAdminEvent('complete_construction', { siteId: site.id, type: site.type, sectorX: site.sector_x, sectorY: site.sector_y });
@@ -616,6 +616,9 @@ adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: R
       siteId: site.id,
       sectorX: site.sector_x,
       sectorY: site.sector_y,
+      type: site.type,
+      ownerId: site.owner_id,
+      metadata: site.metadata,
     });
     logger.info({ id, type: site.type }, 'Admin completed construction site');
     res.json({ success: true });
