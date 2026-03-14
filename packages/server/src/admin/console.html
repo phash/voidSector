@@ -3325,7 +3325,7 @@ expiresDays: 14"></textarea>
 
   let dronesData = [];
   async function loadDrones() {
-    const data = await apiFetch('/drones');
+    const data = await api('GET', '/drones');
     dronesData = data.ships || [];
     const summary = data.summary || {};
     const sumEl = document.getElementById('drones-summary');
