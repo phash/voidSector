@@ -162,6 +162,17 @@ export const civQueries = {
     );
   },
 
+  async getStationBySector(x: number, y: number): Promise<{
+    id: number; sector_x: number; sector_y: number;
+    faction: string; mode: string; conquest_pool: number; level: number;
+  } | null> {
+    const res = await query<{
+      id: number; sector_x: number; sector_y: number;
+      faction: string; mode: string; conquest_pool: number; level: number;
+    }>('SELECT id, sector_x, sector_y, faction, mode, conquest_pool, level FROM civ_stations WHERE sector_x = $1 AND sector_y = $2', [x, y]);
+    return res.rows[0] ?? null;
+  },
+
   async depositConquestPool(id: number, amount: number, maxPool: number): Promise<number> {
     const res = await query<{ conquest_pool: number }>(
       `UPDATE civ_stations
