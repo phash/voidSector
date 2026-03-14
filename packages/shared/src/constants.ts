@@ -453,16 +453,16 @@ export const UNIQUE_MODULE_CATEGORIES: ModuleCategory[] = ['shield', 'scanner'];
 export const DEFENSE_ONLY_CATEGORIES: ModuleCategory[] = ['defense', 'special'];
 
 /** ausbau-XP-Schwellwerte für Extra-Slot-Freischaltung */
-export const ACEP_EXTRA_SLOT_THRESHOLDS: number[] = [10, 25, 40, 50];
+export const ACEP_EXTRA_SLOT_THRESHOLDS: number[] = [500, 2500, 7500, 20000];
 
 // ─── ACEP LEVEL THRESHOLDS ───────────────────────────────────────────────────
 
 export const ACEP_LEVEL_THRESHOLDS: Record<number, number> = {
   1: 0,
-  2: 8,
-  3: 18,
-  4: 32,
-  5: 50,
+  2: 500,
+  3: 2500,
+  4: 7500,
+  5: 20000,
 };
 
 export const ACEP_LEVEL_MULTIPLIERS: Record<number, number> = {

@@ -3,7 +3,7 @@ import { validateModuleInstall } from '../shipCalculator.js';
 import type { ShipModule, AcepXpSnapshot } from '../types.js';
 
 const noAcep: AcepXpSnapshot = { ausbau: 0, intel: 0, kampf: 0, explorer: 0 };
-const acepWith1ExtraSlot: AcepXpSnapshot = { ausbau: 10, intel: 0, kampf: 0, explorer: 0 };
+const acepWith1ExtraSlot: AcepXpSnapshot = { ausbau: 500, intel: 0, kampf: 0, explorer: 0 };
 
 describe('validateModuleInstall — specialized slots', () => {
   it('allows generator in slot 0 (specialized)', () => {

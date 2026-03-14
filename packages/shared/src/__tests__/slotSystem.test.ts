@@ -36,9 +36,9 @@ describe('specialized slot system', () => {
     expect(DEFENSE_ONLY_CATEGORIES).toContain('special');
   });
 
-  it('extra slot unlocks at ausbau XP 10, 25, 40, 50', () => {
-    expect(ACEP_EXTRA_SLOT_THRESHOLDS[0]).toBe(10);
-    expect(ACEP_EXTRA_SLOT_THRESHOLDS[3]).toBe(50);
+  it('extra slot unlocks at ausbau XP 500, 2500, 7500, 20000', () => {
+    expect(ACEP_EXTRA_SLOT_THRESHOLDS[0]).toBe(500);
+    expect(ACEP_EXTRA_SLOT_THRESHOLDS[3]).toBe(20000);
   });
 
   it('ACEP level 1 = 1.0 multiplier', () => {
@@ -49,7 +49,7 @@ describe('specialized slot system', () => {
     expect(ACEP_LEVEL_MULTIPLIERS[5]).toBe(1.5);
   });
 
-  it('level 5 threshold is 50 XP', () => {
-    expect(ACEP_LEVEL_THRESHOLDS[5]).toBe(50);
+  it('level 5 threshold is 20000 XP', () => {
+    expect(ACEP_LEVEL_THRESHOLDS[5]).toBe(20000);
   });
 });
