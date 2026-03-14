@@ -1676,7 +1676,7 @@ export class WorldService {
       survivorsRescued: 1,
       safeSlotsFree: safeSlots - survivors.length - 1,
     });
-    client.send('apUpdate', { current: newAP.current, max: newAP.max });
+    client.send('apUpdate', newAP);
   }
 
   async handleDeliverSurvivors(client: Client, data: DeliverSurvivorsMessage): Promise<void> {
