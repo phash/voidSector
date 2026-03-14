@@ -13,6 +13,7 @@ import {
   STRUCTURE_COSTS,
   STRUCTURE_AP_COSTS,
   JUMPGATE_BUILD_COST,
+  STATION_BUILD_COSTS,
   CONQUEST_POOL_MAX,
   CONQUEST_RATE,
 } from '@void-sector/shared';
@@ -954,16 +955,15 @@ export function DetailPanel() {
                 <div>
                   <button
                     className="vs-btn"
-                    onClick={() => network.sendBuild('mining_station')}
+                    onClick={() => network.sendBuildStation()}
                     style={{ fontSize: '0.7rem' }}
                   >
-                    [BUILD STATION]
+                    [STATION BAUEN]
                   </button>
                   <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
-                    {STRUCTURE_COSTS.mining_station.ore} ORE ·{' '}
-                    {STRUCTURE_COSTS.mining_station.gas} GAS ·{' '}
-                    {STRUCTURE_COSTS.mining_station.crystal} CRYSTAL ·{' '}
-                    {STRUCTURE_AP_COSTS.mining_station} AP
+                    {STATION_BUILD_COSTS[1].credits} CR ·{' '}
+                    {STATION_BUILD_COSTS[1].crystal} CRYSTAL ·{' '}
+                    {STATION_BUILD_COSTS[1].artefact} ARTEFAKT
                   </div>
                 </div>
                 {!playerGateInfo && (

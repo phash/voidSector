@@ -98,6 +98,21 @@ export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
   jumpgate: 10,
 };
 
+// ── Player Stations ──────────────────────────────────────────────────
+
+export const MAX_STATION_LEVEL = 5;
+export const MAX_STATIONS_PER_QUADRANT = 1;
+
+export const STATION_BUILD_COSTS: Record<number, { credits: number; crystal: number; artefact: number }> = {
+  1: { credits: 500, crystal: 5, artefact: 1 },
+  2: { credits: 1000, crystal: 10, artefact: 2 },
+  3: { credits: 2000, crystal: 20, artefact: 4 },
+  4: { credits: 4000, crystal: 40, artefact: 8 },
+  5: { credits: 8000, crystal: 80, artefact: 16 },
+};
+
+export const STATION_MODULE_UPGRADE_COST = (level: number): number => 200 * level * level;
+
 // ── Research Lab / Wissen ─────────────────────────────────────────────
 
 /** Lab tier Wissen multiplier for active generation (replaces passive tick) */

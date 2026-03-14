@@ -810,6 +810,21 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('build', async (client, data: BuildMessage) => {
       await this.world.handleBuild(client, data);
     });
+    this.onMessage('buildStation', async (client) => {
+      await this.world.handleBuildStation(client);
+    });
+    this.onMessage('upgradeStation', async (client, data) => {
+      await this.world.handleUpgradeStation(client, data);
+    });
+    this.onMessage('upgradeStationModule', async (client, data) => {
+      await this.world.handleUpgradeStationModule(client, data);
+    });
+    this.onMessage('getMyStations', async (client) => {
+      await this.world.handleGetMyStations(client);
+    });
+    this.onMessage('getStationDetails', async (client, data) => {
+      await this.world.handleGetStationDetails(client, data);
+    });
     this.onMessage('depositConstruction', async (client, data: DepositConstructionMessage) => {
       await this.world.handleDepositConstruction(client, data);
     });

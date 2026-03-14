@@ -744,6 +744,32 @@ class GameNetwork {
       }
     });
 
+    // Player station results
+    room.onMessage('buildStationResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('STATION ERRICHTET');
+      } else {
+        store.addLogEntry(`STATION FEHLER: ${data.error}`);
+      }
+    });
+    room.onMessage('upgradeStationResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('STATION UPGRADED');
+      } else {
+        store.addLogEntry(`UPGRADE FEHLER: ${data.error}`);
+      }
+    });
+    room.onMessage('upgradeStationModuleResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('MODUL UPGRADED');
+      } else {
+        store.addLogEntry(`MODUL FEHLER: ${data.error}`);
+      }
+    });
+
     // Credits update
     room.onMessage('creditsUpdate', (data: { credits: number }) => {
       useStore.getState().setCredits(data.credits);
@@ -2059,6 +2085,26 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('build', { type });
+  }
+
+  sendBuildStation() {
+    this.sectorRoom?.send('buildStation');
+  }
+
+  sendUpgradeStation(stationId: string) {
+    this.sectorRoom?.send('upgradeStation', { stationId });
+  }
+
+  sendUpgradeStationModule(stationId: string, module: 'factory' | 'cargo') {
+    this.sectorRoom?.send('upgradeStationModule', { stationId, module });
+  }
+
+  requestMyStations() {
+    this.sectorRoom?.send('getMyStations');
+  }
+
+  requestStationDetails(stationId: string) {
+    this.sectorRoom?.send('getStationDetails', { stationId });
   }
 
   sendDepositConstruction(siteId: string, ore: number, gas: number, crystal: number) {

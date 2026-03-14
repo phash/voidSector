@@ -352,6 +352,20 @@ export interface BaseStructure {
   createdAt: string;
 }
 
+export interface PlayerStation {
+  id: string;
+  ownerId: string;
+  sectorX: number;
+  sectorY: number;
+  quadrantX: number;
+  quadrantY: number;
+  level: number;
+  factoryLevel: number;
+  cargoLevel: number;
+  cargoContents: Record<string, number>;
+  createdAt: number;
+}
+
 export interface BuildMessage {
   type: StructureType;
 }
