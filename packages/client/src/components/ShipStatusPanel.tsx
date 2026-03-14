@@ -177,6 +177,15 @@ export function ShipStatusPanel() {
           <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', marginTop: 2 }}>
             <div style={{ height: '100%', width: `${chargePercent}%`, background: '#8888ff', transition: 'width 0.3s' }} />
           </div>
+          {chargePercent < 100 && (cargo?.gas ?? 0) > 0 && (
+            <button
+              className="vs-btn"
+              style={{ fontSize: '0.5rem', marginTop: 4, padding: '1px 6px', color: '#8888ff', borderColor: '#8888ff44' }}
+              onClick={() => network.sendChargeHyperdrive()}
+            >
+              [CHARGE: 1 GAS → +4]
+            </button>
+          )}
         </>
       )}
 

@@ -2359,6 +2359,10 @@ class GameNetwork {
     this.sectorRoom.send('hyperJump', { targetX, targetY });
   }
 
+  sendChargeHyperdrive() {
+    this.sectorRoom?.send('chargeHyperdrive', {});
+  }
+
   sendStartAutopilot(targetX: number, targetY: number, useHyperjump: boolean = false) {
     if (!this.sectorRoom) {
       useStore.getState().addLogEntry('NOT CONNECTED');

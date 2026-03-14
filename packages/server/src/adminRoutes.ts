@@ -50,6 +50,8 @@ import { query } from './db/client.js';
 import { civQueries } from './db/civQueries.js';
 import { constructionBus } from './constructionBus.js';
 import { MODULES, QUADRANT_SIZE } from '@void-sector/shared';
+import { STORY_CHAPTERS } from './engine/storyQuestChain.js';
+import { getStoryProgress, upsertStoryProgress } from './db/queries.js';
 
 export const adminRouter = Router();
 
@@ -773,6 +775,46 @@ adminRouter.delete('/errors/:id', async (req: Request, res: Response) => {
     res.json({ success: ok });
   } catch (err) {
     logger.error({ err }, 'Admin delete error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Story Event Trigger ─────────────────────────────────────────────
+
+adminRouter.post('/story/trigger', async (req: Request, res: Response) => {
+  try {
+    const { playerId, chapter } = req.body;
+    if (!playerId || chapter === undefined) {
+      res.status(400).json({ error: 'playerId and chapter required' });
+      return;
+    }
+    const chapterNum = Number(chapter);
+    const chapterDef = STORY_CHAPTERS[chapterNum];
+    if (!chapterDef) {
+      res.status(400).json({ error: `Chapter ${chapterNum} not found. Valid: 0-${STORY_CHAPTERS.length - 1}` });
+      return;
+    }
+
+    const row = await getStoryProgress(playerId);
+    const completedChapters = [...row.completed_chapters];
+
+    // Ensure all previous chapters are marked completed
+    for (let i = 0; i < chapterNum; i++) {
+      if (!completedChapters.includes(i)) completedChapters.push(i);
+    }
+
+    // Set current_chapter to this chapter so it triggers on next sector enter
+    await upsertStoryProgress(playerId, chapterNum, completedChapters, row.branch_choices);
+
+    await logAdminEvent('story_trigger', { playerId, chapter: chapterNum, title: chapterDef.title });
+    res.json({
+      ok: true,
+      chapter: chapterNum,
+      title: chapterDef.title,
+      message: `Chapter ${chapterNum} queued for player. Will trigger on next sector enter.`,
+    });
+  } catch (err) {
+    logger.error({ err }, 'Admin story trigger error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

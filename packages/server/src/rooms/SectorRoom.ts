@@ -38,7 +38,7 @@ import {
   getHyperdriveState,
   setHyperdriveState,
 } from './services/RedisAPStore.js';
-import { getCargoState, addToInventory, getResourceTotal } from '../engine/inventoryService.js';
+import { getCargoState, addToInventory, getResourceTotal, removeFromInventory } from '../engine/inventoryService.js';
 import {
   getSector,
   saveSector,
@@ -74,6 +74,7 @@ import {
   getVisitedQuadrantSet,
   getAllAlienReputations,
   getInventory,
+  getInventoryItem,
   getMiningStoryIndex,
 } from '../db/queries.js';
 import { getQuadrant, addPlayerKnownQuadrant } from '../db/quadrantQueries.js';
@@ -87,6 +88,7 @@ import {
   calculateCurrentCharge,
   STATION_REP_VISIT,
   COSMIC_FACTION_IDS,
+  HYPERDRIVE_CHARGE_PER_GAS,
   getAcepLevel,
   FUEL_MIN_TANK,
   BASE_FUEL_CAPACITY,
@@ -428,6 +430,31 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('hyperJump', async (client, data: HyperJumpMessage) => {
       await this.navigation.handleHyperJump(client, data);
+    });
+    this.onMessage('chargeHyperdrive', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const gasAmount = await getInventoryItem(auth.userId, 'resource', 'gas');
+      if (gasAmount < 1) {
+        client.send('error', { code: 'NO_GAS', message: 'Kein Gas im Cargo.' });
+        return;
+      }
+      const hdState = await getHyperdriveState(auth.userId);
+      if (!hdState || hdState.maxCharge <= 0) {
+        client.send('error', { code: 'NO_HYPERDRIVE', message: 'Kein Hyperdrive installiert.' });
+        return;
+      }
+      const currentCharge = calculateCurrentCharge(hdState);
+      if (currentCharge >= hdState.maxCharge) {
+        client.send('error', { code: 'CHARGE_FULL', message: 'Hyperdrive bereits voll.' });
+        return;
+      }
+      await removeFromInventory(auth.userId, 'resource', 'gas', 1);
+      const newCharge = Math.min(hdState.maxCharge, currentCharge + HYPERDRIVE_CHARGE_PER_GAS);
+      const newState = { ...hdState, charge: newCharge, lastTick: Date.now() };
+      await setHyperdriveState(auth.userId, newState);
+      client.send('hyperdriveUpdate', newState);
+      const cargo = await getCargoState(auth.userId);
+      client.send('cargoUpdate', cargo);
     });
     this.onMessage('cancelAutopilot', async (client) => {
       await this.navigation.handleCancelAutopilot(client);
