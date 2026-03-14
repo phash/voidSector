@@ -198,7 +198,7 @@ export function CommsScreen() {
               style={{ color: 'var(--color-primary)', cursor: 'pointer' }}
               onClick={(e) => {
                 e.stopPropagation();
-                openContextMenu(msg.senderId, msg.senderName, e.clientX, e.clientY);
+                network.getPlayerCard(msg.senderId);
               }}
             >
               {msg.senderName}:

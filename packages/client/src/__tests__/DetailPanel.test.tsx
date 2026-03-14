@@ -106,7 +106,7 @@ describe('DetailPanel', () => {
       selectedSector: { x: 0, y: 0 },
       position: { x: 0, y: 0 },
       players: {
-        s1: { sessionId: 's1', username: 'SpacePilot', x: 0, y: 0, connected: true },
+        s1: { sessionId: 's1', userId: 'u1', username: 'SpacePilot', x: 0, y: 0, connected: true },
       },
       discoveries: {
         '0:0': {

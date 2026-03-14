@@ -260,6 +260,7 @@ function savePlayerStats(stats: PlayerStats): void {
 
 export interface PlayerPresence {
   sessionId: string;
+  userId: string;
   username: string;
   x: number;
   y: number;

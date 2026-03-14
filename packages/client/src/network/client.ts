@@ -71,6 +71,7 @@ import type {
 
 /** Schema-level player object from Colyseus room state. */
 interface RoomPlayerSchema {
+  userId: string;
   username: string;
   x: number;
   y: number;
@@ -206,6 +207,7 @@ class GameNetwork {
         const store = useStore.getState();
         store.setPlayer(sessionId, {
           sessionId,
+          userId: player.userId,
           username: player.username,
           x: player.x,
           y: player.y,
@@ -224,6 +226,7 @@ class GameNetwork {
           const prev = s.players[sessionId];
           s.setPlayer(sessionId, {
             sessionId,
+            userId: player.userId,
             username: player.username,
             x: player.x,
             y: player.y,
