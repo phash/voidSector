@@ -216,7 +216,7 @@ Bookmark-Button ist immer sichtbar (ausserhalb des `{sector ?}`-Blocks). Zeigt `
 
 ### 1.13 Navigation & Bewegung
 
-**Schiffsanimation**: Sanfte Interpolation von Sektor zu Sektor (800ms Dauer, `easeInOutCubic`). (#155)
+**Schiffsanimation**: Normale Spruenge: glitch/slide/settle (800ms). Hyperjumps: smooth Gerade-Linie-Flug zum Ziel, 200ms pro Sektor euklidischer Distanz, `easeInOutCubic`. (#155, #448)
 
 **Autopilot**: Persistente Routen (max 3 aktive), automatische Betankung an Stationen, Black-Hole-Avoidance.
 
