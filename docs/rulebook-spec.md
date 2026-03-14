@@ -781,9 +781,10 @@ Jede Fraktion hat `home_qx`, `home_qy` und expandiert priorisiert innerhalb des 
 
 | Parameter | Wert |
 |---|---|
-| Max. aktive Quests | 3 |
+| Max. annehmbare Quests | 20 |
+| Max. in NAV-COM trackbar | 5 |
 | Quest-Ablauf | 7 Tage |
-| Quest-Typen | fetch, delivery, scan, bounty, bounty_chase |
+| Quest-Typen | fetch, delivery, scan, bounty_chase |
 | Quest-Rotation | taeglich (stationsabhaengig) |
 | Max. getrackte Quests | 5 |
 
@@ -793,11 +794,23 @@ Jede Fraktion hat `home_qx`, `home_qy` und expandiert priorisiert innerhalb des 
 
 | Typ | Beschreibung | Belohnungen |
 |---|---|---|
-| `fetch` | Ressource beschaffen und liefern | Credits, XP, Rep |
-| `delivery` | NPC-Auftrag (Waren transportieren) | Credits, XP, Rep |
-| `scan` | Sektor(en) scannen und berichten | Credits, XP, Artefakt-Chance |
-| `bounty` | Piraten/NPC besiegen | Credits, XP, Ressourcen |
-| `bounty_chase` | Kopfgeldjagd mit Trail-Verfolgung | Credits, XP, hohe Belohnung |
+| `fetch` | Dinge besorgen und an Station abliefern | Credits, XP, Rep, Artefakt-Chance, Blueprint-Chance |
+| `delivery` | Dinge an andere Station bringen | Credits, XP, Rep, Artefakt-Chance, Blueprint-Chance |
+| `scan` | 1-4 Sektoren scannen, Data Slates erstellen und zurueckliefern | Credits, XP, Rep, Artefakt-Chance |
+| `bounty_chase` | Ziel in 1-4 Sektoren nacheinander scannen, Kampf am Ende, Gefangenen zurueckliefern | Credits, XP, Rep, hohe Belohnung, Blueprint-Chance |
+
+**Entfernte Typen:** `bounty`, `bounty_trail`, `bounty_combat`, `bounty_deliver`, `scan_deliver` — diese Zwischen-Typen werden in die Haupttypen integriert.
+
+**Quest-Belohnungsstruktur:**
+- Credits, XP, Rep (immer)
+- `reputationPenalty` + `rivalFactionId` (optional, bei Fraktionsquests)
+- `wissen` (optional, wenig pro Quest)
+- `artefactChance` (optional, 0.0-1.0)
+- `blueprintChance` (optional, 0.0-1.0)
+
+**Max annehmbare Quests:** 20 (im JOURNAL sichtbar)
+**Max in NAV-COM trackbar:** 5 (Radar-Puls + BookmarkBar)
+**Community- und Story-Quests** sind von diesen Limits ausgenommen und haben eigene Seiten im JOURNAL.
 
 ### 9.3 Kopfgeld-Quest-System (bounty_chase)
 
