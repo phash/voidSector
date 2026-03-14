@@ -298,13 +298,16 @@ class GameNetwork {
           store.setPlayerGateInfo(null);
           const dx = data.newSector.x - store.position.x;
           const dy = data.newSector.y - store.position.y;
-          store.startJumpAnimation(dx, dy);
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          store.startJumpAnimation(dx, dy, distance);
           const newSector = data.newSector;
           const needsRoomChange = data.crossQuadrant === true;
           // Update position immediately to prevent stale coordinates on rapid clicks
           if (!needsRoomChange) {
             store.setPosition({ x: newSector.x, y: newSector.y });
           }
+          // Wait for animation to finish before clearing
+          const animDuration = store.jumpAnimation?.totalDuration ?? 800;
           setTimeout(async () => {
             useStore.getState().addDiscoveries([newSector]);
             useStore
@@ -319,7 +322,7 @@ class GameNetwork {
               useStore.getState().resetPan();
             }
             useStore.getState().clearJumpAnimation();
-          }, 800);
+          }, animDuration);
         } else {
           useStore.getState().addLogEntry(`Jump failed: ${data.error}`);
         }
@@ -1333,13 +1336,16 @@ class GameNetwork {
           store.setPlayerGateInfo(null);
           const dx = data.newSector.x - store.position.x;
           const dy = data.newSector.y - store.position.y;
-          store.startJumpAnimation(dx, dy);
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          store.startJumpAnimation(dx, dy, distance);
           const newSector = data.newSector;
           const needsRoomChange = data.crossQuadrant === true;
           if (!needsRoomChange) {
             store.setPosition({ x: newSector.x, y: newSector.y });
           }
           if (data.credits !== undefined) store.setCredits(data.credits);
+          // Wait for animation to finish before clearing
+          const animDuration = store.jumpAnimation?.totalDuration ?? 800;
           setTimeout(async () => {
             useStore.getState().addDiscoveries([newSector]);
             useStore
@@ -1354,7 +1360,7 @@ class GameNetwork {
               useStore.getState().resetPan();
             }
             useStore.getState().clearJumpAnimation();
-          }, 800);
+          }, animDuration);
         } else {
           store.addLogEntry(`GATE-SPRUNG FEHLER: ${data.error}`);
         }
