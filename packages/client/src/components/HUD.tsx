@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../state/store';
-import { innerCoord } from '@void-sector/shared';
+import { innerCoord, QUADRANT_SIZE } from '@void-sector/shared';
 
 function SegmentedBar({
   current,
@@ -198,6 +198,9 @@ export function SectorInfo() {
     >
       <span style={{ whiteSpace: 'nowrap' }}>
         SECTOR: ({innerCoord(position.x)}, {innerCoord(position.y)})
+      </span>
+      <span style={{ whiteSpace: 'nowrap' }}>
+        Q: {Math.floor((position.x + Math.floor(QUADRANT_SIZE / 2)) / QUADRANT_SIZE)}:{Math.floor((position.y + Math.floor(QUADRANT_SIZE / 2)) / QUADRANT_SIZE)}
       </span>
       <span>{currentSector?.type?.toUpperCase() || '---'}</span>
       <span>PILOTS: {playerCount}</span>
