@@ -53,6 +53,8 @@ import {
   JUMPGATE_UPGRADE_COSTS,
   JUMPGATE_DISTANCE_LIMITS,
   JUMPGATE_CONNECTION_LIMITS,
+  JUMPGATE_MAX_PER_QUADRANT,
+  QUADRANT_SIZE,
   STRUCTURE_AP_COSTS,
   STRUCTURE_COSTS,
   RESCUE_AP_COST,
@@ -149,6 +151,7 @@ import {
   upgradeJumpGate,
   updateJumpGateToll,
   deleteJumpGate,
+  countPlayerJumpGatesInQuadrant,
   getJumpGateLinks,
   insertJumpGateLink,
   removeJumpGateLink,
@@ -884,6 +887,17 @@ export class WorldService {
     const worldGate = await getJumpGate(sx, sy);
     if (worldGate) {
       client.send('buildResult', { success: false, error: 'World gate already exists here' });
+      return;
+    }
+
+    // Check quadrant limit
+    const { qx, qy } = sectorToQuadrant(sx, sy);
+    const gatesInQuadrant = await countPlayerJumpGatesInQuadrant(qx, qy, QUADRANT_SIZE);
+    if (gatesInQuadrant >= JUMPGATE_MAX_PER_QUADRANT) {
+      client.send('buildResult', {
+        success: false,
+        error: `Max ${JUMPGATE_MAX_PER_QUADRANT} Jumpgates pro Quadrant erreicht`,
+      });
       return;
     }
 

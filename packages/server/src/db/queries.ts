@@ -1548,6 +1548,25 @@ export async function updateJumpGateToll(gateId: string, toll: number): Promise<
   await query(`UPDATE jumpgates SET toll_credits = $1 WHERE id = $2`, [toll, gateId]);
 }
 
+export async function countPlayerJumpGatesInQuadrant(
+  qx: number,
+  qy: number,
+  quadrantSize: number,
+): Promise<number> {
+  const minX = qx * quadrantSize - Math.floor(quadrantSize / 2);
+  const maxX = minX + quadrantSize - 1;
+  const minY = qy * quadrantSize - Math.floor(quadrantSize / 2);
+  const maxY = minY + quadrantSize - 1;
+  const { rows } = await query(
+    `SELECT COUNT(*)::int AS cnt FROM jumpgates
+     WHERE owner_id IS NOT NULL
+       AND sector_x >= $1 AND sector_x <= $2
+       AND sector_y >= $3 AND sector_y <= $4`,
+    [minX, maxX, minY, maxY],
+  );
+  return rows[0]?.cnt ?? 0;
+}
+
 export async function deleteJumpGate(gateId: string): Promise<void> {
   // Links cascade-delete due to ON DELETE CASCADE
   await query(`DELETE FROM jumpgates WHERE id = $1`, [gateId]);

@@ -132,6 +132,7 @@ export const JUMPGATE_CONNECTION_LIMITS = {
     3: 3,
 };
 export const JUMPGATE_MAX_CHAIN_HOPS = 10;
+export const JUMPGATE_MAX_PER_QUADRANT = 4;
 // NPC Trade Prices (base prices per unit in credits)
 export const NPC_PRICES = {
     ore: 10,
