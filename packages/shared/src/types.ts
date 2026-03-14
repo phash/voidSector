@@ -158,6 +158,9 @@ export interface SectorData {
   metadata: Record<string, unknown>;
   resources?: SectorResources;
   impassable?: boolean;
+  faction?: string;        // Set for civ-station sectors (humans conquest/factory)
+  civStationId?: number;  // civ_stations.id for conquest deposit
+  civStationMode?: 'conquest' | 'factory' | 'battle';
 }
 
 export interface BlackHoleCluster {

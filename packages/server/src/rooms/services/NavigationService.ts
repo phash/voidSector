@@ -55,6 +55,7 @@ import {
   recordNewsEvent,
   getAllQuadrantControls,
 } from '../../db/queries.js';
+import { civQueries } from '../../db/civQueries.js';
 import {
   getAPState,
   saveAPState,
@@ -129,6 +130,19 @@ export class NavigationService {
     this.ctx.playerSectorData.set(client.sessionId, sectorData);
     await savePlayerPosition(auth.userId, sectorX, sectorY);
     await addDiscovery(auth.userId, sectorX, sectorY);
+
+    // Enrich station sectors with civ faction info for conquest UI
+    if (sectorData.type === 'station') {
+      const civStation = await civQueries.getStationBySector(sectorX, sectorY);
+      if (civStation) {
+        sectorData = {
+          ...sectorData,
+          faction: civStation.faction,
+          civStationId: civStation.id,
+          civStationMode: civStation.mode as 'conquest' | 'factory' | 'battle',
+        };
+      }
+    }
 
     // Send sector data to client
     client.send('sectorData', sectorData);
