@@ -56,6 +56,10 @@ import type {
   WreckItem,
   SalvageResultPayload,
   WreckExhaustedPayload,
+  FriendEntry,
+  FriendRequestEntry,
+  BlockEntry,
+  PlayerCardData,
 } from '@void-sector/shared';
 
 export interface QuestCompleteEntry {
@@ -317,6 +321,10 @@ export interface GameSlice {
   chatMessages: ChatMessage[];
   chatChannel: ChatChannel;
   recentContacts: Array<{ id: string; name: string }>;
+  friends: FriendEntry[];
+  friendRequests: FriendRequestEntry[];
+  blockedPlayers: BlockEntry[];
+  playerCardTarget: PlayerCardData | null;
   channelAlerts: Record<string, boolean>;
 
   // Alerts
@@ -597,6 +605,14 @@ export interface GameSlice {
   addChatMessage: (msg: ChatMessage) => void;
   setChatChannel: (channel: ChatChannel) => void;
   addRecentContact: (id: string, name: string) => void;
+  setFriends: (friends: FriendEntry[]) => void;
+  setFriendRequests: (friendRequests: FriendRequestEntry[]) => void;
+  setBlockedPlayers: (blockedPlayers: BlockEntry[]) => void;
+  setPlayerCardTarget: (playerCardTarget: PlayerCardData | null) => void;
+  addFriend: (friend: FriendEntry) => void;
+  removeFriendFromList: (friendId: string) => void;
+  addFriendRequest: (req: FriendRequestEntry) => void;
+  removeFriendRequest: (requestId: string) => void;
   setChannelAlert: (channel: string, active: boolean) => void;
   clearChannelAlert: (channel: string) => void;
   setAlert: (monitorId: string, active: boolean) => void;
@@ -740,6 +756,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   chatMessages: [],
   chatChannel: 'quadrant' as ChatChannel,
   recentContacts: [],
+  friends: [],
+  friendRequests: [],
+  blockedPlayers: [],
+  playerCardTarget: null,
   channelAlerts: {},
   alerts: {},
   selectedSector: null,
@@ -921,6 +941,20 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       const filtered = s.recentContacts.filter((c) => c.id !== id);
       return { recentContacts: [{ id, name }, ...filtered].slice(0, MAX_CONTACTS) };
     }),
+  setFriends: (friends) => set({ friends }),
+  setFriendRequests: (friendRequests) => set({ friendRequests }),
+  setBlockedPlayers: (blockedPlayers) => set({ blockedPlayers }),
+  setPlayerCardTarget: (playerCardTarget) => set({ playerCardTarget }),
+  addFriend: (friend) => set((s) => ({ friends: [...s.friends, friend] })),
+  removeFriendFromList: (friendId) => set((s) => ({
+    friends: s.friends.filter((f) => f.id !== friendId),
+  })),
+  addFriendRequest: (req) => set((s) => ({
+    friendRequests: [...s.friendRequests, req],
+  })),
+  removeFriendRequest: (requestId) => set((s) => ({
+    friendRequests: s.friendRequests.filter((r) => r.id !== requestId),
+  })),
   setChannelAlert: (channel, active) =>
     set((s) => ({
       channelAlerts: { ...s.channelAlerts, [channel]: active },

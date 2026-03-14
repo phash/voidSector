@@ -63,6 +63,10 @@ import type {
   SalvageStartedPayload,
   SalvageResultPayload,
   WreckExhaustedPayload,
+  FriendEntry,
+  FriendRequestEntry,
+  BlockEntry,
+  PlayerCardData,
 } from '@void-sector/shared';
 
 /** Schema-level player object from Colyseus room state. */
@@ -1843,6 +1847,31 @@ class GameNetwork {
       useStore.getState().addLogEntry(`JUMPGATE VERBUNDEN — Route zu (${data.toX}, ${data.toY}) hergestellt`);
     });
 
+    // ── Friends System ──────────────────────────────────────────────────────
+    room.onMessage('friendsList', (data: FriendEntry[]) => {
+      useStore.getState().setFriends(data);
+    });
+    room.onMessage('pendingRequests', (data: FriendRequestEntry[]) => {
+      useStore.getState().setFriendRequests(data);
+      if (data.length > 0) useStore.getState().setAlert('FRIENDS', true);
+    });
+    room.onMessage('blockedPlayers', (data: BlockEntry[]) => {
+      useStore.getState().setBlockedPlayers(data);
+    });
+    room.onMessage('friendRequest', (data: FriendRequestEntry) => {
+      useStore.getState().addFriendRequest(data);
+      useStore.getState().setAlert('FRIENDS', true);
+    });
+    room.onMessage('friendAccepted', (data: { friendId: string; friendName: string }) => {
+      useStore.getState().addFriend({ id: data.friendId, name: data.friendName, level: 0, online: true });
+    });
+    room.onMessage('friendRemoved', (data: { friendId: string }) => {
+      useStore.getState().removeFriendFromList(data.friendId);
+    });
+    room.onMessage('playerCard', (data: PlayerCardData) => {
+      useStore.getState().setPlayerCardTarget(data);
+    });
+
     room.onLeave(async (code) => {
       if (this.intentionalLeave) {
         this.intentionalLeave = false;
@@ -2581,6 +2610,36 @@ class GameNetwork {
 
   sendFeedSlateToGate(slateId: string) {
     this.sectorRoom?.send('feedSlateToGate', { slateId });
+  }
+
+  // ── Friends System ──────────────────────────────────────────────────────────
+
+  sendFriendRequest(targetPlayerId: string) {
+    this.sectorRoom?.send('sendFriendRequest', { targetPlayerId });
+  }
+
+  acceptFriendRequest(requestId: string) {
+    this.sectorRoom?.send('acceptFriendRequest', { requestId });
+  }
+
+  declineFriendRequest(requestId: string) {
+    this.sectorRoom?.send('declineFriendRequest', { requestId });
+  }
+
+  removeFriend(friendId: string) {
+    this.sectorRoom?.send('removeFriend', { friendId });
+  }
+
+  blockPlayer(targetPlayerId: string) {
+    this.sectorRoom?.send('blockPlayer', { targetPlayerId });
+  }
+
+  unblockPlayer(targetPlayerId: string) {
+    this.sectorRoom?.send('unblockPlayer', { targetPlayerId });
+  }
+
+  getPlayerCard(playerId: string) {
+    this.sectorRoom?.send('getPlayerCard', { playerId });
   }
 }
 
