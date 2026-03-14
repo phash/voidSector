@@ -7,6 +7,7 @@ import type { CivShip } from '@void-sector/shared';
 import { civQueries } from '../db/civQueries.js';
 import { civShipBus } from '../civShipBus.js';
 import { generateSector } from './worldgen.js';
+import { query } from '../db/client.js';
 import { logger } from '../utils/logger.js';
 
 export function ulamSpiralStep(n: number): { dx: number; dy: number } {
@@ -143,6 +144,19 @@ export async function processCivTick(): Promise<void> {
         spiral_step: updated.spiral_step ?? 0,
         resources_carried: updated.resources_carried ?? 0,
       });
+
+      // Deliver mined resources when drone returns home
+      if (ship.state === 'returning' && updated.state === 'idle' && (ship.resources_carried ?? 0) > 0) {
+        const delivered = ship.resources_carried!;
+        // Add ore to station inventory (drones mine ore from asteroid fields)
+        await query(
+          `UPDATE npc_station_inventory
+           SET stock = LEAST(max_stock, stock + $3), last_updated = NOW()
+           WHERE station_x = $1 AND station_y = $2 AND item_type = 'ore'`,
+          [ship.home_x, ship.home_y, delivered],
+        ).catch(() => {});
+        logger.debug({ droneId: ship.id, homeX: ship.home_x, homeY: ship.home_y, delivered }, 'Drone delivered resources');
+      }
 
       const { qx, qy } = sectorToQuadrant(updated.x, updated.y);
       const key = `${qx}:${qy}`;
