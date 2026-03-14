@@ -57,7 +57,7 @@ export function CommsScreen() {
       if (e.key === 'q') setChatChannel('quadrant');
       else if (e.key === 'f') setChatChannel('faction');
       else if (e.key === 'd') setChatChannel('direct');
-      else if (e.key === 's') setChatChannel('system');
+      else if (e.key === 'b') setChatChannel('broadcast');
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -104,7 +104,7 @@ export function CommsScreen() {
     >
       {/* Channel switcher */}
       <div style={{ display: 'flex', gap: '2px', fontFamily: 'monospace', fontSize: '0.75rem', flexShrink: 0 }}>
-        {(['quadrant', 'faction', 'direct', 'system'] as const).map((ch) => (
+        {(['quadrant', 'faction', 'direct', 'broadcast'] as const).map((ch) => (
           <button
             key={ch}
             onClick={() => setChatChannel(ch)}
@@ -217,27 +217,33 @@ export function CommsScreen() {
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: '1px solid var(--color-primary)',
-            color: 'var(--color-primary)',
-            fontFamily: 'var(--font-mono)',
-            padding: '4px 8px',
-          }}
-          maxLength={500}
-          placeholder="Type message..."
-        />
-        <button className="vs-btn" onClick={send}>
-          [SEND]
-        </button>
-      </div>
+      {channel === 'broadcast' ? (
+        <div style={{ fontSize: '0.65rem', color: 'var(--color-dim)', padding: '4px 0', flexShrink: 0 }}>
+          BROADCAST — SYSTEM ONLY (NOTRUFE, STORY QUESTS)
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && send()}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: '1px solid var(--color-primary)',
+              color: 'var(--color-primary)',
+              fontFamily: 'var(--font-mono)',
+              padding: '4px 8px',
+            }}
+            maxLength={500}
+            placeholder="Type message..."
+          />
+          <button className="vs-btn" onClick={send}>
+            [SEND]
+          </button>
+        </div>
+      )}
     </div>
   );
 }

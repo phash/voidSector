@@ -58,6 +58,8 @@ import {
   STRUCTURE_COSTS,
   RESCUE_AP_COST,
   RESCUE_EXPIRY_MINUTES,
+  DISTRESS_INTERVAL_MIN_MS,
+  DISTRESS_INTERVAL_MAX_MS,
   NPC_PRICES,
   NPC_BUY_SPREAD,
   NPC_SELL_SPREAD,
@@ -1415,12 +1417,23 @@ export class WorldService {
 
   // ── Distress Call Detection ─────────────────────────────────────────
 
+  // Per-player per-quadrant cooldown: time-based 1-2h between distress calls
+  private distressCooldowns = new Map<string, number>(); // key: `${userId}_${qx}_${qy}`, value: nextAllowedTs
+
   async checkAndEmitDistressCalls(
     client: Client,
     userId: string,
     playerX: number,
     playerY: number,
   ): Promise<void> {
+    const { qx, qy } = sectorToQuadrant(playerX, playerY);
+    const cooldownKey = `${userId}_${qx}_${qy}`;
+    const now = Date.now();
+
+    // Check time-based cooldown (1-2h per quadrant per player)
+    const nextAllowed = this.distressCooldowns.get(cooldownKey) ?? 0;
+    if (now < nextAllowed) return;
+
     const ship = this.ctx.getShipForClient(client.sessionId);
     const commRange = ship.commRange;
 
@@ -1436,8 +1449,8 @@ export class WorldService {
         if (dist > commRange) continue;
 
         if (checkDistressCall(sx, sy)) {
-          const distressId = `distress_${sx}_${sy}`;
-          const expiresAt = new Date(Date.now() + RESCUE_EXPIRY_MINUTES * 60 * 1000);
+          const distressId = `distress_${sx}_${sy}_${Math.floor(now / 3600000)}`;
+          const expiresAt = new Date(now + RESCUE_EXPIRY_MINUTES * 60 * 1000);
 
           try {
             await insertDistressCall(distressId, sx, sy, 1, expiresAt);
@@ -1457,11 +1470,28 @@ export class WorldService {
             id: distressId,
             direction: callData.direction,
             estimatedDistance: callData.estimatedDistance,
-            receivedAt: Date.now(),
+            receivedAt: now,
             expiresAt: expiresAt.getTime(),
             targetX: sx,
             targetY: sy,
           });
+
+          // Also send as broadcast chat message
+          client.send('chatMessage', {
+            id: `broadcast_${distressId}`,
+            senderId: 'SYSTEM',
+            senderName: 'NOTRUF',
+            channel: 'broadcast',
+            content: `Notsignal empfangen — Richtung ${callData.direction}, ~${Math.round(callData.estimatedDistance)} Sektoren`,
+            sentAt: now,
+            delayed: false,
+          });
+
+          // Set cooldown: random 1-2 hours before next distress in this quadrant
+          const cooldownMs = DISTRESS_INTERVAL_MIN_MS +
+            Math.random() * (DISTRESS_INTERVAL_MAX_MS - DISTRESS_INTERVAL_MIN_MS);
+          this.distressCooldowns.set(cooldownKey, now + cooldownMs);
+          return; // Only one distress call per check
         }
       }
     }

@@ -2154,6 +2154,8 @@ export const RESCUE_DELIVER_AP_COST = 3;
 export const RESCUE_EXPIRY_MINUTES = 30;
 export const DISTRESS_CALL_CHANCE = 0.005;
 export const DISTRESS_DIRECTION_VARIANCE = 0.3;
+export const DISTRESS_INTERVAL_MIN_MS = 60 * 60 * 1000;   // 1h min between distress per quadrant
+export const DISTRESS_INTERVAL_MAX_MS = 2 * 60 * 60 * 1000; // 2h max
 export const RESCUE_REWARDS = {
   scan_event: { credits: 50, rep: 10, xp: 25 },
   npc_quest: { credits: 80, rep: 15, xp: 40 },

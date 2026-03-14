@@ -40,7 +40,7 @@ describe('CommsScreen', () => {
     expect(screen.getByText('QUAD')).toBeInTheDocument();
     expect(screen.getByText('FACT')).toBeInTheDocument();
     expect(screen.getByText('DIRE')).toBeInTheDocument();
-    expect(screen.getByText('SYST')).toBeInTheDocument();
+    expect(screen.getByText('BROA')).toBeInTheDocument();
   });
 
   it('displays messages for active channel', () => {
@@ -144,14 +144,14 @@ describe('CommsScreen', () => {
 
   // --- New channel tests ---
 
-  it('displays SYSTEM channel button', () => {
+  it('displays BROADCAST channel button', () => {
     mockStoreState({
       chatMessages: [],
-      chatChannel: 'system' as const,
+      chatChannel: 'broadcast' as const,
       alerts: {},
     });
     render(<CommsScreen />);
-    expect(screen.getByText('SYST')).toBeInTheDocument();
+    expect(screen.getByText('BROA')).toBeInTheDocument();
   });
 
   it('displays QUADRANT channel button', () => {
@@ -164,15 +164,15 @@ describe('CommsScreen', () => {
     expect(screen.getByText('QUAD')).toBeInTheDocument();
   });
 
-  it('filters system channel messages', () => {
+  it('filters broadcast channel messages', () => {
     mockStoreState({
       chatMessages: [
         {
           id: '1',
           senderId: 's1',
           senderName: 'Player1',
-          channel: 'system' as const,
-          content: 'System hello',
+          channel: 'broadcast' as const,
+          content: 'Broadcast hello',
           sentAt: Date.now(),
           delayed: false,
         },
@@ -186,11 +186,11 @@ describe('CommsScreen', () => {
           delayed: false,
         },
       ],
-      chatChannel: 'system' as const,
+      chatChannel: 'broadcast' as const,
       alerts: {},
     });
     render(<CommsScreen />);
-    expect(screen.getByText(/System hello/)).toBeInTheDocument();
+    expect(screen.getByText(/Broadcast hello/)).toBeInTheDocument();
     expect(screen.queryByText(/Quadrant hello/)).not.toBeInTheDocument();
   });
 
@@ -210,8 +210,8 @@ describe('CommsScreen', () => {
           id: '2',
           senderId: 's2',
           senderName: 'Player2',
-          channel: 'system' as const,
-          content: 'System hello',
+          channel: 'broadcast' as const,
+          content: 'Broadcast hello',
           sentAt: Date.now(),
           delayed: false,
         },
@@ -221,7 +221,7 @@ describe('CommsScreen', () => {
     });
     render(<CommsScreen />);
     expect(screen.getByText(/Quadrant hello/)).toBeInTheDocument();
-    expect(screen.queryByText(/System hello/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Broadcast hello/)).not.toBeInTheDocument();
   });
 
   // --- Address book tests ---
