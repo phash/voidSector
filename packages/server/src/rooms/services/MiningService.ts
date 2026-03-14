@@ -275,6 +275,10 @@ export class MiningService {
     await saveMiningState(auth.userId, result.state!);
     client.send('miningUpdate', result.state!);
 
+    // Update player schema mining flag for other players' visibility
+    const playerSchema = this.ctx.state.players.get(client.sessionId);
+    if (playerSchema) playerSchema.mining = true;
+
     // Set auto-stop timer
     const cargoSpace = Math.max(0, ship.cargoCap - cargoTotal);
     this.setAutoStopTimer(
@@ -315,6 +319,10 @@ export class MiningService {
     }
 
     await saveMiningState(auth.userId, result.newState);
+
+    // Update player schema mining flag for other players' visibility
+    const playerSchema = this.ctx.state.players.get(client.sessionId);
+    if (playerSchema) playerSchema.mining = false;
 
     const cargo = await getCargoState(auth.userId);
     client.send('miningUpdate', result.newState);

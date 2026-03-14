@@ -265,6 +265,8 @@ export interface PlayerPresence {
   x: number;
   y: number;
   connected: boolean;
+  mining: boolean;
+  acepTotal: number;
 }
 
 export interface BountyEncounterState {

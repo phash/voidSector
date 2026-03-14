@@ -94,6 +94,7 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
     _py: vi.fn().mockReturnValue(0),
     getShipForClient: vi.fn().mockReturnValue({ cargoCap: 50 }),
     getPlayerBonuses: vi.fn().mockResolvedValue({ miningRateMultiplier: 1 }),
+    state: { players: new Map() },
     ...overrides,
   } as unknown as import('../rooms/services/ServiceContext.js').ServiceContext;
 }

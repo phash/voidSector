@@ -1354,6 +1354,24 @@ export class SectorRoom extends Room<SectorRoomState> {
       player.y = sectorY;
       player.connected = true;
 
+      // Set ACEP total XP for player visibility
+      try {
+        const { rows: shipRows } = await query<{ id: string }>(
+          `SELECT id FROM ships WHERE owner_id = $1 AND active = TRUE LIMIT 1`,
+          [auth.userId],
+        );
+        if (shipRows.length > 0) {
+          const acep = await getAcepXpSummary(shipRows[0].id);
+          player.acepTotal = acep.total;
+        }
+      } catch { /* non-critical */ }
+
+      // Set mining state
+      try {
+        const mState = await getMiningState(auth.userId);
+        player.mining = !!(mState?.active);
+      } catch { /* non-critical */ }
+
       this.state.players.set(client.sessionId, player);
       this.state.playerCount = this.state.players.size;
       const allPlayers = Array.from(this.state.players.entries()).map(([sid, p]) => ({

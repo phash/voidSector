@@ -7,6 +7,8 @@ export class PlayerSchema extends Schema {
   x: number = 0;
   y: number = 0;
   connected: boolean = true;
+  mining: boolean = false;
+  acepTotal: number = 0;
 }
 
 defineTypes(PlayerSchema, {
@@ -16,6 +18,8 @@ defineTypes(PlayerSchema, {
   x: 'int32',
   y: 'int32',
   connected: 'boolean',
+  mining: 'boolean',
+  acepTotal: 'uint16',
 });
 
 export class SectorSchema extends Schema {
