@@ -569,6 +569,7 @@ button.success:hover {
     <div class="tab" data-tab="construction">BAUSTELLEN</div>
     <div class="tab" data-tab="structures">STRUKTUREN</div>
     <div class="tab" data-tab="errors">ERRORS <span id="errors-badge" style="display:none;background:#ff4444;color:#fff;border-radius:10px;padding:0 5px;font-size:10px;margin-left:4px;vertical-align:middle"></span></div>
+    <div class="tab" data-tab="config">CONFIG</div>
   </div>
 
   <div id="content">
@@ -1011,6 +1012,23 @@ expiresDays: 14"></textarea>
       </table>
     </div>
 
+    <!-- ── CONFIG Tab ──────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-config">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="config-categories" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        <button class="btn" id="config-export-btn" style="font-size:10px">EXPORT &rarr; GH ISSUE</button>
+      </div>
+      <div style="margin-bottom:8px">
+        <input type="search" id="config-search" placeholder="Search config keys..." style="max-width:300px">
+      </div>
+      <table class="data-table" id="config-table">
+        <thead>
+          <tr><th>KEY</th><th>CATEGORY</th><th>VALUE</th><th>ACTIONS</th></tr>
+        </thead>
+        <tbody id="config-tbody"></tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
@@ -1203,6 +1221,7 @@ expiresDays: 14"></textarea>
       else renderQmap();
     }
     else if (name === 'errors') loadErrors('new');
+    else if (name === 'config') loadConfig();
   }
 
   function switchQuestSubTab(name) {
@@ -3095,6 +3114,162 @@ expiresDays: 14"></textarea>
       }).catch(function(err) { toast('Fehler: ' + err.message, 'error'); });
     }
   }
+
+  // ── CONFIG ────────────────────────────────────────────────────────
+
+  var configCategory = null;
+  var configData = [];
+  var configSearchTerm = '';
+
+  function loadConfig() {
+    var url = '/config' + (configCategory ? '?category=' + encodeURIComponent(configCategory) : '');
+    api('GET', url).then(function(data) {
+      configData = data.entries || [];
+      renderConfigCategories(data.categories || []);
+      renderConfigList(configData);
+    }).catch(function(err) {
+      if (err.message !== 'Unauthorized') toast('Config laden fehlgeschlagen: ' + err.message, 'error');
+    });
+  }
+
+  function renderConfigCategories(categories) {
+    var container = document.getElementById('config-categories');
+    clearChildren(container);
+    var allBtn = document.createElement('button');
+    allBtn.className = 'btn' + (configCategory === null ? ' primary' : '');
+    allBtn.textContent = 'ALLE';
+    allBtn.style.cssText = 'font-size:9px;padding:2px 7px';
+    allBtn.addEventListener('click', function() { configCategory = null; loadConfig(); });
+    container.appendChild(allBtn);
+    categories.forEach(function(cat) {
+      var btn = document.createElement('button');
+      btn.className = 'btn' + (cat === configCategory ? ' primary' : '');
+      btn.textContent = cat.toUpperCase();
+      btn.style.cssText = 'font-size:9px;padding:2px 7px';
+      btn.addEventListener('click', function() { configCategory = cat; loadConfig(); });
+      container.appendChild(btn);
+    });
+  }
+
+  function renderConfigList(entries) {
+    var tbody = document.getElementById('config-tbody');
+    clearChildren(tbody);
+
+    var filtered = entries;
+    if (configSearchTerm) {
+      var lower = configSearchTerm.toLowerCase();
+      filtered = entries.filter(function(e) {
+        return e.key.toLowerCase().indexOf(lower) !== -1 ||
+               e.category.toLowerCase().indexOf(lower) !== -1;
+      });
+    }
+
+    if (filtered.length === 0) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 4;
+      td.textContent = 'Keine Config-Eintraege.';
+      td.style.cssText = 'text-align:center;padding:20px;color:var(--amber-dim)';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+
+    filtered.forEach(function(entry) {
+      var tr = document.createElement('tr');
+      var isComplex = typeof entry.value === 'object' && entry.value !== null;
+      var displayVal = isComplex ? JSON.stringify(entry.value) : String(entry.value);
+      if (displayVal.length > 60) displayVal = displayVal.substring(0, 57) + '...';
+
+      var keyTd = document.createElement('td');
+      keyTd.textContent = entry.key;
+      keyTd.style.cssText = 'font-size:10px;font-family:monospace';
+      keyTd.title = entry.description || '';
+      tr.appendChild(keyTd);
+
+      var catTd = document.createElement('td');
+      catTd.textContent = entry.category;
+      catTd.style.fontSize = '10px';
+      tr.appendChild(catTd);
+
+      var valTd = document.createElement('td');
+      valTd.textContent = displayVal;
+      valTd.style.cssText = 'font-size:10px;font-family:monospace;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      valTd.title = isComplex ? JSON.stringify(entry.value, null, 2) : String(entry.value);
+      tr.appendChild(valTd);
+
+      var actionsTd = document.createElement('td');
+      actionsTd.style.whiteSpace = 'nowrap';
+
+      var editBtn = document.createElement('button');
+      editBtn.className = 'btn';
+      editBtn.textContent = 'EDIT';
+      editBtn.style.cssText = 'font-size:9px;padding:1px 6px;margin-right:4px';
+      editBtn.addEventListener('click', function() { editConfigValue(entry); });
+      actionsTd.appendChild(editBtn);
+
+      var resetBtn = document.createElement('button');
+      resetBtn.className = 'btn';
+      resetBtn.textContent = 'RESET';
+      resetBtn.style.cssText = 'font-size:9px;padding:1px 6px;color:#FF4444';
+      resetBtn.addEventListener('click', function() { resetConfigValue(entry.key); });
+      actionsTd.appendChild(resetBtn);
+
+      tr.appendChild(actionsTd);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function editConfigValue(entry) {
+    var isComplex = typeof entry.value === 'object' && entry.value !== null;
+    var currentVal = isComplex ? JSON.stringify(entry.value, null, 2) : String(entry.value);
+
+    var input = prompt('Edit ' + entry.key + (isComplex ? ' (JSON):' : ':'), currentVal);
+    if (input === null) return;
+
+    var parsed;
+    try {
+      parsed = JSON.parse(input);
+    } catch (e) {
+      var num = Number(input);
+      parsed = isNaN(num) ? input : num;
+    }
+
+    api('PUT', '/config/by-key', {
+      key: entry.key,
+      value: parsed,
+      category: entry.category,
+      description: entry.description,
+    }).then(function() {
+      toast('Gespeichert: ' + entry.key, 'success');
+      loadConfig();
+    }).catch(function(err) { toast('Fehler: ' + err.message, 'error'); });
+  }
+
+  function resetConfigValue(key) {
+    if (!confirm('Reset ' + key + ' auf Default?')) return;
+    api('DELETE', '/config/by-key?key=' + encodeURIComponent(key)).then(function() {
+      toast('Zurueckgesetzt: ' + key, 'success');
+      loadConfig();
+    }).catch(function(err) { toast('Fehler: ' + err.message, 'error'); });
+  }
+
+  function exportConfigIssue() {
+    if (!confirm('GitHub Issue mit allen aktuellen Config-Werten erstellen?')) return;
+    api('POST', '/config/export-issue').then(function(data) {
+      if (data.ok) {
+        toast('Issue erstellt: ' + data.issueUrl, 'success');
+      } else {
+        toast('Fehler: ' + (data.error || 'unbekannt'), 'error');
+      }
+    }).catch(function(err) { toast('Fehler: ' + err.message, 'error'); });
+  }
+
+  document.getElementById('config-export-btn').addEventListener('click', exportConfigIssue);
+  document.getElementById('config-search').addEventListener('input', function() {
+    configSearchTerm = this.value;
+    renderConfigList(configData);
+  });
 
 })();
 </script>
