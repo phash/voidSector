@@ -18,9 +18,14 @@ vi.mock('../engine/commands.js', () => ({
 vi.mock('../rooms/services/RedisAPStore.js', () => ({
   getMiningState: vi.fn().mockResolvedValue({ active: false }),
   saveMiningState: vi.fn().mockResolvedValue(undefined),
+  getAPState: vi.fn().mockResolvedValue({ current: 100, max: 100, lastTick: Date.now(), regenPerSecond: 0.5 }),
+  saveAPState: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('../engine/acepXpService.js', () => ({
   addAcepXpForPlayer: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../engine/ap.js', () => ({
+  spendAP: vi.fn().mockReturnValue({ current: 99, max: 100, lastTick: Date.now(), regenPerSecond: 0.5 }),
 }));
 
 import { MiningService } from '../rooms/services/MiningService.js';
@@ -55,7 +60,7 @@ describe('MiningService mining rate includes miningBonus', () => {
     expect(savedState?.rate).toBeCloseTo(1.5);
   });
 
-  it('rate is 1 when miningBonus is 0 (no module)', async () => {
+  it('rate is 0.1 when miningBonus is 0 (no mining laser)', async () => {
     const ctx = {
       checkRate: vi.fn().mockReturnValue(true),
       _px: vi.fn().mockReturnValue(1),
@@ -71,7 +76,55 @@ describe('MiningService mining rate includes miningBonus', () => {
 
     await svc.handleMine(client, { resource: 'ore' });
 
+    // Without mining laser: rate = 0.1 * (1 + 0) * 1 = 0.1
     const savedState = vi.mocked(saveMiningState).mock.calls[0]?.[1];
-    expect(savedState?.rate).toBeCloseTo(1.0);
+    expect(savedState?.rate).toBeCloseTo(0.1);
+  });
+
+  it('charges 1 AP when mining without laser', async () => {
+    const ctx = {
+      checkRate: vi.fn().mockReturnValue(true),
+      _px: vi.fn().mockReturnValue(1),
+      _py: vi.fn().mockReturnValue(1),
+      _pst: vi.fn().mockReturnValue('asteroid_field'),
+      getShipForClient: vi.fn().mockReturnValue({ cargoCap: 50, miningBonus: 0 }),
+      getPlayerBonuses: vi.fn().mockResolvedValue({ miningRateMultiplier: 1 }),
+    } as any;
+
+    const svc = new MiningService(ctx);
+    const client = makeClient();
+    const { saveAPState } = await import('../rooms/services/RedisAPStore.js');
+    const { spendAP } = await import('../engine/ap.js');
+
+    await svc.handleMine(client, { resource: 'ore' });
+
+    // spendAP should be called with cost 1
+    expect(spendAP).toHaveBeenCalledWith(expect.any(Object), 1);
+    expect(saveAPState).toHaveBeenCalled();
+    expect(client.send).toHaveBeenCalledWith('apUpdate', expect.any(Object));
+  });
+
+  it('does not charge AP when mining with laser', async () => {
+    const ctx = {
+      checkRate: vi.fn().mockReturnValue(true),
+      _px: vi.fn().mockReturnValue(1),
+      _py: vi.fn().mockReturnValue(1),
+      _pst: vi.fn().mockReturnValue('asteroid_field'),
+      getShipForClient: vi.fn().mockReturnValue({ cargoCap: 50, miningBonus: 0.5 }),
+      getPlayerBonuses: vi.fn().mockResolvedValue({ miningRateMultiplier: 1 }),
+    } as any;
+
+    const svc = new MiningService(ctx);
+    const client = makeClient();
+    const { saveAPState } = await import('../rooms/services/RedisAPStore.js');
+    const { spendAP } = await import('../engine/ap.js');
+
+    vi.mocked(spendAP).mockClear();
+    vi.mocked(saveAPState).mockClear();
+
+    await svc.handleMine(client, { resource: 'ore' });
+
+    // With mining laser, no AP should be spent
+    expect(spendAP).not.toHaveBeenCalled();
   });
 });

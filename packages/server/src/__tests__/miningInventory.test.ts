@@ -25,6 +25,8 @@ vi.mock('../rooms/services/RedisAPStore.js', () => ({
   saveMiningState: vi.fn(),
   getMiningStoryCounter: vi.fn().mockResolvedValue(0),
   setMiningStoryCounter: vi.fn().mockResolvedValue(undefined),
+  getAPState: vi.fn().mockResolvedValue({ current: 100, max: 100, lastTick: Date.now(), regenPerSecond: 0.5 }),
+  saveAPState: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../engine/commands.js', () => ({
@@ -38,6 +40,10 @@ vi.mock('../engine/acepXpService.js', () => ({
 
 vi.mock('../engine/mining.js', () => ({
   stopMining: vi.fn(),
+}));
+
+vi.mock('../engine/ap.js', () => ({
+  spendAP: vi.fn().mockReturnValue({ current: 99, max: 100, lastTick: Date.now(), regenPerSecond: 0.5 }),
 }));
 
 vi.mock('../engine/inventoryService.js', async (importOriginal) => {

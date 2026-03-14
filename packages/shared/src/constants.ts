@@ -60,6 +60,8 @@ export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceT
 };
 
 export const MINING_RATE_PER_SECOND = 1;
+export const MINING_RATE_NO_LASER = 0.1; // mining rate without mining laser module
+export const MINING_AP_COST_NO_LASER = 1; // AP cost per second when mining without laser
 
 export const RESOURCE_REGEN_DELAY_TICKS = 50;
 export const RESOURCE_REGEN_INTERVAL_TICKS = 12; // 1 unit per 12 ticks (60s)
@@ -664,12 +666,12 @@ export const MODULES: Record<string, ModuleDefinition> = {
     tier: 2,
     name: 'CARGO BAY MK.II',
     displayName: 'CARGO MK.II',
-    primaryEffect: { stat: 'cargoCap', delta: 24, label: 'Frachtraum +24' },
+    primaryEffect: { stat: 'cargoCap', delta: 25, label: 'Frachtraum +25' },
     secondaryEffects: [
       { stat: 'safeSlotBonus', delta: 2, label: 'Safe-Slot +2' },
       { stat: 'fuelMax', delta: 1_000, label: 'Fuel-Tank +1.000' },
     ],
-    effects: { cargoCap: 24, safeSlotBonus: 2, fuelMax: 1_000 },
+    effects: { cargoCap: 25, safeSlotBonus: 2, fuelMax: 1_000 },
     cost: { credits: 250, ore: 15 },
     researchCost: { wissen: 300 },
     researchDurationMin: 5,
@@ -2195,6 +2197,7 @@ export const ENGINE_SPEED: Record<string, number> = {
 };
 // Research system
 export const RESEARCH_TICK_MS = 60_000; // 1 tick = 1 minute
+export const ARTEFACT_RESEARCH_TIME_BONUS = 0.1; // -10% research time when typed artefacts present
 
 export const AUTOPILOT_STEP_MS = 800; // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24; // dim sectors after 24h
