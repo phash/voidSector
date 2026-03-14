@@ -20,6 +20,7 @@ import {
 import type { ChatChannel, ConstructionSiteState, DataSlate } from '@void-sector/shared';
 import { JumpGatePanel } from './JumpGatePanel';
 import { PlayerGatePanel } from './PlayerGatePanel';
+import { StationManagePanel } from './StationManagePanel';
 import { InlineError } from './InlineError';
 
 type DrillDown =
@@ -278,6 +279,8 @@ export function DetailPanel() {
   const fuel = useStore((s) => s.fuel);
   const jumpGateInfo = useStore((s) => s.jumpGateInfo);
   const playerGateInfo = useStore((s) => s.playerGateInfo);
+  const playerStationInfo = useStore((s) => s.playerStationInfo);
+  const playerId = useStore((s) => s.playerId);
   const scanEvents = useStore((s) => s.scanEvents);
   const rescuedSurvivors = useStore((s) => s.rescuedSurvivors);
   const bookmarks = useStore((s) => s.bookmarks);
@@ -541,6 +544,9 @@ export function DetailPanel() {
         )}
         {isPlayerHere && jumpGateInfo && <JumpGatePanel gate={jumpGateInfo} />}
         {isPlayerHere && playerGateInfo && <PlayerGatePanel />}
+        {isPlayerHere && playerStationInfo && playerStationInfo.ownerId === playerId && (
+          <StationManagePanel station={playerStationInfo} />
+        )}
         {isPlayerHere && sector?.type === 'station' && (
           <>
             <button
@@ -784,6 +790,10 @@ export function DetailPanel() {
           {isPlayerHere && jumpGateInfo && <JumpGatePanel gate={jumpGateInfo} />}
           {/* Player-built jumpgate panel */}
           {isPlayerHere && playerGateInfo && <PlayerGatePanel />}
+          {/* Player station management */}
+          {isPlayerHere && playerStationInfo && playerStationInfo.ownerId === playerId && (
+            <StationManagePanel station={playerStationInfo} />
+          )}
 
           {/* Rescue button - distress signal scan event at this sector */}
           {isPlayerHere &&

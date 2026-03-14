@@ -1496,6 +1496,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Detect player-built jumpgate in sector
       await this.navigation.detectAndSendPlayerGate(client, sectorX, sectorY);
 
+      // Detect player station in sector
+      await this.navigation.detectAndSendPlayerStation(client, auth.userId, sectorX, sectorY);
+
       // Send initial hyperdrive state
       if (stats.hyperdriveRange > 0) {
         let hdState = await getHyperdriveState(auth.userId);
