@@ -64,7 +64,19 @@ import {
   NPC_SELL_SPREAD,
   CUSTOM_SLATE_AP_COST,
   CUSTOM_SLATE_CREDIT_COST,
+  STATION_BUILD_COSTS,
+  STATION_MODULE_UPGRADE_COST,
+  MAX_STATION_LEVEL,
 } from '@void-sector/shared';
+import {
+  getPlayerStationAt,
+  getPlayerStationInQuadrant,
+  getPlayerStations as getPlayerStationsList,
+  getPlayerStationById,
+  insertPlayerStation,
+  upgradeStationLevel as dbUpgradeStationLevel,
+  upgradeStationModule as dbUpgradeStationModule,
+} from '../../db/stationQueries.js';
 import {
   getAPState,
   saveAPState,
@@ -475,6 +487,170 @@ export class WorldService {
     const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
     client.send('depositResult', { success: true });
+  }
+
+  // ── Player Station ──────────────────────────────────────────────────
+
+  async handleBuildStation(client: Client): Promise<void> {
+    if (rejectGuest(client, 'Station bauen')) return;
+    const auth = client.auth as AuthPayload;
+    const sx = this.ctx._px(client.sessionId);
+    const sy = this.ctx._py(client.sessionId);
+
+    const sector = await getSector(sx, sy);
+    if (sector?.type !== 'empty') {
+      client.send('buildStationResult', { success: false, error: 'Nur in leeren Sektoren möglich' });
+      return;
+    }
+
+    const existing = await getPlayerStationAt(sx, sy);
+    if (existing) {
+      client.send('buildStationResult', { success: false, error: 'Hier steht bereits eine Station' });
+      return;
+    }
+
+    const { qx, qy } = sectorToQuadrant(sx, sy);
+    const inQuadrant = await getPlayerStationInQuadrant(auth.userId, qx, qy);
+    if (inQuadrant) {
+      client.send('buildStationResult', { success: false, error: 'Bereits eine Station in diesem Quadranten' });
+      return;
+    }
+
+    const costs = STATION_BUILD_COSTS[1];
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < costs.credits) {
+      client.send('buildStationResult', { success: false, error: `${costs.credits} Credits benötigt` });
+      return;
+    }
+    const cargo = await getCargoState(auth.userId);
+    if ((cargo.crystal ?? 0) < costs.crystal) {
+      client.send('buildStationResult', { success: false, error: `${costs.crystal} Crystal benötigt` });
+      return;
+    }
+    if ((cargo.artefact ?? 0) < costs.artefact) {
+      client.send('buildStationResult', { success: false, error: `${costs.artefact} Artefakt benötigt` });
+      return;
+    }
+
+    await deductCredits(auth.userId, costs.credits);
+    await removeFromInventory(auth.userId, 'resource', 'crystal', costs.crystal);
+    await removeFromInventory(auth.userId, 'resource', 'artefact', costs.artefact);
+
+    const station = await insertPlayerStation(auth.userId, sx, sy, qx, qy);
+
+    client.send('buildStationResult', { success: true, station });
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    client.send('cargoUpdate', await getCargoState(auth.userId));
+    client.send('logEntry', `STATION ERRICHTET bei (${sx}, ${sy})`);
+  }
+
+  async handleUpgradeStation(client: Client, data: { stationId: string }): Promise<void> {
+    if (rejectGuest(client, 'Station upgraden')) return;
+    const auth = client.auth as AuthPayload;
+
+    const station = await getPlayerStationById(data.stationId);
+    if (!station || station.owner_id !== auth.userId) {
+      client.send('upgradeStationResult', { success: false, error: 'Station nicht gefunden' });
+      return;
+    }
+
+    const sx = this.ctx._px(client.sessionId);
+    const sy = this.ctx._py(client.sessionId);
+    if (sx !== station.sector_x || sy !== station.sector_y) {
+      client.send('upgradeStationResult', { success: false, error: 'Du musst an der Station sein' });
+      return;
+    }
+
+    if (station.level >= MAX_STATION_LEVEL) {
+      client.send('upgradeStationResult', { success: false, error: 'Maximales Level erreicht' });
+      return;
+    }
+
+    const nextLevel = station.level + 1;
+    const costs = STATION_BUILD_COSTS[nextLevel as keyof typeof STATION_BUILD_COSTS];
+    if (!costs) {
+      client.send('upgradeStationResult', { success: false, error: 'Ungültiges Level' });
+      return;
+    }
+
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < costs.credits) {
+      client.send('upgradeStationResult', { success: false, error: `${costs.credits} Credits benötigt` });
+      return;
+    }
+    const cargo = await getCargoState(auth.userId);
+    if ((cargo.crystal ?? 0) < costs.crystal || (cargo.artefact ?? 0) < costs.artefact) {
+      client.send('upgradeStationResult', { success: false, error: 'Nicht genug Ressourcen' });
+      return;
+    }
+
+    await deductCredits(auth.userId, costs.credits);
+    await removeFromInventory(auth.userId, 'resource', 'crystal', costs.crystal);
+    await removeFromInventory(auth.userId, 'resource', 'artefact', costs.artefact);
+
+    const updated = await dbUpgradeStationLevel(data.stationId);
+    client.send('upgradeStationResult', { success: true, station: updated });
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    client.send('cargoUpdate', await getCargoState(auth.userId));
+    client.send('logEntry', `STATION UPGRADE → Level ${nextLevel}`);
+  }
+
+  async handleUpgradeStationModule(
+    client: Client,
+    data: { stationId: string; module: 'factory' | 'cargo' },
+  ): Promise<void> {
+    if (rejectGuest(client, 'Modul upgraden')) return;
+    const auth = client.auth as AuthPayload;
+
+    const station = await getPlayerStationById(data.stationId);
+    if (!station || station.owner_id !== auth.userId) {
+      client.send('upgradeStationModuleResult', { success: false, error: 'Station nicht gefunden' });
+      return;
+    }
+
+    const currentModuleLevel = data.module === 'factory' ? station.factory_level : station.cargo_level;
+    if (currentModuleLevel >= station.level) {
+      client.send('upgradeStationModuleResult', {
+        success: false,
+        error: `Modul-Level kann Station-Level (${station.level}) nicht überschreiten`,
+      });
+      return;
+    }
+
+    const nextLevel = currentModuleLevel + 1;
+    const cost = STATION_MODULE_UPGRADE_COST(nextLevel);
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < cost) {
+      client.send('upgradeStationModuleResult', { success: false, error: `${cost} Credits benötigt` });
+      return;
+    }
+
+    await deductCredits(auth.userId, cost);
+    const updated = await dbUpgradeStationModule(data.stationId, data.module, station.level);
+    if (!updated) {
+      client.send('upgradeStationModuleResult', { success: false, error: 'Upgrade fehlgeschlagen' });
+      return;
+    }
+
+    client.send('upgradeStationModuleResult', { success: true, station: updated });
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    client.send('logEntry', `${data.module.toUpperCase()} UPGRADE → Level ${nextLevel}`);
+  }
+
+  async handleGetMyStations(client: Client): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const stations = await getPlayerStationsList(auth.userId);
+    client.send('myStations', { stations });
+  }
+
+  async handleGetStationDetails(client: Client, data: { stationId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const station = await getPlayerStationById(data.stationId);
+    if (!station || station.owner_id !== auth.userId) {
+      client.send('stationDetails', { station: null });
+      return;
+    }
+    client.send('stationDetails', { station });
   }
 
   // ── Jumpgate Build ─────────────────────────────────────────────────
