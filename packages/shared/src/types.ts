@@ -172,11 +172,9 @@ export interface BlackHoleCluster {
 
 /** Derive legacy SectorType from environment + contents (for backward compat) */
 export function legacySectorType(env: SectorEnvironment, contents: SectorContent[]): SectorType {
-  if (contents.includes('pirate_zone') && contents.includes('asteroid_field')) return 'pirate';
   if (contents.includes('station')) return 'station';
   if (contents.includes('anomaly')) return 'anomaly';
   if (contents.includes('asteroid_field')) return 'asteroid_field';
-  if (contents.includes('pirate_zone')) return 'pirate';
   if (env === 'nebula') return 'nebula';
   return 'empty';
 }

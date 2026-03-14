@@ -49,6 +49,10 @@ import type {
   NpcTradeResultMessage,
   AcepPath,
   StationProductionState,
+  CombatTactic,
+  SpecialAction,
+  CombatV2State,
+  CombatV2RoundResult,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -1082,9 +1086,27 @@ class GameNetwork {
     });
 
     room.onMessage('pirateAmbush', (data) => {
+      // Legacy handler — log only. Combat v2 uses combatV2Started.
+      useStore.getState().addLogEntry(`PIRATEN-HINTERHALT bei (${data.sectorX}, ${data.sectorY})!`);
+    });
+
+    room.onMessage('combatV2Started', (data: { state: CombatV2State }) => {
+      useStore.getState().setActiveCombatV2(data.state);
+    });
+
+    room.onMessage('combatV2RoundResult', (data: CombatV2RoundResult) => {
       const store = useStore.getState();
-      store.setActiveBattle(data.encounter);
-      store.addLogEntry(`PIRATEN-HINTERHALT bei (${data.sectorX}, ${data.sectorY})!`);
+      if (!data.success) {
+        store.addLogEntry(`KAMPF-FEHLER: ${data.error}`);
+        return;
+      }
+      if (data.state) {
+        store.setActiveCombatV2(data.state);
+      }
+    });
+
+    room.onMessage('fleeAttemptFailed', () => {
+      useStore.getState().addLogEntry('FLUCHT FEHLGESCHLAGEN — Kampf geht weiter.');
     });
 
     room.onMessage('bountyAmbush', (data: {
@@ -2355,6 +2377,24 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('combatRound', { input, sectorX, sectorY });
+  }
+
+  // ── Kampfsystem v2 send methods ──────────────────────────────────────────
+
+  sendCombatV2Action(tactic: CombatTactic, specialAction: SpecialAction, sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('combatV2Action', { tactic, specialAction, sectorX, sectorY });
+  }
+
+  sendCombatV2Flee(sectorX: number, sectorY: number) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
   }
 
   // ─────────────────────────────────────────────────────────────────────────

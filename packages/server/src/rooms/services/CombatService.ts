@@ -2,6 +2,15 @@ import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import type { CombatState, RoundInput, EnemyModule } from '../../engine/combatTypes.js';
+import type {
+  CombatV2State,
+  CombatTactic,
+  SpecialAction,
+  PirateEncounter,
+  BattleOutcome,
+  BattleResult,
+  ShipStats,
+} from '@void-sector/shared';
 
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
 import { getAcepEffects } from '../../engine/acepXpService.js';
@@ -15,8 +24,10 @@ import {
   calculateEpCost,
   resolveRound,
 } from '../../engine/combatEngine.js';
+import { initCombatV2, resolveRoundV2, attemptFleeV2 } from '../../engine/combatV2Engine.js';
 import { rejectGuest } from './utils.js';
 import { getAPState, saveAPState } from './RedisAPStore.js';
+import { calculateCurrentAP } from '../../engine/ap.js';
 import {
   getCargoState,
   addToInventory,
@@ -47,6 +58,9 @@ import { logger } from '../../utils/logger.js';
 
 /** Active Kampfsystem-v1 combat sessions, keyed by playerId */
 const activeCombatSessions = new Map<string, CombatState>();
+
+/** Active Combat V2 sessions, keyed by playerId */
+const activeCombatV2Sessions = new Map<string, { state: CombatV2State; shipStats: ShipStats }>();
 
 // ─── CombatService ────────────────────────────────────────────────────────────
 
@@ -194,6 +208,275 @@ export class CombatService {
       round: result,
       state: result.newState,
     });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Kampfsystem v2 — tactic-based round combat
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * `combatV2Start` — initialize a new v2 combat encounter.
+   * Called from pirate-zone sector entry or scan events.
+   */
+  async handleCombatV2Start(
+    client: Client,
+    encounter: PirateEncounter,
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const playerId = auth.userId;
+
+    // Load ship from DB
+    const ship = await getActiveShip(playerId);
+    if (!ship) {
+      client.send('combatV2Started', { success: false, error: 'No active ship found' });
+      return;
+    }
+
+    // Derive ship stats
+    const shipStats = calculateShipStats(ship.modules);
+
+    // Initialize combat v2 state
+    const state = initCombatV2(encounter, shipStats);
+
+    // Store session
+    activeCombatV2Sessions.set(playerId, { state, shipStats });
+
+    logger.info(
+      { playerId, pirateLevel: encounter.pirateLevel },
+      'combatV2Start: session started',
+    );
+
+    client.send('combatV2Started', { success: true, state });
+    client.send('logEntry', `KAMPF BEGONNEN: Pirat Stufe ${encounter.pirateLevel}`);
+  }
+
+  /**
+   * `combatV2Action` — submit tactic + special action for one round.
+   */
+  async handleCombatV2Action(
+    client: Client,
+    data: { tactic: CombatTactic; specialAction: SpecialAction; sectorX: number; sectorY: number },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const playerId = auth.userId;
+
+    const session = activeCombatV2Sessions.get(playerId);
+    if (!session) {
+      client.send('combatV2RoundResult', { success: false, error: 'No active combat session' });
+      return;
+    }
+    if (session.state.status !== 'active') {
+      client.send('combatV2RoundResult', { success: false, error: 'Combat already ended' });
+      return;
+    }
+
+    // Resolve round
+    const seed = Date.now();
+    const { round, newState } = resolveRoundV2(
+      session.state,
+      data.tactic,
+      data.specialAction,
+      session.shipStats,
+      seed,
+    );
+
+    // Update session
+    session.state = newState;
+    activeCombatV2Sessions.set(playerId, session);
+
+    // Check if combat ended
+    let finalResult: BattleResult | undefined;
+    if (newState.status !== 'active') {
+      finalResult = await this.finalizeCombatV2(
+        client,
+        auth,
+        newState,
+        { sectorX: data.sectorX, sectorY: data.sectorY },
+      );
+    }
+
+    client.send('combatV2RoundResult', {
+      success: true,
+      round,
+      state: newState,
+      finalResult,
+    });
+  }
+
+  /**
+   * `combatV2Flee` — attempt to flee from v2 combat. Costs 2 AP.
+   */
+  async handleCombatV2Flee(
+    client: Client,
+    data: { sectorX: number; sectorY: number },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const playerId = auth.userId;
+
+    const session = activeCombatV2Sessions.get(playerId);
+    if (!session) {
+      client.send('combatV2RoundResult', { success: false, error: 'No active combat session' });
+      return;
+    }
+    if (session.state.status !== 'active') {
+      client.send('combatV2RoundResult', { success: false, error: 'Combat already ended' });
+      return;
+    }
+
+    // Check AP (flee costs 2 AP)
+    const apState = await getAPState(playerId);
+    const currentAp = calculateCurrentAP(apState, Date.now());
+    if (currentAp.current < 2) {
+      client.send('combatV2RoundResult', {
+        success: false,
+        error: 'Nicht genug AP für Flucht (2 AP benötigt)',
+      });
+      return;
+    }
+
+    // Deduct AP
+    const updatedAp = { ...currentAp, current: currentAp.current - 2 };
+    await saveAPState(playerId, updatedAp);
+    client.send('apUpdate', updatedAp);
+
+    // Attempt flee
+    const seed = Date.now();
+    const fleeResult = attemptFleeV2(session.state, seed);
+
+    if (fleeResult.success) {
+      // Fled successfully — delete session, finalize
+      activeCombatV2Sessions.delete(playerId);
+
+      // Write combat log
+      try {
+        await insertCombatLog({
+          playerId,
+          quadrantX: this.ctx.quadrantX,
+          quadrantY: this.ctx.quadrantY,
+          sectorX: data.sectorX,
+          sectorY: data.sectorY,
+          enemyType: `pirate_lv${session.state.encounter.pirateLevel}`,
+          enemyLevel: session.state.encounter.pirateLevel,
+          outcome: 'fled',
+          rounds: session.state.currentRound,
+          playerHpEnd: session.state.playerHp,
+          modulesDamaged: [],
+          loot: {},
+        });
+      } catch (err) {
+        logger.warn({ err }, 'combatLog insert failed (flee)');
+      }
+
+      client.send('combatV2RoundResult', {
+        success: true,
+        state: fleeResult.newState,
+        finalResult: { outcome: 'escaped' as BattleOutcome },
+      });
+      client.send('logEntry', 'FLUCHT ERFOLGREICH — Kampf abgebrochen.');
+    } else {
+      // Flee failed — update session state, combat continues
+      session.state = fleeResult.newState;
+      activeCombatV2Sessions.set(playerId, session);
+
+      client.send('combatV2RoundResult', {
+        success: true,
+        state: fleeResult.newState,
+        fleeAttemptFailed: true,
+      });
+      client.send('logEntry', 'FLUCHT FEHLGESCHLAGEN — Kampf geht weiter.');
+    }
+  }
+
+  /**
+   * Finalize a combat v2: award loot on victory, handle permadeath on defeat, write combat_log.
+   */
+  private async finalizeCombatV2(
+    client: Client,
+    auth: AuthPayload,
+    state: CombatV2State,
+    position: { sectorX: number; sectorY: number },
+  ): Promise<BattleResult> {
+    const playerId = auth.userId;
+
+    // Remove session
+    activeCombatV2Sessions.delete(playerId);
+
+    // Map status to outcome
+    const outcomeMap: Record<string, BattleOutcome> = {
+      victory: 'victory',
+      defeat: 'defeat',
+      escaped: 'escaped',
+      auto_flee: 'escaped',
+    };
+    const outcome: BattleOutcome = outcomeMap[state.status] ?? 'escaped';
+    let loot: { credits?: number; ore?: number; crystal?: number } = {};
+
+    if (outcome === 'victory') {
+      loot = this.generateLoot(state.encounter.pirateLevel);
+
+      if (loot.credits) {
+        await addCredits(playerId, loot.credits);
+        client.send('creditsUpdate', { credits: await getPlayerCredits(playerId) });
+      }
+      if (loot.ore && loot.ore > 0) {
+        await addToInventory(playerId, 'resource', 'ore', loot.ore);
+      }
+      if (loot.crystal && loot.crystal > 0) {
+        await addToInventory(playerId, 'resource', 'crystal', loot.crystal);
+      }
+      if ((loot.ore ?? 0) > 0 || (loot.crystal ?? 0) > 0) {
+        client.send('cargoUpdate', await getCargoState(playerId));
+      }
+
+      // Quest + ACEP XP
+      await this.ctx.checkQuestProgress(client, playerId, 'battle_won', {
+        sectorX: position.sectorX,
+        sectorY: position.sectorY,
+      });
+      addAcepXpForPlayer(playerId, 'kampf', 10).catch(() => {});
+      this._emitPersonalityComment(client, playerId, 'combat_victory').catch(() => {});
+
+      const npcWissen = Math.min(8, Math.max(3, Math.ceil(state.encounter.pirateLevel / 2)));
+      awardWissenAndNotify(client, playerId, npcWissen);
+
+      client.send('logEntry', `SIEG! Pirat Stufe ${state.encounter.pirateLevel} besiegt. +${loot.credits ?? 0} CR`);
+    } else if (outcome === 'defeat') {
+      this._emitPersonalityComment(client, playerId, 'combat_defeat').catch(() => {});
+      await this._handlePermadeath(client, auth, position.sectorX, position.sectorY);
+      client.send('logEntry', 'NIEDERLAGE. Schiff zerstört.');
+    } else {
+      // auto_flee
+      client.send('logEntry', 'AUTO-FLUCHT — Maximale Rundenanzahl erreicht.');
+    }
+
+    // Write combat log
+    try {
+      await insertCombatLog({
+        playerId,
+        quadrantX: this.ctx.quadrantX,
+        quadrantY: this.ctx.quadrantY,
+        sectorX: position.sectorX,
+        sectorY: position.sectorY,
+        enemyType: `pirate_lv${state.encounter.pirateLevel}`,
+        enemyLevel: state.encounter.pirateLevel,
+        outcome,
+        rounds: state.currentRound,
+        playerHpEnd: state.playerHp,
+        modulesDamaged: [],
+        loot,
+      });
+    } catch (err) {
+      logger.warn({ err }, 'combatLog insert failed (v2)');
+    }
+
+    return {
+      outcome,
+      lootCredits: loot.credits,
+      lootResources: {
+        ore: loot.ore,
+        crystal: loot.crystal,
+      },
+    };
   }
 
   /**

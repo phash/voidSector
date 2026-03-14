@@ -85,6 +85,87 @@ export function CombatV2Dialog() {
 
   if (!combat) return null;
 
+  // ── Result screen ──────────────────────────────────────────────────
+  if (combat.status !== 'active') {
+    const outcomeColors: Record<string, string> = {
+      victory: '#00FF88',
+      defeat: '#FF3333',
+      escaped: '#FFB000',
+      auto_flee: '#FFB000',
+    };
+    const outcomeLabels: Record<string, string> = {
+      victory: 'SIEG',
+      defeat: 'NIEDERLAGE',
+      escaped: 'FLUCHT ERFOLGREICH',
+      auto_flee: 'AUTO-FLUCHT',
+    };
+    const color = outcomeColors[combat.status] ?? '#aaa';
+    const label = outcomeLabels[combat.status] ?? combat.status.toUpperCase();
+    const lastRound = combat.rounds[combat.rounds.length - 1];
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(5, 5, 5, 0.95)', zIndex: 1000,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'var(--font-mono)', color: 'var(--color-primary)',
+        }}
+      >
+        <div style={{
+          fontSize: '2rem', color, letterSpacing: '0.3em',
+          textShadow: `0 0 20px ${color}`, marginBottom: 16,
+        }}>
+          {label}
+        </div>
+
+        {/* Stats summary */}
+        <div style={{
+          width: '100%', maxWidth: 400, border: `1px solid ${color}`,
+          padding: 16, marginBottom: 16, fontSize: '0.65rem',
+          background: 'rgba(0,0,0,0.5)',
+        }}>
+          <div style={{ marginBottom: 4 }}>RUNDEN: {combat.rounds.length}/{combat.maxRounds}</div>
+          <div style={{ color: combat.playerHp > 0 ? '#00FF88' : '#FF3333' }}>
+            EIGENE HP: {combat.playerHp}/{combat.playerMaxHp}
+            {combat.playerMaxShield > 0 && ` | SCHILD: ${combat.playerShield}/${combat.playerMaxShield}`}
+          </div>
+          <div style={{ color: combat.enemyHp > 0 ? '#FF3333' : '#00FF88' }}>
+            FEIND HP: {combat.enemyHp}/{combat.enemyMaxHp}
+          </div>
+        </div>
+
+        {/* Last round details */}
+        {lastRound && (
+          <div style={{
+            width: '100%', maxWidth: 400, border: '1px solid #333',
+            padding: 12, marginBottom: 16, fontSize: '0.6rem', color: '#888',
+          }}>
+            <div style={{ color: '#555', marginBottom: 4 }}>LETZTE RUNDE</div>
+            <div>Angriff: {lastRound.playerAttack} DMG | Feind: {lastRound.enemyAttack} DMG</div>
+            {lastRound.specialEffects.map((e, i) => (
+              <div key={i} style={{ color: '#00BFFF' }}>[{e}]</div>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={() => useStore.getState().setActiveCombatV2(null)}
+          style={{
+            background: 'transparent', color, border: `1px solid ${color}`,
+            fontFamily: 'var(--font-mono)', fontSize: '0.75rem',
+            padding: '10px 24px', cursor: 'pointer', letterSpacing: '0.15em',
+          }}
+        >
+          [SCHLIESSEN]
+        </button>
+      </div>
+    );
+  }
+
   const {
     encounter,
     currentRound,
