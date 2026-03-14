@@ -897,7 +897,17 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     set({ visitedTrail: [pos, ...trail].slice(0, 9) });
   },
 
-  setAP: (ap) => set({ ap }),
+  setAP: (incoming) => set((state) => {
+    const prev = state.ap;
+    // Guard: merge with previous state to prevent incomplete apUpdate from wiping fields
+    const ap: APState = {
+      current: isNaN(incoming.current) ? (prev?.current ?? 100) : incoming.current,
+      max: incoming.max ?? prev?.max ?? 100,
+      lastTick: incoming.lastTick ?? prev?.lastTick ?? Date.now(),
+      regenPerSecond: incoming.regenPerSecond ?? prev?.regenPerSecond ?? 0.5,
+    };
+    return { ap };
+  }),
   setFuel: (fuel) => set({ fuel }),
   setShip: (ship) => set({ ship }),
   setCurrentSector: (sector) => set({ currentSector: sector }),
