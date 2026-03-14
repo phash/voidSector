@@ -19,13 +19,13 @@ describe('AP engine', () => {
   });
 
   it('createAPState uses calculateApRegen when generator_mk1 present', () => {
-    // generator_mk1: apRegenPerSecond=0.20, powerLevel=high (multiplier=1.0), currentHp=maxHp=20
-    // expected: BASE_HULL_AP_REGEN + 0.20 * 1.0 * 1.0 = 0.08 + 0.20 = 0.28
+    // generator_mk1: apRegenPerSecond=2, powerLevel=high (multiplier=1.0), currentHp=maxHp=20
+    // expected: BASE_HULL_AP_REGEN + 2 * 1.0 * 1.0 = 0.1 + 2 = 2.1
     const modules: ShipModule[] = [
       { moduleId: 'generator_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
     ];
     const ap = createAPState(Date.now(), modules);
-    expect(ap.regenPerSecond).toBeCloseTo(BASE_HULL_AP_REGEN + 0.20);
+    expect(ap.regenPerSecond).toBeCloseTo(BASE_HULL_AP_REGEN + 2);
   });
 
   it('calculateCurrentAP regenerates over time', () => {

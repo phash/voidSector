@@ -331,7 +331,7 @@ interface CreateSlateResult {
 
 export function validateCreateSlate(state: CreateSlateState, slateType: string): CreateSlateResult {
   const apCost =
-    slateType === 'sector' ? SLATE_AP_COST_SECTOR : SLATE_AP_COST_AREA + (state.scannerLevel - 1);
+    slateType === 'sector' ? SLATE_AP_COST_SECTOR : SLATE_AP_COST_AREA + state.scannerLevel * 2;
 
   if (state.ap < apCost) {
     return { valid: false, error: `Not enough AP (need ${apCost}, have ${state.ap})` };
@@ -539,7 +539,6 @@ export function getReputationTier(reputation: number): string {
 
 export function validateLabUpgrade(
   currentLabTier: number,
-  currentAP: number,
   credits: number,
   cargo: { ore: number; crystal: number },
 ): {
@@ -556,9 +555,6 @@ export function validateLabUpgrade(
   const costs = RESEARCH_LAB_UPGRADE_COSTS[targetTier];
   if (!costs) return { valid: false, error: 'Unknown upgrade tier' };
 
-  if (currentAP < 20) {
-    return { valid: false, error: `Insufficient AP (need 20, have ${Math.floor(currentAP)})` };
-  }
   if (credits < costs.credits) {
     return { valid: false, error: `Insufficient credits (need ${costs.credits})` };
   }

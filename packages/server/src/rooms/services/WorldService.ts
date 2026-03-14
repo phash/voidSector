@@ -492,15 +492,13 @@ export class WorldService {
     const sx = this.ctx._px(client.sessionId);
     const sy = this.ctx._py(client.sessionId);
 
-    const [labTier, ap, cargo, credits] = await Promise.all([
+    const [labTier, cargo, credits] = await Promise.all([
       getResearchLabTier(auth.userId),
-      getAPState(auth.userId),
       getCargoState(auth.userId),
       getPlayerCredits(auth.userId),
     ]);
 
-    const currentAP = calculateCurrentAP(ap, Date.now());
-    const result = validateLabUpgrade(labTier, currentAP.current, credits, cargo);
+    const result = validateLabUpgrade(labTier, credits, cargo);
 
     if (!result.valid) {
       client.send('error', { code: 'LAB_UPGRADE_FAIL', message: result.error! });
@@ -511,8 +509,6 @@ export class WorldService {
     await deductCredits(auth.userId, result.costs!.credits);
     await removeFromInventory(auth.userId, 'resource', 'ore', result.costs!.ore);
     await removeFromInventory(auth.userId, 'resource', 'crystal', result.costs!.crystal);
-    const newAP = { ...currentAP, current: currentAP.current - 20 };
-    await saveAPState(auth.userId, newAP);
 
     // Upgrade the lab at player's current position
     const newTier = await upgradeResearchLabTier(auth.userId, sx, sy);
@@ -525,7 +521,6 @@ export class WorldService {
     }
 
     client.send('labUpgradeResult', { success: true, newTier });
-    client.send('apUpdate', newAP);
     const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
   }

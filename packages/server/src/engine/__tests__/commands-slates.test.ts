@@ -29,9 +29,9 @@ describe('validateCreateSlate', () => {
   });
 
   it('calculates area slate AP cost from scanner level', () => {
-    const result = validateCreateSlate({ ...baseState, scannerLevel: 2 }, 'area');
+    const result = validateCreateSlate({ ...baseState, ap: 10, scannerLevel: 2 }, 'area');
     expect(result.valid).toBe(true);
-    expect(result.apCost).toBe(SLATE_AP_COST_AREA + 1);
+    expect(result.apCost).toBe(SLATE_AP_COST_AREA + 2 * 2);
     expect(result.radius).toBe(SLATE_AREA_RADIUS[2]);
   });
 
