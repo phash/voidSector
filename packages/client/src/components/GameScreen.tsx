@@ -19,6 +19,7 @@ import { CombatDialog } from './CombatDialog';
 import { BattleResultDialog } from './BattleResultDialog';
 import { AcepProgram } from './AcepProgram';
 import { FriendsScreen } from './FriendsScreen';
+import { FabrikPanel } from './FabrikPanel';
 import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
@@ -354,6 +355,8 @@ function renderScreen(monitorId: string) {
       return <AcepProgram />;
     case MONITORS.FRIENDS:
       return <FriendsScreen />;
+    case MONITORS.FABRIK:
+      return <FabrikPanel />;
     default:
       return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
