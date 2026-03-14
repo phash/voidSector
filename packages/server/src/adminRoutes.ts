@@ -220,6 +220,13 @@ adminRouter.post('/players/:id/cargo', async (req: Request, res: Response) => {
         [req.params.id, resource, amount],
       );
     }
+    // Notify live session so client updates without reconnect
+    const cargoUpdate: Record<string, number> = {};
+    for (const [resource, amount] of Object.entries(resources)) {
+      if (!['ore', 'gas', 'crystal', 'slate', 'artefact', 'fuel'].includes(resource)) continue;
+      if (typeof amount === 'number' && amount > 0) cargoUpdate[resource] = amount;
+    }
+    adminBus.playerUpdated({ playerId: req.params.id as string, updates: { cargo: cargoUpdate } });
     await logAdminEvent('give_player_cargo', { playerId: req.params.id, resources });
     res.json({ ok: true });
   } catch (err) {
