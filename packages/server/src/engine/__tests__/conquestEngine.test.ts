@@ -3,6 +3,7 @@ import {
   computeConquestRate,
   computeFrictionModifier,
   updateShares,
+  hasAdjacentFactionControl,
 } from '../conquestEngine.js';
 
 describe('computeConquestRate', () => {
@@ -83,5 +84,48 @@ describe('updateShares', () => {
     const result = updateShares({ kthari: 80 }, 'humans', 10);
     expect(result.shares['humans']).toBe(10);
     expect(result.shares['kthari']).toBeCloseTo(70);
+  });
+});
+
+describe('hasAdjacentFactionControl', () => {
+  const makeCtrl = (qx: number, qy: number, shares: Record<string, number>) => ({
+    qx, qy,
+    controlling_faction: Object.keys(shares)[0] ?? 'humans',
+    faction_shares: shares,
+    attack_value: 0, defense_value: 0, friction_score: 0, station_tier: 1,
+  }) as any;
+
+  it('returns true when neighbor has >= 60%', () => {
+    const controls = [makeCtrl(1, 0, { humans: 80 })];
+    expect(hasAdjacentFactionControl(0, 0, 'humans', controls)).toBe(true);
+  });
+
+  it('returns false when no neighbor has >= 60%', () => {
+    const controls = [makeCtrl(1, 0, { humans: 40 })];
+    expect(hasAdjacentFactionControl(0, 0, 'humans', controls)).toBe(false);
+  });
+
+  it('returns false when no controls exist', () => {
+    expect(hasAdjacentFactionControl(0, 0, 'humans', [])).toBe(false);
+  });
+
+  it('ignores the quadrant itself', () => {
+    const controls = [makeCtrl(0, 0, { humans: 100 })];
+    expect(hasAdjacentFactionControl(0, 0, 'humans', controls)).toBe(false);
+  });
+
+  it('checks diagonal neighbors', () => {
+    const controls = [makeCtrl(1, 1, { humans: 70 })];
+    expect(hasAdjacentFactionControl(0, 0, 'humans', controls)).toBe(true);
+  });
+
+  it('returns true at exactly 60%', () => {
+    const controls = [makeCtrl(-1, 0, { humans: 60 })];
+    expect(hasAdjacentFactionControl(0, 0, 'humans', controls)).toBe(true);
+  });
+
+  it('returns false at 59%', () => {
+    const controls = [makeCtrl(-1, 0, { humans: 59 })];
+    expect(hasAdjacentFactionControl(0, 0, 'humans', controls)).toBe(false);
   });
 });
