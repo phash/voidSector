@@ -2572,7 +2572,22 @@ export function getAcepBoostCost(
 
 // Universe Tick Engine constants
 export const UNIVERSE_TICK_MS = 5_000; // 5 seconds per tick
-export const FACTION_EXPANSION_INTERVAL_TICKS = 360; // 30 min (360 × 5s)
+export const FACTION_EXPANSION_INTERVAL_TICKS = 360; // 30 min (360 × 5s) — base interval, scaled per faction
+
+/** Expansion rate per faction: lower = faster. Base=10 → interval*1.0, rate=5 → interval*0.5 */
+export const FACTION_EXPANSION_RATES: Record<string, number> = {
+  humans: 0,       // humans expand via player activity only
+  kthari: 5,       // aggressive, fast
+  silent_swarm: 4, // very fast swarm invasion
+  archivists: 15,  // slow, conservative
+  consortium: 10,  // normal
+  mycelians: 12,   // slow, organic
+  mirror_minds: 10, // normal, reactive
+  tourist_guild: 20, // very slow, harmless
+  helions: 8,
+  axioms: 10,
+  voids: 6,        // steady expansion
+};
 
 /** Radar render radius for NPC mining drones (hollow circle, px at zoom 2) */
 export const CIV_DRONE_RADIUS = 5;

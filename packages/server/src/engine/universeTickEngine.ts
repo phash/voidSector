@@ -1,11 +1,13 @@
 import {
   UNIVERSE_TICK_MS,
   FACTION_EXPANSION_INTERVAL_TICKS,
+  FACTION_EXPANSION_RATES,
   COSMIC_FACTION_IDS,
   HUMAN_STARTING_TERRITORY,
   ALIEN_STARTING_REGIONS,
   HUMAN_CIVILIZATION_METER_MAX,
 } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 import type { CosmicFactionId } from '@void-sector/shared';
 
 export interface TickState {
@@ -128,11 +130,18 @@ export function runUniverseTick(
   let expansionHappened = false;
   const newTerritories: string[] = [];
 
-  // Expansion only happens every FACTION_EXPANSION_INTERVAL_TICKS ticks
-  if (state.tickCount % FACTION_EXPANSION_INTERVAL_TICKS === 0) {
-    // All non-human factions attempt expansion
-    for (const factionId of COSMIC_FACTION_IDS) {
-      if (factionId === 'humans') continue; // humans expand via player activity
+  // Per-faction expansion: each faction has its own rate
+  // Rate from game_config (DB/Redis), fallback to FACTION_EXPANSION_RATES constant
+  const rates = getConfig('FACTION_EXPANSION_RATES') ?? FACTION_EXPANSION_RATES;
+  const baseInterval = FACTION_EXPANSION_INTERVAL_TICKS;
+
+  for (const factionId of COSMIC_FACTION_IDS) {
+    if (factionId === 'humans') continue; // humans expand via player activity
+    const rate = rates[factionId] ?? 10;
+    if (rate <= 0) continue; // rate 0 = no expansion
+    // Scale interval: rate 10 = base interval, rate 5 = half interval (2x faster)
+    const factionInterval = Math.max(1, Math.round(baseInterval * rate / 10));
+    if (state.tickCount % factionInterval === 0) {
       const claimed = expandFaction(factionId, territory, rng);
       if (claimed.length > 0) {
         expansionHappened = true;
