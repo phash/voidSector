@@ -825,6 +825,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getStationDetails', async (client, data) => {
       await this.world.handleGetStationDetails(client, data);
     });
+    this.onMessage('getAcepBlueprints', async (client) => {
+      await this.world.handleGetAcepBlueprints(client);
+    });
+    this.onMessage('consumeBlueprint', async (client, data) => {
+      await this.world.handleConsumeBlueprint(client, data);
+    });
     this.onMessage('depositConstruction', async (client, data: DepositConstructionMessage) => {
       await this.world.handleDepositConstruction(client, data);
     });
