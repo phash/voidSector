@@ -83,4 +83,7 @@ export interface ServiceContext {
 
   // AP management
   deductAP: (playerId: string, cost: number) => Promise<boolean>;
+
+  // Navigation helpers (cross-service)
+  detectAndSendPlayerGate: (client: Client, sectorX: number, sectorY: number) => Promise<void>;
 }

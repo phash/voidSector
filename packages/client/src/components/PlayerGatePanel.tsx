@@ -191,6 +191,37 @@ function OwnerView({ gate, destinations, gateSlates }: OwnerViewProps) {
         </div>
       )}
 
+      {/* Travel (owner can also use their own gate) */}
+      {destinations.length > 0 && (
+        <div style={{ marginTop: 4 }}>
+          <div style={{ fontSize: '0.7rem', opacity: 0.6, letterSpacing: '0.1em' }}>REISEN:</div>
+          {destinations.map((dest) => (
+            <div
+              key={dest.gateId}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '0.75rem',
+                padding: '2px 0',
+              }}
+            >
+              <span style={{ color: '#00BFFF' }}>
+                ({innerCoord(dest.sectorX)}, {innerCoord(dest.sectorY)}) — {dest.totalCost} CR
+                {dest.hops > 1 ? ` (${dest.hops} Hops)` : ''}
+              </span>
+              <button
+                className="vs-btn"
+                style={{ fontSize: '0.65rem', padding: '1px 6px' }}
+                onClick={() => network.sendUsePlayerGate(gate.id, dest.gateId)}
+              >
+                [SPRINGEN]
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Actions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
         <button

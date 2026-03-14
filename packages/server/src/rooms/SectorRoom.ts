@@ -107,6 +107,7 @@ import type {
   UpgradeStructureMessage,
   PlaceOrderMessage,
   CreateSlateMessage,
+  CreateCustomSlateMessage,
   ActivateSlateMessage,
   NpcBuybackMessage,
   ListSlateMessage,
@@ -319,6 +320,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       applyReputationChange: null as any,
       applyXpGain: null as any,
       contributeToCommunityQuest: null as any,
+      detectAndSendPlayerGate: null as any,
+      onResourceSoldAtStation: null as any,
       deductAP: async (playerId: string, cost: number): Promise<boolean> => {
         const ap = await getAPState(playerId);
         const newAP = spendAP(ap, cost);
@@ -362,6 +365,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     );
     this.serviceCtx.contributeToCommunityQuest = this.communityQuests.contribute.bind(
       this.communityQuests,
+    );
+    this.serviceCtx.detectAndSendPlayerGate = this.navigation.detectAndSendPlayerGate.bind(
+      this.navigation,
     );
 
     // ── Navigation ──────────────────────────────────────────────────
@@ -810,6 +816,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('createSlateFromScan', async (client) => {
       await this.world.handleCreateSlateFromScan(client);
+    });
+    this.onMessage('createCustomSlate', async (client, data: CreateCustomSlateMessage) => {
+      await this.world.handleCreateCustomSlate(client, data);
     });
     this.onMessage('activateSlate', async (client, data: ActivateSlateMessage) => {
       await this.world.handleActivateSlate(client, data);

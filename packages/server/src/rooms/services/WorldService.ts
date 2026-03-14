@@ -19,6 +19,7 @@ import type {
   ClearBookmarkMessage,
   MineableResourceType,
   StructureType,
+  CreateCustomSlateMessage,
 } from '@void-sector/shared';
 
 import { logger } from '../../utils/logger.js';
@@ -60,6 +61,8 @@ import {
   NPC_PRICES,
   NPC_BUY_SPREAD,
   NPC_SELL_SPREAD,
+  CUSTOM_SLATE_AP_COST,
+  CUSTOM_SLATE_CREDIT_COST,
 } from '@void-sector/shared';
 import {
   getAPState,
@@ -84,6 +87,7 @@ import {
   cancelTradeOrder,
   fulfillTradeOrder,
   createDataSlate,
+  createCustomDataSlate,
   getPlayerSlates,
   getSlateById,
   deleteSlate,
@@ -600,6 +604,9 @@ export class WorldService {
     client.send('cargoUpdate', await getCargoState(auth.userId));
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     client.send('logEntry', `Jumpgate errichtet bei (${sx}, ${sy})`);
+
+    // Send gate info so PlayerGatePanel shows immediately after build
+    await this.ctx.detectAndSendPlayerGate(client, sx, sy);
   }
 
   // ── Jumpgate Upgrade / Dismantle / Toll ───────────────────────────
@@ -772,6 +779,7 @@ export class WorldService {
       ownerId: row.owner_id,
       slateType: row.slate_type,
       sectorData: row.sector_data,
+      customData: row.custom_data ?? undefined,
       status: row.status,
       createdAt: new Date(row.created_at).getTime(),
     };
@@ -881,6 +889,67 @@ export class WorldService {
       ap: currentAP.current,
     });
     client.send('apUpdate', currentAP);
+  }
+
+  async handleCreateCustomSlate(client: Client, data: CreateCustomSlateMessage): Promise<void> {
+    if (rejectGuest(client, 'Data Slates erstellen')) return;
+    const auth = client.auth as AuthPayload;
+
+    if (!data.label || typeof data.label !== 'string' || !data.label.trim()) {
+      client.send('createSlateResult', { success: false, error: 'Label required' });
+      return;
+    }
+
+    const ship = this.ctx.getShipForClient(client.sessionId);
+    const cargo = await getCargoState(auth.userId);
+    if (cargo.slates >= ship.memory) {
+      client.send('createSlateResult', { success: false, error: 'Memory full — no space for slate' });
+      return;
+    }
+
+    const ap = await getAPState(auth.userId);
+    const currentAP = calculateCurrentAP(ap, Date.now());
+    if (currentAP.current < CUSTOM_SLATE_AP_COST) {
+      client.send('createSlateResult', {
+        success: false,
+        error: `Not enough AP (need ${CUSTOM_SLATE_AP_COST})`,
+      });
+      return;
+    }
+
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < CUSTOM_SLATE_CREDIT_COST) {
+      client.send('createSlateResult', {
+        success: false,
+        error: `Not enough credits (need ${CUSTOM_SLATE_CREDIT_COST})`,
+      });
+      return;
+    }
+
+    // Deduct AP and credits
+    currentAP.current -= CUSTOM_SLATE_AP_COST;
+    await saveAPState(auth.userId, currentAP);
+    await deductCredits(auth.userId, CUSTOM_SLATE_CREDIT_COST);
+
+    // Create slate + add to cargo
+    const customData = {
+      label: data.label.trim(),
+      notes: data.notes,
+      coordinates: data.coordinates,
+      codes: data.codes,
+    };
+    const slate = await createCustomDataSlate(auth.userId, customData);
+    await addSlateToCargo(auth.userId);
+    const updatedCargo = await getCargoState(auth.userId);
+
+    client.send('createSlateResult', {
+      success: true,
+      slate: { id: slate.id, slateType: 'custom', sectorData: [], customData, status: 'available' },
+      cargo: updatedCargo,
+      ap: currentAP.current,
+    });
+    client.send('apUpdate', currentAP);
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
   }
 
   async handleCreateSlateFromScan(client: Client): Promise<void> {
@@ -1040,6 +1109,9 @@ export class WorldService {
     client.send('jumpgateLinkResult', { success: true });
     client.send('cargoUpdate', await getCargoState(auth.userId));
     client.send('logEntry', `Gate bei (${targetGate.sectorX}, ${targetGate.sectorY}) verknüpft`);
+
+    // Send updated gate info so PlayerGatePanel reflects the new link and destinations
+    await this.ctx.detectAndSendPlayerGate(client, sx, sy);
   }
 
   async handleUnlinkJumpgate(
