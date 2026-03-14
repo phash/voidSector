@@ -105,6 +105,8 @@ interface RadarState {
   /** Slow flight path from current position to target — drawn as dashed overlay */
   slowFlightPath?: Array<{ x: number; y: number }>;
   sectorWrecks?: Record<string, { tier: number; size: string }>;
+  /** ACEP EXPLORER effect: reveals Tier 4/5 wrecks without local scan */
+  wreckDetection?: boolean;
   constructionSites?: ConstructionSiteState[];
 }
 
@@ -577,12 +579,26 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         const wkey = `${sx}:${sy}`;
         const wreck = state.sectorWrecks[wkey];
         if (wreck) {
+          // Tier 4/5 wrecks detected via ACEP wreckDetection get a brighter highlight
+          const isDetected = state.wreckDetection && wreck.tier >= 4;
           ctx.save();
           ctx.font = `${Math.floor(CELL_H * 0.55)}px 'Share Tech Mono', 'Courier New', monospace`;
-          ctx.fillStyle = 'rgba(255, 176, 0, 0.55)';
+          ctx.fillStyle = isDetected
+            ? 'rgba(255, 120, 0, 0.85)'
+            : 'rgba(255, 176, 0, 0.55)';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('⊠', cellX, cellY);
+          // Pulsing glow ring for ACEP-detected high-tier wrecks
+          if (isDetected) {
+            const t = state.animTime ?? 0;
+            const pulse = 0.4 + 0.4 * Math.sin(t / 500);
+            ctx.strokeStyle = `rgba(255, 120, 0, ${pulse})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cellX, cellY, Math.floor(CELL_H * 0.35), 0, Math.PI * 2);
+            ctx.stroke();
+          }
           ctx.restore();
         }
       }

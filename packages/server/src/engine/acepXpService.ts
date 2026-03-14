@@ -79,6 +79,26 @@ export function getAcepEffects(xp: AcepXpSummary): AcepEffects {
   };
 }
 
+/**
+ * AUSBAU gates: research lab max tier and factory access based on AUSBAU XP.
+ * - AUSBAU 0-9: Lab tier 1 only, no factory
+ * - AUSBAU 10-24: Lab tier 2, factory basic recipes
+ * - AUSBAU 25-39: Lab tier 3, factory advanced recipes
+ * - AUSBAU 40-49: Lab tier 4, factory all recipes
+ * - AUSBAU 50: Lab tier 5 (max), factory all recipes + speed bonus
+ */
+export function getAusbauGating(ausbauXp: number): {
+  maxLabTier: number;
+  factoryUnlocked: boolean;
+  factorySpeedBonus: number; // 0.0 to 0.5
+} {
+  if (ausbauXp >= 50) return { maxLabTier: 5, factoryUnlocked: true, factorySpeedBonus: 0.5 };
+  if (ausbauXp >= 40) return { maxLabTier: 4, factoryUnlocked: true, factorySpeedBonus: 0.3 };
+  if (ausbauXp >= 25) return { maxLabTier: 3, factoryUnlocked: true, factorySpeedBonus: 0.15 };
+  if (ausbauXp >= 10) return { maxLabTier: 2, factoryUnlocked: true, factorySpeedBonus: 0 };
+  return { maxLabTier: 1, factoryUnlocked: false, factorySpeedBonus: 0 };
+}
+
 const COL: Record<AcepPath, string> = {
   ausbau: 'acep_ausbau_xp',
   intel: 'acep_intel_xp',

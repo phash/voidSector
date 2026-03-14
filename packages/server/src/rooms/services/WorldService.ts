@@ -130,6 +130,7 @@ import {
   countJumpGateLinks,
   getResearchLabTier,
   upgradeResearchLabTier,
+  getActiveShip,
   logExpansionEvent,
 } from '../../db/queries.js';
 import {
@@ -146,7 +147,7 @@ import {
   playerKnowsQuadrant,
 } from '../../db/quadrantQueries.js';
 import { isInt, rejectGuest } from './utils.js';
-import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
+import { addAcepXpForPlayer, getAcepXpSummary, getAusbauGating } from '../../engine/acepXpService.js';
 import {
   createConstructionSite,
   getConstructionSite,
@@ -503,6 +504,21 @@ export class WorldService {
     if (!result.valid) {
       client.send('error', { code: 'LAB_UPGRADE_FAIL', message: result.error! });
       return;
+    }
+
+    // AUSBAU gating: check ACEP XP before allowing lab upgrade
+    const targetTier = labTier + 1;
+    const activeShip = await getActiveShip(auth.userId);
+    if (activeShip) {
+      const acepXp = await getAcepXpSummary(activeShip.id);
+      const gating = getAusbauGating(acepXp.ausbau);
+      if (targetTier > gating.maxLabTier) {
+        client.send('error', {
+          code: 'AUSBAU_REQUIRED',
+          message: `AUSBAU Level zu niedrig. Benötigt: ${targetTier * 10} AUSBAU XP.`,
+        });
+        return;
+      }
     }
 
     // Deduct costs

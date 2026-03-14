@@ -160,8 +160,8 @@ export async function destroyShipAndCreateLegacy(params: {
   );
   const oldGen = genResult.rows[0]?.acep_generation ?? 0;
 
-  // Create new legacy ship (named "Phoenix-<timestamp>")
-  const shipName = `Phoenix-${Date.now().toString(36).toUpperCase().slice(-4)}`;
+  // Create new legacy ship (named "Legacy-<timestamp>")
+  const shipName = `Legacy-${Date.now().toString(36).toUpperCase().slice(-4)}`;
   const { rows } = await query<{ id: string }>(
     `INSERT INTO ships
        (owner_id, name, fuel, active,

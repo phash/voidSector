@@ -1,4 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock DB + query dependencies so pure function imports work
+vi.mock('../../db/client.js', () => ({
+  query: vi.fn(),
+}));
+vi.mock('../../db/queries.js', () => ({
+  deductCredits: vi.fn(),
+  addCredits: vi.fn(),
+  deductWissen: vi.fn(),
+}));
+
+import { getAusbauGating } from '../acepXpService.js';
 
 /**
  * Unit tests for ACEP XP budget logic.
@@ -90,5 +102,33 @@ describe('ACEP XP budget logic', () => {
     // 50 ausbau, 45 kampf (5 remaining on path) — but total is 95, so 5 remaining on budget
     const current2 = { ausbau: 50, intel: 0, kampf: 45, explorer: 0 };
     expect(computeEffectiveGain(current2, 'kampf', 10)).toBe(5); // path cap limits
+  });
+});
+
+describe('getAusbauGating', () => {
+  it('0 XP: lab 1, no factory', () => {
+    const g = getAusbauGating(0);
+    expect(g.maxLabTier).toBe(1);
+    expect(g.factoryUnlocked).toBe(false);
+  });
+
+  it('10 XP: lab 2, factory unlocked', () => {
+    const g = getAusbauGating(10);
+    expect(g.maxLabTier).toBe(2);
+    expect(g.factoryUnlocked).toBe(true);
+  });
+
+  it('25 XP: lab 3', () => {
+    expect(getAusbauGating(25).maxLabTier).toBe(3);
+  });
+
+  it('40 XP: lab 4', () => {
+    expect(getAusbauGating(40).maxLabTier).toBe(4);
+  });
+
+  it('50 XP: lab 5, speed bonus 0.5', () => {
+    const g = getAusbauGating(50);
+    expect(g.maxLabTier).toBe(5);
+    expect(g.factorySpeedBonus).toBe(0.5);
   });
 });
