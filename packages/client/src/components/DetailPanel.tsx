@@ -10,8 +10,6 @@ import {
   calcHyperjumpAP,
   calcHyperjumpFuel,
   innerCoord,
-  STRUCTURE_COSTS,
-  STRUCTURE_AP_COSTS,
   JUMPGATE_BUILD_COST,
   STATION_BUILD_COSTS,
   CONQUEST_POOL_MAX,
@@ -138,29 +136,54 @@ function RefuelPanel({
   );
 }
 
+const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
+  mining_station: 'MINING-STATION',
+  jumpgate: 'JUMPGATE',
+  station: 'STATION',
+  jumpgate_conn_2: 'JUMPGATE VERBINDUNG L2',
+  jumpgate_conn_3: 'JUMPGATE VERBINDUNG L3',
+  jumpgate_dist_2: 'JUMPGATE DISTANZ L2',
+  jumpgate_dist_3: 'JUMPGATE DISTANZ L3',
+};
+
 function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
   const cargo = useStore((s) => s.cargo);
-  const [amounts, setAmounts] = useState({ ore: 0, gas: 0, crystal: 0 });
+  const playerCredits = useStore((s) => s.credits);
+  const [amounts, setAmounts] = useState({ ore: 0, gas: 0, crystal: 0, credits: 0, artefact: 0 });
 
-  const remainOre     = Math.max(0, site.neededOre     - site.depositedOre);
-  const remainGas     = Math.max(0, site.neededGas     - site.depositedGas);
-  const remainCrystal = Math.max(0, site.neededCrystal - site.depositedCrystal);
+  const remainOre      = Math.max(0, site.neededOre      - site.depositedOre);
+  const remainGas      = Math.max(0, site.neededGas      - site.depositedGas);
+  const remainCrystal  = Math.max(0, site.neededCrystal  - site.depositedCrystal);
+  const remainCredits  = Math.max(0, site.neededCredits  - site.depositedCredits);
+  const remainArtefact = Math.max(0, site.neededArtefact - site.depositedArtefact);
 
-  const maxOre     = Math.min(cargo.ore,     remainOre);
-  const maxGas     = Math.min(cargo.gas,     remainGas);
-  const maxCrystal = Math.min(cargo.crystal, remainCrystal);
+  const maxOre      = Math.min(cargo.ore,           remainOre);
+  const maxGas      = Math.min(cargo.gas,           remainGas);
+  const maxCrystal  = Math.min(cargo.crystal,       remainCrystal);
+  const maxCredits  = Math.min(playerCredits,       remainCredits);
+  const maxArtefact = Math.min(cargo.artefact ?? 0, remainArtefact);
 
   const pct = site.progress;
-  const canDeliver = amounts.ore + amounts.gas + amounts.crystal > 0;
+  const canDeliver = amounts.ore + amounts.gas + amounts.crystal + amounts.credits + amounts.artefact > 0;
   const adminToken = localStorage.getItem('vs_admin_token');
 
-  type ResKey = 'ore' | 'gas' | 'crystal';
+  type ResKey = 'ore' | 'gas' | 'crystal' | 'credits' | 'artefact';
   const rows: [string, ResKey, number][] = [
-    ['ORE',     'ore',     maxOre],
-    ['GAS',     'gas',     maxGas],
-    ['CRYSTAL', 'crystal', maxCrystal],
+    ['CREDITS',  'credits',  maxCredits],
+    ['ORE',      'ore',      maxOre],
+    ['GAS',      'gas',      maxGas],
+    ['CRYSTAL',  'crystal',  maxCrystal],
+    ['ARTEFAKT', 'artefact', maxArtefact],
   ];
   const deliverableRows = rows.filter(([, , max]) => max > 0);
+
+  const statusRows: [string, number, number][] = [
+    ['CREDITS',  site.depositedCredits,  site.neededCredits],
+    ['ORE',      site.depositedOre,      site.neededOre],
+    ['GAS',      site.depositedGas,      site.neededGas],
+    ['CRYSTAL',  site.depositedCrystal,  site.neededCrystal],
+    ['ARTEFAKT', site.depositedArtefact, site.neededArtefact],
+  ];
 
   function setAmt(key: ResKey, raw: number, max: number) {
     const v = Math.max(0, Math.min(max, isNaN(raw) ? 0 : raw));
@@ -168,8 +191,8 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
   }
 
   function deliver() {
-    network.sendDepositConstruction(site.id, amounts.ore, amounts.gas, amounts.crystal);
-    setAmounts({ ore: 0, gas: 0, crystal: 0 });
+    network.sendDepositConstruction(site.id, amounts);
+    setAmounts({ ore: 0, gas: 0, crystal: 0, credits: 0, artefact: 0 });
   }
 
   async function adminComplete() {
@@ -181,13 +204,15 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
     });
   }
 
+  const typeLabel = CONSTRUCTION_TYPE_LABELS[site.type] ?? site.type.toUpperCase();
+
   return (
     <div style={{ marginTop: 8 }}>
       {/* Header */}
       <div style={{ fontSize: '0.65rem', color: 'var(--color-dim)', letterSpacing: '0.15em', marginBottom: 4 }}>
-        {site.type === 'mining_station' ? 'STATION' : 'JUMPGATE'} — IN BAU
+        {typeLabel} — IN BAU
         {site.paused && (
-          <span style={{ color: '#ff4444', marginLeft: 8 }}>⏸ PAUSIERT</span>
+          <span style={{ color: '#ff4444', marginLeft: 8 }}>PAUSIERT</span>
         )}
       </div>
 
@@ -200,11 +225,7 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
       </div>
 
       {/* Resource status */}
-      {([
-        ['ORE',     site.depositedOre,     site.neededOre],
-        ['GAS',     site.depositedGas,     site.neededGas],
-        ['CRYSTAL', site.depositedCrystal, site.neededCrystal],
-      ] as [string, number, number][]).filter(([, , needed]) => needed > 0).map(([label, deposited, needed]) => (
+      {statusRows.filter(([, , needed]) => needed > 0).map(([label, deposited, needed]) => (
         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem' }}>
           <span style={{ color: 'var(--color-dim)' }}>{label}</span>
           <span style={{ color: deposited >= needed ? 'var(--color-primary)' : '#ffaa00' }}>
@@ -219,7 +240,7 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
           {deliverableRows.map(([label, key, max]) => (
             <div key={key} style={{ marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.6rem' }}>
-                <span style={{ color: 'var(--color-dim)', width: 44 }}>{label}</span>
+                <span style={{ color: 'var(--color-dim)', width: 50 }}>{label}</span>
                 <input
                   type="range"
                   min={0}
@@ -234,7 +255,7 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
                   max={max}
                   value={amounts[key]}
                   onChange={(e) => setAmt(key, Number(e.target.value), max)}
-                  style={{ width: 36, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontSize: '0.6rem', textAlign: 'center', padding: '1px 2px' }}
+                  style={{ width: 42, background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-primary)', fontSize: '0.6rem', textAlign: 'center', padding: '1px 2px' }}
                 />
                 <button
                   className="vs-btn"
@@ -296,8 +317,6 @@ export function DetailPanel() {
   const activeQuests = useStore((s) => s.activeQuests);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const constructionSites = useStore((s) => s.constructionSites);
-  const credits = useStore((s) => s.credits);
-  const cargo = useStore((s) => s.cargo);
   const openStationTerminal = useStore((s) => s.openStationTerminal);
   const breadcrumbStack = useStore((s) => s.breadcrumbStack);
   const activeProgram = useStore((s) => s.activeProgram);
@@ -964,76 +983,34 @@ export function DetailPanel() {
                 BAUEN
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {(() => {
-                  const stCost = STATION_BUILD_COSTS[1];
-                  const stMissing: string[] = [];
-                  if (credits < stCost.credits)
-                    stMissing.push(`${stCost.credits - credits} CR fehlen`);
-                  if ((cargo.crystal ?? 0) < stCost.crystal)
-                    stMissing.push(`${stCost.crystal - (cargo.crystal ?? 0)} CRYSTAL fehlen`);
-                  if ((cargo.artefact ?? 0) < stCost.artefact)
-                    stMissing.push(`${stCost.artefact - (cargo.artefact ?? 0)} ARTEFAKT fehlen`);
-                  const canBuildSt = stMissing.length === 0;
-                  return (
-                    <div>
-                      <button
-                        className="vs-btn"
-                        onClick={() => network.sendBuildStation()}
-                        style={{
-                          fontSize: '0.7rem',
-                          opacity: canBuildSt ? 1 : 0.4,
-                          cursor: canBuildSt ? 'pointer' : 'not-allowed',
-                        }}
-                        disabled={!canBuildSt}
-                      >
-                        [STATION BAUEN]
-                      </button>
-                      <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
-                        {stCost.credits} CR · {stCost.crystal} CRYSTAL · {stCost.artefact} ARTEFAKT
-                      </div>
-                      {!canBuildSt && (
-                        <div style={{ fontSize: '0.6rem', color: '#FF3333', marginTop: 1 }}>
-                          {stMissing.join(' · ')}
-                        </div>
-                      )}
+                <div>
+                  <button
+                    className="vs-btn"
+                    onClick={() => network.sendBuildStation()}
+                    style={{ fontSize: '0.7rem' }}
+                  >
+                    [STATION BAUEN]
+                  </button>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
+                    {STATION_BUILD_COSTS[1].credits} CR · {STATION_BUILD_COSTS[1].crystal} CRYSTAL ·{' '}
+                    {STATION_BUILD_COSTS[1].artefact} ARTEFAKT
+                  </div>
+                </div>
+                {!playerGateInfo && (
+                  <div>
+                    <button
+                      className="vs-btn"
+                      onClick={() => network.sendBuild('jumpgate')}
+                      style={{ fontSize: '0.7rem' }}
+                    >
+                      [JUMPGATE BAUEN]
+                    </button>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
+                      {JUMPGATE_BUILD_COST.credits} CR · {JUMPGATE_BUILD_COST.crystal} CRYSTAL ·{' '}
+                      {JUMPGATE_BUILD_COST.artefact} ARTEFAKT
                     </div>
-                  );
-                })()}
-                {!playerGateInfo && (() => {
-                  const missing: string[] = [];
-                  if (credits < JUMPGATE_BUILD_COST.credits)
-                    missing.push(`${JUMPGATE_BUILD_COST.credits - credits} CR fehlen`);
-                  if ((cargo.crystal ?? 0) < JUMPGATE_BUILD_COST.crystal)
-                    missing.push(`${JUMPGATE_BUILD_COST.crystal - (cargo.crystal ?? 0)} CRYSTAL fehlen`);
-                  if ((cargo.artefact ?? 0) < JUMPGATE_BUILD_COST.artefact)
-                    missing.push(`${JUMPGATE_BUILD_COST.artefact - (cargo.artefact ?? 0)} ARTEFAKT fehlen`);
-                  const canBuild = missing.length === 0;
-                  return (
-                    <div>
-                      <button
-                        className="vs-btn"
-                        onClick={() => network.sendBuild('jumpgate')}
-                        style={{
-                          fontSize: '0.7rem',
-                          opacity: canBuild ? 1 : 0.4,
-                          cursor: canBuild ? 'pointer' : 'not-allowed',
-                        }}
-                        disabled={!canBuild}
-                      >
-                        [BUILD JUMPGATE]
-                      </button>
-                      <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 2 }}>
-                        {JUMPGATE_BUILD_COST.credits} CR · {JUMPGATE_BUILD_COST.crystal} CRYSTAL ·{' '}
-                        {JUMPGATE_BUILD_COST.artefact} ARTEFAKT · {STRUCTURE_AP_COSTS.jumpgate} AP
-                      </div>
-                      {!canBuild && (
-                        <div style={{ fontSize: '0.6rem', color: '#FF3333', marginTop: 1 }}>
-                          {missing.join(' · ')}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                  </div>
+                )}
               </div>
             </div>
           ) : null}

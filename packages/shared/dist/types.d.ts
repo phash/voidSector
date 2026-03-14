@@ -250,16 +250,20 @@ export interface BuildResultMessage {
 }
 export interface ConstructionSiteState {
     id: string;
-    type: StructureType;
+    type: string;
     sectorX: number;
     sectorY: number;
     progress: number;
     neededOre: number;
     neededGas: number;
     neededCrystal: number;
+    neededCredits: number;
+    neededArtefact: number;
     depositedOre: number;
     depositedGas: number;
     depositedCrystal: number;
+    depositedCredits: number;
+    depositedArtefact: number;
     paused: boolean;
 }
 export interface DepositConstructionMessage {
@@ -267,6 +271,8 @@ export interface DepositConstructionMessage {
     ore?: number;
     gas?: number;
     crystal?: number;
+    credits?: number;
+    artefact?: number;
 }
 export type ChatChannel = 'direct' | 'faction' | 'quadrant' | 'broadcast';
 export interface ChatMessage {

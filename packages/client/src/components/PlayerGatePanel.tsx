@@ -7,7 +7,7 @@ import {
   JUMPGATE_CONNECTION_LIMITS,
   JUMPGATE_DISTANCE_LIMITS,
 } from '@void-sector/shared';
-import type { PlayerJumpGate, JumpGateDestination, DataSlate, CargoState } from '@void-sector/shared';
+import type { PlayerJumpGate, JumpGateDestination, DataSlate } from '@void-sector/shared';
 
 function formatCost(cost: Record<string, number>): string {
   return Object.entries(cost)
@@ -16,33 +16,13 @@ function formatCost(cost: Record<string, number>): string {
     .join(', ');
 }
 
-function getMissingResources(
-  cost: Record<string, number>,
-  credits: number,
-  cargo: CargoState,
-): string[] {
-  const missing: string[] = [];
-  for (const [resource, amount] of Object.entries(cost)) {
-    if (!amount) continue;
-    if (resource === 'credits') {
-      if (credits < amount) missing.push(`${amount - credits} CR fehlen`);
-    } else {
-      const have = (cargo as any)[resource] ?? 0;
-      if (have < amount) missing.push(`${amount - have} ${resource.toUpperCase()} fehlen`);
-    }
-  }
-  return missing;
-}
-
 interface OwnerViewProps {
   gate: PlayerJumpGate;
   destinations: JumpGateDestination[];
   gateSlates: DataSlate[];
-  credits: number;
-  cargo: CargoState;
 }
 
-function OwnerView({ gate, destinations, gateSlates, credits, cargo }: OwnerViewProps) {
+function OwnerView({ gate, destinations, gateSlates }: OwnerViewProps) {
   const [showTollInput, setShowTollInput] = useState(false);
   const [tollValue, setTollValue] = useState(gate.tollCredits);
   const [confirmDismantle, setConfirmDismantle] = useState(false);
@@ -252,57 +232,35 @@ function OwnerView({ gate, destinations, gateSlates, credits, cargo }: OwnerView
           [GATE-SLATE ERSTELLEN]
         </button>
 
-        {connUpgradeCost && (() => {
-          const missing = getMissingResources(connUpgradeCost, credits, cargo);
-          const canAfford = missing.length === 0;
-          return (
-            <div>
-              <button
-                className="vs-btn"
-                style={{
-                  fontSize: '0.7rem',
-                  opacity: canAfford ? 1 : 0.4,
-                  cursor: canAfford ? 'pointer' : 'not-allowed',
-                }}
-                disabled={!canAfford}
-                onClick={() => network.sendUpgradeJumpgate(gate.id, 'connection')}
-              >
-                [VERBINDUNG UPGRADEN] — {formatCost(connUpgradeCost)}
-              </button>
-              {!canAfford && (
-                <div style={{ fontSize: '0.6rem', color: '#FF3333', marginTop: 1 }}>
-                  {missing.join(' · ')}
-                </div>
-              )}
+        {connUpgradeCost && (
+          <div>
+            <button
+              className="vs-btn"
+              style={{ fontSize: '0.7rem' }}
+              onClick={() => network.sendUpgradeJumpgate(gate.id, 'connection')}
+            >
+              [VERBINDUNG UPGRADEN]
+            </button>
+            <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 1 }}>
+              {formatCost(connUpgradeCost)}
             </div>
-          );
-        })()}
+          </div>
+        )}
 
-        {distUpgradeCost && (() => {
-          const missing = getMissingResources(distUpgradeCost, credits, cargo);
-          const canAfford = missing.length === 0;
-          return (
-            <div>
-              <button
-                className="vs-btn"
-                style={{
-                  fontSize: '0.7rem',
-                  opacity: canAfford ? 1 : 0.4,
-                  cursor: canAfford ? 'pointer' : 'not-allowed',
-                }}
-                disabled={!canAfford}
-                onClick={() => network.sendUpgradeJumpgate(gate.id, 'distance')}
-              >
-                [DISTANZ UPGRADEN] — {formatCost(distUpgradeCost)}
-              </button>
-              {!canAfford && (
-                <div style={{ fontSize: '0.6rem', color: '#FF3333', marginTop: 1 }}>
-                  {missing.join(' · ')}
-                </div>
-              )}
+        {distUpgradeCost && (
+          <div>
+            <button
+              className="vs-btn"
+              style={{ fontSize: '0.7rem' }}
+              onClick={() => network.sendUpgradeJumpgate(gate.id, 'distance')}
+            >
+              [DISTANZ UPGRADEN]
+            </button>
+            <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginTop: 1 }}>
+              {formatCost(distUpgradeCost)}
             </div>
-          );
-        })()}
+          </div>
+        )}
 
         <button
           className="vs-btn"
@@ -369,8 +327,6 @@ export function PlayerGatePanel() {
   const playerGateInfo = useStore((s) => s.playerGateInfo);
   const playerId = useStore((s) => s.playerId);
   const mySlates = useStore((s) => s.mySlates);
-  const credits = useStore((s) => s.credits);
-  const cargo = useStore((s) => s.cargo);
 
   if (!playerGateInfo) return null;
 
@@ -399,7 +355,7 @@ export function PlayerGatePanel() {
       </div>
 
       {isOwner ? (
-        <OwnerView gate={gate} destinations={destinations} gateSlates={gateSlates} credits={credits} cargo={cargo} />
+        <OwnerView gate={gate} destinations={destinations} gateSlates={gateSlates} />
       ) : (
         <VisitorView gate={gate} destinations={destinations} />
       )}

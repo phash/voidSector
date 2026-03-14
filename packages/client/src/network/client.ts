@@ -2177,8 +2177,8 @@ class GameNetwork {
     this.sectorRoom?.send('getProductionQueue', { stationId });
   }
 
-  sendDepositConstruction(siteId: string, ore: number, gas: number, crystal: number) {
-    this.sectorRoom?.send('depositConstruction', { siteId, ore, gas, crystal });
+  sendDepositConstruction(siteId: string, resources: { ore?: number; gas?: number; crystal?: number; credits?: number; artefact?: number }) {
+    this.sectorRoom?.send('depositConstruction', { siteId, ...resources });
   }
 
   sendTransfer(resource: string, amount: number, direction: 'toStorage' | 'fromStorage') {

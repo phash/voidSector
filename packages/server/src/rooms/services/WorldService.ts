@@ -188,16 +188,20 @@ import { getUniverseTickCount } from '../../engine/universeBootstrap.js';
 function toConstructionSiteState(site: ConstructionSite): ConstructionSiteState {
   return {
     id: site.id,
-    type: site.type as StructureType,
+    type: site.type,
     sectorX: site.sector_x,
     sectorY: site.sector_y,
     progress: site.progress,
     neededOre: site.needed_ore,
     neededGas: site.needed_gas,
     neededCrystal: site.needed_crystal,
+    neededCredits: site.needed_credits,
+    neededArtefact: site.needed_artefact,
     depositedOre: site.deposited_ore,
     depositedGas: site.deposited_gas,
     depositedCrystal: site.deposited_crystal,
+    depositedCredits: site.deposited_credits,
+    depositedArtefact: site.deposited_artefact,
     paused: site.paused,
   };
 }
@@ -475,29 +479,35 @@ export class WorldService {
     }
 
     const cargo = await getCargoState(auth.userId);
+    const playerCredits = await getPlayerCredits(auth.userId);
 
     // Cap what player can actually deposit (can't deposit more than they have)
     const ore     = Math.max(0, Math.min(data.ore     ?? 0, cargo.ore));
     const gas     = Math.max(0, Math.min(data.gas     ?? 0, cargo.gas));
     const crystal = Math.max(0, Math.min(data.crystal ?? 0, cargo.crystal));
+    const artefact = Math.max(0, Math.min(data.artefact ?? 0, cargo.artefact ?? 0));
+    const credits = Math.max(0, Math.min(data.credits ?? 0, playerCredits));
 
     // Cap at what's still needed
-    const capOre     = Math.min(ore,     Math.max(0, site.needed_ore     - site.deposited_ore));
-    const capGas     = Math.min(gas,     Math.max(0, site.needed_gas     - site.deposited_gas));
-    const capCrystal = Math.min(crystal, Math.max(0, site.needed_crystal - site.deposited_crystal));
+    const capOre      = Math.min(ore,      Math.max(0, site.needed_ore      - site.deposited_ore));
+    const capGas      = Math.min(gas,      Math.max(0, site.needed_gas      - site.deposited_gas));
+    const capCrystal  = Math.min(crystal,  Math.max(0, site.needed_crystal  - site.deposited_crystal));
+    const capCredits  = Math.min(credits,  Math.max(0, site.needed_credits  - site.deposited_credits));
+    const capArtefact = Math.min(artefact, Math.max(0, site.needed_artefact - site.deposited_artefact));
 
-    if (capOre + capGas + capCrystal === 0) {
-      client.send('depositResult', { success: false, error: 'No resources needed or available' });
+    if (capOre + capGas + capCrystal + capCredits + capArtefact === 0) {
+      client.send('depositResult', { success: false, error: 'Keine Ressourcen benötigt oder verfügbar' });
       return;
     }
 
-    // Multi-player delivery: any player can deposit to any site (by design).
-    // No sector-proximity check required per issue #231 spec.
-    if (capOre     > 0) await removeFromInventory(auth.userId, 'resource', 'ore',     capOre);
-    if (capGas     > 0) await removeFromInventory(auth.userId, 'resource', 'gas',     capGas);
-    if (capCrystal > 0) await removeFromInventory(auth.userId, 'resource', 'crystal', capCrystal);
+    // Deduct resources
+    if (capOre      > 0) await removeFromInventory(auth.userId, 'resource', 'ore',      capOre);
+    if (capGas      > 0) await removeFromInventory(auth.userId, 'resource', 'gas',      capGas);
+    if (capCrystal  > 0) await removeFromInventory(auth.userId, 'resource', 'crystal',  capCrystal);
+    if (capArtefact > 0) await removeFromInventory(auth.userId, 'resource', 'artefact', capArtefact);
+    if (capCredits  > 0) await deductCredits(auth.userId, capCredits);
 
-    await depositResources(data.siteId, capOre, capGas, capCrystal);
+    await depositResources(data.siteId, capOre, capGas, capCrystal, capCredits, capArtefact);
 
     const updatedSite = await getConstructionSiteById(data.siteId);
     const siteState = toConstructionSiteState(updatedSite!);
@@ -505,6 +515,9 @@ export class WorldService {
 
     const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
+    if (capCredits > 0) {
+      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    }
     client.send('depositResult', { success: true });
   }
 
@@ -535,32 +548,25 @@ export class WorldService {
       return;
     }
 
+    // Check existing construction site
+    const existingSite = await getConstructionSite(sx, sy);
+    if (existingSite) {
+      client.send('buildStationResult', { success: false, error: 'Hier gibt es bereits eine Baustelle' });
+      return;
+    }
+
+    // Create construction site — no upfront resource cost
     const costs = STATION_BUILD_COSTS[1];
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < costs.credits) {
-      client.send('buildStationResult', { success: false, error: `${costs.credits} Credits benötigt` });
-      return;
-    }
-    const cargo = await getCargoState(auth.userId);
-    if ((cargo.crystal ?? 0) < costs.crystal) {
-      client.send('buildStationResult', { success: false, error: `${costs.crystal} Crystal benötigt` });
-      return;
-    }
-    if ((cargo.artefact ?? 0) < costs.artefact) {
-      client.send('buildStationResult', { success: false, error: `${costs.artefact} Artefakt benötigt` });
-      return;
-    }
+    const siteId = await createConstructionSite(
+      auth.userId, 'station', sx, sy,
+      { credits: costs.credits, crystal: costs.crystal, artefact: costs.artefact },
+    );
 
-    await deductCredits(auth.userId, costs.credits);
-    await removeFromInventory(auth.userId, 'resource', 'crystal', costs.crystal);
-    await removeFromInventory(auth.userId, 'resource', 'artefact', costs.artefact);
-
-    const station = await insertPlayerStation(auth.userId, sx, sy, qx, qy);
-
-    client.send('buildStationResult', { success: true, station });
-    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-    client.send('cargoUpdate', await getCargoState(auth.userId));
-    client.send('logEntry', `STATION ERRICHTET bei (${sx}, ${sy})`);
+    const site = await getConstructionSiteById(siteId);
+    const constructionSite = toConstructionSiteState(site!);
+    client.send('buildStationResult', { success: true, constructionSite });
+    this.ctx.broadcast('constructionSiteCreated', { site: constructionSite });
+    client.send('logEntry', `Station-Baustelle eröffnet bei (${sx}, ${sy})`);
   }
 
   async handleUpgradeStation(client: Client, data: { stationId: string }): Promise<void> {
@@ -903,65 +909,24 @@ export class WorldService {
       return;
     }
 
-    // Check credits
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < JUMPGATE_BUILD_COST.credits) {
-      client.send('buildResult', {
-        success: false,
-        error: `Need ${JUMPGATE_BUILD_COST.credits} credits`,
-      });
+    // Check existing construction site
+    const existingSite = await getConstructionSite(sx, sy);
+    if (existingSite) {
+      client.send('buildResult', { success: false, error: 'Hier gibt es bereits eine Baustelle' });
       return;
     }
 
-    // Check artefacts
-    const cargoState = await getCargoState(auth.userId);
-    if ((cargoState.artefact ?? 0) < JUMPGATE_BUILD_COST.artefact) {
-      client.send('buildResult', {
-        success: false,
-        error: `Need ${JUMPGATE_BUILD_COST.artefact} artefacts`,
-      });
-      return;
-    }
+    // Create construction site — no upfront resource cost
+    const siteId = await createConstructionSite(
+      auth.userId, 'jumpgate', sx, sy,
+      { credits: JUMPGATE_BUILD_COST.credits, crystal: JUMPGATE_BUILD_COST.crystal, artefact: JUMPGATE_BUILD_COST.artefact },
+    );
 
-    // Check crystal (from STRUCTURE_COSTS)
-    if ((cargoState.crystal ?? 0) < JUMPGATE_BUILD_COST.crystal) {
-      client.send('buildResult', {
-        success: false,
-        error: `Need ${JUMPGATE_BUILD_COST.crystal} crystal`,
-      });
-      return;
-    }
-
-    // Deduct AP
-    const ap = await getAPState(auth.userId);
-    const currentAP = calculateCurrentAP(ap, Date.now());
-    const newAP = spendAP(currentAP, STRUCTURE_AP_COSTS.jumpgate);
-    if (!newAP) {
-      client.send('buildResult', { success: false, error: 'Not enough AP' });
-      return;
-    }
-    await saveAPState(auth.userId, newAP);
-
-    // Deduct all resources
-    await deductCredits(auth.userId, JUMPGATE_BUILD_COST.credits);
-    await removeFromInventory(auth.userId, 'resource', 'artefact', JUMPGATE_BUILD_COST.artefact);
-    await removeFromInventory(auth.userId, 'resource', 'crystal', JUMPGATE_BUILD_COST.crystal);
-
-    // Insert into jumpgates table
-    const gateId = `pgate_${sx}_${sy}`;
-    await insertPlayerJumpGate({ id: gateId, sectorX: sx, sectorY: sy, ownerId: auth.userId });
-
-    client.send('buildResult', {
-      success: true,
-      structure: { id: gateId, type: 'jumpgate', sectorX: sx, sectorY: sy },
-    });
-    client.send('apUpdate', newAP);
-    client.send('cargoUpdate', await getCargoState(auth.userId));
-    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-    client.send('logEntry', `Jumpgate errichtet bei (${sx}, ${sy})`);
-
-    // Send gate info so PlayerGatePanel shows immediately after build
-    await this.ctx.detectAndSendPlayerGate(client, sx, sy);
+    const site = await getConstructionSiteById(siteId);
+    const constructionSite = toConstructionSiteState(site!);
+    client.send('buildResult', { success: true, constructionSite });
+    this.ctx.broadcast('constructionSiteCreated', { site: constructionSite });
+    client.send('logEntry', `Jumpgate-Baustelle eröffnet bei (${sx}, ${sy})`);
   }
 
   // ── Jumpgate Upgrade / Dismantle / Toll ───────────────────────────
@@ -979,68 +944,54 @@ export class WorldService {
       return;
     }
 
-    const costs = JUMPGATE_UPGRADE_COSTS[data.upgradeType];
-    if (!costs) {
+    // upgradeType is 'connection' or 'distance' from client
+    let currentLevel: number;
+    let siteTypePrefix: string;
+    if (data.upgradeType === 'connection') {
+      currentLevel = gate.levelConnection;
+      siteTypePrefix = 'jumpgate_conn';
+    } else if (data.upgradeType === 'distance') {
+      currentLevel = gate.levelDistance;
+      siteTypePrefix = 'jumpgate_dist';
+    } else {
       client.send('error', { code: 'UPGRADE_FAIL', message: 'Invalid upgrade type' });
       return;
     }
 
-    // Determine which field and new level
-    let field: 'level_connection' | 'level_distance';
-    let currentLevel: number;
-    if (data.upgradeType.startsWith('connection_')) {
-      field = 'level_connection';
-      currentLevel = gate.levelConnection;
-    } else {
-      field = 'level_distance';
-      currentLevel = gate.levelDistance;
-    }
-
-    const targetLevel = parseInt(data.upgradeType.split('_')[1], 10);
-    if (currentLevel >= targetLevel) {
-      client.send('error', { code: 'UPGRADE_FAIL', message: 'Already at this level or higher' });
-      return;
-    }
-    if (targetLevel !== currentLevel + 1) {
-      client.send('error', { code: 'UPGRADE_FAIL', message: 'Must upgrade sequentially' });
+    const targetLevel = currentLevel + 1;
+    const costKey = data.upgradeType === 'connection' ? `connection_${targetLevel}` : `distance_${targetLevel}`;
+    const costs = JUMPGATE_UPGRADE_COSTS[costKey];
+    if (!costs) {
+      client.send('error', { code: 'UPGRADE_FAIL', message: 'Max level reached' });
       return;
     }
 
-    // Check resources
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < (costs.credits ?? 0)) {
-      client.send('error', { code: 'UPGRADE_FAIL', message: 'Not enough credits' });
+    // Check no existing construction site at this sector
+    const existingSite = await getConstructionSite(gate.sectorX, gate.sectorY);
+    if (existingSite) {
+      client.send('error', { code: 'UPGRADE_FAIL', message: 'Hier gibt es bereits eine Baustelle' });
       return;
     }
-    const cargo = await getCargoState(auth.userId);
-    for (const [resource, amount] of Object.entries(costs)) {
-      if (resource === 'credits' || !amount) continue;
-      if ((cargo[resource as keyof typeof cargo] ?? 0) < amount) {
-        client.send('error', { code: 'UPGRADE_FAIL', message: `Not enough ${resource}` });
-        return;
-      }
-    }
 
-    // Deduct
-    await deductCredits(auth.userId, costs.credits ?? 0);
-    for (const [resource, amount] of Object.entries(costs)) {
-      if (resource === 'credits' || !amount) continue;
-      await removeFromInventory(auth.userId, 'resource', resource, amount);
-    }
+    const siteType = `${siteTypePrefix}_${targetLevel}`;
+    const siteId = await createConstructionSite(
+      auth.userId, siteType, gate.sectorX, gate.sectorY,
+      {
+        credits: costs.credits ?? 0,
+        ore: costs.ore ?? 0,
+        crystal: costs.crystal ?? 0,
+        artefact: costs.artefact ?? 0,
+      },
+      { gateId: data.gateId },
+    );
 
-    await upgradeJumpGate(data.gateId, field, targetLevel);
-
-    client.send('jumpgateUpdated', {
-      success: true,
-      gateId: data.gateId,
-      field,
-      newLevel: targetLevel,
-    });
-    client.send('cargoUpdate', await getCargoState(auth.userId));
-    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    const site = await getConstructionSiteById(siteId);
+    const constructionSite = toConstructionSiteState(site!);
+    client.send('constructionSiteCreated', { site: constructionSite });
+    this.ctx.broadcast('constructionSiteCreated', { site: constructionSite });
     client.send(
       'logEntry',
-      `Jumpgate ${field === 'level_connection' ? 'Verbindung' : 'Distanz'} auf Level ${targetLevel} aufgerüstet`,
+      `Jumpgate-Upgrade (${data.upgradeType} → L${targetLevel}) Baustelle eröffnet`,
     );
   }
 
