@@ -2178,6 +2178,8 @@ export const CUSTOM_SLATE_MAX_COORDS = 20;
 export const CUSTOM_SLATE_MAX_CODES = 10;
 export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
 
+// Blueprint Crafting
+export const BLUEPRINT_COPY_BASE_COST = 100; // CR per tier
 
 // Hyperjump Navigation
 export const HYPERJUMP_AP_DISCOUNT = 0.5; // 50% AP cost for known routes (legacy)
