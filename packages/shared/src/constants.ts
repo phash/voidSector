@@ -108,34 +108,6 @@ export const LAB_WISSEN_MULTIPLIER: Record<number, number> = {
   5: 5.0,
 };
 
-/** Maximum research lab tier */
-export const RESEARCH_LAB_MAX_TIER = 5;
-
-/** Credits + material cost to upgrade research lab to the given tier */
-export const RESEARCH_LAB_UPGRADE_COSTS: Record<
-  number,
-  { credits: number; ore: number; crystal: number }
-> = {
-  2: { credits: 500, ore: 30, crystal: 20 },
-  3: { credits: 1200, ore: 60, crystal: 40 },
-  4: { credits: 2500, ore: 100, crystal: 80 },
-  5: { credits: 5000, ore: 150, crystal: 120 },
-};
-
-export const RELAY_RANGES: Record<StructureType, number> = {
-  comm_relay: 500,
-  mining_station: 500,
-  base: 1000,
-  storage: 0,
-  trading_post: 0,
-  defense_turret: 0,
-  station_shield: 0,
-  ion_cannon: 0,
-  factory: 0,
-  research_lab: 0,
-  kontor: 0,
-  jumpgate: 0,
-};
 
 // Player Jumpgate costs
 export const JUMPGATE_BUILD_COST = { credits: 500, crystal: 20, artefact: 5 };
@@ -2136,7 +2108,7 @@ export const FACTION_UPGRADE_TIERS: Record<
 };
 
 // JumpGates
-export const JUMPGATE_CHANCE = 0.005; // natural bidirectional/wormhole gates (1 in 200 sectors)
+export const JUMPGATE_CHANCE = 0; // disabled — only ancient jumpgates remain
 export const JUMPGATE_SALT = 777;
 export const JUMPGATE_FUEL_COST = 0; // jumpgates cost credits only, no fuel
 export const JUMPGATE_TRAVEL_COST_CREDITS = 50; // credits to use a public jumpgate

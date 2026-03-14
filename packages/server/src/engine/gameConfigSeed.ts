@@ -118,7 +118,6 @@ import {
   STRUCTURE_AP_COSTS,
   JUMPGATE_BUILD_COST,
   JUMPGATE_UPGRADE_COSTS,
-  RESEARCH_LAB_UPGRADE_COSTS,
   MAX_ACTIVE_QUESTS,
   QUEST_EXPIRY_DAYS,
   SCAN_EVENT_CHANCE,
@@ -156,7 +155,6 @@ import {
   BASE_COMM_RANGE,
   BASE_SCANNER_LEVEL,
   LAB_WISSEN_MULTIPLIER,
-  RESEARCH_LAB_MAX_TIER,
   RESEARCH_TICK_MS,
   WRECK_BASE_DIFFICULTY,
   WRECK_SALVAGE_DURATION_MS,
@@ -339,7 +337,6 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   { key: 'STRUCTURE_AP_COSTS', category: 'structures', description: 'AP costs to build structures', getDefault: () => STRUCTURE_AP_COSTS },
   { key: 'JUMPGATE_BUILD_COST', category: 'structures', description: 'Cost to build player jumpgate', getDefault: () => JUMPGATE_BUILD_COST },
   { key: 'JUMPGATE_UPGRADE_COSTS', category: 'structures', description: 'Jumpgate upgrade costs by type', getDefault: () => JUMPGATE_UPGRADE_COSTS },
-  { key: 'RESEARCH_LAB_UPGRADE_COSTS', category: 'structures', description: 'Research lab upgrade costs per tier', getDefault: () => RESEARCH_LAB_UPGRADE_COSTS },
 
   // ══════════════════════════════════════════════════════════════════════════════
   // Quests
@@ -401,7 +398,6 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   // Research
   // ══════════════════════════════════════════════════════════════════════════════
   { key: 'LAB_WISSEN_MULTIPLIER', category: 'research', description: 'Lab tier Wissen generation multiplier', getDefault: () => LAB_WISSEN_MULTIPLIER },
-  { key: 'RESEARCH_LAB_MAX_TIER', category: 'research', description: 'Maximum research lab tier', getDefault: () => RESEARCH_LAB_MAX_TIER },
   { key: 'RESEARCH_TICK_MS', category: 'research', description: 'Research tick interval in milliseconds', getDefault: () => RESEARCH_TICK_MS },
 
   // ══════════════════════════════════════════════════════════════════════════════

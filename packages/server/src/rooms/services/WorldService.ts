@@ -28,7 +28,6 @@ import {
   validateBuild,
   validateCreateSlate,
   validateNpcBuyback,
-  validateLabUpgrade,
 } from '../../engine/commands.js';
 import {
   checkDistressCall,
@@ -128,8 +127,6 @@ import {
   insertJumpGateLink,
   removeJumpGateLink,
   countJumpGateLinks,
-  getResearchLabTier,
-  upgradeResearchLabTier,
   getActiveShip,
   logExpansionEvent,
 } from '../../db/queries.js';
@@ -147,7 +144,7 @@ import {
   playerKnowsQuadrant,
 } from '../../db/quadrantQueries.js';
 import { isInt, rejectGuest } from './utils.js';
-import { addAcepXpForPlayer, getAcepXpSummary, getAusbauGating } from '../../engine/acepXpService.js';
+import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import {
   createConstructionSite,
   getConstructionSite,
@@ -478,67 +475,6 @@ export class WorldService {
     const updatedCargo = await getCargoState(auth.userId);
     client.send('cargoUpdate', updatedCargo);
     client.send('depositResult', { success: true });
-  }
-
-  // ── Research Lab Upgrade ────────────────────────────────────────────
-
-  async handleUpgradeResearchLab(client: Client): Promise<void> {
-    if (rejectGuest(client, 'Labor-Upgrade')) return;
-    if (!this.ctx.checkRate(client.sessionId, 'upgradeResearchLab', 3000)) {
-      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
-      return;
-    }
-
-    const auth = client.auth as AuthPayload;
-    const sx = this.ctx._px(client.sessionId);
-    const sy = this.ctx._py(client.sessionId);
-
-    const [labTier, cargo, credits] = await Promise.all([
-      getResearchLabTier(auth.userId),
-      getCargoState(auth.userId),
-      getPlayerCredits(auth.userId),
-    ]);
-
-    const result = validateLabUpgrade(labTier, credits, cargo);
-
-    if (!result.valid) {
-      client.send('error', { code: 'LAB_UPGRADE_FAIL', message: result.error! });
-      return;
-    }
-
-    // AUSBAU gating: check ACEP XP before allowing lab upgrade
-    const targetTier = labTier + 1;
-    const activeShip = await getActiveShip(auth.userId);
-    if (activeShip) {
-      const acepXp = await getAcepXpSummary(activeShip.id);
-      const gating = getAusbauGating(acepXp.ausbau);
-      if (targetTier > gating.maxLabTier) {
-        client.send('error', {
-          code: 'AUSBAU_REQUIRED',
-          message: `AUSBAU Level zu niedrig. Benötigt: ${targetTier * 10} AUSBAU XP.`,
-        });
-        return;
-      }
-    }
-
-    // Deduct costs
-    await deductCredits(auth.userId, result.costs!.credits);
-    await removeFromInventory(auth.userId, 'resource', 'ore', result.costs!.ore);
-    await removeFromInventory(auth.userId, 'resource', 'crystal', result.costs!.crystal);
-
-    // Upgrade the lab at player's current position
-    const newTier = await upgradeResearchLabTier(auth.userId, sx, sy);
-    if (!newTier) {
-      client.send('error', {
-        code: 'LAB_UPGRADE_FAIL',
-        message: 'No research lab at your location',
-      });
-      return;
-    }
-
-    client.send('labUpgradeResult', { success: true, newTier });
-    const updatedCargo = await getCargoState(auth.userId);
-    client.send('cargoUpdate', updatedCargo);
   }
 
   // ── Jumpgate Build ─────────────────────────────────────────────────

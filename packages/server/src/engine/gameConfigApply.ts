@@ -28,7 +28,6 @@ import {
   JUMPGATE_CONNECTION_LIMITS,
   JUMPGATE_BUILD_COST,
   JUMPGATE_UPGRADE_COSTS,
-  RESEARCH_LAB_UPGRADE_COSTS,
   STRUCTURE_COSTS,
   STRUCTURE_AP_COSTS,
   STORAGE_TIERS,
@@ -170,10 +169,6 @@ export function applyConfigValue(key: string, value: any): void {
   }
   if (key === 'JUMPGATE_UPGRADE_COSTS') {
     deepAssign(JUMPGATE_UPGRADE_COSTS, value);
-    return;
-  }
-  if (key === 'RESEARCH_LAB_UPGRADE_COSTS') {
-    deepAssign(RESEARCH_LAB_UPGRADE_COSTS, value);
     return;
   }
   if (key === 'STRUCTURE_COSTS') {
