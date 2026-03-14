@@ -205,6 +205,36 @@ adminRouter.patch('/players/:id/cargo', async (req: Request, res: Response) => {
 
 // ── Catalog (for admin UI dropdowns) ────────────────────────────────
 
+adminRouter.post('/players/:id/cargo', async (req: Request, res: Response) => {
+  try {
+    const player = await getPlayerById(req.params.id as string);
+    if (!player) { res.status(404).json({ error: 'Player not found' }); return; }
+    const resources = req.body as Record<string, number>;
+    const allowed = ['ore', 'gas', 'crystal', 'slate', 'artefact', 'fuel'];
+    for (const [resource, amount] of Object.entries(resources)) {
+      if (!allowed.includes(resource)) continue;
+      if (typeof amount !== 'number' || amount <= 0) continue;
+      await query(
+        `INSERT INTO cargo (player_id, resource, quantity) VALUES ($1, $2, $3)
+         ON CONFLICT (player_id, resource) DO UPDATE SET quantity = cargo.quantity + $3`,
+        [req.params.id, resource, amount],
+      );
+    }
+    // Notify live session so client updates without reconnect
+    const cargoUpdate: Record<string, number> = {};
+    for (const [resource, amount] of Object.entries(resources)) {
+      if (!['ore', 'gas', 'crystal', 'slate', 'artefact', 'fuel'].includes(resource)) continue;
+      if (typeof amount === 'number' && amount > 0) cargoUpdate[resource] = amount;
+    }
+    adminBus.playerUpdated({ playerId: req.params.id as string, updates: { cargo: cargoUpdate } });
+    await logAdminEvent('give_player_cargo', { playerId: req.params.id, resources });
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, 'Admin give cargo error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 adminRouter.get('/catalog', (_req: Request, res: Response) => {
   const resources = ['ore', 'gas', 'crystal', 'artefact', 'fuel_cell',
     'artefact_drive', 'artefact_cargo', 'artefact_scanner', 'artefact_armor',
@@ -632,9 +662,11 @@ adminRouter.post('/structures/station', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'sectorX and sectorY required' });
       return;
     }
-    await civQueries.upsertStation(
-      sectorX, sectorY, 'humans',
-      hasShipyard ?? true, hasWarehouse ?? true, hasKontor ?? false,
+    await query(
+      `INSERT INTO civ_stations (sector_x, sector_y, faction, has_shipyard, has_warehouse, has_kontor, mode)
+       VALUES ($1, $2, 'humans', $3, $4, $5, 'conquest')
+       ON CONFLICT (sector_x, sector_y) DO UPDATE SET faction = 'humans', mode = 'conquest'`,
+      [sectorX, sectorY, hasShipyard ?? true, hasWarehouse ?? true, hasKontor ?? false],
     );
     await query(
       `INSERT INTO sectors (x, y, type, seed) VALUES ($1, $2, 'station', 0)
@@ -644,9 +676,9 @@ adminRouter.post('/structures/station', async (req: Request, res: Response) => {
     const qx = Math.floor(sectorX / QUADRANT_SIZE);
     const qy = Math.floor(sectorY / QUADRANT_SIZE);
     await query(
-      `INSERT INTO quadrant_control (qx, qy, controlling_faction)
-       VALUES ($1, $2, 'humans')
-       ON CONFLICT (qx, qy) DO UPDATE SET controlling_faction = 'humans'`,
+      `INSERT INTO quadrant_control (qx, qy, controlling_faction, faction_shares)
+       VALUES ($1, $2, 'humans', '{"humans": 0}')
+       ON CONFLICT (qx, qy) DO NOTHING`,
       [qx, qy],
     );
     await logAdminEvent('create_human_station', { sectorX, sectorY });
