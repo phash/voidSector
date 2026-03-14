@@ -14,6 +14,7 @@ import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
 import { adminRouter } from './adminRoutes.js';
 import { logger } from './utils/logger.js';
 import { startUniverseEngine } from './engine/universeBootstrap.js';
+import { gameConfig } from './engine/gameConfigService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -117,6 +118,7 @@ export default config({
 
   beforeListen: async () => {
     await runMigrations();
+    await gameConfig.init();
     const expiredGuests = await deleteExpiredGuestPlayers();
     if (expiredGuests > 0) {
       logger.info({ expiredGuests }, 'Cleaned up expired guest accounts');

@@ -1816,6 +1816,15 @@ class GameNetwork {
       room.send('getInventory');
     });
 
+    room.onMessage('craftResult', (data: { success: boolean; moduleId?: string; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`MODUL HERGESTELLT: ${data.moduleId ?? '?'}`);
+      } else {
+        store.addLogEntry(`HERSTELLUNG FEHLGESCHLAGEN: ${data.error ?? 'Unbekannter Fehler'}`);
+      }
+    });
+
     room.onMessage('stationProductionUpdate', (data: StationProductionState) => {
       useStore.getState().setStationProductionState(data);
     });
@@ -2574,8 +2583,8 @@ class GameNetwork {
     this.sectorRoom?.send('getInventory');
   }
 
-  sendCraftModule(blueprintId: string) {
-    this.sectorRoom?.send('craftModule', { blueprintId });
+  sendCraftModule(moduleId: string) {
+    this.sectorRoom?.send('craftModule', { moduleId });
   }
 
   // --- Station Production ---

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { MODULES, SPECIALIZED_SLOT_INDEX } from '@void-sector/shared';
 
 const green = '#00FF88';
 const dimGreen = 'rgba(0,255,136,0.3)';
@@ -94,7 +95,11 @@ export function FabrikPanel() {
               <button
                 style={{ ...btnStyle, opacity: installedIds.has(m.itemId) ? 0.4 : 1 }}
                 disabled={installedIds.has(m.itemId)}
-                onClick={() => network.sendInstallModule('', m.itemId, 0)}
+                onClick={() => {
+                  const modDef = MODULES[m.itemId];
+                  const slot = modDef ? (SPECIALIZED_SLOT_INDEX[modDef.category] ?? 0) : 0;
+                  network.sendInstallModule('', m.itemId, slot);
+                }}
               >
                 {installedIds.has(m.itemId) ? t('fabrik.installed') : t('fabrik.install')}
               </button>

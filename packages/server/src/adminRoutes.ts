@@ -52,6 +52,12 @@ import { constructionBus } from './constructionBus.js';
 import { MODULES, QUADRANT_SIZE } from '@void-sector/shared';
 import { STORY_CHAPTERS } from './engine/storyQuestChain.js';
 import { getStoryProgress, upsertStoryProgress } from './db/queries.js';
+import { gameConfig } from './engine/gameConfigService.js';
+import { getDefaultValue } from './engine/gameConfigApply.js';
+import { execFile } from 'child_process';
+import { writeFile, unlink } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 export const adminRouter = Router();
 
@@ -815,6 +821,120 @@ adminRouter.post('/story/trigger', async (req: Request, res: Response) => {
     });
   } catch (err) {
     logger.error({ err }, 'Admin story trigger error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Game Config ──────────────────────────────────────────────────
+
+// GET /admin/api/config — all values, optional ?category= filter
+adminRouter.get('/config', async (req: Request, res: Response) => {
+  try {
+    const category = req.query.category as string | undefined;
+    const entries = gameConfig.getAll(category || undefined);
+    const categories = gameConfig.getCategories();
+    res.json({ entries, categories });
+  } catch (err) {
+    logger.error({ err }, 'Admin get config error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /admin/api/config/by-key?key=AP_DEFAULTS.max — single value + default
+adminRouter.get('/config/by-key', async (req: Request, res: Response) => {
+  try {
+    const key = req.query.key as string;
+    if (!key) { res.status(400).json({ error: 'key query param required' }); return; }
+    const value = gameConfig.get(key);
+    const defaultValue = getDefaultValue(key);
+    res.json({ key, value: value ?? defaultValue, defaultValue, isCustom: value !== undefined });
+  } catch (err) {
+    logger.error({ err }, 'Admin get config key error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /admin/api/config/by-key — update value
+adminRouter.put('/config/by-key', async (req: Request, res: Response) => {
+  try {
+    const { key, value, category, description } = req.body;
+    if (!key || value === undefined) { res.status(400).json({ error: 'key and value required' }); return; }
+    const previous = await gameConfig.set(key, value, category, description);
+    await logAdminEvent('config_update', { key, value, previous });
+    res.json({ ok: true, key, value, previous });
+  } catch (err) {
+    logger.error({ err }, 'Admin set config error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /admin/api/config/by-key?key=AP_DEFAULTS.max — reset to default
+adminRouter.delete('/config/by-key', async (req: Request, res: Response) => {
+  try {
+    const key = req.query.key as string;
+    if (!key) { res.status(400).json({ error: 'key query param required' }); return; }
+    await gameConfig.delete(key);
+    const defaultValue = getDefaultValue(key);
+    await logAdminEvent('config_reset', { key, defaultValue });
+    res.json({ ok: true, key, resetTo: defaultValue });
+  } catch (err) {
+    logger.error({ err }, 'Admin delete config error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /admin/api/config/export-issue — create GH issue with all current values
+adminRouter.post('/config/export-issue', async (req: Request, res: Response) => {
+  try {
+    const entries = gameConfig.getAll();
+    const categories = gameConfig.getCategories();
+
+    let body = `# Game Config Snapshot ${new Date().toISOString().split('T')[0]}\n\n`;
+    body += `> Auto-generated from admin console. ${entries.length} values.\n\n`;
+
+    for (const cat of categories) {
+      const catEntries = entries.filter((e) => e.category === cat);
+      if (catEntries.length === 0) continue;
+      body += `## ${cat.toUpperCase()}\n\n`;
+      body += '| Key | Value |\n|-----|-------|\n';
+      for (const e of catEntries) {
+        const val = typeof e.value === 'object' ? JSON.stringify(e.value) : String(e.value);
+        const truncated = val.length > 80 ? val.substring(0, 77) + '...' : val;
+        body += `| ${e.key} | \`${truncated}\` |\n`;
+      }
+      body += '\n';
+    }
+
+    // Write body to temp file for gh CLI
+    const tmpPath = join(tmpdir(), `config_export_${Date.now()}.md`);
+    await writeFile(tmpPath, body);
+
+    const result = await new Promise<{ stdout: string; stderr: string; status: number }>((resolve) => {
+      execFile('gh', [
+        'issue', 'create',
+        '--title', `chore: update default game config values [${new Date().toISOString().split('T')[0]}]`,
+        '--body-file', tmpPath,
+      ], (error, stdout, stderr) => {
+        resolve({
+          stdout: stdout || '',
+          stderr: stderr || '',
+          status: error ? 1 : 0,
+        });
+      });
+    });
+
+    await unlink(tmpPath).catch(() => {});
+
+    if (result.status !== 0) {
+      res.status(500).json({ error: 'Failed to create GH issue', stderr: result.stderr });
+      return;
+    }
+
+    const issueUrl = result.stdout.trim();
+    await logAdminEvent('config_export_issue', { issueUrl });
+    res.json({ ok: true, issueUrl });
+  } catch (err) {
+    logger.error({ err }, 'Admin export config issue error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
