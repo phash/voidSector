@@ -72,6 +72,14 @@ export interface ServiceContext {
   ) => Promise<void>;
   applyXpGain: (playerId: string, xp: number, client: Client) => Promise<void>;
   contributeToCommunityQuest: (playerId: string, count: number, questType: string) => Promise<void>;
+  onResourceSoldAtStation: (
+    client: Client,
+    playerId: string,
+    sectorX: number,
+    sectorY: number,
+    resource: string,
+    amount: number,
+  ) => Promise<void>;
 
   // AP management
   deductAP: (playerId: string, cost: number) => Promise<boolean>;

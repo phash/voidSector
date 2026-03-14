@@ -233,6 +233,8 @@ export class EconomyService {
         if (wasFullLoad) {
           addAcepXpForPlayer(auth.userId, 'ausbau', 2).catch(() => {});
         }
+        // Auto-progress delivery quests targeting this station
+        await this.ctx.onResourceSoldAtStation(client, auth.userId, sx, sy, resource, effectiveAmount);
         // Send station info update (rich format with inventory)
         await this.sendNpcStationUpdate(client, sx, sy);
       } else {
