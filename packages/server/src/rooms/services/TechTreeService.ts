@@ -4,9 +4,12 @@ import {
   TECH_TREE_RESET_COOLDOWN_MS,
   getTechNode,
   calculateResearchCost,
+  getTechTreeEffects,
+  MODULES,
 } from '@void-sector/shared';
 import { getOrCreateTechTree, saveTechTree, resetTechTree as dbResetTree } from '../../db/techTreeQueries.js';
 import { deductWissen, getWissen } from '../../db/queries.js';
+import { addToInventory } from '../../engine/inventoryService.js';
 import type { ServiceContext } from './ServiceContext.js';
 
 interface ValidationResult {
@@ -86,6 +89,23 @@ export class TechTreeService {
     row.total_researched += 1;
 
     await saveTechTree(auth.userId, row.researched_nodes, row.total_researched);
+
+    // Auto-grant first blueprint for newly accessible modules
+    const node = getTechNode(data.nodeId);
+    if (node && node.type === 'branch') {
+      // Branch level increased — tier = newLevel + 1 (level 1→tier 2, level 2→tier 3, level 3→tier 4)
+      const newTier = (currentLevel + 1) + 1;
+      try {
+        for (const mod of Object.values(MODULES)) {
+          if (!mod.cost || !mod.acepPaths) continue;
+          if (mod.tier !== newTier) continue;
+          if (!(mod.acepPaths as string[]).includes(node.branch)) continue;
+          await addToInventory(auth.userId, 'blueprint', mod.id, 1);
+          client.send('logEntry', `BLUEPRINT ERHALTEN: ${mod.name}`);
+        }
+        client.send('inventoryUpdated', {});
+      } catch { /* don't block research on blueprint grant failure */ }
+    }
 
     // Read actual remaining wissen from DB after deduction
     const remainingWissen = await getWissen(auth.userId);
