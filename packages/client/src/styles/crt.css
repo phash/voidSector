@@ -1462,19 +1462,20 @@
 .program-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
-  padding: 8px 8px;
+  padding: 5px 8px;
   background: transparent;
   border: none;
   border-bottom: 1px solid #1a1a1a;
   border-left: 3px solid transparent;
   color: #777;
   font-family: var(--font-mono);
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   cursor: pointer;
   text-align: left;
+  flex-shrink: 0;
 }
 
 .program-btn:hover { background: rgba(255,255,255,0.03); border-left-color: rgba(255,176,0,0.3); }
