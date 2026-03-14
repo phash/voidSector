@@ -121,7 +121,7 @@ export function StatusBar() {
         </span>
         {ap && (
           <span style={{ fontSize: '0.75rem', color: 'var(--color-dim)' }}>
-            {ap.regenPerSecond}/s {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `IN ${secondsToFull}s`}
+            {Math.round(ap.regenPerSecond * 100) / 100}/s {isFull ? <span style={{ color: '#00FF88' }}>FULL</span> : `IN ${secondsToFull}s`}
           </span>
         )}
       </div>
