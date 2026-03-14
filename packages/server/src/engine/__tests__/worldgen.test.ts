@@ -174,14 +174,15 @@ describe('worldgen', () => {
     expect(found).toBe(true);
   });
 
-  it('pirate sectors have pirate_zone and asteroid_field in contents', () => {
+  it('pirate_zone sectors contain pirate_zone and asteroid_field in contents (hidden from radar)', () => {
     let found = false;
     for (let x = -30; x <= 30 && !found; x++) {
       for (let y = -30; y <= 30 && !found; y++) {
         const sector = generateSector(x, y, null);
-        if (sector.type === 'pirate') {
-          expect(sector.contents).toContain('pirate_zone');
+        if (sector.contents.includes('pirate_zone')) {
           expect(sector.contents).toContain('asteroid_field');
+          // pirate_zone is hidden — type should be asteroid_field, not 'pirate'
+          expect(sector.type).toBe('asteroid_field');
           found = true;
         }
       }
