@@ -71,10 +71,10 @@ function AcepTab() {
           if (!mod) return null;
           return (
             <div key={moduleId} style={rowStyle}>
-              <span style={{ color: green }}>
+              <div style={{ color: green }}>
                 {mod.name ?? moduleId}
                 <CostDisplay moduleId={moduleId} />
-              </span>
+              </div>
               <button
                 style={btnStyle}
                 onClick={() => network.sendCraftModule(moduleId)}
@@ -157,9 +157,9 @@ function CostDisplay({ moduleId }: { moduleId: string }) {
   if (mod.cost.artefact) parts.push(`${mod.cost.artefact} ART`);
   if (parts.length === 0) return null;
   return (
-    <span style={{ fontSize: '0.55rem', opacity: 0.5, marginLeft: 4 }}>
+    <div style={{ fontSize: '0.55rem', opacity: 0.5, marginTop: 1 }}>
       {parts.join(' · ')}
-    </span>
+    </div>
   );
 }
 
@@ -235,10 +235,10 @@ function StationTab() {
               if (!mod) return null;
               return (
                 <div key={moduleId} style={rowStyle}>
-                  <span style={{ color: '#00BFFF' }}>
+                  <div style={{ color: '#00BFFF' }}>
                     {mod.name ?? moduleId}
                     <CostDisplay moduleId={moduleId} />
-                  </span>
+                  </div>
                   <button
                     style={{ ...btnStyle, borderColor: '#00BFFF', color: '#00BFFF' }}
                     onClick={() => network.sendStartProduction(selected.id, moduleId, 1)}
