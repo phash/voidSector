@@ -609,7 +609,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       engineSpeed: 1,
       hyperdriveRange: 32,
       hyperdriveSpeed: 2,
-      hyperdriveRegen: 4.0,
+      hyperdriveRegen: 2.0,
       fuelMax: 2_000,
     },
     cost: { credits: 100, ore: 10 },
@@ -661,7 +661,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       engineSpeed: 3,
       hyperdriveRange: 128,
       hyperdriveSpeed: 5,
-      hyperdriveRegen: 4.0,
+      hyperdriveRegen: 6.0,
       hyperdriveFuelEfficiency: 0.2,
       fuelMax: 7_000,
     },
@@ -1037,7 +1037,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
       fuelPerJump: -30,
       hyperdriveRange: 192,
       hyperdriveSpeed: 8,
-      hyperdriveRegen: 4.0,
+      hyperdriveRegen: 8.0,
       hyperdriveFuelEfficiency: 0.35,
     },
     cost: { credits: 2000, artefact: 5 },
@@ -1173,7 +1173,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     primaryEffect: { stat: 'jumpRange', delta: 4, label: 'Sprungweite +4' },
     secondaryEffects: [
       { stat: 'engineSpeed', delta: 4, label: 'Engine-Speed +4' },
-      { stat: 'hyperdriveRegen', delta: 2.5, label: 'Hyperdrive-Regen +2.5' },
+      { stat: 'hyperdriveRegen', delta: 8, label: 'Hyperdrive-Regen +8' },
       { stat: 'hyperdriveFuelEfficiency', delta: 0.3, label: 'Fuel-Effizienz +30%' },
       { stat: 'fuelMax', delta: 12_000, label: 'Fuel-Tank +12.000' },
     ],
@@ -1181,9 +1181,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
       jumpRange: 4,
       apCostJump: -0.7,
       engineSpeed: 4,
-      hyperdriveRange: 256,
-      hyperdriveSpeed: 6,
-      hyperdriveRegen: 4.0,
+      hyperdriveRange: 384,
+      hyperdriveSpeed: 8,
+      hyperdriveRegen: 8.0,
       hyperdriveFuelEfficiency: 0.3,
       fuelMax: 12_000,
     },
@@ -1202,7 +1202,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     primaryEffect: { stat: 'jumpRange', delta: 6, label: 'Sprungweite +6' },
     secondaryEffects: [
       { stat: 'engineSpeed', delta: 5, label: 'Engine-Speed MAX' },
-      { stat: 'hyperdriveRegen', delta: 4.0, label: 'Hyperdrive-Regen +4.0' },
+      { stat: 'hyperdriveRegen', delta: 10, label: 'Hyperdrive-Regen +10' },
       { stat: 'hyperdriveFuelEfficiency', delta: 0.5, label: 'Fuel-Effizienz +50%' },
       { stat: 'fuelMax', delta: 18_000, label: 'Fuel-Tank +18.000' },
     ],
@@ -1210,9 +1210,9 @@ export const MODULES: Record<string, ModuleDefinition> = {
       jumpRange: 6,
       apCostJump: -1.0,
       engineSpeed: 5,
-      hyperdriveRange: 512,
-      hyperdriveSpeed: 10,
-      hyperdriveRegen: 4.0,
+      hyperdriveRange: 768,
+      hyperdriveSpeed: 12,
+      hyperdriveRegen: 10.0,
       hyperdriveFuelEfficiency: 0.5,
       fuelMax: 18_000,
     },
@@ -2061,7 +2061,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
 
 // Fuel
 export const FUEL_COST_PER_UNIT = 0.01; // 0.01 credits per fuel unit → 100 fuel = 1 credit
-export const FUEL_MIN_TANK = 1_000; // minimum tank size regardless of hull+modules
+export const FUEL_MIN_TANK = 10_000; // minimum tank size regardless of hull+modules
 export const FREE_REFUEL_MAX_SHIPS = 3;
 
 // Base ship stats (replaces hull-specific values after hull system removal)
@@ -2132,7 +2132,7 @@ export const FACTION_UPGRADE_TIERS: Record<
 // JumpGates
 export const JUMPGATE_CHANCE = 0.005; // natural bidirectional/wormhole gates (1 in 200 sectors)
 export const JUMPGATE_SALT = 777;
-export const JUMPGATE_FUEL_COST = 1;
+export const JUMPGATE_FUEL_COST = 0; // jumpgates cost credits only, no fuel
 export const JUMPGATE_TRAVEL_COST_CREDITS = 50; // credits to use a public jumpgate
 export const PLAYER_GATE_TRAVEL_COST_CREDITS = 25; // credits to use a player-built gate (cheaper)
 export const JUMPGATE_MIN_RANGE = 50;

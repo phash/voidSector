@@ -208,12 +208,12 @@ describe('Mining laser modules', () => {
 });
 
 describe('Drive mk4/mk5 specifics', () => {
-  it('drive_mk4 has hyperdriveRange 25', () => {
-    expect(MODULES['drive_mk4'].effects.hyperdriveRange).toBe(25);
+  it('drive_mk4 has hyperdriveRange 384', () => {
+    expect(MODULES['drive_mk4'].effects.hyperdriveRange).toBe(384);
   });
 
-  it('drive_mk5 has hyperdriveRange 50', () => {
-    expect(MODULES['drive_mk5'].effects.hyperdriveRange).toBe(50);
+  it('drive_mk5 has hyperdriveRange 768', () => {
+    expect(MODULES['drive_mk5'].effects.hyperdriveRange).toBe(768);
   });
 
   it('drive_mk4 costs 3 artefacts to purchase', () => {
