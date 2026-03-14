@@ -25,8 +25,6 @@ import {
   getPlayerCredits,
   addCredits,
   getPlayerReputation,
-  getPlayerFaction,
-  getFactionMembersByPlayerIds,
   hasScannedRuin,
   insertAncientRuinScan,
   getActiveShip,
@@ -327,22 +325,15 @@ export class ScanService {
 
     client.send('scanResult', { sectors: foggedSectors, apRemaining: scanResult.newAP!.current });
 
-    // #159: Share scan results with online faction members
+    // Share area scan results with all players in the room
     try {
-      const playerFaction = await getPlayerFaction(auth.userId);
-      if (playerFaction) {
-        const memberIds = await getFactionMembersByPlayerIds(playerFaction.id);
-        for (const memberId of memberIds) {
-          if (memberId === auth.userId) continue;
-          this.ctx.sendToPlayer(memberId, 'scanResult', {
-            sectors: foggedSectors,
-            apRemaining: 0,
-            sharedByScan: true,
-          });
-        }
-      }
+      this.ctx.broadcast('scanResult', {
+        sectors: foggedSectors,
+        apRemaining: 0,
+        sharedByScan: true,
+      }, { except: client });
     } catch {
-      // Faction sharing failure must not break scan
+      // Scan sharing failure must not break scan
     }
 
     // Phase 4: Post-scan side effects — must not propagate errors (scanResult already sent)
