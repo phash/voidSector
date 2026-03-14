@@ -450,12 +450,12 @@ describe('Autopilot Engine', () => {
   // --- Constants ---
 
   describe('constants', () => {
-    it('STEP_INTERVAL_MS is 100ms', () => {
-      expect(STEP_INTERVAL_MS).toBe(100);
+    it('STEP_INTERVAL_MS is 800ms', () => {
+      expect(STEP_INTERVAL_MS).toBe(800);
     });
 
-    it('STEP_INTERVAL_MIN_MS is 20ms', () => {
-      expect(STEP_INTERVAL_MIN_MS).toBe(20);
+    it('STEP_INTERVAL_MIN_MS is 100ms', () => {
+      expect(STEP_INTERVAL_MIN_MS).toBe(100);
     });
   });
 

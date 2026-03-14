@@ -446,19 +446,19 @@ describe('autopilot completion', () => {
 describe('autopilot tick rate', () => {
   it('normal mode uses STEP_INTERVAL_MS', () => {
     const tickMs = STEP_INTERVAL_MS;
-    expect(tickMs).toBe(100);
+    expect(tickMs).toBe(800);
   });
 
   it('hyperjump mode scales tick by engine speed', () => {
     const speed = 3;
     const tickMs = Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / speed));
-    expect(tickMs).toBe(33);
+    expect(tickMs).toBe(266);
   });
 
   it('tick rate is clamped to STEP_INTERVAL_MIN_MS', () => {
     const speed = 10;
     const tickMs = Math.max(STEP_INTERVAL_MIN_MS, Math.floor(STEP_INTERVAL_MS / speed));
-    expect(tickMs).toBe(STEP_INTERVAL_MIN_MS); // 20
+    expect(tickMs).toBe(STEP_INTERVAL_MIN_MS); // 100
   });
 
   it('speed 0 falls back to normal interval', () => {
