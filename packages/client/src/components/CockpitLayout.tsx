@@ -30,6 +30,7 @@ import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
 import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
 import { LocalScanResultOverlay } from './overlays/LocalScanResultOverlay';
+import { PlayerCardModal } from './PlayerCardModal';
 import { AreaScanSummaryOverlay } from './overlays/AreaScanSummaryOverlay';
 import { getPhysicalCargoTotal } from '@void-sector/shared';
 
@@ -213,6 +214,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       </div>
       <PlayerContextMenu />
       <LocalScanResultOverlay />
+      <PlayerCardModal />
       <AreaScanSummaryOverlay />
       <StoryEventOverlay />
       <FirstContactNewsOverlay />
