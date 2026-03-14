@@ -217,9 +217,9 @@ export interface AutopilotSegment {
 }
 
 /** Default step interval in ms (for normal movement). */
-export const STEP_INTERVAL_MS = 100;
+export const STEP_INTERVAL_MS = 800;
 /** Minimum tick interval in ms (clamped for high-speed drives). */
-export const STEP_INTERVAL_MIN_MS = 20;
+export const STEP_INTERVAL_MIN_MS = 100;
 
 /**
  * Extract the next segment of moves from a path for one autopilot tick.

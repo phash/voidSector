@@ -2215,7 +2215,7 @@ export const ENGINE_SPEED: Record<string, number> = {
 // Research system
 export const RESEARCH_TICK_MS = 60_000; // 1 tick = 1 minute
 
-export const AUTOPILOT_STEP_MS = 100; // ms per sector during autopilot
+export const AUTOPILOT_STEP_MS = 800; // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24; // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7; // coords-only after 7 days
 
