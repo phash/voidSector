@@ -160,6 +160,9 @@ export class MiningService {
 
                 await saveMiningState(playerId, nextResult.state);
                 client.send('miningUpdate', nextResult.state);
+                // Send depleted sector data so client resource bars update
+                client.send('sectorData', sectorData);
+                client.send('cargoUpdate', await getCargoState(playerId));
                 this.setAutoStopTimer(
                   client, playerId,
                   nextResult.state.sectorYield,
