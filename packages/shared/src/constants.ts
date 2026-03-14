@@ -2249,7 +2249,7 @@ export const COSMIC_FACTION_IDS = [
 ] as const;
 export type CosmicFactionId = (typeof COSMIC_FACTION_IDS)[number];
 
-// Human starting territory: quadrants 0:0 to 4:4 (25 quadrants)
+// Human starting territory: quadrants 0:0 to 2:2 (9 quadrants)
 export const HUMAN_STARTING_TERRITORY: Array<[number, number]> = [
   [0, 0],
   [0, 1],
@@ -2260,22 +2260,6 @@ export const HUMAN_STARTING_TERRITORY: Array<[number, number]> = [
   [2, 0],
   [2, 1],
   [2, 2],
-  [0, 3],
-  [1, 3],
-  [2, 3],
-  [3, 0],
-  [3, 1],
-  [3, 2],
-  [3, 3],
-  [4, 0],
-  [4, 1],
-  [4, 2],
-  [4, 3],
-  [0, 4],
-  [1, 4],
-  [2, 4],
-  [3, 4],
-  [4, 4],
 ];
 
 // Alien starting regions (distant from humans, no overlap with 0:0–4:4)

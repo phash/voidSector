@@ -21,7 +21,7 @@ import {
 describe('initializeTerritoryState', () => {
   it('seeds human starting territory correctly', () => {
     const state = initializeTerritoryState();
-    expect(state.factionQuadrants.get('humans')?.size).toBe(25);
+    expect(state.factionQuadrants.get('humans')?.size).toBe(9);
   });
 
   it('human territory includes 0:0', () => {
@@ -29,9 +29,9 @@ describe('initializeTerritoryState', () => {
     expect(state.dominantFactions.get('0:0')).toBe('humans');
   });
 
-  it('human territory includes 4:4', () => {
+  it('human territory includes 2:2', () => {
     const state = initializeTerritoryState();
-    expect(state.dominantFactions.get('4:4')).toBe('humans');
+    expect(state.dominantFactions.get('2:2')).toBe('humans');
   });
 
   it('alien factions have territory far from origin', () => {
@@ -142,7 +142,7 @@ describe('UniverseTickEngine', () => {
   it('returns dominant faction for seeded human quadrant', () => {
     const engine = new UniverseTickEngine();
     expect(engine.getDominantFaction(0, 0)).toBe('humans');
-    expect(engine.getDominantFaction(4, 4)).toBe('humans');
+    expect(engine.getDominantFaction(2, 2)).toBe('humans');
   });
 
   it('returns null for unclaimed quadrant', () => {
@@ -154,7 +154,7 @@ describe('UniverseTickEngine', () => {
   it('getFactionStats returns counts for all factions', () => {
     const engine = new UniverseTickEngine();
     const stats = engine.getFactionStats();
-    expect(stats['humans']).toBe(25);
+    expect(stats['humans']).toBe(9);
     expect(stats['axioms']).toBeGreaterThanOrEqual(0);
   });
 });
@@ -204,14 +204,14 @@ describe('cosmic faction constants', () => {
     expect(COSMIC_FACTION_IDS[0]).toBe('humans');
   });
 
-  it('has exactly 25 human starting territory quadrants', () => {
-    expect(HUMAN_STARTING_TERRITORY).toHaveLength(25);
+  it('has exactly 9 human starting territory quadrants', () => {
+    expect(HUMAN_STARTING_TERRITORY).toHaveLength(9);
   });
 
-  it('human territory covers 0:0 to 4:4', () => {
+  it('human territory covers 0:0 to 2:2', () => {
     const humanSet = new Set(HUMAN_STARTING_TERRITORY.map(([x, y]) => `${x}:${y}`));
-    for (let x = 0; x <= 4; x++) {
-      for (let y = 0; y <= 4; y++) {
+    for (let x = 0; x <= 2; x++) {
+      for (let y = 0; y <= 2; y++) {
         expect(humanSet.has(`${x}:${y}`)).toBe(true);
       }
     }
