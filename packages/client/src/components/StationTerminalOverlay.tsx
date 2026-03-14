@@ -127,7 +127,7 @@ export function StationTerminalOverlay() {
           style={
             {
               flex: 1,
-              overflow: 'auto',
+              overflow: 'hidden',
               '--color-primary': green,
               '--color-dim': dimGreen,
             } as React.CSSProperties

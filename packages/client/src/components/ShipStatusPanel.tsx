@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { calculateCurrentCharge } from '@void-sector/shared';
 
 const mono = { fontFamily: 'var(--font-mono)', fontSize: '0.55rem' };
 const dim  = { ...mono, color: 'var(--color-dim)' };
@@ -59,8 +60,19 @@ export function ShipStatusPanel() {
   }
 
   const hasHyperdrive = hyperdriveState && hyperdriveState.maxCharge > 0;
+
+  // Live-update hyperdrive charge via lazy evaluation (regenPerSecond)
+  const [liveCharge, setLiveCharge] = useState(0);
+  useEffect(() => {
+    if (!hasHyperdrive) return;
+    const update = () => setLiveCharge(calculateCurrentCharge(hyperdriveState!, Date.now()));
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [hasHyperdrive, hyperdriveState]);
+
   const chargePercent = hasHyperdrive
-    ? Math.round((hyperdriveState!.charge / hyperdriveState!.maxCharge) * 100)
+    ? Math.round((liveCharge / hyperdriveState!.maxCharge) * 100)
     : 0;
 
   return (
