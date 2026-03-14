@@ -615,24 +615,27 @@ export class NavigationService {
       lastTick: newHdState.lastTick,
     });
 
-    // Build step list (Manhattan path: X first, then Y)
+    // Build step list (diagonal Bresenham path for straight-line flight)
     // Use hyperdriveSpeed for autopilot tick rate
     const autopilotMs =
       ship.hyperdriveSpeed > 0
         ? Math.max(20, Math.floor(AUTOPILOT_STEP_MS / ship.hyperdriveSpeed))
         : AUTOPILOT_STEP_MS;
     const steps: { x: number; y: number }[] = [];
-    let cx = pos.x;
-    let cy = pos.y;
-    const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
-    const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
-    for (let i = 0; i < Math.abs(dx); i++) {
-      cx += stepX;
-      steps.push({ x: cx, y: cy });
-    }
-    for (let i = 0; i < Math.abs(dy); i++) {
-      cy += stepY;
-      steps.push({ x: cx, y: cy });
+    {
+      let cx = pos.x;
+      let cy = pos.y;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+      const sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+      const sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+      let err = adx - ady;
+      while (cx !== targetX || cy !== targetY) {
+        const e2 = 2 * err;
+        if (e2 > -ady) { err -= ady; cx += sx; }
+        if (e2 < adx) { err += adx; cy += sy; }
+        steps.push({ x: cx, y: cy });
+      }
     }
 
     // Start autopilot
