@@ -508,6 +508,7 @@ export interface GameSlice {
 
   // Player Stations
   playerStationInfo: any | null;
+  acepFactoryBlueprints: string[];
 
   // Quadrant system
   knownQuadrants: Array<{
@@ -830,6 +831,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   shipMoveAnimation: null,
   playerGateInfo: null,
   playerStationInfo: null,
+  acepFactoryBlueprints: [],
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,

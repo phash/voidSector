@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
@@ -5,12 +6,12 @@ import { MODULES, SPECIALIZED_SLOT_INDEX } from '@void-sector/shared';
 
 const green = '#00FF88';
 const dimGreen = 'rgba(0,255,136,0.3)';
+const amber = '#FFB000';
 
 const panelStyle: React.CSSProperties = {
   padding: '8px 12px',
   fontFamily: 'var(--font-mono)',
   fontSize: '0.7rem',
-  color: green,
   overflowY: 'auto',
   height: '100%',
 };
@@ -29,7 +30,7 @@ const rowStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '3px 0',
-  borderBottom: `1px solid rgba(0,255,136,0.1)`,
+  borderBottom: 'rgba(0,255,136,0.1)',
   gap: 8,
   flexWrap: 'wrap',
 };
@@ -44,52 +45,77 @@ const btnStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-export function FabrikPanel() {
+function AcepTab() {
   const { t } = useTranslation('ui');
   const inventory = useStore((s) => s.inventory);
   const ship = useStore((s) => s.ship);
+  const acepBlueprints = useStore((s) => s.acepFactoryBlueprints);
 
-  const blueprints = inventory.filter((i) => i.itemType === 'blueprint');
+  useEffect(() => {
+    network.requestAcepBlueprints();
+  }, []);
+
+  const blueprintsInCargo = inventory.filter((i) => i.itemType === 'blueprint');
   const cargoModules = inventory.filter((i) => i.itemType === 'module');
   const installedIds = new Set((ship?.modules ?? []).map((m) => m.moduleId));
 
   return (
-    <div style={panelStyle}>
-      {/* Craft from blueprints */}
-      <div style={{ ...headerStyle, marginTop: 0 }}>{t('fabrik.craft')}</div>
-      {blueprints.length === 0 ? (
-        <div style={{ opacity: 0.4 }}>{t('fabrik.noBlueprints')}</div>
+    <div>
+      {/* Consumed blueprints — available for crafting */}
+      <div style={{ ...headerStyle, marginTop: 0, color: green }}>VERFÜGBARE REZEPTE</div>
+      {acepBlueprints.length === 0 ? (
+        <div style={{ opacity: 0.4, color: green }}>KEINE BLUEPRINTS EINGELEGT</div>
       ) : (
-        blueprints.map((bp) => (
-          <div key={bp.itemId} style={rowStyle}>
-            <span>{bp.itemId.toUpperCase().replace(/_/g, ' ')}</span>
-            <div style={{ display: 'flex', gap: 4 }}>
+        acepBlueprints.map((moduleId) => {
+          const mod = MODULES[moduleId];
+          if (!mod) return null;
+          return (
+            <div key={moduleId} style={rowStyle}>
+              <span style={{ color: green }}>{mod.name ?? moduleId}</span>
               <button
                 style={btnStyle}
-                onClick={() => network.sendActivateBlueprint(bp.itemId)}
-                title="Blaupause aktivieren (Forschungsbaum)"
-              >
-                {t('fabrik.activate')}
-              </button>
-              <button
-                style={btnStyle}
-                onClick={() => network.sendCraftModule(bp.itemId)}
-                title="Modul herstellen"
+                onClick={() => network.sendCraftModule(moduleId)}
               >
                 {t('fabrik.manufacture')}
               </button>
             </div>
-          </div>
-        ))
+          );
+        })
       )}
 
-      {/* Install cargo modules */}
+      {/* Blueprints in cargo — can be consumed */}
+      {blueprintsInCargo.length > 0 && (
+        <>
+          <div style={headerStyle}>BLUEPRINTS IM CARGO → EINLEGEN</div>
+          {blueprintsInCargo.map((bp) => (
+            <div key={bp.itemId} style={rowStyle}>
+              <span style={{ color: amber }}>{bp.itemId.toUpperCase().replace(/_/g, ' ')}</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  style={{ ...btnStyle, borderColor: amber, color: amber }}
+                  onClick={() => network.sendConsumeBlueprint('acep', bp.itemId)}
+                >
+                  [EINLEGEN]
+                </button>
+                <button
+                  style={btnStyle}
+                  onClick={() => network.sendActivateBlueprint(bp.itemId)}
+                >
+                  {t('fabrik.activate')}
+                </button>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Cargo modules — install */}
       {cargoModules.length > 0 && (
         <>
           <div style={headerStyle}>{t('fabrik.fromCargo')}</div>
           {cargoModules.map((m) => (
             <div key={m.itemId} style={rowStyle}>
-              <span>
+              <span style={{ color: green }}>
                 {m.itemId.toUpperCase().replace(/_/g, ' ')} x{m.quantity}
               </span>
               <button
@@ -108,11 +134,108 @@ export function FabrikPanel() {
         </>
       )}
 
-      {blueprints.length === 0 && cargoModules.length === 0 && (
-        <div style={{ opacity: 0.4, marginTop: 8 }}>
+      {acepBlueprints.length === 0 && blueprintsInCargo.length === 0 && cargoModules.length === 0 && (
+        <div style={{ opacity: 0.4, marginTop: 8, color: green }}>
           {t('fabrik.noModulesOrBlueprints')}
         </div>
       )}
+    </div>
+  );
+}
+
+function StationTab() {
+  const [selectedStation, setSelectedStation] = useState<string | null>(null);
+  const [stationBlueprints, setStationBlueprints] = useState<string[]>([]);
+  const [stations, setStations] = useState<any[]>([]);
+  const inventory = useStore((s) => s.inventory);
+
+  useEffect(() => {
+    network.requestMyStations();
+    const handler = (e: MessageEvent) => {
+      // Listen for myStations response
+    };
+    return () => {};
+  }, []);
+
+  // Listen for station list
+  useEffect(() => {
+    const unsub = useStore.subscribe((state) => {
+      // We'd need myStations in state — for now use a simple approach
+    });
+    return unsub;
+  }, []);
+
+  // Request station list on mount
+  useEffect(() => {
+    network.requestMyStations();
+  }, []);
+
+  const blueprintsInCargo = inventory.filter((i) => i.itemType === 'blueprint');
+
+  return (
+    <div>
+      <div style={{ ...headerStyle, marginTop: 0, color: '#00BFFF' }}>STATIONEN</div>
+      <div style={{ opacity: 0.4, color: '#00BFFF', fontSize: '0.6rem' }}>
+        Wähle eine Station mit ausgebauter Factory.
+        Blueprints aus dem Cargo können in die Station-Factory eingelegt werden.
+      </div>
+
+      {/* Station selection would go here — requires myStations in store */}
+      <div style={{ marginTop: 8, color: 'rgba(0,191,255,0.5)', fontSize: '0.6rem' }}>
+        Station-Produktion kommt in einem zukünftigen Update.
+        Nutze die VERWALTUNG im Detail-Panel um Factory auszubauen.
+      </div>
+
+      {blueprintsInCargo.length > 0 && selectedStation && (
+        <>
+          <div style={{ ...headerStyle, color: '#00BFFF' }}>BLUEPRINTS EINLEGEN</div>
+          {blueprintsInCargo.map((bp) => (
+            <div key={bp.itemId} style={rowStyle}>
+              <span style={{ color: amber }}>{bp.itemId.toUpperCase().replace(/_/g, ' ')}</span>
+              <button
+                style={{ ...btnStyle, borderColor: '#00BFFF', color: '#00BFFF' }}
+                onClick={() => network.sendConsumeBlueprint('station', bp.itemId, selectedStation)}
+              >
+                [EINLEGEN]
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+export function FabrikPanel() {
+  const [tab, setTab] = useState<'acep' | 'station'>('acep');
+
+  return (
+    <div style={panelStyle}>
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 8 }}>
+        {(['acep', 'station'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              flex: 1,
+              background: tab === t ? (t === 'acep' ? green : '#00BFFF') : 'transparent',
+              color: tab === t ? '#000' : (t === 'acep' ? green : '#00BFFF'),
+              border: `1px solid ${t === 'acep' ? green : '#00BFFF'}`,
+              padding: '3px 6px',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.65rem',
+              letterSpacing: '0.1em',
+            }}
+          >
+            {t.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'acep' && <AcepTab />}
+      {tab === 'station' && <StationTab />}
     </div>
   );
 }

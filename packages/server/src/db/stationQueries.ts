@@ -87,3 +87,45 @@ export async function getPlayerStationById(stationId: string): Promise<PlayerSta
   );
   return result.rows[0] ?? null;
 }
+
+// ── Blueprint Memory ─────────────────────────────────────────────────
+
+export async function getStationBlueprints(stationId: string): Promise<string[]> {
+  const result = await query<{ module_id: string }>(
+    'SELECT module_id FROM station_blueprints WHERE station_id = $1 ORDER BY consumed_at ASC',
+    [stationId],
+  );
+  return result.rows.map((r) => r.module_id);
+}
+
+export async function consumeBlueprintIntoStation(stationId: string, moduleId: string): Promise<boolean> {
+  try {
+    await query(
+      'INSERT INTO station_blueprints (station_id, module_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [stationId, moduleId],
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getAcepBlueprints(playerId: string): Promise<string[]> {
+  const result = await query<{ module_id: string }>(
+    'SELECT module_id FROM acep_blueprints WHERE player_id = $1 ORDER BY consumed_at ASC',
+    [playerId],
+  );
+  return result.rows.map((r) => r.module_id);
+}
+
+export async function consumeBlueprintIntoAcep(playerId: string, moduleId: string): Promise<boolean> {
+  try {
+    await query(
+      'INSERT INTO acep_blueprints (player_id, module_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [playerId, moduleId],
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}

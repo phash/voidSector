@@ -771,6 +771,21 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('consumeBlueprintResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry('BLUEPRINT EINGELEGT');
+        if (data.target === 'acep' && data.blueprints) {
+          useStore.setState({ acepFactoryBlueprints: data.blueprints });
+        }
+      } else {
+        store.addLogEntry(`BLUEPRINT FEHLER: ${data.error}`);
+      }
+    });
+    room.onMessage('acepBlueprints', (data: { blueprints: string[] }) => {
+      useStore.setState({ acepFactoryBlueprints: data.blueprints });
+    });
+
     // Credits update
     room.onMessage('creditsUpdate', (data: { credits: number }) => {
       useStore.getState().setCredits(data.credits);
@@ -2111,6 +2126,14 @@ class GameNetwork {
 
   requestStationDetails(stationId: string) {
     this.sectorRoom?.send('getStationDetails', { stationId });
+  }
+
+  requestAcepBlueprints() {
+    this.sectorRoom?.send('getAcepBlueprints');
+  }
+
+  sendConsumeBlueprint(target: 'acep' | 'station', moduleId: string, stationId?: string) {
+    this.sectorRoom?.send('consumeBlueprint', { target, moduleId, stationId });
   }
 
   sendDepositConstruction(siteId: string, ore: number, gas: number, crystal: number) {

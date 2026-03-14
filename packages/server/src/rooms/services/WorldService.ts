@@ -76,6 +76,10 @@ import {
   insertPlayerStation,
   upgradeStationLevel as dbUpgradeStationLevel,
   upgradeStationModule as dbUpgradeStationModule,
+  getStationBlueprints as getStationBlueprintsList,
+  consumeBlueprintIntoStation as consumeBlueprintInStation,
+  getAcepBlueprints as getAcepBlueprintsList,
+  consumeBlueprintIntoAcep as consumeBlueprintInAcep,
 } from '../../db/stationQueries.js';
 import {
   getAPState,
@@ -146,6 +150,7 @@ import {
   getCargoState,
   addToInventory,
   removeFromInventory,
+  getInventoryItem,
 } from '../../engine/inventoryService.js';
 import {
   getPlayerKnownQuadrants,
@@ -650,7 +655,56 @@ export class WorldService {
       client.send('stationDetails', { station: null });
       return;
     }
-    client.send('stationDetails', { station });
+    const blueprints = await getStationBlueprintsList(data.stationId);
+    client.send('stationDetails', { station, blueprints });
+  }
+
+  async handleGetAcepBlueprints(client: Client): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const blueprints = await getAcepBlueprintsList(auth.userId);
+    client.send('acepBlueprints', { blueprints });
+  }
+
+  async handleConsumeBlueprint(
+    client: Client,
+    data: { target: 'acep' | 'station'; stationId?: string; moduleId: string },
+  ): Promise<void> {
+    if (rejectGuest(client, 'Blueprint einlegen')) return;
+    const auth = client.auth as AuthPayload;
+
+    const qty = await getInventoryItem(auth.userId, 'blueprint', data.moduleId);
+    if (qty < 1) {
+      client.send('consumeBlueprintResult', { success: false, error: 'Blueprint nicht im Inventar' });
+      return;
+    }
+
+    if (data.target === 'station') {
+      if (!data.stationId) {
+        client.send('consumeBlueprintResult', { success: false, error: 'Keine Station angegeben' });
+        return;
+      }
+      const station = await getPlayerStationById(data.stationId);
+      if (!station || station.owner_id !== auth.userId) {
+        client.send('consumeBlueprintResult', { success: false, error: 'Station nicht gefunden' });
+        return;
+      }
+      if (station.factory_level < 1) {
+        client.send('consumeBlueprintResult', { success: false, error: 'Factory-Modul nicht ausgebaut' });
+        return;
+      }
+      await removeFromInventory(auth.userId, 'blueprint', data.moduleId, 1);
+      await consumeBlueprintInStation(data.stationId, data.moduleId);
+      const blueprints = await getStationBlueprintsList(data.stationId);
+      client.send('consumeBlueprintResult', { success: true, target: 'station', blueprints });
+    } else {
+      await removeFromInventory(auth.userId, 'blueprint', data.moduleId, 1);
+      await consumeBlueprintInAcep(auth.userId, data.moduleId);
+      const blueprints = await getAcepBlueprintsList(auth.userId);
+      client.send('consumeBlueprintResult', { success: true, target: 'acep', blueprints });
+    }
+
+    client.send('inventoryUpdated', {});
+    client.send('logEntry', `BLUEPRINT EINGELEGT: ${data.moduleId} → ${data.target.toUpperCase()}`);
   }
 
   // ── Jumpgate Build ─────────────────────────────────────────────────
