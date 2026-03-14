@@ -1311,7 +1311,22 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Load or generate sector for this player
       let sectorData = await getSector(sectorX, sectorY);
       if (!sectorData) {
-        {
+        // Check if a CIV station exists at this sector (NPC faction station)
+        const civStation = await civQueries.getStationBySector(sectorX, sectorY);
+        if (civStation) {
+          // CIV station exists — create sector as station type
+          sectorData = {
+            x: sectorX,
+            y: sectorY,
+            type: 'station',
+            seed: 0,
+            discoveredBy: null,
+            discoveredAt: new Date().toISOString(),
+            environment: 'empty',
+            contents: ['station'],
+            metadata: {},
+          } as any;
+        } else {
           const { qx, qy } = sectorToQuadrant(sectorX, sectorY);
           const _controls = await getAllQuadrantControls();
           sectorData = generateSector(sectorX, sectorY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
