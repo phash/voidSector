@@ -131,7 +131,7 @@ function fillQuestTemplate(
   }
 
   if (
-    (template.type === 'delivery' || template.type === 'scan' || template.type === 'bounty') &&
+    (template.type === 'delivery' || template.type === 'scan' || template.type === 'bounty_chase') &&
     template.distanceRange
   ) {
     const [minDist, maxDist] = template.distanceRange;

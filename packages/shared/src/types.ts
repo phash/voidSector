@@ -650,20 +650,19 @@ export interface StationNpc {
   personality: number;
 }
 
+/** Primary quest types (player-facing) */
 export type QuestType =
   | 'fetch'
   | 'delivery'
   | 'scan'
-  | 'bounty'
-  | 'bounty_chase'
-  | 'bounty_trail'
-  | 'bounty_combat'
-  | 'bounty_deliver'
-  | 'scan_deliver';
+  | 'bounty_chase';
+
+/** Internal objective phase types (used in QuestObjective.type for multi-step quests) */
+export type QuestObjectiveType = QuestType | 'bounty_trail' | 'bounty_combat' | 'bounty_deliver' | 'scan_deliver';
 export type QuestStatus = 'active' | 'completed' | 'expired' | 'abandoned';
 
 export interface QuestObjective {
-  type: QuestType;
+  type: QuestObjectiveType;
   description: string;
   targetX?: number;
   targetY?: number;
@@ -671,16 +670,14 @@ export interface QuestObjective {
   amount?: number;
   progress?: number;
   fulfilled: boolean;
-  // bounty_trail fields
+  // bounty_chase fields (trail → combat → deliver phases)
   trail?: Array<{ x: number; y: number; hint: string }>;
   currentStep?: number;
   targetName?: string;
   targetLevel?: number;
   currentHint?: string;
-  // bounty_combat fields
   sectorX?: number;
   sectorY?: number;
-  // bounty_deliver fields
   stationX?: number;
   stationY?: number;
 }
@@ -708,6 +705,8 @@ export interface QuestRewards {
   reputationPenalty?: number;
   rivalFactionId?: NpcFactionId;
   wissen?: number;
+  artefactChance?: number;
+  blueprintChance?: number;
 }
 
 export interface AvailableQuest {

@@ -123,7 +123,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
   // Pirate quests
   {
     id: 'pirates_bounty',
-    type: 'bounty',
+    type: 'bounty_chase',
     factionId: 'pirates',
     title: 'Kopfgeld',
     descriptionTemplate: 'Eliminiere Piraten bei ({targetX}, {targetY}).',
@@ -136,7 +136,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
   },
   {
     id: 'pirates_elite_bounty',
-    type: 'bounty',
+    type: 'bounty_chase',
     factionId: 'pirates',
     title: 'Hohes Kopfgeld',
     descriptionTemplate: 'Gefährliche Piraten bei ({targetX}, {targetY}) eliminieren.',
