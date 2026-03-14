@@ -28,6 +28,7 @@ import {
 import { createStructure } from '../../db/queries.js';
 import { constructionBus } from '../../constructionBus.js';
 
+// duration = ore(30) + gas(15) + crystal(10) + artefact(0) = 55
 const baseSite = {
   id: 'site-1',
   owner_id: 'player-1',
@@ -57,6 +58,7 @@ describe('processConstructionTick', () => {
   });
 
   it('advances when resources meet threshold at progress 0→1', async () => {
+    // duration=55, at progress 1: need ceil(1*30/55)=1 ore, ceil(1*15/55)=1 gas, ceil(1*10/55)=1 crystal
     (getAllConstructionSites as any).mockResolvedValue([{
       ...baseSite, progress: 0,
       deposited_ore: 1, deposited_gas: 1, deposited_crystal: 1,
@@ -69,7 +71,7 @@ describe('processConstructionTick', () => {
 
   it('pauses when insufficient resources', async () => {
     (getAllConstructionSites as any).mockResolvedValue([{
-      ...baseSite, progress: 50,
+      ...baseSite, progress: 25,
       deposited_ore: 0, deposited_gas: 0, deposited_crystal: 0,
     }]);
     await processConstructionTick();
@@ -79,16 +81,17 @@ describe('processConstructionTick', () => {
 
   it('does not re-pause an already-paused site', async () => {
     (getAllConstructionSites as any).mockResolvedValue([{
-      ...baseSite, progress: 50, paused: true,
+      ...baseSite, progress: 25, paused: true,
       deposited_ore: 0, deposited_gas: 0, deposited_crystal: 0,
     }]);
     await processConstructionTick();
     expect(markPaused).not.toHaveBeenCalled();
   });
 
-  it('creates structure and deletes site when progress reaches 100', async () => {
+  it('creates structure and deletes site when progress reaches duration (55)', async () => {
+    // duration=55, progress 54→55 = complete
     (getAllConstructionSites as any).mockResolvedValue([{
-      ...baseSite, progress: 99,
+      ...baseSite, progress: 54,
       deposited_ore: 30, deposited_gas: 15, deposited_crystal: 10,
     }]);
     (createStructure as any).mockResolvedValue({ id: 'struct-1' });

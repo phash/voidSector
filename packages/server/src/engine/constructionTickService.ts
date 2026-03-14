@@ -10,8 +10,24 @@ import { sectorToQuadrant } from './quadrantEngine.js';
 import { logger } from '../utils/logger.js';
 import { constructionBus } from '../constructionBus.js';
 
-function resourcesNeededAt(progress: number, total: number): number {
-  return Math.ceil((progress * total) / 100);
+/**
+ * Construction duration = sum of non-credit resources (ore + gas + crystal + artefact).
+ * 1 tick = 1 second = 1 resource unit consumed.
+ * Credits are consumed proportionally alongside material resources.
+ */
+function getTotalDuration(site: {
+  needed_ore: number;
+  needed_gas: number;
+  needed_crystal: number;
+  needed_artefact: number;
+}): number {
+  const material = site.needed_ore + site.needed_gas + site.needed_crystal + site.needed_artefact;
+  return Math.max(1, material);
+}
+
+function resourcesNeededAt(progress: number, total: number, duration: number): number {
+  if (total === 0) return 0;
+  return Math.ceil((progress * total) / duration);
 }
 
 export async function processConstructionTick(): Promise<void> {
@@ -19,12 +35,14 @@ export async function processConstructionTick(): Promise<void> {
   if (sites.length === 0) return;
 
   for (const site of sites) {
+    const duration = getTotalDuration(site);
     const nextProgress = site.progress + 1;
-    const oreNeeded      = resourcesNeededAt(nextProgress, site.needed_ore);
-    const gasNeeded      = resourcesNeededAt(nextProgress, site.needed_gas);
-    const crystalNeeded  = resourcesNeededAt(nextProgress, site.needed_crystal);
-    const creditsNeeded  = resourcesNeededAt(nextProgress, site.needed_credits);
-    const artefactNeeded = resourcesNeededAt(nextProgress, site.needed_artefact);
+
+    const oreNeeded      = resourcesNeededAt(nextProgress, site.needed_ore, duration);
+    const gasNeeded      = resourcesNeededAt(nextProgress, site.needed_gas, duration);
+    const crystalNeeded  = resourcesNeededAt(nextProgress, site.needed_crystal, duration);
+    const creditsNeeded  = resourcesNeededAt(nextProgress, site.needed_credits, duration);
+    const artefactNeeded = resourcesNeededAt(nextProgress, site.needed_artefact, duration);
 
     const hasResources =
       site.deposited_ore      >= oreNeeded &&
@@ -38,7 +56,7 @@ export async function processConstructionTick(): Promise<void> {
       continue;
     }
 
-    if (nextProgress >= 100) {
+    if (nextProgress >= duration) {
       try {
         await completeConstruction(site);
         await deleteConstructionSiteById(site.id);
@@ -69,7 +87,7 @@ export async function processConstructionTick(): Promise<void> {
   }
 }
 
-async function completeConstruction(site: {
+export async function completeConstruction(site: {
   owner_id: string;
   type: string;
   sector_x: number;

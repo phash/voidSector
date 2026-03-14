@@ -47,6 +47,7 @@ describe('MiningService mining rate includes miningBonus', () => {
       _pst: vi.fn().mockReturnValue('asteroid_field'),
       getShipForClient: vi.fn().mockReturnValue({ cargoCap: 50, miningBonus: 0.5 }),
       getPlayerBonuses: vi.fn().mockResolvedValue({ miningRateMultiplier: 1 }),
+      state: { players: new Map() },
     } as any;
 
     const svc = new MiningService(ctx);
@@ -68,6 +69,7 @@ describe('MiningService mining rate includes miningBonus', () => {
       _pst: vi.fn().mockReturnValue('asteroid_field'),
       getShipForClient: vi.fn().mockReturnValue({ cargoCap: 50, miningBonus: 0 }),
       getPlayerBonuses: vi.fn().mockResolvedValue({ miningRateMultiplier: 1 }),
+      state: { players: new Map() },
     } as any;
 
     const svc = new MiningService(ctx);
@@ -89,6 +91,7 @@ describe('MiningService mining rate includes miningBonus', () => {
       _pst: vi.fn().mockReturnValue('asteroid_field'),
       getShipForClient: vi.fn().mockReturnValue({ cargoCap: 50, miningBonus: 0 }),
       getPlayerBonuses: vi.fn().mockResolvedValue({ miningRateMultiplier: 1 }),
+      state: { players: new Map() },
     } as any;
 
     const svc = new MiningService(ctx);
@@ -112,6 +115,7 @@ describe('MiningService mining rate includes miningBonus', () => {
       _pst: vi.fn().mockReturnValue('asteroid_field'),
       getShipForClient: vi.fn().mockReturnValue({ cargoCap: 50, miningBonus: 0.5 }),
       getPlayerBonuses: vi.fn().mockResolvedValue({ miningRateMultiplier: 1 }),
+      state: { players: new Map() },
     } as any;
 
     const svc = new MiningService(ctx);
