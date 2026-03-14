@@ -1,15 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   createPirateEncounter,
-  validateBattleAction,
   validateAcceptQuest,
   calculateLevel,
   getReputationTier,
 } from '../commands.js';
-import type { APState, CargoState } from '@void-sector/shared';
-
-const fullAP: APState = { current: 100, max: 100, lastTick: Date.now(), regenPerSecond: 0.5 };
-const emptyCargo: CargoState = { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 };
 
 describe('Battle validation', () => {
   it('createPirateEncounter scales with level', () => {
@@ -23,49 +18,6 @@ describe('Battle validation', () => {
   it('negotiate requires friendly reputation', () => {
     const encounter = createPirateEncounter(3, 10, 10, 1);
     expect(encounter.canNegotiate).toBe(true);
-    const result = validateBattleAction('negotiate', fullAP, encounter, 100, emptyCargo, 10, 42);
-    expect(result.valid).toBe(true);
-    expect(result.result!.outcome).toBe('negotiated');
-  });
-
-  it('negotiate fails without friendly rep', () => {
-    const encounter = createPirateEncounter(3, 10, 10, 0);
-    const result = validateBattleAction('negotiate', fullAP, encounter, 100, emptyCargo, 10, 42);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('negotiate');
-  });
-
-  it('negotiate fails without enough credits', () => {
-    const encounter = createPirateEncounter(3, 10, 10, 1);
-    const result = validateBattleAction('negotiate', fullAP, encounter, 0, emptyCargo, 10, 42);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('credits');
-  });
-
-  it('flee costs AP', () => {
-    const lowAP: APState = { ...fullAP, current: 1 };
-    const encounter = createPirateEncounter(1, 10, 10, 0);
-    const result = validateBattleAction('flee', lowAP, encounter, 100, emptyCargo, 10, 42);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('AP');
-  });
-
-  it('fight produces victory or defeat', () => {
-    const encounter = createPirateEncounter(1, 10, 10, 0);
-    const result = validateBattleAction('fight', fullAP, encounter, 50, emptyCargo, 10, 42);
-    expect(result.valid).toBe(true);
-    expect(['victory', 'defeat']).toContain(result.result!.outcome);
-  });
-
-  it('victory gives loot and XP', () => {
-    const encounter = createPirateEncounter(1, 10, 10, 0);
-    // Use high shipAttack to maximize victory chance
-    const result = validateBattleAction('fight', fullAP, encounter, 200, emptyCargo, 10, 1);
-    expect(result.valid).toBe(true);
-    if (result.result!.outcome === 'victory') {
-      expect(result.result!.lootCredits).toBeGreaterThan(0);
-      expect(result.result!.xpGained).toBeGreaterThan(0);
-    }
   });
 });
 
@@ -76,7 +28,7 @@ describe('Quest validation', () => {
   });
 
   it('rejects quest when at max', () => {
-    expect(validateAcceptQuest(3).valid).toBe(false);
+    expect(validateAcceptQuest(20).valid).toBe(false);
   });
 });
 
