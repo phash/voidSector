@@ -216,6 +216,8 @@ class GameNetwork {
           x: player.x,
           y: player.y,
           connected: player.connected,
+          mining: player.mining ?? false,
+          acepTotal: player.acepTotal ?? 0,
         });
         // Alert if another player enters our sector
         if (player.x === store.position.x && player.y === store.position.y) {
@@ -235,6 +237,8 @@ class GameNetwork {
             x: player.x,
             y: player.y,
             connected: player.connected,
+            mining: player.mining ?? false,
+            acepTotal: player.acepTotal ?? 0,
           });
           // Alert if player moved INTO our sector
           const wasInSector = prev && prev.x === s.position.x && prev.y === s.position.y;

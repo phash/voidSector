@@ -951,7 +951,10 @@ export function DetailPanel() {
                     fontFamily: 'inherit',
                     fontSize: 'inherit',
                     padding: '2px 0',
-                    display: 'block',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    width: '100%',
                   }}
                   onClick={() => {
                     if (p.userId) {
@@ -961,7 +964,12 @@ export function DetailPanel() {
                     }
                   }}
                 >
-                  ◆ {p.username}
+                  <span>{p.mining ? '⛏' : '◆'} {p.username}</span>
+                  {p.acepTotal > 0 && (
+                    <span style={{ fontSize: '0.55rem', color: 'var(--color-dim)' }}>
+                      ACEP:{p.acepTotal}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

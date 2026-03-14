@@ -660,31 +660,39 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
-  // Draw other players — zoom >= 2
-  if (state.zoomLevel >= 2) {
+  // Draw other players — visible at all zoom levels
+  {
     const otherPattern = DEFAULT_SHIP_RADAR_PATTERN;
-    const otherPixelSize = 1 + state.zoomLevel;
+    const otherPixelSize = Math.max(2, 1 + state.zoomLevel);
     const otherColor = '#FFDD22';
     const playerList = Object.values(state.players);
-    // Only draw one icon per sector — track which sectors already have an icon
     const drawnSectors = new Set<string>();
+    const now = performance.now();
     for (let i = 0; i < playerList.length; i++) {
       const player = playerList[i];
-      const dx = player.x - viewX;
-      const dy = player.y - viewY;
+      const pdx = player.x - viewX;
+      const pdy = player.y - viewY;
       if (
-        Math.abs(dx) <= radiusX &&
-        Math.abs(dy) <= radiusY &&
+        Math.abs(pdx) <= radiusX &&
+        Math.abs(pdy) <= radiusY &&
         !(player.x === state.position.x && player.y === state.position.y)
       ) {
         const sectorKey = `${player.x}:${player.y}`;
         if (drawnSectors.has(sectorKey)) continue;
         drawnSectors.add(sectorKey);
-        const px = gridCenterX + dx * CELL_W + 12;
-        const py = gridCenterY + dy * CELL_H;
+        const px = gridCenterX + pdx * CELL_W + 12;
+        const py = gridCenterY + pdy * CELL_H;
+
+        // Mining pulse: oscillate alpha when mining
+        if ((player as any).mining) {
+          const pulse = 0.4 + 0.6 * Math.abs(Math.sin(now / 400));
+          ctx.globalAlpha = pulse;
+        }
         drawHullIcon(ctx, otherPattern, px, py, otherColor, otherPixelSize);
-        // Player username at zoom >= 3
-        if (state.zoomLevel >= 3) {
+        ctx.globalAlpha = 1;
+
+        // Player username at zoom >= 2
+        if (state.zoomLevel >= 2) {
           const displayName = player.username?.slice(0, 8) ?? '';
           if (displayName) {
             ctx.font = COORD_FONT;
