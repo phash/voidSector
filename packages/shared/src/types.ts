@@ -1499,3 +1499,35 @@ export interface ConquestPoolUpdatedMessage {
   newPool: number;
   newMode: string;
 }
+
+// ─── Friends System ──────────────────────────────────────────────
+
+export interface FriendEntry {
+  id: string;
+  name: string;
+  level: number;
+  online: boolean;
+}
+
+export interface FriendRequestEntry {
+  id: string;
+  fromId: string;
+  fromName: string;
+  createdAt: number;
+}
+
+export interface BlockEntry {
+  id: string;
+  name: string;
+}
+
+export interface PlayerCardData {
+  id: string;
+  name: string;
+  level: number;
+  online: boolean;
+  position: { x: number; y: number } | null;
+  isFriend: boolean;
+  isBlocked: boolean;
+  pendingDirection: 'sent' | 'received' | null;
+}

@@ -2006,6 +2006,7 @@ export const MONITORS = {
   QUAD_MAP: 'QUAD-MAP',
   NEWS: 'NEWS',
   ACEP: 'ACEP',
+  FRIENDS: 'FRIENDS',
 } as const;
 
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
@@ -2024,6 +2025,7 @@ export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.NEWS,
   MONITORS.LOG,
   MONITORS.ACEP,
+  MONITORS.FRIENDS,
 ];
 
 /** Labels for cockpit program buttons */
@@ -2041,6 +2043,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
   LOG: 'LOG',
   MODULES: 'MODULES',
   ACEP: 'ACEP',
+  FRIENDS: 'FRIENDS',
 };
 
 // --- Phase 5: Deep Systems ---
