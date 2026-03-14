@@ -46,8 +46,6 @@ export const AP_COSTS_LOCAL_SCAN = 1;
 
 export const WORLD_SEED = 77;
 
-export const RADAR_RADIUS = 3; // visible sectors around player on scan
-
 export const RECONNECTION_TIMEOUT_S = 15;
 
 export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceType, number>> = {
