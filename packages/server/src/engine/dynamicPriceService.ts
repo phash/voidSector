@@ -53,7 +53,7 @@ export function getDynamicSellPrice(
   reputationModifier: number = 0,
 ): number {
   const buyPrice = getDynamicPrice(resource, sectorX, sectorY, environment, reputationModifier);
-  return Math.round(buyPrice * 0.6);
+  return Math.round(buyPrice * 0.8);
 }
 
 /**
