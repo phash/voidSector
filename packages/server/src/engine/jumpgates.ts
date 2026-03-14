@@ -2,7 +2,6 @@ import { hashCoords } from './worldgen.js';
 import {
   WORLD_SEED,
   JUMPGATE_SALT,
-  JUMPGATE_CHANCE,
   JUMPGATE_MIN_RANGE,
   JUMPGATE_MAX_RANGE,
   JUMPGATE_CODE_CHANCE,
@@ -15,9 +14,8 @@ import {
 } from '@void-sector/shared';
 import type { JumpGateType } from '@void-sector/shared';
 
-export function checkJumpGate(sectorX: number, sectorY: number): boolean {
-  const hash = hashCoords(sectorX, sectorY, WORLD_SEED + JUMPGATE_SALT);
-  return ((hash >>> 0) % 10000) / 10000 < JUMPGATE_CHANCE;
+export function checkJumpGate(_x: number, _y: number): boolean {
+  return false; // natural jumpgates disabled — only ancient gates spawn
 }
 
 export function checkAncientJumpGate(sectorX: number, sectorY: number): boolean {

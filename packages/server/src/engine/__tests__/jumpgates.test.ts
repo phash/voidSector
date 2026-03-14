@@ -7,10 +7,10 @@ import {
 } from '../jumpgates.js';
 
 describe('JumpGate Generation', () => {
-  it('should deterministically detect gates', () => {
-    const result1 = checkJumpGate(100, 200);
-    const result2 = checkJumpGate(100, 200);
-    expect(result1).toBe(result2);
+  it('checkJumpGate always returns false (natural jumpgates disabled)', () => {
+    expect(checkJumpGate(100, 200)).toBe(false);
+    expect(checkJumpGate(0, 0)).toBe(false);
+    expect(checkJumpGate(9999, 9999)).toBe(false);
   });
 
   it('should generate targets within range', () => {
@@ -22,14 +22,12 @@ describe('JumpGate Generation', () => {
     expect(dist).toBeLessThanOrEqual(10002); // slight rounding tolerance
   });
 
-  it('should respect JUMPGATE_CHANCE probability (~0.5%)', () => {
+  it('should return false for all sectors (natural jumpgates disabled)', () => {
     let count = 0;
-    for (let i = 0; i < 50000; i++) {
+    for (let i = 0; i < 1000; i++) {
       if (checkJumpGate(i * 3 + 1, i * 7 + 2)) count++;
     }
-    const rate = count / 50000;
-    expect(rate).toBeGreaterThan(0.001);
-    expect(rate).toBeLessThan(0.015);
+    expect(count).toBe(0);
   });
 
   it('should convert angles to compass directions', () => {

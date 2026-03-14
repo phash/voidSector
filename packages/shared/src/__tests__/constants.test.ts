@@ -7,7 +7,6 @@ import {
   AP_DEFAULTS,
   STRUCTURE_COSTS,
   STRUCTURE_AP_COSTS,
-  RELAY_RANGES,
   PRODUCTION_RECIPES,
   getAcepDominantPath,
   getAcepRadarPattern,
@@ -51,12 +50,6 @@ describe('constants', () => {
     expect(STRUCTURE_AP_COSTS.factory).toBe(20);
     expect(STRUCTURE_AP_COSTS.research_lab).toBe(25);
     expect(STRUCTURE_AP_COSTS.kontor).toBe(15);
-  });
-
-  it('RELAY_RANGES includes factory, research_lab, and kontor', () => {
-    expect(RELAY_RANGES.factory).toBe(0);
-    expect(RELAY_RANGES.research_lab).toBe(0);
-    expect(RELAY_RANGES.kontor).toBe(0);
   });
 
   it('PRODUCTION_RECIPES has valid recipes', () => {

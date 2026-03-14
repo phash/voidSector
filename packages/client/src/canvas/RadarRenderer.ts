@@ -293,13 +293,17 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         }
       }
 
-      // Construction site marker: cyan pulsing ⚙ dot for sectors with an active construction site
+      // Construction site marker: progress-colored ⚙
       if (state.constructionSites && !isPlayer) {
-        const hasSite = state.constructionSites.some((c) => c.sectorX === sx && c.sectorY === sy);
-        if (hasSite) {
+        const site = state.constructionSites.find((c) => c.sectorX === sx && c.sectorY === sy);
+        if (site) {
+          const progress = site.progress ?? 0; // 0-100
           const t = state.animTime ?? 0;
-          const alpha = 0.5 + 0.5 * Math.sin(t / 800);
-          ctx.fillStyle = `rgba(0,255,200,${alpha})`;
+          const pulse = 0.7 + 0.3 * Math.sin(t / 800);
+          // Color transitions from red (0%) through orange (50%) to green (100%)
+          const r = progress < 50 ? 255 : Math.round(255 - (progress - 50) * 5.1);
+          const g = progress < 50 ? Math.round(progress * 5.1) : 255;
+          ctx.fillStyle = `rgba(${r},${g},0,${pulse})`;
           ctx.font = `${coordSize}px 'Share Tech Mono', monospace`;
           ctx.textAlign = 'right';
           ctx.textBaseline = 'top';

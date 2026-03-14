@@ -25,11 +25,15 @@ describe('jumpgate constants', () => {
   it('max chain hops is 10', () => {
     expect(JUMPGATE_MAX_CHAIN_HOPS).toBe(10);
   });
+
+  it('JUMPGATE_CHANCE is 0 (natural jumpgates disabled)', () => {
+    expect(JUMPGATE_CHANCE).toBe(0);
+  });
 });
 
 describe('ancient jumpgate spawn rate', () => {
-  it('ancient gates are much rarer than normal gates', () => {
-    expect(ANCIENT_JUMPGATE_SPAWN_RATE).toBeLessThan(JUMPGATE_CHANCE * 0.1);
+  it('ancient gates have a very low spawn rate', () => {
+    expect(ANCIENT_JUMPGATE_SPAWN_RATE).toBeLessThan(0.001);
   });
 
   it('ancient gate min range exceeds normal max range', () => {
@@ -62,13 +66,11 @@ describe('ancient jumpgate spawn rate', () => {
     }
   });
 
-  it('normal checkJumpGate is unaffected by ancient gate changes', () => {
+  it('checkJumpGate always returns false (natural jumpgates disabled)', () => {
     let normalCount = 0;
     for (let x = 0; x < 1000; x++) {
       if (checkJumpGate(x, 42)) normalCount++;
     }
-    // JUMPGATE_CHANCE = 0.005, expect far fewer than 100 in 1000
-    expect(normalCount).toBeGreaterThan(0);
-    expect(normalCount).toBeLessThan(100);
+    expect(normalCount).toBe(0);
   });
 });
