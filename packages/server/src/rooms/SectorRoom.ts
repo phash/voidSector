@@ -1254,6 +1254,28 @@ export class SectorRoom extends Room<SectorRoomState> {
       if (qx !== this.quadrantX || qy !== this.quadrantY) return;
       this.broadcast('constructionSiteCompleted', { siteId: event.siteId });
       this.broadcast('structureBuilt', { sectorX: event.sectorX, sectorY: event.sectorY });
+
+      // For jumpgate completions, send updated gate info to owner
+      if (event.type === 'jumpgate' || event.type?.startsWith('jumpgate_')) {
+        for (const c of this.clients) {
+          const cAuth = c.auth as AuthPayload;
+          if (cAuth.userId === event.ownerId) {
+            this.navigation.detectAndSendPlayerGate(c, event.sectorX, event.sectorY).catch(() => {});
+            c.send('logEntry', event.type === 'jumpgate'
+              ? `JUMPGATE FERTIGGESTELLT bei (${event.sectorX}, ${event.sectorY})`
+              : `JUMPGATE-UPGRADE ABGESCHLOSSEN`);
+          }
+        }
+      }
+
+      if (event.type === 'station') {
+        for (const c of this.clients) {
+          const cAuth = c.auth as AuthPayload;
+          if (cAuth.userId === event.ownerId) {
+            c.send('logEntry', `STATION FERTIGGESTELLT bei (${event.sectorX}, ${event.sectorY})`);
+          }
+        }
+      }
     };
     constructionBus.on('completed', onConstructionCompleted);
 

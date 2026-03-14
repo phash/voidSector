@@ -8,6 +8,14 @@ vi.mock('../../db/constructionQueries.js', () => ({
 }));
 vi.mock('../../db/queries.js', () => ({
   createStructure: vi.fn(),
+  insertPlayerJumpGate: vi.fn(),
+  upgradeJumpGate: vi.fn(),
+}));
+vi.mock('../../db/stationQueries.js', () => ({
+  insertPlayerStation: vi.fn(),
+}));
+vi.mock('../quadrantEngine.js', () => ({
+  sectorToQuadrant: vi.fn().mockReturnValue({ qx: 0, qy: 0 }),
 }));
 
 import { processConstructionTick } from '../constructionTickService.js';
@@ -29,6 +37,11 @@ const baseSite = {
   needed_ore: 30,
   needed_gas: 15,
   needed_crystal: 10,
+  needed_credits: 0,
+  needed_artefact: 0,
+  deposited_credits: 0,
+  deposited_artefact: 0,
+  metadata: null,
   paused: false,
 };
 
@@ -44,7 +57,6 @@ describe('processConstructionTick', () => {
   });
 
   it('advances when resources meet threshold at progress 0→1', async () => {
-    // At progress 1: need ceil(1*30/100)=1 ore, ceil(1*15/100)=1 gas, ceil(1*10/100)=1 crystal
     (getAllConstructionSites as any).mockResolvedValue([{
       ...baseSite, progress: 0,
       deposited_ore: 1, deposited_gas: 1, deposited_crystal: 1,
@@ -75,7 +87,6 @@ describe('processConstructionTick', () => {
   });
 
   it('creates structure and deletes site when progress reaches 100', async () => {
-    // At progress 99→100: need all resources
     (getAllConstructionSites as any).mockResolvedValue([{
       ...baseSite, progress: 99,
       deposited_ore: 30, deposited_gas: 15, deposited_crystal: 10,
@@ -86,6 +97,9 @@ describe('processConstructionTick', () => {
     await processConstructionTick();
     expect(createStructure).toHaveBeenCalledWith('player-1', 'mining_station', 5, 5);
     expect(deleteConstructionSiteById).toHaveBeenCalledWith('site-1');
-    expect(emitSpy).toHaveBeenCalledWith('completed', { siteId: 'site-1', sectorX: 5, sectorY: 5 });
+    expect(emitSpy).toHaveBeenCalledWith('completed', {
+      siteId: 'site-1', sectorX: 5, sectorY: 5,
+      type: 'mining_station', ownerId: 'player-1', metadata: null,
+    });
   });
 });
