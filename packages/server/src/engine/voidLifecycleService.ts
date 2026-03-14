@@ -19,7 +19,7 @@ import { getExpansionTarget } from './expansionEngine.js';
 import { logger } from '../utils/logger.js';
 
 export const QUADRANT_SIZE = 10_000;
-const VOID_SPAWN_INTERVAL_TICKS = 240;
+const VOID_SPAWN_INTERVAL_TICKS = 10;
 const VOID_MIN_CLUSTER_COUNT = 32;
 const VOID_MAX_CLUSTER_COUNT = 48;
 const VOID_ORIGIN_EXCLUSION = 100;
