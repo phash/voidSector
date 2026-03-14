@@ -2,8 +2,11 @@
 import { CONQUEST_RATE, CONQUEST_POOL_DRAIN_PER_TICK } from '@void-sector/shared';
 import { sectorToQuadrant } from './quadrantEngine.js';
 import { civQueries } from '../db/civQueries.js';
-import { getQuadrantControl, upsertQuadrantControl } from '../db/queries.js';
+import { getQuadrantControl, upsertQuadrantControl, getAllQuadrantControls } from '../db/queries.js';
+import type { QuadrantControlRow } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
+
+const NEIGHBOR_MIN_SHARE = 60; // faction must hold >= 60% in at least one adjacent quadrant
 
 // --- Pure functions (exported for testing) ---
 
@@ -60,21 +63,46 @@ export function updateShares(
   return { shares, controllingFaction };
 }
 
+/**
+ * Check if faction has >= threshold% control in any of the 8 adjacent quadrants.
+ * Pure function — takes the full controls list to avoid DB calls per station.
+ */
+export function hasAdjacentFactionControl(
+  qx: number, qy: number, faction: string,
+  allControls: QuadrantControlRow[], threshold: number = NEIGHBOR_MIN_SHARE,
+): boolean {
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      if (dx === 0 && dy === 0) continue;
+      const ctrl = allControls.find(c => c.qx === qx + dx && c.qy === qy + dy);
+      if (ctrl) {
+        const share = (ctrl.faction_shares as Record<string, number>)?.[faction] ?? 0;
+        if (share >= threshold) return true;
+      }
+    }
+  }
+  return false;
+}
+
 // --- Engine class ---
 
 export class ConquestEngine {
   async tick(): Promise<void> {
     let stations;
+    let allControls: QuadrantControlRow[];
     try {
-      stations = await civQueries.getConquestStations();
+      [stations, allControls] = await Promise.all([
+        civQueries.getConquestStations(),
+        getAllQuadrantControls(),
+      ]);
     } catch (err) {
-      logger.error({ err }, 'ConquestEngine: failed to load stations');
+      logger.error({ err }, 'ConquestEngine: failed to load stations/controls');
       return;
     }
 
     for (const station of stations) {
       try {
-        await this.processStation(station);
+        await this.processStation(station, allControls);
       } catch (err) {
         logger.error({ err, stationId: station.id }, 'ConquestEngine: error processing station');
       }
@@ -83,8 +111,16 @@ export class ConquestEngine {
 
   private async processStation(
     station: { id: number; sector_x: number; sector_y: number; faction: string; mode: string; conquest_pool: number; level: number },
+    allControls: QuadrantControlRow[],
   ): Promise<void> {
     const { qx, qy } = sectorToQuadrant(station.sector_x, station.sector_y);
+
+    // Expansion requires adjacent quadrant with >= 60% faction control
+    if (!hasAdjacentFactionControl(qx, qy, station.faction, allControls)) {
+      // No friendly neighbor — can't expand, stay in conquest mode but skip tick
+      await civQueries.updateStationMode(station.id, 'conquest');
+      return;
+    }
 
     // Get or create quadrant control row
     let qc = await getQuadrantControl(qx, qy);
