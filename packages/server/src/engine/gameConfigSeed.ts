@@ -92,6 +92,7 @@ import {
   CONQUEST_POOL_DRAIN_PER_TICK,
   CONQUEST_POOL_MAX,
   CONQUEST_RATE,
+  FACTION_EXPANSION_RATES,
   JUMPGATE_CHANCE,
   JUMPGATE_FUEL_COST,
   JUMPGATE_TRAVEL_COST_CREDITS,
@@ -304,6 +305,7 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   { key: 'CONQUEST_POOL_DRAIN_PER_TICK', category: 'conquest', description: 'Conquest pool drain per tick', getDefault: () => CONQUEST_POOL_DRAIN_PER_TICK },
   { key: 'CONQUEST_POOL_MAX', category: 'conquest', description: 'Maximum conquest pool', getDefault: () => CONQUEST_POOL_MAX },
   { key: 'CONQUEST_RATE', category: 'conquest', description: 'Conquest rate table by tier', getDefault: () => CONQUEST_RATE },
+  { key: 'FACTION_EXPANSION_RATES', category: 'conquest', description: 'Expansion speed per faction (lower=faster, 10=base, 0=disabled)', getDefault: () => FACTION_EXPANSION_RATES },
 
   // ══════════════════════════════════════════════════════════════════════════════
   // Navigation

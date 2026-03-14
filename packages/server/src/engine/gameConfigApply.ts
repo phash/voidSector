@@ -24,6 +24,7 @@ import {
   CONTENT_WEIGHTS,
   SECTOR_ENVIRONMENT_WEIGHTS,
   CONQUEST_RATE,
+  FACTION_EXPANSION_RATES,
   JUMPGATE_DISTANCE_LIMITS,
   JUMPGATE_CONNECTION_LIMITS,
   JUMPGATE_BUILD_COST,
@@ -153,6 +154,10 @@ export function applyConfigValue(key: string, value: any): void {
   }
   if (key === 'CONQUEST_RATE') {
     deepAssign(CONQUEST_RATE, value);
+    return;
+  }
+  if (key === 'FACTION_EXPANSION_RATES') {
+    Object.assign(FACTION_EXPANSION_RATES, value);
     return;
   }
   if (key === 'JUMPGATE_DISTANCE_LIMITS') {
