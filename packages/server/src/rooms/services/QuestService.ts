@@ -40,6 +40,7 @@ import {
   addWissen,
   getQuestById,
   getCargoCapForPlayer,
+  getInventory,
 } from '../../db/queries.js';
 import {
   getCargoState,
@@ -399,6 +400,23 @@ export class QuestService {
       }
       if (rewards.wissen) await addWissen(auth.userId, rewards.wissen);
 
+      // Blueprint reward
+      if (rewards.rewardBlueprint) {
+        const hasBlueprint = await getInventoryItem(auth.userId, 'blueprint', rewards.rewardBlueprint);
+        if (hasBlueprint > 0) {
+          // Player already has this blueprint — give alternative reward (credits + wissen)
+          const altCredits = 200;
+          const altWissen = 15;
+          await addCredits(auth.userId, altCredits);
+          await addWissen(auth.userId, altWissen);
+          this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+        } else {
+          await addToInventory(auth.userId, 'blueprint', rewards.rewardBlueprint, 1);
+        }
+        const items = await getInventory(auth.userId);
+        this.ctx.send(client, 'inventoryState', { items });
+      }
+
       // Wissen from quest completion, scaled by reward value
       const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
       awardWissenAndNotify(client, auth.userId, questWissen);
@@ -462,6 +480,23 @@ export class QuestService {
           }
         }
         if (rewards.wissen) await addWissen(playerId, rewards.wissen);
+
+        // Blueprint reward
+        if (rewards.rewardBlueprint) {
+          const hasBlueprint = await getInventoryItem(playerId, 'blueprint', rewards.rewardBlueprint);
+          if (hasBlueprint > 0) {
+            const altCredits = 200;
+            const altWissen = 15;
+            await addCredits(playerId, altCredits);
+            await addWissen(playerId, altWissen);
+            this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(playerId) });
+          } else {
+            await addToInventory(playerId, 'blueprint', rewards.rewardBlueprint, 1);
+          }
+          const items = await getInventory(playerId);
+          this.ctx.send(client, 'inventoryState', { items });
+        }
+
         const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
         awardWissenAndNotify(client, playerId, questWissen);
         this.ctx.send(client, 'questComplete', { id: row.id, title: row.title, rewards });
@@ -695,6 +730,22 @@ export class QuestService {
           }
           if (rewards.wissen) {
             await addWissen(playerId, rewards.wissen);
+          }
+
+          // Blueprint reward
+          if (rewards.rewardBlueprint) {
+            const hasBlueprint = await getInventoryItem(playerId, 'blueprint', rewards.rewardBlueprint);
+            if (hasBlueprint > 0) {
+              const altCredits = 200;
+              const altWissen = 15;
+              await addCredits(playerId, altCredits);
+              await addWissen(playerId, altWissen);
+              this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(playerId) });
+            } else {
+              await addToInventory(playerId, 'blueprint', rewards.rewardBlueprint, 1);
+            }
+            const items = await getInventory(playerId);
+            this.ctx.send(client, 'inventoryState', { items });
           }
 
           // Wissen from quest completion, scaled by reward value

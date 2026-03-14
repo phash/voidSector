@@ -164,6 +164,11 @@ export function QuestDetailPanel() {
       <div>{quest.rewards.credits} CR</div>
       <div>{quest.rewards.xp} XP</div>
       {quest.rewards.reputation > 0 && <div>+{quest.rewards.reputation} REP</div>}
+      {quest.rewards.rewardBlueprint && (
+        <div style={{ color: '#AA88FF', fontSize: '0.7rem', marginTop: 4 }}>
+          BLUEPRINT: {quest.rewards.rewardBlueprint.toUpperCase().replace(/_/g, ' ')}
+        </div>
+      )}
 
       <button
         className="vs-btn"
