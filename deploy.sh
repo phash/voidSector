@@ -11,12 +11,14 @@ set -euo pipefail
 KEEP_TUNNEL=false
 BRANCH=""
 NO_PULL=false
+NO_CACHE=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --keep-tunnel) KEEP_TUNNEL=true; shift ;;
     --branch) BRANCH="$2"; shift 2 ;;
     --no-pull) NO_PULL=true; shift ;;
+    --no-cache) NO_CACHE=true; shift ;;
     --help|-h)
       echo "Verwendung: $0 [OPTIONEN]"
       echo ""
@@ -24,6 +26,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --keep-tunnel      Cloudflared nicht neu starten (Tunnel-URL bleibt erhalten)"
       echo "  --branch <name>    Branch vor dem Deploy auschecken"
       echo "  --no-pull          Kein git pull"
+      echo "  --no-cache         Docker Build ohne Cache"
       echo "  --help, -h         Diese Hilfe anzeigen"
       echo ""
       echo "Beispiele:"
@@ -31,6 +34,7 @@ while [[ $# -gt 0 ]]; do
       echo "  ./deploy.sh --keep-tunnel            # Deploy, Tunnel-URL behalten"
       echo "  ./deploy.sh --branch feat/xyz        # bestimmten Branch deployen"
       echo "  ./deploy.sh --keep-tunnel --no-pull  # nur neu starten, kein git pull"
+      echo "  ./deploy.sh --no-cache               # ohne Docker-Cache neu bauen"
       exit 0
       ;;
     *) echo "Unbekannte Option: $1"; echo "Hilfe: $0 --help"; exit 1 ;;
@@ -39,6 +43,7 @@ done
 
 echo "── voidSector Deploy ────────────────────"
 echo "  keep-tunnel : $KEEP_TUNNEL"
+echo "  no-cache    : $NO_CACHE"
 [[ -n "$BRANCH" ]] && echo "  branch      : $BRANCH"
 echo ""
 
@@ -57,7 +62,12 @@ fi
 
 # ── Build ────────────────────────────────────────────────────────────────────
 echo "── Docker Build ─────────────────────────"
-docker compose build server client
+if [[ "$NO_CACHE" = true ]]; then
+  echo "  (ohne Cache)"
+  docker compose build --no-cache server client
+else
+  docker compose build server client
+fi
 echo ""
 
 # ── Start / Restart ──────────────────────────────────────────────────────────

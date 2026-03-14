@@ -318,6 +318,7 @@ export class WorldService {
   // ── Build ───────────────────────────────────────────────────────────
 
   async handleBuild(client: Client, data: BuildMessage): Promise<void> {
+    logger.info({ type: data?.type }, 'handleBuild called');
     if (rejectGuest(client, 'Bauen')) return;
     if (!this.ctx.checkRate(client.sessionId, 'build', 2000)) {
       client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
@@ -875,6 +876,7 @@ export class WorldService {
   private async handleBuildJumpgate(client: Client, auth: AuthPayload): Promise<void> {
     const sx = this.ctx._px(client.sessionId);
     const sy = this.ctx._py(client.sessionId);
+    logger.info({ sx, sy, userId: auth.userId }, 'handleBuildJumpgate start');
 
     // Check no existing player gate at this sector
     const existingGate = await getPlayerJumpGate(sx, sy);
