@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULES, isModuleFreelyAvailable } from '@void-sector/shared';
+import { MODULES, isModuleFreelyAvailable, BLUEPRINT_COPY_BASE_COST } from '@void-sector/shared';
 
 function costLine(cost: {
   credits: number;
@@ -185,6 +185,16 @@ export function TechDetailPanel() {
             <div style={{ color: '#00BFFF', marginBottom: 4 }}>{t('tech.blueprintAvailable')}</div>
             <button style={btnStyle} onClick={() => network.sendActivateBlueprint(mod.id)}>
               {t('tech.activateBlueprint')}
+            </button>
+          </div>
+        )}
+        {isUnlocked && mod.cost && (
+          <div style={{ marginTop: 6 }}>
+            <button
+              style={btnStyle}
+              onClick={() => network.sendCreateBlueprintCopy(mod.id)}
+            >
+              [BLUEPRINT HERSTELLEN — {BLUEPRINT_COPY_BASE_COST * mod.tier} CR]
             </button>
           </div>
         )}
