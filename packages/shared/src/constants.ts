@@ -111,6 +111,33 @@ export const STATION_BUILD_COSTS: Record<number, { credits: number; crystal: num
 
 export const STATION_MODULE_UPGRADE_COST = (level: number): number => 200 * level * level;
 
+// Station production
+export const PRODUCTION_BASE_TIME_MS = 60_000; // 60s base per item
+export const PRODUCTION_TIER_COST_FACTOR = 2; // cost multiplier per tier above factory level
+export const PRODUCTION_MAX_QUEUE = 9;
+
+/** Basic recipes available to every factory (no blueprint needed) */
+export const BASIC_FACTORY_RECIPES: Record<string, { inputs: Record<string, number>; outputs: Record<string, number>; timeMs: number }> = {
+  fuel: { inputs: { gas: 4 }, outputs: { fuel: 100 }, timeMs: 30_000 },
+};
+
+/**
+ * Calculate production time for a module at a given factory level.
+ * Tier difference increases time exponentially.
+ */
+export function calculateProductionTime(moduleTier: number, factoryLevel: number): number {
+  const tierDiff = Math.max(0, moduleTier - factoryLevel);
+  return PRODUCTION_BASE_TIME_MS * moduleTier * Math.pow(PRODUCTION_TIER_COST_FACTOR, tierDiff);
+}
+
+/**
+ * Calculate resource cost multiplier for producing above factory level.
+ */
+export function calculateCostMultiplier(moduleTier: number, factoryLevel: number): number {
+  const tierDiff = Math.max(0, moduleTier - factoryLevel);
+  return Math.pow(PRODUCTION_TIER_COST_FACTOR, tierDiff);
+}
+
 // ── Research Lab / Wissen ─────────────────────────────────────────────
 
 /** Lab tier Wissen multiplier for active generation (replaces passive tick) */

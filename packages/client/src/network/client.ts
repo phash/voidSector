@@ -785,6 +785,17 @@ class GameNetwork {
     room.onMessage('acepBlueprints', (data: { blueprints: string[] }) => {
       useStore.setState({ acepFactoryBlueprints: data.blueprints });
     });
+    room.onMessage('productionResult', (data: any) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(data.instant ? 'PRODUZIERT' : 'PRODUKTION GESTARTET');
+      } else {
+        store.addLogEntry(`PRODUKTION FEHLER: ${data.error}`);
+      }
+    });
+    room.onMessage('productionQueue', (data: { jobs: any[] }) => {
+      useStore.setState({ productionQueue: data.jobs });
+    });
 
     // Credits update
     room.onMessage('creditsUpdate', (data: { credits: number }) => {
@@ -2134,6 +2145,14 @@ class GameNetwork {
 
   sendConsumeBlueprint(target: 'acep' | 'station', moduleId: string, stationId?: string) {
     this.sectorRoom?.send('consumeBlueprint', { target, moduleId, stationId });
+  }
+
+  sendStartProduction(stationId: string, moduleId: string, quantity: number) {
+    this.sectorRoom?.send('startProduction', { stationId, moduleId, quantity });
+  }
+
+  requestProductionQueue(stationId: string) {
+    this.sectorRoom?.send('getProductionQueue', { stationId });
   }
 
   sendDepositConstruction(siteId: string, ore: number, gas: number, crystal: number) {

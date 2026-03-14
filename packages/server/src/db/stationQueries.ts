@@ -118,6 +118,62 @@ export async function getAcepBlueprints(playerId: string): Promise<string[]> {
   return result.rows.map((r) => r.module_id);
 }
 
+// ── Production Queue ─────────────────────────────────────────────────
+
+export interface ProductionQueueRow {
+  id: string;
+  station_id: string;
+  module_id: string;
+  quantity: number;
+  completed: number;
+  started_at: number;
+  time_per_item_ms: number;
+}
+
+export async function getProductionQueue(stationId: string): Promise<ProductionQueueRow[]> {
+  const result = await query<ProductionQueueRow>(
+    'SELECT * FROM station_production_queue WHERE station_id = $1 ORDER BY created_at ASC',
+    [stationId],
+  );
+  return result.rows;
+}
+
+export async function insertProductionJob(
+  stationId: string,
+  moduleId: string,
+  quantity: number,
+  startedAt: number,
+  timePerItemMs: number,
+): Promise<ProductionQueueRow> {
+  const result = await query<ProductionQueueRow>(
+    `INSERT INTO station_production_queue (station_id, module_id, quantity, started_at, time_per_item_ms)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [stationId, moduleId, quantity, startedAt, timePerItemMs],
+  );
+  return result.rows[0];
+}
+
+export async function updateProductionCompleted(jobId: string, completed: number): Promise<void> {
+  await query(
+    'UPDATE station_production_queue SET completed = $2 WHERE id = $1',
+    [jobId, completed],
+  );
+}
+
+export async function deleteProductionJob(jobId: string): Promise<void> {
+  await query('DELETE FROM station_production_queue WHERE id = $1', [jobId]);
+}
+
+export async function updateStationCargo(
+  stationId: string,
+  cargoContents: Record<string, number>,
+): Promise<void> {
+  await query(
+    'UPDATE player_stations SET cargo_contents = $2::jsonb WHERE id = $1',
+    [stationId, JSON.stringify(cargoContents)],
+  );
+}
+
 export async function consumeBlueprintIntoAcep(playerId: string, moduleId: string): Promise<boolean> {
   try {
     await query(
