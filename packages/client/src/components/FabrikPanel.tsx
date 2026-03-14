@@ -71,7 +71,10 @@ function AcepTab() {
           if (!mod) return null;
           return (
             <div key={moduleId} style={rowStyle}>
-              <span style={{ color: green }}>{mod.name ?? moduleId}</span>
+              <span style={{ color: green }}>
+                {mod.name ?? moduleId}
+                <CostDisplay moduleId={moduleId} />
+              </span>
               <button
                 style={btnStyle}
                 onClick={() => network.sendCraftModule(moduleId)}
@@ -143,63 +146,140 @@ function AcepTab() {
   );
 }
 
+function CostDisplay({ moduleId }: { moduleId: string }) {
+  const mod = MODULES[moduleId];
+  if (!mod?.cost) return null;
+  const parts: string[] = [];
+  if (mod.cost.credits) parts.push(`${mod.cost.credits} CR`);
+  if (mod.cost.ore) parts.push(`${mod.cost.ore} ORE`);
+  if (mod.cost.gas) parts.push(`${mod.cost.gas} GAS`);
+  if (mod.cost.crystal) parts.push(`${mod.cost.crystal} CRYSTAL`);
+  if (mod.cost.artefact) parts.push(`${mod.cost.artefact} ART`);
+  if (parts.length === 0) return null;
+  return (
+    <span style={{ fontSize: '0.55rem', opacity: 0.5, marginLeft: 4 }}>
+      {parts.join(' · ')}
+    </span>
+  );
+}
+
 function StationTab() {
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
-  const [stationBlueprints, setStationBlueprints] = useState<string[]>([]);
-  const [stations, setStations] = useState<any[]>([]);
+  const stations = useStore((s) => s.myStations);
+  const stationBlueprintsMap = useStore((s) => s.stationBlueprintsMap);
   const inventory = useStore((s) => s.inventory);
 
   useEffect(() => {
     network.requestMyStations();
-    const handler = (e: MessageEvent) => {
-      // Listen for myStations response
-    };
-    return () => {};
   }, []);
 
-  // Listen for station list
+  // When a station is selected, request its details (blueprints)
   useEffect(() => {
-    const unsub = useStore.subscribe((state) => {
-      // We'd need myStations in state — for now use a simple approach
-    });
-    return unsub;
-  }, []);
-
-  // Request station list on mount
-  useEffect(() => {
-    network.requestMyStations();
-  }, []);
+    if (selectedStation) {
+      network.requestStationDetails(selectedStation);
+    }
+  }, [selectedStation]);
 
   const blueprintsInCargo = inventory.filter((i) => i.itemType === 'blueprint');
+  const stationsWithFactory = stations.filter((s) => s.factory_level >= 1);
+  const selected = stations.find((s) => s.id === selectedStation);
+  const stationBlueprints = selectedStation ? (stationBlueprintsMap[selectedStation] ?? []) : [];
 
   return (
     <div>
       <div style={{ ...headerStyle, marginTop: 0, color: '#00BFFF' }}>STATIONEN</div>
-      <div style={{ opacity: 0.4, color: '#00BFFF', fontSize: '0.6rem' }}>
-        Wähle eine Station mit ausgebauter Factory.
-        Blueprints aus dem Cargo können in die Station-Factory eingelegt werden.
-      </div>
 
-      {/* Station selection would go here — requires myStations in store */}
-      <div style={{ marginTop: 8, color: 'rgba(0,191,255,0.5)', fontSize: '0.6rem' }}>
-        Station-Produktion kommt in einem zukünftigen Update.
-        Nutze die VERWALTUNG im Detail-Panel um Factory auszubauen.
-      </div>
-
-      {blueprintsInCargo.length > 0 && selectedStation && (
-        <>
-          <div style={{ ...headerStyle, color: '#00BFFF' }}>BLUEPRINTS EINLEGEN</div>
-          {blueprintsInCargo.map((bp) => (
-            <div key={bp.itemId} style={rowStyle}>
-              <span style={{ color: amber }}>{bp.itemId.toUpperCase().replace(/_/g, ' ')}</span>
-              <button
-                style={{ ...btnStyle, borderColor: '#00BFFF', color: '#00BFFF' }}
-                onClick={() => network.sendConsumeBlueprint('station', bp.itemId, selectedStation)}
-              >
-                [EINLEGEN]
-              </button>
-            </div>
+      {stations.length === 0 ? (
+        <div style={{ opacity: 0.4, color: '#00BFFF', fontSize: '0.6rem' }}>
+          KEINE STATIONEN GEBAUT
+        </div>
+      ) : stationsWithFactory.length === 0 ? (
+        <div style={{ opacity: 0.4, color: '#00BFFF', fontSize: '0.6rem' }}>
+          Keine Station hat eine Factory. Nutze VERWALTUNG im Detail-Panel um Factory auszubauen.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
+          {stationsWithFactory.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSelectedStation(s.id)}
+              style={{
+                background: selectedStation === s.id ? '#00BFFF' : 'transparent',
+                color: selectedStation === s.id ? '#000' : '#00BFFF',
+                border: '1px solid #00BFFF',
+                padding: '3px 6px',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.6rem',
+                textAlign: 'left',
+              }}
+            >
+              ({s.sector_x}, {s.sector_y}) · FAB L{s.factory_level} · CARGO L{s.cargo_level}
+            </button>
           ))}
+        </div>
+      )}
+
+      {/* Selected station: show recipes + blueprints */}
+      {selected && (
+        <>
+          {/* Station blueprints — available for crafting */}
+          <div style={{ ...headerStyle, color: '#00BFFF' }}>VERFÜGBARE REZEPTE</div>
+          {stationBlueprints.length === 0 ? (
+            <div style={{ opacity: 0.4, color: '#00BFFF', fontSize: '0.6rem' }}>
+              KEINE BLUEPRINTS IN DIESER FACTORY
+            </div>
+          ) : (
+            stationBlueprints.map((moduleId) => {
+              const mod = MODULES[moduleId];
+              if (!mod) return null;
+              return (
+                <div key={moduleId} style={rowStyle}>
+                  <span style={{ color: '#00BFFF' }}>
+                    {mod.name ?? moduleId}
+                    <CostDisplay moduleId={moduleId} />
+                  </span>
+                  <button
+                    style={{ ...btnStyle, borderColor: '#00BFFF', color: '#00BFFF' }}
+                    onClick={() => network.sendStartProduction(selected.id, moduleId, 1)}
+                  >
+                    [HERSTELLEN]
+                  </button>
+                </div>
+              );
+            })
+          )}
+
+          {/* Blueprints in cargo — consume into station */}
+          {blueprintsInCargo.length > 0 && (
+            <>
+              <div style={{ ...headerStyle, color: '#00BFFF' }}>BLUEPRINTS EINLEGEN</div>
+              {blueprintsInCargo.map((bp) => (
+                <div key={bp.itemId} style={rowStyle}>
+                  <span style={{ color: amber }}>{bp.itemId.toUpperCase().replace(/_/g, ' ')}</span>
+                  <button
+                    style={{ ...btnStyle, borderColor: '#00BFFF', color: '#00BFFF' }}
+                    onClick={() => network.sendConsumeBlueprint('station', bp.itemId, selected.id)}
+                  >
+                    [EINLEGEN]
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Station cargo overview */}
+          {selected.cargo_contents && Object.keys(selected.cargo_contents).length > 0 && (
+            <>
+              <div style={{ ...headerStyle, color: '#00BFFF' }}>STATIONS-CARGO</div>
+              <div style={{ fontSize: '0.6rem', color: 'rgba(0,191,255,0.6)' }}>
+                {Object.entries(selected.cargo_contents)
+                  .filter(([, v]) => (v as number) > 0)
+                  .map(([k, v]) => `${k.toUpperCase()}: ${v}`)
+                  .join(' · ') || 'LEER'}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

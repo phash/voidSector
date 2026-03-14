@@ -222,19 +222,11 @@ adminRouter.post('/players/:id/cargo', async (req: Request, res: Response) => {
     for (const [resource, amount] of Object.entries(resources)) {
       if (!allowed.includes(resource)) continue;
       if (typeof amount !== 'number' || amount <= 0) continue;
-      await query(
-        `INSERT INTO cargo (player_id, resource, quantity) VALUES ($1, $2, $3)
-         ON CONFLICT (player_id, resource) DO UPDATE SET quantity = cargo.quantity + $3`,
-        [req.params.id, resource, amount],
-      );
+      // Use unified inventory table (not legacy cargo table)
+      await upsertInventory(req.params.id as string, 'resource', resource, amount);
     }
     // Notify live session so client updates without reconnect
-    const cargoUpdate: Record<string, number> = {};
-    for (const [resource, amount] of Object.entries(resources)) {
-      if (!['ore', 'gas', 'crystal', 'slate', 'artefact', 'fuel'].includes(resource)) continue;
-      if (typeof amount === 'number' && amount > 0) cargoUpdate[resource] = amount;
-    }
-    adminBus.playerUpdated({ playerId: req.params.id as string, updates: { cargo: cargoUpdate } });
+    adminBus.playerUpdated({ playerId: req.params.id as string, updates: { cargo: true as any } });
     await logAdminEvent('give_player_cargo', { playerId: req.params.id, resources });
     res.json({ ok: true });
   } catch (err) {

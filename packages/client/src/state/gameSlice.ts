@@ -510,6 +510,8 @@ export interface GameSlice {
   playerStationInfo: any | null;
   acepFactoryBlueprints: string[];
   productionQueue: any[];
+  myStations: Array<{ id: string; sector_x: number; sector_y: number; level: number; factory_level: number; cargo_level: number; cargo_contents: Record<string, number> }>;
+  stationBlueprintsMap: Record<string, string[]>; // stationId → blueprint list
 
   // Quadrant system
   knownQuadrants: Array<{
@@ -834,6 +836,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   playerStationInfo: null,
   acepFactoryBlueprints: [],
   productionQueue: [],
+  myStations: [],
+  stationBlueprintsMap: {},
   knownQuadrants: [],
   currentQuadrant: null,
   firstContactEvent: null,

@@ -792,12 +792,28 @@ class GameNetwork {
       const store = useStore.getState();
       if (data.success) {
         store.addLogEntry(data.instant ? 'PRODUZIERT' : 'PRODUKTION GESTARTET');
+        // Refresh station list to update cargo contents
+        this.requestMyStations();
       } else {
         store.addLogEntry(`PRODUKTION FEHLER: ${data.error}`);
       }
     });
     room.onMessage('productionQueue', (data: { jobs: any[] }) => {
       useStore.setState({ productionQueue: data.jobs });
+    });
+
+    // Player stations list
+    room.onMessage('myStations', (data: { stations: any[] }) => {
+      useStore.setState({ myStations: data.stations });
+    });
+
+    // Station details (blueprints for a specific station)
+    room.onMessage('stationDetails', (data: { station: any; blueprints?: string[] }) => {
+      if (data.station && data.blueprints) {
+        useStore.setState((prev) => ({
+          stationBlueprintsMap: { ...prev.stationBlueprintsMap, [data.station.id]: data.blueprints },
+        }));
+      }
     });
 
     // Credits update
