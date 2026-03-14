@@ -962,6 +962,33 @@ adminRouter.post('/config/export-issue', async (req: Request, res: Response) => 
   }
 });
 
+// ── Drones ──────────────────────────────────────────────────────────
+
+adminRouter.get('/drones', async (_req: Request, res: Response) => {
+  try {
+    const ships = await civQueries.getAllShips();
+    const summary = {
+      total: ships.length,
+      byState: {} as Record<string, number>,
+      byFaction: {} as Record<string, number>,
+      byResource: {} as Record<string, number>,
+      totalResourcesCarried: 0,
+    };
+    for (const s of ships) {
+      summary.byState[s.state] = (summary.byState[s.state] ?? 0) + 1;
+      summary.byFaction[s.faction] = (summary.byFaction[s.faction] ?? 0) + 1;
+      if (s.mined_resource) {
+        summary.byResource[s.mined_resource] = (summary.byResource[s.mined_resource] ?? 0) + 1;
+      }
+      summary.totalResourcesCarried += s.resources_carried ?? 0;
+    }
+    res.json({ summary, ships });
+  } catch (err) {
+    logger.error({ err }, 'Admin drones error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ── Helpers ─────────────────────────────────────────────────────────
 
 function getRawBody(req: Request): Promise<string> {

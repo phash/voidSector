@@ -62,13 +62,15 @@ export const civQueries = {
     state: string; x: number; y: number;
     target_x?: number | null; target_y?: number | null;
     spiral_step?: number; resources_carried?: number;
+    mined_resource?: string;
   }): Promise<void> {
     await query(
       `UPDATE civ_ships SET state=$2, x=$3, y=$4, target_x=$5, target_y=$6,
-       spiral_step=$7, resources_carried=$8 WHERE id=$1`,
+       spiral_step=$7, resources_carried=$8, mined_resource=COALESCE($9, mined_resource) WHERE id=$1`,
       [id, data.state, data.x, data.y,
        data.target_x ?? null, data.target_y ?? null,
-       data.spiral_step ?? 0, data.resources_carried ?? 0],
+       data.spiral_step ?? 0, data.resources_carried ?? 0,
+       data.mined_resource ?? null],
     );
   },
 
@@ -78,6 +80,7 @@ export const civQueries = {
       x: number; y: number; home_x: number; home_y: number;
       target_x: number | null; target_y: number | null;
       spiral_step: number; resources_carried: number;
+      mined_resource: string;
     }>('SELECT * FROM civ_ships ORDER BY id');
     return res.rows.map((r) => ({
       id: r.id, faction: r.faction, ship_type: r.ship_type as any,
@@ -87,6 +90,7 @@ export const civQueries = {
       target_y: r.target_y ?? undefined,
       spiral_step: r.spiral_step,
       resources_carried: r.resources_carried,
+      mined_resource: r.mined_resource,
     }));
   },
 

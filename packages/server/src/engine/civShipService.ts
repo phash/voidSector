@@ -39,10 +39,17 @@ export function stepToward(
   return { x: x + Math.sign(tx - x), y: y + Math.sign(ty - y) };
 }
 
-function hasMineableResources(x: number, y: number): boolean {
+function getMineableResource(x: number, y: number): string | null {
   const sector = generateSector(x, y, null);
   const t = sector.type;
-  return t === 'asteroid_field' || t === 'nebula' || t === 'anomaly' || t === 'pirate';
+  if (t === 'asteroid_field' || t === 'pirate') return 'ore';
+  if (t === 'nebula') return 'gas';
+  if (t === 'anomaly') return 'crystal';
+  return null;
+}
+
+function hasMineableResources(x: number, y: number): boolean {
+  return getMineableResource(x, y) !== null;
 }
 
 export function nextShipState(
@@ -83,7 +90,7 @@ export function nextShipState(
         if (tx === ship.home_x && ty === ship.home_y) {
           return { state: 'idle', x: nx, y: ny, resources_carried: 0, target_x: undefined, target_y: undefined };
         }
-        return { state: 'mining', x: nx, y: ny };
+        return { state: 'mining', x: nx, y: ny, mined_resource: getMineableResource(nx, ny) ?? 'ore' };
       }
       return { x: nx, y: ny };
     }
@@ -143,20 +150,21 @@ export async function processCivTick(): Promise<void> {
         target_y: updated.target_y ?? null,
         spiral_step: updated.spiral_step ?? 0,
         resources_carried: updated.resources_carried ?? 0,
+        mined_resource: updated.mined_resource,
       });
 
       // Deliver mined resources when drone returns home
       if (ship.state === 'returning' && updated.state === 'idle' && (ship.resources_carried ?? 0) > 0) {
         const delivered = ship.resources_carried!;
-        // Add ore to station inventory (upsert — creates row if station not yet visited)
+        const resource = ship.mined_resource ?? 'ore';
         await query(
           `INSERT INTO npc_station_inventory (station_x, station_y, item_type, stock, max_stock, restock_rate, consumption_rate, last_updated)
-           VALUES ($1, $2, 'ore', $3, 500, 0, 0, NOW())
+           VALUES ($1, $2, $4, $3, 500, 0, 0, NOW())
            ON CONFLICT (station_x, station_y, item_type)
            DO UPDATE SET stock = LEAST(npc_station_inventory.max_stock, npc_station_inventory.stock + $3), last_updated = NOW()`,
-          [ship.home_x, ship.home_y, delivered],
+          [ship.home_x, ship.home_y, delivered, resource],
         ).catch(() => {});
-        logger.info({ droneId: ship.id, homeX: ship.home_x, homeY: ship.home_y, delivered }, 'Drone delivered resources');
+        logger.info({ droneId: ship.id, homeX: ship.home_x, homeY: ship.home_y, delivered, resource }, 'Drone delivered resources');
       }
 
       const { qx, qy } = sectorToQuadrant(updated.x, updated.y);

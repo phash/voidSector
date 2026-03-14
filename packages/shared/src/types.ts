@@ -1484,6 +1484,7 @@ export interface CivShip {
   target_y?: number;
   spiral_step?: number;
   resources_carried?: number;
+  mined_resource?: string;
 }
 
 export interface CivStation {

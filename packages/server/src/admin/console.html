@@ -570,6 +570,7 @@ button.success:hover {
     <div class="tab" data-tab="structures">STRUKTUREN</div>
     <div class="tab" data-tab="errors">ERRORS <span id="errors-badge" style="display:none;background:#ff4444;color:#fff;border-radius:10px;padding:0 5px;font-size:10px;margin-left:4px;vertical-align:middle"></span></div>
     <div class="tab" data-tab="config">CONFIG</div>
+    <div class="tab" data-tab="drones">DROHNEN</div>
   </div>
 
   <div id="content">
@@ -1036,6 +1037,31 @@ expiresDays: 14"></textarea>
           <tr><th>KEY</th><th>CATEGORY</th><th>VALUE</th><th>ACTIONS</th></tr>
         </thead>
         <tbody id="config-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- ── DRONES Tab ──────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-drones">
+      <h3 style="margin:0 0 12px">Mining-Drohnen Übersicht</h3>
+      <div id="drones-summary" style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px"></div>
+      <div style="margin-bottom:8px;display:flex;gap:8px">
+        <select id="drones-faction-filter" style="font-family:monospace;font-size:11px;background:#111;color:#FFB000;border:1px solid #333;padding:2px 6px">
+          <option value="">ALLE FRAKTIONEN</option>
+        </select>
+        <select id="drones-state-filter" style="font-family:monospace;font-size:11px;background:#111;color:#FFB000;border:1px solid #333;padding:2px 6px">
+          <option value="">ALLE STATES</option>
+          <option value="idle">idle</option>
+          <option value="exploring">exploring</option>
+          <option value="traveling">traveling</option>
+          <option value="mining">mining</option>
+          <option value="returning">returning</option>
+        </select>
+      </div>
+      <table class="data-table" id="drones-table">
+        <thead>
+          <tr><th>ID</th><th>FRAKTION</th><th>STATE</th><th>POS</th><th>HOME</th><th>RESOURCE</th><th>CARRIED</th></tr>
+        </thead>
+        <tbody id="drones-tbody"></tbody>
       </table>
     </div>
 
@@ -3291,6 +3317,61 @@ expiresDays: 14"></textarea>
   document.getElementById('config-search').addEventListener('input', function() {
     configSearchTerm = this.value;
     renderConfigList(configData);
+  });
+
+  // ── DRONES ──────────────────────────────────────────────────────────
+  // Note: innerHTML usage here is safe — all data comes from the authenticated admin API,
+  // not from user input. The admin console is only accessible with the ADMIN_TOKEN.
+
+  let dronesData = [];
+  async function loadDrones() {
+    const data = await apiFetch('/drones');
+    dronesData = data.ships || [];
+    const summary = data.summary || {};
+    const sumEl = document.getElementById('drones-summary');
+    sumEl.innerHTML = [
+      `<div style="border:1px solid #333;padding:6px 12px"><b>${Number(summary.total)}</b> DROHNEN</div>`,
+      ...Object.entries(summary.byState || {}).map(([k,v]) =>
+        `<div style="border:1px solid #333;padding:6px 12px">${String(k)}: <b>${Number(v)}</b></div>`),
+      `<div style="border:1px solid #333;padding:6px 12px">CARRIED: <b>${Number(summary.totalResourcesCarried)}</b></div>`,
+      ...Object.entries(summary.byResource || {}).map(([k,v]) =>
+        `<div style="border:1px solid #333;padding:6px 12px">${String(k)}: <b>${Number(v)}</b></div>`),
+    ].join('');
+    const factionFilter = document.getElementById('drones-faction-filter');
+    const factions = [...new Set(dronesData.map(d => d.faction))].sort();
+    factionFilter.innerHTML = '<option value="">ALLE FRAKTIONEN</option>' +
+      factions.map(f => `<option value="${encodeURIComponent(f)}">${f}</option>`).join('');
+    renderDrones();
+  }
+
+  function renderDrones() {
+    const factionF = document.getElementById('drones-faction-filter').value;
+    const stateF = document.getElementById('drones-state-filter').value;
+    let filtered = dronesData;
+    if (factionF) filtered = filtered.filter(d => d.faction === decodeURIComponent(factionF));
+    if (stateF) filtered = filtered.filter(d => d.state === stateF);
+    const tbody = document.getElementById('drones-tbody');
+    tbody.innerHTML = '';
+    const limited = filtered.slice(0, 200);
+    for (const d of limited) {
+      const tr = document.createElement('tr');
+      [d.id, d.faction, d.state, `(${d.x}, ${d.y})`, `(${d.home_x}, ${d.home_y})`, d.mined_resource || '-', d.resources_carried || 0]
+        .forEach(val => { const td = document.createElement('td'); td.textContent = String(val); tr.appendChild(td); });
+      tbody.appendChild(tr);
+    }
+    if (filtered.length > 200) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td'); td.colSpan = 7; td.style.textAlign = 'center'; td.style.opacity = '0.5';
+      td.textContent = `...${filtered.length - 200} weitere`;
+      tr.appendChild(td); tbody.appendChild(tr);
+    }
+  }
+
+  document.getElementById('drones-faction-filter').addEventListener('change', renderDrones);
+  document.getElementById('drones-state-filter').addEventListener('change', renderDrones);
+
+  document.querySelectorAll('.tab[data-tab="drones"]').forEach(tab => {
+    tab.addEventListener('click', () => loadDrones());
   });
 
 })();
