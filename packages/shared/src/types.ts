@@ -385,7 +385,7 @@ export interface DepositConstructionMessage {
 }
 
 // Communication
-export type ChatChannel = 'direct' | 'faction' | 'quadrant' | 'system';
+export type ChatChannel = 'direct' | 'faction' | 'quadrant' | 'broadcast';
 
 export interface ChatMessage {
   id: string;

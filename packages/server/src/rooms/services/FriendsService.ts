@@ -24,7 +24,7 @@ export class FriendsService {
   constructor(private ctx: ServiceContext) {}
 
   async sendRequest(client: Client, targetId: string): Promise<void> {
-    if (!this.ctx.checkRate(client.sessionId, 'friendReq', 2000)) return;
+    if (!this.ctx.checkRate(client.sessionId, 'friendReq', 1000)) return;
     const auth = client.auth as AuthPayload;
     const fromId = auth.userId;
 

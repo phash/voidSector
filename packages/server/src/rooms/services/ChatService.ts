@@ -12,6 +12,26 @@ function sanitizeChat(text: string): string {
   return text.replace(/<[^>]*>/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 }
 
+// Sliding-window spam protection: max 5 messages per 60 seconds
+const SPAM_WINDOW_MS = 60_000;
+const SPAM_MAX_MESSAGES = 5;
+const messageTimestamps = new Map<string, number[]>();
+
+function checkSpam(playerId: string): boolean {
+  const now = Date.now();
+  let timestamps = messageTimestamps.get(playerId);
+  if (!timestamps) {
+    timestamps = [];
+    messageTimestamps.set(playerId, timestamps);
+  }
+  // Remove timestamps outside window
+  timestamps = timestamps.filter((t) => now - t < SPAM_WINDOW_MS);
+  messageTimestamps.set(playerId, timestamps);
+  if (timestamps.length >= SPAM_MAX_MESSAGES) return false;
+  timestamps.push(now);
+  return true;
+}
+
 export class ChatService {
   constructor(private ctx: ServiceContext) {}
 
@@ -23,14 +43,26 @@ export class ChatService {
       });
       return;
     }
-    if (isGuest(client) && data.channel === 'faction') {
+
+    const auth = client.auth as AuthPayload;
+
+    // Broadcast channel is system-only (distress calls, story quests, etc.)
+    if (data.channel === 'broadcast') {
       this.ctx.send(client, 'error', {
-        code: 'GUEST_RESTRICTED',
-        message: 'Fraktions-Chat ist für Gäste nicht verfügbar',
+        code: 'BROADCAST_READONLY',
+        message: 'Broadcast-Kanal ist nur für Systemnachrichten',
       });
       return;
     }
-    const auth = client.auth as AuthPayload;
+
+    // Guest restrictions: can only read or reply in direct chat
+    if (isGuest(client) && data.channel !== 'direct') {
+      this.ctx.send(client, 'error', {
+        code: 'GUEST_RESTRICTED',
+        message: 'Gäste können nur Direktnachrichten senden',
+      });
+      return;
+    }
 
     // Block check for direct messages
     if (data.channel === 'direct' && data.recipientId) {
@@ -42,7 +74,7 @@ export class ChatService {
     }
 
     // Validate channel
-    const VALID_CHANNELS = ['direct', 'faction', 'quadrant', 'system'] as const;
+    const VALID_CHANNELS = ['direct', 'faction', 'quadrant'] as const;
     if (!VALID_CHANNELS.includes(data.channel as any)) {
       this.ctx.send(client, 'error', { code: 'INVALID_CHANNEL', message: 'Unknown channel' });
       return;
@@ -54,6 +86,15 @@ export class ChatService {
       this.ctx.send(client, 'error', {
         code: 'MSG_TOO_LONG',
         message: 'Message too long (max 500 chars)',
+      });
+      return;
+    }
+
+    // Spam protection: 5 messages per minute
+    if (!checkSpam(auth.userId)) {
+      this.ctx.send(client, 'error', {
+        code: 'SPAM_LIMIT',
+        message: 'Maximal 5 Nachrichten pro Minute',
       });
       return;
     }
@@ -97,21 +138,7 @@ export class ChatService {
       delayed: false,
     };
 
-    if (data.channel === 'system') {
-      const senderX = this.ctx._px(client.sessionId);
-      const senderY = this.ctx._py(client.sessionId);
-      this.ctx.broadcastToSector(chatMsg, senderX, senderY);
-      // Also emit to commsBus for other rooms at the same coordinates
-      const { qx, qy } = sectorToQuadrant(senderX, senderY);
-      commsBus.broadcast({
-        channel: 'sector',
-        sectorX: senderX,
-        sectorY: senderY,
-        quadrantX: qx,
-        quadrantY: qy,
-        message: chatMsg,
-      });
-    } else if (data.channel === 'quadrant') {
+    if (data.channel === 'quadrant') {
       // Broadcast to all players in this room (same quadrant)
       this.ctx.broadcast('chatMessage', chatMsg);
       // Emit to commsBus for other rooms in the same quadrant
