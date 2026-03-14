@@ -60,6 +60,11 @@ export function QuestCompleteOverlay() {
         {current.rewards.wissen ? ` · +${current.rewards.wissen} Wissen` : ''}
         {current.rewards.reputation ? ` · +${current.rewards.reputation} REP` : ''}
       </div>
+      {current.rewards.rewardBlueprint && (
+        <div style={{ color: '#AA88FF', fontSize: '0.6rem', marginTop: 4 }}>
+          BLUEPRINT: {current.rewards.rewardBlueprint.toUpperCase().replace(/_/g, ' ')}
+        </div>
+      )}
       <div
         style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.55rem', marginTop: 6, textAlign: 'right' }}
       >

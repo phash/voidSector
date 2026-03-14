@@ -721,6 +721,7 @@ export interface QuestRewards {
   wissen?: number;
   artefactChance?: number;
   blueprintChance?: number;
+  rewardBlueprint?: string;  // moduleId — specific blueprint as quest reward
 }
 
 export interface AvailableQuest {

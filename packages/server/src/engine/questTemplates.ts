@@ -20,6 +20,8 @@ export interface QuestTemplate {
   scanAdjacentCount?: number;
   /** For bounty_chase quests: [min, max] pirate level */
   targetLevelRange?: [number, number];
+  /** Specific blueprint (moduleId) awarded on completion */
+  rewardBlueprint?: string;
 }
 
 export const QUEST_TEMPLATES: QuestTemplate[] = [
@@ -77,6 +79,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     rewardRepBase: 20,
     rewardWissenBase: 2,
     distanceRange: [10, 40],
+    rewardBlueprint: 'module_cargo_mk3',
   },
   // Scientist quests
   {
@@ -119,6 +122,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     distanceRange: [20, 50],
     rivalFactionId: 'pirates',
     rivalRepPenalty: 5,
+    rewardBlueprint: 'module_scanner_mk3',
   },
   // Pirate quests
   {
@@ -176,6 +180,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     targetLevelRange: [4, 6],
     rivalFactionId: 'traders',
     rivalRepPenalty: 5,
+    rewardBlueprint: 'module_shield_mk3',
   },
   // Ancient quests (rare)
   {

@@ -847,6 +847,11 @@ export function QuestsScreen() {
                           {q.rewards.artefactChance ? ` | ${Math.round(q.rewards.artefactChance * 100)}% ARTEFAKT` : ''}
                           {q.rewards.blueprintChance ? ` | ${Math.round(q.rewards.blueprintChance * 100)}% BLUEPRINT` : ''}
                         </div>
+                        {q.rewards.rewardBlueprint && (
+                          <div style={{ color: '#AA88FF', fontSize: '0.5rem', marginTop: '2px' }}>
+                            BLUEPRINT: {q.rewards.rewardBlueprint.toUpperCase().replace(/_/g, ' ')}
+                          </div>
+                        )}
                         <button
                           className="vs-btn"
                           onClick={() => confirm(`abandon-${q.id}`, () => network.sendAbandonQuest(q.id))}
@@ -1021,6 +1026,11 @@ export function QuestsScreen() {
                           {q.rewards.artefactChance ? ` | ${Math.round(q.rewards.artefactChance * 100)}% ARTEFAKT` : ''}
                           {q.rewards.blueprintChance ? ` | ${Math.round(q.rewards.blueprintChance * 100)}% BLUEPRINT` : ''}
                         </div>
+                        {q.rewards.rewardBlueprint && (
+                          <div style={{ color: '#AA88FF', fontSize: '0.5rem', paddingLeft: '6px', marginTop: '2px' }}>
+                            BLUEPRINT: {q.rewards.rewardBlueprint.toUpperCase().replace(/_/g, ' ')}
+                          </div>
+                        )}
                       </div>
                     )}
                     {armed ? (

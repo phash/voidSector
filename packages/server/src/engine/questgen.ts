@@ -198,6 +198,7 @@ function fillQuestTemplate(
       reputationPenalty: template.rivalRepPenalty,
       rivalFactionId: template.rivalFactionId,
       wissen: template.rewardWissenBase,
+      rewardBlueprint: template.rewardBlueprint,
     },
     requiredTier: template.requiredTier,
   };
