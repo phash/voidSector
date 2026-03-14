@@ -83,6 +83,7 @@ export function RadarCanvas({ onSectorTap }: RadarCanvasProps = {}) {
       miningActive: !!state.mining?.active,
       civShips: state.civShips,
       sectorWrecks: state.sectorWrecks,
+      wreckDetection: state.ship?.acepEffects?.wreckDetection ?? false,
       constructionSites: state.constructionSites,
       slowFlightPath:
         state.slowFlightActive && state.autopilot?.active
