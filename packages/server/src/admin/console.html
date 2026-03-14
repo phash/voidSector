@@ -2990,11 +2990,10 @@ expiresDays: 14"></textarea>
   function buildFactionFilter(stations) {
     var container = document.getElementById('str-faction-filter');
     clearChildren(container);
-    var factions = ['all'].concat(
-      stations.map(function(s) { return s.faction; })
-        .filter(function(f, i, a) { return a.indexOf(f) === i; })
-        .sort()
-    );
+    var dynamicFactions = stations.map(function(s) { return s.faction; })
+      .filter(function(f, i, a) { return a.indexOf(f) === i; });
+    if (dynamicFactions.indexOf('humans') === -1) dynamicFactions.push('humans');
+    var factions = ['all'].concat(dynamicFactions.sort());
     factions.forEach(function(f) {
       var btn = document.createElement('button');
       btn.className = 'btn' + (f === 'all' && strFactionFilter === null ? ' active' : '') +
