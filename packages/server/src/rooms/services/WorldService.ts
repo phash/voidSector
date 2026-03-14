@@ -67,6 +67,11 @@ import {
   STATION_BUILD_COSTS,
   STATION_MODULE_UPGRADE_COST,
   MAX_STATION_LEVEL,
+  MODULES,
+  PRODUCTION_MAX_QUEUE,
+  BASIC_FACTORY_RECIPES,
+  calculateProductionTime,
+  calculateCostMultiplier,
 } from '@void-sector/shared';
 import {
   getPlayerStationAt,
@@ -80,6 +85,11 @@ import {
   consumeBlueprintIntoStation as consumeBlueprintInStation,
   getAcepBlueprints as getAcepBlueprintsList,
   consumeBlueprintIntoAcep as consumeBlueprintInAcep,
+  getProductionQueue as getProductionQueueRows,
+  insertProductionJob as insertProductionJobRow,
+  updateProductionCompleted as updateProductionCompletedRow,
+  deleteProductionJob as deleteProductionJobRow,
+  updateStationCargo as updateStationCargoContents,
 } from '../../db/stationQueries.js';
 import {
   getAPState,
@@ -705,6 +715,156 @@ export class WorldService {
 
     client.send('inventoryUpdated', {});
     client.send('logEntry', `BLUEPRINT EINGELEGT: ${data.moduleId} → ${data.target.toUpperCase()}`);
+  }
+
+  // ── Station Production ──────────────────────────────────────────────
+
+  async handleStartProduction(
+    client: Client,
+    data: { stationId: string; moduleId: string; quantity: number },
+  ): Promise<void> {
+    if (rejectGuest(client, 'Produzieren')) return;
+    const auth = client.auth as AuthPayload;
+
+    const station = await getPlayerStationById(data.stationId);
+    if (!station || station.owner_id !== auth.userId) {
+      client.send('productionResult', { success: false, error: 'Station nicht gefunden' });
+      return;
+    }
+    if (station.factory_level < 1) {
+      client.send('productionResult', { success: false, error: 'Factory nicht ausgebaut' });
+      return;
+    }
+
+    const qty = Math.max(1, Math.min(PRODUCTION_MAX_QUEUE, data.quantity));
+
+    // Check if this is a basic recipe
+    const basicRecipe = BASIC_FACTORY_RECIPES[data.moduleId];
+    if (basicRecipe) {
+      // Check station cargo has enough inputs
+      const cargo = station.cargo_contents ?? {};
+      for (const [res, needed] of Object.entries(basicRecipe.inputs)) {
+        if ((cargo[res] ?? 0) < needed * qty) {
+          client.send('productionResult', { success: false, error: `Nicht genug ${res.toUpperCase()} im Stationslager` });
+          return;
+        }
+      }
+      // Deduct inputs from station cargo
+      const newCargo = { ...cargo };
+      for (const [res, needed] of Object.entries(basicRecipe.inputs)) {
+        newCargo[res] = (newCargo[res] ?? 0) - needed * qty;
+      }
+      // Add outputs to station cargo
+      for (const [res, amount] of Object.entries(basicRecipe.outputs)) {
+        newCargo[res] = (newCargo[res] ?? 0) + amount * qty;
+      }
+      await updateStationCargoContents(data.stationId, newCargo);
+      client.send('productionResult', { success: true, instant: true, stationCargo: newCargo });
+      client.send('logEntry', `PRODUZIERT: ${qty}x ${data.moduleId.toUpperCase()}`);
+      return;
+    }
+
+    // Module production from consumed blueprint
+    const blueprints = await getStationBlueprintsList(data.stationId);
+    if (!blueprints.includes(data.moduleId)) {
+      client.send('productionResult', { success: false, error: 'Blueprint nicht in dieser Factory' });
+      return;
+    }
+
+    const mod = MODULES[data.moduleId];
+    if (!mod || !mod.cost) {
+      client.send('productionResult', { success: false, error: 'Modul nicht herstellbar' });
+      return;
+    }
+
+    // Calculate costs with tier multiplier
+    const costMult = calculateCostMultiplier(mod.tier, station.factory_level);
+    const cargo = station.cargo_contents ?? {};
+
+    // Check resources in station cargo
+    for (const [res, base] of Object.entries(mod.cost)) {
+      if (res === 'credits') continue;
+      const needed = Math.ceil((base as number) * costMult) * qty;
+      if ((cargo[res] ?? 0) < needed) {
+        client.send('productionResult', { success: false, error: `Nicht genug ${res.toUpperCase()} (${needed} benötigt)` });
+        return;
+      }
+    }
+
+    // Check credits
+    const creditCost = Math.ceil((mod.cost.credits ?? 0) * costMult) * qty;
+    if (creditCost > 0) {
+      const credits = await getPlayerCredits(auth.userId);
+      if (credits < creditCost) {
+        client.send('productionResult', { success: false, error: `Nicht genug Credits (${creditCost} benötigt)` });
+        return;
+      }
+      await deductCredits(auth.userId, creditCost);
+    }
+
+    // Deduct resources from station cargo
+    const newCargo = { ...cargo };
+    for (const [res, base] of Object.entries(mod.cost)) {
+      if (res === 'credits') continue;
+      const needed = Math.ceil((base as number) * costMult) * qty;
+      newCargo[res] = (newCargo[res] ?? 0) - needed;
+    }
+    await updateStationCargoContents(data.stationId, newCargo);
+
+    // Add to production queue
+    const timePerItem = calculateProductionTime(mod.tier, station.factory_level);
+    const job = await insertProductionJobRow(data.stationId, data.moduleId, qty, Date.now(), timePerItem);
+
+    client.send('productionResult', {
+      success: true,
+      job: { id: job.id, moduleId: data.moduleId, quantity: qty, completed: 0, timePerItemMs: timePerItem },
+      stationCargo: newCargo,
+    });
+    if (creditCost > 0) {
+      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    }
+    client.send('logEntry', `PRODUKTION GESTARTET: ${qty}x ${mod.name ?? data.moduleId}`);
+  }
+
+  async handleGetProductionQueue(client: Client, data: { stationId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const station = await getPlayerStationById(data.stationId);
+    if (!station || station.owner_id !== auth.userId) {
+      client.send('productionQueue', { jobs: [] });
+      return;
+    }
+
+    const jobs = await getProductionQueueRows(data.stationId);
+    const now = Date.now();
+
+    // Lazy evaluation: calculate completed items
+    const updatedJobs = [];
+    for (const job of jobs) {
+      const elapsed = now - job.started_at;
+      const newCompleted = Math.min(job.quantity, Math.floor(elapsed / job.time_per_item_ms));
+      if (newCompleted > job.completed) {
+        await updateProductionCompletedRow(job.id, newCompleted);
+        // Add produced modules to station cargo
+        const cargo = (await getPlayerStationById(data.stationId))?.cargo_contents ?? {};
+        const produced = newCompleted - job.completed;
+        cargo[job.module_id] = (cargo[job.module_id] ?? 0) + produced;
+        await updateStationCargoContents(data.stationId, cargo);
+      }
+      if (newCompleted >= job.quantity) {
+        await deleteProductionJobRow(job.id);
+      } else {
+        updatedJobs.push({
+          id: job.id,
+          moduleId: job.module_id,
+          quantity: job.quantity,
+          completed: newCompleted,
+          timePerItemMs: job.time_per_item_ms,
+          startedAt: job.started_at,
+        });
+      }
+    }
+
+    client.send('productionQueue', { jobs: updatedJobs });
   }
 
   // ── Jumpgate Build ─────────────────────────────────────────────────
