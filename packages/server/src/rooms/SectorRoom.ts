@@ -21,6 +21,12 @@ import { civShipBus } from '../civShipBus.js';
 import type { CivShipsTickEvent } from '../civShipBus.js';
 import { constructionBus } from '../constructionBus.js';
 import type { ConstructionCompletedEvent } from '../constructionBus.js';
+import { friendsBus } from '../friendsBus.js';
+import type { FriendBusEvent } from '../friendsBus.js';
+import { FriendsService } from './services/FriendsService.js';
+import Redis from 'ioredis';
+
+const onlineRedis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 import {
   getAPState,
   saveAPState,
@@ -179,6 +185,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private factions!: FactionService;
   private quests!: QuestService;
   private chat!: ChatService;
+  private friends!: FriendsService;
   private ships!: ShipService;
   private world!: WorldService;
   private alienInteraction!: AlienInteractionService;
@@ -329,6 +336,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.factions = new FactionService(this.serviceCtx);
     this.quests = new QuestService(this.serviceCtx);
     this.chat = new ChatService(this.serviceCtx);
+    this.friends = new FriendsService(this.serviceCtx);
     this.ships = new ShipService(this.serviceCtx);
     this.world = new WorldService(this.serviceCtx);
     this.repair = new RepairService(this.serviceCtx);
@@ -1038,6 +1046,29 @@ export class SectorRoom extends Room<SectorRoomState> {
       logger.info({ playerId: auth.userId, stationId: msg.stationId, deposited: actual, newPool }, 'conquest pool deposit');
     });
 
+    // ── Friends System ────────────────────────────────────────────
+    this.onMessage('sendFriendRequest', async (client, data: { targetPlayerId: string }) => {
+      await this.friends.sendRequest(client, data.targetPlayerId);
+    });
+    this.onMessage('acceptFriendRequest', async (client, data: { requestId: string }) => {
+      await this.friends.acceptRequest(client, data.requestId);
+    });
+    this.onMessage('declineFriendRequest', async (client, data: { requestId: string }) => {
+      await this.friends.declineRequest(client, data.requestId);
+    });
+    this.onMessage('removeFriend', async (client, data: { friendId: string }) => {
+      await this.friends.removeFriend(client, data.friendId);
+    });
+    this.onMessage('blockPlayer', async (client, data: { targetPlayerId: string }) => {
+      await this.friends.blockPlayer(client, data.targetPlayerId);
+    });
+    this.onMessage('unblockPlayer', async (client, data: { targetPlayerId: string }) => {
+      await this.friends.unblockPlayer(client, data.targetPlayerId);
+    });
+    this.onMessage('getPlayerCard', async (client, data: { playerId: string }) => {
+      await this.friends.getPlayerCard(client, data.playerId);
+    });
+
     // ── Trade Route Processing Interval ─────────────────────────────
     this.clock.setInterval(() => {
       this.world
@@ -1153,6 +1184,13 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     commsBus.on('commsBroadcast', onCommsBroadcast);
 
+    // Friends bus — relay friend events to target clients in this room
+    const onFriendEvent = (event: FriendBusEvent) => {
+      const client = this.clients.find(c => (c.auth as AuthPayload).userId === event.targetPlayerId);
+      if (client) client.send(event.type, event.payload);
+    };
+    friendsBus.on('friendEvent', onFriendEvent);
+
     this.disposeCallbacks.push(() => {
       adminBus.off('adminBroadcast', onBroadcast);
       adminBus.off('adminQuestCreated', onQuestCreated);
@@ -1160,6 +1198,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       commsBus.off('commsBroadcast', onCommsBroadcast);
       civShipBus.off('civShipsTick', onCivShipsTick);
       constructionBus.off('completed', onConstructionCompleted);
+      friendsBus.off('friendEvent', onFriendEvent);
     });
   }
 
@@ -1168,6 +1207,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       throw new ServerError(401, 'Missing auth payload');
     }
     try {
+      // Track player as online in Redis
+      await onlineRedis.sadd('online_players', auth.userId);
+
       // Player joins a specific sector within this quadrant room
       const sectorX = options?.sectorX ?? 0;
       const sectorY = options?.sectorY ?? 0;
@@ -1375,6 +1417,16 @@ export class SectorRoom extends Room<SectorRoomState> {
         labTier,
       });
 
+      // Send friends data
+      const [friendsList, pendingRequests, blockedPlayers] = await Promise.all([
+        this.friends.getFriendsListWithOnline(auth.userId),
+        this.friends.getPendingRequestsList(auth.userId),
+        this.friends.getBlockedList(auth.userId),
+      ]);
+      client.send('friendsList', friendsList);
+      client.send('pendingRequests', pendingRequests);
+      client.send('blockedPlayers', blockedPlayers);
+
       // Record NPC station visit for XP and per-station reputation
       if (sectorData.type === 'station') {
         recordVisit(sectorX, sectorY).catch(() => {});
@@ -1538,6 +1590,12 @@ export class SectorRoom extends Room<SectorRoomState> {
       } catch {
         // reconnection timed out
       }
+    }
+
+    // Remove from online players set (truly disconnected)
+    const leaveAuthForOnline = client.auth as AuthPayload | null;
+    if (leaveAuthForOnline?.userId) {
+      await onlineRedis.srem('online_players', leaveAuthForOnline.userId);
     }
 
     // Clean up autopilot timer and pause DB route for resume on rejoin

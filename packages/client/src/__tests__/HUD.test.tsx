@@ -100,8 +100,8 @@ describe('SectorInfo', () => {
   it('renders player count', () => {
     mockStoreState({
       players: {
-        a: { sessionId: 'a', username: 'A', x: 0, y: 0, connected: true },
-        b: { sessionId: 'b', username: 'B', x: 0, y: 0, connected: true },
+        a: { sessionId: 'a', userId: 'ua', username: 'A', x: 0, y: 0, connected: true },
+        b: { sessionId: 'b', userId: 'ub', username: 'B', x: 0, y: 0, connected: true },
       },
     });
     render(<SectorInfo />);

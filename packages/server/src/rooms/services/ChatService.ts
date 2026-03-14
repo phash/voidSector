@@ -6,6 +6,7 @@ import { isGuest } from './utils.js';
 import { commsBus } from '../../commsBus.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
 import { saveMessage, getPlayerFaction, getFactionMembersByPlayerIds } from '../../db/queries.js';
+import { friendQueries } from '../../db/friendQueries.js';
 
 function sanitizeChat(text: string): string {
   return text.replace(/<[^>]*>/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
@@ -30,6 +31,15 @@ export class ChatService {
       return;
     }
     const auth = client.auth as AuthPayload;
+
+    // Block check for direct messages
+    if (data.channel === 'direct' && data.recipientId) {
+      const blocked = await friendQueries.isBlocked(auth.userId, data.recipientId);
+      if (blocked) {
+        this.ctx.send(client, 'error', { code: 'CHAT_BLOCKED', message: 'Nachricht konnte nicht zugestellt werden.' });
+        return;
+      }
+    }
 
     // Validate channel
     const VALID_CHANNELS = ['direct', 'faction', 'quadrant', 'system'] as const;

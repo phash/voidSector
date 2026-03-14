@@ -1,4 +1,5 @@
 import { useStore } from '../state/store';
+import { network } from '../network/client';
 import type { ChatChannel } from '@void-sector/shared';
 
 export function PlayerContextMenu() {
@@ -12,6 +13,11 @@ export function PlayerContextMenu() {
       chatChannel: 'direct' as ChatChannel,
       directChatRecipient: { id: menu.playerId, name: menu.playerName },
     });
+    close();
+  };
+
+  const openPlayerCard = () => {
+    network.getPlayerCard(menu.playerId);
     close();
   };
 
@@ -56,14 +62,11 @@ export function PlayerContextMenu() {
           NACHRICHT SENDEN
         </div>
         <div
-          style={{
-            padding: '4px 8px',
-            color: 'var(--color-dim)',
-            cursor: 'not-allowed',
-            opacity: 0.5,
-          }}
+          data-testid="ctx-player-card"
+          style={{ padding: '4px 8px', cursor: 'pointer', color: 'var(--color-primary)' }}
+          onClick={openPlayerCard}
         >
-          VISITENKARTE (bald)
+          VISITENKARTE
         </div>
       </div>
     </>

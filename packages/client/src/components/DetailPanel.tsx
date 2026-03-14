@@ -17,7 +17,6 @@ import {
   CONQUEST_RATE,
 } from '@void-sector/shared';
 import type { ChatChannel, ConstructionSiteState, DataSlate } from '@void-sector/shared';
-import { network } from '../network/client';
 import { JumpGatePanel } from './JumpGatePanel';
 import { PlayerGatePanel } from './PlayerGatePanel';
 import { InlineError } from './InlineError';
@@ -916,15 +915,19 @@ export function DetailPanel() {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: 'var(--color-primary)',
+                    color: '#00FF88',
                     fontFamily: 'inherit',
                     fontSize: 'inherit',
                     padding: '2px 0',
                     display: 'block',
                   }}
-                  onClick={() =>
-                    setDrillDown({ type: 'player', username: p.username, sessionId: p.sessionId })
-                  }
+                  onClick={() => {
+                    if (p.userId) {
+                      network.getPlayerCard(p.userId);
+                    } else {
+                      setDrillDown({ type: 'player', username: p.username, sessionId: p.sessionId });
+                    }
+                  }}
                 >
                   ◆ {p.username}
                 </button>
