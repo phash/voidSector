@@ -165,8 +165,17 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   const anim = state.jumpAnimation;
   const animActive = anim && anim.active;
 
-  // Apply slide translate during slide phase
-  const slideActive = animActive && anim.phase === 'slide';
+  // Smooth flight for hyperjumps
+  const flightActive = animActive && anim.phase === 'flight';
+  if (flightActive) {
+    ctx.save();
+    const translateX = anim.direction.dx * anim.progress * CELL_W;
+    const translateY = anim.direction.dy * anim.progress * CELL_H;
+    ctx.translate(-translateX, -translateY);
+  }
+
+  // Apply slide translate during slide phase (normal jumps only)
+  const slideActive = animActive && anim.phase === 'slide' && !flightActive;
   if (slideActive) {
     ctx.save();
     const slideX = anim.direction.dx * anim.progress * CELL_W;
@@ -740,7 +749,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   } finally {
     // Guarantee ctx.restore() is called if ctx.save() was called, even on exception
-    if (slideActive) {
+    if (slideActive || flightActive) {
       ctx.restore();
     }
   }
@@ -924,8 +933,8 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
   ctx.closePath();
   ctx.stroke();
 
-  // Apply glitch overlay based on animation phase
-  if (animActive) {
+  // Apply glitch overlay based on animation phase (skip during smooth flight)
+  if (animActive && anim.phase !== 'flight') {
     const pixelW = Math.floor(w * dpr);
     const pixelH = Math.floor(h * dpr);
     if (anim.phase === 'glitch') {

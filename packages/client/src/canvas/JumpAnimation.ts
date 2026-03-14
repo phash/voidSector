@@ -1,6 +1,6 @@
 export interface JumpAnimationState {
   active: boolean;
-  phase: 'glitch' | 'slide' | 'settle' | 'none';
+  phase: 'glitch' | 'slide' | 'settle' | 'none' | 'flight';
   progress: number; // 0-1 within current phase
   direction: { dx: number; dy: number };
   startTime: number;
@@ -8,10 +8,15 @@ export interface JumpAnimationState {
   distance: number;
   /** Whether this is a heavy/long jump (>20 sectors). */
   isLongJump: boolean;
+  /** Total duration of the animation in ms. */
+  totalDuration: number;
 }
 
 /** Threshold in sectors above which the heavy CRT effect kicks in. */
 export const LONG_JUMP_THRESHOLD = 20;
+
+/** Duration per sector of euclidean distance for smooth hyperjump flight. */
+export const HYPERJUMP_MS_PER_SECTOR = 200;
 
 const PHASE_DURATIONS = {
   glitch: 200,
@@ -21,19 +26,28 @@ const PHASE_DURATIONS = {
 
 const TOTAL_DURATION = 800;
 
-/** Heavy phase durations for long jumps — scales with distance. */
-function longJumpDurations(distance: number) {
-  const scale = Math.min(3, 1 + (distance - LONG_JUMP_THRESHOLD) / 40);
-  return {
-    glitch: Math.round(300 * scale),
-    slide: Math.round(600 * scale),
-    settle: Math.round(300 * scale),
-    total: Math.round(1200 * scale),
-  };
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 export function createJumpAnimation(dx: number, dy: number, distance?: number): JumpAnimationState {
-  const dist = distance ?? Math.abs(dx) + Math.abs(dy);
+  const dist = distance ?? Math.sqrt(dx * dx + dy * dy);
+  const isLong = dist > 1.5; // anything beyond adjacent is a hyperjump
+
+  if (isLong) {
+    return {
+      active: true,
+      phase: 'flight',
+      progress: 0,
+      direction: { dx, dy },
+      startTime: performance.now(),
+      distance: dist,
+      isLongJump: true,
+      totalDuration: Math.round(dist * HYPERJUMP_MS_PER_SECTOR),
+    };
+  }
+
+  // Normal adjacent jump — keep existing behavior
   return {
     active: true,
     phase: 'glitch',
@@ -41,7 +55,8 @@ export function createJumpAnimation(dx: number, dy: number, distance?: number): 
     direction: { dx, dy },
     startTime: performance.now(),
     distance: dist,
-    isLongJump: dist > LONG_JUMP_THRESHOLD,
+    isLongJump: false,
+    totalDuration: TOTAL_DURATION,
   };
 }
 
@@ -50,23 +65,16 @@ export function updateJumpAnimation(state: JumpAnimationState, now: number): Jum
 
   const elapsed = now - state.startTime;
 
-  if (state.isLongJump) {
-    const durations = longJumpDurations(state.distance);
-    if (elapsed >= durations.total) {
+  // Smooth flight for hyperjumps (distance > 1)
+  if (state.phase === 'flight') {
+    if (elapsed >= state.totalDuration) {
       return { ...state, active: false, phase: 'none', progress: 1 };
     }
-    if (elapsed < durations.glitch) {
-      return { ...state, phase: 'glitch', progress: elapsed / durations.glitch };
-    }
-    if (elapsed < durations.glitch + durations.slide) {
-      const slideElapsed = elapsed - durations.glitch;
-      return { ...state, phase: 'slide', progress: slideElapsed / durations.slide };
-    }
-    const settleElapsed = elapsed - durations.glitch - durations.slide;
-    return { ...state, phase: 'settle', progress: settleElapsed / durations.settle };
+    const raw = elapsed / state.totalDuration;
+    return { ...state, progress: easeInOutCubic(raw) };
   }
 
-  // Standard jump animation
+  // Standard jump animation (glitch → slide → settle)
   if (elapsed >= TOTAL_DURATION) {
     return { ...state, active: false, phase: 'none', progress: 1 };
   }
