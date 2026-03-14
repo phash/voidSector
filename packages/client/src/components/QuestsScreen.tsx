@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { innerCoord } from '@void-sector/shared';
+import { innerCoord, MAX_TRACKED_QUESTS } from '@void-sector/shared';
 import type { AvailableQuest, StationNpc, SectorData } from '@void-sector/shared';
 import type { TrackedQuest } from '../state/gameSlice';
 import { findNearestStation } from '../utils/sectorUtils';
@@ -10,7 +10,7 @@ import { btn, btnDisabled } from '../ui-helpers';
 import { useConfirm } from '../hooks/useConfirm';
 import { InlineError } from './InlineError';
 
-const MAX_TRACKED = 5;
+const MAX_TRACKED = MAX_TRACKED_QUESTS;
 
 const NPC_FACTION_LABELS: Record<string, string> = {
   independent: 'SOLO',
@@ -563,7 +563,7 @@ export function QuestsScreen() {
   const trackedIds = new Set(trackedQuests.map((tq) => tq.questId));
   const { confirm, isArmed, disarm } = useConfirm(null);
 
-  const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'reputation' | 'story'>('auftraege');
+  const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'story' | 'reputation'>('auftraege');
   const [subFilter, setSubFilter] = useState<'all' | 'rescue'>('all');
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
   const [stationNpcs, setStationNpcs] = useState<StationNpc[]>([]);
@@ -610,8 +610,8 @@ export function QuestsScreen() {
   const tabLabels: Record<string, string> = {
     auftraege: t('tabs.active'),
     verfuegbar: t('tabs.available'),
-    reputation: t('tabs.reputation'),
     story: t('tabs.story'),
+    reputation: t('tabs.reputation'),
   };
 
   return (
@@ -630,37 +630,31 @@ export function QuestsScreen() {
       )}
       {/* Tab bar */}
       <div style={{ display: 'flex', width: '100%', flexWrap: 'nowrap', marginBottom: '8px' }}>
-        {(['auftraege', 'verfuegbar', 'reputation', 'story'] as const).map((tabKey) => {
-          const isStory = tabKey === 'story';
-          return (
-            <button
-              key={tabKey}
-              disabled={isStory}
-              onClick={() => {
-                setTab(tabKey);
-                if (tabKey === 'verfuegbar' && isAtStation) {
-                  network.requestStationNpcs(position.x, position.y);
-                }
-              }}
-              title={isStory ? 'Story-Events — in Entwicklung (#357)' : undefined}
-              style={{
-                width: '25%',
-                textAlign: 'center',
-                flexShrink: 0,
-                background: tab === tabKey ? '#FFB000' : '#1a1a1a',
-                color: tab === tabKey ? '#000' : isStory ? '#444' : '#FFB000',
-                border: `1px solid ${isStory ? '#333' : '#FFB000'}`,
-                padding: '2px 6px',
-                cursor: isStory ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit',
-                fontSize: 'inherit',
-                opacity: isStory ? 0.4 : 1,
-              }}
-            >
-              {tabLabels[tabKey]}
-            </button>
-          );
-        })}
+        {(['auftraege', 'verfuegbar', 'story', 'reputation'] as const).map((tabKey) => (
+          <button
+            key={tabKey}
+            onClick={() => {
+              setTab(tabKey);
+              if (tabKey === 'verfuegbar' && isAtStation) {
+                network.requestStationNpcs(position.x, position.y);
+              }
+            }}
+            style={{
+              width: '25%',
+              textAlign: 'center',
+              flexShrink: 0,
+              background: tab === tabKey ? '#FFB000' : '#1a1a1a',
+              color: tab === tabKey ? '#000' : '#FFB000',
+              border: '1px solid #FFB000',
+              padding: '2px 6px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+            }}
+          >
+            {tabLabels[tabKey]}
+          </button>
+        ))}
       </div>
 
       {/* AUFTRÄGE tab: active quests + journal + rescue */}
@@ -849,6 +843,9 @@ export function QuestsScreen() {
                         >
                           BELOHNUNG: +{q.rewards.credits} CR | +{q.rewards.xp} XP
                           {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
+                          {q.rewards.wissen ? ` | +${q.rewards.wissen} WISSEN` : ''}
+                          {q.rewards.artefactChance ? ` | ${Math.round(q.rewards.artefactChance * 100)}% ARTEFAKT` : ''}
+                          {q.rewards.blueprintChance ? ` | ${Math.round(q.rewards.blueprintChance * 100)}% BLUEPRINT` : ''}
                         </div>
                         <button
                           className="vs-btn"
@@ -1020,6 +1017,9 @@ export function QuestsScreen() {
                         <div style={{ color: '#00FF88', fontSize: '0.5rem', paddingLeft: '6px' }}>
                           +{q.rewards.credits} CR | +{q.rewards.xp} XP
                           {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
+                          {q.rewards.wissen ? ` | +${q.rewards.wissen} WISSEN` : ''}
+                          {q.rewards.artefactChance ? ` | ${Math.round(q.rewards.artefactChance * 100)}% ARTEFAKT` : ''}
+                          {q.rewards.blueprintChance ? ` | ${Math.round(q.rewards.blueprintChance * 100)}% BLUEPRINT` : ''}
                         </div>
                       </div>
                     )}
@@ -1199,8 +1199,18 @@ export function QuestsScreen() {
         </div>
       )}
 
-      {/* STORY tab */}
-      {tab === 'story' && <StoryTab />}
+      {/* STORY tab: story quest chain + community quests */}
+      {tab === 'story' && (
+        <div>
+          <StoryTab />
+          <div style={{ borderTop: '1px solid #222', marginTop: '8px', paddingTop: '8px' }}>
+            <div style={{ color: '#FFB000', marginBottom: '4px', letterSpacing: '0.1em' }}>
+              ─── COMMUNITY ───
+            </div>
+            <CommunityTab />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

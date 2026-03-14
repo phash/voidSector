@@ -13,7 +13,7 @@ import type {
   ReputationTier,
   NpcFactionId,
 } from '@void-sector/shared';
-import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES, UNIVERSE_TICK_MS } from '@void-sector/shared';
+import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES, UNIVERSE_TICK_MS, MAX_TRACKED_QUESTS } from '@void-sector/shared';
 import { redis } from './RedisAPStore.js';
 import { generateStationNpcs, getStationFaction } from '../../engine/npcgen.js';
 import { generateStationQuests } from '../../engine/questgen.js';
@@ -281,10 +281,10 @@ export class QuestService {
     data: { questId: string; tracked: boolean },
   ): Promise<void> {
     const auth = client.auth as AuthPayload;
-    // Enforce max 5 tracked quests
+    // Enforce max tracked quests
     if (data.tracked) {
       const currentTracked = await getTrackedQuests(auth.userId);
-      if (currentTracked.length >= 5) {
+      if (currentTracked.length >= MAX_TRACKED_QUESTS) {
         this.ctx.send(client, 'trackQuestResult', {
           success: false,
           error: 'MAX_TRACKED_REACHED',
