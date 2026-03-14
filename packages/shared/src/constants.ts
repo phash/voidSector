@@ -52,8 +52,8 @@ export const RECONNECTION_TIMEOUT_S = 15;
 
 export const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceType, number>> = {
   empty: { ore: 0, gas: 0, crystal: 0 },
-  nebula: { ore: 0, gas: 30, crystal: 5 },
-  asteroid_field: { ore: 50, gas: 0, crystal: 8 },
+  nebula: { ore: 0, gas: 15, crystal: 0 },
+  asteroid_field: { ore: 50, gas: 2, crystal: 8 },
   anomaly: { ore: 3, gas: 3, crystal: 20 },
   station: { ore: 0, gas: 0, crystal: 0 },
   pirate: { ore: 8, gas: 3, crystal: 8 },
@@ -1826,13 +1826,19 @@ for (const mod of Object.values(MODULES)) {
   }
 }
 
-export const SECTOR_COLORS: Record<SectorType, string> = {
+export const SECTOR_COLORS: Record<string, string> = {
   empty: '#FFB000',
   asteroid_field: '#FF8C00',
   nebula: '#00BFFF',
   station: '#00FF88',
   anomaly: '#FF00FF',
   pirate: '#FF3333',
+  star: '#FFFFAA',
+  planet: '#44BBAA',
+  ruin: '#AA88FF',
+  jumpgate: '#8888FF',
+  construction_site: '#FFB000',
+  wreck: '#888888',
 };
 
 export const SPAWN_MIN_DISTANCE = 10_000_000;
@@ -1848,7 +1854,7 @@ export const NEBULA_ZONE_GRID = 250;   // was 5_000; 1-2 clusters per 500×500 q
 export const NEBULA_ZONE_CHANCE = 0.4; // 40% of centers activate → ~1.6 blobs per quadrant
 export const NEBULA_ZONE_MIN_RADIUS = 2.5; // was 3; ~20 sectors min (π×r²)
 export const NEBULA_ZONE_MAX_RADIUS = 8; // max radius → ~201 sectors per blob
-export const NEBULA_SAFE_ORIGIN = 50; // no nebula zones within this many sectors of origin — reduced for better quest accessibility
+export const NEBULA_SAFE_ORIGIN = 250; // no nebula zones within this many sectors of origin — spawn zone of humans
 
 // Two-stage worldgen: environment weights (first roll).
 // Nebula is handled purely via zone system (NEBULA_ZONE_*) — no scattered random nebula.
@@ -1930,6 +1936,11 @@ export const SYMBOLS = {
   player: '\u25C6',
   iron: '\u26CF',
   jumpgate: '\u25CE', // ◎
+  star: '\u2605',        // ★
+  planet: '\u25CF',      // ●
+  ruin: '\u0394',        // Δ
+  construction_site: '\u2699', // ⚙
+  wreck: '\u22A0',       // ⊠
 } as const;
 
 // Environment-specific radar colors
@@ -2161,9 +2172,6 @@ export const CUSTOM_SLATE_CREDIT_COST = 5;
 export const CUSTOM_SLATE_MAX_COORDS = 20;
 export const CUSTOM_SLATE_MAX_CODES = 10;
 export const CUSTOM_SLATE_MAX_NOTES_LENGTH = 500;
-
-// Multi-content sectors
-export const SECTOR_MAX_FEATURES = 3;
 
 
 // Hyperjump Navigation

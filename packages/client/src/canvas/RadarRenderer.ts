@@ -935,6 +935,18 @@ function getSectorSymbol(type: string, environment?: string): string {
       return SYMBOLS.anomaly;
     case 'pirate':
       return SYMBOLS.pirate;
+    case 'jumpgate':
+      return SYMBOLS.jumpgate;
+    case 'star':
+      return SYMBOLS.star;
+    case 'planet':
+      return SYMBOLS.planet;
+    case 'ruin':
+      return SYMBOLS.ruin;
+    case 'construction_site':
+      return SYMBOLS.construction_site;
+    case 'wreck':
+      return SYMBOLS.wreck;
     case 'empty':
     default:
       return SYMBOLS.empty;
@@ -954,6 +966,18 @@ function getSectorLabel(type: string, environment?: string): string {
       return 'ANOMALY';
     case 'pirate':
       return 'PIRATE';
+    case 'jumpgate':
+      return 'JUMPGATE';
+    case 'star':
+      return 'STAR';
+    case 'planet':
+      return 'PLANET';
+    case 'ruin':
+      return 'RUIN';
+    case 'construction_site':
+      return 'BAUSTELLE';
+    case 'wreck':
+      return 'WRECK';
     case 'empty':
       return 'EMPTY';
     default:
