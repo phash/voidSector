@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { RESOURCE_TYPES, getPhysicalCargoTotal } from '@void-sector/shared';
+import { RESOURCE_TYPES, getPhysicalCargoTotal, MODULES } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
 import { useTranslation } from 'react-i18next';
@@ -206,7 +206,7 @@ export function CargoScreen() {
               <div style={{ opacity: 0.6, marginBottom: 4 }}>INVENTORY RESOURCES:</div>
               {resources.map((item) => (
                 <div key={item.itemId} style={{ marginBottom: 2 }}>
-                  {item.itemId.toUpperCase()} x{item.quantity}
+                  {(MODULES as any)[item.itemId]?.displayName ?? (MODULES as any)[item.itemId]?.name ?? item.itemId.toUpperCase().replace(/_/g, ' ')} x{item.quantity}
                 </div>
               ))}
             </div>
@@ -270,7 +270,7 @@ export function CargoScreen() {
                 }}
               >
                 <span>
-                  {item.itemId.toUpperCase()} x{item.quantity}
+                  {(MODULES as any)[item.itemId]?.displayName ?? (MODULES as any)[item.itemId]?.name ?? item.itemId.toUpperCase().replace(/_/g, ' ')} x{item.quantity}
                 </span>
                 <button
                   className="vs-btn"
@@ -304,7 +304,7 @@ export function CargoScreen() {
                 }}
               >
                 <span>
-                  {item.itemId.toUpperCase()} x{item.quantity}
+                  {(MODULES as any)[item.itemId]?.displayName ?? (MODULES as any)[item.itemId]?.name ?? item.itemId.toUpperCase().replace(/_/g, ' ')} x{item.quantity}
                 </span>
                 <button
                   className="vs-btn"
