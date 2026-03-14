@@ -1238,9 +1238,23 @@ Urspruenglich war Wissen-Generierung **passiv** durch Station-Labs (5–80 Wisse
 
 ### 11.9 Blueprints
 
-Blueprints werden ueber Scan-Events (`blueprint_find`) gefunden. Ein Blueprint schaltet ein Modul **ohne Forschung** frei.
+Blueprints schalten Module **ohne Forschung** frei. Sie umgehen NICHT die Tech-Tree-Tier-Anforderungen (ein Blueprint fuer `drive_mk3` erfordert weiterhin EXPLORER Stufe 2).
 
-**Wichtig**: Blueprints umgehen NICHT die Tech-Tree-Tier-Anforderungen. Ein Blueprint fuer `drive_mk3` erfordert EXPLORER Stufe 2 (Tier 3).
+**Blueprint-Quellen:**
+
+| Quelle | Mechanik | Verfuegbarkeit |
+|---|---|---|
+| **Scan-Events** | `blueprint_find` Event (10% Gewichtung bei Scan-Events) | Ab Spielstart |
+| **Wrack-Bergung** | Loot aus Wracks, Tier 2+ (30% Basischance) | Ab Wrack-Entdeckung |
+| **Quest-Belohnungen** | Blueprints als Belohnung fuer Story-Quests und Spezialquests | Ab Quest-System |
+| **Handel** | Kauf/Verkauf ueber Auktionshaus oder Direkthandel zwischen Spielern | Ab Handelsfreischaltung |
+| **Alien-Fraktionen** | Einzigartige Blueprints durch Alien-Diplomatie und Reputationsstufen | Ab First Contact |
+
+**Quest-Blueprints**: Story-Quests und mehrstufige Questketten koennen als Abschlussbelohnung einen Blueprint gewaehren. Hoehere Quest-Schwierigkeit = hoeherer Blueprint-Tier.
+
+**Handel-Blueprints**: Blueprints sind handelbar wie andere Items (unified item system). Spieler koennen gefundene Blueprints im Auktionshaus listen oder per Direkthandel tauschen.
+
+**Alien-Blueprints**: Alien-Fraktionen bieten exklusive Blueprints, die nur ueber Reputationsstufen freigeschaltet werden. Jede Alien-Fraktion hat eigene Modul-Spezialisierungen (z.B. Alien-Waffen, Alien-Schilde). Diese Blueprints sind **nicht anderweitig erhaeltlich**.
 
 > Referenz: `compendium.md` Abschnitt 8; Spec `2026-03-12-tech-tree-rework-design.md`
 

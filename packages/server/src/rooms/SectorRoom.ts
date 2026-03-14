@@ -761,6 +761,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.ships.handleActivateBlueprint(client, data),
     );
     this.onMessage('craftModule', (client, data) => this.ships.handleCraftModule(client, data));
+    this.onMessage('createBlueprintCopy', (client, data) =>
+      this.ships.handleCreateBlueprintCopy(client, data),
+    );
     this.onMessage('acepBoost', (client, data: { path: AcepPath }) =>
       this.ships.handleAcepBoost(client, data),
     );

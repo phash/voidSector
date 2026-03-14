@@ -1825,6 +1825,15 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('blueprintCopyResult', (data: { success: boolean; moduleId?: string; cost?: number; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.addLogEntry(`BLUEPRINT KOPIE: ${data.moduleId} (-${data.cost} CR)`);
+      } else {
+        store.addLogEntry(`BLUEPRINT FEHLER: ${data.error}`);
+      }
+    });
+
     room.onMessage('stationProductionUpdate', (data: StationProductionState) => {
       useStore.getState().setStationProductionState(data);
     });
@@ -2585,6 +2594,10 @@ class GameNetwork {
 
   sendCraftModule(moduleId: string) {
     this.sectorRoom?.send('craftModule', { moduleId });
+  }
+
+  sendCreateBlueprintCopy(moduleId: string) {
+    this.sectorRoom?.send('createBlueprintCopy', { moduleId });
   }
 
   // --- Station Production ---

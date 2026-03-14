@@ -10,6 +10,7 @@ import {
   isModuleUnlocked,
   MODULES,
   MODULE_HP_BY_TIER,
+  BLUEPRINT_COPY_BASE_COST,
 } from '@void-sector/shared';
 import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import {
@@ -303,6 +304,36 @@ export class ShipService {
       'logEntry',
       `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`,
     );
+  }
+
+  async handleCreateBlueprintCopy(client: Client, data: { moduleId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const mod = MODULES[data.moduleId];
+    if (!mod) {
+      client.send('blueprintCopyResult', { success: false, error: 'Unknown module' });
+      return;
+    }
+
+    const research = await getPlayerResearch(auth.userId);
+    if (!research.unlockedModules.includes(data.moduleId)) {
+      client.send('blueprintCopyResult', { success: false, error: 'Modul nicht erforscht' });
+      return;
+    }
+
+    const cost = BLUEPRINT_COPY_BASE_COST * mod.tier;
+    const credits = await getPlayerCredits(auth.userId);
+    if (credits < cost) {
+      client.send('blueprintCopyResult', { success: false, error: `Nicht genug Credits (${cost} CR)` });
+      return;
+    }
+
+    await deductCredits(auth.userId, cost);
+    await addToInventory(auth.userId, 'blueprint', data.moduleId, 1);
+
+    client.send('blueprintCopyResult', { success: true, moduleId: data.moduleId, cost });
+    client.send('inventoryUpdated', {});
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    client.send('logEntry', `BLUEPRINT KOPIE: ${mod.name ?? data.moduleId} (-${cost} CR)`);
   }
 
   async handleAcepBoost(
