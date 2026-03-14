@@ -35,11 +35,11 @@ export const AP_COSTS = {
 };
 
 export const AP_COSTS_BY_SCANNER: Record<number, { areaScan: number; areaScanRadius: number }> = {
-  1: { areaScan: 3, areaScanRadius: 3 },
-  2: { areaScan: 6, areaScanRadius: 6 },
-  3: { areaScan: 10, areaScanRadius: 9 },
-  4: { areaScan: 14, areaScanRadius: 12 },
-  5: { areaScan: 18, areaScanRadius: 15 },
+  1: { areaScan: 3, areaScanRadius: 4 },
+  2: { areaScan: 5, areaScanRadius: 8 },
+  3: { areaScan: 8, areaScanRadius: 12 },
+  4: { areaScan: 14, areaScanRadius: 16 },
+  5: { areaScan: 18, areaScanRadius: 20 },
 };
 
 export const AP_COSTS_LOCAL_SCAN = 1;
@@ -473,7 +473,7 @@ export const MODULE_EP_COSTS: Partial<Record<ModuleCategory, Record<string, numb
 };
 
 /** Basis AP/s des Schiffs ohne Generator */
-export const BASE_HULL_AP_REGEN = 0.08;
+export const BASE_HULL_AP_REGEN = 0.1;
 
 /** Power-Level-Multiplikatoren für AP-Regen und EP-Output */
 export const POWER_LEVEL_MULTIPLIERS: Record<string, number> = {
@@ -488,7 +488,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'FUSION CELL MK.I', displayName: 'FUSION MK.I',
     primaryEffect: { stat: 'generatorEpPerRound', delta: 6, label: 'EP/Runde +6' },
     secondaryEffects: [],
-    effects: { generatorEpPerRound: 6, apRegenPerSecond: 0.20 } as any,
+    effects: { generatorEpPerRound: 6, apRegenPerSecond: 2 } as any,
     cost: { credits: 150, ore: 15 },
     maxHp: 20, isUnique: true, acepPaths: ['ausbau'] as any,
   },
@@ -497,7 +497,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'FUSION CELL MK.II', displayName: 'FUSION MK.II',
     primaryEffect: { stat: 'generatorEpPerRound', delta: 9, label: 'EP/Runde +9' },
     secondaryEffects: [],
-    effects: { generatorEpPerRound: 9, apRegenPerSecond: 0.30 } as any,
+    effects: { generatorEpPerRound: 9, apRegenPerSecond: 4 } as any,
     cost: { credits: 400, ore: 30, crystal: 5 },
     maxHp: 35, isUnique: true, acepPaths: ['ausbau'] as any,
     prerequisite: 'generator_mk1',
@@ -507,7 +507,7 @@ export const MODULES: Record<string, ModuleDefinition> = {
     name: 'FUSION CELL MK.III', displayName: 'FUSION MK.III',
     primaryEffect: { stat: 'generatorEpPerRound', delta: 12, label: 'EP/Runde +12' },
     secondaryEffects: [],
-    effects: { generatorEpPerRound: 12, apRegenPerSecond: 0.50 } as any,
+    effects: { generatorEpPerRound: 12, apRegenPerSecond: 6 } as any,
     cost: { credits: 900, ore: 50, crystal: 15 },
     maxHp: 55, isUnique: true, acepPaths: ['ausbau'] as any,
     prerequisite: 'generator_mk2',
@@ -516,8 +516,8 @@ export const MODULES: Record<string, ModuleDefinition> = {
     id: 'generator_mk4', category: 'generator', tier: 4,
     name: 'FUSION CELL MK.IV', displayName: 'FUSION MK.IV',
     primaryEffect: { stat: 'generatorEpPerRound', delta: 15, label: 'EP/Runde +15' },
-    secondaryEffects: [{ stat: 'apRegenPerSecond', delta: 0.70, label: 'AP/s +0.70' }],
-    effects: { generatorEpPerRound: 15, apRegenPerSecond: 0.70 } as any,
+    secondaryEffects: [{ stat: 'apRegenPerSecond', delta: 8, label: 'AP/s +8' }],
+    effects: { generatorEpPerRound: 15, apRegenPerSecond: 8 } as any,
     cost: { credits: 2000, ore: 80, crystal: 30, artefact: 1 },
     maxHp: 80, isUnique: true, acepPaths: ['ausbau'] as any,
     prerequisite: 'generator_mk3',
@@ -528,8 +528,8 @@ export const MODULES: Record<string, ModuleDefinition> = {
     id: 'generator_mk5', category: 'generator', tier: 5,
     name: 'FUSION CELL MK.V', displayName: 'FUSION MK.V',
     primaryEffect: { stat: 'generatorEpPerRound', delta: 18, label: 'EP/Runde +18' },
-    secondaryEffects: [{ stat: 'apRegenPerSecond', delta: 1.00, label: 'AP/s +1.00' }],
-    effects: { generatorEpPerRound: 18, apRegenPerSecond: 1.00 } as any,
+    secondaryEffects: [{ stat: 'apRegenPerSecond', delta: 10, label: 'AP/s +10' }],
+    effects: { generatorEpPerRound: 18, apRegenPerSecond: 10 } as any,
     cost: { credits: 4500, ore: 120, crystal: 60, artefact: 2 },
     maxHp: 110, isUnique: true, acepPaths: ['ausbau'] as any,
     prerequisite: 'generator_mk4',

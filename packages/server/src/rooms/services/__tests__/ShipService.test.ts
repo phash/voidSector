@@ -59,8 +59,8 @@ describe('new ship generator_mk1 initialization', () => {
       { moduleId: 'generator_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
     ];
     const regen = calculateApRegen(modules);
-    // generator_mk1 has apRegenPerSecond: 0.20, so total = 0.08 + 0.20 = 0.28
-    expect(regen).toBeCloseTo(BASE_HULL_AP_REGEN + 0.20);
+    // generator_mk1 has apRegenPerSecond: 2, so total = 0.1 + 2 = 2.1
+    expect(regen).toBeCloseTo(BASE_HULL_AP_REGEN + 2);
     expect(regen).toBeGreaterThan(BASE_HULL_AP_REGEN);
   });
 });

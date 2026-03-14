@@ -22,37 +22,31 @@ const fullCargo = {
 
 describe('validateLabUpgrade', () => {
   it('fails if no existing lab (tier 0)', () => {
-    const r = validateLabUpgrade(0, 20, 9999, fullCargo);
+    const r = validateLabUpgrade(0, 9999, fullCargo);
     expect(r.valid).toBe(false);
     expect(r.error).toMatch(/no.*lab/i);
   });
 
   it('fails if already at max tier (5)', () => {
-    const r = validateLabUpgrade(5, 20, 9999, fullCargo);
+    const r = validateLabUpgrade(5, 9999, fullCargo);
     expect(r.valid).toBe(false);
     expect(r.error).toMatch(/max/i);
   });
 
-  it('fails if insufficient AP (< 20)', () => {
-    const r = validateLabUpgrade(1, 10, 9999, fullCargo);
-    expect(r.valid).toBe(false);
-    expect(r.error).toMatch(/AP/i);
-  });
-
   it('fails if insufficient credits', () => {
-    const r = validateLabUpgrade(1, 20, 0, fullCargo);
+    const r = validateLabUpgrade(1, 0, fullCargo);
     expect(r.valid).toBe(false);
     expect(r.error).toMatch(/credits/i);
   });
 
   it('fails if insufficient ore', () => {
-    const r = validateLabUpgrade(1, 20, 9999, { ...fullCargo, ore: 0 });
+    const r = validateLabUpgrade(1, 9999, { ...fullCargo, ore: 0 });
     expect(r.valid).toBe(false);
     expect(r.error).toMatch(/ore/i);
   });
 
   it('succeeds for valid upgrade from tier 1 to 2', () => {
-    const r = validateLabUpgrade(1, 20, 9999, fullCargo);
+    const r = validateLabUpgrade(1, 9999, fullCargo);
     expect(r.valid).toBe(true);
     expect(r.targetTier).toBe(2);
     expect(r.costs).toBeDefined();

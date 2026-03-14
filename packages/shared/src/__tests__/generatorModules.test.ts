@@ -45,8 +45,8 @@ describe('new constants', () => {
     expect(MODULE_EP_COSTS['weapon']!['off']).toBe(0);
   });
 
-  it('BASE_HULL_AP_REGEN is 0.08', () => {
-    expect(BASE_HULL_AP_REGEN).toBeCloseTo(0.08);
+  it('BASE_HULL_AP_REGEN is 0.1', () => {
+    expect(BASE_HULL_AP_REGEN).toBeCloseTo(0.1);
   });
 });
 
@@ -57,13 +57,13 @@ describe('generator modules', () => {
     expect(g.category).toBe('generator');
     expect(g.tier).toBe(1);
     expect(g.effects.generatorEpPerRound).toBe(6);
-    expect(g.effects.apRegenPerSecond).toBeCloseTo(0.20);
+    expect(g.effects.apRegenPerSecond).toBeCloseTo(2);
     expect(g.maxHp).toBe(20);
   });
 
-  it('generator_mk5 has 18 EP/round and 1.0 AP/s', () => {
+  it('generator_mk5 has 18 EP/round and 10 AP/s', () => {
     expect(MODULES['generator_mk5'].effects.generatorEpPerRound).toBe(18);
-    expect(MODULES['generator_mk5'].effects.apRegenPerSecond).toBeCloseTo(1.0);
+    expect(MODULES['generator_mk5'].effects.apRegenPerSecond).toBeCloseTo(10);
   });
 
   it('repair_mk1 exists with repair stats', () => {
