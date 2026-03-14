@@ -20,11 +20,11 @@ describe('legacySectorType', () => {
   it('returns asteroid_field for asteroid content', () => {
     expect(legacySectorType('empty', ['asteroid_field'])).toBe('asteroid_field');
   });
-  it('returns pirate for pirate_zone + asteroid_field', () => {
-    expect(legacySectorType('empty', ['pirate_zone', 'asteroid_field'])).toBe('pirate');
+  it('returns asteroid_field for pirate_zone + asteroid_field (pirate hidden)', () => {
+    expect(legacySectorType('empty', ['pirate_zone', 'asteroid_field'])).toBe('asteroid_field');
   });
-  it('returns pirate for pirate_zone alone', () => {
-    expect(legacySectorType('empty', ['pirate_zone'])).toBe('pirate');
+  it('returns empty for pirate_zone alone (pirate hidden)', () => {
+    expect(legacySectorType('empty', ['pirate_zone'])).toBe('empty');
   });
   it('returns anomaly for anomaly content', () => {
     expect(legacySectorType('empty', ['anomaly'])).toBe('anomaly');

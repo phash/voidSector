@@ -1988,7 +1988,6 @@ export const CONTENT_SYMBOLS: Partial<Record<SectorContent, string>> = {
   station: 'S',
   player_base: 'B',
   anomaly: '\u25CA', // ◊
-  pirate_zone: '\u2620', // ☠
   meteor: 'm',
   relic: 'R',
   npc_ship: '\u25B8', // ▸
@@ -2000,7 +1999,6 @@ export const CONTENT_COLORS: Partial<Record<SectorContent, string>> = {
   asteroid_field: '#FF8C00',
   station: '#00FF88',
   anomaly: '#FF00FF',
-  pirate_zone: '#FF3333',
   player_base: '#FFFFFF',
   meteor: '#FFD700',
   relic: '#CC44FF',
