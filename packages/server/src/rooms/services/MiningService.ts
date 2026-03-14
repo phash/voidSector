@@ -7,13 +7,14 @@ import type {
   CargoState,
   MineableResourceType,
 } from '@void-sector/shared';
-import { MINING_RATE_PER_SECOND } from '@void-sector/shared';
+import { MINING_RATE_PER_SECOND, MINING_RATE_NO_LASER, MINING_AP_COST_NO_LASER } from '@void-sector/shared';
 
 import { validateMine, validateJettison } from '../../engine/commands.js';
+import { spendAP } from '../../engine/ap.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import { stopMining } from '../../engine/mining.js';
-import { getMiningState, saveMiningState, getMiningStoryCounter, setMiningStoryCounter } from './RedisAPStore.js';
+import { getMiningState, saveMiningState, getMiningStoryCounter, setMiningStoryCounter, getAPState, saveAPState } from './RedisAPStore.js';
 import { getSector, updateSectorResources, getMiningStoryIndex, updateMiningStoryIndex } from '../../db/queries.js';
 import {
   addToInventory,
@@ -154,7 +155,9 @@ export class MiningService {
               );
               if (nextResult.valid && nextResult.state) {
                 const bonuses = await this.ctx.getPlayerBonuses(playerId);
-                nextResult.state.rate = MINING_RATE_PER_SECOND
+                const chainHasLaser = (ship.miningBonus ?? 0) > 0;
+                const chainBaseRate = chainHasLaser ? MINING_RATE_PER_SECOND : MINING_RATE_NO_LASER;
+                nextResult.state.rate = chainBaseRate
                   * (1 + (ship.miningBonus ?? 0))
                   * bonuses.miningRateMultiplier;
 
@@ -247,9 +250,25 @@ export class MiningService {
       return;
     }
 
+    // Check if player has a mining laser module
+    const hasMiningLaser = (ship.miningBonus ?? 0) > 0;
+
+    // Mining without laser costs AP upfront
+    if (!hasMiningLaser) {
+      const currentAP = await getAPState(auth.userId);
+      const newAP = spendAP(currentAP, MINING_AP_COST_NO_LASER);
+      if (!newAP) {
+        client.send('error', { code: 'MINE_FAILED', message: 'Kein Mining-Laser — manuelles Mining kostet 1 AP.' });
+        return;
+      }
+      await saveAPState(auth.userId, newAP);
+      client.send('apUpdate', newAP);
+    }
+
     // Apply ship module bonus and faction mining bonus
     const bonuses = await this.ctx.getPlayerBonuses(auth.userId);
-    result.state!.rate = MINING_RATE_PER_SECOND
+    const baseRate = hasMiningLaser ? MINING_RATE_PER_SECOND : MINING_RATE_NO_LASER;
+    result.state!.rate = baseRate
       * (1 + (ship.miningBonus ?? 0))
       * bonuses.miningRateMultiplier;
 
