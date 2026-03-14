@@ -4,7 +4,7 @@ Multiplayer 2D space-exploration idle MMO · CRT terminal aesthetics · TypeScri
 
 > **Programmierrichtlinien** → [`docs/programming-guidelines.md`](docs/programming-guidelines.md) — verbindlich für alle Implementierungen (Spec-Driven, TDD, Clean Code, UX, Fehlerbehandlung, Workflow)
 
-> **Memory files** (in `~/.claude/projects/E--claude-voidSector/memory/`):
+> **Memory files** (in Claude's project memory directory):
 > - Architecture, services, patterns → read **architecture.md** before touching server/client code
 > - DB schema, migrations, Redis → read **database-schema.md** before DB work
 > - Sprint status, open issues, roadmap → read **roadmap.md** before planning/feature work
@@ -21,9 +21,9 @@ npm run docker:up           # PostgreSQL + Redis
 npm test                    # All tests (run per-package, see below)
 
 # Tests — always run from package directory
-cd packages/server && npx vitest run    # ~973 tests
-cd packages/client && npx vitest run    # ~499 tests
-cd packages/shared && npx vitest run    # ~205 tests
+cd packages/server && npx vitest run    # ~1495 tests
+cd packages/client && npx vitest run    # ~559 tests
+cd packages/shared && npx vitest run    # ~310 tests
 
 # After changing shared/: REQUIRED
 cd packages/shared && npm run build
@@ -50,7 +50,7 @@ docker compose logs cloudflared | grep trycloudflare   # get current public URL
 curl -H "Authorization: Bearer vs-admin-2026" http://localhost:2567/admin/api/stories
 ```
 
-**DB Migrations**: auto-run on server startup. Next migration: **061**.
+**DB Migrations**: auto-run on server startup. Next migration: **073**.
 
 **DB queries (Docker)**: `psql -U postgres` fails — use env vars:
 ```bash
@@ -85,19 +85,19 @@ git push origin feat/<feature-name>
 
 ## Architecture (summary — see architecture.md for full detail)
 
-- **Server**: Colyseus rooms per quadrant (`quadrant_qx_qy`), SectorRoom → 10 domain services via ServiceContext DI. PostgreSQL (all queries in `queries.ts`), Redis (AP/fuel/mining/position state). Structured logging via pino.
+- **Server**: Colyseus rooms per quadrant (`quadrant_qx_qy`), SectorRoom → 19 domain services via ServiceContext DI. PostgreSQL (all queries in `queries.ts`), Redis (AP/fuel/mining/position state). Structured logging via pino.
 - **Client**: React + Zustand (`gameSlice` + `uiSlice` + `helpSlice`), Canvas radar (`RadarRenderer`), singleton `GameNetwork`
 - **Shared**: `types.ts` + `constants.ts` → compiled to `dist/`, re-exported from `index.ts`
 
-**11 domain services**: NavigationService · ScanService · CombatService · MiningService · EconomyService · FactionService · QuestService · ChatService · ShipService · WorldService · FriendsService
+**19 domain services**: NavigationService · ScanService · CombatService · MiningService · EconomyService · FactionService · QuestService · ChatService · ShipService · WorldService · FriendsService · AlienInteractionService · CommunityQuestService · RepairService · StationProductionService · StoryQuestChainService · TechTreeService · TerritoryService · WreckService
 
 ---
 
 ## DB Migrations
 
-`packages/server/src/db/migrations/` — **001–070**, auto-run on startup.
+`packages/server/src/db/migrations/` — **001–072**, auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` (idempotent).
-Next: **071**.
+Next: **073**.
 
 ---
 
@@ -105,7 +105,7 @@ Next: **071**.
 
 | Section | ID | Content |
 |---------|-----|---------|
-| Sec 1 | `cockpit-sec1` | Program Selector (13 programs: NAV-COM, MINING, CARGO, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP, NEWS, LOG, ACEP, FRIENDS) |
+| Sec 1 | `cockpit-sec1` | Program Selector (14 programs: NAV-COM, MINING, CARGO, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP, NEWS, LOG, ACEP, FRIENDS, FABRIK) |
 | Sec 2 | `cockpit-sec2` | Main Monitor — RadarCanvas or program content |
 | Sec 3 | `cockpit-sec3` | Detail Monitor — context panel per program |
 | Sec 4 | `cockpit-sec4` | Settings (ShipStatus + CombatStatus + Settings) |
@@ -127,13 +127,13 @@ Next: **071**.
 
 ---
 
-## Current State (2026-03-14)
+## Current State (2026-03-15)
 
-**Branch:** `master`
+**Branch:** `master` · **Tests:** ~2364 (1495 server, 559 client, 310 shared) · **Migrations:** 001–072
 
 ### Merged (all on master)
 - All phases 1–7: fuel, jumpgates, autopilot, ship designer, trade, factions, quests, combat v2
-- Codebase review (#133): SectorRoom decomposed to 11 services, ESLint/Prettier, pino logging
+- Codebase review (#133): SectorRoom decomposed to 19 services, ESLint/Prettier, pino logging
 - Admin console, quadrant system, QUAD-MAP, first-contact naming
 - 6-section cockpit layout, bookmarks, staleness rendering, nav-grid overhaul
 - All Quality Sprints (S0–S4), Phase 2, Phase LU, Phase D, Phase AQ (#170–175)
@@ -149,6 +149,14 @@ Next: **071**.
 - **Smooth Hyperjump** ✅ (#448): straight-line flight animation, 200ms/sector, easeInOutCubic
 - **Blueprint Quest Rewards** ✅ (#406): rewardBlueprint field, duplicate fallback, 3 elite quests
 - **Per-Faction Expansion** ✅ (#434): individual expansion speeds via game_config DB
+- **Player Stations** ✅ (#426): build, upgrade, station VERWALTUNG panel, factory/cargo upgrades
+- **FABRIK / Station Production** ✅ (#430/#437): ACEP/STATION tabs, blueprint consume, production queue
+- **Construction Sites** ✅ (#456): construction site system for jumpgates + stations, progress rendering
+- **Jumpgate UI Limits** ✅ (#450): resource gating + max 4 per quadrant
+- **Combat V2 Pirates** ✅ (#459): taktischer Piratenkampf + unsichtbare Piratenzonen
+- **Mining Drones** ✅: drones mine ore/gas/crystal by sector type, admin drone overview
+- **Player Visibility** ✅ (#463): other players visible on radar with mining pulse + ACEP info
+- **Construction Improvements** ✅ (#466): construction site fixes for #461 #464 #465
 
 ### Key recent changes
 - `BASE_CARGO = 20`, `BASE_SCANNER_MEMORY = 10`, `FUEL_MIN_TANK = 10000`
@@ -159,6 +167,9 @@ Next: **071**.
 - Natural jumpgates removed (only ancient), lab upgrade system removed (AUSBAU gating)
 - Human starting territory: 9 quadrants (0:0 to 2:2)
 - Legacy combat v1 removed, blueprint tier enforcement active
+- ACEP level thresholds raised: 500/2500/7500/20000 XP
+- Sell price ratio 0.6 → 0.8
+- Quadrant coordinates shown in nav HUD
 
 Full roadmap: `docs/plans/2026-03-09-master-roadmap.md`
 Game rules: `docs/rulebook-spec.md` · `docs/rulebook-implementation.md` · `docs/rulebook-comparison.md`

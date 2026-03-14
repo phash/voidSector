@@ -15,7 +15,7 @@ Explore, mine, build, communicate: Players move sector by sector through an infi
 | Game Server | [Colyseus](https://colyseus.io/) | Room abstraction, state sync, clustering-ready |
 | Frontend | React 18 + Canvas | Terminal UI, radar rendering with CRT effects |
 | State | Zustand | Client-side state management (game + UI slices) |
-| Testing | Vitest + RTL | 1787 tests (1083 server, 513 client, 191 shared) |
+| Testing | Vitest + RTL | ~2364 tests (1495 server, 559 client, 310 shared) |
 | Database | PostgreSQL 16 | Persistent storage (players, sectors, discoveries) |
 | Cache | Redis 7 | AP state, player positions, sessions |
 | Shared Types | TypeScript Package | Shared interfaces between client and server |
@@ -66,9 +66,9 @@ void-sector/
 │   │       ├── auth.ts              # JWT auth (register/login) + spawn
 │   │       ├── app.config.ts        # Colyseus + Express config
 │   │       ├── index.ts             # Server entry point
-│   │       ├── db/                  # PostgreSQL client, migrations (001-043), queries
+│   │       ├── db/                  # PostgreSQL client, migrations (001-072), queries
 │   │       ├── engine/              # AP, ACEP XP/traits/permadeath, expansion warfare, universe tick
-│   │       └── rooms/               # SectorRoom, schemas, Redis store
+│   │       └── rooms/               # SectorRoom, schemas, 19 domain services, Redis store
 │   └── client/          # React frontend
 │       └── src/
 │           ├── canvas/              # RadarRenderer, JumpAnimation, useCanvas
@@ -96,7 +96,7 @@ void-sector/
 
 ### Server
 
-- **SectorRoom**: One Colyseus room per sector coordinate. Auto-created on first player entry, auto-disposed when empty.
+- **SectorRoom**: One Colyseus room per quadrant (`quadrant_qx_qy`). 19 domain services via ServiceContext DI.
 - **World Generation**: Deterministic seed-based (`hashCoords(x, y, worldSeed)`). Sectors are generated on first visit and persisted to PostgreSQL. World origin is **(0,0)** — coordinate space extends into positive x/y. New players spawn within radius 5 of (0,0).
 - **AP System**: Lazy evaluation — no server tick loop. AP regeneration is calculated on each action based on elapsed time.
 - **Auth**: bcrypt password hashing + JWT tokens.
@@ -105,7 +105,7 @@ void-sector/
 
 - **CRT Theme**: CSS scanlines, flicker animation (with `prefers-reduced-motion` support), vignette, hardware bezel with draggable knobs. 4 color profiles (Amber Classic, Green Phosphor, Ice Blue, High Contrast).
 - **Radar**: HTML5 Canvas renderer at 60fps, DPI-aware, 3 zoom levels, drag-to-pan, sector color accents, jump animation with CRT glitch effects.
-- **Cockpit Layout**: 6-section grid (program selector, main monitor, detail monitor, settings, navigation, comms). 12 selectable programs with LED indicators, hardware button strips (D-Pad, zoom, power, channel buttons). Mobile uses tab-based layout.
+- **Cockpit Layout**: 6-section grid (program selector, main monitor, detail monitor, settings, navigation, comms). 14 selectable programs (NAV-COM, MINING, CARGO, BASE-LINK, TRADE, FACTION, QUESTS, TECH, QUAD-MAP, NEWS, LOG, ACEP, FRIENDS, FABRIK) with LED indicators, hardware button strips (D-Pad, zoom, power, channel buttons). Mobile uses tab-based layout.
 - **Network**: Singleton `GameNetwork` class managing Colyseus room connections, state sync via Zustand.
 
 ## Features
@@ -137,12 +137,16 @@ void-sector/
 - [x] Factory Werkstatt: craft modules from blueprints or research unlocks
 - [x] Kontor extended: buy/sell orders for modules and blueprints
 - [x] Direct player trade: `/trade @player`, same-sector, 60s session, atomic item + credit swap
+- [x] Player stations: build, upgrade (factory/cargo capacity), VERWALTUNG management panel
+- [x] FABRIK production: ACEP/STATION tabs, blueprint consume, module production queue
+- [x] Mining drones: automated resource extraction by sector type, admin drone overview
 
 ### Combat
 - [x] 5-round tactical combat (laser/railgun/missile/EMP weapons, shield system)
 - [x] Tactic choices (assault/balanced/defensive) + special actions
 - [x] Station defense system (turrets, shields, ion cannon)
 - [x] NPC encounters (pirate ambush, distress signals, anomalies)
+- [x] Invisible pirate zones with tactical combat V2
 
 ### Tech & Ships
 - [x] Tech tree & research system (artefact costs, prerequisites)
@@ -158,6 +162,7 @@ void-sector/
 - [x] Procedural quest system (fetch/delivery/scan/bounty, daily rotation)
 - [x] Cluster spawn system — new players spawn within radius 5 of world origin (0,0)
 - [x] Quadrant system (10K sectors/axis, first-contact naming)
+- [x] Other players visible on radar with mining pulse + ACEP info
 - [x] Alien Quest System: 9-chapter story chain, 4 community quests, 10 alien factions
 - [x] Menschheits-Reputation: server-wide aggregate rep per faction, encounter chance modifier (0.5×–1.5×), tier-aware dialogs, ALIEN REP tab
 
@@ -170,8 +175,7 @@ void-sector/
 - [x] Permadeath: ship destroyed → wreck POI in universe, 25% module salvage chance
 - [x] Legacy: successor ship inherits 30% XP + 1 dominant trait
 - [x] Eject pod: cargo jettisoned, ship survives at < 15% HP
-- [ ] ACEP panel in HANGAR (XP bars, trait overview, effects) — not yet built
-- [ ] Wreck POIs visible on radar — not yet built
+- [x] ACEP level thresholds: 500/2500/7500/20000 XP
 
 ### Galactic Expansion & Warfare — Phase EW
 - [x] Bilateral expansion: humans wave from 0:0, aliens sphere from home centres
@@ -186,9 +190,11 @@ void-sector/
 ### Polish
 - [x] 6-section cockpit layout with CRT hardware aesthetic
 - [x] 4 color profiles (Amber Classic, Green Phosphor, Ice Blue, High Contrast)
-- [x] JumpGates (bidirectional + wormholes + frequency minigame)
-- [x] Admin console (quests, broadcasts, economy monitoring)
-- [x] 1787 automated tests
+- [x] JumpGates (bidirectional + wormholes + frequency minigame, max 4 per quadrant, resource gating)
+- [x] Construction site system for jumpgates + stations (progress rendering)
+- [x] Admin console (quests, broadcasts, economy monitoring, cargo sync, drone overview, config)
+- [x] Game config system: 256 balance constants in DB, Admin CONFIG tab, Redis Pub/Sub live-updates
+- [x] ~2364 automated tests
 
 ## License
 
