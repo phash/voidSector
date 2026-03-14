@@ -635,9 +635,39 @@ adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: R
 
 // ── Structures Overview ─────────────────────────────────────────────
 
-adminRouter.get('/structures/overview', async (_req: Request, res: Response) => {
+adminRouter.get('/structures/overview', async (req: Request, res: Response) => {
   try {
-    const stations = await civQueries.getAllStations();
+    const filter = (req.query.filter as string) ?? 'all'; // 'all' | 'npc' | 'player'
+
+    let stations: any[] = [];
+    let playerStations: any[] = [];
+
+    if (filter === 'all' || filter === 'npc') {
+      stations = await civQueries.getAllStations();
+    }
+
+    if (filter === 'all' || filter === 'player') {
+      const { rows } = await query<{
+        id: string; owner_id: string; sector_x: number; sector_y: number;
+        quadrant_x: number; quadrant_y: number; level: number;
+        factory_level: number; cargo_level: number;
+        created_at: string; owner_name: string | null;
+      }>(
+        `SELECT ps.*, p.username AS owner_name
+         FROM player_stations ps
+         LEFT JOIN players p ON p.id = ps.owner_id
+         ORDER BY ps.created_at DESC`,
+      );
+      playerStations = rows.map(r => ({
+        ...r,
+        source: 'player',
+        faction: 'humans',
+      }));
+    }
+
+    // Mark NPC stations with source
+    const npcStations = stations.map(s => ({ ...s, source: 'npc' }));
+
     const { rows: jumpgates } = await query<{
       id: string; sector_x: number; sector_y: number;
       target_x: number; target_y: number; gate_type: string;
@@ -653,10 +683,11 @@ adminRouter.get('/structures/overview', async (_req: Request, res: Response) => 
        LEFT JOIN players p ON p.id = g.owner_id
        ORDER BY g.sector_x, g.sector_y`,
     );
-    res.json({ stations, jumpgates });
+
+    res.json({ stations: [...npcStations, ...playerStations], jumpgates });
   } catch (err) {
     logger.error({ err }, 'Admin structures overview GET error');
-    res.status(500).json({ error: 'Internal error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

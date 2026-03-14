@@ -953,6 +953,16 @@ expiresDays: 14"></textarea>
             </div>
           </div>
 
+          <!-- Source filter (NPC / Player / All) -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <span style="font-size:10px;color:var(--amber-dim);letter-spacing:.1em">QUELLE:</span>
+            <div id="str-source-filter" style="display:flex;gap:4px">
+              <button class="btn active" onclick="setStrSourceFilter('all')" id="str-src-all" style="font-size:9px;padding:2px 7px">ALLE</button>
+              <button class="btn" onclick="setStrSourceFilter('npc')" id="str-src-npc" style="font-size:9px;padding:2px 7px">NPC</button>
+              <button class="btn" onclick="setStrSourceFilter('player')" id="str-src-player" style="font-size:9px;padding:2px 7px">PLAYER</button>
+            </div>
+          </div>
+
           <!-- Faction filter -->
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span style="font-size:10px;color:var(--amber-dim);letter-spacing:.1em">ZIVILISATION:</span>
@@ -961,11 +971,11 @@ expiresDays: 14"></textarea>
 
           <!-- Stations list -->
           <div>
-            <div class="section-title">STATIONEN (civ_stations)</div>
+            <div class="section-title">STATIONEN</div>
             <div id="str-stations-empty" class="empty-state" style="display:none">Keine Stationen.</div>
             <table class="data-table" id="str-stations-table">
               <thead><tr>
-                <th>ID</th><th>Sektor</th><th>Fraktion</th><th>Shipyard</th><th>Warehouse</th><th>Kontor</th>
+                <th>ID</th><th>Sektor</th><th>Fraktion</th><th>Quelle</th><th>Besitzer</th><th>Shipyard</th><th>Warehouse</th><th>Kontor</th>
               </tr></thead>
               <tbody id="str-stations-list"></tbody>
             </table>
@@ -2979,6 +2989,7 @@ expiresDays: 14"></textarea>
   var strAllStations = [];
   var strAllGates = [];
   var strFactionFilter = null; // null = all
+  var strSourceFilter = 'all';
 
   // Recompute absolute coords whenever quadrant/sector inputs change
   ['str-qx','str-qy','str-sx','str-sy'].forEach(function(id) {
@@ -2995,8 +3006,17 @@ expiresDays: 14"></textarea>
     document.getElementById('str-abs-y').value = String(qy * QUADRANT_SIZE + sy);
   }
 
+  function setStrSourceFilter(filter) {
+    strSourceFilter = filter;
+    document.getElementById('str-src-all').className = 'btn' + (filter === 'all' ? ' active' : '');
+    document.getElementById('str-src-npc').className = 'btn' + (filter === 'npc' ? ' active' : '');
+    document.getElementById('str-src-player').className = 'btn' + (filter === 'player' ? ' active' : '');
+    loadStructures();
+  }
+
   function loadStructures() {
-    api('GET', '/structures/overview').then(function(data) {
+    var url = '/structures/overview?filter=' + strSourceFilter;
+    api('GET', url).then(function(data) {
       strAllStations = data.stations || [];
       strAllGates = data.jumpgates || [];
       buildFactionFilter(strAllStations);
@@ -3047,6 +3067,8 @@ expiresDays: 14"></textarea>
       tr.appendChild(el('td', null, String(s.id)));
       tr.appendChild(el('td', null, s.sector_x + ', ' + s.sector_y));
       tr.appendChild(el('td', null, esc(s.faction)));
+      tr.appendChild(el('td', { style: { fontSize: '10px', color: s.source === 'player' ? '#6af' : '#aaa' } }, s.source || 'npc'));
+      tr.appendChild(el('td', { style: { fontSize: '10px' } }, esc(s.owner_name || '—')));
       tr.appendChild(el('td', { style: { color: s.has_shipyard ? '#4a9' : '#555' } }, s.has_shipyard ? '✓' : '—'));
       tr.appendChild(el('td', { style: { color: s.has_warehouse ? '#4a9' : '#555' } }, s.has_warehouse ? '✓' : '—'));
       tr.appendChild(el('td', { style: { color: s.has_kontor ? '#4a9' : '#555' } }, s.has_kontor ? '✓' : '—'));
