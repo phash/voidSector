@@ -179,33 +179,33 @@ describe('efficiency clamping in shipCalculator', () => {
 
   it('adds hyperdrive stats from drive_mk1', () => {
     const stats = calculateShipStats([{ moduleId: 'drive_mk1', slotIndex: 0 }]);
-    expect(stats.hyperdriveRange).toBe(4);
+    expect(stats.hyperdriveRange).toBe(32);
     expect(stats.hyperdriveSpeed).toBe(2);
-    expect(stats.hyperdriveRegen).toBe(1.0);
+    expect(stats.hyperdriveRegen).toBe(2.0);
     expect(stats.hyperdriveFuelEfficiency).toBe(0);
   });
 
   it('adds hyperdrive stats from drive_mk2', () => {
     const stats = calculateShipStats([{ moduleId: 'drive_mk2', slotIndex: 0 }]);
-    expect(stats.hyperdriveRange).toBe(8);
+    expect(stats.hyperdriveRange).toBe(64);
     expect(stats.hyperdriveSpeed).toBe(3);
-    expect(stats.hyperdriveRegen).toBe(1.5);
+    expect(stats.hyperdriveRegen).toBe(4.0);
     expect(stats.hyperdriveFuelEfficiency).toBeCloseTo(0.1);
   });
 
   it('adds hyperdrive stats from drive_mk3', () => {
     const stats = calculateShipStats([{ moduleId: 'drive_mk3', slotIndex: 0 }]);
-    expect(stats.hyperdriveRange).toBe(16);
+    expect(stats.hyperdriveRange).toBe(128);
     expect(stats.hyperdriveSpeed).toBe(5);
-    expect(stats.hyperdriveRegen).toBe(2.0);
+    expect(stats.hyperdriveRegen).toBe(6.0);
     expect(stats.hyperdriveFuelEfficiency).toBeCloseTo(0.2);
   });
 
   it('adds hyperdrive stats from void_drive', () => {
     const stats = calculateShipStats([{ moduleId: 'void_drive', slotIndex: 0 }]);
-    expect(stats.hyperdriveRange).toBe(30);
+    expect(stats.hyperdriveRange).toBe(192);
     expect(stats.hyperdriveSpeed).toBe(8);
-    expect(stats.hyperdriveRegen).toBe(3.0);
+    expect(stats.hyperdriveRegen).toBe(8.0);
     expect(stats.hyperdriveFuelEfficiency).toBeCloseTo(0.35);
   });
 });

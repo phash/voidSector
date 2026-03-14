@@ -137,34 +137,30 @@ export function ShipStatusPanel() {
         </div>
       )}
 
-      {/* Fuel section */}
-      {tab === 'stats' && (
-        <>
-          <div style={hdr}>FUEL</div>
-          <div style={row}>
-            <span style={dim}>TANK</span>
-            <span style={pri}>
-              {fuel ? fuel.current.toLocaleString() : '—'}
-              <span style={{ opacity: 0.4 }}> / {(fuel?.max ?? stats.fuelMax).toLocaleString()}</span>
-            </span>
-          </div>
-          {fuel && (
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, margin: '2px 0 4px' }}>
-              <div style={{
-                height: '100%',
-                width: `${Math.min(100, Math.round((fuel.current / fuel.max) * 100))}%`,
-                background: 'linear-gradient(90deg, #f97316, #fb923c)',
-                borderRadius: 2,
-                transition: 'width 0.3s',
-              }} />
-            </div>
-          )}
-          <div style={row}>
-            <span style={dim}>COST/SEKTOR</span>
-            <span style={pri}>{stats.fuelPerJump}</span>
-          </div>
-        </>
+      {/* Fuel section — always visible */}
+      <div style={hdr}>FUEL</div>
+      <div style={row}>
+        <span style={dim}>TANK</span>
+        <span style={pri}>
+          {fuel ? fuel.current.toLocaleString() : '—'}
+          <span style={{ opacity: 0.4 }}> / {(fuel?.max ?? stats.fuelMax).toLocaleString()}</span>
+        </span>
+      </div>
+      {fuel && (
+        <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, margin: '2px 0 4px' }}>
+          <div style={{
+            height: '100%',
+            width: `${Math.min(100, Math.round((fuel.current / fuel.max) * 100))}%`,
+            background: 'linear-gradient(90deg, #f97316, #fb923c)',
+            borderRadius: 2,
+            transition: 'width 0.3s',
+          }} />
+        </div>
       )}
+      <div style={row}>
+        <span style={dim}>COST/SEKTOR</span>
+        <span style={pri}>{stats.fuelPerJump}</span>
+      </div>
 
       {/* Hyperdrive charge */}
       {hasHyperdrive && (
@@ -183,7 +179,7 @@ export function ShipStatusPanel() {
               style={{ fontSize: '0.5rem', marginTop: 4, padding: '1px 6px', color: '#8888ff', borderColor: '#8888ff44' }}
               onClick={() => network.sendChargeHyperdrive()}
             >
-              [CHARGE: 1 GAS → +4]
+              [OVERPOWER: 1 GAS → +4]
             </button>
           )}
         </>
