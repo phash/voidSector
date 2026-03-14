@@ -19,6 +19,8 @@ export function NavControls() {
   const autopilot = useStore((s) => s.autopilot);
   const hyperdrive = useStore((s) => s.hyperdriveState);
   const scanPending = useStore((s) => s.scanPending);
+  const ship = useStore((s) => s.ship);
+  const scannerLevel = ship?.stats?.scannerLevel ?? 1;
 
   if (autopilot?.active) {
     return (
@@ -49,7 +51,8 @@ export function NavControls() {
   // AP cost feasibility checks
   const canJump = ap && ap.current >= AP_COSTS.jump;
   const canLocalScan = ap && ap.current >= AP_COSTS_LOCAL_SCAN;
-  const canAreaScan = ap && ap.current >= (AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3);
+  const areaScanCost = AP_COSTS_BY_SCANNER[scannerLevel]?.areaScan ?? areaScanCost;
+  const canAreaScan = ap && ap.current >= areaScanCost;
 
   const insufficientStyle = { borderColor: 'var(--color-danger)', opacity: 0.5 };
   const miningDisabledStyle = isMining
@@ -140,7 +143,7 @@ export function NavControls() {
           </button>
           <button
             className="vs-btn"
-            title={`Area Scan: ${AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3} AP`}
+            title={`Area Scan: ${areaScanCost} AP`}
             onClick={() => network.sendAreaScan()}
             disabled={jumpPending || isMining || scanPending || !canAreaScan}
             style={
@@ -154,7 +157,7 @@ export function NavControls() {
             {isMining
               ? btnDisabled(t('actions.scan'), t('reasons.miningActive'))
               : !canAreaScan
-                ? btnDisabled(t('actions.scan'), t('reasons.apCost', { n: AP_COSTS_BY_SCANNER[1]?.areaScan ?? 3 }))
+                ? btnDisabled(t('actions.scan'), t('reasons.apCost', { n: areaScanCost }))
                 : btn('AREA SCAN')}
           </button>
         </div>
