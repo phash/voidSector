@@ -122,7 +122,7 @@ describe('Hyperjump Navigation', () => {
     });
 
     it('has correct autopilot step interval', () => {
-      expect(AUTOPILOT_STEP_MS).toBe(100);
+      expect(AUTOPILOT_STEP_MS).toBe(800);
     });
 
     it('has correct staleness dim threshold (hours)', () => {

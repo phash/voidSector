@@ -28,9 +28,16 @@ describe('isModuleUnlocked', () => {
     expect(isModuleUnlocked('cargo_mk1', { category: 'cargo', tier: 1 }, {}, [])).toBe(true);
   });
 
-  it('blueprint modules are unlocked', () => {
+  it('blueprint alone does NOT unlock without required tier', () => {
     expect(
       isModuleUnlocked('void_drive', { category: 'drive', tier: 3 }, {}, ['void_drive']),
+    ).toBe(false);
+  });
+
+  it('blueprint + required tier unlocks module', () => {
+    // explorer branch level 2 → unlocked tier 3; blueprint provides the recipe
+    expect(
+      isModuleUnlocked('void_drive', { category: 'drive', tier: 3 }, { explorer: 2 }, ['void_drive']),
     ).toBe(true);
   });
 
@@ -63,6 +70,12 @@ describe('isModuleUnlocked', () => {
     expect(
       isModuleUnlocked('some_special', { category: 'special', tier: 2 }, nodes, []),
     ).toBe(false);
+  });
+
+  it('special category modules can be unlocked with blueprint (no tier needed)', () => {
+    expect(
+      isModuleUnlocked('some_special', { category: 'special', tier: 2 }, {}, ['some_special']),
+    ).toBe(true);
   });
 
   it('ausbau branch unlocks shield, armor, cargo, mining, defense, generator, repair', () => {

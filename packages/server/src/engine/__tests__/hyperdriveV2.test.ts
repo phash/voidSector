@@ -267,7 +267,7 @@ describe('Hyperdrive V2 — Charge System', () => {
       const cost = tankSpace * FUEL_COST_PER_UNIT;
 
       expect(tankSpace).toBe(7_000);
-      expect(cost).toBe(700); // 7_000 * 0.1
+      expect(cost).toBe(70); // 7_000 * 0.01
     });
 
     it('skips refuel when tank is full', () => {
@@ -283,7 +283,7 @@ describe('Hyperdrive V2 — Charge System', () => {
       const tankSpace = fuelMax - currentFuel;
       const cost = tankSpace * FUEL_COST_PER_UNIT;
       const credits = 50;
-      expect(credits < cost).toBe(true); // 50 < 1000
+      expect(credits < cost).toBe(true); // 50 < 100
     });
   });
 

@@ -3,7 +3,7 @@ import { FUEL_COST_PER_UNIT, BASE_FUEL_CAPACITY, BASE_FUEL_PER_JUMP } from '@voi
 
 describe('Fuel System', () => {
   it('should have fuel cost per unit defined', () => {
-    expect(FUEL_COST_PER_UNIT).toBe(0.1);
+    expect(FUEL_COST_PER_UNIT).toBe(0.01);
   });
 
   it('base fuel capacity should be 10_000', () => {
@@ -16,7 +16,7 @@ describe('Fuel System', () => {
 
   it('refuel cost should be calculable', () => {
     const cost = BASE_FUEL_CAPACITY * FUEL_COST_PER_UNIT;
-    expect(cost).toBe(1000); // 10_000 * 0.1
+    expect(cost).toBe(100); // 10_000 * 0.01
   });
 });
 
@@ -29,7 +29,7 @@ describe('Fuel System (new values)', () => {
     expect(BASE_FUEL_PER_JUMP).toBe(100);
   });
 
-  it('FUEL_COST_PER_UNIT is 0.1', () => {
-    expect(FUEL_COST_PER_UNIT).toBe(0.1);
+  it('FUEL_COST_PER_UNIT is 0.01', () => {
+    expect(FUEL_COST_PER_UNIT).toBe(0.01);
   });
 });

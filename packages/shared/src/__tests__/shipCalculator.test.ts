@@ -6,7 +6,7 @@ describe('calculateShipStats', () => {
   it('returns base stats with no modules', () => {
     const stats = calculateShipStats([]);
     expect(stats.fuelMax).toBe(10_000);
-    expect(stats.cargoCap).toBe(10);
+    expect(stats.cargoCap).toBe(20); // BASE_CARGO = 20
     expect(stats.jumpRange).toBe(5);
     expect(stats.apCostJump).toBe(1);
     expect(stats.hp).toBe(100);
@@ -19,7 +19,7 @@ describe('calculateShipStats', () => {
       { moduleId: 'cargo_mk1', slotIndex: 1 },
     ]);
     expect(stats.jumpRange).toBe(7); // 5 + 2
-    expect(stats.cargoCap).toBe(20); // 10 + 10
+    expect(stats.cargoCap).toBe(30); // 20 + 10
     expect(stats.apCostJump).toBe(0.8); // 1 - 0.2
   });
 
@@ -43,7 +43,7 @@ describe('calculateShipStats', () => {
     const stats = calculateShipStats([]);
     expect(stats.fuelMax).toBe(10_000);
     expect(stats.hp).toBe(100);
-    expect(stats.cargoCap).toBe(10);
+    expect(stats.cargoCap).toBe(20); // BASE_CARGO = 20
   });
 
   it('should include fuelPerJump in calculated stats', () => {
@@ -115,7 +115,7 @@ describe('calculateShipStats', () => {
 
   it('adds safeSlotBonus from cargo_mk2', () => {
     const stats = calculateShipStats([{ moduleId: 'cargo_mk2', slotIndex: 0 }]);
-    expect(stats.safeSlotBonus).toBe(1);
+    expect(stats.safeSlotBonus).toBe(2);
   });
 
   it('stacks safeSlotBonus from multiple cargo modules', () => {
@@ -123,7 +123,7 @@ describe('calculateShipStats', () => {
       { moduleId: 'cargo_mk2', slotIndex: 0 },
       { moduleId: 'cargo_mk3', slotIndex: 1 },
     ]);
-    expect(stats.safeSlotBonus).toBe(3); // 1 + 2
+    expect(stats.safeSlotBonus).toBe(5); // 2 + 3
   });
 });
 
@@ -168,12 +168,12 @@ describe('validateModuleInstall', () => {
 describe('memory stat', () => {
   it('returns BASE_SCANNER_MEMORY with no scanner modules', () => {
     const stats = calculateShipStats([]);
-    expect(stats.memory).toBe(2);
+    expect(stats.memory).toBe(10); // BASE_SCANNER_MEMORY = 10
   });
 
   it('adds scanner module memory to base', () => {
     const stats = calculateShipStats([{ moduleId: 'scanner_mk1', slotIndex: 0 }]);
-    expect(stats.memory).toBe(6); // 2 base + 4
+    expect(stats.memory).toBe(18); // 10 base + 8
   });
 
   it('accumulates memory from multiple scanners', () => {
@@ -181,12 +181,12 @@ describe('memory stat', () => {
       { moduleId: 'scanner_mk1', slotIndex: 0 },
       { moduleId: 'quantum_scanner', slotIndex: 1 },
     ]);
-    expect(stats.memory).toBe(16); // 2 + 4 + 10
+    expect(stats.memory).toBe(28); // 10 + 8 + 10
   });
 
   it('war_scanner adds 0 memory', () => {
     const stats = calculateShipStats([{ moduleId: 'war_scanner', slotIndex: 0 }]);
-    expect(stats.memory).toBe(2); // 2 base + 0
+    expect(stats.memory).toBe(10); // 10 base + 0
   });
 });
 
