@@ -377,7 +377,8 @@ export const STATION_DEFENSE_DEFS: Record<
   },
 };
 
-export const MAX_ACTIVE_QUESTS = 3;
+export const MAX_ACTIVE_QUESTS = 20;
+export const MAX_TRACKED_QUESTS = 5;
 export const QUEST_EXPIRY_DAYS = 7;
 
 export const SCAN_EVENT_CHANCE = 0.15;

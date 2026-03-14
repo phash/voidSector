@@ -594,7 +594,7 @@ export class QuestService {
         }
 
         if (
-          obj.type === 'bounty' &&
+          (obj.type === 'bounty_chase' || obj.type === 'bounty_combat') &&
           action === 'battle_won' &&
           obj.targetX === context.sectorX &&
           obj.targetY === context.sectorY
