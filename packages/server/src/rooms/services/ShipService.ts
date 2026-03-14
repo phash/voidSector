@@ -267,6 +267,10 @@ export class ShipService {
 
     client.send('craftResult', { success: true, moduleId: data.moduleId });
     client.send('logEntry', `HERGESTELLT: ${mod.name ?? data.moduleId}`);
+    // Refresh client inventory, cargo, and credits
+    client.send('inventoryUpdated', {});
+    client.send('cargoUpdate', await getCargoState(auth.userId));
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     awardWissenAndNotify(client, auth.userId, 3);  // +3 per craft
   }
 
@@ -290,6 +294,8 @@ export class ShipService {
       unlockedModules: updated.unlockedModules,
       blueprints: updated.blueprints,
     });
+    // Refresh client inventory so FabrikPanel updates
+    client.send('inventoryUpdated', {});
     client.send(
       'logEntry',
       `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`,
