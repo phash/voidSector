@@ -127,6 +127,7 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
     _pst: vi.fn().mockReturnValue('station'),
     getShipForClient: vi.fn().mockReturnValue({ cargoCap: 50 }),
     getPlayerBonuses: vi.fn().mockResolvedValue({ tradePriceMultiplier: 1, scanRadiusBonus: 0 }),
+    onResourceSoldAtStation: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   } as unknown as import('../rooms/services/ServiceContext.js').ServiceContext;
 }

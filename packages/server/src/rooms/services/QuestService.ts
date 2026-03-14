@@ -417,6 +417,60 @@ export class QuestService {
     }
   }
 
+  // Called automatically after a successful NPC sell — credits delivery objectives
+  // without removing cargo (trade already did that).
+  async onResourceSoldAtStation(
+    client: Client,
+    playerId: string,
+    sectorX: number,
+    sectorY: number,
+    resource: string,
+    amount: number,
+  ): Promise<void> {
+    const quests = await getActiveQuests(playerId);
+    for (const row of quests) {
+      if (row.station_x !== sectorX || row.station_y !== sectorY) continue;
+      const objectives = row.objectives as QuestObjective[];
+      let changed = false;
+      let remaining = amount;
+      for (const obj of objectives) {
+        if (obj.type !== 'delivery' || obj.resource !== resource || obj.fulfilled || remaining <= 0) continue;
+        const progress = obj.progress ?? 0;
+        const toCredit = Math.min(remaining, (obj.amount ?? 0) - progress);
+        if (toCredit <= 0) continue;
+        obj.progress = progress + toCredit;
+        if (obj.progress >= (obj.amount ?? 0)) obj.fulfilled = true;
+        remaining -= toCredit;
+        changed = true;
+      }
+      if (!changed) continue;
+      await updateQuestObjectives(row.id, objectives);
+      this.ctx.send(client, 'questProgress', { questId: row.id, objectives });
+      if (objectives.every((o) => o.fulfilled)) {
+        await updateQuestStatus(row.id, 'completed');
+        const rewards = row.rewards as QuestRewards;
+        if (rewards.credits) {
+          await addCredits(playerId, rewards.credits);
+          this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(playerId) });
+        }
+        if (rewards.xp) await this.applyXpGain(playerId, rewards.xp, client);
+        if (rewards.reputation) {
+          const factionId = row.template_id.split('_')[0] as string;
+          const validFactions = ['traders', 'scientists', 'pirates', 'ancients'];
+          if (validFactions.includes(factionId)) {
+            await this.applyReputationChange(playerId, factionId as NpcFactionId, rewards.reputation, client);
+          }
+        }
+        if (rewards.wissen) await addWissen(playerId, rewards.wissen);
+        const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
+        awardWissenAndNotify(client, playerId, questWissen);
+        this.ctx.send(client, 'questComplete', { id: row.id, title: row.title, rewards });
+        this.ctx.send(client, 'logEntry', `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`);
+        await this.sendActiveQuests(client, playerId);
+      }
+    }
+  }
+
   async sendReputationUpdate(client: Client, playerId: string): Promise<void> {
     const reps = await getPlayerReputations(playerId);
     const upgrades = await getPlayerUpgrades(playerId);

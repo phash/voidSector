@@ -1375,6 +1375,7 @@ class GameNetwork {
       store.addLogEntry(
         `NOTRUF EMPFANGEN — Richtung: ${data.direction}, ~${data.estimatedDistance} Sektoren`,
       );
+      store.showTip('first_distress');
       if (!isMonitorVisible('LOG')) store.setAlert('LOG', true);
       if (!isMonitorVisible('COMMS')) store.setAlert('COMMS', true);
     });

@@ -162,12 +162,26 @@ export function MiningScreen() {
             ) : (
               <div>STATUS: {t('status.idle')}</div>
             )}
-            <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>
-              <span style={{ color: cargoBarColor }}>
-                CARGO: {cargoTotal}/{cargoCap} ({Math.round(cargoPercent * 100)}%)
-              </span>
-              {' — '}ORE:{cargo.ore} GAS:{cargo.gas} CRYSTAL:{cargo.crystal}
-            </div>
+            {(() => {
+              // Include in-flight mining in the status display
+              const pendingMined = mining?.active && mining.startedAt !== null && mining.resource
+                ? Math.round(miningProgress * mining.sectorYield)
+                : 0;
+              const displayTotal = cargoTotal + pendingMined;
+              const displayPercent = cargoCap > 0 ? displayTotal / cargoCap : 0;
+              const displayColor = displayPercent >= 1 ? '#ff4444' : displayPercent >= 0.8 ? '#FFB000' : '#4a9';
+              const displayOre = cargo.ore + (mining?.resource === 'ore' ? pendingMined : 0);
+              const displayGas = cargo.gas + (mining?.resource === 'gas' ? pendingMined : 0);
+              const displayCrystal = cargo.crystal + (mining?.resource === 'crystal' ? pendingMined : 0);
+              return (
+                <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>
+                  <span style={{ color: displayColor }}>
+                    CARGO: {displayTotal}/{cargoCap} ({Math.round(displayPercent * 100)}%)
+                  </span>
+                  {' — '}ORE:{displayOre} GAS:{displayGas} CRYSTAL:{displayCrystal}
+                </div>
+              );
+            })()}
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>

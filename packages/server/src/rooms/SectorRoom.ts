@@ -351,6 +351,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // Wire cross-service callbacks
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
+    this.serviceCtx.onResourceSoldAtStation = this.quests.onResourceSoldAtStation.bind(this.quests);
     this.serviceCtx.applyReputationChange = this.quests.applyReputationChange.bind(this.quests);
     this.serviceCtx.applyXpGain = this.quests.applyXpGain.bind(this.quests);
     this.serviceCtx.checkFirstContact = this.world.checkFirstContact.bind(this.world);
