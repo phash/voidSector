@@ -2768,6 +2768,10 @@ class GameNetwork {
     this.sectorRoom?.send('sendFriendRequest', { targetPlayerId });
   }
 
+  sendFriendRequestByName(username: string) {
+    this.sectorRoom?.send('sendFriendRequestByName', { username });
+  }
+
   acceptFriendRequest(requestId: string) {
     this.sectorRoom?.send('acceptFriendRequest', { requestId });
   }

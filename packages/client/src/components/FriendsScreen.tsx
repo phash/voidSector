@@ -1,8 +1,51 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 
 type Tab = 'FREUNDE' | 'KONTAKTE';
+
+function AddFriendForm() {
+  const [name, setName] = useState('');
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    network.sendFriendRequestByName(trimmed);
+    setSent(true);
+    setTimeout(() => setSent(false), 3000);
+    setName('');
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+      <input
+        type="text"
+        placeholder="Spielername..."
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        style={{
+          flex: 1,
+          background: 'transparent',
+          border: '1px solid var(--color-dim)',
+          color: 'var(--color-primary)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.7rem',
+          padding: '3px 6px',
+        }}
+      />
+      <button
+        type="submit"
+        className="vs-btn"
+        style={{ fontSize: '0.65rem', padding: '3px 8px' }}
+        disabled={!name.trim() || sent}
+      >
+        {sent ? '[GESENDET]' : '[ANFRAGE]'}
+      </button>
+    </form>
+  );
+}
 
 export function FriendsScreen() {
   const friends = useStore((s) => s.friends);
@@ -189,6 +232,7 @@ export function FriendsScreen() {
 
         {tab === 'KONTAKTE' && (
           <>
+            <AddFriendForm />
             {recentContacts.length === 0 ? (
               <div style={{ color: 'var(--color-dim)', fontSize: '0.75rem', padding: 8 }}>
                 KEINE KONTAKTE

@@ -76,6 +76,7 @@ import {
   getInventory,
   getInventoryItem,
   getMiningStoryIndex,
+  findPlayerByUsername,
 } from '../db/queries.js';
 import { getQuadrant, addPlayerKnownQuadrant } from '../db/quadrantQueries.js';
 import { civQueries } from '../db/civQueries.js';
@@ -1115,6 +1116,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     // ── Friends System ────────────────────────────────────────────
     this.onMessage('sendFriendRequest', async (client, data: { targetPlayerId: string }) => {
       await this.friends.sendRequest(client, data.targetPlayerId);
+    });
+    this.onMessage('sendFriendRequestByName', async (client, data: { username: string }) => {
+      const target = await findPlayerByUsername(data.username);
+      if (!target) {
+        client.send('actionError', { code: 'PLAYER_NOT_FOUND', message: `Spieler "${data.username}" nicht gefunden` });
+        return;
+      }
+      await this.friends.sendRequest(client, target.id);
     });
     this.onMessage('acceptFriendRequest', async (client, data: { requestId: string }) => {
       await this.friends.acceptRequest(client, data.requestId);

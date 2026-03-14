@@ -7,10 +7,13 @@ export function PlayerCardModal() {
   const target = useStore((s) => s.playerCardTarget);
   const setPlayerCardTarget = useStore((s) => s.setPlayerCardTarget);
   const friendRequests = useStore((s) => s.friendRequests);
+  const currentPlayerId = useStore((s) => s.playerId);
   const [confirm, setConfirm] = useState<'remove' | 'block' | null>(null);
   const [localSent, setLocalSent] = useState(false);
 
   if (!target) return null;
+
+  const isSelf = target.id === currentPlayerId;
 
   const close = () => {
     setPlayerCardTarget(null);
@@ -165,43 +168,51 @@ export function PlayerCardModal() {
 
         {/* Action buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {!target.isBlocked && friendLabel && (
-            <button
-              className="vs-btn"
-              style={{ fontSize: '0.75rem', borderColor: friendColor, color: friendColor }}
-              disabled={friendDisabled}
-              onClick={handleFriendAction}
-            >
-              {friendLabel}
-            </button>
-          )}
+          {isSelf ? (
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-dim)', padding: '4px 0' }}>
+              DAS BIST DU
+            </div>
+          ) : (
+            <>
+              {!target.isBlocked && friendLabel && (
+                <button
+                  className="vs-btn"
+                  style={{ fontSize: '0.75rem', borderColor: friendColor, color: friendColor }}
+                  disabled={friendDisabled}
+                  onClick={handleFriendAction}
+                >
+                  {friendLabel}
+                </button>
+              )}
 
-          <button
-            className="vs-btn"
-            style={{ fontSize: '0.75rem', borderColor: blockColor, color: blockColor }}
-            onClick={handleBlockAction}
-          >
-            {blockLabel}
-          </button>
+              <button
+                className="vs-btn"
+                style={{ fontSize: '0.75rem', borderColor: blockColor, color: blockColor }}
+                onClick={handleBlockAction}
+              >
+                {blockLabel}
+              </button>
 
-          {!target.isBlocked && (
-            <button
-              className="vs-btn"
-              style={{ fontSize: '0.75rem' }}
-              onClick={handleMessage}
-            >
-              [NACHRICHT]
-            </button>
-          )}
+              {!target.isBlocked && (
+                <button
+                  className="vs-btn"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={handleMessage}
+                >
+                  [NACHRICHT]
+                </button>
+              )}
 
-          {target.position && (
-            <button
-              className="vs-btn"
-              style={{ fontSize: '0.75rem' }}
-              onClick={handlePosition}
-            >
-              [POSITION -&gt; NAV-COM]
-            </button>
+              {target.position && (
+                <button
+                  className="vs-btn"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={handlePosition}
+                >
+                  [POSITION -&gt; NAV-COM]
+                </button>
+              )}
+            </>
           )}
         </div>
 
