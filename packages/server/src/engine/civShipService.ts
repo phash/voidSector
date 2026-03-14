@@ -148,14 +148,15 @@ export async function processCivTick(): Promise<void> {
       // Deliver mined resources when drone returns home
       if (ship.state === 'returning' && updated.state === 'idle' && (ship.resources_carried ?? 0) > 0) {
         const delivered = ship.resources_carried!;
-        // Add ore to station inventory (drones mine ore from asteroid fields)
+        // Add ore to station inventory (upsert — creates row if station not yet visited)
         await query(
-          `UPDATE npc_station_inventory
-           SET stock = LEAST(max_stock, stock + $3), last_updated = NOW()
-           WHERE station_x = $1 AND station_y = $2 AND item_type = 'ore'`,
+          `INSERT INTO npc_station_inventory (station_x, station_y, item_type, stock, max_stock, restock_rate, consumption_rate, last_updated)
+           VALUES ($1, $2, 'ore', $3, 500, 0, 0, NOW())
+           ON CONFLICT (station_x, station_y, item_type)
+           DO UPDATE SET stock = LEAST(npc_station_inventory.max_stock, npc_station_inventory.stock + $3), last_updated = NOW()`,
           [ship.home_x, ship.home_y, delivered],
         ).catch(() => {});
-        logger.debug({ droneId: ship.id, homeX: ship.home_x, homeY: ship.home_y, delivered }, 'Drone delivered resources');
+        logger.info({ droneId: ship.id, homeX: ship.home_x, homeY: ship.home_y, delivered }, 'Drone delivered resources');
       }
 
       const { qx, qy } = sectorToQuadrant(updated.x, updated.y);
