@@ -718,7 +718,7 @@ export async function createDataSlate(
 
 export async function getPlayerSlates(playerId: string): Promise<any[]> {
   const result = await query(
-    `SELECT ds.id, ds.creator_id, ds.owner_id, ds.slate_type, ds.sector_data, ds.status, ds.created_at,
+    `SELECT ds.id, ds.creator_id, ds.owner_id, ds.slate_type, ds.sector_data, ds.custom_data, ds.status, ds.created_at,
             p.username as creator_name
      FROM data_slates ds
      JOIN players p ON p.id = ds.creator_id
@@ -727,6 +727,19 @@ export async function getPlayerSlates(playerId: string): Promise<any[]> {
     [playerId],
   );
   return result.rows;
+}
+
+export async function createCustomDataSlate(
+  creatorId: string,
+  customData: Record<string, unknown>,
+): Promise<{ id: string }> {
+  const result = await query<{ id: string }>(
+    `INSERT INTO data_slates (creator_id, owner_id, slate_type, sector_data, custom_data)
+     VALUES ($1, $1, 'custom', '[]'::jsonb, $2::jsonb)
+     RETURNING id`,
+    [creatorId, JSON.stringify(customData)],
+  );
+  return result.rows[0];
 }
 
 export async function getSlateById(slateId: string): Promise<any | null> {

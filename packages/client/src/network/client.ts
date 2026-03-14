@@ -293,6 +293,8 @@ class GameNetwork {
         }
         if (data.success && data.newSector) {
           const store = useStore.getState();
+          // Clear stale gate info — server will re-send if new sector has a player gate
+          store.setPlayerGateInfo(null);
           const dx = data.newSector.x - store.position.x;
           const dy = data.newSector.y - store.position.y;
           store.startJumpAnimation(dx, dy);
@@ -1269,6 +1271,8 @@ class GameNetwork {
       }) => {
         const store = useStore.getState();
         if (data.success && data.newSector) {
+          // Clear stale gate info — server will re-send if new sector has a player gate
+          store.setPlayerGateInfo(null);
           const dx = data.newSector.x - store.position.x;
           const dy = data.newSector.y - store.position.y;
           store.startJumpAnimation(dx, dy);
