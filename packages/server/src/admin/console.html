@@ -2340,6 +2340,7 @@ expiresDays: 14"></textarea>
     mycelians:     '#00cc88',
     mirror_minds:  '#00aacc',
     tourist_guild: '#cc6600',
+    voids:         '#ffffff',
     unknown:       '#555555',
   };
 
@@ -2440,6 +2441,22 @@ expiresDays: 14"></textarea>
       var fk = h.factionId.toLowerCase();
       var lbl = h.factionId.toUpperCase() + '\n(' + h.homeQx + ', ' + h.homeQy + ')';
       container.appendChild(makeBookmark(lbl, h.homeQx, h.homeQy, fk));
+    }
+
+    // Void cluster bookmarks from quadrant-map data
+    if (qmapData && qmapData.length > 0) {
+      var voidQuads = qmapData.filter(function(q) { return q.faction === 'voids'; });
+      if (voidQuads.length > 0) {
+        // Find centroid of void quadrants
+        var cx = 0, cy = 0;
+        for (var v = 0; v < voidQuads.length; v++) {
+          cx += voidQuads[v].qx;
+          cy += voidQuads[v].qy;
+        }
+        cx = Math.round(cx / voidQuads.length);
+        cy = Math.round(cy / voidQuads.length);
+        container.appendChild(makeBookmark('VOIDS (' + voidQuads.length + ')\n(' + cx + ', ' + cy + ')', cx, cy, 'voids'));
+      }
     }
   }
 
