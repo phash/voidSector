@@ -73,6 +73,15 @@ export class ChatService {
       }
     }
 
+    // Block check for direct messages
+    if (data.channel === 'direct' && data.recipientId) {
+      const blocked = await friendQueries.isBlocked(auth.userId, data.recipientId);
+      if (blocked) {
+        this.ctx.send(client, 'error', { code: 'CHAT_BLOCKED', message: 'Nachricht konnte nicht zugestellt werden.' });
+        return;
+      }
+    }
+
     // Validate channel
     const VALID_CHANNELS = ['direct', 'faction', 'quadrant'] as const;
     if (!VALID_CHANNELS.includes(data.channel as any)) {
