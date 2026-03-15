@@ -46,6 +46,40 @@ export const HELP_TIPS: HelpTip[] = [
     articleId: 'mining',
   },
   {
+    id: 'first_acep_tab',
+    title: 'ACEP — PILOTENENTWICKLUNG',
+    body: 'Hier entwickelst du deinen Piloten weiter. XP sammeln sich automatisch durch Aktionen.\n\n'
+      + '4 PFADE zur Spezialisierung:\n'
+      + '→ AUSBAU: Extra Modul-Slots + bessere Stationsproduktion\n'
+      + '→ INTEL: Bessere Scanner + mehr Scan-Reichweite\n'
+      + '→ KAMPF: Stärkere Waffen + Kampfboni\n'
+      + '→ EXPLORER: Schnellere Antriebe + Hyperdrive-Upgrades\n\n'
+      + 'Investiere XP in einen Pfad um höhere Tier-Module freizuschalten.',
+    articleId: 'acep',
+  },
+  {
+    id: 'first_module_tab',
+    title: 'MODULE — SCHIFFSAUSBAU',
+    body: 'Hier verwaltest du deine Schiffsmodule.\n\n'
+      + '8 Spezial-Slots: Generator, Antrieb, Waffe, Panzerung, Schild, Scanner, Mining, Fracht\n'
+      + '→ Wähle ein Modul aus deinem Inventar (unten)\n'
+      + '→ Klicke auf einen passenden leeren Slot zum Einbauen\n'
+      + '→ Ausbauen: Klicke [X] am installierten Modul\n\n'
+      + 'Höhere ACEP-Stufen (AUSBAU-Pfad) schalten Extra-Slots frei.',
+    articleId: 'schiffe',
+  },
+  {
+    id: 'first_shop_tab',
+    title: 'SHOP — MODULE KAUFEN',
+    body: 'An Stationen kannst du neue Module kaufen.\n\n'
+      + '→ Nur freigeschaltete Module werden angezeigt\n'
+      + '→ Freischaltung über Tech-Tree (Forschung) oder Blueprints\n'
+      + '→ Bezahlung: Credits + Ressourcen (Erz, Gas, Kristalle)\n'
+      + '→ Gekaufte Module landen im Inventar (MODULE-Tab)\n\n'
+      + 'Tipp: Mining Laser MK.I ist sofort verfügbar — kein Tech-Tree nötig!',
+    articleId: 'npc-stationen',
+  },
+  {
     id: 'first_pirate',
     title: 'PIRATEN-WARNUNG',
     body: 'Piraten-Ambush erkannt! Du kannst kämpfen, fliehen oder verhandeln. Das Ergebnis hängt von deinem Schiff und deiner Crew ab. Schwache Schiffe sollten fliehen.',

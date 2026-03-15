@@ -1,9 +1,16 @@
+import { useEffect } from 'react';
 import { useStore } from '../state/store';
 import { AcepTab } from './AcepTab';
 import { ModuleTab } from './ModuleTab';
 import { ShopTab } from './ShopTab';
 
 type AcepTabId = 'acep' | 'module' | 'shop';
+
+const TAB_TIP_MAP: Record<AcepTabId, string> = {
+  acep: 'first_acep_tab',
+  module: 'first_module_tab',
+  shop: 'first_shop_tab',
+};
 
 const TABS: Array<{ id: AcepTabId; label: string }> = [
   { id: 'acep',   label: '[ACEP]' },
@@ -15,6 +22,12 @@ export function AcepProgram() {
   const ship = useStore((s) => s.ship);
   const activeTab = useStore((s) => s.acepActiveTab);
   const setActiveTab = useStore((s) => s.setAcepActiveTab);
+  const showTip = useStore((s) => s.showTip);
+
+  // Show first-time tip for each tab
+  useEffect(() => {
+    showTip(TAB_TIP_MAP[activeTab]);
+  }, [activeTab, showTip]);
 
   if (!ship) {
     return (
