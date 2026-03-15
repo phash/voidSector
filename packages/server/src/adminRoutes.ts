@@ -965,6 +965,40 @@ adminRouter.post('/config/export-issue', async (req: Request, res: Response) => 
   }
 });
 
+// ── Faction Config (for balance export/import) ─────────────────────
+
+adminRouter.get('/faction-config', async (_req: Request, res: Response) => {
+  try {
+    const result = await query('SELECT * FROM faction_config WHERE active = true ORDER BY faction_id');
+    res.json({ factions: result.rows });
+  } catch (err) {
+    logger.error({ err }, 'Admin get faction config error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.put('/faction-config', async (req: Request, res: Response) => {
+  try {
+    const { factionId, home_qx, home_qy, expansion_rate, aggression, expansion_style } = req.body;
+    if (!factionId) { res.status(400).json({ error: 'factionId required' }); return; }
+    await query(
+      `UPDATE faction_config
+       SET home_qx = COALESCE($2, home_qx),
+           home_qy = COALESCE($3, home_qy),
+           expansion_rate = COALESCE($4, expansion_rate),
+           aggression = COALESCE($5, aggression),
+           expansion_style = COALESCE($6, expansion_style)
+       WHERE faction_id = $1`,
+      [factionId, home_qx, home_qy, expansion_rate, aggression, expansion_style],
+    );
+    await logAdminEvent('faction_config_update', { factionId, expansion_rate, aggression });
+    res.json({ ok: true, factionId });
+  } catch (err) {
+    logger.error({ err }, 'Admin set faction config error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ── Drones ──────────────────────────────────────────────────────────
 
 adminRouter.get('/drones', async (_req: Request, res: Response) => {
