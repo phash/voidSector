@@ -747,9 +747,29 @@ class GameNetwork {
       }
     });
 
-    // Base data
-    room.onMessage('baseData', (data: { structures: any[] }) => {
+    // Base data (structures + construction sites)
+    room.onMessage('baseData', (data: { structures: any[]; constructionSites?: any[] }) => {
       useStore.getState().setBaseStructures(data.structures);
+      if (data.constructionSites) {
+        useStore.getState().setConstructionSites(data.constructionSites.map((cs: any) => ({
+          id: cs.id,
+          type: cs.type,
+          sectorX: cs.sector_x,
+          sectorY: cs.sector_y,
+          progress: cs.progress,
+          neededOre: cs.needed_ore,
+          neededGas: cs.needed_gas,
+          neededCrystal: cs.needed_crystal,
+          neededCredits: cs.needed_credits,
+          neededArtefact: cs.needed_artefact,
+          depositedOre: cs.deposited_ore,
+          depositedGas: cs.deposited_gas,
+          depositedCrystal: cs.deposited_crystal,
+          depositedCredits: cs.deposited_credits,
+          depositedArtefact: cs.deposited_artefact,
+          paused: cs.paused,
+        })));
+      }
     });
 
     // Build results

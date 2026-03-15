@@ -180,6 +180,7 @@ import {
   getConstructionSite,
   getConstructionSiteById,
   depositResources,
+  getPlayerConstructionSites,
 } from '../../db/constructionQueries.js';
 import type { ConstructionSite } from '../../db/constructionQueries.js';
 import { getWrecksInSector } from '../../engine/permadeathService.js';
@@ -255,7 +256,8 @@ export class WorldService {
   async handleGetBase(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
     const structures = await getPlayerBaseStructures(auth.userId);
-    client.send('baseData', { structures });
+    const constructionSites = await getPlayerConstructionSites(auth.userId);
+    client.send('baseData', { structures, constructionSites });
   }
 
   async handleGetCredits(client: Client): Promise<void> {

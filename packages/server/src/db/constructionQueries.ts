@@ -79,6 +79,14 @@ export async function getAllConstructionSites(): Promise<ConstructionSite[]> {
   return result.rows;
 }
 
+export async function getPlayerConstructionSites(ownerId: string): Promise<ConstructionSite[]> {
+  const result = await query<ConstructionSite>(
+    'SELECT * FROM construction_sites WHERE owner_id = $1 ORDER BY created_at',
+    [ownerId],
+  );
+  return result.rows;
+}
+
 export async function depositResources(
   siteId: string,
   ore: number,

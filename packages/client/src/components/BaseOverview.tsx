@@ -49,8 +49,7 @@ export function BaseOverview() {
     network.requestCredits();
   }, []);
 
-  const hasBase = baseStructures.some((s: any) => s.type === 'base');
-  const hasAnything = hasBase || constructionSites.length > 0;
+  const hasAnything = baseStructures.length > 0 || constructionSites.length > 0;
 
   if (!hasAnything) {
     return (
