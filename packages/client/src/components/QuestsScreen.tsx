@@ -750,17 +750,17 @@ export function QuestsScreen() {
                             background: isTracked ? 'rgba(0,120,255,0.3)' : 'none',
                             color: isTracked ? '#4488FF' : canTrack ? 'rgba(255,176,0,0.5)' : '#333',
                             border: `1px solid ${isTracked ? '#4488FF' : canTrack ? 'rgba(255,176,0,0.3)' : '#333'}`,
-                            padding: '0px 3px',
+                            padding: '2px 5px',
                             cursor: canTrack ? 'pointer' : 'not-allowed',
                             fontFamily: 'inherit',
-                            fontSize: '0.55rem',
+                            fontSize: '0.75rem',
                             lineHeight: 1.2,
                             flexShrink: 0,
                           }}
                         >
                           {isTracked ? '◈' : '◉'}
                         </button>
-                        <span style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.5rem' }}>
+                        <span style={{ color: 'rgba(255,176,0,0.5)', fontSize: '0.7rem' }}>
                           {isExpanded ? '▲' : '▼'}
                         </span>
                       </span>
@@ -852,23 +852,49 @@ export function QuestsScreen() {
                             BLUEPRINT: {q.rewards.rewardBlueprint.toUpperCase().replace(/_/g, ' ')}
                           </div>
                         )}
-                        <button
-                          className="vs-btn"
-                          onClick={() => confirm(`abandon-${q.id}`, () => network.sendAbandonQuest(q.id))}
-                          style={isArmed(`abandon-${q.id}`) ? { borderColor: '#ff4444', color: '#ff4444' } : undefined}
-                        >
-                          {isArmed(`abandon-${q.id}`) ? (
-                            (() => {
-                              const jettison = getJettisonItems(q.objectives);
-                              const jettisonText = jettison.length > 0
-                                ? `JETTISON: ${jettison.join(', ')}`
-                                : 'SURE?';
-                              return btnDisabled(t('actions.abandon'), jettisonText);
-                            })()
-                          ) : (
-                            btn(t('actions.abandon'))
-                          )}
-                        </button>
+                        <div style={{ display: 'flex', gap: 4, marginTop: 6, alignItems: 'center' }}>
+                          {/* Deliver button — shown when at delivery station */}
+                          {(() => {
+                            const deliverObj = q.objectives.find(
+                              (o) =>
+                                !o.fulfilled &&
+                                ((o.type === 'scan_deliver' && o.stationX === position.x && o.stationY === position.y) ||
+                                 (o.type === 'fetch' && q.stationX === position.x && q.stationY === position.y) ||
+                                 (o.type === 'bounty_deliver' && o.stationX === position.x && o.stationY === position.y)),
+                            );
+                            if (!deliverObj) return null;
+                            const label = deliverObj.type === 'scan_deliver' ? 'SLATE ABGEBEN'
+                              : deliverObj.type === 'bounty_deliver' ? 'GEFANGENEN ABGEBEN'
+                              : 'ABGEBEN';
+                            return (
+                              <button
+                                className="vs-btn"
+                                onClick={() => network.sendDeliverQuest(q.id)}
+                                style={{ borderColor: '#00FF88', color: '#00FF88', fontSize: '0.6rem' }}
+                              >
+                                [{label}]
+                              </button>
+                            );
+                          })()}
+                          <div style={{ flex: 1 }} />
+                          <button
+                            className="vs-btn"
+                            onClick={() => confirm(`abandon-${q.id}`, () => network.sendAbandonQuest(q.id))}
+                            style={{ borderColor: '#ff4444', color: '#ff4444', fontSize: '0.55rem', opacity: 0.7 }}
+                          >
+                            {isArmed(`abandon-${q.id}`) ? (
+                              (() => {
+                                const jettison = getJettisonItems(q.objectives);
+                                const jettisonText = jettison.length > 0
+                                  ? `JETTISON: ${jettison.join(', ')}`
+                                  : 'SURE?';
+                                return btnDisabled(t('actions.abandon'), jettisonText);
+                              })()
+                            ) : (
+                              btn(t('actions.abandon'))
+                            )}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>

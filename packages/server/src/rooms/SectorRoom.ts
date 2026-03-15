@@ -708,6 +708,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getActiveQuests', async (client) => {
       await this.quests.handleGetActiveQuests(client);
     });
+    this.onMessage('deliverQuest', async (client, data: { questId: string }) => {
+      await this.quests.handleDeliverQuest(client, data.questId, this._px(client.sessionId), this._py(client.sessionId));
+    });
     this.onMessage('getReputation', async (client) => {
       await this.quests.handleGetReputation(client);
     });

@@ -168,6 +168,12 @@ export class NavigationService {
     // Quadrant first-contact detection
     await this.ctx.checkFirstContact(client, auth, sectorX, sectorY);
 
+    // Check quest progress for arrive/fetch/delivery (same as handleJump)
+    await this.ctx.checkQuestProgress(client, auth.userId, 'arrive', {
+      sectorX,
+      sectorY,
+    });
+
     awardWissenAndNotify(client, auth.userId, 1);  // +1 per new sector
   }
 

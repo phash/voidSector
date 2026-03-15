@@ -23,6 +23,7 @@ const abandonBtnStyle: React.CSSProperties = {
 export function QuestDetailPanel() {
   const selectedQuest = useStore((s) => s.selectedQuest);
   const activeQuests = useStore((s) => s.activeQuests);
+  const position = useStore((s) => s.position);
 
   if (!selectedQuest) {
     return (
@@ -169,6 +170,38 @@ export function QuestDetailPanel() {
           BLUEPRINT: {quest.rewards.rewardBlueprint.toUpperCase().replace(/_/g, ' ')}
         </div>
       )}
+
+      {/* Deliver button — shown when at delivery station with pending deliver objective */}
+      {(() => {
+        const deliverObj = quest.objectives.find(
+          (o) =>
+            !o.fulfilled &&
+            ((o.type === 'scan_deliver' && o.stationX === position.x && o.stationY === position.y) ||
+             (o.type === 'fetch' && quest.stationX === position.x && quest.stationY === position.y) ||
+             (o.type === 'bounty_deliver' && o.stationX === position.x && o.stationY === position.y)),
+        );
+        if (!deliverObj) return null;
+        const label = deliverObj.type === 'scan_deliver' ? 'SLATE ABGEBEN'
+          : deliverObj.type === 'bounty_deliver' ? 'GEFANGENEN ABGEBEN'
+          : 'RESSOURCEN ABGEBEN';
+        return (
+          <button
+            className="vs-btn"
+            style={{
+              marginTop: 12,
+              fontSize: '0.7rem',
+              display: 'block',
+              width: '100%',
+              borderColor: '#00FF88',
+              color: '#00FF88',
+              letterSpacing: '0.1em',
+            }}
+            onClick={() => network.sendDeliverQuest(quest.id)}
+          >
+            [{label}]
+          </button>
+        );
+      })()}
 
       <button
         className="vs-btn"

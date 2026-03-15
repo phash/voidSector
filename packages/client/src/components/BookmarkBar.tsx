@@ -244,7 +244,7 @@ export function BookmarkBar() {
                   }}
                   title={tq.title}
                 >
-                  [{typeShort}] {tq.title}
+                  {tq.objectiveLabel ?? `[${typeShort}] ${tq.title}`}
                 </button>
                 <button
                   onClick={(e) => {

@@ -221,22 +221,35 @@ export function NavTargetPanel() {
           )}
 
           {/* Hyperjump toggle */}
-          <div style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <label style={{ ...labelStyle, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={useHyperjump}
-                onChange={(e) => setUseHyperjump(e.target.checked)}
-                style={{ marginRight: 4 }}
-              />
-              HYPERJUMP
-            </label>
-            {useHyperjump && (
-              <span style={{ color: '#00CCFF', fontSize: '0.7rem' }}>
-                {t('nav.hyperjumpHint')}
-              </span>
-            )}
-          </div>
+          {(() => {
+            const hasHyperdrive = (ship?.stats?.hyperdriveRange ?? 0) > 0;
+            return (
+              <div style={{ marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label style={{ ...labelStyle, cursor: hasHyperdrive ? 'pointer' : 'not-allowed', opacity: hasHyperdrive ? 1 : 0.4 }}>
+                    <input
+                      type="checkbox"
+                      checked={useHyperjump}
+                      onChange={(e) => setUseHyperjump(e.target.checked)}
+                      disabled={!hasHyperdrive}
+                      style={{ marginRight: 4 }}
+                    />
+                    HYPERJUMP
+                  </label>
+                  {useHyperjump && hasHyperdrive && (
+                    <span style={{ color: '#00CCFF', fontSize: '0.7rem' }}>
+                      {t('nav.hyperjumpHint')}
+                    </span>
+                  )}
+                </div>
+                {!hasHyperdrive && (
+                  <div style={{ color: '#FF6644', fontSize: '0.65rem', marginTop: 2 }}>
+                    Hyperdrive-Modul benötigt
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Cost preview */}
           {hasValidTarget && (

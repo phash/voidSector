@@ -1199,9 +1199,27 @@ export async function trackQuest(
   ]);
 }
 
+const OBJ_TYPE_SHORT: Record<string, string> = {
+  scan: 'SCN',
+  scan_deliver: 'RET',
+  fetch: 'LFR',
+  delivery: 'DEL',
+  bounty_chase: 'BNT',
+  bounty_combat: 'BNT',
+  bounty_deliver: 'RET',
+};
+
+function buildObjectiveLabel(obj: any): string {
+  const prefix = OBJ_TYPE_SHORT[obj.type] ?? obj.type?.slice(0, 3).toUpperCase() ?? '???';
+  const x = obj.targetX ?? obj.stationX;
+  const y = obj.targetY ?? obj.stationY;
+  if (x != null && y != null) return `${prefix} (${x},${y})`;
+  return prefix;
+}
+
 export async function getTrackedQuests(
   playerId: string,
-): Promise<Array<{ questId: string; title: string; type: string; description: string; targetX?: number; targetY?: number }>> {
+): Promise<Array<{ questId: string; title: string; type: string; description: string; targetX?: number; targetY?: number; objectiveLabel?: string }>> {
   const { rows } = await query(
     `SELECT id, title, template_id, description, objectives
      FROM player_quests
@@ -1211,6 +1229,7 @@ export async function getTrackedQuests(
   );
   return rows.map((r: any) => {
     const objectives: any[] = r.objectives ?? [];
+    const currentObj = objectives.find((o: any) => !o.fulfilled);
     const firstTarget = objectives.find(
       (o: any) => o.targetX != null && o.targetY != null && !o.fulfilled,
     );
@@ -1219,8 +1238,9 @@ export async function getTrackedQuests(
       title: r.title ?? r.template_id,
       type: (r.template_id as string).split('_')[0] ?? 'quest',
       description: r.description ?? '',
-      targetX: firstTarget?.targetX,
-      targetY: firstTarget?.targetY,
+      targetX: firstTarget?.targetX ?? currentObj?.stationX,
+      targetY: firstTarget?.targetY ?? currentObj?.stationY,
+      objectiveLabel: currentObj ? buildObjectiveLabel(currentObj) : undefined,
     };
   });
 }

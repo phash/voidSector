@@ -147,6 +147,8 @@ export interface TrackedQuest {
   description: string;
   targetX?: number;
   targetY?: number;
+  /** Short label for current objective, e.g. "SCN (-5,1)" or "RET (0,0)" */
+  objectiveLabel?: string;
 }
 
 export interface CommunityQuestPayload {

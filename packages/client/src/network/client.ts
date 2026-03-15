@@ -2327,6 +2327,14 @@ class GameNetwork {
     this.sectorRoom.send('abandonQuest', { questId });
   }
 
+  sendDeliverQuest(questId: string) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('deliverQuest', { questId });
+  }
+
   sendDeliverQuestResources(questId: string, sectorX: number, sectorY: number) {
     if (!this.sectorRoom) {
       useStore.getState().addLogEntry('NOT CONNECTED');

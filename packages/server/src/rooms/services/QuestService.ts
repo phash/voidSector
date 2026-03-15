@@ -14,6 +14,7 @@ import type {
   NpcFactionId,
 } from '@void-sector/shared';
 import { QUEST_EXPIRY_DAYS, FACTION_UPGRADES, UNIVERSE_TICK_MS, MAX_TRACKED_QUESTS } from '@void-sector/shared';
+import { logger } from '../../utils/logger.js';
 import { redis } from './RedisAPStore.js';
 import { generateStationNpcs, getStationFaction } from '../../engine/npcgen.js';
 import { generateStationQuests } from '../../engine/questgen.js';
@@ -299,6 +300,86 @@ export class QuestService {
     this.ctx.send(client, 'trackQuestResult', { success: true });
   }
 
+  async handleDeliverQuest(
+    client: Client,
+    questId: string,
+    playerX: number,
+    playerY: number,
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const rows = await getActiveQuests(auth.userId);
+    const row = rows.find((r) => r.id === questId);
+    if (!row) {
+      this.ctx.send(client, 'error', { code: 'QUEST_NOT_FOUND', message: 'Quest not found' });
+      return;
+    }
+    const objectives = row.objectives as QuestObjective[];
+
+    // Find a deliverable objective at current position
+    const deliverObj = objectives.find(
+      (o) =>
+        !o.fulfilled &&
+        ((o.type === 'scan_deliver' && o.stationX === playerX && o.stationY === playerY) ||
+         (o.type === 'fetch' && row.station_x === playerX && row.station_y === playerY) ||
+         (o.type === 'bounty_deliver' && o.stationX === playerX && o.stationY === playerY)),
+    );
+    if (!deliverObj) {
+      this.ctx.send(client, 'error', { code: 'DELIVER_FAIL', message: 'Abgabe hier nicht möglich' });
+      return;
+    }
+
+    // For scan_deliver: check that all scan objectives are done
+    if (deliverObj.type === 'scan_deliver') {
+      const allScansDone = objectives.filter((o) => o.type === 'scan').every((o) => o.fulfilled);
+      if (!allScansDone) {
+        this.ctx.send(client, 'error', { code: 'DELIVER_FAIL', message: 'Scans noch nicht abgeschlossen' });
+        return;
+      }
+      // Remove data_slate from inventory if it exists (may not exist due to earlier bugs)
+      try {
+        const hasSlate = await getInventoryItem(auth.userId, 'data_slate', questId);
+        if (hasSlate > 0) {
+          await removeFromInventory(auth.userId, 'data_slate', questId, 1);
+        }
+      } catch { /* ignore — slate may not exist */ }
+    }
+
+    // For fetch: check cargo
+    if (deliverObj.type === 'fetch' && deliverObj.resource && deliverObj.amount) {
+      const cargo = await getCargoState(auth.userId);
+      if (((cargo as any)[deliverObj.resource] ?? 0) < deliverObj.amount) {
+        this.ctx.send(client, 'error', { code: 'DELIVER_FAIL', message: 'Nicht genug Ressourcen' });
+        return;
+      }
+    }
+
+    // For bounty_deliver: check prisoner
+    if (deliverObj.type === 'bounty_deliver') {
+      const hasPrisoner = await getInventoryItem(auth.userId, 'prisoner', questId);
+      if (hasPrisoner <= 0) {
+        this.ctx.send(client, 'error', { code: 'DELIVER_FAIL', message: 'Kein Gefangener' });
+        return;
+      }
+      await removeFromInventory(auth.userId, 'prisoner', questId, 1);
+    }
+
+    deliverObj.fulfilled = true;
+    await updateQuestObjectives(questId, objectives);
+    this.ctx.send(client, 'questProgress', { questId, objectives });
+
+    // Re-send tracked quests for bookmark update
+    const updatedTracked = await getTrackedQuests(auth.userId);
+    this.ctx.send(client, 'trackedQuestsUpdate', { quests: updatedTracked });
+
+    // Check if all objectives are now fulfilled → complete quest
+    if (objectives.every((o) => o.fulfilled)) {
+      await this.completeQuest(client, auth.userId, row);
+    }
+
+    // Refresh active quests list
+    await this.sendActiveQuests(client, auth.userId);
+  }
+
   async handleGetTrackedQuests(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
     const trackedQuests = await getTrackedQuests(auth.userId);
@@ -565,7 +646,9 @@ export class QuestService {
     action: string,
     context: Record<string, any>,
   ): Promise<void> {
+    logger.info({ action, context, playerId }, 'QUEST-DEBUG checkQuestProgress called');
     const rows = await getActiveQuests(playerId);
+    logger.info({ questCount: rows.length }, 'QUEST-DEBUG active quests found');
     const cargo = await getCargoState(playerId);
     for (const row of rows) {
       const objectives = row.objectives as QuestObjective[];
@@ -574,12 +657,22 @@ export class QuestService {
       for (const obj of objectives) {
         if (obj.fulfilled) continue;
 
+        if (obj.type === 'scan' && action === 'scan') {
+          logger.info({
+            objTargetX: obj.targetX, objTargetY: obj.targetY,
+            ctxSectorX: context.sectorX, ctxSectorY: context.sectorY,
+            typeObj: typeof obj.targetX, typeCtx: typeof context.sectorX,
+            equal: obj.targetX === context.sectorX && obj.targetY === context.sectorY,
+          }, 'QUEST-DEBUG scan check');
+        }
+
         if (
           obj.type === 'scan' &&
           action === 'scan' &&
           obj.targetX === context.sectorX &&
           obj.targetY === context.sectorY
         ) {
+          logger.info({ questId: row.id }, 'QUEST-DEBUG scan objective matched — setting fulfilled');
           obj.fulfilled = true;
           updated = true;
           // When all scan objectives in this quest are now fulfilled, issue a data slate
@@ -587,7 +680,12 @@ export class QuestService {
             .filter((o) => o.type === 'scan')
             .every((o) => o.fulfilled);
           if (allScansDone) {
-            await addToInventory(playerId, 'data_slate', row.id, 1);
+            try {
+              await addToInventory(playerId, 'data_slate', row.id, 1);
+              logger.info({ questId: row.id }, 'QUEST-DEBUG data_slate added');
+            } catch (err) {
+              logger.error({ err, questId: row.id }, 'QUEST-DEBUG addToInventory FAILED');
+            }
           }
         }
 
@@ -695,80 +793,93 @@ export class QuestService {
       }
 
       if (updated) {
-        await updateQuestObjectives(row.id, objectives);
+        try {
+          await updateQuestObjectives(row.id, objectives);
+          logger.info({ questId: row.id, objectives }, 'QUEST-DEBUG objectives saved');
+        } catch (err) {
+          logger.error({ err, questId: row.id }, 'QUEST-DEBUG updateQuestObjectives FAILED');
+        }
         this.ctx.send(client, 'questProgress', { questId: row.id, objectives });
+        // Re-send tracked quests so bookmark labels update with current objective
+        const updatedTracked = await getTrackedQuests(playerId);
+        this.ctx.send(client, 'trackedQuestsUpdate', { quests: updatedTracked });
 
         if (objectives.every((o) => o.fulfilled)) {
-          await updateQuestStatus(row.id, 'completed');
-          const rewards = row.rewards;
-
-          if (rewards.credits) {
-            await addCredits(playerId, rewards.credits);
-            this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(playerId) });
-          }
-          if (rewards.xp) await this.applyXpGain(playerId, rewards.xp, client);
-          if (rewards.reputation) {
-            // Determine quest faction from template_id prefix
-            const factionId = row.template_id.split('_')[0] as string;
-            const validFactions = ['traders', 'scientists', 'pirates', 'ancients'];
-            if (validFactions.includes(factionId)) {
-              await this.applyReputationChange(
-                playerId,
-                factionId as NpcFactionId,
-                rewards.reputation,
-                client,
-              );
-            }
-          }
-          if (rewards.reputationPenalty && rewards.rivalFactionId) {
-            await this.applyReputationChange(
-              playerId,
-              rewards.rivalFactionId as NpcFactionId,
-              -rewards.reputationPenalty,
-              client,
-            );
-          }
-          if (rewards.wissen) {
-            await addWissen(playerId, rewards.wissen);
-          }
-
-          // Blueprint reward
-          if (rewards.rewardBlueprint) {
-            const hasBlueprint = await getInventoryItem(playerId, 'blueprint', rewards.rewardBlueprint);
-            if (hasBlueprint > 0) {
-              const altCredits = 200;
-              const altWissen = 15;
-              await addCredits(playerId, altCredits);
-              await addWissen(playerId, altWissen);
-              this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(playerId) });
-            } else {
-              await addToInventory(playerId, 'blueprint', rewards.rewardBlueprint, 1);
-            }
-            const items = await getInventory(playerId);
-            this.ctx.send(client, 'inventoryState', { items });
-          }
-
-          // Wissen from quest completion, scaled by reward value
-          const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
-          awardWissenAndNotify(client, playerId, questWissen);
-
-          // Deduct fetch resources from cargo
-          for (const obj of objectives) {
-            if (obj.type === 'fetch' && obj.resource && obj.amount) {
-              await removeFromInventory(playerId, 'resource', obj.resource, obj.amount);
-            }
-          }
-          this.ctx.send(client, 'cargoUpdate', await getCargoState(playerId));
-
-          this.ctx.send(
-            client,
-            'logEntry',
-            `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`,
-          );
-          await this.sendActiveQuests(client, playerId);
+          await this.completeQuest(client, playerId, row);
         }
       }
     }
+  }
+
+  private async completeQuest(client: Client, playerId: string, row: any): Promise<void> {
+    await updateQuestStatus(row.id, 'completed');
+    const rewards = row.rewards;
+    const objectives = row.objectives as QuestObjective[];
+
+    if (rewards.credits) {
+      await addCredits(playerId, rewards.credits);
+      this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(playerId) });
+    }
+    if (rewards.xp) await this.applyXpGain(playerId, rewards.xp, client);
+    if (rewards.reputation) {
+      const factionId = row.template_id.split('_')[0] as string;
+      const validFactions = ['traders', 'scientists', 'pirates', 'ancients'];
+      if (validFactions.includes(factionId)) {
+        await this.applyReputationChange(
+          playerId,
+          factionId as NpcFactionId,
+          rewards.reputation,
+          client,
+        );
+      }
+    }
+    if (rewards.reputationPenalty && rewards.rivalFactionId) {
+      await this.applyReputationChange(
+        playerId,
+        rewards.rivalFactionId as NpcFactionId,
+        -rewards.reputationPenalty,
+        client,
+      );
+    }
+    if (rewards.wissen) {
+      await addWissen(playerId, rewards.wissen);
+    }
+
+    // Blueprint reward
+    if (rewards.rewardBlueprint) {
+      const hasBlueprint = await getInventoryItem(playerId, 'blueprint', rewards.rewardBlueprint);
+      if (hasBlueprint > 0) {
+        const altCredits = 200;
+        const altWissen = 15;
+        await addCredits(playerId, altCredits);
+        await addWissen(playerId, altWissen);
+        this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(playerId) });
+      } else {
+        await addToInventory(playerId, 'blueprint', rewards.rewardBlueprint, 1);
+      }
+      const items = await getInventory(playerId);
+      this.ctx.send(client, 'inventoryState', { items });
+    }
+
+    // Wissen from quest completion, scaled by reward value
+    const questWissen = (rewards.credits ?? 0) > 500 ? 10 : 5;
+    awardWissenAndNotify(client, playerId, questWissen);
+
+    // Deduct fetch resources from cargo
+    for (const obj of objectives) {
+      if (obj.type === 'fetch' && obj.resource && obj.amount) {
+        await removeFromInventory(playerId, 'resource', obj.resource, obj.amount);
+      }
+    }
+    this.ctx.send(client, 'cargoUpdate', await getCargoState(playerId));
+
+    this.ctx.send(client, 'questComplete', { id: row.id, title: row.title ?? row.template_id, rewards });
+    this.ctx.send(
+      client,
+      'logEntry',
+      `Quest abgeschlossen: +${rewards.credits ?? 0} CR, +${rewards.xp ?? 0} XP`,
+    );
+    await this.sendActiveQuests(client, playerId);
   }
 }
 
