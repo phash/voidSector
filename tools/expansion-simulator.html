@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>voidSector — Alien Expansion Simulator</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #FFB000; font-family: 'Share Tech Mono', 'Courier New', monospace; display: flex; height: 100vh; overflow: hidden; }
+#controls { width: 340px; flex-shrink: 0; padding: 12px; overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 8px; }
+#controls h1 { font-size: 14px; letter-spacing: 3px; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 4px; }
+#controls h2 { font-size: 11px; letter-spacing: 2px; color: #888; margin-top: 8px; }
+.ctrl-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.ctrl-row label { min-width: 100px; color: #aaa; }
+.ctrl-row input[type=range] { flex: 1; accent-color: #FFB000; }
+.ctrl-row .val { min-width: 40px; text-align: right; color: #FFB000; }
+.ctrl-row input[type=number] { width: 60px; background: #111; border: 1px solid #333; color: #FFB000; font-family: inherit; font-size: 11px; padding: 2px 4px; }
+.ctrl-row input[type=color] { width: 30px; height: 20px; border: 1px solid #333; background: none; cursor: pointer; }
+.ctrl-row select { background: #111; border: 1px solid #333; color: #FFB000; font-family: inherit; font-size: 11px; padding: 2px; }
+.faction-block { border: 1px solid #222; padding: 6px; margin-bottom: 4px; }
+.faction-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.faction-header .name { font-size: 11px; letter-spacing: 1px; }
+.faction-details { display: none; margin-top: 6px; }
+.faction-block.open .faction-details { display: block; }
+button { background: transparent; border: 1px solid #FFB000; color: #FFB000; font-family: inherit; font-size: 11px; padding: 4px 10px; cursor: pointer; letter-spacing: 1px; }
+button:hover { background: #FFB00020; }
+.btn-row { display: flex; gap: 4px; flex-wrap: wrap; }
+#timeline-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #333; border-bottom: 1px solid #333; }
+#timeline-row input[type=range] { flex: 1; accent-color: #FFB000; }
+#play-btn { width: 30px; text-align: center; }
+#map-area { flex: 1; display: flex; flex-direction: column; }
+#stats-bar { padding: 6px 12px; font-size: 11px; color: #888; border-bottom: 1px solid #222; display: flex; gap: 16px; flex-wrap: wrap; }
+#stats-bar .stat { color: #FFB000; }
+canvas { flex: 1; display: block; cursor: crosshair; }
+#prompt-area { position: fixed; bottom: 0; left: 340px; right: 0; background: #111; border-top: 1px solid #333; padding: 8px 12px; font-size: 11px; display: flex; gap: 8px; align-items: flex-start; max-height: 120px; }
+#prompt-text { flex: 1; color: #aaa; overflow-y: auto; max-height: 100px; white-space: pre-wrap; }
+#copy-btn { flex-shrink: 0; }
+#copy-btn.copied { color: #0f0; border-color: #0f0; }
+#legend { padding: 6px 12px; font-size: 10px; display: flex; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid #222; }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-swatch { width: 12px; height: 12px; border: 1px solid #444; display: inline-block; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <h1>EXPANSION SIMULATOR</h1>
+  <h2>UNIVERSUM</h2>
+  <div class="ctrl-row">
+    <label>Groesse (Quadr.)</label>
+    <input type="number" id="universe-size" value="80" min="20" max="2000" step="10">
+  </div>
+  <div class="ctrl-row">
+    <label>Max Ticks</label>
+    <input type="number" id="max-ticks" value="5000" min="100" max="50000" step="100">
+  </div>
+  <h2>TIMELINE</h2>
+  <div id="timeline-row">
+    <button id="play-btn">&#9654;</button>
+    <input type="range" id="tick-slider" min="0" max="5000" value="0" step="1">
+    <span class="val" id="tick-val">0</span>
+  </div>
+  <div class="ctrl-row">
+    <label>Speed</label>
+    <input type="range" id="play-speed" min="1" max="50" value="10">
+    <span class="val" id="speed-val">10</span>
+  </div>
+  <h2>FRAKTIONEN</h2>
+  <div id="faction-list"></div>
+  <h2>VOIDS</h2>
+  <div class="faction-block open" id="void-config">
+    <div class="faction-details">
+      <div class="ctrl-row"><label>Spawn-Intervall</label><input type="number" id="void-spawn-interval" value="10" min="1" max="100"><span>Ticks</span></div>
+      <div class="ctrl-row"><label>Min Cluster</label><input type="number" id="void-min-clusters" value="32" min="1" max="100"></div>
+      <div class="ctrl-row"><label>Max Cluster</label><input type="number" id="void-max-clusters" value="48" min="1" max="200"></div>
+      <div class="ctrl-row"><label>Origin Exclusion</label><input type="number" id="void-exclusion" value="10" min="0" max="500"></div>
+      <div class="ctrl-row"><label>Split Threshold</label><input type="number" id="void-split-min" value="8" min="2" max="50">-<input type="number" id="void-split-max" value="16" min="2" max="50"></div>
+    </div>
+  </div>
+  <h2>AKTIONEN</h2>
+  <div class="btn-row">
+    <button id="btn-reset">RESET &amp; SIM</button>
+    <button id="btn-export">EXPORT JSON</button>
+  </div>
+</div>
+
+<div id="map-area">
+  <div id="legend"></div>
+  <div id="stats-bar">
+    <span>Tick: <span class="stat" id="s-tick">0</span></span>
+    <span>Zeit: <span class="stat" id="s-time">0h</span></span>
+    <span>Quadranten: <span class="stat" id="s-quads">0</span></span>
+    <span>Void Cluster: <span class="stat" id="s-vclusters">0</span></span>
+    <span>Void Quads: <span class="stat" id="s-vquads">0</span></span>
+  </div>
+  <canvas id="map"></canvas>
+  <div id="prompt-area">
+    <div id="prompt-text">Starte die Simulation mit RESET &amp; SIM.</div>
+    <button id="copy-btn">COPY</button>
+  </div>
+</div>
+
+<script>
+// === DEFAULT FACTIONS ===
+var DEFAULT_FACTIONS = [
+  { id: 'humans', name: 'HUMANS', color: '#4080ff', homeQx: 0, homeQy: 0, rate: 8, style: 'wave', active: true },
+  { id: 'kthari', name: 'KTHARI', color: '#ff4444', homeQx: 20, homeQy: -15, rate: 5, style: 'sphere', active: true },
+  { id: 'silent_swarm', name: 'SILENT SWARM', color: '#ff8844', homeQx: -30, homeQy: 20, rate: 4, style: 'sphere', active: true },
+  { id: 'archivists', name: 'ARCHIVISTS', color: '#88ffcc', homeQx: 15, homeQy: 10, rate: 15, style: 'sphere', active: true },
+  { id: 'consortium', name: 'CONSORTIUM', color: '#ffaa44', homeQx: -10, homeQy: -20, rate: 10, style: 'sphere', active: true },
+  { id: 'mycelians', name: 'MYCELIANS', color: '#44ff88', homeQx: 25, homeQy: 5, rate: 12, style: 'sphere', active: true },
+  { id: 'mirror_minds', name: 'MIRROR MINDS', color: '#cc88ff', homeQx: -20, homeQy: 15, rate: 10, style: 'sphere', active: true },
+  { id: 'tourist_guild', name: 'TOURIST GUILD', color: '#ffff44', homeQx: -5, homeQy: -25, rate: 20, style: 'sphere', active: true },
+];
+
+var factions = JSON.parse(JSON.stringify(DEFAULT_FACTIONS));
+var grid = {};
+var voidClusters = [];
+var history = [];
+var currentTick = 0;
+var playing = false;
+var playTimer = null;
+
+// === UI SETUP ===
+function buildFactionUI() {
+  var list = document.getElementById('faction-list');
+  while (list.firstChild) list.removeChild(list.firstChild);
+  factions.forEach(function(f, i) {
+    var block = document.createElement('div');
+    block.className = 'faction-block';
+
+    var header = document.createElement('div');
+    header.className = 'faction-header';
+    header.addEventListener('click', function() { block.classList.toggle('open'); });
+
+    var nameSpan = document.createElement('span');
+    nameSpan.className = 'name';
+    nameSpan.style.color = f.color;
+    nameSpan.textContent = '\u25CF ' + f.name;
+    header.appendChild(nameSpan);
+
+    var arrow = document.createElement('span');
+    arrow.style.cssText = 'font-size:10px;color:#666';
+    arrow.textContent = '\u25BC';
+    header.appendChild(arrow);
+    block.appendChild(header);
+
+    var details = document.createElement('div');
+    details.className = 'faction-details';
+
+    var fields = [
+      { label: 'Home QX', key: 'homeQx', val: f.homeQx },
+      { label: 'Home QY', key: 'homeQy', val: f.homeQy },
+      { label: 'Exp. Rate', key: 'rate', val: f.rate },
+    ];
+    fields.forEach(function(fd) {
+      var row = document.createElement('div');
+      row.className = 'ctrl-row';
+      var lbl = document.createElement('label');
+      lbl.textContent = fd.label;
+      var inp = document.createElement('input');
+      inp.type = 'number';
+      inp.value = fd.val;
+      inp.addEventListener('change', function() { factions[i][fd.key] = +this.value; });
+      row.appendChild(lbl);
+      row.appendChild(inp);
+      if (fd.key === 'rate') {
+        var hint = document.createElement('span');
+        hint.style.cssText = 'color:#666;font-size:10px';
+        hint.textContent = 'niedriger=schneller';
+        row.appendChild(hint);
+      }
+      details.appendChild(row);
+    });
+
+    // Style select
+    var styleRow = document.createElement('div');
+    styleRow.className = 'ctrl-row';
+    var styleLbl = document.createElement('label');
+    styleLbl.textContent = 'Style';
+    var sel = document.createElement('select');
+    ['sphere', 'wave'].forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      if (f.style === s) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function() { factions[i].style = this.value; });
+    styleRow.appendChild(styleLbl);
+    styleRow.appendChild(sel);
+    details.appendChild(styleRow);
+
+    // Color
+    var colorRow = document.createElement('div');
+    colorRow.className = 'ctrl-row';
+    var colorLbl = document.createElement('label');
+    colorLbl.textContent = 'Farbe';
+    var colorInp = document.createElement('input');
+    colorInp.type = 'color';
+    colorInp.value = f.color;
+    colorInp.addEventListener('change', function() { factions[i].color = this.value; });
+    colorRow.appendChild(colorLbl);
+    colorRow.appendChild(colorInp);
+    details.appendChild(colorRow);
+
+    // Active
+    var activeRow = document.createElement('div');
+    activeRow.className = 'ctrl-row';
+    var activeLbl = document.createElement('label');
+    activeLbl.textContent = 'Aktiv';
+    var activeInp = document.createElement('input');
+    activeInp.type = 'checkbox';
+    activeInp.checked = f.active;
+    activeInp.addEventListener('change', function() { factions[i].active = this.checked; });
+    activeRow.appendChild(activeLbl);
+    activeRow.appendChild(activeInp);
+    details.appendChild(activeRow);
+
+    block.appendChild(details);
+    list.appendChild(block);
+  });
+}
+
+function buildLegend() {
+  var el = document.getElementById('legend');
+  while (el.firstChild) el.removeChild(el.firstChild);
+  var items = factions.filter(function(f) { return f.active; }).map(function(f) {
+    return { name: f.name, color: f.color };
+  });
+  items.push({ name: 'VOIDS', color: '#ffffff' });
+  items.push({ name: 'UNCLAIMED', color: '#222' });
+  items.forEach(function(item) {
+    var div = document.createElement('div');
+    div.className = 'legend-item';
+    var swatch = document.createElement('div');
+    swatch.className = 'legend-swatch';
+    swatch.style.background = item.color;
+    div.appendChild(swatch);
+    div.appendChild(document.createTextNode(item.name));
+    el.appendChild(div);
+  });
+}
+
+// === SIMULATION ENGINE ===
+function getNeighbors(qx, qy) {
+  return [
+    { qx: qx + 1, qy: qy }, { qx: qx - 1, qy: qy },
+    { qx: qx, qy: qy + 1 }, { qx: qx, qy: qy - 1 },
+  ];
+}
+
+function getFrontier(factionId, half) {
+  var seen = {};
+  for (var key in grid) {
+    if (grid[key].faction !== factionId) continue;
+    var parts = key.split(':');
+    var qx = +parts[0], qy = +parts[1];
+    var neighbors = getNeighbors(qx, qy);
+    for (var n = 0; n < neighbors.length; n++) {
+      var nb = neighbors[n];
+      var nk = nb.qx + ':' + nb.qy;
+      if (!grid[nk] && Math.abs(nb.qx) <= half && Math.abs(nb.qy) <= half) {
+        seen[nk] = true;
+      }
+    }
+  }
+  return Object.keys(seen);
+}
+
+function expandFaction(f, tick, half) {
+  if (!f.active) return;
+  if (tick % f.rate !== 0) return;
+  var frontier = getFrontier(f.id, half);
+  if (frontier.length === 0) return;
+
+  if (f.style === 'wave') {
+    var count = Math.min(frontier.length, 1 + Math.floor(Math.random() * 3));
+    for (var c = 0; c < count; c++) {
+      var idx = Math.floor(Math.random() * frontier.length);
+      var key = frontier.splice(idx, 1)[0];
+      grid[key] = { faction: f.id, tick: tick };
+    }
+  } else {
+    var key2 = frontier[Math.floor(Math.random() * frontier.length)];
+    grid[key2] = { faction: f.id, tick: tick };
+  }
+}
+
+// === VOID ENGINE ===
+function voidTick(tick, half) {
+  var spawnInterval = +document.getElementById('void-spawn-interval').value;
+  var minClusters = +document.getElementById('void-min-clusters').value;
+  var maxClusters = +document.getElementById('void-max-clusters').value;
+  var exclusion = +document.getElementById('void-exclusion').value;
+  var splitMin = +document.getElementById('void-split-min').value;
+  var splitMax = +document.getElementById('void-split-max').value;
+
+  // Grow
+  for (var ci = 0; ci < voidClusters.length; ci++) {
+    var c = voidClusters[ci];
+    if (c.state === 'dying') {
+      var keys = [];
+      c.quadrants.forEach(function(k) { keys.push(k); });
+      if (keys.length === 0) { c.state = 'dead'; continue; }
+      c.quadrants.delete(keys[0]);
+      delete grid[keys[0]];
+      continue;
+    }
+    if (c.state !== 'growing') continue;
+    c.age++;
+
+    if (c.age % 100 === 0) {
+      var frontier = [];
+      c.quadrants.forEach(function(key) {
+        var parts = key.split(':');
+        var qx = +parts[0], qy = +parts[1];
+        var neighbors = getNeighbors(qx, qy);
+        for (var n = 0; n < neighbors.length; n++) {
+          var nb = neighbors[n];
+          var nk = nb.qx + ':' + nb.qy;
+          if (!grid[nk] && !c.quadrants.has(nk) && Math.abs(nb.qx) <= half && Math.abs(nb.qy) <= half) {
+            frontier.push(nk);
+          }
+        }
+      });
+      if (frontier.length > 0) {
+        var target = frontier[Math.floor(Math.random() * frontier.length)];
+        c.quadrants.add(target);
+        grid[target] = { faction: 'voids', tick: tick };
+      }
+    }
+
+    if (c.quadrants.size >= c.splitThreshold) {
+      c.state = 'splitting';
+    }
+  }
+
+  // Process splits
+  var toAdd = [];
+  voidClusters = voidClusters.filter(function(c) {
+    if (c.state !== 'splitting') return true;
+    var keys = [];
+    c.quadrants.forEach(function(k) { keys.push(k); });
+    var mid = Math.ceil(keys.length / 2);
+    toAdd.push({
+      id: 'vc_' + tick + '_a', quadrants: new Set(keys.slice(0, mid)),
+      splitThreshold: splitMin + Math.floor(Math.random() * (splitMax - splitMin + 1)),
+      age: 0, state: 'growing'
+    });
+    toAdd.push({
+      id: 'vc_' + tick + '_b', quadrants: new Set(keys.slice(mid)),
+      splitThreshold: splitMin + Math.floor(Math.random() * (splitMax - splitMin + 1)),
+      age: 0, state: 'growing'
+    });
+    return false;
+  });
+  for (var a = 0; a < toAdd.length; a++) voidClusters.push(toAdd[a]);
+
+  // Kill excess
+  var alive = voidClusters.filter(function(c) { return c.state !== 'dead'; });
+  if (alive.length > maxClusters) {
+    var growing = voidClusters.filter(function(c) { return c.state === 'growing'; }).sort(function(a, b) { return b.age - a.age; });
+    if (growing.length > 0) growing[0].state = 'dying';
+  }
+
+  // Remove dead
+  voidClusters = voidClusters.filter(function(c) { return c.state !== 'dead'; });
+
+  // Spawn
+  if (tick % spawnInterval === 0 && voidClusters.filter(function(c) { return c.state !== 'dead'; }).length < minClusters) {
+    for (var attempt = 0; attempt < 50; attempt++) {
+      var qx = Math.floor(Math.random() * half * 2) - half;
+      var qy = Math.floor(Math.random() * half * 2) - half;
+      if (Math.max(Math.abs(qx), Math.abs(qy)) <= exclusion) continue;
+      var key = qx + ':' + qy;
+      if (grid[key]) continue;
+      voidClusters.push({
+        id: 'vc_' + tick + '_' + attempt,
+        quadrants: new Set([key]),
+        splitThreshold: splitMin + Math.floor(Math.random() * (splitMax - splitMin + 1)),
+        age: 0, state: 'growing',
+      });
+      grid[key] = { faction: 'voids', tick: tick };
+      break;
+    }
+  }
+}
+
+// === RUN ===
+function simulate() {
+  var maxTicks = +document.getElementById('max-ticks').value;
+  var uniSize = +document.getElementById('universe-size').value;
+  var half = uniSize / 2;
+  document.getElementById('tick-slider').max = maxTicks;
+
+  grid = {};
+  voidClusters = [];
+  history = [];
+
+  factions.filter(function(f) { return f.active; }).forEach(function(f) {
+    grid[f.homeQx + ':' + f.homeQy] = { faction: f.id, tick: 0 };
+  });
+
+  for (var t = 1; t <= maxTicks; t++) {
+    factions.forEach(function(f) { expandFaction(f, t, half); });
+    voidTick(t, half);
+
+    if (t % 10 === 0 || t === maxTicks) {
+      var snap = {};
+      for (var k in grid) snap[k] = { faction: grid[k].faction, tick: grid[k].tick };
+      var vAlive = voidClusters.filter(function(c) { return c.state !== 'dead'; }).length;
+      var vQuads = 0;
+      for (var k2 in grid) { if (grid[k2].faction === 'voids') vQuads++; }
+      history.push({ tick: t, grid: snap, vc: vAlive, vq: vQuads });
+    }
+  }
+
+  currentTick = 0;
+  document.getElementById('tick-slider').value = 0;
+  renderAtTick(0);
+  updatePrompt();
+  buildLegend();
+}
+
+// === RENDER ===
+function renderAtTick(targetTick) {
+  var snap = history[0];
+  for (var i = 0; i < history.length; i++) {
+    if (history[i].tick <= targetTick) snap = history[i];
+    else break;
+  }
+  if (!snap) return;
+
+  currentTick = snap.tick;
+  document.getElementById('tick-val').textContent = snap.tick;
+  document.getElementById('s-tick').textContent = snap.tick;
+  document.getElementById('s-time').textContent = (Math.round(snap.tick / 60 * 10) / 10) + 'h';
+  document.getElementById('s-quads').textContent = Object.keys(snap.grid).length;
+  document.getElementById('s-vclusters').textContent = snap.vc;
+  document.getElementById('s-vquads').textContent = snap.vq;
+
+  var canvas = document.getElementById('map');
+  var ctx = canvas.getContext('2d');
+  var rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * devicePixelRatio;
+  canvas.height = rect.height * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  var W = rect.width;
+  var H = rect.height - 40;
+
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, W, H + 40);
+
+  var uniSize = +document.getElementById('universe-size').value;
+  var half = uniSize / 2;
+  var cell = Math.min(W / uniSize, H / uniSize);
+  var offsetX = (W - cell * uniSize) / 2;
+  var offsetY = (H - cell * uniSize) / 2;
+
+  var colorMap = { voids: '#ffffff' };
+  factions.forEach(function(f) { colorMap[f.id] = f.color; });
+
+  // Count per faction
+  var counts = {};
+  for (var key in snap.grid) {
+    var fid = snap.grid[key].faction;
+    counts[fid] = (counts[fid] || 0) + 1;
+  }
+
+  // Draw cells
+  for (var key2 in snap.grid) {
+    var parts = key2.split(':');
+    var qx = +parts[0], qy = +parts[1];
+    var x = offsetX + (qx + half) * cell;
+    var y = offsetY + (qy + half) * cell;
+    var faction = snap.grid[key2].faction;
+    ctx.fillStyle = colorMap[faction] || '#555';
+    if (faction === 'voids') ctx.globalAlpha = 0.8;
+    ctx.fillRect(x, y, Math.max(1, cell - (cell > 3 ? 1 : 0)), Math.max(1, cell - (cell > 3 ? 1 : 0)));
+    ctx.globalAlpha = 1;
+  }
+
+  // Crosshair
+  ctx.strokeStyle = '#FFB00030';
+  ctx.lineWidth = 1;
+  var cx = offsetX + half * cell;
+  var cy = offsetY + half * cell;
+  ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+
+  // Home markers
+  ctx.font = '10px monospace';
+  factions.filter(function(f) { return f.active; }).forEach(function(f) {
+    var fx = offsetX + (f.homeQx + half) * cell;
+    var fy = offsetY + (f.homeQy + half) * cell;
+    ctx.strokeStyle = f.color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(fx - 3, fy - 3, 6, 6);
+    if (cell > 2) {
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.name.slice(0, 3), fx + 5, fy + 3);
+    }
+  });
+
+  // Stats overlay
+  ctx.font = '11px monospace';
+  var statsY = 14;
+  factions.filter(function(f) { return f.active; }).forEach(function(f) {
+    ctx.fillStyle = f.color;
+    ctx.fillText(f.name + ': ' + (counts[f.id] || 0) + ' Q', 8, statsY);
+    statsY += 14;
+  });
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('VOIDS: ' + (counts.voids || 0) + ' Q / ' + snap.vc + ' clusters', 8, statsY);
+}
+
+// === TIMELINE ===
+document.getElementById('tick-slider').addEventListener('input', function() {
+  renderAtTick(+this.value);
+});
+document.getElementById('play-speed').addEventListener('input', function() {
+  document.getElementById('speed-val').textContent = this.value;
+});
+
+function togglePlay() {
+  playing = !playing;
+  document.getElementById('play-btn').textContent = playing ? '\u23F8' : '\u25B6';
+  if (playing) {
+    playTimer = setInterval(function() {
+      var slider = document.getElementById('tick-slider');
+      var speed = +document.getElementById('play-speed').value;
+      var next = Math.min(+slider.max, +slider.value + speed * 10);
+      slider.value = next;
+      renderAtTick(next);
+      if (next >= +slider.max) togglePlay();
+    }, 50);
+  } else {
+    clearInterval(playTimer);
+  }
+}
+document.getElementById('play-btn').addEventListener('click', togglePlay);
+
+// === PROMPT ===
+function updatePrompt() {
+  if (history.length === 0) return;
+  var last = history[history.length - 1];
+  var counts = {};
+  for (var k in last.grid) {
+    var fid = last.grid[k].faction;
+    counts[fid] = (counts[fid] || 0) + 1;
+  }
+
+  var lines = ['Expansion-Simulation nach ' + last.tick + ' Ticks (~' + (Math.round(last.tick / 60 * 10) / 10) + 'h):'];
+  factions.filter(function(f) { return f.active; }).forEach(function(f) {
+    lines.push(f.name + ': ' + (counts[f.id] || 0) + ' Quadranten (Home: ' + f.homeQx + ',' + f.homeQy + ', Rate: ' + f.rate + ', Style: ' + f.style + ')');
+  });
+  lines.push('VOIDS: ' + (counts.voids || 0) + ' Quadranten, ' + last.vc + ' Cluster');
+  lines.push('');
+  lines.push('Universe: ' + document.getElementById('universe-size').value + 'x' + document.getElementById('universe-size').value + ' Quadranten');
+
+  var nonDefault = [];
+  factions.forEach(function(f, i) {
+    var d = DEFAULT_FACTIONS[i];
+    if (!d) return;
+    if (f.homeQx !== d.homeQx || f.homeQy !== d.homeQy) nonDefault.push(f.name + ' Home: (' + f.homeQx + ',' + f.homeQy + ')');
+    if (f.rate !== d.rate) nonDefault.push(f.name + ' Rate: ' + f.rate);
+  });
+  if (nonDefault.length > 0) {
+    lines.push('');
+    lines.push('Aenderungen: ' + nonDefault.join(', '));
+  }
+
+  document.getElementById('prompt-text').textContent = lines.join('\n');
+}
+
+document.getElementById('copy-btn').addEventListener('click', function() {
+  var text = document.getElementById('prompt-text').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.getElementById('copy-btn');
+    btn.textContent = 'COPIED!';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+  });
+});
+
+function exportState() {
+  var data = {
+    factions: factions.filter(function(f) { return f.active; }).map(function(f) {
+      return { id: f.id, homeQx: f.homeQx, homeQy: f.homeQy, rate: f.rate, style: f.style };
+    }),
+    voidConfig: {
+      spawnInterval: +document.getElementById('void-spawn-interval').value,
+      minClusters: +document.getElementById('void-min-clusters').value,
+      maxClusters: +document.getElementById('void-max-clusters').value,
+      exclusion: +document.getElementById('void-exclusion').value,
+      splitRange: [+document.getElementById('void-split-min').value, +document.getElementById('void-split-max').value],
+    },
+    universeSize: +document.getElementById('universe-size').value,
+    maxTicks: +document.getElementById('max-ticks').value,
+  };
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'expansion-sim-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+document.getElementById('btn-reset').addEventListener('click', function() {
+  if (playing) togglePlay();
+  simulate();
+});
+document.getElementById('btn-export').addEventListener('click', exportState);
+
+// === INIT ===
+buildFactionUI();
+buildLegend();
+</script>
+</body>
+</html>
