@@ -177,7 +177,12 @@ export function SectorInfo() {
   const currentSector = useStore((s) => s.currentSector);
   const players = useStore((s) => s.players);
   const playerCount = Object.keys(players).length;
-  const distToOrigin = Math.ceil(Math.sqrt(position.x ** 2 + position.y ** 2));
+  const selectedSector = useStore((s) => s.selectedSector);
+  const navTarget = useStore((s) => s.navTarget);
+  const target = navTarget ?? selectedSector;
+  const distToTarget = target
+    ? Math.abs(target.x - position.x) + Math.abs(target.y - position.y)
+    : null;
 
   return (
     <div
@@ -204,7 +209,7 @@ export function SectorInfo() {
       </span>
       <span>{currentSector?.type?.toUpperCase() || '---'}</span>
       <span>PILOTS: {playerCount}</span>
-      <span>ORIGIN: {distToOrigin.toLocaleString()}</span>
+      {distToTarget != null && <span>DIST: {distToTarget}</span>}
     </div>
   );
 }
