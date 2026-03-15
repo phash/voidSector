@@ -1616,12 +1616,19 @@ class GameNetwork {
 
     room.onMessage(
       'autopilotComplete',
-      async (data: { x: number; y: number; source?: 'slow_flight'; sector?: { type: string } }) => {
+      async (data: { x: number; y: number; source?: 'slow_flight'; sector?: { type: string }; originalTargetX?: number; originalTargetY?: number }) => {
         const store = useStore.getState();
         store.setAutopilot(null);
         store.setAutopilotStatus(null);
-        store.setNavTarget(null);
         store.setSlowFlightActive(false);
+        // Partial hyperjump: keep original target selected for re-jump
+        if (data.originalTargetX != null && data.originalTargetY != null) {
+          store.setNavTarget({ x: data.originalTargetX, y: data.originalTargetY });
+          store.setSelectedSector({ x: data.originalTargetX, y: data.originalTargetY });
+          store.addLogEntry(`Hyperdrive erschöpft — Ziel (${data.originalTargetX}, ${data.originalTargetY}) bleibt markiert`);
+        } else {
+          store.setNavTarget(null);
+        }
         if (data.x >= 0 && data.y >= 0) {
           store.setPosition({ x: data.x, y: data.y });
           store.addLogEntry(`Autopilot: Ankunft bei (${data.x}, ${data.y})`);

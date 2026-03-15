@@ -549,19 +549,48 @@ export class NavigationService {
     const now = Date.now();
     const currentCharge = calculateCurrentCharge(hdState, now);
 
-    // Check charge covers distance
-    if (distance > currentCharge) {
+    // Partial jump: if charge < distance, jump as far as charge allows
+    const chargeFloor = Math.floor(currentCharge);
+    const isPartial = distance > chargeFloor;
+    let actualDistance = isPartial ? chargeFloor : distance;
+
+    if (actualDistance < 2) {
       client.send('error', {
         code: 'HYPERJUMP_FAIL',
-        message: `Insufficient hyperdrive charge (need ${distance}, have ${Math.floor(currentCharge)})`,
+        message: `Insufficient hyperdrive charge (need 2, have ${chargeFloor})`,
       });
       return;
+    }
+
+    // Compute partial target along the Bresenham path if partial
+    let actualTargetX = targetX;
+    let actualTargetY = targetY;
+    if (isPartial) {
+      // Walk Bresenham path and stop after actualDistance steps
+      let cx = pos.x;
+      let cy = pos.y;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+      const sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+      const sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+      let err = adx - ady;
+      let stepsWalked = 0;
+      while (stepsWalked < actualDistance && (cx !== targetX || cy !== targetY)) {
+        const e2 = 2 * err;
+        if (e2 > -ady) { err -= ady; cx += sx; }
+        if (e2 < adx) { err += adx; cy += sy; }
+        stepsWalked++;
+      }
+      actualTargetX = cx;
+      actualTargetY = cy;
+      // Recalculate actual Manhattan distance to partial target
+      actualDistance = Math.abs(actualTargetX - pos.x) + Math.abs(actualTargetY - pos.y);
     }
 
     // Fuel cost: V2 formula with drive efficiency
     const fuelCost = calcHyperjumpFuelV2(
       BASE_FUEL_PER_JUMP,
-      distance,
+      actualDistance,
       ship.hyperdriveFuelEfficiency,
     );
 
@@ -596,7 +625,7 @@ export class NavigationService {
     }
 
     // Spend charge
-    const newHdState = spendCharge(hdState, distance, now);
+    const newHdState = spendCharge(hdState, actualDistance, now);
     if (!newHdState) {
       client.send('error', { code: 'HYPERJUMP_FAIL', message: 'Hyperdrive charge spend failed' });
       return;
@@ -629,14 +658,16 @@ export class NavigationService {
         : AUTOPILOT_STEP_MS;
     const steps: { x: number; y: number }[] = [];
     {
+      const pdx = actualTargetX - pos.x;
+      const pdy = actualTargetY - pos.y;
       let cx = pos.x;
       let cy = pos.y;
-      const adx = Math.abs(dx);
-      const ady = Math.abs(dy);
-      const sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
-      const sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+      const adx = Math.abs(pdx);
+      const ady = Math.abs(pdy);
+      const sx = pdx > 0 ? 1 : pdx < 0 ? -1 : 0;
+      const sy = pdy > 0 ? 1 : pdy < 0 ? -1 : 0;
       let err = adx - ady;
-      while (cx !== targetX || cy !== targetY) {
+      while (cx !== actualTargetX || cy !== actualTargetY) {
         const e2 = 2 * err;
         if (e2 > -ady) { err -= ady; cx += sx; }
         if (e2 < adx) { err += adx; cy += sy; }
@@ -644,34 +675,44 @@ export class NavigationService {
       }
     }
 
-    // Start autopilot
+    // Start autopilot — send original target so client can keep it selected for re-jump
     let stepIndex = 0;
-    client.send('autopilotStart', { targetX, targetY, totalSteps: steps.length });
+    client.send('autopilotStart', {
+      targetX: actualTargetX,
+      targetY: actualTargetY,
+      totalSteps: steps.length,
+      ...(isPartial ? { originalTargetX: targetX, originalTargetY: targetY } : {}),
+    });
 
     const timer = setInterval(async () => {
       try {
         if (stepIndex >= steps.length) {
           clearInterval(timer);
           this.ctx.autopilotTimers.delete(client.sessionId);
-          await savePlayerPosition(auth.userId, targetX, targetY);
-          await addDiscovery(auth.userId, targetX, targetY);
+          await savePlayerPosition(auth.userId, actualTargetX, actualTargetY);
+          await addDiscovery(auth.userId, actualTargetX, actualTargetY);
           const hjPlayer = this.ctx.state.players.get(client.sessionId);
           if (hjPlayer) {
-            hjPlayer.x = targetX;
-            hjPlayer.y = targetY;
+            hjPlayer.x = actualTargetX;
+            hjPlayer.y = actualTargetY;
           }
-          let targetSector = await getSector(targetX, targetY);
+          let targetSector = await getSector(actualTargetX, actualTargetY);
           if (!targetSector) {
             {
-              const { qx, qy } = sectorToQuadrant(targetX, targetY);
+              const { qx, qy } = sectorToQuadrant(actualTargetX, actualTargetY);
               const _controls = await getAllQuadrantControls();
-              targetSector = generateSector(targetX, targetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
+              targetSector = generateSector(actualTargetX, actualTargetY, auth.userId, isFrontierQuadrant(qx, qy, _controls));
             }
             await saveSector(targetSector);
           }
           this.ctx.playerSectorData.set(client.sessionId, targetSector);
-          client.send('autopilotComplete', { x: targetX, y: targetY, sector: targetSector });
-          await this.ctx.checkFirstContact(client, auth, targetX, targetY);
+          client.send('autopilotComplete', {
+            x: actualTargetX,
+            y: actualTargetY,
+            sector: targetSector,
+            ...(isPartial ? { originalTargetX: targetX, originalTargetY: targetY } : {}),
+          });
+          await this.ctx.checkFirstContact(client, auth, actualTargetX, actualTargetY);
 
           // Auto-refuel at station
           if (targetSector.contents?.includes('station') || targetSector.type === 'station') {
