@@ -116,7 +116,7 @@ var DEFAULT_FACTIONS = [
 var factions = JSON.parse(JSON.stringify(DEFAULT_FACTIONS));
 var grid = {};
 var voidClusters = [];
-var history = [];
+var simHistory = [];
 var currentTick = 0;
 var playing = false;
 var playTimer = null;
@@ -411,7 +411,7 @@ function simulate() {
       var vAlive = voidClusters.filter(function(c) { return c.state !== 'dead'; }).length;
       var vQuads = 0;
       for (var k2 in grid) { if (grid[k2].faction === 'voids') vQuads++; }
-      history.push({ tick: t, grid: snap, vc: vAlive, vq: vQuads });
+      simHistory.push({ tick: t, grid: snap, vc: vAlive, vq: vQuads });
     }
   }
 
@@ -424,9 +424,9 @@ function simulate() {
 
 // === RENDER ===
 function renderAtTick(targetTick) {
-  var snap = history[0];
-  for (var i = 0; i < history.length; i++) {
-    if (history[i].tick <= targetTick) snap = history[i];
+  var snap = simHistory[0];
+  for (var i = 0; i < simHistory.length; i++) {
+    if (simHistory[i].tick <= targetTick) snap = simHistory[i];
     else break;
   }
   if (!snap) return;
@@ -542,8 +542,8 @@ document.getElementById('play-btn').addEventListener('click', togglePlay);
 
 // === PROMPT ===
 function updatePrompt() {
-  if (history.length === 0) return;
-  var last = history[history.length - 1];
+  if (simHistory.length === 0) return;
+  var last = simHistory[simHistory.length - 1];
   var counts = {};
   for (var k in last.grid) {
     var fid = last.grid[k].faction;
