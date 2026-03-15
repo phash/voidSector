@@ -83,6 +83,19 @@ git push origin feat/<feature-name>
 
 ---
 
+## Onboarding / HelpSlices
+
+> **Richtlinien** → [`docs/onboardingInstructions.md`](docs/onboardingInstructions.md)
+
+**Pflicht bei jeder Implementierung:**
+- Jede **neue Funktion** oder **neuer Screen/Tab** braucht einen HelpSlice (`first_<feature>`)
+- Bestehende Screens **ohne** HelpSlice bekommen bei Gelegenheit einen nachgereicht
+- Neben dem Titel jedes Bereichs mit HelpSlice einen **[?] Button** platzieren (ruft `showTip()` auf)
+- HelpSlice-Texte: Deutsch, kurz (max 6 Zeilen), konkrete Handlungsanweisungen mit → Schritten
+- Tipps erscheinen automatisch beim ersten Kontakt, [?] Button ermöglicht erneutes Aufrufen
+
+---
+
 ## Architecture (summary — see architecture.md for full detail)
 
 - **Server**: Colyseus rooms per quadrant (`quadrant_qx_qy`), SectorRoom → 19 domain services via ServiceContext DI. PostgreSQL (all queries in `queries.ts`), Redis (AP/fuel/mining/position state). Structured logging via pino.
@@ -95,9 +108,9 @@ git push origin feat/<feature-name>
 
 ## DB Migrations
 
-`packages/server/src/db/migrations/` — **001–072**, auto-run on startup.
+`packages/server/src/db/migrations/` — **001–073**, auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` (idempotent).
-Next: **073**.
+Next: **074**.
 
 ---
 
