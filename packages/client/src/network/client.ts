@@ -531,6 +531,10 @@ class GameNetwork {
       const store = useStore.getState();
       const wasMining = store.mining?.active;
       store.setMining(data);
+      // First mining tip: show laser upgrade hint
+      if (!wasMining && data.active) {
+        store.showTip('first_mining');
+      }
       // Alert when mining completes (was active, now not)
       if (wasMining && !data.active) {
         if (!isMonitorVisible('MINING')) {

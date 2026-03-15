@@ -34,6 +34,18 @@ export const HELP_TIPS: HelpTip[] = [
     articleId: 'mining',
   },
   {
+    id: 'first_mining',
+    title: 'MINING-LASER TIPP',
+    body: 'Ohne Mining-Laser baust du langsam ab (0.1/s). Ein Laser macht dich 10x schneller!\n\n'
+      + '→ Fliege zu einer STATION (◇ auf dem Radar)\n'
+      + '→ Öffne BASE-LINK → Tab SHOP\n'
+      + '→ Kaufe MINING LASER MK.I (100 CR, 10 Erz)\n'
+      + '→ Wechsle zum Tab MODULE\n'
+      + '→ Wähle den Laser aus und setze ihn in Slot 6 (MINING) ein\n\n'
+      + 'Erz bekommst du durch Mining, Credits durch Verkauf an Stationen.',
+    articleId: 'mining',
+  },
+  {
     id: 'first_pirate',
     title: 'PIRATEN-WARNUNG',
     body: 'Piraten-Ambush erkannt! Du kannst kämpfen, fliehen oder verhandeln. Das Ergebnis hängt von deinem Schiff und deiner Crew ab. Schwache Schiffe sollten fliehen.',
