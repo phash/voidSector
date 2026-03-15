@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure node/npm are in PATH (nvm, fnm, or system install)
+export PATH="$HOME/.nvm/versions/node/$(ls "$HOME/.nvm/versions/node/" 2>/dev/null | tail -1)/bin:$HOME/.local/share/fnm/aliases/default/bin:/usr/local/bin:/usr/bin:$PATH"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # deploy.sh — voidSector Testrechner-Deployment
 #
 # Optionen:
@@ -66,7 +70,7 @@ if [[ "$FRESH" = true ]]; then
   if docker compose ps server --status running 2>/dev/null | grep -q "running"; then
     echo "  Exportiere aktuellen Balance-Stand..."
     BACKUP_FILE="balance-backup-pre-fresh-$(date +%Y%m%d-%H%M%S).json"
-    npm run balance:export -- -o "$BACKUP_FILE" 2>/dev/null && \
+    npx tsx "$SCRIPT_DIR/scripts/balance-export.ts" -- -o "$BACKUP_FILE" 2>/dev/null && \
       echo "  Backup: $BACKUP_FILE" || \
       echo "  (kein Backup möglich — Server nicht erreichbar)"
   fi
@@ -157,7 +161,7 @@ if [[ -n "$BALANCE_FILE" ]]; then
       sleep 2
     done
     echo "  Importiere $BALANCE_FILE..."
-    npm run balance:import -- "$BALANCE_FILE" 2>&1 | tail -5
+    npx tsx "$SCRIPT_DIR/scripts/balance-import.ts" -- "$BALANCE_FILE" 2>&1 | tail -5
   fi
 fi
 
@@ -173,7 +177,7 @@ for i in {1..10}; do
 done
 
 SNAPSHOT_FILE="balance-snapshot-$(date +%Y%m%d-%H%M%S).json"
-npm run balance:export -- -o "$SNAPSHOT_FILE" 2>&1 | tail -3
+npx tsx "$SCRIPT_DIR/scripts/balance-export.ts" -- -o "$SNAPSHOT_FILE" 2>&1 | tail -3
 
 if command -v gh &>/dev/null; then
   echo "  Erstelle GitHub Issue mit Balance-Daten..."
