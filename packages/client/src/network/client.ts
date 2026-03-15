@@ -293,7 +293,6 @@ class GameNetwork {
         fuelRemaining?: number;
         crossQuadrant?: boolean;
       }) => {
-        useStore.getState().setJumpPending(false);
         if (data.fuelRemaining !== undefined) {
           const currentFuel = useStore.getState().fuel;
           if (currentFuel) {
@@ -310,13 +309,13 @@ class GameNetwork {
           store.startJumpAnimation(dx, dy, distance);
           const newSector = data.newSector;
           const needsRoomChange = data.crossQuadrant === true;
-          // Update position immediately to prevent stale coordinates on rapid clicks
-          if (!needsRoomChange) {
-            store.setPosition({ x: newSector.x, y: newSector.y });
-          }
-          // Wait for animation to finish before clearing
+          // Position updates AFTER animation so the translate (old→new) is correct
+          // Wait for animation to finish before updating position and clearing
           const animDuration = store.jumpAnimation?.totalDuration ?? 800;
           setTimeout(async () => {
+            if (!needsRoomChange) {
+              useStore.getState().setPosition({ x: newSector.x, y: newSector.y });
+            }
             useStore.getState().addDiscoveries([newSector]);
             useStore
               .getState()
@@ -330,8 +329,10 @@ class GameNetwork {
               useStore.getState().resetPan();
             }
             useStore.getState().clearJumpAnimation();
+            useStore.getState().setJumpPending(false);
           }, animDuration);
         } else {
+          useStore.getState().setJumpPending(false);
           useStore.getState().addLogEntry(`Jump failed: ${data.error}`);
         }
       },

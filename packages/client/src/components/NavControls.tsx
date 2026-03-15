@@ -7,7 +7,9 @@ import {
   AP_COSTS_LOCAL_SCAN,
   AP_COSTS_BY_SCANNER,
   innerCoord,
+  calculateCurrentCharge,
 } from '@void-sector/shared';
+import { useState, useEffect } from 'react';
 
 export function NavControls() {
   const { t } = useTranslation('ui');
@@ -21,6 +23,17 @@ export function NavControls() {
   const scanPending = useStore((s) => s.scanPending);
   const ship = useStore((s) => s.ship);
   const scannerLevel = ship?.stats?.scannerLevel ?? 1;
+
+  // Live-update hyperdrive charge via lazy evaluation (regenPerSecond)
+  const hasHyperdrive = hyperdrive && hyperdrive.maxCharge > 0;
+  const [liveCharge, setLiveCharge] = useState(0);
+  useEffect(() => {
+    if (!hasHyperdrive) return;
+    const update = () => setLiveCharge(calculateCurrentCharge(hyperdrive!, Date.now()));
+    update();
+    const iv = setInterval(update, 1000);
+    return () => clearInterval(iv);
+  }, [hasHyperdrive, hyperdrive]);
 
   if (autopilot?.active) {
     return (
@@ -162,7 +175,7 @@ export function NavControls() {
           </button>
         </div>
       </div>
-      {hyperdrive && hyperdrive.maxCharge > 0 && (
+      {hasHyperdrive && (
         <div
           style={{
             marginTop: 8,
@@ -174,14 +187,14 @@ export function NavControls() {
           }}
         >
           <span>
-            HYPERDRIVE: {Math.floor(hyperdrive.charge)}/{hyperdrive.maxCharge} RNG
+            HYPERDRIVE: {Math.floor(liveCharge)}/{hyperdrive!.maxCharge} RNG
           </span>
-          {hyperdrive.charge < hyperdrive.maxCharge && (
+          {liveCharge < hyperdrive!.maxCharge && (
             <span style={{ color: 'var(--color-dim)', marginLeft: 8 }}>
-              +{hyperdrive.regenPerSecond}/s
+              +{hyperdrive!.regenPerSecond}/s
             </span>
           )}
-          {hyperdrive.charge >= hyperdrive.maxCharge && (
+          {liveCharge >= hyperdrive!.maxCharge && (
             <span style={{ color: '#00FF88', marginLeft: 8 }}>CHARGED</span>
           )}
         </div>
