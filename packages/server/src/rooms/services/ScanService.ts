@@ -124,9 +124,18 @@ export class ScanService {
       ? { wreckId: wreck.id, tier: wreck.tier, size: wreck.size, status: wreck.status }
       : null;
 
+    // Hidden signatures: only show if this sector actually has a scan event
+    // that the scanner is too weak to detect (scanner < 3)
+    let hiddenSignatures = false;
+    if (scannerLevel < 3) {
+      const env = (sectorData?.environment === 'nebula' ? 'nebula' : 'empty') as SectorEnvironment;
+      const event = checkScanEvent(px, py, env);
+      hiddenSignatures = event.hasEvent;
+    }
+
     client.send('localScanResult', {
       resources,
-      hiddenSignatures: result.hiddenSignatures,
+      hiddenSignatures,
       wrecks: wrecks.map((w) => ({
         id: w.id,
         playerName: w.playerName,

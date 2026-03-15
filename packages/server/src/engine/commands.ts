@@ -77,14 +77,14 @@ export function validateScan(ap: APState, apCost: number): ScanValidation {
 export function validateLocalScan(
   ap: APState,
   cost: number = AP_COSTS_LOCAL_SCAN,
-  scannerLevel: number = 1,
+  _scannerLevel: number = 1,
 ): { valid: boolean; error?: string; newAP?: APState; hiddenSignatures: boolean } {
   const newAP = spendAP(ap, cost);
   if (!newAP) {
     return { valid: false, error: 'Insufficient AP', hiddenSignatures: false };
   }
-  const hiddenSignatures = scannerLevel < 3;
-  return { valid: true, newAP, hiddenSignatures };
+  // hiddenSignatures is now determined in ScanService based on actual sector events
+  return { valid: true, newAP, hiddenSignatures: false };
 }
 
 export function validateAreaScan(

@@ -140,11 +140,11 @@ describe('validateLocalScan', () => {
     expect(result.valid).toBe(false);
   });
 
-  it('reports hidden signatures for low scanner level', () => {
+  it('always returns hiddenSignatures false (determined in ScanService now)', () => {
     const now = Date.now();
     const ap = createAPState(now);
     const result1 = validateLocalScan(ap, 1, 1);
-    expect(result1.hiddenSignatures).toBe(true);
+    expect(result1.hiddenSignatures).toBe(false);
     const result3 = validateLocalScan(ap, 1, 3);
     expect(result3.hiddenSignatures).toBe(false);
   });
