@@ -22,8 +22,10 @@ export const QUADRANT_SIZE = 10_000;
 const VOID_SPAWN_INTERVAL_TICKS = 10;
 const VOID_MIN_CLUSTER_COUNT = 32;
 const VOID_MAX_CLUSTER_COUNT = 48;
-const VOID_ORIGIN_EXCLUSION = 100;
-const VOID_SPAWN_MIN_DISTANCE = 50;
+// TODO: Für Produktion auf 100+ erhöhen — alle Alien-Zivilisationen sollen
+// weiter vom Zentrum starten und größer werden dürfen. Aktuell nah für Tests.
+const VOID_ORIGIN_EXCLUSION = 10;
+const VOID_SPAWN_MIN_DISTANCE = 5;
 
 // ─── Pure Helpers (exported for testing) ─────────────────────────────────────
 
