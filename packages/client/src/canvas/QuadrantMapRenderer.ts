@@ -41,7 +41,7 @@ const FACTION_COLORS: Record<string, string> = {
   mycelians: 'rgba(68, 255, 136, 0.30)',
   mirror_minds: 'rgba(204, 136, 255, 0.30)',
   tourist_guild: 'rgba(255, 255, 68, 0.30)',
-  voids: 'rgba(5,5,8,0)', // handled separately
+  voids: 'rgba(255,255,255,0.50)', // bright white for visibility
 };
 
 export function getMixedFactionColors(
@@ -181,16 +181,17 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         }
       }
 
-      // Void overlay (renders over faction colors)
+      // Void overlay (renders over faction colors) — white with glow
       if (ctrl?.controlling_faction === 'voids') {
         ctx.save();
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = '#050508';
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
-        ctx.strokeStyle = '#aaaacc';
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
-        ctx.shadowColor = 'rgba(255,255,255,0.13)';
-        ctx.shadowBlur = 4;
+        ctx.shadowColor = 'rgba(255,255,255,0.6)';
+        ctx.shadowBlur = 6;
         ctx.strokeRect(cellX - CELL_W / 2 + 0.5, cellY - CELL_H / 2 + 0.5, CELL_W - 1, CELL_H - 1);
         ctx.shadowBlur = 0;
         ctx.restore();
@@ -201,8 +202,8 @@ export function drawQuadrantMap(ctx: CanvasRenderingContext2D, state: QuadrantMa
         const progressVal = state.voidQuadrantProgress.get(`${qx}:${qy}`);
         if (progressVal !== undefined && progressVal > 0 && progressVal < 100) {
           ctx.save();
-          ctx.globalAlpha = progressVal / 100;
-          ctx.fillStyle = '#050508';
+          ctx.globalAlpha = (progressVal / 100) * 0.5;
+          ctx.fillStyle = '#ffffff';
           ctx.fillRect(cellX - CELL_W / 2, cellY - CELL_H / 2, CELL_W, CELL_H);
           ctx.globalAlpha = 1;
           ctx.restore();

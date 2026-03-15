@@ -879,10 +879,15 @@ export async function getAdminQuadrantMap(): Promise<AdminQuadrantMapEntry[]> {
       SELECT qx, qy FROM quadrants
       UNION
       SELECT qx, qy FROM quadrant_control
+      UNION
+      SELECT qx, qy FROM void_cluster_quadrants WHERE progress > 0
     )
     SELECT
       k.qx, k.qy,
-      qc.controlling_faction AS faction,
+      COALESCE(
+        (SELECT 'voids' FROM void_cluster_quadrants vcq WHERE vcq.qx = k.qx AND vcq.qy = k.qy AND vcq.progress >= 100 LIMIT 1),
+        qc.controlling_faction
+      ) AS faction,
       q.name,
       COALESCE(qc.friction_score, 0) AS friction,
       NULL::text AS border_state,
