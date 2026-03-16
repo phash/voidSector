@@ -2,6 +2,7 @@ import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import type { CompleteScanEventMessage, SectorEnvironment } from '@void-sector/shared';
+import * as civQueries from '../../db/civQueries.js';
 
 import { calculateCurrentAP } from '../../engine/ap.js';
 import { logger } from '../../utils/logger.js';
@@ -222,6 +223,19 @@ export class ScanService {
         this._emitPersonalityComment(client, auth.userId, 'scan_ruin').catch(() => {});
         awardWissenAndNotify(client, auth.userId, 15);  // +15 for ancient ruin artefact
       }
+    }
+
+    // Reveal OUTLAWs in current sector on local scan
+    const outlawsHere = (await civQueries.getNpcShipsInSector(px, py))
+      .filter((s: any) => s.role === 'outlaw');
+    if (outlawsHere.length > 0) {
+      for (const o of outlawsHere) {
+        this.ctx.revealOutlaw?.(client.sessionId, o.id);
+      }
+      // Send all NPCs in sector (now including revealed outlaws)
+      const allNpcs = await civQueries.getNpcShipsInSector(px, py);
+      client.send('npcsInSector', allNpcs);
+      client.send('logEntry', `WARNUNG: ${outlawsHere.length} OUTLAW(s) entdeckt!`);
     }
 
     // Bounty chase: exclusive spawn check (after normal scan events)

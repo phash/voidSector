@@ -795,6 +795,21 @@ export class QuestService {
             updated = true;
           }
         }
+
+        // NPC communication: find_npc and deliver_to_npc
+        if (
+          (obj.type === 'find_npc' || obj.type === 'deliver_to_npc') &&
+          action === 'communicate_npc' &&
+          obj.targetNpcId === context.npcId
+        ) {
+          if (obj.type === 'deliver_to_npc' && obj.cargoItem) {
+            const hasItem = await getInventoryItem(playerId, 'quest_item', obj.cargoItem);
+            if (hasItem <= 0) continue;
+            await removeFromInventory(playerId, 'quest_item', obj.cargoItem, 1);
+          }
+          obj.fulfilled = true;
+          updated = true;
+        }
       }
 
       if (updated) {
