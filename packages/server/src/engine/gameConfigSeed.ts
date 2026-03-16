@@ -94,7 +94,7 @@ import {
   CONQUEST_RATE,
   FACTION_EXPANSION_RATES,
   JUMPGATE_CHANCE,
-  JUMPGATE_FUEL_COST,
+  JUMPGATE_FUEL_PER_HOP,
   JUMPGATE_TRAVEL_COST_CREDITS,
   JUMPGATE_MIN_RANGE,
   JUMPGATE_MAX_RANGE,
@@ -311,7 +311,7 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   // Navigation
   // ══════════════════════════════════════════════════════════════════════════════
   { key: 'JUMPGATE_CHANCE', category: 'navigation', description: 'Natural jumpgate spawn chance', getDefault: () => JUMPGATE_CHANCE },
-  { key: 'JUMPGATE_FUEL_COST', category: 'navigation', description: 'Fuel cost to use a jumpgate', getDefault: () => JUMPGATE_FUEL_COST },
+  { key: 'JUMPGATE_FUEL_PER_HOP', category: 'navigation', description: 'Fuel cost to use a jumpgate', getDefault: () => JUMPGATE_FUEL_PER_HOP },
   { key: 'JUMPGATE_TRAVEL_COST_CREDITS', category: 'navigation', description: 'Credits to use a public jumpgate', getDefault: () => JUMPGATE_TRAVEL_COST_CREDITS },
   { key: 'JUMPGATE_MIN_RANGE', category: 'navigation', description: 'Minimum jumpgate connection range', getDefault: () => JUMPGATE_MIN_RANGE },
   { key: 'JUMPGATE_MAX_RANGE', category: 'navigation', description: 'Maximum jumpgate connection range', getDefault: () => JUMPGATE_MAX_RANGE },
