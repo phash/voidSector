@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
@@ -32,6 +33,25 @@ function canAfford(def: ModuleDefinition, credits: number, cargo: CargoState): b
   return true;
 }
 
+function getAffordanceReason(def: ModuleDefinition, credits: number, cargo: CargoState, tFn: (k: string) => string): string | null {
+  if (credits < def.cost.credits) {
+    return `${tFn('shop.needCredits')}: ${def.cost.credits - credits} CR`;
+  }
+  if (def.cost.ore !== undefined && cargo.ore < def.cost.ore) {
+    return `${tFn('shop.needOre')}: ${def.cost.ore - cargo.ore}`;
+  }
+  if (def.cost.gas !== undefined && cargo.gas < def.cost.gas) {
+    return `${tFn('shop.needGas')}: ${def.cost.gas - cargo.gas}`;
+  }
+  if (def.cost.crystal !== undefined && cargo.crystal < def.cost.crystal) {
+    return `${tFn('shop.needCrystal')}: ${def.cost.crystal - cargo.crystal}`;
+  }
+  if (def.cost.artefact !== undefined && cargo.artefact < def.cost.artefact) {
+    return `${tFn('shop.needArtefact')}: ${def.cost.artefact - cargo.artefact}`;
+  }
+  return null;
+}
+
 // costLabel is a pure helper used only in ShopTab display — no i18n needed here
 // as resource names in cost strings are formatted inline
 function costLabel(def: ModuleDefinition, tFn: (k: string) => string): string {
@@ -52,6 +72,8 @@ export function ShopTab() {
   const currentSector = useStore((s) => s.currentSector);
   const baseStructures = useStore((s) => s.baseStructures);
   const setHovered = useStore((s) => s.setAcepHoveredModuleId);
+
+  const [selectedModule, setSelectedModule] = useState<ModuleDefinition | null>(null);
 
   const atStation =
     currentSector?.type === 'station' ||
@@ -112,42 +134,117 @@ export function ShopTab() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {availableModules.map((def: ModuleDefinition) => {
           const affordable = canAfford(def, credits, cargo);
+          const reason = !affordable ? getAffordanceReason(def, credits, cargo, t) : null;
           return (
             <div
               key={def.id}
               style={{
-                border: '1px solid #333',
+                border: `1px solid ${affordable ? '#333' : '#2a1a1a'}`,
                 padding: '9px 11px',
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                flexDirection: 'column',
+                gap: 6,
               }}
               onMouseEnter={() => setHovered(def.id)}
               onMouseLeave={() => setHovered(null)}
             >
-              <div>
-                <div style={{ color: getModuleSourceColor(undefined), fontSize: '0.95rem' }}>
-                  {def.displayName ?? def.name}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ color: getModuleSourceColor(undefined), fontSize: '0.95rem' }}>
+                    {def.displayName ?? def.name}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 3 }}>
+                    {def.primaryEffect.label} · {costLabel(def, t)}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 3 }}>
-                  {def.primaryEffect.label} · {costLabel(def, t)}
-                </div>
+                <button
+                  style={{
+                    ...btnStyle,
+                    opacity: affordable ? 1 : 0.3,
+                    cursor: affordable ? 'pointer' : 'not-allowed',
+                  }}
+                  disabled={!affordable}
+                  onClick={() => setSelectedModule(def)}
+                >
+                  {t('shop.buy')}
+                </button>
               </div>
-              <button
-                style={{
-                  ...btnStyle,
-                  opacity: affordable ? 1 : 0.3,
-                  cursor: affordable ? 'pointer' : 'not-allowed',
-                }}
-                disabled={!affordable}
-                onClick={() => network.sendBuyModule(def.id)}
-              >
-                {t('shop.buy')}
-              </button>
+              {reason && (
+                <div style={{ fontSize: '0.75rem', color: '#ff6666', paddingTop: 4, borderTop: '1px solid #3a2a2a' }}>
+                  ⚠ {reason}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {selectedModule && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9000,
+          }}
+          onClick={() => setSelectedModule(null)}
+        >
+          <div
+            style={{
+              background: '#0a0a0a',
+              border: '1px solid var(--color-primary)',
+              padding: '16px 20px',
+              maxWidth: '300px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.85rem',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ marginBottom: 12, color: 'var(--color-primary)', letterSpacing: '0.1em' }}>
+              {selectedModule.displayName ?? selectedModule.name}
+            </div>
+            <div style={{ marginBottom: 12, color: '#888', fontSize: '0.75rem', lineHeight: 1.6 }}>
+              {costLabel(selectedModule, t)}
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setSelectedModule(null)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #555',
+                  color: '#888',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.8rem',
+                }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={() => {
+                  network.sendBuyModule(selectedModule.id);
+                  setSelectedModule(null);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--color-primary)',
+                  color: 'var(--color-primary)',
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.8rem',
+                }}
+              >
+                {t('shop.buy')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

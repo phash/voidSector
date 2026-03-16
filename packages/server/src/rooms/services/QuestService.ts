@@ -811,6 +811,9 @@ export class QuestService {
 
         if (objectives.every((o) => o.fulfilled)) {
           await this.completeQuest(client, playerId, row);
+          // Clear from tracking after quest completion
+          const updatedTracked = await getTrackedQuests(playerId);
+          this.ctx.send(client, 'trackedQuestsUpdate', { quests: updatedTracked });
         }
       }
     }
