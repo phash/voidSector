@@ -2588,8 +2588,8 @@ class GameNetwork {
   requestBookmarks() {
     this.sectorRoom?.send('getBookmarks');
   }
-  sendSetBookmark(slot: number, sectorX: number, sectorY: number, label: string) {
-    this.sectorRoom?.send('setBookmark', { slot, sectorX, sectorY, label });
+  sendSetBookmark(slot: number, sectorX: number, sectorY: number, label: string, description: string = '') {
+    this.sectorRoom?.send('setBookmark', { slot, sectorX, sectorY, label, description });
   }
   sendClearBookmark(slot: number) {
     this.sectorRoom?.send('clearBookmark', { slot });

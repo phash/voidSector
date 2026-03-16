@@ -19,6 +19,7 @@ import {
 import type { ChatChannel, ConstructionSiteState, DataSlate } from '@void-sector/shared';
 import { JumpGatePanel } from './JumpGatePanel';
 import { PlayerGatePanel } from './PlayerGatePanel';
+import { BookmarkDialog } from './overlays/BookmarkDialog';
 import { StationManagePanel } from './StationManagePanel';
 import { InlineError } from './InlineError';
 
@@ -351,6 +352,7 @@ export function DetailPanel() {
   const quadrantControls = useStore((s) => s.quadrantControls);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
+  const [bookmarkDialogOpen, setBookmarkDialogOpen] = useState(false);
 
   useEffect(() => {
     if (autoFollow) {
@@ -794,7 +796,7 @@ export function DetailPanel() {
           {isPlayerHere && (
             <div style={{ marginTop: 8, color: 'var(--color-primary)' }}>YOU ARE HERE</div>
           )}
-          {/* Quest target hint (#151) */}
+          {/* Quest target detail (#473) */}
           {questsTargetingHere.length > 0 && (
             <div
               style={{
@@ -804,19 +806,37 @@ export function DetailPanel() {
                 fontSize: '0.7rem',
               }}
             >
-              <div style={{ color: '#FFB000', marginBottom: 2, letterSpacing: '0.1em' }}>
+              <div style={{ color: '#FFB000', marginBottom: 4, letterSpacing: '0.1em' }}>
                 ◎ QUEST-ZIEL
               </div>
-              {questsTargetingHere.map((q) => (
-                <div key={q.id} style={{ color: 'rgba(255,176,0,0.7)', fontSize: '0.65rem' }}>
-                  <span
-                    style={{ cursor: 'pointer', textDecoration: 'underline dotted' }}
-                    onClick={() => setActiveProgram('QUESTS')}
-                  >
-                    {q.title}
-                  </span>
-                </div>
-              ))}
+              {questsTargetingHere.map((q) => {
+                const relevantObjs = q.objectives.filter(
+                  (o) => o.targetX === selectedSector.x && o.targetY === selectedSector.y && !o.fulfilled,
+                );
+                return (
+                  <div key={q.id} style={{ marginBottom: 6, borderBottom: '1px solid rgba(255,176,0,0.15)', paddingBottom: 4 }}>
+                    <div
+                      style={{ color: '#FFB000', cursor: 'pointer', textDecoration: 'underline dotted' }}
+                      onClick={() => setActiveProgram('QUESTS')}
+                    >
+                      {q.title}
+                    </div>
+                    <div style={{ color: 'rgba(255,176,0,0.5)', fontSize: '0.6rem', marginTop: 2 }}>
+                      {q.description}
+                    </div>
+                    {relevantObjs.map((o, i) => (
+                      <div key={i} style={{ color: 'rgba(255,176,0,0.7)', fontSize: '0.6rem', marginTop: 2, paddingLeft: 6 }}>
+                        › {o.description}
+                        {o.amount != null && o.progress != null && ` (${o.progress}/${o.amount})`}
+                      </div>
+                    ))}
+                    <div style={{ color: 'rgba(0,255,136,0.6)', fontSize: '0.55rem', marginTop: 2, paddingLeft: 6 }}>
+                      +{q.rewards.credits} CR | +{q.rewards.xp} XP
+                      {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
           {mining?.active && mining.sectorX === sector?.x && mining.sectorY === sector?.y && (
@@ -1092,7 +1112,6 @@ export function DetailPanel() {
 
       {/* Bookmark button — always visible when a sector is selected */}
       {(() => {
-        const freeSlot = [1, 2, 3, 4, 5].find((s) => !bookmarks.find((b) => b.slot === s));
         const alreadyBookmarked = bookmarks.some(
           (b) => b.sectorX === selectedSector.x && b.sectorY === selectedSector.y,
         );
@@ -1104,24 +1123,22 @@ export function DetailPanel() {
           );
         }
         return (
-          <button
-            className="vs-btn"
-            style={{ fontSize: '0.7rem', marginTop: 4, opacity: freeSlot ? 1 : 0.4 }}
-            onClick={() => {
-              if (freeSlot) {
-                network.sendSetBookmark(
-                  freeSlot,
-                  selectedSector.x,
-                  selectedSector.y,
-                  `${(sector?.type || 'sector').toUpperCase()} (${selectedSector.x},${selectedSector.y})`,
-                );
-              }
-            }}
-            disabled={!freeSlot}
-            title={freeSlot ? 'Sektor speichern' : 'Alle 5 Bookmark-Slots belegt'}
-          >
-            [BOOKMARK]
-          </button>
+          <>
+            <button
+              className="vs-btn"
+              style={{ fontSize: '0.7rem', marginTop: 4 }}
+              onClick={() => setBookmarkDialogOpen(true)}
+            >
+              [BOOKMARK]
+            </button>
+            {bookmarkDialogOpen && (
+              <BookmarkDialog
+                sectorX={selectedSector.x}
+                sectorY={selectedSector.y}
+                onClose={() => setBookmarkDialogOpen(false)}
+              />
+            )}
+          </>
         );
       })()}
     </div>

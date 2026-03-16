@@ -1114,6 +1114,7 @@ export interface Bookmark {
   sectorX: number;
   sectorY: number;
   label: string;
+  description: string;
 }
 
 export interface SetBookmarkMessage {
@@ -1121,6 +1122,7 @@ export interface SetBookmarkMessage {
   sectorX: number;
   sectorY: number;
   label: string;
+  description: string;
 }
 export interface ClearBookmarkMessage {
   slot: number;

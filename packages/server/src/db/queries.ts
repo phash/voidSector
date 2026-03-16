@@ -1927,8 +1927,8 @@ export async function getActiveTradeRoutes(): Promise<
 // --- Bookmarks ---
 
 export async function getPlayerBookmarks(playerId: string): Promise<Bookmark[]> {
-  const result = await query<{ slot: number; sector_x: number; sector_y: number; label: string }>(
-    'SELECT slot, sector_x, sector_y, label FROM player_bookmarks WHERE player_id = $1 ORDER BY slot',
+  const result = await query<{ slot: number; sector_x: number; sector_y: number; label: string; description: string }>(
+    'SELECT slot, sector_x, sector_y, label, COALESCE(description, \'\') as description FROM player_bookmarks WHERE player_id = $1 ORDER BY slot',
     [playerId],
   );
   return result.rows.map((r) => ({
@@ -1936,6 +1936,7 @@ export async function getPlayerBookmarks(playerId: string): Promise<Bookmark[]> 
     sectorX: r.sector_x,
     sectorY: r.sector_y,
     label: r.label,
+    description: r.description,
   }));
 }
 
@@ -1945,12 +1946,13 @@ export async function setPlayerBookmark(
   sectorX: number,
   sectorY: number,
   label: string,
+  description: string = '',
 ): Promise<void> {
   await query(
-    `INSERT INTO player_bookmarks (player_id, slot, sector_x, sector_y, label)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (player_id, slot) DO UPDATE SET sector_x = $3, sector_y = $4, label = $5`,
-    [playerId, slot, sectorX, sectorY, label],
+    `INSERT INTO player_bookmarks (player_id, slot, sector_x, sector_y, label, description)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (player_id, slot) DO UPDATE SET sector_x = $3, sector_y = $4, label = $5, description = $6`,
+    [playerId, slot, sectorX, sectorY, label, description],
   );
 }
 

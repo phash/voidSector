@@ -1000,19 +1000,22 @@ export function QuestsScreen() {
           {isAtStation && stationNpcs.length === 0 && (
             <div style={{ color: 'rgba(255,176,0,0.5)' }}>{t('status.loading')}</div>
           )}
-          {stationNpcs.map((npc) => (
-            <div key={npc.id} style={{ color: '#00FF88', marginBottom: '2px' }}>
-              {npc.name} [{npc.factionId.toUpperCase()}]
-            </div>
-          ))}
-          {availableQuests.length > 0 && (
-            <>
-              <div style={{ color: '#FFB000', marginTop: '8px', marginBottom: '4px' }}>
-                AVAILABLE QUESTS:
-              </div>
-              {availableQuests.map((q, idx) => {
-                const armKey = `accept-${idx}-${q.templateId}`;
-                const armed = isArmed(armKey);
+          {availableQuests.length > 0 && (() => {
+            // Group quests by NPC/faction
+            const grouped = new Map<string, { npcName: string; factionId: string; quests: typeof availableQuests }>();
+            for (const q of availableQuests) {
+              const key = `${q.npcFactionId}:${q.npcName}`;
+              if (!grouped.has(key)) grouped.set(key, { npcName: q.npcName, factionId: q.npcFactionId, quests: [] });
+              grouped.get(key)!.quests.push(q);
+            }
+            return [...grouped.values()].map((group) => (
+              <div key={`${group.factionId}:${group.npcName}`} style={{ marginBottom: '8px' }}>
+                <div style={{ color: '#00FF88', marginBottom: '4px', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+                  {group.npcName} [{group.factionId.toUpperCase()}]
+                </div>
+                {group.quests.map((q, idx) => {
+                  const armKey = `accept-${group.factionId}-${idx}-${q.templateId}`;
+                  const armed = isArmed(armKey);
                 return (
                   <div
                     key={`${idx}-${q.templateId}`}
@@ -1113,9 +1116,10 @@ export function QuestsScreen() {
                     )}
                   </div>
                 );
-              })}
-            </>
-          )}
+                })}
+              </div>
+            ));
+          })()}
           {isAtStation && stationNpcs.length > 0 && availableQuests.length === 0 && (
             <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.75rem', marginTop: '8px' }}>
               NO QUESTS AVAILABLE FROM THIS STATION

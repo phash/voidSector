@@ -312,7 +312,7 @@ export class WorldService {
       client.send('error', { code: 'INVALID_SLOT', message: 'Bookmark slot must be 1-5' });
       return;
     }
-    await setPlayerBookmark(auth.userId, data.slot, data.sectorX, data.sectorY, data.label);
+    await setPlayerBookmark(auth.userId, data.slot, data.sectorX, data.sectorY, data.label, data.description ?? '');
     const bookmarks = await getPlayerBookmarks(auth.userId);
     client.send('bookmarksUpdate', { bookmarks });
   }

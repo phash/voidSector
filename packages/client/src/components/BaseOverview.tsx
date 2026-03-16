@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
+import { BookmarkDialog } from './overlays/BookmarkDialog';
 
 const STRUCTURE_LABELS: Record<string, string> = {
   base: 'COMMAND CENTER',
@@ -42,6 +43,8 @@ export function BaseOverview() {
   const credits = useStore((s) => s.credits);
   const selectedId = useStore((s) => s.selectedBaseStructure);
   const setSelected = useStore((s) => s.setSelectedBaseStructure);
+  const bookmarks = useStore((s) => s.bookmarks);
+  const [bookmarkTarget, setBookmarkTarget] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     network.requestBase();
@@ -178,8 +181,26 @@ export function BaseOverview() {
                     {cs.paused ? 'PAUSIERT' : `${pct}%`}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.5rem', color: 'var(--color-dim)' }}>
-                  ({innerCoord(cs.sectorX)}, {innerCoord(cs.sectorY)})
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.5rem', color: 'var(--color-dim)' }}>
+                    ({innerCoord(cs.sectorX)}, {innerCoord(cs.sectorY)})
+                  </span>
+                  {!bookmarks.some((b) => b.sectorX === cs.sectorX && b.sectorY === cs.sectorY) && (
+                    <button
+                      onClick={() => setBookmarkTarget({ x: cs.sectorX, y: cs.sectorY })}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-dim)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.5rem',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      [BM]
+                    </button>
+                  )}
                 </div>
                 <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', marginTop: 2 }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: '#ffaa00' }} />
@@ -188,6 +209,13 @@ export function BaseOverview() {
             );
           })}
         </>
+      )}
+      {bookmarkTarget && (
+        <BookmarkDialog
+          sectorX={bookmarkTarget.x}
+          sectorY={bookmarkTarget.y}
+          onClose={() => setBookmarkTarget(null)}
+        />
       )}
     </div>
   );
