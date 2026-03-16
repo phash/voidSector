@@ -974,6 +974,7 @@ class GameNetwork {
       const store = useStore.getState();
       if (data.success) {
         store.addLogEntry('DATA SLATE ERSTELLT');
+        store.showSuccessToast(data.slate?.slateType === 'jumpgate' ? 'GATE-SLATE IM CARGO' : 'DATA SLATE ERSTELLT');
         if (data.cargo) store.setCargo(data.cargo);
         if (data.ap) store.setAP(data.ap);
         this.sectorRoom?.send('getMySlates');
@@ -1397,6 +1398,7 @@ class GameNetwork {
         credits?: number;
         hops?: number;
         tollPaid?: number;
+        fuelUsed?: number;
         crossQuadrant?: boolean;
       }) => {
         const store = useStore.getState();
@@ -1420,7 +1422,7 @@ class GameNetwork {
             useStore
               .getState()
               .addLogEntry(
-                `GATE-SPRUNG nach (${newSector.x}, ${newSector.y}) — ${data.hops ?? 1} Hop(s), ${data.tollPaid ?? 0} CR Maut`,
+                `GATE-SPRUNG nach (${newSector.x}, ${newSector.y}) — ${data.hops ?? 1} Hop(s), ${data.tollPaid ?? 0} CR Maut, ${data.fuelUsed ?? 0} FUEL`,
               );
             if (needsRoomChange) {
               await this.joinSector(newSector.x, newSector.y);

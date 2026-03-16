@@ -6,6 +6,7 @@ import {
   JUMPGATE_UPGRADE_COSTS,
   JUMPGATE_CONNECTION_LIMITS,
   JUMPGATE_DISTANCE_LIMITS,
+  JUMPGATE_FUEL_PER_HOP,
 } from '@void-sector/shared';
 import type { PlayerJumpGate, JumpGateDestination, DataSlate } from '@void-sector/shared';
 
@@ -146,6 +147,14 @@ function OwnerView({ gate, destinations, gateSlates }: OwnerViewProps) {
         )}
       </div>
 
+      {/* Usage Stats */}
+      {(gate.usageCount != null || gate.tollEarned != null) && (
+        <div style={{ marginTop: 4, fontSize: '0.65rem', color: 'var(--color-dim)', display: 'flex', gap: 12 }}>
+          <span>NUTZUNG: {gate.usageCount ?? 0}x</span>
+          <span>EINNAHMEN: {gate.tollEarned ?? 0} CR</span>
+        </div>
+      )}
+
       {/* Gate slates in cargo */}
       {gateSlates.length > 0 && (
         <div
@@ -207,7 +216,7 @@ function OwnerView({ gate, destinations, gateSlates }: OwnerViewProps) {
               }}
             >
               <span style={{ color: '#00BFFF' }}>
-                ({innerCoord(dest.sectorX)}, {innerCoord(dest.sectorY)}) — {dest.totalCost} CR
+                ({innerCoord(dest.sectorX)}, {innerCoord(dest.sectorY)}) — {dest.totalCost} CR · {dest.hops * JUMPGATE_FUEL_PER_HOP} FUEL
                 {dest.hops > 1 ? ` (${dest.hops} Hops)` : ''}
               </span>
               <button
@@ -303,7 +312,7 @@ function VisitorView({ gate, destinations }: VisitorViewProps) {
               }}
             >
               <span style={{ color: '#00BFFF' }}>
-                ({innerCoord(dest.sectorX)}, {innerCoord(dest.sectorY)}) — {dest.totalCost} CR
+                ({innerCoord(dest.sectorX)}, {innerCoord(dest.sectorY)}) — {dest.totalCost} CR · {dest.hops * JUMPGATE_FUEL_PER_HOP} FUEL
                 {dest.hops > 1 ? ` (${dest.hops} Hops)` : ''}
               </span>
               <button

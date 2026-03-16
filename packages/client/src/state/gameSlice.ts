@@ -312,6 +312,9 @@ export interface GameSlice {
   // Inline action error (shown near the action that caused it)
   actionError: { code: string; message: string } | null;
 
+  // Success toast (brief centered popup, auto-dismisses)
+  successToast: string | null;
+
   // Mining
   mining: MiningState | null;
   miningStoryIndex: number;
@@ -609,6 +612,7 @@ export interface GameSlice {
   addDiscoveries: (sectors: SectorData[]) => void;
   addLogEntry: (message: string) => void;
   setActionError: (error: { code: string; message: string } | null) => void;
+  showSuccessToast: (message: string) => void;
   setTradeMessage: (message: string | null) => void;
   setActiveMonitor: (monitor: string) => void;
   setMining: (mining: MiningState) => void;
@@ -746,6 +750,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   discoveries: {},
   log: [],
   actionError: null,
+  successToast: null,
   mining: null,
   miningStoryIndex: 0,
   cargo: {
@@ -943,6 +948,10 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     })),
 
   setActionError: (actionError) => set({ actionError }),
+  showSuccessToast: (message: string) => {
+    set({ successToast: message });
+    setTimeout(() => set({ successToast: null }), 2500);
+  },
   setTradeMessage: (tradeMessage) => set({ tradeMessage }),
 
   setActiveMonitor: (activeMonitor) => set({ activeMonitor }),

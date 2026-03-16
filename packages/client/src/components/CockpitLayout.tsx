@@ -220,6 +220,33 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       <FirstContactNewsOverlay />
       <AlienEncounterToast />
       <QuestCompleteOverlay />
+      <SuccessToast />
+    </div>
+  );
+}
+
+function SuccessToast() {
+  const message = useStore((s) => s.successToast);
+  if (!message) return null;
+  return (
+    <div style={{
+      position: 'fixed',
+      top: '40%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      zIndex: 9600,
+      background: '#080808',
+      border: '1px solid #00FF88',
+      borderLeft: '4px solid #00FF88',
+      padding: '14px 24px',
+      fontFamily: 'var(--font-mono)',
+      fontSize: '0.8rem',
+      color: '#00FF88',
+      letterSpacing: '0.1em',
+      animation: 'crt-expand 200ms ease-out',
+      pointerEvents: 'none',
+    }}>
+      {message}
     </div>
   );
 }

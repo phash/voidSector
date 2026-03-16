@@ -2152,7 +2152,7 @@ export const FACTION_UPGRADE_TIERS: Record<
 // JumpGates
 export const JUMPGATE_CHANCE = 0; // disabled — only ancient jumpgates remain
 export const JUMPGATE_SALT = 777;
-export const JUMPGATE_FUEL_COST = 0; // jumpgates cost credits only, no fuel
+export const JUMPGATE_FUEL_PER_HOP = 10; // fuel cost per hop through jumpgate network
 export const JUMPGATE_TRAVEL_COST_CREDITS = 50; // credits to use a public jumpgate
 export const PLAYER_GATE_TRAVEL_COST_CREDITS = 25; // credits to use a player-built gate (cheaper)
 export const JUMPGATE_MIN_RANGE = 50;

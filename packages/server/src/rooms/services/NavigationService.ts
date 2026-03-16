@@ -52,6 +52,7 @@ import {
   getAllPlayerGates,
   getAllJumpGateLinks,
   getJumpGateLinks,
+  incrementJumpgateUsage,
   recordNewsEvent,
   getAllQuadrantControls,
 } from '../../db/queries.js';
@@ -87,6 +88,7 @@ import {
   WORLD_SEED,
   BLACK_HOLE_SPAWN_CHANCE,
   BLACK_HOLE_MIN_DISTANCE,
+  JUMPGATE_FUEL_PER_HOP,
 } from '@void-sector/shared';
 
 const SLOW_FLIGHT_INTERVAL_MS = 3000;
@@ -1389,9 +1391,26 @@ export class NavigationService {
     const { gatesMap, linksMap } = await this.buildGateGraph();
     const destinations = findReachableGates(data.gateId, gatesMap, linksMap);
 
+    // Exit must not be entrance
+    if (data.destinationGateId === data.gateId) {
+      client.send('error', { code: 'GATE_FAIL', message: 'Ausgang darf nicht Eingang sein' });
+      return;
+    }
+
     const destination = destinations.find((r) => r.gateId === data.destinationGateId);
     if (!destination) {
       client.send('error', { code: 'GATE_FAIL', message: 'Destination not reachable' });
+      return;
+    }
+
+    // Check fuel (10 per hop)
+    const fuelCost = destination.hops * JUMPGATE_FUEL_PER_HOP;
+    const currentFuel = (await getFuelState(auth.userId)) ?? 0;
+    if (currentFuel < fuelCost) {
+      client.send('error', {
+        code: 'GATE_FAIL',
+        message: `Nicht genug Fuel: ${fuelCost} benötigt (${currentFuel} vorhanden)`,
+      });
       return;
     }
 
@@ -1424,6 +1443,13 @@ export class NavigationService {
         gatesMap,
         linksMap,
       );
+    }
+
+    // Deduct fuel
+    if (fuelCost > 0) {
+      const newFuel = currentFuel - fuelCost;
+      await saveFuelState(auth.userId, newFuel);
+      client.send('fuelUpdate', { fuel: newFuel });
     }
 
     const targetX = destination.sectorX;
@@ -1478,6 +1504,7 @@ export class NavigationService {
       credits: remainingCredits,
       hops: destination.hops,
       tollPaid: destination.totalCost,
+      fuelUsed: fuelCost,
       crossQuadrant,
     });
 
@@ -1562,7 +1589,12 @@ export class NavigationService {
     // Each hop from path[i] to path[i+1] costs path[i]'s toll
     for (let i = 0; i < path.length - 1; i++) {
       const hopGate = gatesMap.get(path[i]);
-      if (!hopGate || hopGate.tollCredits <= 0) continue;
+      if (!hopGate) continue;
+
+      // Increment usage stats for each gate along the path
+      incrementJumpgateUsage(path[i], hopGate.tollCredits).catch(() => {});
+
+      if (hopGate.tollCredits <= 0) continue;
 
       // Get the owner from the DB (gatesMap doesn't have ownerId)
       const fullGate = await getPlayerJumpGate(hopGate.sectorX, hopGate.sectorY);

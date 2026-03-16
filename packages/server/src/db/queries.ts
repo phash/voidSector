@@ -1496,6 +1496,8 @@ export async function getPlayerJumpGate(sectorX: number, sectorY: number): Promi
     `SELECT g.id, g.sector_x as "sectorX", g.sector_y as "sectorY",
             g.owner_id as "ownerId", g.level_connection as "levelConnection",
             g.level_distance as "levelDistance", g.toll_credits as "tollCredits",
+            COALESCE(g.usage_count, 0) as "usageCount",
+            COALESCE(g.toll_earned, 0) as "tollEarned",
             p.username as "ownerName"
      FROM jumpgates g
      LEFT JOIN players p ON p.id::text = g.owner_id::text
@@ -1685,6 +1687,14 @@ export async function getAllJumpGateLinks(): Promise<
     [],
   );
   return rows;
+}
+
+export async function incrementJumpgateUsage(gateId: string, tollEarned: number): Promise<void> {
+  await query(
+    `UPDATE jumpgates SET usage_count = usage_count + 1, toll_earned = toll_earned + $2
+     WHERE id = $1`,
+    [gateId, tollEarned],
+  );
 }
 
 // --- Phase 5: Rescued Survivors ---

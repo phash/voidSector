@@ -1382,6 +1382,8 @@ export interface PlayerJumpGate {
   levelConnection: number;
   levelDistance: number;
   tollCredits: number;
+  usageCount?: number;
+  tollEarned?: number;
   linkedGates: PlayerJumpGateLink[];
 }
 
