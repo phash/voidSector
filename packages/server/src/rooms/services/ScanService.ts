@@ -4,6 +4,7 @@ import type { AuthPayload } from '../../auth.js';
 import type { CompleteScanEventMessage, SectorEnvironment } from '@void-sector/shared';
 
 import { calculateCurrentAP } from '../../engine/ap.js';
+import { logger } from '../../utils/logger.js';
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
 import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import { calculateTraits } from '../../engine/traitCalculator.js';

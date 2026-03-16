@@ -773,7 +773,12 @@ export class QuestService {
         ) {
           obj.fulfilled = true;
           updated = true;
-          await addToInventory(playerId, 'prisoner', row.id, 1);
+          try {
+            await addToInventory(playerId, 'prisoner', row.id, 1);
+            logger.info({ questId: row.id }, 'QUEST-DEBUG prisoner added');
+          } catch (err) {
+            logger.error({ err, questId: row.id }, 'QUEST-DEBUG addToInventory FAILED');
+          }
         }
 
         // bounty_deliver: check prisoner in inventory on arrive at station

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { InlineError } from './InlineError';
 import {
   TECH_TREE_NODES,
   getTechNode,
@@ -1145,6 +1146,9 @@ export function TechTreeCanvas() {
               [ERFORSCHEN]
             </button>
           )}
+
+          {/* Research error feedback */}
+          <InlineError codes={['TECH_RESEARCH_INVALID', 'INSUFFICIENT_WISSEN']} style={{ marginTop: 4 }} />
 
           {/* Exclusive group info */}
           {selectedStatus === 'exclusive_blocked' && (
