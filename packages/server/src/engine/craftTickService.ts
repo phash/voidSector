@@ -1,5 +1,6 @@
 import { getAllActiveCraftSites, setCraftProgress, deleteCraftSite } from '../db/craftSiteQueries.js';
-import { addToInventory, addWissen, getWissen } from '../db/queries.js';
+import { addWissen, getWissen } from '../db/queries.js';
+import { addToInventory } from './inventoryService.js';
 
 export async function processCraftTick(
   notifyPlayer: (playerId: string, event: string, data: any) => void,
