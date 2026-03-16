@@ -9,6 +9,7 @@ import { civShipBus } from '../civShipBus.js';
 import { generateSector } from './worldgen.js';
 import { query } from '../db/client.js';
 import { logger } from '../utils/logger.js';
+import { nextTraderState, nextMilitaryState, nextOutlawState } from './npcShipAI.js';
 
 export function ulamSpiralStep(n: number): { dx: number; dy: number } {
   if (n === 0) return { dx: 0, dy: 0 };
@@ -58,6 +59,13 @@ export function nextShipState(
   _tickCount: number,
   maxResources: number = CIV_MINING_TICKS_TO_FULL,
 ): Partial<CivShip> {
+  const dead = (ship as any).dead_until;
+  if (dead && new Date(dead) > new Date()) return {};
+  const role = (ship as any).role ?? 'drone';
+  if (role === 'trader') return nextTraderState(ship);
+  if (role === 'military') return nextMilitaryState(ship);
+  if (role === 'outlaw') return nextOutlawState(ship);
+
   switch (ship.state) {
     case 'idle':
       return { state: 'exploring', spiral_step: 0 };
