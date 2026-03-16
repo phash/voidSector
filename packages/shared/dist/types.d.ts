@@ -1082,6 +1082,17 @@ export interface ShipStats {
     repairHpPerRound: number;
     repairHpPerSecond: number;
     memory: number;
+    apRegen?: number;
+    energyBudget?: number;
+    jumpDistance?: number;
+    rechargeRate?: number;
+    fuelCapacity?: number;
+    fuelPerSector?: number;
+    msPerSector?: number;
+    scanRange?: number;
+    miningSpeed?: number;
+    armorHp?: number;
+    maxHp?: number;
 }
 export interface ShipRecord {
     id: string;

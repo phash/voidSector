@@ -1303,6 +1303,18 @@ export interface ShipStats {
   repairHpPerRound: number;
   repairHpPerSecond: number;
   memory: number;
+  // V3 exploration stats (new module system)
+  apRegen?: number;
+  energyBudget?: number;
+  jumpDistance?: number;
+  rechargeRate?: number;
+  fuelCapacity?: number;
+  fuelPerSector?: number;
+  msPerSector?: number;
+  scanRange?: number;
+  miningSpeed?: number;
+  armorHp?: number;
+  maxHp?: number;
 }
 
 export interface ShipRecord {

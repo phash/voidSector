@@ -19,7 +19,11 @@ import {
   BASE_COMM_RANGE,
   BASE_SCANNER_LEVEL,
 } from './constants.js';
+import { MODULE_DEFINITIONS } from './moduleDefinitions.js';
 import type { ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
+
+// ─── Module lookup map for V2 calculator ──────────────────────────────────────
+const MODULE_MAP = new Map(MODULE_DEFINITIONS.map((m) => [m.id, m]));
 
 /** Returns ACEP level (1–5) for a given XP value. */
 export function getAcepLevel(xp: number): number {
@@ -37,7 +41,131 @@ export function getExtraSlotCount(ausbauXp: number): number {
   return ACEP_EXTRA_SLOT_THRESHOLDS.filter((t) => ausbauXp >= t).length;
 }
 
+// ─── V2 calculateShipStats (new module system) ────────────────────────────────
+
+/**
+ * New V2 signature: accepts installedModules with moduleId + slot (new module system).
+ * Also handles legacy ShipModule[] (with slotIndex) for backward compatibility.
+ *
+ * Routing: if any module has a `slot` string property → new system (V2).
+ * If all modules use `slotIndex` number property → legacy system.
+ * Empty array → V2 (returns zero/base stats).
+ */
 export function calculateShipStats(
+  installedModules: Array<{ moduleId: string; slot?: string; slotIndex?: number; currentHp?: number; source?: string; powerLevel?: string }>,
+  acepXp?: AcepXpSnapshot | { ausbau?: number; intel?: number; kampf?: number; explorer?: number },
+): ShipStats {
+  // Use V2 path when any module explicitly has a `slot` string (new system)
+  const isNewSystem = installedModules.length === 0 || installedModules.some((m) => typeof m.slot === 'string');
+
+  if (isNewSystem) {
+    return _calculateShipStatsV2(installedModules, acepXp);
+  }
+
+  // Legacy path: all modules have slotIndex (old system)
+  return _calculateShipStatsLegacy(installedModules as ShipModule[], acepXp as AcepXpSnapshot | undefined);
+}
+
+/** V2 calculator — uses MODULE_DEFINITIONS (new module system). */
+function _calculateShipStatsV2(
+  installedModules: Array<{ moduleId: string; slot?: string; currentHp?: number }>,
+  acepXp?: AcepXpSnapshot | { ausbau?: number; intel?: number; kampf?: number; explorer?: number },
+): ShipStats {
+  const stats: ShipStats = {
+    // Legacy fields (kept for backward compat)
+    fuelMax: BASE_FUEL_CAPACITY,
+    cargoCap: BASE_CARGO,
+    jumpRange: BASE_JUMP_RANGE,
+    apCostJump: 1,
+    fuelPerJump: BASE_FUEL_PER_JUMP,
+    hp: BASE_HP,
+    commRange: BASE_COMM_RANGE,
+    scannerLevel: BASE_SCANNER_LEVEL,
+    damageMod: 1.0,
+    shieldHp: 0,
+    shieldRegen: 0,
+    weaponAttack: 0,
+    weaponType: 'none',
+    weaponPiercing: 0,
+    pointDefense: 0,
+    ecmReduction: 0,
+    engineSpeed: BASE_ENGINE_SPEED,
+    artefactChanceBonus: 0,
+    safeSlotBonus: 0,
+    hyperdriveRange: 0,
+    hyperdriveSpeed: 0,
+    hyperdriveRegen: 0,
+    hyperdriveFuelEfficiency: 0,
+    miningBonus: 0,
+    generatorEpPerRound: 0,
+    repairHpPerRound: 0,
+    repairHpPerSecond: 0,
+    memory: BASE_SCANNER_MEMORY,
+    // V2 new fields
+    apRegen: 0,
+    energyBudget: 0,
+    jumpDistance: 0,
+    rechargeRate: 0,
+    fuelCapacity: 0,
+    fuelPerSector: 0,
+    msPerSector: 0,
+    scanRange: 0,
+    miningSpeed: 0,
+    armorHp: 0,
+    maxHp: 0,
+  };
+
+  for (const mod of installedModules) {
+    const def = MODULE_MAP.get(mod.moduleId);
+    if (!def) continue;
+
+    // Accumulate total HP
+    const currentHp = mod.currentHp ?? def.hitpoints;
+    stats.maxHp = (stats.maxHp ?? 0) + def.hitpoints;
+
+    const category = def.category;
+
+    if (category === 'generator') {
+      // apCost is negative for generators → apRegen = |apCost|
+      stats.apRegen = (stats.apRegen ?? 0) + Math.abs(def.apCost);
+      // energyCost is negative for generators → energyBudget = |energyCost|
+      stats.energyBudget = (stats.energyBudget ?? 0) + Math.abs(def.energyCost);
+    } else if (category === 'drive') {
+      stats.jumpDistance = def.stats['jumpDistance'] ?? 0;
+      stats.rechargeRate = def.stats['rechargeRate'] ?? 0;
+      stats.fuelCapacity = def.stats['fuelCapacity'] ?? 0;
+      stats.fuelPerSector = def.stats['fuelPerSector'] ?? 0;
+      stats.msPerSector = def.stats['msPerSector'] ?? 0;
+      // Also update legacy fields
+      stats.fuelMax = Math.max(stats.fuelMax, def.stats['fuelCapacity'] ?? 0);
+    } else if (category === 'scanner') {
+      stats.scanRange = def.stats['scanRange'] ?? 0;
+    } else if (category === 'mining') {
+      stats.miningSpeed = (stats.miningSpeed ?? 0) + (def.stats['miningSpeed'] ?? 0);
+    } else if (category === 'cargo') {
+      // base 20 + module cargoCapacity
+      stats.cargoCap = BASE_CARGO + (def.stats['cargoCapacity'] ?? 0);
+    } else if (category === 'shield') {
+      stats.shieldHp = (stats.shieldHp ?? 0) + (def.stats['shield'] ?? 0);
+      stats.shieldRegen = (stats.shieldRegen ?? 0) + (def.stats['regen'] ?? 0);
+    } else if (category === 'armor') {
+      stats.armorHp = (stats.armorHp ?? 0) + def.hitpoints;
+    }
+    // repair, weapon_*, defense: no exploration stats, only combat (handled via energyCost/stats)
+  }
+
+  // Ensure fuelMax reflects fuelCapacity
+  if ((stats.fuelCapacity ?? 0) > 0) {
+    stats.fuelMax = Math.max(FUEL_MIN_TANK, stats.fuelCapacity ?? 0);
+  } else {
+    stats.fuelMax = Math.max(FUEL_MIN_TANK, stats.fuelMax);
+  }
+
+  return stats;
+}
+
+/** Legacy calculator — uses old MODULES constant. */
+function _calculateShipStatsLegacy(
   modules: ShipModule[],
   acepXp?: AcepXpSnapshot,
 ): ShipStats {

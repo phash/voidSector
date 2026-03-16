@@ -150,6 +150,7 @@ import { StationProductionService } from './services/StationProductionService.js
 import { RepairService } from './services/RepairService.js';
 import { TechTreeService } from './services/TechTreeService.js';
 import { NpcShipService } from './services/NpcShipService.js';
+import { CombatV3Service } from './services/CombatV3Service.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -204,6 +205,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private repair!: RepairService;
   private techTree!: TechTreeService;
   private npcShips!: NpcShipService;
+  private combatV3!: CombatV3Service;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
   private revealedOutlaws = new Map<string, Set<number>>();
 
@@ -369,6 +371,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.stationProduction = new StationProductionService(this.serviceCtx);
     this.stationProduction.registerHandlers(this);
     this.npcShips = new NpcShipService(this.serviceCtx);
+    this.combatV3 = new CombatV3Service(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
@@ -614,6 +617,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('combatV2Flee', async (client, data) => {
       await this.combat.handleCombatV2Flee(client, data);
     });
+    this.onMessage('combatV3Start', async (client, data) => { await this.combatV3.handleCombatV3Start(client, data); });
+    this.onMessage('combatV3Action', async (client, data) => { await this.combatV3.handleCombatV3Action(client, data); });
+    this.onMessage('combatV3Flee', async (client) => { await this.combatV3.handleCombatV3Flee(client); });
     this.onMessage('repairModule', async (client, data: { moduleId: string }) => {
       await this.repair.handleRepairModule(client, data);
     });
