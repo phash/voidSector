@@ -477,7 +477,7 @@ export interface FactionDataMessage {
     members: FactionMember[];
     invites: FactionInvite[];
 }
-export type NpcFactionId = 'traders' | 'scientists' | 'pirates' | 'ancients' | 'independent';
+export type NpcFactionId = 'traders' | 'scientists' | 'pirates' | 'ancients' | 'independent' | 'outlaws';
 export type ReputationTier = 'hostile' | 'unfriendly' | 'neutral' | 'friendly' | 'honored';
 export interface PlayerReputation {
     factionId: NpcFactionId;
@@ -493,7 +493,7 @@ export interface StationNpc {
 /** Primary quest types (player-facing) */
 export type QuestType = 'fetch' | 'delivery' | 'scan' | 'bounty_chase';
 /** Internal objective phase types (used in QuestObjective.type for multi-step quests) */
-export type QuestObjectiveType = QuestType | 'bounty_trail' | 'bounty_combat' | 'bounty_deliver' | 'scan_deliver';
+export type QuestObjectiveType = QuestType | 'bounty_trail' | 'bounty_combat' | 'bounty_deliver' | 'scan_deliver' | 'find_npc' | 'deliver_to_npc';
 export type QuestStatus = 'active' | 'completed' | 'expired' | 'abandoned';
 export interface QuestObjective {
     type: QuestObjectiveType;
@@ -517,6 +517,10 @@ export interface QuestObjective {
     sectorY?: number;
     stationX?: number;
     stationY?: number;
+    targetNpcId?: number;
+    targetNpcRole?: string;
+    targetNpcName?: string;
+    cargoItem?: string;
 }
 export interface Quest {
     id: string;
@@ -891,12 +895,14 @@ export interface Bookmark {
     sectorX: number;
     sectorY: number;
     label: string;
+    description: string;
 }
 export interface SetBookmarkMessage {
     slot: number;
     sectorX: number;
     sectorY: number;
     label: string;
+    description: string;
 }
 export interface ClearBookmarkMessage {
     slot: number;
@@ -1136,6 +1142,8 @@ export interface PlayerJumpGate {
     levelConnection: number;
     levelDistance: number;
     tollCredits: number;
+    usageCount?: number;
+    tollEarned?: number;
     linkedGates: PlayerJumpGateLink[];
 }
 export interface PlayerJumpGateLink {
@@ -1240,6 +1248,18 @@ export interface CivShip {
     spiral_step?: number;
     resources_carried?: number;
     mined_resource?: string;
+    role?: 'drone' | 'trader' | 'military' | 'outlaw';
+    level?: number;
+    name?: string;
+    inventory?: Record<string, number>;
+    patrol_state?: Record<string, any>;
+    dead_until?: string | null;
+}
+export interface NpcQuestOffer {
+    npcId: number;
+    npcName: string;
+    dialogText: string;
+    quest: AvailableQuest;
 }
 export interface CivStation {
     id: number;
