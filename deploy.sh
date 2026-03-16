@@ -75,8 +75,10 @@ if [[ "$FRESH" = true ]]; then
       echo "  (kein Backup möglich — Server nicht erreichbar)"
   fi
 
-  echo "  Stoppe alle Container..."
-  docker compose down -v
+  echo "  Stoppe Services (Tunnel bleibt)..."
+  docker compose stop server client postgres redis
+  docker compose rm -f server client postgres redis
+  docker volume rm voidsector_postgres-data 2>/dev/null || true
   echo "  DB-Volume gelöscht. Frischer Start."
   echo ""
 fi
@@ -108,6 +110,12 @@ echo ""
 echo "── Services starten ─────────────────────"
 docker compose up -d postgres redis server client
 if [[ "$NEW_TUNNEL" = true ]]; then
+  echo "  Starte neuen Cloudflare-Tunnel..."
+  docker compose up -d --force-recreate cloudflared
+elif docker compose ps cloudflared --status running 2>/dev/null | grep -q "running"; then
+  echo "  Tunnel läuft bereits."
+else
+  # Tunnel existiert aber läuft nicht (z.B. nach fresh) → starten
   echo "  Starte Cloudflare-Tunnel..."
   docker compose up -d cloudflared
 fi
