@@ -77,7 +77,6 @@ import {
   getInventoryItem,
   getMiningStoryIndex,
   findPlayerByUsername,
-  getPlayerReputation,
 } from '../db/queries.js';
 import { getQuadrant, addPlayerKnownQuadrant } from '../db/quadrantQueries.js';
 import { civQueries } from '../db/civQueries.js';
@@ -160,7 +159,6 @@ import {
 import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
 import { getDirectTradeService } from '../engine/directTradeService.js';
-import { createPirateEncounter } from '../engine/commands.js';
 import { ensureQuadrantNpcs } from '../engine/npcSpawner.js';
 import { logger } from '../utils/logger.js';
 import { captureError } from '../utils/errorLogTransport.js';
@@ -409,17 +407,12 @@ export class SectorRoom extends Room<SectorRoomState> {
           );
         }
 
-        // Auto-start combat v2 if pirate_zone sector
+        // Auto-start combat v3 if pirate_zone sector
         if (sectorData?.contents?.includes('pirate_zone')) {
-          const moveSectorAuth2 = client.auth as AuthPayload;
           const pirateLevel = Math.min(10, Math.floor(
             Math.sqrt(data.sectorX * data.sectorX + data.sectorY * data.sectorY) / 50,
           ) + 1);
-          const pirateRep = await getPlayerReputation(moveSectorAuth2.userId, 'pirates');
-          const encounter = createPirateEncounter(
-            pirateLevel, data.sectorX, data.sectorY, pirateRep,
-          );
-          await this.combat.handleCombatV2Start(client, encounter);
+          await this.combatV3.handleCombatV3Start(client, { npcLevel: pirateLevel });
         }
 
         // Story trigger + spontaneous encounter
@@ -468,17 +461,12 @@ export class SectorRoom extends Room<SectorRoomState> {
           );
         }
 
-        // Auto-start combat v2 if pirate_zone sector
+        // Auto-start combat v3 if pirate_zone sector
         if (sectorData?.contents?.includes('pirate_zone')) {
-          const jumpAuth2 = client.auth as AuthPayload;
           const pirateLevel = Math.min(10, Math.floor(
             Math.sqrt(data.targetX * data.targetX + data.targetY * data.targetY) / 50,
           ) + 1);
-          const pirateRep = await getPlayerReputation(jumpAuth2.userId, 'pirates');
-          const encounter = createPirateEncounter(
-            pirateLevel, data.targetX, data.targetY, pirateRep,
-          );
-          await this.combat.handleCombatV2Start(client, encounter);
+          await this.combatV3.handleCombatV3Start(client, { npcLevel: pirateLevel });
         }
       } catch (err) {
         logger.error({ err }, 'Jump unhandled error');
@@ -603,20 +591,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('repairStation', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleRepairStation(client, data);
-    });
-    // Kampfsystem v1 — energy-based round combat
-    this.onMessage('combatInit', async (client, data) => {
-      await this.combat.handleCombatInit(client, data);
-    });
-    this.onMessage('combatRound', async (client, data) => {
-      await this.combat.handleCombatRound(client, data);
-    });
-    // Kampfsystem v2 — tactic-based round combat
-    this.onMessage('combatV2Action', async (client, data) => {
-      await this.combat.handleCombatV2Action(client, data);
-    });
-    this.onMessage('combatV2Flee', async (client, data) => {
-      await this.combat.handleCombatV2Flee(client, data);
     });
     this.onMessage('combatV3Start', async (client, data) => { await this.combatV3.handleCombatV3Start(client, data); });
     this.onMessage('combatV3Action', async (client, data) => { await this.combatV3.handleCombatV3Action(client, data); });

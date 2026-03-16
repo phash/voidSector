@@ -49,10 +49,6 @@ import type {
   NpcTradeResultMessage,
   AcepPath,
   StationProductionState,
-  CombatTactic,
-  SpecialAction,
-  CombatV2State,
-  CombatV2RoundResult,
   CombatV3State,
   CombatV3RoundResult,
 } from '@void-sector/shared';
@@ -1158,39 +1154,6 @@ class GameNetwork {
       store.setPlayerUpgrades(data.upgrades);
     });
 
-    room.onMessage('battleResult', (data) => {
-      const store = useStore.getState();
-      const encounter = store.activeBattle;
-      store.setActiveBattle(null);
-      if (data.success && data.result && encounter) {
-        store.setLastBattleResult({ encounter, result: data.result });
-      }
-    });
-
-    room.onMessage('pirateAmbush', (data) => {
-      // Legacy handler — log only. Combat v2 uses combatV2Started.
-      useStore.getState().addLogEntry(`PIRATEN-HINTERHALT bei (${data.sectorX}, ${data.sectorY})!`);
-    });
-
-    room.onMessage('combatV2Started', (data: { state: CombatV2State }) => {
-      useStore.getState().setActiveCombatV2(data.state);
-    });
-
-    room.onMessage('combatV2RoundResult', (data: CombatV2RoundResult) => {
-      const store = useStore.getState();
-      if (!data.success) {
-        store.addLogEntry(`KAMPF-FEHLER: ${data.error}`);
-        return;
-      }
-      if (data.state) {
-        store.setActiveCombatV2(data.state);
-      }
-    });
-
-    room.onMessage('fleeAttemptFailed', () => {
-      useStore.getState().addLogEntry('FLUCHT FEHLGESCHLAGEN — Kampf geht weiter.');
-    });
-
     // ── Combat V3 message handlers ─────────────────────────────────────────
     room.onMessage('combatV3Start', (data: { state: CombatV3State }) => {
       const store = useStore.getState();
@@ -1239,33 +1202,6 @@ class GameNetwork {
       store.setActiveAncientRuinScan(data);
       store.addLogEntry(`ANCIENT RUIN — ${data.fragmentText.split('\n')[0]}`);
     });
-
-    // ── Kampfsystem v1 — energy-based round combat ──────────────────────────
-    room.onMessage('combatInitResult', (data: { success: boolean; state?: any; error?: string }) => {
-      if (data.success && data.state) {
-        useStore.getState().setActiveCombat(data.state);
-      }
-    });
-
-    room.onMessage(
-      'combatRoundResult',
-      (data: { success: boolean; round?: any; state?: any; outcome?: string; loot?: any; error?: string }) => {
-        const store = useStore.getState();
-        if (!data.success) {
-          if (data.error) store.addLogEntry(`KAMPF FEHLER: ${data.error}`);
-          return;
-        }
-        if (data.state) {
-          const newState = { ...data.state };
-          if (data.outcome && data.outcome !== 'ongoing') {
-            newState.outcome = data.outcome;
-            newState.loot = data.loot;
-          }
-          store.setActiveCombat(newState);
-        }
-      },
-    );
-    // ─────────────────────────────────────────────────────────────────────────
 
     // ── RepairService — onboard module repair & station repair ───────────────
     room.onMessage(
@@ -1333,8 +1269,7 @@ class GameNetwork {
       }) => {
         const store = useStore.getState();
         store.addLogEntry(data.message);
-        store.setActiveCombatV2(null);
-        store.setActiveBattle(null);
+        store.clearCombatV3();
         // shipData for the new ship is sent by server before this message
       },
     );
@@ -1342,7 +1277,7 @@ class GameNetwork {
     // Eject Pod: cargo lost, combat ended
     room.onMessage('ejectPodResult', (data: { success: boolean }) => {
       if (data.success) {
-        useStore.getState().setActiveCombatV2(null);
+        useStore.getState().clearCombatV3();
       }
     });
 
@@ -2489,55 +2424,6 @@ class GameNetwork {
   requestTrackedQuests() {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('getTrackedQuests', {});
-  }
-
-  sendBattleAction(action: string, sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED');
-      return;
-    }
-    this.sectorRoom.send('battleAction', { action, sectorX, sectorY });
-  }
-
-  // ── Kampfsystem v1 send methods ──────────────────────────────────────────
-
-  sendCombatInit(enemyType: string, enemyLevel: number, sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED');
-      return;
-    }
-    this.sectorRoom.send('combatInit', { enemyType, enemyLevel, sectorX, sectorY });
-  }
-
-  sendCombatRound(input: {
-    energyAllocations: Array<{ moduleId: string; category: string; powerLevel: 'off' | 'low' | 'mid' | 'high' }>;
-    primaryAction: { type: string; targetModuleId?: string; targetModuleCategory?: string };
-    reactionChoice?: { type: string };
-    ancientAbility?: { type: string };
-  }, sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED');
-      return;
-    }
-    this.sectorRoom.send('combatRound', { input, sectorX, sectorY });
-  }
-
-  // ── Kampfsystem v2 send methods ──────────────────────────────────────────
-
-  sendCombatV2Action(tactic: CombatTactic, specialAction: SpecialAction, sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED');
-      return;
-    }
-    this.sectorRoom.send('combatV2Action', { tactic, specialAction, sectorX, sectorY });
-  }
-
-  sendCombatV2Flee(sectorX: number, sectorY: number) {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED');
-      return;
-    }
-    this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
   }
 
   // ── Kampfsystem v3 send methods ──────────────────────────────────────────

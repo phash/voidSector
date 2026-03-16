@@ -13,10 +13,6 @@ import { BookmarkBar } from './BookmarkBar';
 import { TradeScreen } from './TradeScreen';
 import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
-import { BattleDialog } from './BattleDialog';
-import { CombatV2Dialog } from './CombatV2Dialog';
-import { CombatDialog } from './CombatDialog';
-import { BattleResultDialog } from './BattleResultDialog';
 import { AcepProgram } from './AcepProgram';
 import { FriendsScreen } from './FriendsScreen';
 import { FabrikPanel } from './FabrikPanel';
@@ -479,11 +475,7 @@ export function GameScreen() {
         ))}
       </div>
       <MehrOverlay monitors={mehrMonitors} />
-      <BattleDialog />
-      <CombatV2Dialog />
-      <CombatDialog />
       <StationCombatOverlay />
-      <BattleResultDialog />
       <BlueprintDialog />
       <CompendiumOverlay />
       <HelpOverlay />

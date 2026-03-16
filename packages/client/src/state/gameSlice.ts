@@ -18,8 +18,6 @@ import type {
   Quest,
   PlayerReputation,
   PlayerUpgrade,
-  PirateEncounter,
-  BattleResult,
   ScanEvent,
   JumpGateInfo,
   JumpGateMapEntry,
@@ -32,7 +30,6 @@ import type {
   ShipRecord,
   ShipStats,
   ShipModule,
-  CombatV2State,
   CombatV3State,
   CombatV3RoundResult,
   StationDefense,
@@ -186,45 +183,6 @@ function safeRemoveItem(key: string): void {
   } catch {
     /* noop */
   }
-}
-
-// ─── Kampfsystem v1 client types ────────────────────────────────────────────
-
-export interface ClientModule {
-  moduleId: string;
-  category: string;
-  tier: number;
-  currentHp: number;
-  maxHp: number;
-  powerLevel: 'off' | 'low' | 'mid' | 'high';
-}
-
-export interface ClientEnemyModule {
-  category: string;
-  tier: number;
-  currentHp: number;
-  maxHp: number;
-  powerLevel: 'off' | 'low' | 'mid' | 'high';
-  revealed: boolean;
-}
-
-export interface ClientCombatState {
-  playerHp: number;
-  playerMaxHp: number;
-  playerModules: ClientModule[];
-  epBuffer: number;
-  maxEpBuffer: number;
-  enemyType: string;
-  enemyLevel: number;
-  enemyHp: number;
-  enemyMaxHp: number;
-  enemyModules: ClientEnemyModule[];
-  round: number;
-  ancientChargeRounds: number;
-  ancientAbilityUsed: boolean;
-  log: string[];
-  outcome?: 'ongoing' | 'victory' | 'defeat' | 'fled' | 'draw' | 'ejected';
-  loot?: { credits?: number; ore?: number; crystal?: number };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -393,16 +351,10 @@ export interface GameSlice {
   activeQuests: Quest[];
   reputations: PlayerReputation[];
   playerUpgrades: PlayerUpgrade[];
-  activeBattle: PirateEncounter | null;
   bountyEncounter: BountyEncounterState | null;
-  lastBattleResult: { encounter: PirateEncounter; result: BattleResult } | null;
-  activeCombatV2: CombatV2State | null;
   stationDefenses: StationDefense[];
   stationCombatEvent: StationCombatEvent | null;
   scanEvents: ScanEvent[];
-
-  // Kampfsystem v1 — energy-based round combat
-  activeCombat: ClientCombatState | null;
 
   // Phase 5: Deep Systems
   jumpGateInfo: JumpGateInfo | null;
@@ -652,13 +604,7 @@ export interface GameSlice {
   setActiveQuests: (quests: Quest[]) => void;
   setReputations: (reps: PlayerReputation[]) => void;
   setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
-  setActiveBattle: (encounter: PirateEncounter | null) => void;
   setBountyEncounter: (encounter: BountyEncounterState | null) => void;
-  setLastBattleResult: (
-    result: { encounter: PirateEncounter; result: BattleResult } | null,
-  ) => void;
-  setActiveCombatV2: (activeCombatV2: CombatV2State | null) => void;
-  setActiveCombat: (state: ClientCombatState | null) => void;
   setStationDefenses: (stationDefenses: StationDefense[]) => void;
   setStationCombatEvent: (stationCombatEvent: StationCombatEvent | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
@@ -812,11 +758,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   activeQuests: [],
   reputations: [],
   playerUpgrades: [],
-  activeBattle: null,
   bountyEncounter: null,
-  lastBattleResult: null,
-  activeCombatV2: null,
-  activeCombat: null,
   stationDefenses: [],
   stationCombatEvent: null,
   scanEvents: [],
@@ -1047,11 +989,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setActiveQuests: (activeQuests) => set({ activeQuests }),
   setReputations: (reputations) => set({ reputations }),
   setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
-  setActiveBattle: (activeBattle) => set({ activeBattle }),
   setBountyEncounter: (bountyEncounter) => set({ bountyEncounter }),
-  setLastBattleResult: (lastBattleResult) => set({ lastBattleResult }),
-  setActiveCombatV2: (activeCombatV2) => set({ activeCombatV2 }),
-  setActiveCombat: (activeCombat) => set({ activeCombat }),
   setStationDefenses: (stationDefenses) => set({ stationDefenses }),
   setStationCombatEvent: (stationCombatEvent) => set({ stationCombatEvent }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
