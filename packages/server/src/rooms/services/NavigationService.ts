@@ -57,7 +57,7 @@ import {
   getAllQuadrantControls,
 } from '../../db/queries.js';
 import { getPlayerStationAt } from '../../db/stationQueries.js';
-import { civQueries } from '../../db/civQueries.js';
+import { civQueries, getNpcShipsInSector } from '../../db/civQueries.js';
 import {
   getAPState,
   saveAPState,
@@ -149,6 +149,14 @@ export class NavigationService {
 
     // Send sector data to client
     client.send('sectorData', sectorData);
+
+    // Send NPC ships in this sector
+    const npcsHere = await getNpcShipsInSector(sectorX, sectorY);
+    if (npcsHere.length > 0) {
+      client.send('npcsInSector', npcsHere);
+    } else {
+      client.send('npcsInSector', []);
+    }
 
     // Station visit tracking
     if (sectorData.type === 'station') {
@@ -1513,6 +1521,14 @@ export class NavigationService {
 
     // Check for player gate at target sector
     await this.detectAndSendPlayerGate(client, targetX, targetY);
+
+    // Send NPC ships at target sector
+    const npcsAtTarget = await getNpcShipsInSector(targetX, targetY);
+    if (npcsAtTarget.length > 0) {
+      client.send('npcsInSector', npcsAtTarget);
+    } else {
+      client.send('npcsInSector', []);
+    }
 
     // Quadrant first-contact detection
     await this.ctx.checkFirstContact(client, auth, targetX, targetY);

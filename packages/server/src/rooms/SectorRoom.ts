@@ -149,6 +149,7 @@ import { CommunityQuestService } from './services/CommunityQuestService.js';
 import { StationProductionService } from './services/StationProductionService.js';
 import { RepairService } from './services/RepairService.js';
 import { TechTreeService } from './services/TechTreeService.js';
+import { NpcShipService } from './services/NpcShipService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -202,6 +203,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private stationProduction!: StationProductionService;
   private repair!: RepairService;
   private techTree!: TechTreeService;
+  private npcShips!: NpcShipService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
   private revealedOutlaws = new Map<string, Set<number>>();
 
@@ -366,6 +368,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     await this.communityQuests.seedInitialIfEmpty().catch(() => {});
     this.stationProduction = new StationProductionService(this.serviceCtx);
     this.stationProduction.registerHandlers(this);
+    this.npcShips = new NpcShipService(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
@@ -1201,6 +1204,15 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('getPlayerCard', async (client, data: { playerId: string }) => {
       await this.friends.getPlayerCard(client, data.playerId);
+    });
+    this.onMessage('npcShipTrade', async (client, data) => {
+      await this.npcShips.handleNpcShipTrade(client, data);
+    });
+    this.onMessage('communicateNpc', async (client, data) => {
+      await this.npcShips.handleCommunicateNpc(client, data);
+    });
+    this.onMessage('attackNpc', async (client, data) => {
+      await this.npcShips.handleAttackNpc(client, data);
     });
 
     // ── Trade Route Processing Interval ─────────────────────────────

@@ -350,6 +350,7 @@ export function DetailPanel() {
   const selectedSlateId = useStore((s) => s.selectedSlateId);
   const mySlates = useStore((s) => s.mySlates);
   const quadrantControls = useStore((s) => s.quadrantControls);
+  const sectorNpcs = useStore((s) => s.sectorNpcs);
 
   const [drillDown, setDrillDown] = useState<DrillDown>(null);
   const [bookmarkDialogOpen, setBookmarkDialogOpen] = useState(false);
@@ -839,6 +840,46 @@ export function DetailPanel() {
               })}
             </div>
           )}
+          {/* NPC Ships in sector */}
+          {sectorNpcs.filter((npc: any) => npc.x === selectedSector.x && npc.y === selectedSector.y).map((npc: any) => (
+            <div key={npc.id} style={{
+              marginTop: 8, padding: '4px 6px',
+              border: `1px solid ${npc.role === 'trader' ? '#00FF66' : npc.role === 'military' ? '#4488FF' : '#FF3333'}`,
+              fontSize: '0.7rem',
+            }}>
+              <div style={{ color: npc.role === 'trader' ? '#00FF66' : npc.role === 'military' ? '#4488FF' : '#FF3333', marginBottom: 2 }}>
+                {npc.role === 'trader' ? '▶' : npc.role === 'military' ? '◇' : '✕'} {npc.name}
+                <span style={{ color: 'var(--color-dim)', marginLeft: 4, fontSize: '0.6rem' }}>
+                  [{(npc.role ?? '').toUpperCase()}]{npc.level > 1 ? ` Lv.${npc.level}` : ''}
+                </span>
+              </div>
+              {npc.role === 'trader' && npc.inventory && (
+                <div style={{ fontSize: '0.6rem', color: 'var(--color-dim)', marginBottom: 4 }}>
+                  ORE: {(typeof npc.inventory === 'string' ? JSON.parse(npc.inventory) : npc.inventory).ore ?? 0}
+                  {' · '}GAS: {(typeof npc.inventory === 'string' ? JSON.parse(npc.inventory) : npc.inventory).gas ?? 0}
+                  {' · '}CRYSTAL: {(typeof npc.inventory === 'string' ? JSON.parse(npc.inventory) : npc.inventory).crystal ?? 0}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 4 }}>
+                {(npc.role === 'trader' || npc.role === 'outlaw') && (
+                  <button className="vs-btn" style={{ fontSize: '0.65rem' }}
+                    onClick={() => network.sendNpcShipTrade(npc.id, 'ore', 10, 'buy')}>
+                    [HANDELN]
+                  </button>
+                )}
+                <button className="vs-btn" style={{ fontSize: '0.65rem' }}
+                  onClick={() => network.sendCommunicateNpc(npc.id)}>
+                  [KOMMUNIZIEREN]
+                </button>
+                {npc.role === 'outlaw' && (
+                  <button className="vs-btn" style={{ fontSize: '0.65rem', borderColor: '#FF3333', color: '#FF3333' }}
+                    onClick={() => network.sendAttackNpc(npc.id)}>
+                    [ANGREIFEN]
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
           {mining?.active && mining.sectorX === sector?.x && mining.sectorY === sector?.y && (
             <div
               style={{
