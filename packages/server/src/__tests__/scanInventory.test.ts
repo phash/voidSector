@@ -53,6 +53,10 @@ vi.mock('../db/queries.js', () => ({
   getActiveQuests: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock('../db/civQueries.js', () => ({
+  getNpcShipsInSector: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock('../engine/ap.js', () => ({
   calculateCurrentAP: vi.fn().mockReturnValue(100),
 }));
