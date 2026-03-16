@@ -65,4 +65,30 @@ describe('LocalScanResultOverlay', () => {
     render(<LocalScanResultOverlay />);
     expect(screen.getByText('scan.slateMemoryFull')).toBeTruthy();
   });
+
+  it('resets slateSaved when a new scan result arrives', () => {
+    const { rerender } = render(<LocalScanResultOverlay />);
+    // Save a slate
+    fireEvent.click(screen.getByText('scan.saveToSlate'));
+    expect(screen.getByText('scan.slateSaved')).toBeTruthy();
+
+    // New scan result arrives
+    useStore.setState({
+      localScanResult: {
+        resources: { ore: 10, gas: 5, crystal: 0 },
+        hiddenSignatures: false,
+        wrecks: [],
+        sectorX: 20,
+        sectorY: 25,
+        quadrantX: 1,
+        quadrantY: 1,
+        sectorType: 'empty',
+        structures: [],
+        universeTick: 48800,
+      },
+    });
+    rerender(<LocalScanResultOverlay />);
+    // Button should be reset to unsaved state
+    expect(screen.getByText('scan.saveToSlate')).toBeTruthy();
+  });
 });

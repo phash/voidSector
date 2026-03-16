@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../state/store';
 import { network } from '../../network/client';
@@ -10,6 +10,11 @@ export function LocalScanResultOverlay() {
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const [slateSaved, setSlateSaved] = useState(false);
+
+  // Reset saved state when a new scan result arrives
+  useEffect(() => {
+    if (result) setSlateSaved(false);
+  }, [result]);
 
   if (!result) return null;
 
