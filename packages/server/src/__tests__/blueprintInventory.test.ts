@@ -52,19 +52,27 @@ vi.mock('../db/queries.js', () => ({
 }));
 
 // ── Mock shared ──────────────────────────────────────────────────────────────
-vi.mock('@void-sector/shared', () => ({
-  MODULES: {
-    scanner_mk3: { id: 'scanner_mk3', name: 'Scanner MK3', category: 'scanner', tier: 3, researchCost: { credits: 200 } },
-    drive_mk2: { id: 'drive_mk2', name: 'Drive MK2', category: 'drive', tier: 2, researchCost: { credits: 100 } },
-  },
-  calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
-  validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
-  isModuleUnlocked: vi.fn().mockReturnValue(true),
-  RESEARCH_TICK_MS: 60000,
-  UNIVERSE_TICK_MS: 5000,
-  WORLD_SEED: 42,
-  AP_COSTS_LOCAL_SCAN: 1,
-}));
+vi.mock('@void-sector/shared', () => {
+  const mods: Record<string, any> = {
+    scanner_mk3: { id: 'scanner_mk3', name: 'Scanner Mk3', category: 'scanner', tier: 3, hitpoints: 20, costCredits: 900 },
+    ion_drive_mk2: { id: 'ion_drive_mk2', name: 'Ion Drive Mk2', category: 'drive', tier: 2, hitpoints: 20, costCredits: 750 },
+  };
+  return {
+    MODULES: mods,
+    MODULE_MAP: new Map(Object.entries(mods)),
+    MODULE_DEFINITIONS: Object.values(mods),
+    MODULE_HP_BY_TIER: { 1: 20, 2: 20, 3: 20, 4: 40, 5: 60 },
+    BLUEPRINT_COPY_BASE_COST: 100,
+    calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
+    validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
+    getActiveDrawbacks: vi.fn().mockReturnValue([]),
+    isModuleUnlocked: vi.fn().mockReturnValue(true),
+    RESEARCH_TICK_MS: 60000,
+    UNIVERSE_TICK_MS: 5000,
+    WORLD_SEED: 42,
+    AP_COSTS_LOCAL_SCAN: 1,
+  };
+});
 
 // ── Mock techTreeQueries ─────────────────────────────────────────────────────
 vi.mock('../db/techTreeQueries.js', () => ({

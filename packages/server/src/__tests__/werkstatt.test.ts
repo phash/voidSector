@@ -1,8 +1,7 @@
 /**
  * TDD: werkstatt.test.ts
- * Verifies that ShipService.handleCraftModule correctly crafts modules
- * from blueprints or research unlocks, deducting credits and resources
- * via the unified inventory system.
+ * Verifies that ShipService.handleCraftModule creates a craft site (Baustelle)
+ * instead of instant crafting. Resources are deposited later via depositCraftResources.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -12,60 +11,76 @@ vi.mock('../db/queries.js', () => ({
   getPlayerResearch: vi.fn(),
   getPlayerCredits: vi.fn(),
   deductCredits: vi.fn(),
-  // ShipService deps (need stubs even if not called in craftModule path)
+  addCredits: vi.fn(),
   getActiveShip: vi.fn(),
   getPlayerShips: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
-  renameBase: vi.fn(),
   getInventory: vi.fn(),
-  getPlayerLevel: vi.fn(),
   addUnlockedModule: vi.fn(),
-  getActiveResearch: vi.fn(),
-  startActiveResearch: vi.fn(),
-  deleteActiveResearch: vi.fn(),
-  getPlayerReputations: vi.fn(),
-  getStorageInventory: vi.fn(),
-  upsertInventory: vi.fn(),
-  deductInventory: vi.fn(),
-  getInventoryItem: vi.fn(),
-  transferInventoryItem: vi.fn(),
-  getCargoCapForPlayer: vi.fn(),
+  getWissen: vi.fn().mockResolvedValue(0),
+  addWissen: vi.fn(),
 }));
 
 // ── Mock @void-sector/shared ──────────────────────────────────────────────────
-vi.mock('@void-sector/shared', () => ({
-  MODULES: {
-    drive_mk2: {
-      id: 'drive_mk2',
-      name: 'ION DRIVE MK.II',
+vi.mock('@void-sector/shared', () => {
+  const mods: Record<string, any> = {
+    ion_drive_mk2: {
+      id: 'ion_drive_mk2',
+      name: 'Ion Drive Mk2',
       category: 'drive',
       tier: 2,
-      cost: { credits: 300, ore: 20, crystal: 5 },
+      costCredits: 750,
+      costOre: 25,
+      costGas: 40,
+      costCrystal: 80,
+      costArtefact: '0',
+      hitpoints: 20,
+      stats: {},
     },
-    scanner_mk2: {
-      id: 'scanner_mk2',
-      name: 'SCANNER MK.II',
-      category: 'scanner',
-      tier: 2,
-      cost: { credits: 150 },
-    },
-    cargo_hold: {
-      id: 'cargo_hold',
-      name: 'CARGO HOLD',
+    cargo_bay_mk1: {
+      id: 'cargo_bay_mk1',
+      name: 'Cargo Bay Mk1',
       category: 'cargo',
       tier: 1,
-      cost: { credits: 0 },
+      costCredits: 0,
+      costOre: 0,
+      costGas: 0,
+      costCrystal: 0,
+      costArtefact: '0',
+      hitpoints: 1,
+      stats: {},
     },
-  },
-  calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
-  validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
-  isModuleUnlocked: vi.fn().mockImplementation(
-    (_id: string, _mod: unknown, _nodes: unknown, blueprints: string[]) =>
-      blueprints.length > 0,
-  ),
-  RESEARCH_TICK_MS: 60000,
-}));
+    factory_mk1: {
+      id: 'factory_mk1',
+      name: 'Micro-Fabrikator',
+      category: 'factory',
+      tier: 1,
+      costCredits: 0,
+      costOre: 0,
+      costGas: 0,
+      costCrystal: 0,
+      costArtefact: '0',
+      hitpoints: 20,
+      stats: { craftSpeed: 1 },
+    },
+  };
+  return {
+    MODULES: mods,
+    MODULE_MAP: new Map(Object.entries(mods)),
+    MODULE_DEFINITIONS: Object.values(mods),
+    MODULE_HP_BY_TIER: { 1: 20, 2: 20, 3: 20, 4: 40, 5: 60 },
+    BLUEPRINT_COPY_BASE_COST: 100,
+    calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
+    validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
+    getActiveDrawbacks: vi.fn().mockReturnValue([]),
+    isModuleUnlocked: vi.fn().mockImplementation(
+      (_id: string, _mod: unknown, _nodes: unknown, blueprints: string[]) =>
+        blueprints.length > 0,
+    ),
+    RESEARCH_TICK_MS: 60000,
+  };
+});
 
 // ── Mock techTreeQueries ─────────────────────────────────────────────────────
 vi.mock('../db/techTreeQueries.js', () => ({
@@ -75,6 +90,30 @@ vi.mock('../db/techTreeQueries.js', () => ({
     total_researched: 0,
     last_reset_at: null,
   }),
+}));
+
+// ── Mock craftSiteQueries ────────────────────────────────────────────────────
+vi.mock('../db/craftSiteQueries.js', () => ({
+  createCraftSite: vi.fn().mockResolvedValue({
+    id: 'craft-1',
+    player_id: 'player-1',
+    ship_id: 'ship-1',
+    module_id: 'ion_drive_mk2',
+    progress: 0,
+    duration: 145,
+    needed_ore: 25,
+    needed_gas: 40,
+    needed_crystal: 80,
+    needed_credits: 750,
+    deposited_ore: 0,
+    deposited_gas: 0,
+    deposited_crystal: 0,
+    deposited_credits: 0,
+    paused: true,
+  }),
+  getCraftSiteByShipId: vi.fn().mockResolvedValue(null),
+  depositCraftResources: vi.fn(),
+  deleteCraftSite: vi.fn(),
 }));
 
 // ── Mock engine deps ──────────────────────────────────────────────────────────
@@ -101,195 +140,131 @@ vi.mock('../engine/inventoryService.js', () => ({
 }));
 
 import { ShipService } from '../rooms/services/ShipService.js';
-import {
-  addToInventory,
-  removeFromInventory,
-  getInventoryItem,
-} from '../engine/inventoryService.js';
-import { getPlayerResearch, getPlayerCredits, deductCredits } from '../db/queries.js';
+import { getInventoryItem } from '../engine/inventoryService.js';
+import { getPlayerResearch, getActiveShip } from '../db/queries.js';
+import { createCraftSite, getCraftSiteByShipId } from '../db/craftSiteQueries.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function makeClient(overrides: Record<string, unknown> = {}) {
+const defaultShip = {
+  id: 'ship-1',
+  ownerId: 'player-1',
+  name: 'AEGIS',
+  modules: [
+    { moduleId: 'factory_mk1', slotIndex: 8, source: 'standard' },
+  ],
+  active: true,
+};
+
+function makeClient() {
   return {
     auth: { userId: 'player-1' },
     sessionId: 'session-1',
     send: vi.fn(),
-    ...overrides,
   } as any;
 }
 
-function makeCtx(overrides: Record<string, unknown> = {}) {
+function makeCtx() {
   return {
     _px: vi.fn().mockReturnValue(0),
     _py: vi.fn().mockReturnValue(0),
     _pst: vi.fn().mockReturnValue('station'),
     clientShips: new Map(),
-    ...overrides,
   } as any;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(getActiveShip).mockResolvedValue(defaultShip as any);
+  vi.mocked(getCraftSiteByShipId).mockResolvedValue(null);
+});
 
-beforeEach(() => vi.clearAllMocks());
+// ─── craftModule: creates craft site ─────────────────────────────────────────
 
-// ─── craftModule: research unlock ────────────────────────────────────────────
-
-describe('ShipService.handleCraftModule — research unlock path', () => {
-  it('adds crafted module to inventory when player has research unlock and sufficient credits', async () => {
+describe('ShipService.handleCraftModule — craft site creation', () => {
+  it('creates a craft site when player has research unlock', async () => {
     vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
+      unlockedModules: ['ion_drive_mk2'],
       blueprints: [],
     });
-    vi.mocked(getInventoryItem).mockResolvedValue(0); // no blueprint
-    vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
     const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
+    await svc.handleCraftModule(client, { moduleId: 'ion_drive_mk2' });
 
-    expect(addToInventory).toHaveBeenCalledWith('player-1', 'module', 'drive_mk2', 1);
-  });
-
-  it('sends craftResult success when crafting via research unlock', async () => {
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
-      blueprints: [],
-    });
-    vi.mocked(getInventoryItem).mockResolvedValue(0);
-    vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
-
-    expect(client.send).toHaveBeenCalledWith(
-      'craftResult',
-      expect.objectContaining({ success: true, moduleId: 'drive_mk2' }),
+    expect(createCraftSite).toHaveBeenCalledWith(
+      'player-1', 'ship-1', 'ion_drive_mk2',
+      expect.any(Number),
+      { ore: 25, gas: 40, crystal: 80, credits: 750 },
     );
   });
 
-  it('deducts credits when crafting a module with credit cost', async () => {
+  it('sends craftSiteUpdate and craftResult success', async () => {
     vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
+      unlockedModules: ['ion_drive_mk2'],
       blueprints: [],
     });
-    vi.mocked(getInventoryItem).mockResolvedValue(0);
-    vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
     const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
+    await svc.handleCraftModule(client, { moduleId: 'ion_drive_mk2' });
 
-    expect(deductCredits).toHaveBeenCalledWith('player-1', 300);
+    expect(client.send).toHaveBeenCalledWith('craftSiteUpdate', expect.objectContaining({ module_id: 'ion_drive_mk2' }));
+    expect(client.send).toHaveBeenCalledWith('craftResult', expect.objectContaining({ success: true }));
   });
 
-  it('deducts resource costs from inventory when crafting', async () => {
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
-      blueprints: [],
-    });
-    vi.mocked(getInventoryItem).mockResolvedValue(0);
-    vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
-
-    expect(removeFromInventory).toHaveBeenCalledWith('player-1', 'resource', 'ore', 20);
-    expect(removeFromInventory).toHaveBeenCalledWith('player-1', 'resource', 'crystal', 5);
-  });
-});
-
-// ─── craftModule: blueprint path ─────────────────────────────────────────────
-
-describe('ShipService.handleCraftModule — blueprint inventory path', () => {
-  it('adds crafted module to inventory when player has blueprint and no research unlock', async () => {
+  it('creates craft site via blueprint path', async () => {
     vi.mocked(getPlayerResearch).mockResolvedValue({
       unlockedModules: [],
       blueprints: [],
     });
     vi.mocked(getInventoryItem).mockResolvedValue(1); // has blueprint
-    vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
 
     const svc = new ShipService(makeCtx());
     const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
+    await svc.handleCraftModule(client, { moduleId: 'ion_drive_mk2' });
 
-    expect(addToInventory).toHaveBeenCalledWith('player-1', 'module', 'drive_mk2', 1);
+    expect(createCraftSite).toHaveBeenCalled();
   });
 
-  it('sends craftResult success when crafting via blueprint', async () => {
+  it('rejects when craft already active on ship', async () => {
     vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: [],
+      unlockedModules: ['ion_drive_mk2'],
       blueprints: [],
     });
-    vi.mocked(getInventoryItem).mockResolvedValue(1);
-    vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
+    vi.mocked(getCraftSiteByShipId).mockResolvedValue({ id: 'existing' } as any);
 
     const svc = new ShipService(makeCtx());
     const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
+    await svc.handleCraftModule(client, { moduleId: 'ion_drive_mk2' });
 
-    expect(client.send).toHaveBeenCalledWith(
-      'craftResult',
-      expect.objectContaining({ success: true, moduleId: 'drive_mk2' }),
+    expect(createCraftSite).not.toHaveBeenCalled();
+    expect(client.send).toHaveBeenCalledWith('craftResult', expect.objectContaining({ success: false }));
+  });
+
+  it('calculates duration based on material / craftSpeed', async () => {
+    vi.mocked(getPlayerResearch).mockResolvedValue({
+      unlockedModules: ['ion_drive_mk2'],
+      blueprints: [],
+    });
+
+    const svc = new ShipService(makeCtx());
+    const client = makeClient();
+    await svc.handleCraftModule(client, { moduleId: 'ion_drive_mk2' });
+
+    // ion_drive_mk2: ore=25 + gas=40 + crystal=80 = 145; craftSpeed=1 → duration=145
+    expect(createCraftSite).toHaveBeenCalledWith(
+      'player-1', 'ship-1', 'ion_drive_mk2',
+      145,
+      expect.any(Object),
     );
-  });
-
-  it('does NOT consume the blueprint from inventory during crafting', async () => {
-    // Blueprint-based crafting is read-only (blueprint is a recipe reference, not consumed)
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: [],
-      blueprints: [],
-    });
-    vi.mocked(getInventoryItem).mockResolvedValue(1);
-    vi.mocked(getPlayerCredits).mockResolvedValue(500);
-    vi.mocked(deductCredits).mockResolvedValue(true);
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
-
-    // removeFromInventory should only be called for resource costs, not the blueprint itself
-    expect(removeFromInventory).not.toHaveBeenCalledWith('player-1', 'blueprint', 'drive_mk2', 1);
   });
 });
 
-// ─── craftModule: no recipe available ───────────────────────────────────────
+// ─── craftModule: no recipe ──────────────────────────────────────────────────
 
 describe('ShipService.handleCraftModule — no recipe', () => {
-  it('sends craftResult failure when player has neither research nor blueprint', async () => {
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: [],
-      blueprints: [],
-    });
-    vi.mocked(getInventoryItem).mockResolvedValue(0); // no blueprint either
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
-
-    expect(client.send).toHaveBeenCalledWith(
-      'craftResult',
-      expect.objectContaining({ success: false, error: expect.stringContaining('recipe') }),
-    );
-  });
-
-  it('does NOT add module to inventory when no recipe available', async () => {
+  it('sends craftResult failure when no recipe available', async () => {
     vi.mocked(getPlayerResearch).mockResolvedValue({
       unlockedModules: [],
       blueprints: [],
@@ -298,9 +273,13 @@ describe('ShipService.handleCraftModule — no recipe', () => {
 
     const svc = new ShipService(makeCtx());
     const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
+    await svc.handleCraftModule(client, { moduleId: 'ion_drive_mk2' });
 
-    expect(addToInventory).not.toHaveBeenCalled();
+    expect(client.send).toHaveBeenCalledWith(
+      'craftResult',
+      expect.objectContaining({ success: false }),
+    );
+    expect(createCraftSite).not.toHaveBeenCalled();
   });
 
   it('sends craftResult failure for unknown moduleId', async () => {
@@ -312,75 +291,6 @@ describe('ShipService.handleCraftModule — no recipe', () => {
       'craftResult',
       expect.objectContaining({ success: false }),
     );
-    expect(addToInventory).not.toHaveBeenCalled();
-  });
-});
-
-// ─── craftModule: insufficient credits ───────────────────────────────────────
-
-describe('ShipService.handleCraftModule — insufficient credits', () => {
-  it('sends craftResult failure when player has insufficient credits', async () => {
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
-      blueprints: [],
-    });
-    vi.mocked(getInventoryItem).mockResolvedValue(0);
-    vi.mocked(getPlayerCredits).mockResolvedValue(50); // only 50, needs 300
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
-
-    expect(client.send).toHaveBeenCalledWith(
-      'craftResult',
-      expect.objectContaining({ success: false, error: expect.stringContaining('credit') }),
-    );
-  });
-
-  it('does NOT add module to inventory when credits are insufficient', async () => {
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
-      blueprints: [],
-    });
-    vi.mocked(getInventoryItem).mockResolvedValue(0);
-    vi.mocked(getPlayerCredits).mockResolvedValue(50); // insufficient
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
-
-    expect(addToInventory).not.toHaveBeenCalled();
-  });
-
-  it('does NOT deduct credits when failing due to insufficient credits', async () => {
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
-      blueprints: [],
-    });
-    vi.mocked(getInventoryItem).mockResolvedValue(0);
-    vi.mocked(getPlayerCredits).mockResolvedValue(50);
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'drive_mk2' });
-
-    expect(deductCredits).not.toHaveBeenCalled();
-  });
-
-  it('succeeds when module has zero credit cost', async () => {
-    vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['cargo_hold'],
-      blueprints: [],
-    });
-    vi.mocked(getInventoryItem).mockResolvedValue(0);
-    // getPlayerCredits should NOT be called for zero-cost modules
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
-
-    const svc = new ShipService(makeCtx());
-    const client = makeClient();
-    await svc.handleCraftModule(client, { moduleId: 'cargo_hold' });
-
-    expect(addToInventory).toHaveBeenCalledWith('player-1', 'module', 'cargo_hold', 1);
-    expect(deductCredits).not.toHaveBeenCalled();
+    expect(createCraftSite).not.toHaveBeenCalled();
   });
 });

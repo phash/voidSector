@@ -45,15 +45,110 @@ const btnStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
+function CraftProgress() {
+  const craftSite = useStore((s) => s.craftSite);
+  const cargo = useStore((s) => s.cargo);
+  const credits = useStore((s) => s.credits);
+
+  useEffect(() => {
+    if (!craftSite) return;
+    const iv = setInterval(() => network.sendGetCraftStatus(), 5000);
+    return () => clearInterval(iv);
+  }, [craftSite?.id]);
+
+  if (!craftSite) return null;
+  const mod = MODULE_MAP.get(craftSite.module_id);
+  const pct = craftSite.duration > 0 ? Math.floor((craftSite.progress / craftSite.duration) * 100) : 0;
+
+  const allDeposited =
+    craftSite.deposited_ore >= craftSite.needed_ore &&
+    craftSite.deposited_gas >= craftSite.needed_gas &&
+    craftSite.deposited_crystal >= craftSite.needed_crystal &&
+    craftSite.deposited_credits >= craftSite.needed_credits;
+
+  function depositAll() {
+    if (!craftSite) return;
+    network.sendDepositCraftResources({
+      ore: Math.min(cargo.ore ?? 0, craftSite.needed_ore - craftSite.deposited_ore),
+      gas: Math.min(cargo.gas ?? 0, craftSite.needed_gas - craftSite.deposited_gas),
+      crystal: Math.min(cargo.crystal ?? 0, craftSite.needed_crystal - craftSite.deposited_crystal),
+      credits: Math.min(credits, craftSite.needed_credits - craftSite.deposited_credits),
+    });
+  }
+
+  return (
+    <div>
+      <div style={{ ...headerStyle, marginTop: 0, color: amber }}>
+        HERSTELLUNG: {mod?.name ?? craftSite.module_id.toUpperCase().replace(/_/g, ' ')}
+      </div>
+      <div style={{ margin: '8px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: amber }}>
+          <span>{pct}%</span>
+          <span>{craftSite.progress}/{craftSite.duration}</span>
+        </div>
+        <div style={{ background: '#222', height: 8, marginTop: 2 }}>
+          <div style={{ background: amber, height: '100%', width: `${pct}%`, transition: 'width 0.3s' }} />
+        </div>
+        {!allDeposited && (
+          <div style={{ color: '#f44', fontSize: '0.6rem', marginTop: 2 }}>PAUSIERT — Rohstoffe fehlen</div>
+        )}
+      </div>
+      <div style={{ fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 8 }}>
+        {craftSite.needed_ore > 0 && (
+          <ResRow label="ORE" dep={craftSite.deposited_ore} need={craftSite.needed_ore} />
+        )}
+        {craftSite.needed_gas > 0 && (
+          <ResRow label="GAS" dep={craftSite.deposited_gas} need={craftSite.needed_gas} />
+        )}
+        {craftSite.needed_crystal > 0 && (
+          <ResRow label="CRYSTAL" dep={craftSite.deposited_crystal} need={craftSite.needed_crystal} />
+        )}
+        {craftSite.needed_credits > 0 && (
+          <ResRow label="CREDITS" dep={craftSite.deposited_credits} need={craftSite.needed_credits} />
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {!allDeposited && (
+          <button style={{ ...btnStyle, borderColor: amber, color: amber }} onClick={depositAll}>
+            [EINZAHLEN]
+          </button>
+        )}
+        <button
+          style={{ ...btnStyle, borderColor: '#f44', color: '#f44' }}
+          onClick={() => network.sendCancelCraft()}
+        >
+          [ABBRECHEN]
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ResRow({ label, dep, need }: { label: string; dep: number; need: number }) {
+  const done = dep >= need;
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span style={{ color: done ? green : amber }}>{label}</span>
+      <span style={{ color: done ? green : '#888' }}>{dep}/{need}</span>
+    </div>
+  );
+}
+
 function AcepTab() {
   const { t } = useTranslation('ui');
   const inventory = useStore((s) => s.inventory);
   const ship = useStore((s) => s.ship);
   const acepBlueprints = useStore((s) => s.acepFactoryBlueprints);
+  const craftSite = useStore((s) => s.craftSite);
 
   useEffect(() => {
     network.requestAcepBlueprints();
+    network.sendGetCraftStatus();
   }, []);
+
+  if (craftSite) {
+    return <CraftProgress />;
+  }
 
   const blueprintsInCargo = inventory.filter((i) => i.itemType === 'blueprint');
   const cargoModules = inventory.filter((i) => i.itemType === 'module');

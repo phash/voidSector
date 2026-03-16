@@ -7,6 +7,7 @@ import { SPECIALIZED_SLOT_CATEGORIES, MODULE_MAP, getExtraSlotCount, validateMod
 const CAT_LABELS: Record<string, string> = {
   generator: 'GEN', drive: 'DRV', weapon: 'WPN', armor: 'ARM',
   shield: 'SHD', scanner: 'SCN', mining: 'MIN', cargo: 'CGO',
+  factory: 'FAB',
 };
 
 function hpBar(current: number, max: number): string {

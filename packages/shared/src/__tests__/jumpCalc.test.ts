@@ -97,18 +97,18 @@ describe('calculateShipStats with engineSpeed', () => {
     expect(stats.engineSpeed).toBe(2);
   });
 
-  it('adds module engineSpeed bonus', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk2', slotIndex: 0 }]);
-    // BASE_ENGINE_SPEED 2 + drive_mk2 engineSpeed 2 = 4
-    expect(stats.engineSpeed).toBe(4);
+  it('returns BASE_ENGINE_SPEED with drive module (V2 does not add engineSpeed)', () => {
+    const stats = calculateShipStats([{ moduleId: 'ion_drive_mk1', slotIndex: 0 }]);
+    // V2 calculator does not modify engineSpeed from modules
+    expect(stats.engineSpeed).toBe(2); // BASE_ENGINE_SPEED
   });
 
-  it('clamps engineSpeed to max 5', () => {
+  it('engineSpeed stays at base with multiple drive modules', () => {
     const stats = calculateShipStats([
-      { moduleId: 'drive_mk3', slotIndex: 0 },
-      { moduleId: 'drive_mk3', slotIndex: 1 },
+      { moduleId: 'ion_drive_mk1', slotIndex: 0 },
+      { moduleId: 'ion_drive_mk2', slotIndex: 1 },
     ]);
-    // BASE_ENGINE_SPEED 2 + 3 + 3 = 8, clamped to 5
-    expect(stats.engineSpeed).toBe(5);
+    // V2 calculator does not modify engineSpeed from modules
+    expect(stats.engineSpeed).toBe(2); // BASE_ENGINE_SPEED
   });
 });

@@ -13,6 +13,8 @@ import { getAcepXpSummary, getAcepEffects, type AcepPath } from '../engine/acepX
 import { recordVisit } from '../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../engine/quadrantEngine.js';
 import { isFrontierQuadrant } from '../engine/expansionEngine.js';
+import { processCraftTick } from '../engine/craftTickService.js';
+import { getCraftSiteByShipId } from '../db/craftSiteQueries.js';
 import { adminBus } from '../adminBus.js';
 import type { AdminBroadcastEvent, AdminQuestEvent, AdminPlayerUpdateEvent } from '../adminBus.js';
 import { commsBus } from '../commsBus.js';
@@ -96,6 +98,7 @@ import {
   FUEL_MIN_TANK,
   BASE_FUEL_CAPACITY,
   CONQUEST_POOL_MAX,
+  CRAFT_TICK_INTERVAL_MS,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -748,6 +751,15 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.ships.handleActivateBlueprint(client, data),
     );
     this.onMessage('craftModule', (client, data) => this.ships.handleCraftModule(client, data));
+    this.onMessage('depositCraftResources', async (client, data) => {
+      await this.ships.handleDepositCraftResources(client, data);
+    });
+    this.onMessage('cancelCraft', async (client) => {
+      await this.ships.handleCancelCraft(client);
+    });
+    this.onMessage('getCraftStatus', async (client) => {
+      await this.ships.handleGetCraftStatus(client);
+    });
     this.onMessage('createBlueprintCopy', (client, data) =>
       this.ships.handleCreateBlueprintCopy(client, data),
     );
@@ -1185,6 +1197,19 @@ export class SectorRoom extends Room<SectorRoomState> {
         });
     }, 60000);
 
+    // ── Craft Site Tick — every 5 seconds ──────────────────────────
+    this.clock.setInterval(() => {
+      processCraftTick((playerId, event, data) => {
+        for (const client of this.clients) {
+          if ((client.auth as AuthPayload)?.userId === playerId) {
+            client.send(event, data);
+          }
+        }
+      }).catch((err) => {
+        logger.error({ err }, 'Craft tick error');
+      });
+    }, CRAFT_TICK_INTERVAL_MS);
+
     // ── Community Quest Rotation — every hour ────────────────────────
     this.clock.setInterval(
       async () => {
@@ -1472,6 +1497,10 @@ export class SectorRoom extends Room<SectorRoomState> {
         acepXp,
       });
       client.send('fuelUpdate', { current: fuelCurrent, max: stats.fuelMax });
+
+      // Send active craft site if any
+      const craftSite = await getCraftSiteByShipId(shipRecord.id);
+      if (craftSite) client.send('craftSiteUpdate', craftSite);
 
       // Send mining story progress
       const storyIndex = await getMiningStoryIndex(auth.userId);

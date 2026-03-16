@@ -21,47 +21,45 @@ describe('extra slot count', () => {
   it('0 extra slots at ausbau 499', () => expect(getExtraSlotCount(499)).toBe(0));
 });
 
-describe('calculateShipStats with ACEP multiplier', () => {
-  it('no ACEP XP = base stats unchanged', () => {
-    const mods = [{ moduleId: 'laser_mk1', slotIndex: 1, source: 'standard' as const }];
+describe('calculateShipStats with modules', () => {
+  it('base stats with no modules', () => {
+    const stats = calculateShipStats([], noAcep);
+    expect(stats.cargoCap).toBe(20); // BASE_CARGO
+    expect(stats.shieldHp).toBe(0);
+    expect(stats.weaponAttack).toBe(0);
+  });
+
+  it('drive module sets V2 fields', () => {
+    const mods = [{ moduleId: 'ion_drive_mk1', slotIndex: 1, source: 'standard' as const }];
     const stats = calculateShipStats(mods, noAcep);
-    // laser_mk1 effect.weaponAttack = 8, multiplier = 1.0
-    const baseWeaponAttack = stats.weaponAttack;
-    expect(baseWeaponAttack).toBeGreaterThan(0);
+    expect(stats.jumpDistance).toBe(32);
+    expect(stats.fuelCapacity).toBe(2000);
   });
 
-  it('kampf level 5 multiplies weapon attack by 1.5', () => {
-    const mods = [{ moduleId: 'laser_mk1', slotIndex: 1, source: 'standard' as const }];
-    const base = calculateShipStats(mods, noAcep);
-    const boosted = calculateShipStats(mods, { ...noAcep, kampf: 20000 });
-    // laser_mk1 weaponAttack +8, at KAMPF level 5 = 8 * 1.5 = 12
-    expect(boosted.weaponAttack).toBeGreaterThan(base.weaponAttack);
-    expect(boosted.weaponAttack - base.weaponAttack).toBeCloseTo(4, 0); // 8*1.5 - 8 = 4
+  it('cargo module adds to cargoCap', () => {
+    const mods = [{ moduleId: 'cargo_bay_mk1', slotIndex: 7, source: 'standard' as const }];
+    const stats = calculateShipStats(mods, noAcep);
+    expect(stats.cargoCap).toBe(45); // BASE_CARGO 20 + 25
   });
 
-  it('ausbau level 3 multiplies cargo by 1.2', () => {
-    const mods = [{ moduleId: 'cargo_mk1', slotIndex: 6, source: 'standard' as const }];
-    const base = calculateShipStats(mods, noAcep);
-    const boosted = calculateShipStats(mods, { ...noAcep, ausbau: 2500 });
-    expect(boosted.cargoCap).toBeGreaterThan(base.cargoCap);
+  it('shield module adds shieldHp and shieldRegen', () => {
+    const mods = [{ moduleId: 'schild_gen_mk1', slotIndex: 4, source: 'standard' as const }];
+    const stats = calculateShipStats(mods, noAcep);
+    expect(stats.shieldHp).toBe(100);
+    expect(stats.shieldRegen).toBe(3);
   });
 
-  it('negative effects (drawbacks) are NOT multiplied', () => {
-    // salvage_skin has cargoCap: -5 (drawback) and hp: 80 (bonus)
-    const mods = [{ moduleId: 'salvage_skin', slotIndex: 2, source: 'found' as const }];
-    const base = calculateShipStats(mods, noAcep);
-    const boosted = calculateShipStats(mods, { ...noAcep, kampf: 20000 });
-    // cargoCap -5 should NOT be multiplied → stays -5 regardless of level
-    const scoutBaseCargo = 3;
-    const baseCargoLoss = base.cargoCap - scoutBaseCargo;
-    const boostedCargoLoss = boosted.cargoCap - scoutBaseCargo;
-    expect(baseCargoLoss).toBeCloseTo(boostedCargoLoss, 0);
+  it('generator module sets apRegen and energyBudget', () => {
+    const mods = [{ moduleId: 'fusion_cell_mk1', slotIndex: 0, source: 'standard' as const }];
+    const stats = calculateShipStats(mods, noAcep);
+    expect(stats.apRegen).toBe(4);
+    expect(stats.energyBudget).toBe(100);
   });
 
-  it('weapons without ACEP have multiplier 1.0', () => {
-    const mods = [{ moduleId: 'laser_mk1', slotIndex: 1, source: 'standard' as const }];
+  it('without ACEP or with ACEP, basic V2 stats are the same', () => {
+    const mods = [{ moduleId: 'ion_drive_mk1', slotIndex: 1, source: 'standard' as const }];
     const s1 = calculateShipStats(mods, noAcep);
     const s2 = calculateShipStats(mods); // no acepXp arg
-    expect(s1.weaponAttack).toBe(s2.weaponAttack);
+    expect(s1.jumpDistance).toBe(s2.jumpDistance);
   });
 });

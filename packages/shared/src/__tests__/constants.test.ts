@@ -37,19 +37,13 @@ describe('constants', () => {
     expect(station.ore + station.gas + station.crystal).toBe(0);
   });
 
-  it('STRUCTURE_COSTS includes factory, research_lab, and kontor', () => {
-    expect(STRUCTURE_COSTS.factory).toBeDefined();
-    expect(STRUCTURE_COSTS.research_lab).toBeDefined();
-    expect(STRUCTURE_COSTS.kontor).toBeDefined();
-    expect(STRUCTURE_COSTS.factory.ore).toBeGreaterThan(0);
-    expect(STRUCTURE_COSTS.research_lab.crystal).toBeGreaterThan(0);
-    expect(STRUCTURE_COSTS.kontor.ore).toBeGreaterThan(0);
+  it('STRUCTURE_COSTS includes jumpgate', () => {
+    expect(STRUCTURE_COSTS.jumpgate).toBeDefined();
+    expect(STRUCTURE_COSTS.jumpgate.crystal).toBeGreaterThan(0);
   });
 
-  it('STRUCTURE_AP_COSTS includes factory, research_lab, and kontor', () => {
-    expect(STRUCTURE_AP_COSTS.factory).toBe(20);
-    expect(STRUCTURE_AP_COSTS.research_lab).toBe(25);
-    expect(STRUCTURE_AP_COSTS.kontor).toBe(15);
+  it('STRUCTURE_AP_COSTS includes jumpgate', () => {
+    expect(STRUCTURE_AP_COSTS.jumpgate).toBe(10);
   });
 
   it('PRODUCTION_RECIPES has valid recipes', () => {

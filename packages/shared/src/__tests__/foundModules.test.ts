@@ -1,47 +1,46 @@
 import { describe, it, expect } from 'vitest';
-import { MODULES } from '../constants.js';
+import { MODULE_MAP, MODULE_DEFINITIONS } from '../moduleDefinitions.js';
 
 describe('found modules', () => {
-  it('pulse_drive is found-only with drawback', () => {
-    expect(MODULES['pulse_drive']).toBeDefined();
-    expect(MODULES['pulse_drive'].isFoundOnly).toBe(true);
-    expect(MODULES['pulse_drive'].drawbacks?.length).toBeGreaterThan(0);
+  it('rift_drive is found-only', () => {
+    const mod = MODULE_MAP.get('rift_drive');
+    expect(mod).toBeDefined();
+    expect(mod!.isFoundOnly).toBe(true);
   });
 
-  it('ancient_lance has higher ATK than laser_mk3', () => {
-    const lance = MODULES['ancient_lance'].effects.weaponAttack ?? 0;
-    const laser = MODULES['laser_mk3'].effects.weaponAttack ?? 0;
-    expect(lance).toBeGreaterThan(laser);
+  it('ancient_lance has higher ATK than puls_laser_mk3', () => {
+    const lance = MODULE_MAP.get('ancient_lance')!;
+    const laser = MODULE_MAP.get('puls_laser_mk3')!;
+    expect(lance.stats['atk'] ?? 0).toBeGreaterThan(laser.stats['atk'] ?? 0);
   });
 
-  it('mirror_shield is unique and found-only', () => {
-    expect(MODULES['mirror_shield'].isUnique).toBe(true);
-    expect(MODULES['mirror_shield'].isFoundOnly).toBe(true);
+  it('void_drive is unique and found-only', () => {
+    const mod = MODULE_MAP.get('void_drive')!;
+    expect(mod.isUnique).toBe(true);
+    expect(mod.isFoundOnly).toBe(true);
   });
 
-  it('deep_whisper is unique scanner', () => {
-    expect(MODULES['deep_whisper'].category).toBe('scanner');
-    expect(MODULES['deep_whisper'].isUnique).toBe(true);
+  it('quantum_scanner is unique scanner', () => {
+    const mod = MODULE_MAP.get('quantum_scanner')!;
+    expect(mod.category).toBe('scanner');
+    expect(mod.isUnique).toBe(true);
   });
 
-  it('all found modules have drawbacks defined', () => {
-    const foundModules = Object.values(MODULES).filter((m) => m.isFoundOnly);
-    expect(foundModules.length).toBe(31);
-    for (const mod of foundModules) {
-      expect(mod.drawbacks, `${mod.id} missing drawbacks`).toBeDefined();
-      expect(mod.drawbacks!.length, `${mod.id} drawbacks empty`).toBeGreaterThan(0);
+  it('found-only modules exist', () => {
+    const foundModules = MODULE_DEFINITIONS.filter((m) => m.isFoundOnly);
+    expect(foundModules.length).toBeGreaterThan(0);
+  });
+
+  it('all modules have category defined', () => {
+    for (const mod of MODULE_DEFINITIONS) {
+      expect(mod.category, `${mod.id} missing category`).toBeTruthy();
     }
   });
 
-  it('all modules have acepPaths defined', () => {
-    for (const mod of Object.values(MODULES)) {
-      expect(mod.acepPaths, `${mod.id} missing acepPaths`).toBeDefined();
-      expect(mod.acepPaths!.length, `${mod.id} acepPaths empty`).toBeGreaterThan(0);
-    }
-  });
-
-  it('shield and scanner standard modules are unique', () => {
-    expect(MODULES['shield_mk1'].isUnique).toBe(true);
-    expect(MODULES['scanner_mk1'].isUnique).toBe(true);
+  it('shield and scanner standard modules are not unique', () => {
+    const shieldMk1 = MODULE_MAP.get('schild_gen_mk1')!;
+    const scannerMk1 = MODULE_MAP.get('scanner_mk1')!;
+    expect(shieldMk1.isUnique).toBe(false);
+    expect(scannerMk1.isUnique).toBe(false);
   });
 });

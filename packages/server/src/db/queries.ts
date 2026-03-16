@@ -185,10 +185,11 @@ export async function createShip(
     [playerId, name, initialFuel],
   );
   const row = rows[0];
-  // All new ships start with generator_mk1 + drive_mk1
+  // All new ships start with fusion_cell_mk1 (generator) + ion_drive_mk1 (drive) + factory_mk1 (factory)
   const initialModules: ShipModule[] = [
-    { moduleId: 'generator_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
-    { moduleId: 'drive_mk1', slotIndex: 1, source: 'standard', powerLevel: 'high', currentHp: 20 },
+    { moduleId: 'fusion_cell_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
+    { moduleId: 'ion_drive_mk1', slotIndex: 1, source: 'standard', powerLevel: 'high', currentHp: 20 },
+    { moduleId: 'factory_mk1', slotIndex: 8, source: 'standard', powerLevel: 'high', currentHp: 20 },
   ];
   await query('UPDATE ships SET modules = $1 WHERE id = $2', [JSON.stringify(initialModules), row.id]);
   return {

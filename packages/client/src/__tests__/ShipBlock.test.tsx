@@ -58,8 +58,8 @@ describe('ShipBlock', () => {
       ship: {
         ...baseShip,
         modules: [
-          // generator_mk1 has maxHp: 20 in MODULES; currentHp: 15 → HP: 15/20
-          { moduleId: 'generator_mk1', slotIndex: 0, currentHp: 15, source: 'standard' as const },
+          // fusion_cell_mk1 has hitpoints: 20 in MODULE_MAP; currentHp: 15 → HP: 15/20
+          { moduleId: 'fusion_cell_mk1', slotIndex: 0, currentHp: 15, source: 'standard' as const },
         ],
       },
     });

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { RESOURCE_TYPES, getPhysicalCargoTotal, MODULE_MAP } from '@void-sector/shared';
+import { RESOURCE_TYPES, getPhysicalCargoTotal, MODULE_MAP, SPECIALIZED_SLOT_CATEGORIES, validateModuleInstall, getExtraSlotCount } from '@void-sector/shared';
 import type { DataSlate } from '@void-sector/shared';
 import { getItemArtwork } from '../assets/items';
 import { useTranslation } from 'react-i18next';
@@ -275,7 +275,19 @@ export function CargoScreen() {
                 <button
                   className="vs-btn"
                   style={{ fontSize: '0.75rem', padding: '4px 8px' }}
-                  onClick={() => network.sendInstallModule('', item.itemId, 0)}
+                  onClick={() => {
+                    if (!ship) return;
+                    const acepXp = ship.acepXp ?? { ausbau: 0, intel: 0, kampf: 0, explorer: 0 };
+                    const totalSlots = SPECIALIZED_SLOT_CATEGORIES.length + getExtraSlotCount(acepXp.ausbau);
+                    let targetSlot = -1;
+                    for (let i = 0; i < totalSlots; i++) {
+                      const result = validateModuleInstall(ship.modules, item.itemId, i, acepXp);
+                      if (result.valid) { targetSlot = i; break; }
+                    }
+                    if (targetSlot >= 0) {
+                      network.sendInstallModule(ship.id, item.itemId, targetSlot);
+                    }
+                  }}
                 >
                   {btn(t('actions.install'))}
                 </button>

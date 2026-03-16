@@ -27,7 +27,7 @@ describe('ProgramSelector', () => {
     render(<ProgramSelector />);
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(ALL_PROGRAMS.length);
-    expect(ALL_PROGRAMS.length).toBe(12); // ACEP added
+    expect(ALL_PROGRAMS.length).toBe(14); // includes ACEP, FRIENDS, FABRIK
   });
 
   it('renders a button for each program', () => {

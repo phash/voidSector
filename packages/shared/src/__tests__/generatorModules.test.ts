@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   SPECIALIZED_SLOT_CATEGORIES, SPECIALIZED_SLOT_INDEX,
-  ACEP_EXTRA_SLOT_THRESHOLDS, MODULES,
-  MODULE_HP_BY_TIER, MODULE_EP_COSTS, BASE_HULL_AP_REGEN,
+  ACEP_EXTRA_SLOT_THRESHOLDS,
+  MODULE_HP_BY_TIER, BASE_HULL_AP_REGEN,
   DEFENSE_ONLY_CATEGORIES,
 } from '../constants.js';
+import { MODULE_MAP } from '../moduleDefinitions.js';
 
 describe('slot remap', () => {
   it('generator is slot 0', () => {
@@ -22,8 +23,8 @@ describe('slot remap', () => {
     expect(SPECIALIZED_SLOT_INDEX['cargo']).toBe(7);
   });
 
-  it('has 8 specialized slot categories', () => {
-    expect(SPECIALIZED_SLOT_CATEGORIES).toHaveLength(8);
+  it('has 9 specialized slot categories', () => {
+    expect(SPECIALIZED_SLOT_CATEGORIES).toHaveLength(9);
   });
 
   it('DEFENSE_ONLY_CATEGORIES unchanged', () => {
@@ -39,49 +40,44 @@ describe('new constants', () => {
     expect(MODULE_HP_BY_TIER[5]).toBe(110);
   });
 
-  it('MODULE_EP_COSTS has weapon costs', () => {
-    expect(MODULE_EP_COSTS['weapon']).toBeDefined();
-    expect(MODULE_EP_COSTS['weapon']!['high']).toBe(6);
-    expect(MODULE_EP_COSTS['weapon']!['off']).toBe(0);
-  });
-
   it('BASE_HULL_AP_REGEN is 0.1', () => {
     expect(BASE_HULL_AP_REGEN).toBeCloseTo(0.1);
   });
 });
 
-describe('generator modules', () => {
-  it('generator_mk1 exists with ep and apRegenPerSecond', () => {
-    const g = MODULES['generator_mk1'];
+describe('generator modules (new system)', () => {
+  it('fusion_cell_mk1 exists with apCost and stats', () => {
+    const g = MODULE_MAP.get('fusion_cell_mk1');
     expect(g).toBeDefined();
-    expect(g.category).toBe('generator');
-    expect(g.tier).toBe(1);
-    expect(g.effects.generatorEpPerRound).toBe(6);
-    expect(g.effects.apRegenPerSecond).toBeCloseTo(2);
-    expect(g.maxHp).toBe(20);
+    expect(g!.category).toBe('generator');
+    expect(g!.tier).toBe(1);
+    expect(g!.stats['apRegen']).toBe(4);
+    expect(g!.stats['energyPerRound']).toBe(100);
+    expect(g!.hitpoints).toBe(20);
   });
 
-  it('generator_mk5 has 18 EP/round and 10 AP/s', () => {
-    expect(MODULES['generator_mk5'].effects.generatorEpPerRound).toBe(18);
-    expect(MODULES['generator_mk5'].effects.apRegenPerSecond).toBeCloseTo(10);
+  it('am_generator has 12 apRegen and 500 energyPerRound', () => {
+    const g = MODULE_MAP.get('am_generator')!;
+    expect(g.stats['apRegen']).toBe(12);
+    expect(g.stats['energyPerRound']).toBe(500);
   });
 
-  it('repair_mk1 exists with repair stats', () => {
-    const r = MODULES['repair_mk1'];
+  it('repair_drone_mk1 exists with repair stats', () => {
+    const r = MODULE_MAP.get('repair_drone_mk1');
     expect(r).toBeDefined();
-    expect(r.category).toBe('repair');
-    expect(r.effects.repairHpPerRound).toBe(2);
-    expect(r.effects.repairHpPerSecond).toBeCloseTo(0.5);
-    expect(r.maxHp).toBe(20);
+    expect(r!.category).toBe('repair');
+    expect(r!.stats['repairRate']).toBe(2);
+    expect(r!.hitpoints).toBe(20);
   });
 
-  it('repair_mk5 has 16 HP/round', () => {
-    expect(MODULES['repair_mk5'].effects.repairHpPerRound).toBe(16);
+  it('nano_bots_mk1 has 16 repairRate', () => {
+    const r = MODULE_MAP.get('nano_bots_mk1')!;
+    expect(r.stats['repairRate']).toBe(16);
   });
 
-  it('existing modules have maxHp via backfill', () => {
-    expect(MODULES['laser_mk1'].maxHp).toBe(20);   // tier 1
-    expect(MODULES['laser_mk3'].maxHp).toBe(55);   // tier 3
-    expect(MODULES['drive_mk5'].maxHp).toBe(110);  // tier 5
+  it('modules have hitpoints defined', () => {
+    expect(MODULE_MAP.get('puls_laser_mk1')!.hitpoints).toBe(40);
+    expect(MODULE_MAP.get('puls_laser_mk3')!.hitpoints).toBe(80);
+    expect(MODULE_MAP.get('am_drive_mk1')!.hitpoints).toBe(40);
   });
 });

@@ -56,14 +56,14 @@ function makeServiceContext(overrides: Partial<any> = {}): any {
 
 /**
  * Standard ship fixture with:
- * - repair_mk3 (tier 3, full HP)
+ * - repair_drone_mk3 (tier 3, full HP)
  * - scanner_mk1 at varying HP
  */
 function makeShip(modulesOverride?: any[]): any {
   return {
     id: 'ship-1',
     modules: modulesOverride ?? [
-      { moduleId: 'repair_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 55 },
+      { moduleId: 'repair_drone_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
       { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 5 },
     ],
     active: true,
@@ -155,7 +155,7 @@ describe('RepairService.handleRepairModule', () => {
 
   it('rejects if module not found on ship', async () => {
     vi.mocked(getActiveShip).mockResolvedValue(makeShip());
-    await service.handleRepairModule(client, { moduleId: 'drive_mk5' });
+    await service.handleRepairModule(client, { moduleId: 'am_drive_mk2' });
     const result = client._messages.find((m: any) => m.type === 'repairModuleResult');
     expect(result?.data.success).toBe(false);
     expect(result?.data.error).toMatch(/nicht installiert/);
@@ -164,7 +164,7 @@ describe('RepairService.handleRepairModule', () => {
   it('rejects if module is already intact', async () => {
     vi.mocked(getActiveShip).mockResolvedValue(
       makeShip([
-        { moduleId: 'repair_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 55 },
+        { moduleId: 'repair_drone_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
         // scanner_mk1 maxHp=20, currentHp=20 → intact
         { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 20 },
       ]),
@@ -192,7 +192,7 @@ describe('RepairService.handleRepairModule', () => {
     // scanner_mk1 maxHp=20, destroyed = currentHp ≤ 5
     vi.mocked(getActiveShip).mockResolvedValue(
       makeShip([
-        { moduleId: 'repair_mk1', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
+        { moduleId: 'repair_drone_mk1', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
         { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 2 },
       ]),
     );
@@ -206,7 +206,7 @@ describe('RepairService.handleRepairModule', () => {
     // scanner_mk1 maxHp=20, heavy = currentHp 6–10
     vi.mocked(getActiveShip).mockResolvedValue(
       makeShip([
-        { moduleId: 'repair_mk2', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 35 },
+        { moduleId: 'repair_drone_mk2', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
         { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 8 },
       ]),
     );
@@ -217,9 +217,9 @@ describe('RepairService.handleRepairModule', () => {
   });
 
   it('rejects if not enough ore', async () => {
-    // scanner_mk1 currentHp=12 (light), repair_mk3 tier 3 → cost: 15 ore, 0 crystal
+    // scanner_mk1 currentHp=12 (light), repair_drone_mk3 tier 3 → cost: 15 ore, 0 crystal
     vi.mocked(getActiveShip).mockResolvedValue(makeShip([
-      { moduleId: 'repair_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 55 },
+      { moduleId: 'repair_drone_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
       { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 12 },
     ]));
     vi.mocked(getCargoState).mockResolvedValue({ ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 });
@@ -230,9 +230,9 @@ describe('RepairService.handleRepairModule', () => {
   });
 
   it('rejects if not enough crystal', async () => {
-    // scanner_mk1 currentHp=2 (destroyed), repair_mk3 tier 3 → cost: 0 ore, 15 crystal
+    // scanner_mk1 currentHp=2 (destroyed), repair_drone_mk3 tier 3 → cost: 0 ore, 15 crystal
     vi.mocked(getActiveShip).mockResolvedValue(makeShip([
-      { moduleId: 'repair_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 55 },
+      { moduleId: 'repair_drone_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
       { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 2 },
     ]));
     vi.mocked(getCargoState).mockResolvedValue({ ore: 100, gas: 0, crystal: 3, slates: 0, artefact: 0 });
@@ -245,7 +245,7 @@ describe('RepairService.handleRepairModule', () => {
   it('successfully repairs light→intact (tier 3 repair, sufficient ore)', async () => {
     // scanner_mk1 maxHp=20, currentHp=12 → light (60%)
     vi.mocked(getActiveShip).mockResolvedValue(makeShip([
-      { moduleId: 'repair_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 55 },
+      { moduleId: 'repair_drone_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
       { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 12 },
     ]));
     vi.mocked(getCargoState).mockResolvedValue({ ore: 50, gas: 0, crystal: 20, slates: 0, artefact: 0 });
@@ -269,7 +269,7 @@ describe('RepairService.handleRepairModule', () => {
   it('successfully repairs destroyed→heavy (tier 3, sufficient crystal)', async () => {
     // scanner_mk1 maxHp=20, currentHp=2 → destroyed
     vi.mocked(getActiveShip).mockResolvedValue(makeShip([
-      { moduleId: 'repair_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 55 },
+      { moduleId: 'repair_drone_mk3', slotIndex: 7, source: 'bought', powerLevel: 'high', currentHp: 20 },
       { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 2 },
     ]));
     vi.mocked(getCargoState).mockResolvedValue({ ore: 0, gas: 0, crystal: 30, slates: 0, artefact: 0 });
@@ -289,7 +289,7 @@ describe('RepairService.handleRepairModule', () => {
   it('ignores repair module that is powered off', async () => {
     vi.mocked(getActiveShip).mockResolvedValue(
       makeShip([
-        { moduleId: 'repair_mk3', slotIndex: 7, source: 'bought', powerLevel: 'off', currentHp: 55 },
+        { moduleId: 'repair_drone_mk3', slotIndex: 7, source: 'bought', powerLevel: 'off', currentHp: 20 },
         { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 5 },
       ]),
     );
@@ -384,12 +384,12 @@ describe('RepairService.handleStationRepair', () => {
 
   it('station repair cost is sum of all damaged modules × 2', async () => {
     // scanner_mk1: maxHp=20, currentHp=5 → 15 missing HP → 30 CR
-    // drive_mk1: maxHp=20, currentHp=10 → 10 missing HP → 20 CR
+    // ion_drive_mk1: maxHp=20, currentHp=10 → 10 missing HP → 20 CR
     // total: 50 CR
     vi.mocked(getActiveShip).mockResolvedValue(
       makeShip([
         { moduleId: 'scanner_mk1', slotIndex: 2, source: 'bought', powerLevel: 'high', currentHp: 5 },
-        { moduleId: 'drive_mk1', slotIndex: 0, source: 'bought', powerLevel: 'high', currentHp: 10 },
+        { moduleId: 'ion_drive_mk1', slotIndex: 0, source: 'bought', powerLevel: 'high', currentHp: 10 },
       ]),
     );
     vi.mocked(getPlayerCredits)

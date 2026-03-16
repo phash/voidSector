@@ -26,21 +26,21 @@ describe('Blueprint Copy Creation', () => {
     } as any);
 
     const research = await getPlayerResearch('player-1');
-    expect(research.unlockedModules.includes('drive_mk2')).toBe(false);
+    expect(research.unlockedModules.includes('ion_drive_mk2')).toBe(false);
   });
 
   it('calculates correct cost: 100 * tier', () => {
-    const mod = MODULES['drive_mk2'];
+    const mod = MODULES['ion_drive_mk2'];
     expect(mod).toBeDefined();
     const cost = BLUEPRINT_COPY_BASE_COST * mod.tier;
     expect(cost).toBe(200);
   });
 
-  it('calculates tier 5 cost correctly', () => {
-    const mod = MODULES['drive_mk5'];
+  it('calculates tier 6 cost correctly', () => {
+    const mod = MODULES['am_drive_mk2'];
     if (mod) {
       const cost = BLUEPRINT_COPY_BASE_COST * mod.tier;
-      expect(cost).toBe(500);
+      expect(cost).toBe(600);
     }
   });
 
@@ -53,7 +53,7 @@ describe('Blueprint Copy Creation', () => {
 
   it('deducts credits and adds blueprint on success', async () => {
     vi.mocked(getPlayerResearch).mockResolvedValue({
-      unlockedModules: ['drive_mk2'],
+      unlockedModules: ['ion_drive_mk2'],
       blueprints: [],
     } as any);
     vi.mocked(getPlayerCredits).mockResolvedValue(1000);
@@ -61,14 +61,14 @@ describe('Blueprint Copy Creation', () => {
     vi.mocked(addToInventory).mockResolvedValue();
 
     const research = await getPlayerResearch('player-1');
-    expect(research.unlockedModules.includes('drive_mk2')).toBe(true);
+    expect(research.unlockedModules.includes('ion_drive_mk2')).toBe(true);
 
-    const mod = MODULES['drive_mk2'];
+    const mod = MODULES['ion_drive_mk2'];
     const cost = BLUEPRINT_COPY_BASE_COST * mod.tier;
     await deductCredits('player-1', cost);
-    await addToInventory('player-1', 'blueprint', 'drive_mk2', 1);
+    await addToInventory('player-1', 'blueprint', 'ion_drive_mk2', 1);
 
     expect(deductCredits).toHaveBeenCalledWith('player-1', 200);
-    expect(addToInventory).toHaveBeenCalledWith('player-1', 'blueprint', 'drive_mk2', 1);
+    expect(addToInventory).toHaveBeenCalledWith('player-1', 'blueprint', 'ion_drive_mk2', 1);
   });
 });

@@ -101,7 +101,8 @@ export type ArtefactType =
   | 'special'
   | 'mining'
   | 'generator'
-  | 'repair';
+  | 'repair'
+  | 'factory';
 
 export const ARTEFACT_TYPES: ArtefactType[] = [
   'drive',
@@ -130,6 +131,7 @@ export const ARTEFACT_TYPE_FOR_CATEGORY: Record<ArtefactType, ArtefactType> = {
   mining: 'mining',
   generator: 'generator',
   repair: 'repair',
+  factory: 'factory',
 };
 
 export interface SectorResources {

@@ -1064,7 +1064,7 @@ export function DetailPanel() {
           {/* Build buttons - only when player is here and sector is buildable */}
           {isPlayerHere && constructionSite ? (
             <ConstructionSitePanel key={constructionSite.id} site={constructionSite} />
-          ) : isPlayerHere && isBuildable(currentSector?.environment ?? 'empty') ? (
+          ) : isPlayerHere && isBuildable(sector?.environment ?? 'empty') ? (
             <div style={{ marginTop: 8 }}>
               <div
                 style={{

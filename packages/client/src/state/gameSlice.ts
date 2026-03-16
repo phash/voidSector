@@ -230,6 +230,22 @@ export interface PlayerPresence {
   acepTotal: number;
 }
 
+export interface CraftSiteState {
+  id: string;
+  module_id: string;
+  progress: number;
+  duration: number;
+  needed_ore: number;
+  needed_gas: number;
+  needed_crystal: number;
+  needed_credits: number;
+  deposited_ore: number;
+  deposited_gas: number;
+  deposited_crystal: number;
+  deposited_credits: number;
+  paused: boolean;
+}
+
 export interface BountyEncounterState {
   questId: string;
   targetName: string;
@@ -468,6 +484,7 @@ export interface GameSlice {
   // Player Stations
   playerStationInfo: any | null;
   acepFactoryBlueprints: string[];
+  craftSite: CraftSiteState | null;
   productionQueue: any[];
   myStations: Array<{ id: string; sector_x: number; sector_y: number; level: number; factory_level: number; cargo_level: number; cargo_contents: Record<string, number> }>;
   stationBlueprintsMap: Record<string, string[]>; // stationId → blueprint list
@@ -797,6 +814,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   playerGateInfo: null,
   playerStationInfo: null,
   acepFactoryBlueprints: [],
+  craftSite: null,
   productionQueue: [],
   myStations: [],
   stationBlueprintsMap: {},

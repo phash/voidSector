@@ -10,8 +10,8 @@ import {
 } from '../constants.js';
 
 describe('specialized slot system', () => {
-  it('has 8 specialized slot categories', () => {
-    expect(SPECIALIZED_SLOT_CATEGORIES).toHaveLength(8);
+  it('has 9 specialized slot categories', () => {
+    expect(SPECIALIZED_SLOT_CATEGORIES).toHaveLength(9);
   });
 
   it('generator is slot 0', () => {

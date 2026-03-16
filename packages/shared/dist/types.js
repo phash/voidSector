@@ -24,6 +24,7 @@ export const ARTEFACT_TYPE_FOR_CATEGORY = {
     mining: 'mining',
     generator: 'generator',
     repair: 'repair',
+    factory: 'factory',
 };
 /** Derive legacy SectorType from environment + contents (for backward compat) */
 export function legacySectorType(env, contents) {

@@ -361,6 +361,7 @@ export const SPECIALIZED_SLOT_CATEGORIES: ModuleCategory[] = [
   'scanner',   // slot 5
   'mining',    // slot 6
   'cargo',     // slot 7
+  'factory',   // slot 8
 ];
 
 export const SPECIALIZED_SLOT_INDEX: Partial<Record<ModuleCategory, number>> = {
@@ -372,9 +373,10 @@ export const SPECIALIZED_SLOT_INDEX: Partial<Record<ModuleCategory, number>> = {
   scanner:   5,
   mining:    6,
   cargo:     7,
+  factory:   8,
 };
 
-export const UNIQUE_MODULE_CATEGORIES: ModuleCategory[] = ['shield', 'scanner'];
+export const UNIQUE_MODULE_CATEGORIES: ModuleCategory[] = ['shield', 'scanner', 'factory'];
 export const DEFENSE_ONLY_CATEGORIES: ModuleCategory[] = ['defense', 'special'];
 
 /** ausbau-XP-Schwellwerte für Extra-Slot-Freischaltung */
@@ -805,6 +807,7 @@ export const ENGINE_SPEED: Record<string, number> = {
 export const RESEARCH_TICK_MS = 60_000; // 1 tick = 1 minute
 export const ARTEFACT_RESEARCH_TIME_BONUS = 0.1; // -10% research time when typed artefacts present
 
+export const CRAFT_TICK_INTERVAL_MS = 5_000; // 5 seconds, same as construction ticks
 export const AUTOPILOT_STEP_MS = 800; // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24; // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7; // coords-only after 7 days

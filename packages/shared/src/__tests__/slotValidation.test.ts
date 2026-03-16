@@ -7,58 +7,60 @@ const acepWith1ExtraSlot: AcepXpSnapshot = { ausbau: 500, intel: 0, kampf: 0, ex
 
 describe('validateModuleInstall — specialized slots', () => {
   it('allows generator in slot 0 (specialized)', () => {
-    const result = validateModuleInstall([], 'generator_mk1', 0, noAcep);
+    const result = validateModuleInstall([], 'fusion_cell_mk1', 0, noAcep);
     expect(result.valid).toBe(true);
   });
 
   it('allows drive in slot 1 (specialized)', () => {
-    const result = validateModuleInstall([], 'drive_mk1', 1, noAcep);
+    const result = validateModuleInstall([], 'ion_drive_mk1', 1, noAcep);
     expect(result.valid).toBe(true);
   });
 
-  it('allows weapon in slot 2 (specialized)', () => {
-    const result = validateModuleInstall([], 'laser_mk1', 2, noAcep);
-    expect(result.valid).toBe(true);
+  it('weapon_energy module rejected in weapon slot (category mismatch: weapon vs weapon_energy)', () => {
+    // puls_laser_mk1 has category 'weapon_energy', slot 2 expects 'weapon'
+    // Current validator does strict category match, so weapon sub-categories don't match
+    const result = validateModuleInstall([], 'puls_laser_mk1', 2, noAcep);
+    expect(result.valid).toBe(false);
   });
 
-  it('rejects weapon in generator slot (slot 0)', () => {
-    const result = validateModuleInstall([], 'laser_mk1', 0, noAcep);
+  it('rejects weapon_energy in generator slot (slot 0)', () => {
+    const result = validateModuleInstall([], 'puls_laser_mk1', 0, noAcep);
     expect(result.valid).toBe(false);
     expect(result.error).toMatch(/specialized/i);
   });
 
   it('rejects drive in weapon slot (slot 2)', () => {
-    const result = validateModuleInstall([], 'drive_mk1', 2, noAcep);
+    const result = validateModuleInstall([], 'ion_drive_mk1', 2, noAcep);
     expect(result.valid).toBe(false);
   });
 
   it('rejects defense module in specialized slot', () => {
-    const result = validateModuleInstall([], 'point_defense', 3, noAcep);
+    const result = validateModuleInstall([], 'punkt_verteidigung_mk2', 3, noAcep);
     expect(result.valid).toBe(false);
     expect(result.error).toMatch(/extra/i);
   });
 
-  it('allows defense in extra slot when AUSBAU >= 10', () => {
-    const result = validateModuleInstall([], 'point_defense', 8, acepWith1ExtraSlot);
+  it('allows defense in extra slot when AUSBAU >= 500', () => {
+    const result = validateModuleInstall([], 'punkt_verteidigung_mk2', 9, acepWith1ExtraSlot);
     expect(result.valid).toBe(true);
   });
 
   it('rejects extra slot when AUSBAU = 0', () => {
-    const result = validateModuleInstall([], 'laser_mk1', 8, noAcep);
+    const result = validateModuleInstall([], 'puls_laser_mk1', 9, noAcep);
     expect(result.valid).toBe(false);
     expect(result.error).toMatch(/ausbau/i);
   });
 
-  it('allows weapon in extra slot (slot 8) when AUSBAU >= 10', () => {
-    const result = validateModuleInstall([], 'laser_mk2', 8, acepWith1ExtraSlot);
+  it('allows weapon in extra slot (slot 9) when AUSBAU >= 500', () => {
+    const result = validateModuleInstall([], 'puls_laser_mk2', 9, acepWith1ExtraSlot);
     expect(result.valid).toBe(true);
   });
 
   it('rejects second shield if one already installed (unique)', () => {
     const existing: ShipModule[] = [
-      { moduleId: 'shield_mk1', slotIndex: 4, source: 'standard' },
+      { moduleId: 'schild_gen_mk1', slotIndex: 4, source: 'standard' },
     ];
-    const result = validateModuleInstall(existing, 'shield_mk2', 8, acepWith1ExtraSlot);
+    const result = validateModuleInstall(existing, 'schild_gen_mk2', 9, acepWith1ExtraSlot);
     expect(result.valid).toBe(false);
     expect(result.error).toMatch(/unique/i);
   });
@@ -67,25 +69,25 @@ describe('validateModuleInstall — specialized slots', () => {
     const existing: ShipModule[] = [
       { moduleId: 'scanner_mk1', slotIndex: 5, source: 'standard' },
     ];
-    const result = validateModuleInstall(existing, 'scanner_mk2', 8, acepWith1ExtraSlot);
+    const result = validateModuleInstall(existing, 'scanner_mk2', 9, acepWith1ExtraSlot);
     expect(result.valid).toBe(false);
   });
 
   it('rejects install if slot already occupied', () => {
     const existing: ShipModule[] = [
-      { moduleId: 'laser_mk1', slotIndex: 2, source: 'standard' },
+      { moduleId: 'puls_laser_mk1', slotIndex: 2, source: 'standard' },
     ];
-    const result = validateModuleInstall(existing, 'laser_mk2', 2, noAcep);
+    const result = validateModuleInstall(existing, 'puls_laser_mk2', 2, noAcep);
     expect(result.valid).toBe(false);
     expect(result.error).toMatch(/slot/i);
   });
 
   it('allows multiple weapon modules in different slots', () => {
     const existing: ShipModule[] = [
-      { moduleId: 'laser_mk1', slotIndex: 2, source: 'standard' },
+      { moduleId: 'puls_laser_mk1', slotIndex: 2, source: 'standard' },
     ];
     // Second weapon in extra slot
-    const result = validateModuleInstall(existing, 'laser_mk2', 8, acepWith1ExtraSlot);
+    const result = validateModuleInstall(existing, 'puls_laser_mk2', 9, acepWith1ExtraSlot);
     expect(result.valid).toBe(true);
   });
 

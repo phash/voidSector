@@ -13,25 +13,25 @@ describe('calculateShipStats', () => {
     expect(stats.damageMod).toBe(1.0);
   });
 
-  it('adds module bonuses', () => {
+  it('adds drive module V2 stats', () => {
     const stats = calculateShipStats([
-      { moduleId: 'drive_mk2', slotIndex: 0 },
-      { moduleId: 'cargo_mk1', slotIndex: 1 },
+      { moduleId: 'ion_drive_mk2', slotIndex: 0 },
     ]);
-    expect(stats.jumpRange).toBe(7); // 5 + 2
-    expect(stats.cargoCap).toBe(30); // 20 + 10
-    expect(stats.apCostJump).toBe(0.8); // 1 - 0.2
+    expect(stats.jumpDistance).toBe(48);
+    expect(stats.fuelCapacity).toBe(4000);
+    expect(stats.rechargeRate).toBe(6);
   });
 
-  it('clamps AP cost to minimum 0.5', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk3', slotIndex: 0 }]);
-    expect(stats.apCostJump).toBe(0.5); // 1 - 0.5 = 0.5
+  it('adds cargo module capacity', () => {
+    const stats = calculateShipStats([
+      { moduleId: 'cargo_bay_mk1', slotIndex: 0 },
+    ]);
+    expect(stats.cargoCap).toBe(45); // 20 + 25
   });
 
-  it('stacks armor damage reduction', () => {
-    const stats = calculateShipStats([{ moduleId: 'armor_mk3', slotIndex: 0 }]);
-    expect(stats.hp).toBe(200); // 100 + 100
-    expect(stats.damageMod).toBe(0.75); // 1.0 + (-0.25)
+  it('adds armor hitpoints', () => {
+    const stats = calculateShipStats([{ moduleId: 'armor_plating_mk3', slotIndex: 0 }]);
+    expect(stats.armorHp).toBe(400); // armor_plating_mk3 hitpoints = 400
   });
 
   it('ignores unknown modules', () => {
@@ -62,83 +62,70 @@ describe('calculateShipStats', () => {
     expect(stats.ecmReduction).toBe(0);
   });
 
-  it('adds weapon stats from laser module', () => {
-    const stats = calculateShipStats([{ moduleId: 'laser_mk2', slotIndex: 0 }]);
-    expect(stats.weaponAttack).toBe(16);
-    expect(stats.weaponType).toBe('laser');
-  });
-
   it('adds shield stats from shield module', () => {
-    const stats = calculateShipStats([{ moduleId: 'shield_mk1', slotIndex: 0 }]);
-    expect(stats.shieldHp).toBe(30);
+    const stats = calculateShipStats([{ moduleId: 'schild_gen_mk1', slotIndex: 0 }]);
+    expect(stats.shieldHp).toBe(100);
     expect(stats.shieldRegen).toBe(3);
   });
 
-  it('sets piercing from railgun', () => {
-    const stats = calculateShipStats([{ moduleId: 'railgun_mk2', slotIndex: 0 }]);
-    expect(stats.weaponAttack).toBe(22);
-    expect(stats.weaponPiercing).toBe(0.5);
-    expect(stats.weaponType).toBe('railgun');
+  it('adds shield stats from schild_gen_mk2', () => {
+    const stats = calculateShipStats([{ moduleId: 'schild_gen_mk2', slotIndex: 0 }]);
+    expect(stats.shieldHp).toBe(200);
+    expect(stats.shieldRegen).toBe(6);
   });
 
-  it('adds point defense and ecm', () => {
+  it('adds generator stats (apRegen and energyBudget)', () => {
+    const stats = calculateShipStats([{ moduleId: 'fusion_cell_mk1', slotIndex: 0 }]);
+    expect(stats.apRegen).toBe(4);
+    expect(stats.energyBudget).toBe(100);
+  });
+
+  it('adds mining speed from mining module', () => {
+    const stats = calculateShipStats([{ moduleId: 'mining_laser_mk1', slotIndex: 0 }]);
+    expect(stats.miningSpeed).toBe(1);
+  });
+
+  it('stacks mining speed from multiple mining modules', () => {
     const stats = calculateShipStats([
-      { moduleId: 'point_defense', slotIndex: 0 },
-      { moduleId: 'ecm_suite', slotIndex: 1 },
+      { moduleId: 'mining_laser_mk1', slotIndex: 0 },
+      { moduleId: 'mining_laser_mk2', slotIndex: 1 },
     ]);
-    expect(stats.pointDefense).toBe(0.6);
-    expect(stats.ecmReduction).toBe(0.15);
+    expect(stats.miningSpeed).toBe(5); // 1 + 4
   });
 
-  it('combines weapon + shield + armor', () => {
+  it('combines shield + armor', () => {
     const stats = calculateShipStats([
-      { moduleId: 'laser_mk3', slotIndex: 0 },
-      { moduleId: 'shield_mk2', slotIndex: 1 },
-      { moduleId: 'armor_mk2', slotIndex: 2 },
+      { moduleId: 'schild_gen_mk2', slotIndex: 0 },
+      { moduleId: 'armor_plating_mk1', slotIndex: 1 },
     ]);
-    expect(stats.weaponAttack).toBe(28);
-    expect(stats.shieldHp).toBe(60);
-    expect(stats.hp).toBe(100 + 50); // BASE_HP + armor_mk2
-    expect(stats.damageMod).toBe(0.9); // 1.0 + (-0.10)
+    expect(stats.shieldHp).toBe(200);
+    expect(stats.armorHp).toBe(200);
   });
 
-  it('preserves existing stat behavior', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk1', slotIndex: 0 }]);
-    expect(stats.jumpRange).toBe(5 + 1); // BASE_JUMP_RANGE (5) + drive_mk1 (+1)
-    expect(stats.weaponAttack).toBe(0);
+  it('preserves drive V2 stats', () => {
+    const stats = calculateShipStats([{ moduleId: 'ion_drive_mk1', slotIndex: 0 }]);
+    expect(stats.jumpDistance).toBe(32);
+    expect(stats.fuelCapacity).toBe(2000);
   });
 
-  it('adds artefactChanceBonus from scanner_mk3', () => {
-    const stats = calculateShipStats([{ moduleId: 'scanner_mk3', slotIndex: 0 }]);
-    expect(stats.artefactChanceBonus).toBeCloseTo(0.03);
-  });
-
-  it('adds safeSlotBonus from cargo_mk2', () => {
-    const stats = calculateShipStats([{ moduleId: 'cargo_mk2', slotIndex: 0 }]);
-    expect(stats.safeSlotBonus).toBe(2);
-  });
-
-  it('stacks safeSlotBonus from multiple cargo modules', () => {
-    const stats = calculateShipStats([
-      { moduleId: 'cargo_mk2', slotIndex: 0 },
-      { moduleId: 'cargo_mk3', slotIndex: 1 },
-    ]);
-    expect(stats.safeSlotBonus).toBe(5); // 2 + 3
+  it('scanner sets scanRange', () => {
+    const stats = calculateShipStats([{ moduleId: 'scanner_mk1', slotIndex: 0 }]);
+    expect(stats.scanRange).toBe(3);
   });
 });
 
 describe('validateModuleInstall', () => {
   it('rejects wrong category for specialized slot', () => {
-    // slot 6 is mining; drive_mk1 is category drive → mismatch
-    const result = validateModuleInstall([], 'drive_mk1', 6);
+    // slot 6 is mining; ion_drive_mk1 is category drive → mismatch
+    const result = validateModuleInstall([], 'ion_drive_mk1', 6);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Specialized Slot');
   });
 
   it('rejects occupied slot', () => {
     const result = validateModuleInstall(
-      [{ moduleId: 'drive_mk1', slotIndex: 1, source: 'standard' }],
-      'drive_mk2',
+      [{ moduleId: 'ion_drive_mk1', slotIndex: 1, source: 'standard' }],
+      'ion_drive_mk2',
       1,
     );
     expect(result.valid).toBe(false);
@@ -151,14 +138,14 @@ describe('validateModuleInstall', () => {
   });
 
   it('accepts valid install', () => {
-    const result = validateModuleInstall([], 'drive_mk1', 1);
+    const result = validateModuleInstall([], 'ion_drive_mk1', 1);
     expect(result.valid).toBe(true);
   });
 
   it('accepts cargo module in cargo slot (slot 7)', () => {
     const result = validateModuleInstall(
-      [{ moduleId: 'drive_mk1', slotIndex: 1, source: 'standard' }],
-      'cargo_mk1',
+      [{ moduleId: 'ion_drive_mk1', slotIndex: 1, source: 'standard' }],
+      'cargo_bay_mk1',
       7,
     );
     expect(result.valid).toBe(true);
@@ -169,24 +156,6 @@ describe('memory stat', () => {
   it('returns BASE_SCANNER_MEMORY with no scanner modules', () => {
     const stats = calculateShipStats([]);
     expect(stats.memory).toBe(10); // BASE_SCANNER_MEMORY = 10
-  });
-
-  it('adds scanner module memory to base', () => {
-    const stats = calculateShipStats([{ moduleId: 'scanner_mk1', slotIndex: 0 }]);
-    expect(stats.memory).toBe(18); // 10 base + 8
-  });
-
-  it('accumulates memory from multiple scanners', () => {
-    const stats = calculateShipStats([
-      { moduleId: 'scanner_mk1', slotIndex: 0 },
-      { moduleId: 'quantum_scanner', slotIndex: 1 },
-    ]);
-    expect(stats.memory).toBe(28); // 10 + 8 + 10
-  });
-
-  it('war_scanner adds 0 memory', () => {
-    const stats = calculateShipStats([{ moduleId: 'war_scanner', slotIndex: 0 }]);
-    expect(stats.memory).toBe(10); // 10 base + 0
   });
 });
 

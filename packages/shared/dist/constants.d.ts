@@ -355,6 +355,7 @@ export declare const HYPERJUMP_FUEL_MAX_FACTOR = 2;
 export declare const ENGINE_SPEED: Record<string, number>;
 export declare const RESEARCH_TICK_MS = 60000;
 export declare const ARTEFACT_RESEARCH_TIME_BONUS = 0.1;
+export declare const CRAFT_TICK_INTERVAL_MS = 5000;
 export declare const AUTOPILOT_STEP_MS = 800;
 export declare const STALENESS_DIM_HOURS = 24;
 export declare const STALENESS_FADE_DAYS = 7;

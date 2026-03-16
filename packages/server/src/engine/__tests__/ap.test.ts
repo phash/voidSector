@@ -18,14 +18,14 @@ describe('AP engine', () => {
     expect(ap.regenPerSecond).toBeCloseTo(BASE_HULL_AP_REGEN);
   });
 
-  it('createAPState uses calculateApRegen when generator_mk1 present', () => {
-    // generator_mk1: apRegenPerSecond=2, powerLevel=high (multiplier=1.0), currentHp=maxHp=20
-    // expected: BASE_HULL_AP_REGEN + 2 * 1.0 * 1.0 = 0.1 + 2 = 2.1
+  it('createAPState uses calculateApRegen when fusion_cell_mk1 present', () => {
+    // fusion_cell_mk1: apRegen=4, powerLevel=high (multiplier=1.0), currentHp=maxHp=20
+    // expected: BASE_HULL_AP_REGEN + 4 * 1.0 * 1.0 = 0.1 + 4 = 4.1
     const modules: ShipModule[] = [
-      { moduleId: 'generator_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
+      { moduleId: 'fusion_cell_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
     ];
     const ap = createAPState(Date.now(), modules);
-    expect(ap.regenPerSecond).toBeCloseTo(BASE_HULL_AP_REGEN + 2);
+    expect(ap.regenPerSecond).toBeCloseTo(BASE_HULL_AP_REGEN + 4);
   });
 
   it('calculateCurrentAP regenerates over time', () => {

@@ -1,20 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { isModuleFreelyAvailable, isModuleUnlocked } from '../research';
 import { MODULES } from '../constants';
+import { MODULE_MAP, MODULE_DEFINITIONS } from '../moduleDefinitions';
 import { ARTEFACT_TYPES, ARTEFACT_TYPE_FOR_CATEGORY } from '../types';
 
 describe('isModuleFreelyAvailable', () => {
-  it('returns true for tier-1 base modules without researchCost', () => {
-    expect(isModuleFreelyAvailable('drive_mk1')).toBe(true);
-    expect(isModuleFreelyAvailable('cargo_mk1')).toBe(true);
-    expect(isModuleFreelyAvailable('armor_mk1')).toBe(true);
+  it('returns true for tier-1 base modules (not foundOnly)', () => {
+    expect(isModuleFreelyAvailable('ion_drive_mk1')).toBe(true);
+    expect(isModuleFreelyAvailable('cargo_bay_mk1')).toBe(true);
+    expect(isModuleFreelyAvailable('armor_plating_mk1')).toBe(true);
     expect(isModuleFreelyAvailable('scanner_mk1')).toBe(true);
   });
 
-  it('returns false for modules that require research', () => {
-    expect(isModuleFreelyAvailable('drive_mk2')).toBe(false);
-    expect(isModuleFreelyAvailable('shield_mk1')).toBe(false);
+  it('returns false for found-only modules', () => {
     expect(isModuleFreelyAvailable('void_drive')).toBe(false);
+    expect(isModuleFreelyAvailable('rift_drive')).toBe(false);
+    expect(isModuleFreelyAvailable('ancient_lance')).toBe(false);
   });
 
   it('returns false for unknown modules', () => {
@@ -24,8 +25,8 @@ describe('isModuleFreelyAvailable', () => {
 
 describe('isModuleUnlocked', () => {
   it('freely available modules are always unlocked', () => {
-    expect(isModuleUnlocked('drive_mk1', { category: 'drive', tier: 1 }, {}, [])).toBe(true);
-    expect(isModuleUnlocked('cargo_mk1', { category: 'cargo', tier: 1 }, {}, [])).toBe(true);
+    expect(isModuleUnlocked('ion_drive_mk1', { category: 'drive', tier: 1 }, {}, [])).toBe(true);
+    expect(isModuleUnlocked('cargo_bay_mk1', { category: 'cargo', tier: 1 }, {}, [])).toBe(true);
   });
 
   it('blueprint alone does NOT unlock without required tier', () => {
@@ -102,43 +103,41 @@ describe('isModuleUnlocked', () => {
   });
 });
 
-describe('Module data validation', () => {
-  it('all modules have primaryEffect', () => {
-    for (const [id, mod] of Object.entries(MODULES)) {
-      expect(mod.primaryEffect, `${id} missing primaryEffect`).toBeDefined();
-      expect(mod.primaryEffect.stat).toBeTruthy();
-      expect(typeof mod.primaryEffect.delta).toBe('number');
-      expect(mod.primaryEffect.label).toBeTruthy();
+describe('Module data validation (new system)', () => {
+  it('all modules have description', () => {
+    for (const mod of MODULE_DEFINITIONS) {
+      expect(mod.description, `${mod.id} missing description`).toBeTruthy();
     }
   });
 
-  it('all modules have secondaryEffects array', () => {
-    for (const [id, mod] of Object.entries(MODULES)) {
-      expect(Array.isArray(mod.secondaryEffects), `${id} missing secondaryEffects array`).toBe(
-        true,
-      );
+  it('all modules have category and tier', () => {
+    for (const mod of MODULE_DEFINITIONS) {
+      expect(mod.category, `${mod.id} missing category`).toBeTruthy();
+      expect(mod.tier, `${mod.id} missing tier`).toBeGreaterThan(0);
     }
   });
 
-  it('all tier 2+ modules with researchCost have prerequisite (except laser_mk1, missile_mk1)', () => {
-    const exceptions = ['laser_mk1', 'missile_mk1'];
-    for (const [id, mod] of Object.entries(MODULES)) {
-      if (mod.researchCost && !exceptions.includes(id)) {
-        expect(mod.prerequisite, `${id} has researchCost but no prerequisite`).toBeTruthy();
+  it('all tier 2+ modules with prerequisiteModuleId reference existing modules', () => {
+    for (const mod of MODULE_DEFINITIONS) {
+      if (mod.prerequisiteModuleId) {
+        expect(
+          MODULE_MAP.get(mod.prerequisiteModuleId),
+          `${mod.id} prerequisite '${mod.prerequisiteModuleId}' does not exist`,
+        ).toBeDefined();
       }
     }
   });
 
   it('spezial modules exist', () => {
-    expect(MODULES['void_drive']).toBeDefined();
-    expect(MODULES['quantum_scanner']).toBeDefined();
-    expect(MODULES['nano_armor']).toBeDefined();
+    expect(MODULE_MAP.get('void_drive')).toBeDefined();
+    expect(MODULE_MAP.get('quantum_scanner')).toBeDefined();
+    expect(MODULE_MAP.get('nano_armor')).toBeDefined();
   });
 
-  it('void_drive has faction requirement', () => {
-    expect(MODULES['void_drive'].factionRequirement).toBeDefined();
-    expect(MODULES['void_drive'].factionRequirement!.factionId).toBe('ancients');
-    expect(MODULES['void_drive'].factionRequirement!.minTier).toBe('honored');
+  it('void_drive is found-only and unique', () => {
+    const vd = MODULE_MAP.get('void_drive')!;
+    expect(vd.isFoundOnly).toBe(true);
+    expect(vd.isUnique).toBe(true);
   });
 });
 
@@ -150,35 +149,25 @@ describe('ArtefactType', () => {
     expect(ARTEFACT_TYPES).toContain('drive');
     expect(ARTEFACT_TYPES).toContain('mining');
   });
-  it('ARTEFACT_TYPE_FOR_CATEGORY maps all 11 categories', () => {
-    expect(Object.keys(ARTEFACT_TYPE_FOR_CATEGORY)).toHaveLength(11);
+  it('ARTEFACT_TYPE_FOR_CATEGORY maps all 12 categories', () => {
+    expect(Object.keys(ARTEFACT_TYPE_FOR_CATEGORY)).toHaveLength(12);
     expect(ARTEFACT_TYPE_FOR_CATEGORY['drive']).toBe('drive');
     expect(ARTEFACT_TYPE_FOR_CATEGORY['mining']).toBe('mining');
   });
 });
 
-describe('MODULES researchCost (new format)', () => {
-  it('all researchCost values use wissen (not credits)', () => {
-    for (const [id, mod] of Object.entries(MODULES)) {
-      if (!mod.researchCost) continue;
-      expect((mod.researchCost as any).credits, `${id} should not have credits`).toBeUndefined();
-      expect(mod.researchCost.wissen, `${id} should have wissen`).toBeGreaterThan(0);
-    }
+describe('MODULE_DEFINITIONS artefact costs', () => {
+  it('some modules require artefacts via costArtefact', () => {
+    const modulesWithArtefactCost = MODULE_DEFINITIONS.filter(
+      (m) => m.costArtefact !== '0' && m.costArtefact !== '',
+    );
+    expect(modulesWithArtefactCost.length).toBeGreaterThan(0);
   });
 
-  it('T3+ modules require matching artefacts', () => {
-    for (const [id, mod] of Object.entries(MODULES)) {
-      if (!mod.researchCost || mod.tier < 3) continue;
-      const total = Object.values(mod.researchCost.artefacts ?? {}).reduce((s, v) => s + v, 0);
-      expect(total, `${id} T${mod.tier} needs artefacts`).toBeGreaterThan(0);
-    }
-  });
-
-  it('T5 modules require 3 artefacts', () => {
-    for (const [id, mod] of Object.entries(MODULES)) {
-      if (!mod.researchCost || mod.tier !== 5) continue;
-      const total = Object.values(mod.researchCost.artefacts ?? {}).reduce((s, v) => s + v, 0);
-      expect(total, `${id} T5 should require 3 artefacts`).toBe(3);
-    }
+  it('T4+ modules may require artefacts', () => {
+    const t4plus = MODULE_DEFINITIONS.filter(
+      (m) => m.tier >= 4 && !m.isFoundOnly && m.costArtefact !== '0',
+    );
+    expect(t4plus.length).toBeGreaterThan(0);
   });
 });

@@ -4,16 +4,15 @@ import type {
   MineableResourceType,
   CargoState,
   StorageInventory,
-  ModuleDefinition,
 } from '../types.js';
 import {
   RESOURCE_TYPES,
   ARTEFACT_DROP_CHANCES,
   NPC_PRICES,
   SECTOR_RESOURCE_YIELDS,
-  MODULES,
   PRODUCTION_RECIPES,
 } from '../constants.js';
+import { MODULE_DEFINITIONS } from '../moduleDefinitions.js';
 
 describe('Artefact resource type', () => {
   it('ResourceType includes artefact', () => {
@@ -78,12 +77,10 @@ describe('Artefact resource type', () => {
     }
   });
 
-  it('some module researchCosts require artefacts (artefact is a research resource)', () => {
-    const modulesWithArtefactResearch = Object.values(MODULES).filter(
-      (m: ModuleDefinition) =>
-        m.researchCost?.artefacts &&
-        Object.values(m.researchCost.artefacts).reduce((s, v) => s + v, 0) > 0,
+  it('some modules require artefacts (costArtefact field)', () => {
+    const modulesWithArtefactCost = MODULE_DEFINITIONS.filter(
+      (m) => m.costArtefact !== '0' && m.costArtefact !== '',
     );
-    expect(modulesWithArtefactResearch.length).toBeGreaterThan(0);
+    expect(modulesWithArtefactCost.length).toBeGreaterThan(0);
   });
 });

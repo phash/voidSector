@@ -49,8 +49,8 @@ describe('migration 052 — module_source', () => {
     `);
     await query(`
       INSERT INTO _mig052_test (modules) VALUES
-        ('[{"moduleId":"laser_mk1","slotIndex":1}]'::jsonb),
-        ('[{"moduleId":"shield_mk1","slotIndex":2,"source":"existing"}]'::jsonb),
+        ('[{"moduleId":"puls_laser_mk1","slotIndex":1}]'::jsonb),
+        ('[{"moduleId":"schild_gen_mk1","slotIndex":2,"source":"existing"}]'::jsonb),
         ('[]'::jsonb)
     `);
   });
@@ -79,13 +79,13 @@ describe('migration 052 — module_source', () => {
       `SELECT modules FROM _mig052_test WHERE jsonb_array_length(modules) > 0 ORDER BY modules->0->>'moduleId'`,
     );
 
-    // laser_mk1 had no source → should get 'standard'
-    const laserRow = res.rows.find((r) => r.modules[0].moduleId === 'laser_mk1');
+    // puls_laser_mk1 had no source → should get 'standard'
+    const laserRow = res.rows.find((r) => r.modules[0].moduleId === 'puls_laser_mk1');
     expect(laserRow).toBeDefined();
     expect(laserRow!.modules[0].source).toBe('standard');
 
-    // shield_mk1 already had source='existing' → must be preserved
-    const shieldRow = res.rows.find((r) => r.modules[0].moduleId === 'shield_mk1');
+    // schild_gen_mk1 already had source='existing' → must be preserved
+    const shieldRow = res.rows.find((r) => r.modules[0].moduleId === 'schild_gen_mk1');
     expect(shieldRow).toBeDefined();
     expect(shieldRow!.modules[0].source).toBe('existing');
   });

@@ -35,8 +35,15 @@ import {
   addUnlockedModule,
   getPlayerCredits,
   deductCredits,
+  addCredits,
   getWissen,
 } from '../../db/queries.js';
+import {
+  createCraftSite,
+  getCraftSiteByShipId,
+  depositCraftResources,
+  deleteCraftSite,
+} from '../../db/craftSiteQueries.js';
 import { getOrCreateTechTree } from '../../db/techTreeQueries.js';
 
 export class ShipService {
@@ -210,7 +217,7 @@ export class ShipService {
       return;
     }
 
-    // Check recipe: either researched OR has blueprint + required tech tree tier
+    // 1. Check recipe access
     const [research, bpQty, techTree] = await Promise.all([
       getPlayerResearch(auth.userId),
       getInventoryItem(auth.userId, 'blueprint', data.moduleId),
@@ -225,38 +232,97 @@ export class ShipService {
       return;
     }
 
-    // Check and deduct credits
-    const creditCost = mod.costCredits ?? 0;
-    if (creditCost > 0) {
-      const credits = await getPlayerCredits(auth.userId);
-      if (credits < creditCost) {
-        client.send('craftResult', { success: false, error: 'Not enough credits' });
-        return;
-      }
-      await deductCredits(auth.userId, creditCost);
-    }
-
-    // Deduct resource costs from inventory
-    try {
-      if (mod.costOre > 0) await removeFromInventory(auth.userId, 'resource', 'ore', mod.costOre);
-      if (mod.costGas > 0) await removeFromInventory(auth.userId, 'resource', 'gas', mod.costGas);
-      if (mod.costCrystal > 0)
-        await removeFromInventory(auth.userId, 'resource', 'crystal', mod.costCrystal);
-    } catch (err) {
-      client.send('craftResult', { success: false, error: 'Insufficient resources' });
+    // 2. Check no active craft on this ship
+    const ship = await getActiveShip(auth.userId);
+    if (!ship) return;
+    const existing = await getCraftSiteByShipId(ship.id);
+    if (existing) {
+      client.send('craftResult', { success: false, error: 'Bereits eine Herstellung aktiv' });
       return;
     }
 
-    // Produce module
-    await addToInventory(auth.userId, 'module', data.moduleId, 1);
+    // 3. Get factory craftSpeed from installed factory module
+    const factoryMod = ship.modules.find(m => MODULE_MAP.get(m.moduleId)?.category === 'factory');
+    const craftSpeed = factoryMod ? (MODULE_MAP.get(factoryMod.moduleId)?.stats['craftSpeed'] ?? 1) : 1;
 
+    // 4. Calculate duration: total material / craftSpeed (min 1)
+    const totalMaterial = (mod.costOre ?? 0) + (mod.costGas ?? 0) + (mod.costCrystal ?? 0);
+    const duration = Math.max(1, Math.ceil(totalMaterial / craftSpeed));
+
+    // 5. Create craft site (resources deposited later)
+    const site = await createCraftSite(auth.userId, ship.id, data.moduleId, duration, {
+      ore: mod.costOre ?? 0,
+      gas: mod.costGas ?? 0,
+      crystal: mod.costCrystal ?? 0,
+      credits: mod.costCredits ?? 0,
+    });
+
+    client.send('craftSiteUpdate', site);
     client.send('craftResult', { success: true, moduleId: data.moduleId });
-    client.send('logEntry', `HERGESTELLT: ${mod.name ?? data.moduleId}`);
-    // Refresh client inventory, cargo, and credits
+    client.send('logEntry', `HERSTELLUNG GESTARTET: ${mod.name ?? data.moduleId}`);
+  }
+
+  async handleDepositCraftResources(
+    client: Client,
+    data: { ore?: number; gas?: number; crystal?: number; credits?: number },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const ship = await getActiveShip(auth.userId);
+    if (!ship) return;
+    const site = await getCraftSiteByShipId(ship.id);
+    if (!site) {
+      client.send('actionError', 'Keine aktive Herstellung');
+      return;
+    }
+
+    // Clamp to needed - deposited
+    const ore = Math.min(data.ore ?? 0, site.needed_ore - site.deposited_ore);
+    const gas = Math.min(data.gas ?? 0, site.needed_gas - site.deposited_gas);
+    const crystal = Math.min(data.crystal ?? 0, site.needed_crystal - site.deposited_crystal);
+    const credits = Math.min(data.credits ?? 0, site.needed_credits - site.deposited_credits);
+
+    // Deduct from player
+    if (ore > 0) await removeFromInventory(auth.userId, 'resource', 'ore', ore);
+    if (gas > 0) await removeFromInventory(auth.userId, 'resource', 'gas', gas);
+    if (crystal > 0) await removeFromInventory(auth.userId, 'resource', 'crystal', crystal);
+    if (credits > 0) await deductCredits(auth.userId, credits);
+
+    // Deposit into site
+    await depositCraftResources(site.id, { ore, gas, crystal, credits });
+
+    // Refresh client
+    const updated = await getCraftSiteByShipId(ship.id);
+    client.send('craftSiteUpdate', updated);
     client.send('inventoryUpdated', {});
-    client.send('cargoUpdate', await getCargoState(auth.userId));
+    if (credits > 0) client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+  }
+
+  async handleCancelCraft(client: Client): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const ship = await getActiveShip(auth.userId);
+    if (!ship) return;
+    const site = await getCraftSiteByShipId(ship.id);
+    if (!site) return;
+
+    // Return deposited resources
+    if (site.deposited_ore > 0) await addToInventory(auth.userId, 'resource', 'ore', site.deposited_ore);
+    if (site.deposited_gas > 0) await addToInventory(auth.userId, 'resource', 'gas', site.deposited_gas);
+    if (site.deposited_crystal > 0) await addToInventory(auth.userId, 'resource', 'crystal', site.deposited_crystal);
+    if (site.deposited_credits > 0) await addCredits(auth.userId, site.deposited_credits);
+
+    await deleteCraftSite(site.id);
+    client.send('craftSiteUpdate', null);
+    client.send('inventoryUpdated', {});
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-    awardWissenAndNotify(client, auth.userId, 3);  // +3 per craft
+    client.send('logEntry', 'HERSTELLUNG ABGEBROCHEN');
+  }
+
+  async handleGetCraftStatus(client: Client): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const ship = await getActiveShip(auth.userId);
+    if (!ship) return;
+    const site = await getCraftSiteByShipId(ship.id);
+    client.send('craftSiteUpdate', site ?? null);
   }
 
   async handleActivateBlueprint(client: Client, data: { moduleId: string }): Promise<void> {

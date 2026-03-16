@@ -54,6 +54,14 @@ vi.mock('../engine/npcgen.js', () => ({
   getStationFaction: vi.fn().mockReturnValue('traders'),
 }));
 
+vi.mock('../rooms/services/RedisAPStore.js', () => ({
+  redis: { get: vi.fn().mockResolvedValue(null), set: vi.fn(), del: vi.fn() },
+  getAPState: vi.fn().mockResolvedValue(null),
+  saveAPState: vi.fn(),
+  getFuelState: vi.fn().mockResolvedValue(50),
+  saveFuelState: vi.fn(),
+}));
+
 vi.mock('../engine/questgen.js', () => ({
   generateStationQuests: vi.fn().mockReturnValue([]),
 }));

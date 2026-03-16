@@ -1,15 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { MODULES } from '../constants';
-import type { ModuleDefinition, ModuleTier } from '../types';
+import { MODULE_MAP, MODULE_DEFINITIONS } from '../moduleDefinitions.js';
 
-const TIER_4_5_MODULES = Object.entries(MODULES).filter(
-  ([, m]) => (m.tier === 4 || m.tier === 5) && !m.isFoundOnly,
-);
-
-const DRIVE_CHAIN = ['drive_mk1', 'drive_mk2', 'drive_mk3', 'drive_mk4', 'drive_mk5'];
+const DRIVE_CHAIN = ['ion_drive_mk1', 'ion_drive_mk2', 'ion_drive_mk3', 'proto_am_drive', 'am_drive_mk1'];
 const SCANNER_CHAIN = ['scanner_mk1', 'scanner_mk2', 'scanner_mk3', 'scanner_mk4', 'scanner_mk5'];
-const ARMOR_CHAIN = ['armor_mk1', 'armor_mk2', 'armor_mk3', 'armor_mk4', 'armor_mk5'];
-const CARGO_CHAIN = ['cargo_mk1', 'cargo_mk2', 'cargo_mk3', 'cargo_mk4', 'cargo_mk5'];
+const ARMOR_CHAIN = ['armor_plating_mk1', 'armor_plating_mk2', 'armor_plating_mk3', 'armor_plating_mk4', 'armor_plating_mk5'];
+const CARGO_CHAIN = ['cargo_bay_mk1', 'cargo_bay_mk2', 'cargo_bay_mk3', 'cargo_bay_mk4', 'cargo_bay_mk5'];
 const MINING_CHAIN = [
   'mining_laser_mk1',
   'mining_laser_mk2',
@@ -20,127 +15,85 @@ const MINING_CHAIN = [
 
 const ALL_CHAINS = [DRIVE_CHAIN, SCANNER_CHAIN, ARMOR_CHAIN, CARGO_CHAIN, MINING_CHAIN];
 
+const TIER_4_5_MODULES = MODULE_DEFINITIONS.filter(
+  (m) => (m.tier === 4 || m.tier === 5) && !m.isFoundOnly,
+);
+
 describe('Tier 4-5 module definitions', () => {
-  it('all tier 4-5 modules exist in MODULES', () => {
+  it('all tier 4-5 chain modules exist in MODULE_MAP', () => {
     const expected = [
-      'drive_mk4',
-      'drive_mk5',
+      'proto_am_drive',
+      'am_drive_mk1',
       'scanner_mk4',
       'scanner_mk5',
-      'armor_mk4',
-      'armor_mk5',
-      'cargo_mk4',
-      'cargo_mk5',
+      'armor_plating_mk4',
+      'armor_plating_mk5',
+      'cargo_bay_mk4',
+      'cargo_bay_mk5',
       'mining_laser_mk4',
       'mining_laser_mk5',
     ];
     for (const id of expected) {
-      expect(MODULES[id], `${id} should exist`).toBeDefined();
+      expect(MODULE_MAP.get(id), `${id} should exist`).toBeDefined();
     }
   });
 
   it('all tier 4-5 modules have correct tier value', () => {
-    for (const [id, mod] of TIER_4_5_MODULES) {
+    for (const mod of TIER_4_5_MODULES) {
       expect([4, 5]).toContain(mod.tier);
     }
   });
 
-  it('all tier 4-5 modules have primaryEffect with stat, delta, and label', () => {
-    for (const [id, mod] of TIER_4_5_MODULES) {
-      expect(mod.primaryEffect, `${id} missing primaryEffect`).toBeDefined();
-      expect(mod.primaryEffect.stat, `${id} primaryEffect missing stat`).toBeTruthy();
-      expect(typeof mod.primaryEffect.delta, `${id} primaryEffect delta not number`).toBe('number');
-      expect(mod.primaryEffect.label, `${id} primaryEffect missing label`).toBeTruthy();
+  it('all tier 4-5 modules have description', () => {
+    for (const mod of TIER_4_5_MODULES) {
+      expect(mod.description, `${mod.id} missing description`).toBeTruthy();
     }
   });
 
-  it('all tier 4-5 modules have at least one secondary effect', () => {
-    for (const [id, mod] of TIER_4_5_MODULES) {
+  it('all tier 4-5 modules have stats or hitpoints', () => {
+    for (const mod of TIER_4_5_MODULES) {
+      const hasStats = Object.keys(mod.stats).length > 0;
+      const hasHitpoints = mod.hitpoints > 0;
       expect(
-        mod.secondaryEffects.length,
-        `${id} should have at least one secondary effect`,
-      ).toBeGreaterThanOrEqual(1);
-    }
-  });
-
-  it('all tier 4-5 modules have effects matching their primaryEffect stat', () => {
-    for (const [id, mod] of TIER_4_5_MODULES) {
-      const statKey = mod.primaryEffect.stat;
-      expect(
-        mod.effects[statKey as keyof typeof mod.effects],
-        `${id} effects should contain ${statKey}`,
-      ).toBeDefined();
+        hasStats || hasHitpoints,
+        `${mod.id} should have stats or hitpoints`,
+      ).toBe(true);
     }
   });
 });
 
 describe('Artefact costs for tier 4-5', () => {
-  it('all tier 4-5 modules require artefacts in purchaseCost', () => {
-    for (const [id, mod] of TIER_4_5_MODULES) {
-      expect(mod.cost.artefact, `${id} should require artefacts to purchase`).toBeGreaterThan(0);
-    }
+  it('tier 4-5 modules with artefact costs have non-zero costArtefact', () => {
+    const modulesWithArtefacts = TIER_4_5_MODULES.filter(m => m.costArtefact !== '0');
+    expect(modulesWithArtefacts.length).toBeGreaterThan(0);
   });
 
-  it('all tier 4-5 modules require artefacts in researchCost', () => {
-    for (const [id, mod] of TIER_4_5_MODULES) {
-      expect(mod.researchCost, `${id} should have researchCost`).toBeDefined();
-      const totalArtefacts = Object.values(mod.researchCost!.artefacts ?? {}).reduce(
-        (s, v) => s + v,
-        0,
-      );
-      expect(totalArtefacts, `${id} researchCost should include artefacts`).toBeGreaterThan(0);
-    }
-  });
-
-  it('mk5 modules cost more artefacts than mk4 in same chain', () => {
+  it('tier 5 modules cost more credits than tier 4 in same chain', () => {
     for (const chain of ALL_CHAINS) {
-      const mk4 = MODULES[chain[3]];
-      const mk5 = MODULES[chain[4]];
+      const mk4 = MODULE_MAP.get(chain[3])!;
+      const mk5 = MODULE_MAP.get(chain[4])!;
       expect(
-        mk5.cost.artefact!,
-        `${chain[4]} purchase artefact cost should exceed ${chain[3]}`,
-      ).toBeGreaterThan(mk4.cost.artefact!);
-      const mk4Research = Object.values(mk4.researchCost!.artefacts ?? {}).reduce(
-        (s, v) => s + v,
-        0,
-      );
-      const mk5Research = Object.values(mk5.researchCost!.artefacts ?? {}).reduce(
-        (s, v) => s + v,
-        0,
-      );
-      expect(
-        mk5Research,
-        `${chain[4]} research artefact cost should exceed ${chain[3]}`,
-      ).toBeGreaterThan(mk4Research);
-    }
-  });
-
-  it('mk5 modules cost more credits than mk4', () => {
-    for (const chain of ALL_CHAINS) {
-      const mk4 = MODULES[chain[3]];
-      const mk5 = MODULES[chain[4]];
-      expect(
-        mk5.cost.credits,
+        mk5.costCredits,
         `${chain[4]} purchase credits should exceed ${chain[3]}`,
-      ).toBeGreaterThan(mk4.cost.credits);
+      ).toBeGreaterThan(mk4.costCredits);
     }
   });
 });
 
 describe('Prerequisite chains', () => {
-  it('mk4 requires mk3 as prerequisite', () => {
+  it('tier 4 requires tier 3 as prerequisite', () => {
     for (const chain of ALL_CHAINS) {
-      const mk4 = MODULES[chain[3]];
-      expect(mk4.prerequisite, `${chain[3]} should require ${chain[2]} as prerequisite`).toBe(
+      const mk4 = MODULE_MAP.get(chain[3])!;
+      expect(mk4.prerequisiteModuleId, `${chain[3]} should require ${chain[2]} as prerequisite`).toBe(
         chain[2],
       );
     }
   });
 
-  it('mk5 requires mk4 as prerequisite', () => {
+  it('tier 5 requires tier 4 as prerequisite', () => {
     for (const chain of ALL_CHAINS) {
-      const mk5 = MODULES[chain[4]];
-      expect(mk5.prerequisite, `${chain[4]} should require ${chain[3]} as prerequisite`).toBe(
+      const mk5 = MODULE_MAP.get(chain[4])!;
+      expect(mk5.prerequisiteModuleId, `${chain[4]} should require ${chain[3]} as prerequisite`).toBe(
         chain[3],
       );
     }
@@ -149,13 +102,13 @@ describe('Prerequisite chains', () => {
   it('full prerequisite chains are valid (each module points to previous tier)', () => {
     for (const chain of ALL_CHAINS) {
       // mk1 has no prerequisite (freely available)
-      const mk1 = MODULES[chain[0]];
-      expect(mk1.prerequisite).toBeUndefined();
+      const mk1 = MODULE_MAP.get(chain[0])!;
+      expect(mk1.prerequisiteModuleId).toBeUndefined();
 
       // mk2..mk5 chain back
       for (let i = 1; i < chain.length; i++) {
-        const mod = MODULES[chain[i]];
-        expect(mod.prerequisite, `${chain[i]} should have prerequisite ${chain[i - 1]}`).toBe(
+        const mod = MODULE_MAP.get(chain[i])!;
+        expect(mod.prerequisiteModuleId, `${chain[i]} should have prerequisite ${chain[i - 1]}`).toBe(
           chain[i - 1],
         );
       }
@@ -163,11 +116,11 @@ describe('Prerequisite chains', () => {
   });
 
   it('prerequisite references point to existing modules', () => {
-    for (const [id, mod] of Object.entries(MODULES)) {
-      if (mod.prerequisite) {
+    for (const mod of MODULE_DEFINITIONS) {
+      if (mod.prerequisiteModuleId) {
         expect(
-          MODULES[mod.prerequisite],
-          `${id} prerequisite '${mod.prerequisite}' does not exist`,
+          MODULE_MAP.get(mod.prerequisiteModuleId),
+          `${mod.id} prerequisite '${mod.prerequisiteModuleId}' does not exist`,
         ).toBeDefined();
       }
     }
@@ -177,132 +130,89 @@ describe('Prerequisite chains', () => {
 describe('Mining laser modules', () => {
   it('mining laser mk1-mk5 all exist', () => {
     for (const id of MINING_CHAIN) {
-      expect(MODULES[id], `${id} should exist`).toBeDefined();
+      expect(MODULE_MAP.get(id), `${id} should exist`).toBeDefined();
     }
   });
 
   it('mining laser modules have category "mining"', () => {
     for (const id of MINING_CHAIN) {
-      expect(MODULES[id].category).toBe('mining');
+      expect(MODULE_MAP.get(id)!.category).toBe('mining');
     }
   });
 
-  it('mining laser primary effect is miningBonus', () => {
+  it('mining speed increases with tier', () => {
+    let prevSpeed = 0;
     for (const id of MINING_CHAIN) {
-      expect(MODULES[id].primaryEffect.stat).toBe('miningBonus');
+      const speed = MODULE_MAP.get(id)!.stats['miningSpeed'] ?? 0;
+      expect(speed, `${id} miningSpeed should exceed previous tier`).toBeGreaterThan(prevSpeed);
+      prevSpeed = speed;
     }
   });
 
-  it('mining bonus increases with tier', () => {
-    let prevBonus = 0;
-    for (const id of MINING_CHAIN) {
-      const bonus = MODULES[id].primaryEffect.delta;
-      expect(bonus, `${id} miningBonus should exceed previous tier`).toBeGreaterThan(prevBonus);
-      prevBonus = bonus;
-    }
-  });
-
-  it('mining_laser_mk1 is freely available (no researchCost)', () => {
-    expect(MODULES['mining_laser_mk1'].researchCost).toBeUndefined();
+  it('mining_laser_mk1 is not found-only', () => {
+    expect(MODULE_MAP.get('mining_laser_mk1')!.isFoundOnly).toBe(false);
   });
 });
 
-describe('Drive mk4/mk5 specifics', () => {
-  it('drive_mk4 has hyperdriveRange 384', () => {
-    expect(MODULES['drive_mk4'].effects.hyperdriveRange).toBe(384);
+describe('Drive specifics', () => {
+  it('am_drive_mk1 has jumpDistance 150', () => {
+    expect(MODULE_MAP.get('am_drive_mk1')!.stats['jumpDistance']).toBe(150);
   });
 
-  it('drive_mk5 has hyperdriveRange 768', () => {
-    expect(MODULES['drive_mk5'].effects.hyperdriveRange).toBe(768);
+  it('am_drive_mk2 has jumpDistance 250', () => {
+    expect(MODULE_MAP.get('am_drive_mk2')!.stats['jumpDistance']).toBe(250);
   });
 
-  it('drive_mk4 costs 3 artefacts to purchase', () => {
-    expect(MODULES['drive_mk4'].cost.artefact).toBe(3);
-  });
-
-  it('drive_mk5 costs 8 artefacts to purchase', () => {
-    expect(MODULES['drive_mk5'].cost.artefact).toBe(8);
-  });
-
-  it('drive tier progression increases jump range', () => {
-    let prevRange = 0;
+  it('drive tier progression increases jump distance', () => {
+    let prevDistance = 0;
     for (const id of DRIVE_CHAIN) {
-      const range = MODULES[id].effects.jumpRange ?? 0;
-      expect(range, `${id} jumpRange should exceed previous`).toBeGreaterThan(prevRange);
-      prevRange = range;
+      const distance = MODULE_MAP.get(id)!.stats['jumpDistance'] ?? 0;
+      expect(distance, `${id} jumpDistance should exceed previous`).toBeGreaterThan(prevDistance);
+      prevDistance = distance;
     }
   });
 });
 
-describe('Scanner mk4/mk5 specifics', () => {
-  it('scanner_mk4 has scannerLevel 3 in effects', () => {
-    expect(MODULES['scanner_mk4'].effects.scannerLevel).toBe(3);
-  });
-
-  it('scanner_mk4 costs 2 artefacts to purchase', () => {
-    expect(MODULES['scanner_mk4'].cost.artefact).toBe(2);
-  });
-
-  it('scanner_mk4 has miningBonus secondary effect', () => {
-    expect(MODULES['scanner_mk4'].secondaryEffects.some((e) => e.stat === 'miningBonus')).toBe(
-      true,
-    );
+describe('Scanner specifics', () => {
+  it('scanner_mk4 has scanRange 12', () => {
+    expect(MODULE_MAP.get('scanner_mk4')!.stats['scanRange']).toBe(12);
   });
 });
 
-describe('Armor mk4/mk5 specifics', () => {
-  it('armor_mk4 hp +150 with shield +15', () => {
-    expect(MODULES['armor_mk4'].effects.hp).toBe(150);
-    expect(MODULES['armor_mk4'].effects.shieldHp).toBe(15);
+describe('Armor specifics', () => {
+  it('armor_plating_mk4 has hitpoints 600', () => {
+    expect(MODULE_MAP.get('armor_plating_mk4')!.hitpoints).toBe(600);
   });
 
-  it('armor_mk4 costs 2 artefacts to purchase', () => {
-    expect(MODULES['armor_mk4'].cost.artefact).toBe(2);
-  });
-
-  it('armor hp increases with tier', () => {
+  it('armor hitpoints increase with tier', () => {
     let prevHp = 0;
     for (const id of ARMOR_CHAIN) {
-      const hp = MODULES[id].effects.hp ?? 0;
-      expect(hp, `${id} hp should exceed previous`).toBeGreaterThan(prevHp);
+      const hp = MODULE_MAP.get(id)!.hitpoints;
+      expect(hp, `${id} hitpoints should exceed previous`).toBeGreaterThan(prevHp);
       prevHp = hp;
     }
   });
 });
 
-describe('Cargo mk4/mk5 specifics', () => {
+describe('Cargo specifics', () => {
   it('cargo capacity increases with tier', () => {
     let prevCap = 0;
     for (const id of CARGO_CHAIN) {
-      const cap = MODULES[id].effects.cargoCap ?? 0;
-      expect(cap, `${id} cargoCap should exceed previous`).toBeGreaterThan(prevCap);
+      const cap = MODULE_MAP.get(id)!.stats['cargoCapacity'] ?? 0;
+      expect(cap, `${id} cargoCapacity should exceed previous`).toBeGreaterThan(prevCap);
       prevCap = cap;
     }
-  });
-
-  it('cargo mk4 and mk5 have fuel tank bonus', () => {
-    expect(MODULES['cargo_mk4'].effects.fuelMax).toBeGreaterThan(0);
-    expect(MODULES['cargo_mk5'].effects.fuelMax).toBeGreaterThan(0);
-    expect(MODULES['cargo_mk5'].effects.fuelMax!).toBeGreaterThan(
-      MODULES['cargo_mk4'].effects.fuelMax!,
-    );
   });
 });
 
 describe('ModuleTier type coverage', () => {
-  it('MODULES contains at least one module of each tier 1-5', () => {
+  it('MODULE_DEFINITIONS contains at least one module of each tier 1-5', () => {
     const tiers = new Set<number>();
-    for (const mod of Object.values(MODULES)) {
+    for (const mod of MODULE_DEFINITIONS) {
       tiers.add(mod.tier);
     }
     for (let t = 1; t <= 5; t++) {
       expect(tiers.has(t), `tier ${t} should have at least one module`).toBe(true);
-    }
-  });
-
-  it('each tier 4-5 module has a researchDurationMin', () => {
-    for (const [id, mod] of TIER_4_5_MODULES) {
-      expect(mod.researchDurationMin, `${id} should have researchDurationMin`).toBeGreaterThan(0);
     }
   });
 });

@@ -1982,10 +1982,19 @@ class GameNetwork {
     room.onMessage('craftResult', (data: { success: boolean; moduleId?: string; error?: string }) => {
       const store = useStore.getState();
       if (data.success) {
-        store.addLogEntry(`MODUL HERGESTELLT: ${data.moduleId ?? '?'}`);
+        store.addLogEntry(`HERSTELLUNG GESTARTET: ${data.moduleId ?? '?'}`);
       } else {
         store.addLogEntry(`HERSTELLUNG FEHLGESCHLAGEN: ${data.error ?? 'Unbekannter Fehler'}`);
       }
+    });
+
+    room.onMessage('craftSiteUpdate', (data: any) => {
+      useStore.setState({ craftSite: data ?? null });
+    });
+
+    room.onMessage('craftComplete', (data: { moduleId: string }) => {
+      useStore.getState().addLogEntry(`HERSTELLUNG ABGESCHLOSSEN: ${data.moduleId}`);
+      useStore.setState({ craftSite: null });
     });
 
     room.onMessage('blueprintCopyResult', (data: { success: boolean; moduleId?: string; cost?: number; error?: string }) => {
@@ -2759,6 +2768,18 @@ class GameNetwork {
 
   sendCraftModule(moduleId: string) {
     this.sectorRoom?.send('craftModule', { moduleId });
+  }
+
+  sendDepositCraftResources(resources: { ore?: number; gas?: number; crystal?: number; credits?: number }) {
+    this.sectorRoom?.send('depositCraftResources', resources);
+  }
+
+  sendCancelCraft() {
+    this.sectorRoom?.send('cancelCraft');
+  }
+
+  sendGetCraftStatus() {
+    this.sectorRoom?.send('getCraftStatus');
   }
 
   sendCreateBlueprintCopy(moduleId: string) {

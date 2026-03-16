@@ -160,16 +160,8 @@ describe('spendCharge', () => {
   });
 });
 
-describe('efficiency clamping in shipCalculator', () => {
-  it('clamps hyperdriveFuelEfficiency to [0, 1]', () => {
-    // With void_drive: 0.35 — within range, should not be clamped
-    const stats = calculateShipStats([{ moduleId: 'void_drive', slotIndex: 0 }]);
-    expect(stats.hyperdriveFuelEfficiency).toBe(0.35);
-    expect(stats.hyperdriveFuelEfficiency).toBeGreaterThanOrEqual(0);
-    expect(stats.hyperdriveFuelEfficiency).toBeLessThanOrEqual(1);
-  });
-
-  it('returns zero hyperdrive stats with no drive modules', () => {
+describe('V2 calculateShipStats drive stats', () => {
+  it('returns zero legacy hyperdrive stats with no drive modules', () => {
     const stats = calculateShipStats([]);
     expect(stats.hyperdriveRange).toBe(0);
     expect(stats.hyperdriveSpeed).toBe(0);
@@ -177,53 +169,52 @@ describe('efficiency clamping in shipCalculator', () => {
     expect(stats.hyperdriveFuelEfficiency).toBe(0);
   });
 
-  it('adds hyperdrive stats from drive_mk1', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk1', slotIndex: 0 }]);
-    expect(stats.hyperdriveRange).toBe(32);
-    expect(stats.hyperdriveSpeed).toBe(2);
-    expect(stats.hyperdriveRegen).toBe(2.0);
-    expect(stats.hyperdriveFuelEfficiency).toBe(0);
+  it('ion_drive_mk1 sets V2 jumpDistance and fuelCapacity', () => {
+    const stats = calculateShipStats([{ moduleId: 'ion_drive_mk1', slotIndex: 0 }]);
+    expect(stats.jumpDistance).toBe(32);
+    expect(stats.fuelCapacity).toBe(2000);
+    expect(stats.rechargeRate).toBe(4);
   });
 
-  it('adds hyperdrive stats from drive_mk2', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk2', slotIndex: 0 }]);
-    expect(stats.hyperdriveRange).toBe(64);
-    expect(stats.hyperdriveSpeed).toBe(3);
-    expect(stats.hyperdriveRegen).toBe(4.0);
-    expect(stats.hyperdriveFuelEfficiency).toBeCloseTo(0.1);
+  it('ion_drive_mk2 sets V2 jumpDistance and fuelCapacity', () => {
+    const stats = calculateShipStats([{ moduleId: 'ion_drive_mk2', slotIndex: 0 }]);
+    expect(stats.jumpDistance).toBe(48);
+    expect(stats.fuelCapacity).toBe(4000);
+    expect(stats.rechargeRate).toBe(6);
   });
 
-  it('adds hyperdrive stats from drive_mk3', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk3', slotIndex: 0 }]);
-    expect(stats.hyperdriveRange).toBe(128);
-    expect(stats.hyperdriveSpeed).toBe(5);
-    expect(stats.hyperdriveRegen).toBe(6.0);
-    expect(stats.hyperdriveFuelEfficiency).toBeCloseTo(0.2);
+  it('ion_drive_mk3 sets V2 jumpDistance and fuelCapacity', () => {
+    const stats = calculateShipStats([{ moduleId: 'ion_drive_mk3', slotIndex: 0 }]);
+    expect(stats.jumpDistance).toBe(64);
+    expect(stats.fuelCapacity).toBe(8000);
+    expect(stats.rechargeRate).toBe(8);
   });
 
-  it('adds hyperdrive stats from void_drive', () => {
+  it('void_drive sets V2 jumpDistance and fuelCapacity', () => {
     const stats = calculateShipStats([{ moduleId: 'void_drive', slotIndex: 0 }]);
-    expect(stats.hyperdriveRange).toBe(192);
-    expect(stats.hyperdriveSpeed).toBe(8);
-    expect(stats.hyperdriveRegen).toBe(8.0);
-    expect(stats.hyperdriveFuelEfficiency).toBeCloseTo(0.35);
+    expect(stats.jumpDistance).toBe(1200);
+    expect(stats.fuelCapacity).toBe(2000);
+    expect(stats.rechargeRate).toBe(24);
   });
 });
 
-describe('drive fuelMax bonus', () => {
-  it('drive_mk1 adds 2_000 fuelMax', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk1', slotIndex: 0 }]);
-    expect(stats.fuelMax).toBe(12_000); // 10_000 base + 2_000
+describe('drive fuelMax', () => {
+  it('ion_drive_mk1 sets fuelMax from fuelCapacity', () => {
+    const stats = calculateShipStats([{ moduleId: 'ion_drive_mk1', slotIndex: 0 }]);
+    // fuelCapacity=2000, but FUEL_MIN_TANK=10000 → fuelMax = max(10000, 2000) = 10000
+    expect(stats.fuelMax).toBeGreaterThanOrEqual(FUEL_MIN_TANK);
   });
 
-  it('drive_mk3 adds 7_000 fuelMax', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk3', slotIndex: 0 }]);
-    expect(stats.fuelMax).toBe(17_000);
+  it('am_drive_mk1 sets fuelMax from fuelCapacity', () => {
+    const stats = calculateShipStats([{ moduleId: 'am_drive_mk1', slotIndex: 0 }]);
+    // fuelCapacity=12000, FUEL_MIN_TANK=10000 → fuelMax = max(10000, 12000) = 12000
+    expect(stats.fuelMax).toBe(12_000);
   });
 
-  it('drive_mk5 adds 28_000 fuelMax', () => {
-    const stats = calculateShipStats([{ moduleId: 'drive_mk5', slotIndex: 0 }]);
-    expect(stats.fuelMax).toBe(38_000); // 10_000 base + 28_000
+  it('am_drive_mk2 sets fuelMax from fuelCapacity', () => {
+    const stats = calculateShipStats([{ moduleId: 'am_drive_mk2', slotIndex: 0 }]);
+    // fuelCapacity=20000
+    expect(stats.fuelMax).toBe(20_000);
   });
 
   it('fuelMax never falls below FUEL_MIN_TANK', () => {

@@ -62,18 +62,28 @@ describe('computeFrontierSectors', () => {
 // ─── pickSpawnPoint ───────────────────────────────────────────────────────────
 describe('pickSpawnPoint', () => {
   it('returns null when there are no unclaimed quadrants far enough away', () => {
-    // All nearby quadrants are claimed
-    const claimed = new Set(['110:110', '110:111', '111:110', '111:111']);
-    const result = pickSpawnPoint(claimed, 100, 50);
+    // Claim all quadrants outside exclusion zone within search radius
+    // With searchRadius=11, minDistance=1, and VOID_ORIGIN_EXCLUSION=10:
+    // eligible coords are those where max(|qx|,|qy|) > 10 AND qx/qy in [-11,11]
+    const claimed = new Set<string>();
+    for (let qx = -11; qx <= 11; qx++) {
+      for (let qy = -11; qy <= 11; qy++) {
+        if (Math.max(Math.abs(qx), Math.abs(qy)) > 10) {
+          claimed.add(`${qx}:${qy}`);
+        }
+      }
+    }
+    const result = pickSpawnPoint(claimed, 11, 1);
     expect(result).toBeNull();
   });
 
   it('returns a point outside the origin exclusion zone', () => {
     const claimed = new Set<string>();
-    const result = pickSpawnPoint(claimed, 50, 50);
+    const result = pickSpawnPoint(claimed, 50, 5);
     if (result) {
+      // VOID_ORIGIN_EXCLUSION is 10, so returned point should be > 10 from origin
       const distFromOrigin = Math.max(Math.abs(result.qx), Math.abs(result.qy));
-      expect(distFromOrigin).toBeGreaterThanOrEqual(100);
+      expect(distFromOrigin).toBeGreaterThan(10);
     }
   });
 });
