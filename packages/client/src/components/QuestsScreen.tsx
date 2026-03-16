@@ -1030,7 +1030,25 @@ export function QuestsScreen() {
                     <div style={{ color: 'rgba(255,176,0,0.6)', fontSize: '0.55rem' }}>
                       {q.description}
                     </div>
-                    {/* Confirmation preview: structured objectives + rewards */}
+                    {/* Rewards — always visible */}
+                    <div style={{ marginTop: '4px', borderTop: '1px solid rgba(255,176,0,0.15)', paddingTop: '4px' }}>
+                      <div style={{ color: 'rgba(255,176,0,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginBottom: '3px' }}>
+                        BELOHNUNG
+                      </div>
+                      <div style={{ color: 'rgba(255,176,0,0.7)', fontSize: '0.5rem', paddingLeft: '6px' }}>
+                        +{q.rewards.credits} CR | +{q.rewards.xp} XP
+                        {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
+                        {q.rewards.wissen ? ` | +${q.rewards.wissen} WISSEN` : ''}
+                        {q.rewards.artefactChance ? ` | ${Math.round(q.rewards.artefactChance * 100)}% ARTEFAKT` : ''}
+                        {q.rewards.blueprintChance ? ` | ${Math.round(q.rewards.blueprintChance * 100)}% BLUEPRINT` : ''}
+                      </div>
+                      {q.rewards.rewardBlueprint && (
+                        <div style={{ color: '#AA88FF', fontSize: '0.5rem', paddingLeft: '6px', marginTop: '2px' }}>
+                          BLUEPRINT: {q.rewards.rewardBlueprint.toUpperCase().replace(/_/g, ' ')}
+                        </div>
+                      )}
+                    </div>
+                    {/* Objectives — shown on confirmation */}
                     {armed && (
                       <div style={{ marginTop: '4px', borderTop: '1px solid rgba(0,255,136,0.2)', paddingTop: '4px' }}>
                         <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginBottom: '3px' }}>
@@ -1042,21 +1060,6 @@ export function QuestsScreen() {
                             {obj.amount != null && ` (${obj.amount})`}
                           </div>
                         ))}
-                        <div style={{ color: 'rgba(0,255,136,0.5)', fontSize: '0.5rem', letterSpacing: '0.1em', marginTop: '6px', marginBottom: '3px' }}>
-                          BELOHNUNG
-                        </div>
-                        <div style={{ color: '#00FF88', fontSize: '0.5rem', paddingLeft: '6px' }}>
-                          +{q.rewards.credits} CR | +{q.rewards.xp} XP
-                          {q.rewards.reputation > 0 && ` | +${q.rewards.reputation} REP`}
-                          {q.rewards.wissen ? ` | +${q.rewards.wissen} WISSEN` : ''}
-                          {q.rewards.artefactChance ? ` | ${Math.round(q.rewards.artefactChance * 100)}% ARTEFAKT` : ''}
-                          {q.rewards.blueprintChance ? ` | ${Math.round(q.rewards.blueprintChance * 100)}% BLUEPRINT` : ''}
-                        </div>
-                        {q.rewards.rewardBlueprint && (
-                          <div style={{ color: '#AA88FF', fontSize: '0.5rem', paddingLeft: '6px', marginTop: '2px' }}>
-                            BLUEPRINT: {q.rewards.rewardBlueprint.toUpperCase().replace(/_/g, ' ')}
-                          </div>
-                        )}
                       </div>
                     )}
                     {armed ? (

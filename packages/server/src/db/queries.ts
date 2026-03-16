@@ -1204,6 +1204,7 @@ const OBJ_TYPE_SHORT: Record<string, string> = {
   scan_deliver: 'RET',
   fetch: 'LFR',
   delivery: 'DEL',
+  bounty_trail: 'BNT',
   bounty_chase: 'BNT',
   bounty_combat: 'BNT',
   bounty_deliver: 'RET',
@@ -1211,6 +1212,11 @@ const OBJ_TYPE_SHORT: Record<string, string> = {
 
 function buildObjectiveLabel(obj: any): string {
   const prefix = OBJ_TYPE_SHORT[obj.type] ?? obj.type?.slice(0, 3).toUpperCase() ?? '???';
+  // bounty_trail: use current trail step coordinates + hint
+  if (obj.type === 'bounty_trail' && Array.isArray(obj.trail) && obj.currentStep != null) {
+    const step = obj.trail[obj.currentStep];
+    if (step) return `${prefix} (${step.x},${step.y})${step.hint ? ` — ${step.hint}` : ''}`;
+  }
   const x = obj.targetX ?? obj.stationX;
   const y = obj.targetY ?? obj.stationY;
   if (x != null && y != null) return `${prefix} (${x},${y})`;
@@ -1233,13 +1239,25 @@ export async function getTrackedQuests(
     const firstTarget = objectives.find(
       (o: any) => o.targetX != null && o.targetY != null && !o.fulfilled,
     );
+
+    // bounty_trail: extract current trail step coordinates
+    let trailTargetX: number | undefined;
+    let trailTargetY: number | undefined;
+    if (currentObj?.type === 'bounty_trail' && Array.isArray(currentObj.trail) && currentObj.currentStep != null) {
+      const step = currentObj.trail[currentObj.currentStep];
+      if (step) {
+        trailTargetX = step.x;
+        trailTargetY = step.y;
+      }
+    }
+
     return {
       questId: r.id,
       title: r.title ?? r.template_id,
       type: (r.template_id as string).split('_')[0] ?? 'quest',
       description: r.description ?? '',
-      targetX: firstTarget?.targetX ?? currentObj?.stationX,
-      targetY: firstTarget?.targetY ?? currentObj?.stationY,
+      targetX: firstTarget?.targetX ?? trailTargetX ?? currentObj?.stationX,
+      targetY: firstTarget?.targetY ?? trailTargetY ?? currentObj?.stationY,
       objectiveLabel: currentObj ? buildObjectiveLabel(currentObj) : undefined,
     };
   });
