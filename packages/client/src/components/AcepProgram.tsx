@@ -3,19 +3,22 @@ import { useStore } from '../state/store';
 import { AcepTab } from './AcepTab';
 import { ModuleTab } from './ModuleTab';
 import { ShopTab } from './ShopTab';
+import { TechTreeScreen } from './TechTreeScreen';
 
-type AcepTabId = 'acep' | 'module' | 'shop';
+type AcepTabId = 'acep' | 'module' | 'shop' | 'tech';
 
 const TAB_TIP_MAP: Record<AcepTabId, string> = {
   acep: 'first_acep_tab',
   module: 'first_module_tab',
   shop: 'first_shop_tab',
+  tech: 'first_tech_tab',
 };
 
 const TABS: Array<{ id: AcepTabId; label: string }> = [
   { id: 'acep',   label: '[ACEP]' },
   { id: 'module', label: '[MODULE]' },
   { id: 'shop',   label: '[SHOP]' },
+  { id: 'tech',   label: '[TECH]' },
 ];
 
 export function AcepProgram() {
@@ -66,6 +69,7 @@ export function AcepProgram() {
         {activeTab === 'acep'   && <AcepTab />}
         {activeTab === 'module' && <ModuleTab />}
         {activeTab === 'shop'   && <ShopTab />}
+        {activeTab === 'tech'   && <TechTreeScreen />}
       </div>
     </div>
   );

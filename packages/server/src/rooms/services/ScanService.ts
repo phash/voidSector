@@ -411,6 +411,8 @@ export class ScanService {
           client.send('logEntry', 'INFO: Dieser Sektor liegt tief im Zivilisationsgebiet. Keine Piraten aktiv.');
           continue;
         }
+        // TODO: Wire pirate encounters to CombatV3Service.handleCombatV3Start
+        // Current V2 flow remains until full legacy removal
         client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
         client.send('logEntry', `WARNUNG: Piraten-Hinterhalt bei (${sector.x}, ${sector.y})!`);
       } else {

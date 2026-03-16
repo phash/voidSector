@@ -33,6 +33,8 @@ import type {
   ShipStats,
   ShipModule,
   CombatV2State,
+  CombatV3State,
+  CombatV3RoundResult,
   StationDefense,
   StationCombatEvent,
   ResearchState,
@@ -588,6 +590,9 @@ export interface GameSlice {
     resetCooldownRemaining: number;
   } | null;
 
+  // Tech rework: v2 research nodes (flat list of researched node IDs)
+  playerResearch: string[];
+
   // Trade feedback (partial sell message)
   tradeMessage: string | null;
 
@@ -724,6 +729,7 @@ export interface GameSlice {
   setInventory: (items: InventoryItem[]) => void;
   setTrackedQuests: (quests: TrackedQuest[]) => void;
   setTechTree: (data: { researchedNodes: Record<string, number>; totalResearched: number; resetCooldownRemaining: number }) => void;
+  setPlayerResearch: (research: string[]) => void;
   setConstructionSites: (sites: ConstructionSiteState[]) => void;
   upsertConstructionSite: (site: ConstructionSiteState) => void;
   removeConstructionSite: (siteId: string) => void;
@@ -735,6 +741,13 @@ export interface GameSlice {
   removeWreckSlate: (slateId: string) => void;
   sectorNpcs: any[];
   setSectorNpcs: (npcs: any[]) => void;
+
+  // Combat V3
+  combatV3: CombatV3State | null;
+  combatV3Log: CombatV3RoundResult[];
+  setCombatV3: (state: CombatV3State | null) => void;
+  addCombatV3Round: (result: CombatV3RoundResult) => void;
+  clearCombatV3: () => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -870,6 +883,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   inventory: [],
   trackedQuests: [],
   techTree: null,
+  playerResearch: [],
   constructionSites: [],
   tradeMessage: null,
   sectorWrecks: {},
@@ -877,6 +891,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   salvageSession: null,
   wreckSlates: [],
   sectorNpcs: [],
+  combatV3: null,
+  combatV3Log: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -1139,6 +1155,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setInventory: (inventory) => set({ inventory }),
   setTrackedQuests: (trackedQuests) => set({ trackedQuests }),
   setTechTree: (data) => set({ techTree: data }),
+  setPlayerResearch: (playerResearch) => set({ playerResearch }),
   setConstructionSites: (sites) => set({ constructionSites: sites }),
   upsertConstructionSite: (site) => set((s) => ({
     constructionSites: s.constructionSites.some((c) => c.id === site.id)
@@ -1155,4 +1172,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   addWreckSlate: (meta) => set((s) => ({ wreckSlates: [...s.wreckSlates, meta] })),
   removeWreckSlate: (slateId) => set((s) => ({ wreckSlates: s.wreckSlates.filter((m) => m.id !== slateId) })),
   setSectorNpcs: (sectorNpcs) => set({ sectorNpcs }),
+
+  // Combat V3
+  setCombatV3: (combatV3) => set({ combatV3 }),
+  addCombatV3Round: (result) => set((s) => ({ combatV3Log: [...s.combatV3Log, result] })),
+  clearCombatV3: () => set({ combatV3: null, combatV3Log: [] }),
 });

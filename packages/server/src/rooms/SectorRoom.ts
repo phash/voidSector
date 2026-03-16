@@ -82,6 +82,7 @@ import {
 import { getQuadrant, addPlayerKnownQuadrant } from '../db/quadrantQueries.js';
 import { civQueries } from '../db/civQueries.js';
 import { query } from '../db/client.js';
+import { getPlayerResearchV2, addPlayerResearchV2 } from '../db/techTreeQueries.js';
 import {
   RECONNECTION_TIMEOUT_S,
   calculateShipStats,
@@ -150,6 +151,7 @@ import { StationProductionService } from './services/StationProductionService.js
 import { RepairService } from './services/RepairService.js';
 import { TechTreeService } from './services/TechTreeService.js';
 import { NpcShipService } from './services/NpcShipService.js';
+import { CombatV3Service } from './services/CombatV3Service.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -204,6 +206,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private repair!: RepairService;
   private techTree!: TechTreeService;
   private npcShips!: NpcShipService;
+  private combatV3!: CombatV3Service;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
   private revealedOutlaws = new Map<string, Set<number>>();
 
@@ -369,6 +372,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.stationProduction = new StationProductionService(this.serviceCtx);
     this.stationProduction.registerHandlers(this);
     this.npcShips = new NpcShipService(this.serviceCtx);
+    this.combatV3 = new CombatV3Service(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
@@ -614,6 +618,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('combatV2Flee', async (client, data) => {
       await this.combat.handleCombatV2Flee(client, data);
     });
+    this.onMessage('combatV3Start', async (client, data) => { await this.combatV3.handleCombatV3Start(client, data); });
+    this.onMessage('combatV3Action', async (client, data) => { await this.combatV3.handleCombatV3Action(client, data); });
+    this.onMessage('combatV3Flee', async (client) => { await this.combatV3.handleCombatV3Flee(client); });
     this.onMessage('repairModule', async (client, data: { moduleId: string }) => {
       await this.repair.handleRepairModule(client, data);
     });
@@ -829,6 +836,21 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getTechTree', (client) => this.techTree.handleGetTechTree(client));
     this.onMessage('researchTechNode', (client, data) => this.techTree.handleResearchNode(client, data));
     this.onMessage('resetTechTree', (client) => this.techTree.handleResetTree(client));
+
+    // ── Tech Rework v2: flat research list ──────────────────────────
+    this.onMessage('getPlayerResearch', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const research = await getPlayerResearchV2(auth.userId);
+      client.send('playerResearch', { research });
+    });
+
+    this.onMessage('researchNode', async (client, data: { nodeId: string }) => {
+      const auth = client.auth as AuthPayload;
+      await addPlayerResearchV2(auth.userId, data.nodeId);
+      const research = await getPlayerResearchV2(auth.userId);
+      client.send('researchResult', { success: true, nodeId: data.nodeId });
+      client.send('playerResearch', { research });
+    });
 
     // ── World / Data Queries ────────────────────────────────────────
     this.onMessage('getAP', async (client) => {

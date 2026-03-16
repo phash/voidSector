@@ -3,7 +3,27 @@ import type { ShipModule, ShipStats, AcepXpSnapshot } from './types.js';
 export declare function getAcepLevel(xp: number): number;
 /** Returns the number of extra slots unlocked based on ausbau XP. */
 export declare function getExtraSlotCount(ausbauXp: number): number;
-export declare function calculateShipStats(modules: ShipModule[], acepXp?: AcepXpSnapshot): ShipStats;
+/**
+ * New V2 signature: accepts installedModules with moduleId + slot (new module system).
+ * Also handles legacy ShipModule[] (with slotIndex) for backward compatibility.
+ *
+ * Routing: if any module has a `slot` string property → new system (V2).
+ * If all modules use `slotIndex` number property → legacy system.
+ * Empty array → V2 (returns zero/base stats).
+ */
+export declare function calculateShipStats(installedModules: Array<{
+    moduleId: string;
+    slot?: string;
+    slotIndex?: number;
+    currentHp?: number;
+    source?: string;
+    powerLevel?: string;
+}>, acepXp?: AcepXpSnapshot | {
+    ausbau?: number;
+    intel?: number;
+    kampf?: number;
+    explorer?: number;
+}): ShipStats;
 export declare function validateModuleInstall(currentModules: ShipModule[], moduleId: string, slotIndex: number, acepXp?: AcepXpSnapshot): {
     valid: boolean;
     error?: string;
