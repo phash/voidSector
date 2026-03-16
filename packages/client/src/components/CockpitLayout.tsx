@@ -33,6 +33,7 @@ import { LocalScanResultOverlay } from './overlays/LocalScanResultOverlay';
 import { PlayerCardModal } from './PlayerCardModal';
 import { AreaScanSummaryOverlay } from './overlays/AreaScanSummaryOverlay';
 import { getPhysicalCargoTotal } from '@void-sector/shared';
+import { CombatV3Screen } from './CombatV3Screen';
 
 interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
@@ -116,7 +117,9 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
     }
   };
 
-  const mainContent = renderScreen(activeProgram);
+  const combatV3Active = useStore((s) => s.combatV3 !== null);
+
+  const mainContent = combatV3Active ? <CombatV3Screen /> : renderScreen(activeProgram);
   const detailContent = activeWreck ? <WreckPanel /> : getDetailForProgram(activeProgram);
 
   return (

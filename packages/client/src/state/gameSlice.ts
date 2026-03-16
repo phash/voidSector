@@ -33,6 +33,8 @@ import type {
   ShipStats,
   ShipModule,
   CombatV2State,
+  CombatV3State,
+  CombatV3RoundResult,
   StationDefense,
   StationCombatEvent,
   ResearchState,
@@ -739,6 +741,13 @@ export interface GameSlice {
   removeWreckSlate: (slateId: string) => void;
   sectorNpcs: any[];
   setSectorNpcs: (npcs: any[]) => void;
+
+  // Combat V3
+  combatV3: CombatV3State | null;
+  combatV3Log: CombatV3RoundResult[];
+  setCombatV3: (state: CombatV3State | null) => void;
+  addCombatV3Round: (result: CombatV3RoundResult) => void;
+  clearCombatV3: () => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -882,6 +891,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   salvageSession: null,
   wreckSlates: [],
   sectorNpcs: [],
+  combatV3: null,
+  combatV3Log: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -1161,4 +1172,9 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   addWreckSlate: (meta) => set((s) => ({ wreckSlates: [...s.wreckSlates, meta] })),
   removeWreckSlate: (slateId) => set((s) => ({ wreckSlates: s.wreckSlates.filter((m) => m.id !== slateId) })),
   setSectorNpcs: (sectorNpcs) => set({ sectorNpcs }),
+
+  // Combat V3
+  setCombatV3: (combatV3) => set({ combatV3 }),
+  addCombatV3Round: (result) => set((s) => ({ combatV3Log: [...s.combatV3Log, result] })),
+  clearCombatV3: () => set({ combatV3: null, combatV3Log: [] }),
 });

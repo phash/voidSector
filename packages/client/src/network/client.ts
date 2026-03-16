@@ -53,6 +53,8 @@ import type {
   SpecialAction,
   CombatV2State,
   CombatV2RoundResult,
+  CombatV3State,
+  CombatV3RoundResult,
 } from '@void-sector/shared';
 import type {
   ClientShipData,
@@ -1187,6 +1189,31 @@ class GameNetwork {
 
     room.onMessage('fleeAttemptFailed', () => {
       useStore.getState().addLogEntry('FLUCHT FEHLGESCHLAGEN — Kampf geht weiter.');
+    });
+
+    // ── Combat V3 message handlers ─────────────────────────────────────────
+    room.onMessage('combatV3Start', (data: { state: CombatV3State }) => {
+      const store = useStore.getState();
+      store.clearCombatV3();
+      store.setCombatV3(data.state);
+    });
+
+    room.onMessage('combatV3Round', (data: { state: CombatV3State; roundResult: CombatV3RoundResult }) => {
+      const store = useStore.getState();
+      store.setCombatV3(data.state);
+      store.addCombatV3Round(data.roundResult);
+    });
+
+    room.onMessage('combatV3End', (data: { outcome: string }) => {
+      const store = useStore.getState();
+      if (store.combatV3) {
+        store.setCombatV3({ ...store.combatV3, outcome: data.outcome as CombatV3State['outcome'] });
+      }
+      store.showSuccessToast(
+        data.outcome === 'victory' ? 'SIEG!' :
+        data.outcome === 'defeat' ? 'NIEDERLAGE' :
+        data.outcome === 'fled' ? 'GEFLOHEN' : 'UNENTSCHIEDEN',
+      );
     });
 
     room.onMessage('bountyAmbush', (data: {
@@ -2511,6 +2538,24 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('combatV2Flee', { sectorX, sectorY });
+  }
+
+  // ── Kampfsystem v3 send methods ──────────────────────────────────────────
+
+  sendCombatV3Action(activeModules: string[], tactic: string) {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('combatV3Action', { activeModules, tactic });
+  }
+
+  sendCombatV3Flee() {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('combatV3Flee');
   }
 
   // ─────────────────────────────────────────────────────────────────────────
