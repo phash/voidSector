@@ -59,6 +59,12 @@ function CraftProgress() {
   if (!craftSite) return null;
   const mod = MODULE_MAP.get(craftSite.module_id);
   const pct = craftSite.duration > 0 ? Math.floor((craftSite.progress / craftSite.duration) * 100) : 0;
+  const remaining = craftSite.duration - craftSite.progress;
+  const ticksPerSec = 5 / 5; // 5 progress per 5s tick = 1/s
+  const etaSec = Math.ceil(remaining / ticksPerSec);
+  const etaMin = Math.floor(etaSec / 60);
+  const etaS = etaSec % 60;
+  const etaStr = etaMin > 0 ? `${etaMin}m ${etaS}s` : `${etaS}s`;
 
   const allDeposited =
     craftSite.deposited_ore >= craftSite.needed_ore &&
@@ -83,7 +89,7 @@ function CraftProgress() {
       </div>
       <div style={{ margin: '8px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: amber }}>
-          <span>{pct}%</span>
+          <span>{pct}% {allDeposited && remaining > 0 ? `— ${etaStr}` : ''}</span>
           <span>{craftSite.progress}/{craftSite.duration}</span>
         </div>
         <div style={{ background: '#222', height: 8, marginTop: 2 }}>

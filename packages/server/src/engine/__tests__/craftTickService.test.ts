@@ -7,14 +7,19 @@ vi.mock('../../db/craftSiteQueries.js', () => ({
 }));
 
 vi.mock('../../db/queries.js', () => ({
-  addToInventory: vi.fn(),
   addWissen: vi.fn(),
   getWissen: vi.fn().mockResolvedValue(10),
+  upsertInventory: vi.fn(),
+}));
+
+vi.mock('../inventoryService.js', () => ({
+  addToInventory: vi.fn(),
 }));
 
 import { processCraftTick } from '../craftTickService.js';
 import { getAllActiveCraftSites, setCraftProgress, deleteCraftSite } from '../../db/craftSiteQueries.js';
-import { addToInventory, addWissen } from '../../db/queries.js';
+import { addToInventory } from '../inventoryService.js';
+import { addWissen } from '../../db/queries.js';
 
 const mockGetAll = vi.mocked(getAllActiveCraftSites);
 const mockSetProgress = vi.mocked(setCraftProgress);
@@ -65,15 +70,15 @@ describe('processCraftTick', () => {
     expect(mockSetProgress).not.toHaveBeenCalled();
   });
 
-  it('increments progress for fully-deposited active sites', async () => {
-    mockGetAll.mockResolvedValue([makeSite({ progress: 3, duration: 10 })]);
+  it('increments progress by 5 for fully-deposited active sites', async () => {
+    mockGetAll.mockResolvedValue([makeSite({ progress: 3, duration: 100 })]);
     await processCraftTick(notifyPlayer);
-    expect(mockSetProgress).toHaveBeenCalledWith('site-1', 4);
+    expect(mockSetProgress).toHaveBeenCalledWith('site-1', 8);
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
   it('completes and deletes site when progress reaches duration', async () => {
-    mockGetAll.mockResolvedValue([makeSite({ progress: 9, duration: 10 })]);
+    mockGetAll.mockResolvedValue([makeSite({ progress: 8, duration: 10 })]);
     await processCraftTick(notifyPlayer);
 
     expect(mockAddInventory).toHaveBeenCalledWith('player-1', 'module', 'ion_drive_mk2', 1);

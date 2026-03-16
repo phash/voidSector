@@ -17,7 +17,7 @@ export async function processCraftTick(
       site.deposited_credits >= site.needed_credits;
     if (!allDeposited) continue;
 
-    const newProgress = site.progress + 1;
+    const newProgress = site.progress + 5; // 5 progress per tick
     if (newProgress >= site.duration) {
       // Complete: add module to inventory, award Wissen, clean up
       await addToInventory(site.player_id, 'module', site.module_id, 1);
