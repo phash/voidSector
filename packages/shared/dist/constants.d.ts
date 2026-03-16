@@ -52,8 +52,6 @@ export declare function calculateProductionTime(moduleTier: number, factoryLevel
  * Calculate resource cost multiplier for producing above factory level.
  */
 export declare function calculateCostMultiplier(moduleTier: number, factoryLevel: number): number;
-/** Lab tier Wissen multiplier for active generation (replaces passive tick) */
-export declare const LAB_WISSEN_MULTIPLIER: Record<number, number>;
 export declare const JUMPGATE_BUILD_COST: {
     credits: number;
     crystal: number;
@@ -155,32 +153,11 @@ export declare const STATION_BASE_HP = 500;
 export declare const STATION_REPAIR_CR_PER_HP = 5;
 export declare const STATION_REPAIR_ORE_PER_HP = 1;
 export declare const STATION_COMBAT_MAX_ROUNDS = 10;
-export declare const STATION_DEFENSE_DEFS: Record<string, {
-    damage?: number;
-    shieldHp?: number;
-    shieldRegen?: number;
-    oncePer?: 'combat';
-    bypassShields?: boolean;
-    cost: {
-        credits: number;
-        ore?: number;
-        crystal?: number;
-        gas?: number;
-    };
-}>;
 export declare const MAX_ACTIVE_QUESTS = 20;
 export declare const MAX_TRACKED_QUESTS = 5;
 export declare const QUEST_EXPIRY_DAYS = 7;
 export declare const SCAN_EVENT_CHANCE = 0.15;
 export declare const XP_LEVELS: Record<number, number>;
-export declare const STORAGE_TIERS: Record<number, {
-    capacity: number;
-    upgradeCost: number;
-}>;
-export declare const TRADING_POST_TIERS: Record<number, {
-    name: string;
-    upgradeCost: number;
-}>;
 export declare const SPECIALIZED_SLOT_CATEGORIES: ModuleCategory[];
 export declare const SPECIALIZED_SLOT_INDEX: Partial<Record<ModuleCategory, number>>;
 export declare const UNIQUE_MODULE_CATEGORIES: ModuleCategory[];

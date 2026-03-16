@@ -17,7 +17,6 @@ import {
   AP_COSTS_BY_SCANNER,
   SECTOR_RESOURCE_YIELDS,
   TACTIC_MODS,
-  STATION_DEFENSE_DEFS,
   STATION_FUEL_LEVEL_EFFICIENCY,
   NPC_PRICES,
   REP_PRICE_MODIFIERS,
@@ -31,9 +30,6 @@ import {
   JUMPGATE_UPGRADE_COSTS,
   STRUCTURE_COSTS,
   STRUCTURE_AP_COSTS,
-  STORAGE_TIERS,
-  TRADING_POST_TIERS,
-  LAB_WISSEN_MULTIPLIER,
   XP_LEVELS,
   SLATE_AREA_RADIUS,
   ACEP_LEVEL_THRESHOLDS,
@@ -127,10 +123,6 @@ export function applyConfigValue(key: string, value: any): void {
     deepAssign(TACTIC_MODS, value);
     return;
   }
-  if (key === 'STATION_DEFENSE_DEFS') {
-    deepAssign(STATION_DEFENSE_DEFS, value);
-    return;
-  }
   if (key === 'STATION_FUEL_LEVEL_EFFICIENCY') {
     deepAssign(STATION_FUEL_LEVEL_EFFICIENCY, value);
     return;
@@ -181,18 +173,6 @@ export function applyConfigValue(key: string, value: any): void {
   }
   if (key === 'STRUCTURE_AP_COSTS') {
     deepAssign(STRUCTURE_AP_COSTS, value);
-    return;
-  }
-  if (key === 'STORAGE_TIERS') {
-    deepAssign(STORAGE_TIERS, value);
-    return;
-  }
-  if (key === 'TRADING_POST_TIERS') {
-    deepAssign(TRADING_POST_TIERS, value);
-    return;
-  }
-  if (key === 'LAB_WISSEN_MULTIPLIER') {
-    deepAssign(LAB_WISSEN_MULTIPLIER, value);
     return;
   }
   if (key === 'XP_LEVELS') {

@@ -9,11 +9,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ── Mock DB queries used by ShipService ──────────────────────────────────────
 vi.mock('../db/queries.js', () => ({
   getActiveShip: vi.fn(),
-  playerHasBaseAtSector: vi.fn(),
   getPlayerShips: vi.fn(),
   updateShipModules: vi.fn(),
   renameShip: vi.fn(),
-  renameBase: vi.fn(),
   getPlayerLevel: vi.fn(),
   getPlayerResearch: vi.fn(),
   addUnlockedModule: vi.fn(),
@@ -34,23 +32,25 @@ vi.mock('../db/queries.js', () => ({
 }));
 
 // ── Mock shared module (avoid real MODULES / validators requiring complex deps) ─
-vi.mock('@void-sector/shared', () => ({
-  MODULES: {
-    drive_mk2: {
-      id: 'drive_mk2',
-      name: 'Drive MK2',
-      category: 'drive',
-      tier: 2,
-      cost: { credits: 500, ore: 5 },
-    },
-  },
-  calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
-  validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
-  isModuleUnlocked: vi.fn().mockReturnValue(true),
-  RESEARCH_TICK_MS: 60000,
-  getActiveDrawbacks: vi.fn().mockReturnValue([]),
-  MODULE_HP_BY_TIER: { 1: 20, 2: 30, 3: 40, 4: 50, 5: 60 },
-}));
+vi.mock('@void-sector/shared', () => {
+  const driveMk2 = {
+    id: 'drive_mk2',
+    name: 'Drive MK2',
+    category: 'drive',
+    tier: 2,
+    cost: { credits: 500, ore: 5 },
+  };
+  return {
+    MODULES: { drive_mk2: driveMk2 },
+    MODULE_MAP: new Map([['drive_mk2', driveMk2]]),
+    calculateShipStats: vi.fn().mockReturnValue({ fuelMax: 100 }),
+    validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
+    isModuleUnlocked: vi.fn().mockReturnValue(true),
+    RESEARCH_TICK_MS: 60000,
+    getActiveDrawbacks: vi.fn().mockReturnValue([]),
+    MODULE_HP_BY_TIER: { 1: 20, 2: 30, 3: 40, 4: 50, 5: 60 },
+  };
+});
 
 // ── Mock techTreeQueries ─────────────────────────────────────────────────────
 vi.mock('../db/techTreeQueries.js', () => ({

@@ -105,10 +105,7 @@ import type {
   BuildMessage,
   DepositConstructionMessage,
   SendChatMessage,
-  TransferMessage,
   NpcTradeMessage,
-  UpgradeStructureMessage,
-  PlaceOrderMessage,
   CreateSlateMessage,
   CreateCustomSlateMessage,
   ActivateSlateMessage,
@@ -587,9 +584,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('ejectPod', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleEjectPod(client, data);
     });
-    this.onMessage('installDefense', async (client, data: { defenseType: string }) => {
-      await this.combat.handleInstallDefense(client, data);
-    });
     this.onMessage('repairStation', async (client, data: { sectorX: number; sectorY: number }) => {
       await this.combat.handleRepairStation(client, data);
     });
@@ -618,17 +612,8 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
 
     // ── Economy ─────────────────────────────────────────────────────
-    this.onMessage('transfer', async (client, data: TransferMessage) => {
-      await this.economy.handleTransfer(client, data);
-    });
     this.onMessage('npcTrade', async (client, data: NpcTradeMessage) => {
       await this.economy.handleNpcTrade(client, data);
-    });
-    this.onMessage('upgradeStructure', async (client, data: UpgradeStructureMessage) => {
-      await this.economy.handleUpgradeStructure(client, data);
-    });
-    this.onMessage('placeOrder', async (client, data: PlaceOrderMessage) => {
-      await this.economy.handlePlaceOrder(client, data);
     });
     this.onMessage('refuel', async (client, data: RefuelMessage) => {
       await this.economy.handleRefuel(client, data);
@@ -641,40 +626,6 @@ export class SectorRoom extends Room<SectorRoomState> {
         this._py(client.sessionId),
       );
     });
-    this.onMessage('factoryStatus', async (client) => {
-      await this.economy.handleFactoryStatus(client);
-    });
-    this.onMessage('factorySetRecipe', async (client, data: { recipeId: string }) => {
-      await this.economy.handleFactorySetRecipe(client, data);
-    });
-    this.onMessage('factoryCollect', async (client) => {
-      await this.economy.handleFactoryCollect(client);
-    });
-    this.onMessage(
-      'factoryTransfer',
-      async (client, data: { itemType: string; amount: number }) => {
-        await this.economy.handleFactoryTransfer(client, data);
-      },
-    );
-    this.onMessage(
-      'kontorPlaceOrder',
-      async (
-        client,
-        data: { itemType: string; itemId: string; amount: number; pricePerUnit: number },
-      ) => {
-        await this.economy.handleKontorPlaceOrder(client, data);
-      },
-    );
-    this.onMessage('kontorCancelOrder', async (client, data: { orderId: string }) => {
-      await this.economy.handleKontorCancelOrder(client, data);
-    });
-    this.onMessage('kontorSellTo', async (client, data: { orderId: string; amount: number }) => {
-      await this.economy.handleKontorSellTo(client, data);
-    });
-    this.onMessage('kontorGetOrders', async (client) => {
-      await this.economy.handleKontorGetOrders(client);
-    });
-
     // ── Factions ────────────────────────────────────────────────────
     this.onMessage('createFaction', async (client, data: CreateFactionMessage) => {
       await this.factions.handleCreateFaction(client, data);
@@ -784,9 +735,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     });
     this.onMessage('renameShip', async (client, data: { shipId: string; name: string }) => {
       await this.ships.handleRenameShip(client, data);
-    });
-    this.onMessage('renameBase', async (client, data: { name: string }) => {
-      await this.ships.handleRenameBase(client, data);
     });
     this.onMessage('getModuleInventory', async (client) => {
       await this.ships.handleGetModuleInventory(client);

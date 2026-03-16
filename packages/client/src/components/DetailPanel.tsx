@@ -140,7 +140,6 @@ function RefuelPanel({
 }
 
 const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
-  mining_station: 'MINING-STATION',
   jumpgate: 'JUMPGATE',
   station: 'STATION',
   jumpgate_conn_2: 'JUMPGATE VERBINDUNG L2',

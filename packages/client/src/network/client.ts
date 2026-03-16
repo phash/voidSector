@@ -959,10 +959,6 @@ class GameNetwork {
       }
     });
 
-    room.onMessage('factoryUpdate', (data: any) => {
-      useStore.getState().setFactoryState(data);
-    });
-
     room.onMessage('kontorUpdate', (data: any) => {
       if (data.orders) {
         useStore.getState().setKontorOrders(data.orders);
@@ -2290,11 +2286,6 @@ class GameNetwork {
     this.sectorRoom?.send('getNpcStation');
   }
 
-  sendUpgradeStructure(structureId: string) {
-    if (!this.sectorRoom) return;
-    this.sectorRoom.send('upgradeStructure', { structureId });
-  }
-
   sendPlaceOrder(resource: string, amount: number, pricePerUnit: number, type: 'buy' | 'sell') {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('placeOrder', { resource, amount, pricePerUnit, type });
@@ -2455,14 +2446,6 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('ejectPod', { sectorX, sectorY });
-  }
-
-  sendInstallDefense(defenseType: string) {
-    if (!this.sectorRoom) {
-      useStore.getState().addLogEntry('NOT CONNECTED');
-      return;
-    }
-    this.sectorRoom.send('installDefense', { defenseType });
   }
 
   sendRepairStation(sectorX: number, sectorY: number) {
@@ -2676,10 +2659,6 @@ class GameNetwork {
     this.sectorRoom?.send('acepBoost', { path });
   }
 
-  sendRenameBase(name: string) {
-    this.sectorRoom?.send('renameBase', { name });
-  }
-
   sendGetModuleInventory() {
     this.sectorRoom?.send('getModuleInventory');
   }
@@ -2701,29 +2680,9 @@ class GameNetwork {
     this.sectorRoom?.send('getResearchState', {});
   }
 
-  // Factory
-  requestFactoryStatus() {
-    this.sectorRoom?.send('factoryStatus');
-  }
-  sendFactorySetRecipe(recipeId: string) {
-    this.sectorRoom?.send('factorySetRecipe', { recipeId });
-  }
-  sendFactoryCollect() {
-    this.sectorRoom?.send('factoryCollect');
-  }
-  sendFactoryTransfer(itemType: string, amount: number) {
-    this.sectorRoom?.send('factoryTransfer', { itemType, amount });
-  }
-
-  // Kontor
+  // Kontor (trade — view/fill orders from other players at NPC stations)
   requestKontorOrders(): void {
     this.sectorRoom?.send('kontorGetOrders');
-  }
-  sendKontorPlaceOrder(itemType: string, amount: number, pricePerUnit: number): void {
-    this.sectorRoom?.send('kontorPlaceOrder', { itemType, amount, pricePerUnit });
-  }
-  sendKontorCancel(orderId: string): void {
-    this.sectorRoom?.send('kontorCancelOrder', { orderId });
   }
   sendKontorSellTo(orderId: string, amount: number): void {
     this.sectorRoom?.send('kontorSellTo', { orderId, amount });

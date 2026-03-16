@@ -211,17 +211,6 @@ function toConstructionSiteState(site: ConstructionSite): ConstructionSiteState 
 }
 
 const VALID_STRUCTURE_TYPES = [
-  'comm_relay',
-  'mining_station',
-  'base',
-  'storage',
-  'trading_post',
-  'defense_turret',
-  'station_shield',
-  'ion_cannon',
-  'factory',
-  'research_lab',
-  'kontor',
   'jumpgate',
 ];
 
@@ -359,61 +348,6 @@ export class WorldService {
 
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-
-    // mining_station uses the construction site path — no upfront resource cost
-    if (data.type === 'mining_station') {
-      const apCost = STRUCTURE_AP_COSTS['mining_station'];
-      const newAP = spendAP(currentAP, apCost, Date.now());
-      if (!newAP) {
-        client.send('error', { code: 'BUILD_FAIL', message: `Insufficient AP: need ${apCost}` });
-        return;
-      }
-
-      const sx = this.ctx._px(client.sessionId);
-      const sy = this.ctx._py(client.sessionId);
-
-      const existing = await getConstructionSite(sx, sy);
-      if (existing) {
-        client.send('buildResult', {
-          success: false,
-          error: 'Construction site already exists in this sector',
-        });
-        return;
-      }
-
-      const costs = STRUCTURE_COSTS['mining_station'];
-      let siteId: string;
-      try {
-        siteId = await createConstructionSite(
-          auth.userId,
-          'mining_station',
-          sx,
-          sy,
-          costs.ore,
-          costs.gas,
-          costs.crystal,
-        );
-        await saveAPState(auth.userId, newAP!);
-      } catch (err: any) {
-        if (err.code === '23505') {
-          client.send('buildResult', {
-            success: false,
-            error: 'Construction site already exists in this sector',
-          });
-          return;
-        }
-        client.send('buildResult', { success: false, error: 'Build failed — try again' });
-        return;
-      }
-
-      const site = await getConstructionSiteById(siteId);
-      const constructionSite = toConstructionSiteState(site!);
-      client.send('buildResult', { success: true, constructionSite });
-      client.send('apUpdate', newAP!);
-      this.ctx.broadcast('constructionSiteCreated', { site: constructionSite });
-      addAcepXpForPlayer(auth.userId, 'ausbau', 10).catch(() => {});
-      return;
-    }
 
     const cargo = await getCargoState(auth.userId);
 

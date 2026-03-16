@@ -324,19 +324,7 @@ export interface LocalScanResultMessage {
 }
 
 // Structures
-export type StructureType =
-  | 'comm_relay'
-  | 'mining_station'
-  | 'base'
-  | 'storage'
-  | 'trading_post'
-  | 'defense_turret'
-  | 'station_shield'
-  | 'ion_cannon'
-  | 'factory'
-  | 'research_lab'
-  | 'kontor'
-  | 'jumpgate';
+export type StructureType = 'jumpgate';
 
 export interface Structure {
   id: string;

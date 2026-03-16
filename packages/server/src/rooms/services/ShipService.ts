@@ -27,11 +27,9 @@ import {
 } from '../../engine/inventoryService.js';
 import {
   getActiveShip,
-  playerHasBaseAtSector,
   getPlayerShips,
   updateShipModules,
   renameShip,
-  renameBase,
   getInventory,
   getPlayerResearch,
   addUnlockedModule,
@@ -144,17 +142,12 @@ export class ShipService {
       client.send('error', { code: 'MODULE_LOCKED', message: 'Module not researched' });
       return;
     }
-    // Must be at station or own base
+    // Must be at station
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    const hasBase = await playerHasBaseAtSector(
-      auth.userId,
-      this.ctx._px(client.sessionId),
-      this.ctx._py(client.sessionId),
-    );
-    if (!isStation && !hasBase) {
+    if (!isStation) {
       client.send('error', {
         code: 'WRONG_LOCATION',
-        message: 'Must be at a station or your base',
+        message: 'Must be at a station',
       });
       return;
     }
@@ -197,12 +190,6 @@ export class ShipService {
     if (success) {
       client.send('shipRenamed', { shipId: data.shipId, name: data.name.slice(0, 20) });
     }
-  }
-
-  async handleRenameBase(client: Client, data: { name: string }): Promise<void> {
-    const auth = client.auth as AuthPayload;
-    await renameBase(auth.userId, data.name);
-    client.send('baseRenamed', { name: data.name.slice(0, 20) });
   }
 
   async handleGetModuleInventory(client: Client): Promise<void> {
