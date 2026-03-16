@@ -753,6 +753,7 @@ class GameNetwork {
       if (data.constructionSites) {
         useStore.getState().setConstructionSites(data.constructionSites.map((cs: any) => ({
           id: cs.id,
+          ownerId: cs.owner_id,
           type: cs.type,
           sectorX: cs.sector_x,
           sectorY: cs.sector_y,
@@ -2254,6 +2255,10 @@ class GameNetwork {
 
   sendGetConstructionSiteInfo(siteId: string) {
     this.sectorRoom?.send('getConstructionSiteInfo', { siteId });
+  }
+
+  sendCancelConstruction(siteId: string) {
+    this.sectorRoom?.send('cancelConstruction', { siteId });
   }
 
   sendTransfer(resource: string, amount: number, direction: 'toStorage' | 'fromStorage') {

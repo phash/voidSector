@@ -181,6 +181,7 @@ import {
   getConstructionSiteById,
   depositResources,
   getPlayerConstructionSites,
+  deleteConstructionSiteById,
 } from '../../db/constructionQueries.js';
 import type { ConstructionSite } from '../../db/constructionQueries.js';
 import { getWrecksInSector } from '../../engine/permadeathService.js';
@@ -189,6 +190,7 @@ import { getUniverseTickCount } from '../../engine/universeBootstrap.js';
 function toConstructionSiteState(site: ConstructionSite): ConstructionSiteState {
   return {
     id: site.id,
+    ownerId: site.owner_id,
     type: site.type,
     sectorX: site.sector_x,
     sectorY: site.sector_y,
@@ -521,6 +523,26 @@ export class WorldService {
       client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     }
     client.send('depositResult', { success: true });
+  }
+
+  async handleCancelConstruction(client: Client, data: { siteId: string }): Promise<void> {
+    if (rejectGuest(client, 'Baustelle abbrechen')) return;
+    const auth = client.auth as AuthPayload;
+
+    const site = await getConstructionSiteById(data.siteId);
+    if (!site) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Baustelle nicht gefunden' });
+      return;
+    }
+    if (site.owner_id !== auth.userId) {
+      client.send('error', { code: 'FORBIDDEN', message: 'Nur der Besitzer kann abbrechen' });
+      return;
+    }
+
+    await deleteConstructionSiteById(data.siteId);
+    client.send('constructionSiteCompleted', { siteId: data.siteId });
+    this.ctx.broadcast('constructionSiteCompleted', { siteId: data.siteId });
+    client.send('logEntry', 'Baustelle abgebrochen — verbaute Rohstoffe verloren');
   }
 
   async handleGetConstructionSiteInfo(client: Client, data: { siteId: string }): Promise<void> {

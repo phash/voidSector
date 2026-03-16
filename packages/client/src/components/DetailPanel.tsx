@@ -149,6 +149,8 @@ const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
 function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
   const cargo = useStore((s) => s.cargo);
   const playerCredits = useStore((s) => s.credits);
+  const playerId = useStore((s) => s.playerId);
+  const isOwner = site.ownerId === playerId;
   const [amounts, setAmounts] = useState({ ore: 0, gas: 0, crystal: 0, credits: 0, artefact: 0 });
 
   // Poll for construction site updates every 5 seconds
@@ -285,6 +287,19 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
             [LIEFERN]
           </button>
         </div>
+      )}
+      {isOwner && (
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.65rem', marginTop: 8, width: '100%', borderColor: '#ff4444', color: '#ff4444' }}
+          onClick={() => {
+            if (confirm('Baustelle abbrechen? Verbaute Rohstoffe gehen verloren!')) {
+              network.sendCancelConstruction(site.id);
+            }
+          }}
+        >
+          [BAUSTELLE ABBRECHEN]
+        </button>
       )}
       {adminToken && (
         <button

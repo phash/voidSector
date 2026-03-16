@@ -376,6 +376,7 @@ export interface BuildResultMessage {
 
 export interface ConstructionSiteState {
   id: string;
+  ownerId: string;
   type: string;
   sectorX: number;
   sectorY: number;
