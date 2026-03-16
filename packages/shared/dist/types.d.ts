@@ -652,6 +652,67 @@ export interface StationCombatEvent {
     outcome: 'defended' | 'damaged' | 'destroyed';
     hpLost: number;
 }
+export interface CombatV3State {
+    round: number;
+    maxRounds: number;
+    playerShield: number;
+    playerShieldMax: number;
+    playerShieldRegen: number;
+    playerArmorHp: number;
+    playerArmorMax: number;
+    playerModules: CombatModule[];
+    playerEnergyBudget: number;
+    playerTactic: 'assault' | 'balanced' | 'defensive';
+    enemyShield: number;
+    enemyShieldMax: number;
+    enemyShieldRegen: number;
+    enemyArmorHp: number;
+    enemyArmorMax: number;
+    enemyWeapons: {
+        type: string;
+        atk: number;
+        piercing?: number;
+    }[];
+    enemyAccuracy: number;
+    enemyPvIntercept: number;
+    enemyEcmReduction: number;
+    outcome?: 'victory' | 'defeat' | 'draw' | 'fled';
+}
+export interface CombatModule {
+    moduleId: string;
+    name: string;
+    category: string;
+    hp: number;
+    maxHp: number;
+    active: boolean;
+    energyCost: number;
+    stats: Record<string, number>;
+}
+export interface CombatV3RoundResult {
+    round: number;
+    playerDamageDealt: number;
+    enemyDamageDealt: number;
+    playerShield: number;
+    enemyShield: number;
+    playerArmorHp: number;
+    enemyArmorHp: number;
+    modulesDestroyed: string[];
+    roundLog: string[];
+}
+export interface NpcCombatStats {
+    energy: number;
+    shield: number;
+    shieldRegen: number;
+    armorHp: number;
+    weapons: {
+        type: string;
+        atk: number;
+        piercing?: number;
+    }[];
+    accuracy: number;
+    pvIntercept: number;
+    ecmReduction: number;
+}
 export type ScanEventType = 'pirate_ambush' | 'distress_signal' | 'anomaly_reading' | 'artifact_find' | 'blueprint_find';
 export type ScanEventStatus = 'discovered' | 'completed';
 export interface ScanEvent {
