@@ -86,4 +86,7 @@ export interface ServiceContext {
 
   // Navigation helpers (cross-service)
   detectAndSendPlayerGate: (client: Client, sectorX: number, sectorY: number) => Promise<void>;
+
+  // NPC visibility
+  revealOutlaw: (sessionId: string, npcId: number) => void;
 }

@@ -158,6 +158,7 @@ import { applyBranchEffects } from '../engine/storyQuestChain.js';
 import { getHumanityRepTier } from '../engine/humanityRepTier.js';
 import { getDirectTradeService } from '../engine/directTradeService.js';
 import { createPirateEncounter } from '../engine/commands.js';
+import { ensureQuadrantNpcs } from '../engine/npcSpawner.js';
 import { logger } from '../utils/logger.js';
 import { captureError } from '../utils/errorLogTransport.js';
 
@@ -202,6 +203,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private repair!: RepairService;
   private techTree!: TechTreeService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
+  private revealedOutlaws = new Map<string, Set<number>>();
 
   /** Get a player's current sector X coordinate */
   private _px(sid: string): number {
@@ -214,6 +216,13 @@ export class SectorRoom extends Room<SectorRoomState> {
   /** Get a player's current sector type from cache */
   private _pst(sid: string): string {
     return this.playerSectorData.get(sid)?.type ?? 'empty';
+  }
+
+  revealOutlaw(sessionId: string, npcId: number): void {
+    if (!this.revealedOutlaws.has(sessionId)) {
+      this.revealedOutlaws.set(sessionId, new Set());
+    }
+    this.revealedOutlaws.get(sessionId)!.add(npcId);
   }
 
   private checkRate(sessionId: string, action: string, intervalMs: number): boolean {
@@ -332,6 +341,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         await saveAPState(playerId, newAP);
         return true;
       },
+      revealOutlaw: (sid: string, npcId: number) => this.revealOutlaw(sid, npcId),
     };
 
     // Instantiate services
@@ -371,6 +381,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     );
     this.serviceCtx.detectAndSendPlayerGate = this.navigation.detectAndSendPlayerGate.bind(
       this.navigation,
+    );
+
+    // Lazy NPC spawn — ensure quadrant has the right NPC population
+    ensureQuadrantNpcs(this.quadrantX, this.quadrantY).catch(err =>
+      logger.error({ err }, 'Failed to ensure quadrant NPCs')
     );
 
     // ── Navigation ──────────────────────────────────────────────────
@@ -1288,7 +1303,13 @@ export class SectorRoom extends Room<SectorRoomState> {
     // CivShips — broadcast visible NPC ships to clients in this quadrant
     const onCivShipsTick = (event: CivShipsTickEvent) => {
       if (event.qx !== this.quadrantX || event.qy !== this.quadrantY) return;
-      this.broadcast('civ_ships_tick', event.ships);
+      for (const client of this.clients) {
+        const revealed = this.revealedOutlaws.get(client.sessionId) ?? new Set();
+        const visible = event.ships.filter((s: any) =>
+          s.role !== 'outlaw' || revealed.has(s.id)
+        );
+        if (visible.length > 0) client.send('civ_ships_tick', visible);
+      }
     };
     civShipBus.on('civShipsTick', onCivShipsTick);
 
@@ -1791,6 +1812,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.clientShips.delete(client.sessionId);
     this.rateLimits.delete(client.sessionId);
     this.playerSectorData.delete(client.sessionId);
+    this.revealedOutlaws.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
 
