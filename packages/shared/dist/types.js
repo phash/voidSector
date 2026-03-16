@@ -41,4 +41,8 @@ export function legacySectorType(env, contents) {
 export function isTraversable(env) {
     return env !== 'star' && env !== 'black_hole';
 }
+/** Returns true if structures (stations, jumpgates) can be built in this environment */
+export function isBuildable(env) {
+    return env === 'empty' || env === 'nebula';
+}
 //# sourceMappingURL=types.js.map

@@ -14,6 +14,7 @@ import {
   STATION_BUILD_COSTS,
   CONQUEST_POOL_MAX,
   CONQUEST_RATE,
+  isBuildable,
 } from '@void-sector/shared';
 import type { ChatChannel, ConstructionSiteState, DataSlate } from '@void-sector/shared';
 import { JumpGatePanel } from './JumpGatePanel';
@@ -61,7 +62,8 @@ function getSectorCapabilities(
     caps.push('jump');
   }
   if (isPlayerHere) {
-    caps.push('build', 'scan');
+    if (isBuildable(sector?.environment ?? 'empty')) caps.push('build');
+    caps.push('scan');
   }
   return caps;
 }
@@ -999,10 +1001,10 @@ export function DetailPanel() {
             </div>
           )}
 
-          {/* Build buttons - only when player is here */}
+          {/* Build buttons - only when player is here and sector is buildable */}
           {isPlayerHere && constructionSite ? (
             <ConstructionSitePanel key={constructionSite.id} site={constructionSite} />
-          ) : isPlayerHere ? (
+          ) : isPlayerHere && isBuildable(currentSector?.environment ?? 'empty') ? (
             <div style={{ marginTop: 8 }}>
               <div
                 style={{

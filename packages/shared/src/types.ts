@@ -184,6 +184,11 @@ export function isTraversable(env: SectorEnvironment): boolean {
   return env !== 'star' && env !== 'black_hole';
 }
 
+/** Returns true if structures (stations, jumpgates) can be built in this environment */
+export function isBuildable(env: SectorEnvironment): boolean {
+  return env === 'empty' || env === 'nebula';
+}
+
 export interface PlayerData {
   id: string;
   username: string;

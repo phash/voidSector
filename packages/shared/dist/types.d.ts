@@ -100,6 +100,8 @@ export interface BlackHoleCluster {
 export declare function legacySectorType(env: SectorEnvironment, contents: SectorContent[]): SectorType;
 /** Returns true if a sector environment can be entered/traversed by a ship */
 export declare function isTraversable(env: SectorEnvironment): boolean;
+/** Returns true if structures (stations, jumpgates) can be built in this environment */
+export declare function isBuildable(env: SectorEnvironment): boolean;
 export interface PlayerData {
     id: string;
     username: string;

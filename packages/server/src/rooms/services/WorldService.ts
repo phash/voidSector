@@ -74,6 +74,7 @@ import {
   BASIC_FACTORY_RECIPES,
   calculateProductionTime,
   calculateCostMultiplier,
+  isBuildable,
 } from '@void-sector/shared';
 import {
   getPlayerStationAt,
@@ -338,7 +339,12 @@ export class WorldService {
     }
     const auth = client.auth as AuthPayload;
 
-    // Block building in anomaly sectors
+    // Block building in special sector environments
+    const sectorEnv = this.ctx.playerSectorData.get(client.sessionId)?.environment ?? 'empty';
+    if (!isBuildable(sectorEnv)) {
+      client.send('error', { code: 'BUILD_FAIL', message: `Bauen in ${sectorEnv.toUpperCase()}-Sektoren nicht möglich` });
+      return;
+    }
     const sectorType = this.ctx._pst(client.sessionId);
     if (sectorType === 'anomaly') {
       client.send('error', { code: 'BUILD_FAIL', message: 'Bauen in Anomalien nicht möglich' });
@@ -563,6 +569,11 @@ export class WorldService {
     const sx = this.ctx._px(client.sessionId);
     const sy = this.ctx._py(client.sessionId);
 
+    const sectorEnvStation = this.ctx.playerSectorData.get(client.sessionId)?.environment ?? 'empty';
+    if (!isBuildable(sectorEnvStation)) {
+      client.send('buildStationResult', { success: false, error: `Bauen in ${sectorEnvStation.toUpperCase()}-Sektoren nicht möglich` });
+      return;
+    }
     const sectorType = this.ctx._pst(client.sessionId);
     if (sectorType !== 'empty') {
       client.send('buildStationResult', { success: false, error: `Nur in leeren Sektoren möglich (Typ: ${sectorType})` });
