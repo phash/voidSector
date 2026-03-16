@@ -140,6 +140,17 @@ fi
 ADMIN_TOKEN=$(awk -F': ' '/ADMIN_TOKEN/{gsub(/[[:space:]]/, "", $2); print $2}' docker-compose.yml | head -1)
 ADMIN_BASE="${URL:-http://localhost:3201}"
 
+# Write current deployment info to current.md
+cat > "$SCRIPT_DIR/current.md" <<CURRENT
+# voidSector — Current Deployment
+
+- **URL**: ${URL:-http://localhost:3201}
+- **Admin API**: ${ADMIN_BASE}/admin/api
+- **Admin Token**: ${ADMIN_TOKEN}
+- **Branch**: $(git branch --show-current) @ $(git log --oneline -1)
+- **Deployed**: $(date '+%Y-%m-%d %H:%M:%S')
+CURRENT
+
 echo ""
 echo "── Zugangsdaten ─────────────────────────"
 if [[ -n "$URL" ]]; then

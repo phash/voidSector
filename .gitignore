@@ -6,6 +6,7 @@ dist/
 .worktrees/
 .playwright-mcp/
 playtests/
+current.md
 coverage/
 test-results/
 playwright-report/
