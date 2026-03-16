@@ -663,7 +663,7 @@ class GameNetwork {
       }
     });
 
-    room.onMessage('researchResult', (data) => {
+    room.onMessage('researchResult_legacy', (data) => {
       if (data.success) {
         const current = useStore.getState().research;
         const patch: any = {};
@@ -707,8 +707,11 @@ class GameNetwork {
         const store = useStore.getState();
         store.setPlayerResearch([...store.playerResearch, data.nodeId]);
         store.addLogEntry(`Forschung abgeschlossen: ${data.nodeId}`);
+        store.showSuccessToast('FORSCHUNG ABGESCHLOSSEN');
       } else if (!data.success) {
-        useStore.getState().addLogEntry(`Forschung fehlgeschlagen: ${data.error ?? 'Unbekannter Fehler'}`);
+        const store = useStore.getState();
+        store.addLogEntry(`Forschung fehlgeschlagen: ${data.error ?? 'Unbekannter Fehler'}`);
+        store.setActionError({ code: 'RESEARCH_FAIL', message: data.error ?? 'Nicht genug Wissen' });
       }
     });
 

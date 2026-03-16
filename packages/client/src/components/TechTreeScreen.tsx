@@ -72,10 +72,25 @@ export function TechTreeScreen() {
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', padding: '8px', overflowY: 'auto', maxHeight: '100%' }}>
-      <div style={{ color: 'var(--color-primary)', letterSpacing: '0.2em', marginBottom: 8 }}>
-        TECH TREE <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>WISSEN: {wissen}</span>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Sticky header with Wissen display */}
+      <div style={{
+        padding: '8px 8px 6px', borderBottom: '1px solid rgba(255,176,0,0.2)',
+        background: '#080808', flexShrink: 0,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ color: 'var(--color-primary)', letterSpacing: '0.2em' }}>TECH TREE</span>
+        <span style={{
+          color: wissen >= 10 ? '#00FF88' : '#FF4444',
+          fontSize: '0.75rem', fontWeight: 'bold',
+          border: `1px solid ${wissen >= 10 ? 'rgba(0,255,136,0.3)' : 'rgba(255,68,68,0.3)'}`,
+          padding: '2px 8px',
+        }}>
+          WISSEN: {wissen}
+        </span>
       </div>
+      {/* Scrollable branch list */}
+      <div style={{ padding: '8px', overflowY: 'auto', flex: 1 }}>
 
       {BRANCH_CONFIG.map((branch) => {
         const isExpanded = expandedBranch === branch.id;
@@ -174,6 +189,7 @@ export function TechTreeScreen() {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

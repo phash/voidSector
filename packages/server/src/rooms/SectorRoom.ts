@@ -58,6 +58,7 @@ import {
   getPlayerResearch,
   getActiveResearch,
   getWissen,
+  deductWissen,
   getWissenSpent,
   getTypedArtefacts,
   getActiveAutopilotRoute,
@@ -820,10 +821,25 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     this.onMessage('researchNode', async (client, data: { nodeId: string }) => {
       const auth = client.auth as AuthPayload;
+      // Check if already researched
+      const current = await getPlayerResearchV2(auth.userId);
+      if (current.includes(data.nodeId)) {
+        client.send('researchResult', { success: false, error: 'Bereits erforscht' });
+        return;
+      }
+      // Deduct Wissen (10 per node)
+      const deducted = await deductWissen(auth.userId, 10);
+      if (!deducted) {
+        client.send('researchResult', { success: false, error: 'Nicht genug Wissen (10 benötigt)' });
+        return;
+      }
       await addPlayerResearchV2(auth.userId, data.nodeId);
       const research = await getPlayerResearchV2(auth.userId);
+      const wissen = await getWissen(auth.userId);
       client.send('researchResult', { success: true, nodeId: data.nodeId });
       client.send('playerResearch', { research });
+      client.send('wissenUpdate', { wissen });
+      client.send('logEntry', `Forschung abgeschlossen: ${data.nodeId} (-10 Wissen)`);
     });
 
     // ── World / Data Queries ────────────────────────────────────────
