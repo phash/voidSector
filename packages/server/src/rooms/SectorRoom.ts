@@ -82,6 +82,7 @@ import {
 import { getQuadrant, addPlayerKnownQuadrant } from '../db/quadrantQueries.js';
 import { civQueries } from '../db/civQueries.js';
 import { query } from '../db/client.js';
+import { getPlayerResearchV2, addPlayerResearchV2 } from '../db/techTreeQueries.js';
 import {
   RECONNECTION_TIMEOUT_S,
   calculateShipStats,
@@ -835,6 +836,21 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getTechTree', (client) => this.techTree.handleGetTechTree(client));
     this.onMessage('researchTechNode', (client, data) => this.techTree.handleResearchNode(client, data));
     this.onMessage('resetTechTree', (client) => this.techTree.handleResetTree(client));
+
+    // ── Tech Rework v2: flat research list ──────────────────────────
+    this.onMessage('getPlayerResearch', async (client) => {
+      const auth = client.auth as AuthPayload;
+      const research = await getPlayerResearchV2(auth.userId);
+      client.send('playerResearch', { research });
+    });
+
+    this.onMessage('researchNode', async (client, data: { nodeId: string }) => {
+      const auth = client.auth as AuthPayload;
+      await addPlayerResearchV2(auth.userId, data.nodeId);
+      const research = await getPlayerResearchV2(auth.userId);
+      client.send('researchResult', { success: true, nodeId: data.nodeId });
+      client.send('playerResearch', { research });
+    });
 
     // ── World / Data Queries ────────────────────────────────────────
     this.onMessage('getAP', async (client) => {

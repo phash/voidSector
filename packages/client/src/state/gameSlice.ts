@@ -588,6 +588,9 @@ export interface GameSlice {
     resetCooldownRemaining: number;
   } | null;
 
+  // Tech rework: v2 research nodes (flat list of researched node IDs)
+  playerResearch: string[];
+
   // Trade feedback (partial sell message)
   tradeMessage: string | null;
 
@@ -724,6 +727,7 @@ export interface GameSlice {
   setInventory: (items: InventoryItem[]) => void;
   setTrackedQuests: (quests: TrackedQuest[]) => void;
   setTechTree: (data: { researchedNodes: Record<string, number>; totalResearched: number; resetCooldownRemaining: number }) => void;
+  setPlayerResearch: (research: string[]) => void;
   setConstructionSites: (sites: ConstructionSiteState[]) => void;
   upsertConstructionSite: (site: ConstructionSiteState) => void;
   removeConstructionSite: (siteId: string) => void;
@@ -870,6 +874,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   inventory: [],
   trackedQuests: [],
   techTree: null,
+  playerResearch: [],
   constructionSites: [],
   tradeMessage: null,
   sectorWrecks: {},
@@ -1139,6 +1144,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setInventory: (inventory) => set({ inventory }),
   setTrackedQuests: (trackedQuests) => set({ trackedQuests }),
   setTechTree: (data) => set({ techTree: data }),
+  setPlayerResearch: (playerResearch) => set({ playerResearch }),
   setConstructionSites: (sites) => set({ constructionSites: sites }),
   upsertConstructionSite: (site) => set((s) => ({
     constructionSites: s.constructionSites.some((c) => c.id === site.id)

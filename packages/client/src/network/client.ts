@@ -700,6 +700,20 @@ class GameNetwork {
       useStore.getState().setTechTree(data);
     });
 
+    // Tech rework v2: flat research list
+    room.onMessage('playerResearch', (data: { research: string[] }) => {
+      useStore.getState().setPlayerResearch(data.research);
+    });
+    room.onMessage('researchResult', (data: { success: boolean; nodeId?: string; error?: string }) => {
+      if (data.success && data.nodeId) {
+        const store = useStore.getState();
+        store.setPlayerResearch([...store.playerResearch, data.nodeId]);
+        store.addLogEntry(`Forschung abgeschlossen: ${data.nodeId}`);
+      } else if (!data.success) {
+        useStore.getState().addLogEntry(`Forschung fehlgeschlagen: ${data.error ?? 'Unbekannter Fehler'}`);
+      }
+    });
+
     room.onMessage('wissenUpdate', (data) => {
       useStore.getState().setResearch({
         ...useStore.getState().research,
@@ -2948,6 +2962,16 @@ class GameNetwork {
 
   sendAttackNpc(npcId: number) {
     this.sectorRoom?.send('attackNpc', { npcId });
+  }
+
+  // ── Tech Rework v2 ─────────────────────────────────────────────────────────
+
+  requestPlayerResearch() {
+    this.sectorRoom?.send('getPlayerResearch');
+  }
+
+  sendResearchNode(nodeId: string) {
+    this.sectorRoom?.send('researchNode', { nodeId });
   }
 }
 
