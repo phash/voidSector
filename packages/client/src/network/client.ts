@@ -1444,8 +1444,20 @@ class GameNetwork {
         newLevel?: number;
         tollCredits?: number;
       }) => {
-        if (data.success) {
-          useStore.getState().addLogEntry('Jumpgate aktualisiert');
+        if (data.success && data.gateId) {
+          const store = useStore.getState();
+          // Update the specific gate in playerGates list
+          const updated = store.playerGates.map((g) =>
+            g.id === data.gateId && data.tollCredits !== undefined
+              ? { ...g, tollCredits: data.tollCredits }
+              : g,
+          );
+          store.setPlayerGates(updated);
+          // Also update playerGateInfo if it matches
+          if (store.playerGateInfo?.id === data.gateId && data.tollCredits !== undefined) {
+            store.setPlayerGateInfo({ ...store.playerGateInfo, tollCredits: data.tollCredits });
+          }
+          store.addLogEntry('Jumpgate aktualisiert');
         }
       },
     );
@@ -2237,6 +2249,10 @@ class GameNetwork {
 
   sendDepositConstruction(siteId: string, resources: { ore?: number; gas?: number; crystal?: number; credits?: number; artefact?: number }) {
     this.sectorRoom?.send('depositConstruction', { siteId, ...resources });
+  }
+
+  sendGetConstructionSiteInfo(siteId: string) {
+    this.sectorRoom?.send('getConstructionSiteInfo', { siteId });
   }
 
   sendTransfer(resource: string, amount: number, direction: 'toStorage' | 'fromStorage') {

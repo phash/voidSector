@@ -151,6 +151,14 @@ function ConstructionSitePanel({ site }: { site: ConstructionSiteState }) {
   const playerCredits = useStore((s) => s.credits);
   const [amounts, setAmounts] = useState({ ore: 0, gas: 0, crystal: 0, credits: 0, artefact: 0 });
 
+  // Poll for construction site updates every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      network.sendGetConstructionSiteInfo(site.id);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [site.id]);
+
   const remainOre      = Math.max(0, site.neededOre      - site.depositedOre);
   const remainGas      = Math.max(0, site.neededGas      - site.depositedGas);
   const remainCrystal  = Math.max(0, site.neededCrystal  - site.depositedCrystal);

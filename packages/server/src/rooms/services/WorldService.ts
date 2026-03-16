@@ -523,6 +523,16 @@ export class WorldService {
     client.send('depositResult', { success: true });
   }
 
+  async handleGetConstructionSiteInfo(client: Client, data: { siteId: string }): Promise<void> {
+    const site = await getConstructionSiteById(data.siteId);
+    if (!site) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Construction site not found' });
+      return;
+    }
+    const siteState = toConstructionSiteState(site);
+    client.send('constructionSiteUpdate', siteState);
+  }
+
   // ── Player Station ──────────────────────────────────────────────────
 
   async handleBuildStation(client: Client): Promise<void> {
