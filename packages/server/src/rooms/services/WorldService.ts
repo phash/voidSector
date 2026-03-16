@@ -541,9 +541,9 @@ export class WorldService {
     const sx = this.ctx._px(client.sessionId);
     const sy = this.ctx._py(client.sessionId);
 
-    const sector = await getSector(sx, sy);
-    if (sector?.type !== 'empty') {
-      client.send('buildStationResult', { success: false, error: 'Nur in leeren Sektoren möglich' });
+    const sectorType = this.ctx._pst(client.sessionId);
+    if (sectorType !== 'empty') {
+      client.send('buildStationResult', { success: false, error: `Nur in leeren Sektoren möglich (Typ: ${sectorType})` });
       return;
     }
 

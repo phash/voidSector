@@ -1012,6 +1012,7 @@ export function DetailPanel() {
                     {STATION_BUILD_COSTS[1].credits} CR · {STATION_BUILD_COSTS[1].crystal} CRYSTAL ·{' '}
                     {STATION_BUILD_COSTS[1].artefact} ARTEFAKT
                   </div>
+                  <InlineError codes={['BUILD_STATION_FAIL']} style={{ marginTop: 4 }} />
                 </div>
                 {!playerGateInfo && (
                   <div>

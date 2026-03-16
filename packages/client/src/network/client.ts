@@ -785,9 +785,10 @@ class GameNetwork {
     room.onMessage('buildStationResult', (data: any) => {
       const store = useStore.getState();
       if (data.success) {
-        store.addLogEntry('STATION ERRICHTET');
+        store.addLogEntry('STATION-BAUSTELLE ERRICHTET');
       } else {
         store.addLogEntry(`STATION FEHLER: ${data.error}`);
+        store.setActionError({ code: 'BUILD_STATION_FAIL', message: data.error });
       }
     });
     room.onMessage('upgradeStationResult', (data: any) => {
