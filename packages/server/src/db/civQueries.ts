@@ -188,3 +188,101 @@ export const civQueries = {
     return res.rows[0]?.conquest_pool ?? 0;
   },
 };
+
+export async function getNpcShipsInSector(x: number, y: number): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT * FROM civ_ships
+     WHERE x = $1 AND y = $2 AND role IN ('trader', 'military', 'outlaw')
+       AND (dead_until IS NULL OR dead_until < NOW())`,
+    [x, y],
+  );
+  return rows;
+}
+
+export async function getNpcShipById(id: number): Promise<any | null> {
+  const { rows } = await query(
+    `SELECT * FROM civ_ships WHERE id = $1 AND role IN ('trader', 'military', 'outlaw')`,
+    [id],
+  );
+  return rows[0] ?? null;
+}
+
+export async function getAliveNpcsByRole(
+  qx: number, qy: number, quadrantSize: number, role: string,
+): Promise<any[]> {
+  const minX = qx * quadrantSize;
+  const maxX = minX + quadrantSize - 1;
+  const minY = qy * quadrantSize;
+  const maxY = minY + quadrantSize - 1;
+  const { rows } = await query(
+    `SELECT * FROM civ_ships
+     WHERE role = $1 AND x >= $2 AND x <= $3 AND y >= $4 AND y <= $5
+       AND (dead_until IS NULL OR dead_until < NOW())`,
+    [role, minX, maxX, minY, maxY],
+  );
+  return rows;
+}
+
+export async function getStationsInRange(x: number, y: number, maxDist: number): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT * FROM civ_stations
+     WHERE ABS(sector_x - $1) + ABS(sector_y - $2) <= $3`,
+    [x, y, maxDist],
+  );
+  return rows;
+}
+
+export async function updateNpcShip(
+  id: number,
+  fields: Partial<{
+    x: number; y: number; state: string;
+    target_x: number | null; target_y: number | null;
+    inventory: Record<string, number>;
+    patrol_state: Record<string, any>;
+    dead_until: string | null;
+    resources_carried: number;
+  }>,
+): Promise<void> {
+  const sets: string[] = [];
+  const vals: any[] = [];
+  let i = 1;
+  for (const [k, v] of Object.entries(fields)) {
+    if (v === undefined) continue;
+    sets.push(`${k} = $${i}`);
+    vals.push(k === 'patrol_state' || k === 'inventory' ? JSON.stringify(v) : v);
+    i++;
+  }
+  if (sets.length === 0) return;
+  vals.push(id);
+  await query(`UPDATE civ_ships SET ${sets.join(', ')} WHERE id = $${i}`, vals);
+}
+
+export async function spawnNpcShip(data: {
+  faction: string; ship_type: string; role: string;
+  x: number; y: number; home_x: number; home_y: number;
+  level?: number; name?: string; inventory?: Record<string, number>;
+  patrol_state?: Record<string, any>;
+}): Promise<number> {
+  const { rows } = await query(
+    `INSERT INTO civ_ships (faction, ship_type, state, x, y, home_x, home_y, role, level, name, inventory, patrol_state)
+     VALUES ($1, $2, 'idle', $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     RETURNING id`,
+    [data.faction, data.ship_type, data.x, data.y, data.home_x, data.home_y,
+     data.role, data.level ?? 1, data.name ?? '',
+     JSON.stringify(data.inventory ?? {}), JSON.stringify(data.patrol_state ?? {})],
+  );
+  return rows[0].id;
+}
+
+export async function resetDeadOutlaws(): Promise<number> {
+  const { rowCount } = await query(
+    `UPDATE civ_ships SET dead_until = NULL WHERE role = 'outlaw' AND dead_until IS NOT NULL AND dead_until < NOW()`,
+    [],
+  );
+  return rowCount ?? 0;
+}
+
+export async function getNpcPosition(npcId: number): Promise<{ x: number; y: number } | null> {
+  const { rows } = await query('SELECT x, y FROM civ_ships WHERE id = $1', [npcId]);
+  return rows[0] ?? null;
+}
