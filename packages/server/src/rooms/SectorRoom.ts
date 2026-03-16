@@ -346,6 +346,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         return true;
       },
       revealOutlaw: (sid: string, npcId: number) => this.revealOutlaw(sid, npcId),
+      combatV3: null as any,
     };
 
     // Instantiate services
@@ -374,6 +375,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.combatV3 = new CombatV3Service(this.serviceCtx);
 
     // Wire cross-service callbacks
+    this.serviceCtx.combatV3 = this.combatV3;
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
     this.serviceCtx.onResourceSoldAtStation = this.quests.onResourceSoldAtStation.bind(this.quests);
     this.serviceCtx.applyReputationChange = this.quests.applyReputationChange.bind(this.quests);

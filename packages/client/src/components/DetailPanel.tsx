@@ -859,10 +859,12 @@ export function DetailPanel() {
                   {' · '}CRYSTAL: {(typeof npc.inventory === 'string' ? JSON.parse(npc.inventory) : npc.inventory).crystal ?? 0}
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {(npc.role === 'trader' || npc.role === 'outlaw') && (
                   <button className="vs-btn" style={{ fontSize: '0.65rem' }}
-                    onClick={() => network.sendNpcShipTrade(npc.id, 'ore', 10, 'buy')}>
+                    onClick={() => {
+                      navigateToProgram('TRADE');
+                    }}>
                     [HANDELN]
                   </button>
                 )}

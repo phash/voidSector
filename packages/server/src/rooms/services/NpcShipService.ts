@@ -132,10 +132,8 @@ export class NpcShipService {
       client.send('error', { code: 'NPC_FAIL', message: 'Kann nur Outlaws angreifen' });
       return;
     }
-    // TODO: Wire NPC attack to CombatV3Service.handleCombatV3Start once DB-backed
-    // module loading is in place. Integration will be completed during legacy removal.
-    client.send('npcCombatStart', { npcId: npc.id, npcName: npc.name, level: npc.level });
-
-    logger.info({ npcId: data.npcId }, 'NpcShipService: attack initiated');
+    // Wire to CombatV3
+    await this.ctx.combatV3.handleCombatV3Start(client, { npcLevel: npc.level, npcId: npc.id });
+    logger.info({ npcId: data.npcId, level: npc.level }, 'NpcShipService: combat started');
   }
 }

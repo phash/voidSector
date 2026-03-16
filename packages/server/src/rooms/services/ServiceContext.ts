@@ -89,4 +89,9 @@ export interface ServiceContext {
 
   // NPC visibility
   revealOutlaw: (sessionId: string, npcId: number) => void;
+
+  // Cross-service: CombatV3
+  combatV3: {
+    handleCombatV3Start: (client: Client, data: { npcLevel: number; npcId?: number }) => Promise<void>;
+  };
 }
