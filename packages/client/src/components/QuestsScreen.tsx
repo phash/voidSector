@@ -562,6 +562,10 @@ export function QuestsScreen() {
   const trackedQuests = useStore((s) => s.trackedQuests);
   const trackedIds = new Set(trackedQuests.map((tq) => tq.questId));
   const { confirm, isArmed, disarm } = useConfirm(null);
+  const showTip = useStore((s) => s.showTip);
+
+  // Show quest screen help on first visit
+  useEffect(() => { showTip('first_quest_screen'); }, [showTip]);
 
   const [tab, setTab] = useState<'auftraege' | 'verfuegbar' | 'story' | 'reputation'>('auftraege');
   const [subFilter, setSubFilter] = useState<'all' | 'rescue'>('all');
@@ -629,7 +633,12 @@ export function QuestsScreen() {
         </button>
       )}
       {/* Tab bar */}
-      <div style={{ display: 'flex', width: '100%', flexWrap: 'nowrap', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', width: '100%', flexWrap: 'nowrap', marginBottom: '8px', gap: 2 }}>
+        <button
+          onClick={() => showTip('first_quest_screen')}
+          style={{ background: 'none', border: '1px solid var(--color-dim)', color: 'var(--color-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', padding: '0 4px', cursor: 'pointer', flexShrink: 0 }}
+          title="Hilfe"
+        >[?]</button>
         {(['auftraege', 'verfuegbar', 'story', 'reputation'] as const).map((tabKey) => (
           <button
             key={tabKey}

@@ -109,7 +109,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   zoomLevel: 2,
   panOffset: { x: 0, y: 0 },
   jumpAnimation: null,
-  autoFollow: false,
+  autoFollow: true,
   detailView: null,
   monitorPower: {},
   monitorChromeVisible: {},

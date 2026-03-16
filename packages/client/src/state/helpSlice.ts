@@ -108,6 +108,76 @@ export const HELP_TIPS: HelpTip[] = [
     title: 'ACTION POINTS',
     body: 'AP powers all movement and actions. They regenerate automatically — watch the bar in the status panel.',
   },
+  // Quest onboarding (#492)
+  {
+    id: 'first_quest_screen',
+    title: 'QUESTS — AUFTRÄGE',
+    body: 'Hier verwaltest du deine Aufträge.\n\n'
+      + '→ AUFTRÄGE: Deine aktiven Quests mit Fortschritt\n'
+      + '→ VERFÜGBAR: Neue Quests an der aktuellen Station\n'
+      + '→ STORY: Fraktions-Geschichten zum Freischalten\n\n'
+      + 'Fliege zu einer Station (◇) um Quests anzunehmen. Max. 3 gleichzeitig aktiv.',
+    articleId: 'quests',
+  },
+  {
+    id: 'first_quest_accept',
+    title: 'QUEST ANGENOMMEN',
+    body: 'Dein erster Auftrag! So gehst du vor:\n\n'
+      + '→ Öffne QUESTS → Tab AUFTRÄGE um dein Ziel zu sehen\n'
+      + '→ Klicke [TRACKEN] um das Ziel in der Bookmark-Leiste anzuzeigen\n'
+      + '→ Navigiere zum Ziel-Sektor und führe die Aufgabe aus\n'
+      + '→ Kehre zur Station zurück um die Belohnung abzuholen\n\n'
+      + 'Quests verfallen nach 7 Tagen.',
+    articleId: 'quests',
+  },
+  {
+    id: 'first_quest_scan',
+    title: 'SCAN-QUEST',
+    body: 'Fliege zum markierten Sektor und führe einen Lokal-Scan durch.\n\n'
+      + '→ Navigiere zum Ziel (Koordinaten im Quest-Detail)\n'
+      + '→ Drücke [SCAN] im Detail-Panel\n'
+      + '→ Nach Abschluss aller Scans erhältst du ein Data Slate\n'
+      + '→ Bringe das Data Slate zur Auftragsstation zurück',
+    articleId: 'scan',
+  },
+  {
+    id: 'first_quest_fetch',
+    title: 'SAMMEL-QUEST',
+    body: 'Sammle die angeforderten Ressourcen und liefere sie ab.\n\n'
+      + '→ Mine Erz, Gas oder Kristalle in passenden Sektoren\n'
+      + '→ Wenn genug gesammelt: kehre zur Auftragsstation zurück\n'
+      + '→ Die Abgabe erfolgt automatisch bei Ankunft',
+    articleId: 'quests',
+  },
+  {
+    id: 'first_quest_bounty',
+    title: 'KOPFGELD-QUEST',
+    body: 'Verfolge ein Ziel durch mehrere Sektoren.\n\n'
+      + '→ Folge den Hinweisen im Quest-Tracker (Bookmark-Leiste)\n'
+      + '→ Scanne jeden Hinweis-Sektor um die Spur aufzunehmen\n'
+      + '→ Am Ende: Kampf gegen das Ziel\n'
+      + '→ Bringe den Gefangenen zur Auftragsstation zurück',
+    articleId: 'quests',
+  },
+  {
+    id: 'first_quest_delivery',
+    title: 'LIEFER-QUEST',
+    body: 'Transportiere Waren zwischen Stationen.\n\n'
+      + '→ Die Fracht wird automatisch geladen\n'
+      + '→ Navigiere zur Ziel-Station\n'
+      + '→ Abgabe erfolgt bei Ankunft an der richtigen Station',
+    articleId: 'quests',
+  },
+  {
+    id: 'first_quest_complete',
+    title: 'QUEST ABGESCHLOSSEN!',
+    body: 'Gut gemacht! Belohnungen werden automatisch gutgeschrieben.\n\n'
+      + '→ Credits, XP und Ruf steigen sofort\n'
+      + '→ Manche Quests geben Blueprints oder seltene Items\n'
+      + '→ Höherer Ruf schaltet bessere Quests frei\n'
+      + '→ Nimm den nächsten Auftrag an einer Station an!',
+    articleId: 'quests',
+  },
 ];
 
 export interface HelpSlice {

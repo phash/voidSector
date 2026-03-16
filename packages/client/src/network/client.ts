@@ -1062,7 +1062,17 @@ class GameNetwork {
       const store = useStore.getState();
       if (data.success && data.quest) {
         store.setActiveQuests([...store.activeQuests, data.quest]);
-        // Note: server already sends logEntry "Quest angenommen: ..." via ctx.send — no duplicate here
+        // Quest onboarding help tips (#492)
+        store.showTip('first_quest_accept');
+        const questType = (data.quest.templateId as string).split('_')[0];
+        if (questType === 'scan' || data.quest.objectives?.some((o: any) => o.type === 'scan'))
+          store.showTip('first_quest_scan');
+        else if (questType === 'bounty' || data.quest.objectives?.some((o: any) => o.type?.startsWith('bounty')))
+          store.showTip('first_quest_bounty');
+        else if (data.quest.objectives?.some((o: any) => o.type === 'fetch'))
+          store.showTip('first_quest_fetch');
+        else if (data.quest.objectives?.some((o: any) => o.type === 'delivery'))
+          store.showTip('first_quest_delivery');
       } else {
         store.addLogEntry(`Quest-Fehler: ${data.error}`);
         store.setActionError({ code: 'QUEST_ERROR', message: data.error });
@@ -1090,6 +1100,7 @@ class GameNetwork {
 
     room.onMessage('questComplete', (data: { id: string; title: string; rewards: any }) => {
       useStore.getState().addQuestComplete({ id: data.id, title: data.title, rewards: data.rewards });
+      useStore.getState().showTip('first_quest_complete');
     });
 
     room.onMessage('trackedQuestsUpdate', (data: { quests: TrackedQuest[] }) => {
