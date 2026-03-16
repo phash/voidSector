@@ -38,7 +38,6 @@ import {
   STATION_REPAIR_CR_PER_HP,
   STATION_REPAIR_ORE_PER_HP,
   STATION_COMBAT_MAX_ROUNDS,
-  STATION_DEFENSE_DEFS,
   FUEL_COST_PER_UNIT,
   FUEL_MIN_TANK,
   FREE_REFUEL_MAX_SHIPS,
@@ -58,8 +57,6 @@ import {
   NPC_XP_PER_TRADE_UNIT,
   NPC_XP_QUEST_COMPLETE,
   NPC_STATION_LEVELS,
-  STORAGE_TIERS,
-  TRADING_POST_TIERS,
   REP_PRICE_MODIFIERS,
   STATION_REP_VISIT,
   STATION_REP_TRADE,
@@ -155,7 +152,6 @@ import {
   BASE_ENGINE_SPEED,
   BASE_COMM_RANGE,
   BASE_SCANNER_LEVEL,
-  LAB_WISSEN_MULTIPLIER,
   RESEARCH_TICK_MS,
   WRECK_BASE_DIFFICULTY,
   WRECK_SALVAGE_DURATION_MS,
@@ -235,8 +231,6 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   { key: 'STATION_REPAIR_CR_PER_HP', category: 'combat', description: 'Credits per HP to repair station', getDefault: () => STATION_REPAIR_CR_PER_HP },
   { key: 'STATION_REPAIR_ORE_PER_HP', category: 'combat', description: 'Ore per HP to repair station', getDefault: () => STATION_REPAIR_ORE_PER_HP },
   { key: 'STATION_COMBAT_MAX_ROUNDS', category: 'combat', description: 'Maximum station combat rounds', getDefault: () => STATION_COMBAT_MAX_ROUNDS },
-  { key: 'STATION_DEFENSE_DEFS', category: 'combat', description: 'Station defense structure definitions', getDefault: () => STATION_DEFENSE_DEFS },
-
   // ══════════════════════════════════════════════════════════════════════════════
   // Fuel
   // ══════════════════════════════════════════════════════════════════════════════
@@ -263,8 +257,6 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   { key: 'NPC_XP_PER_TRADE_UNIT', category: 'economy', description: 'XP gained per traded unit', getDefault: () => NPC_XP_PER_TRADE_UNIT },
   { key: 'NPC_XP_QUEST_COMPLETE', category: 'economy', description: 'XP gained per quest completion at station', getDefault: () => NPC_XP_QUEST_COMPLETE },
   { key: 'NPC_STATION_LEVELS', category: 'economy', description: 'NPC station level progression', getDefault: () => NPC_STATION_LEVELS },
-  { key: 'STORAGE_TIERS', category: 'economy', description: 'Storage structure tier capacity and upgrade costs', getDefault: () => STORAGE_TIERS },
-  { key: 'TRADING_POST_TIERS', category: 'economy', description: 'Trading post tier names and upgrade costs', getDefault: () => TRADING_POST_TIERS },
   { key: 'REP_PRICE_MODIFIERS', category: 'economy', description: 'Faction reputation price modifier table', getDefault: () => REP_PRICE_MODIFIERS },
   { key: 'STATION_REP_VISIT', category: 'economy', description: 'Reputation gained per station visit', getDefault: () => STATION_REP_VISIT },
   { key: 'STATION_REP_TRADE', category: 'economy', description: 'Reputation gained per trade at station', getDefault: () => STATION_REP_TRADE },
@@ -399,7 +391,6 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   // ══════════════════════════════════════════════════════════════════════════════
   // Research
   // ══════════════════════════════════════════════════════════════════════════════
-  { key: 'LAB_WISSEN_MULTIPLIER', category: 'research', description: 'Lab tier Wissen generation multiplier', getDefault: () => LAB_WISSEN_MULTIPLIER },
   { key: 'RESEARCH_TICK_MS', category: 'research', description: 'Research tick interval in milliseconds', getDefault: () => RESEARCH_TICK_MS },
 
   // ══════════════════════════════════════════════════════════════════════════════

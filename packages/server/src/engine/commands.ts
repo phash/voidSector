@@ -17,7 +17,6 @@ import {
   NPC_PRICES,
   NPC_BUY_SPREAD,
   NPC_SELL_SPREAD,
-  STORAGE_TIERS,
   SLATE_AP_COST_SECTOR,
   SLATE_AP_COST_AREA,
   SLATE_AREA_RADIUS,
@@ -206,15 +205,8 @@ export function validateTransfer(
   if (!['ore', 'gas', 'crystal', 'artefact'].includes(resource))
     return { valid: false, error: 'Invalid resource' };
 
-  const tierConfig = STORAGE_TIERS[storageTier];
-  if (!tierConfig) return { valid: false, error: 'Invalid storage tier' };
-
   if (direction === 'toStorage') {
     if (cargo[resource] < amount) return { valid: false, error: `Not enough ${resource} in cargo` };
-    const storageTotal = storage.ore + storage.gas + storage.crystal + storage.artefact;
-    if (storageTotal + amount > tierConfig.capacity) {
-      return { valid: false, error: `Storage full (${storageTotal}/${tierConfig.capacity})` };
-    }
   } else {
     if (storage[resource] < amount)
       return { valid: false, error: `Not enough ${resource} in storage` };
@@ -248,16 +240,11 @@ export function validateNpcTrade(
     return { valid: false, error: 'Invalid resource', totalPrice: 0 };
 
   const basePrice = NPC_PRICES[resource as MineableResourceType];
-  const tierConfig = STORAGE_TIERS[storageTier];
 
   if (action === 'buy') {
     const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);
     if (credits < totalPrice)
       return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
-    const storageTotal = storage.ore + storage.gas + storage.crystal + storage.artefact;
-    if (storageTotal + amount > tierConfig.capacity) {
-      return { valid: false, error: 'Storage full', totalPrice };
-    }
     return { valid: true, totalPrice };
   } else {
     const totalPrice = Math.floor(basePrice * NPC_SELL_SPREAD * amount);

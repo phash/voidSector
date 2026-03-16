@@ -1,15 +1,12 @@
 import type { Client } from 'colyseus';
-import { LAB_WISSEN_MULTIPLIER } from '@void-sector/shared';
-import { addWissen, getResearchLabTier, getWissen } from '../db/queries.js';
+import { addWissen, getWissen } from '../db/queries.js';
 
 /**
- * Award Wissen for a gameplay action, applying lab multiplier.
+ * Award Wissen for a gameplay action. Multiplier is always 1.0 (lab system removed).
  */
 export async function awardWissen(playerId: string, baseAmount: number): Promise<void> {
   if (baseAmount <= 0) return;
-  const labTier = await getResearchLabTier(playerId);
-  const multiplier = LAB_WISSEN_MULTIPLIER[labTier] ?? 1.0;
-  const gain = Math.floor(baseAmount * multiplier);
+  const gain = Math.floor(baseAmount);
   if (gain > 0) {
     await addWissen(playerId, gain);
   }

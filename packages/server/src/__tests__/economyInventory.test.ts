@@ -22,19 +22,9 @@ vi.mock('../db/queries.js', () => ({
   getPlayerCredits: vi.fn().mockResolvedValue(1000),
   addCredits: vi.fn().mockResolvedValue(1200),
   deductCredits: vi.fn().mockResolvedValue(true),
-  getStorageInventory: vi.fn().mockResolvedValue({ ore: 0, gas: 0, crystal: 0, artefact: 0 }),
-  updateStorageResource: vi.fn().mockResolvedValue(undefined),
-  getPlayerStructure: vi.fn().mockResolvedValue(null),
-  upgradeStructureTier: vi.fn().mockResolvedValue(2),
-  createTradeOrder: vi.fn().mockResolvedValue({ id: 'order-1' }),
-  findPlayerByUsername: vi.fn().mockResolvedValue({ id: 'user-123', username: 'test', xp: 0, level: 1, passwordHash: '' }),
-  getPlayerBaseStructures: vi.fn().mockResolvedValue([]),
-  playerHasBaseAtSector: vi.fn().mockResolvedValue(false),
-  getPlayerShips: vi.fn().mockResolvedValue([]),
   getPlayerReputation: vi.fn().mockResolvedValue(0),
   getPlayerStationRep: vi.fn().mockResolvedValue(0),
   updatePlayerStationRep: vi.fn().mockResolvedValue(undefined),
-  getPlayerResearch: vi.fn().mockResolvedValue(null),
   upsertInventory: vi.fn().mockResolvedValue(undefined),
   deductInventory: vi.fn().mockResolvedValue(undefined),
   getInventory: vi.fn().mockResolvedValue([]),
@@ -48,6 +38,7 @@ vi.mock('../db/npcStationQueries.js', () => ({
   upsertInventoryItem: vi.fn().mockResolvedValue(undefined),
   getStationInventory: vi.fn().mockResolvedValue([]),
   getStationFuelAndGas: vi.fn().mockResolvedValue({ fuel: 10000, gas: 0 }),
+  deductStationFuelStock: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../engine/npcStationEngine.js', () => ({
@@ -70,21 +61,6 @@ vi.mock('../engine/commands.js', () => ({
   getReputationTier: vi.fn().mockReturnValue('neutral'),
 }));
 
-vi.mock('../engine/productionEngine.js', () => ({
-  getOrCreateFactoryState: vi.fn().mockResolvedValue({}),
-  setActiveRecipe: vi.fn().mockResolvedValue({ success: true }),
-  collectOutput: vi.fn().mockResolvedValue({ consumed: {}, error: null }),
-  getFactoryStatus: vi.fn().mockResolvedValue({ status: 'idle' }),
-  transferOutputToCargo: vi.fn().mockResolvedValue({ success: true }),
-}));
-
-vi.mock('../engine/kontorEngine.js', () => ({
-  placeKontorOrder: vi.fn().mockResolvedValue({ success: true, order: {} }),
-  cancelKontorOrder: vi.fn().mockResolvedValue({ success: true }),
-  fillKontorOrder: vi.fn().mockResolvedValue({ success: true, earned: 100 }),
-  getKontorOrders: vi.fn().mockResolvedValue([]),
-}));
-
 vi.mock('../db/client.js', () => ({
   query: vi.fn().mockResolvedValue({ rows: [] }),
 }));
@@ -102,9 +78,6 @@ import {
   getResourceTotal,
 } from '../engine/inventoryService.js';
 import { canBuyFromStation, canSellToStation } from '../engine/npcStationEngine.js';
-import { validateTransfer } from '../engine/commands.js';
-import { transferOutputToCargo } from '../engine/productionEngine.js';
-import { fillKontorOrder } from '../engine/kontorEngine.js';
 
 function makeClient(
   userId = 'user-123',
@@ -243,158 +216,5 @@ describe('EconomyService.handleNpcTrade station buy — inventory migration', ()
     await svc.handleNpcTrade(client, { resource: 'ore', amount: 5, action: 'buy' });
 
     expect(addToInventory).toHaveBeenCalledWith('user-123', 'resource', 'ore', 5);
-  });
-});
-
-// ──────────────────────────────────────────────────────────────────────────────
-// handleTransfer — toStorage (cargo → storage)
-// ──────────────────────────────────────────────────────────────────────────────
-describe('EconomyService.handleTransfer toStorage — inventory migration', () => {
-  it('uses getCargoState (not getPlayerCargo) to read current cargo', async () => {
-    const client = makeClient();
-    const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
-    // Player at own base
-    const { playerHasBaseAtSector } = await import('../db/queries.js');
-    vi.mocked(playerHasBaseAtSector).mockResolvedValue(true);
-    const { validateTransfer: vt } = await import('../engine/commands.js');
-    vi.mocked(vt).mockReturnValue({ valid: true });
-
-    vi.mocked(getCargoState).mockResolvedValue({
-      ore: 20,
-      gas: 0,
-      crystal: 0,
-      slates: 0,
-      artefact: 0,
-    });
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
-
-    const svc = new EconomyService(ctx);
-    await svc.handleTransfer(client, { resource: 'ore', amount: 5, direction: 'toStorage' });
-
-    expect(getCargoState).toHaveBeenCalledWith('user-123');
-  });
-
-  it('uses removeFromInventory (not deductCargo) for toStorage direction', async () => {
-    const client = makeClient();
-    const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
-    const { playerHasBaseAtSector } = await import('../db/queries.js');
-    vi.mocked(playerHasBaseAtSector).mockResolvedValue(true);
-    const { validateTransfer: vt } = await import('../engine/commands.js');
-    vi.mocked(vt).mockReturnValue({ valid: true });
-
-    vi.mocked(getCargoState).mockResolvedValue({
-      ore: 20,
-      gas: 0,
-      crystal: 0,
-      slates: 0,
-      artefact: 0,
-    });
-    vi.mocked(removeFromInventory).mockResolvedValue(undefined);
-
-    const svc = new EconomyService(ctx);
-    await svc.handleTransfer(client, { resource: 'ore', amount: 5, direction: 'toStorage' });
-
-    expect(removeFromInventory).toHaveBeenCalledWith('user-123', 'resource', 'ore', 5);
-  });
-});
-
-// ──────────────────────────────────────────────────────────────────────────────
-// handleTransfer — toCargo (storage → cargo)
-// ──────────────────────────────────────────────────────────────────────────────
-describe('EconomyService.handleTransfer toCargo — inventory migration', () => {
-  it('uses addToInventory (not addToCargo) for toCargo direction', async () => {
-    const client = makeClient();
-    const ctx = makeCtx({ _pst: vi.fn().mockReturnValue('empty') });
-    const { playerHasBaseAtSector } = await import('../db/queries.js');
-    vi.mocked(playerHasBaseAtSector).mockResolvedValue(true);
-    const { validateTransfer: vt } = await import('../engine/commands.js');
-    vi.mocked(vt).mockReturnValue({ valid: true });
-
-    vi.mocked(getCargoState).mockResolvedValue({
-      ore: 0,
-      gas: 0,
-      crystal: 0,
-      slates: 0,
-      artefact: 0,
-    });
-    vi.mocked(addToInventory).mockResolvedValue(undefined);
-
-    const svc = new EconomyService(ctx);
-    await svc.handleTransfer(client, { resource: 'ore', amount: 5, direction: 'fromStorage' });
-
-    expect(addToInventory).toHaveBeenCalledWith('user-123', 'resource', 'ore', 5);
-  });
-});
-
-// ──────────────────────────────────────────────────────────────────────────────
-// handleFactoryTransfer — adds processed item to cargo via inventory
-// ──────────────────────────────────────────────────────────────────────────────
-describe('EconomyService.handleFactoryTransfer — inventory migration', () => {
-  it('uses addToInventory (not addToCargo) for factory transfer', async () => {
-    const client = makeClient();
-    const ctx = makeCtx();
-    const { getPlayerStructure } = await import('../db/queries.js');
-    vi.mocked(getPlayerStructure).mockResolvedValue({
-      id: 'factory-1',
-      tier: 1,
-      type: 'factory',
-      owner_id: 'user-123',
-    } as any);
-    vi.mocked(transferOutputToCargo).mockResolvedValue({ success: true });
-    vi.mocked(getCargoState).mockResolvedValue({
-      ore: 0,
-      gas: 0,
-      crystal: 0,
-      slates: 0,
-      artefact: 0,
-    });
-    vi.mocked(addToInventory).mockResolvedValue(undefined);
-
-    const svc = new EconomyService(ctx);
-    await svc.handleFactoryTransfer(client, { itemType: 'slates', amount: 3 });
-
-    expect(addToInventory).toHaveBeenCalledWith('user-123', 'resource', 'slates', 3);
-  });
-
-  it('uses getCargoState (not getPlayerCargo) after factory transfer', async () => {
-    const client = makeClient();
-    const ctx = makeCtx();
-    const { getPlayerStructure } = await import('../db/queries.js');
-    vi.mocked(getPlayerStructure).mockResolvedValue({
-      id: 'factory-1',
-      tier: 1,
-      type: 'factory',
-      owner_id: 'user-123',
-    } as any);
-    vi.mocked(transferOutputToCargo).mockResolvedValue({ success: true });
-    const cargoState = { ore: 0, gas: 0, crystal: 0, slates: 3, artefact: 0 };
-    vi.mocked(getCargoState).mockResolvedValue(cargoState);
-    vi.mocked(addToInventory).mockResolvedValue(undefined);
-
-    const svc = new EconomyService(ctx);
-    await svc.handleFactoryTransfer(client, { itemType: 'slates', amount: 3 });
-
-    expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(client.send).toHaveBeenCalledWith('cargoUpdate', cargoState);
-  });
-});
-
-// ──────────────────────────────────────────────────────────────────────────────
-// handleKontorSellTo — sells cargo via kontor (legacy: deductCargo inside kontorEngine)
-// EconomyService itself calls getPlayerCargo after fillKontorOrder — must use getCargoState
-// ──────────────────────────────────────────────────────────────────────────────
-describe('EconomyService.handleKontorSellTo — inventory migration', () => {
-  it('uses getCargoState (not getPlayerCargo) after filling kontor order', async () => {
-    const client = makeClient();
-    const ctx = makeCtx();
-    vi.mocked(fillKontorOrder).mockResolvedValue({ success: true, earned: 50 });
-    const cargoState = { ore: 5, gas: 0, crystal: 0, slates: 0, artefact: 0 };
-    vi.mocked(getCargoState).mockResolvedValue(cargoState);
-
-    const svc = new EconomyService(ctx);
-    await svc.handleKontorSellTo(client, { orderId: 'order-1', amount: 5 });
-
-    expect(getCargoState).toHaveBeenCalledWith('user-123');
-    expect(client.send).toHaveBeenCalledWith('cargoUpdate', cargoState);
   });
 });

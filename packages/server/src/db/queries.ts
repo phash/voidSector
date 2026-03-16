@@ -638,21 +638,6 @@ export async function getPlayerStructure(
   return rows[0] ?? null;
 }
 
-export async function playerHasBaseAtSector(
-  playerId: string,
-  sectorX: number,
-  sectorY: number,
-): Promise<boolean> {
-  const { rows } = await query(
-    `SELECT 1 FROM structures
-     WHERE owner_id = $1 AND type = 'base'
-       AND sector_x = $2 AND sector_y = $3
-     LIMIT 1`,
-    [playerId, sectorX, sectorY],
-  );
-  return rows.length > 0;
-}
-
 export async function createTradeOrder(
   playerId: string,
   resource: string,
@@ -2054,47 +2039,6 @@ export async function addDiscoveriesBatch(
   );
 }
 
-// Combat v2: Station defense queries
-
-export async function getStationDefenses(
-  userId: string,
-  sectorX: number,
-  sectorY: number,
-): Promise<Array<{ id: number; defenseType: string; installedAt: number }>> {
-  const result = await query(
-    'SELECT id, defense_type AS "defenseType", installed_at AS "installedAt" FROM station_defenses WHERE user_id = $1 AND sector_x = $2 AND sector_y = $3',
-    [userId, sectorX, sectorY],
-  );
-  return result.rows as Array<{ id: number; defenseType: string; installedAt: number }>;
-}
-
-export async function installStationDefense(
-  userId: string,
-  sectorX: number,
-  sectorY: number,
-  defenseType: string,
-): Promise<{ id: number }> {
-  const result = await query(
-    `INSERT INTO station_defenses (user_id, sector_x, sector_y, defense_type)
-     VALUES ($1, $2, $3, $4) RETURNING id`,
-    [userId, sectorX, sectorY, defenseType],
-  );
-  return result.rows[0] as { id: number };
-}
-
-export async function removeStationDefense(
-  userId: string,
-  sectorX: number,
-  sectorY: number,
-  defenseType: string,
-): Promise<boolean> {
-  const result = await query(
-    'DELETE FROM station_defenses WHERE user_id = $1 AND sector_x = $2 AND sector_y = $3 AND defense_type = $4',
-    [userId, sectorX, sectorY, defenseType],
-  );
-  return (result.rowCount ?? 0) > 0;
-}
-
 export async function getStructureHp(
   userId: string,
   sectorX: number,
@@ -2344,42 +2288,6 @@ export async function deductTypedArtefacts(
     if ((rowCount ?? 0) === 0) return false;
   }
   return true;
-}
-
-// ── Research Lab ─────────────────────────────────────────────────────────
-
-/**
- * Returns the maximum research lab tier owned by a player (0 if no lab exists).
- */
-export async function getResearchLabTier(userId: string): Promise<number> {
-  const { rows } = await query<{ tier: number }>(
-    `SELECT COALESCE(MAX(tier), 0) AS tier
-     FROM structures
-     WHERE owner_id = $1 AND type = 'research_lab'`,
-    [userId],
-  );
-  return rows[0]?.tier ?? 0;
-}
-
-/**
- * Upgrades a research_lab structure at the given location by 1 tier (max 5).
- * Returns the new tier, or null if no lab was found at that location or already max.
- */
-export async function upgradeResearchLabTier(
-  userId: string,
-  sectorX: number,
-  sectorY: number,
-): Promise<number | null> {
-  const { rows } = await query<{ tier: number }>(
-    `UPDATE structures
-     SET tier = tier + 1
-     WHERE owner_id = $1 AND type = 'research_lab'
-       AND sector_x = $2 AND sector_y = $3
-       AND tier < 5
-     RETURNING tier`,
-    [userId, sectorX, sectorY],
-  );
-  return rows[0]?.tier ?? null;
 }
 
 // --- Autopilot Routes ---

@@ -66,32 +66,10 @@ export const RESOURCE_REGEN_INTERVAL_TICKS = 12; // 1 unit per 12 ticks (60s)
 export const RESOURCE_TYPES: MineableResourceType[] = ['ore', 'gas', 'crystal'];
 
 export const STRUCTURE_COSTS: Record<StructureType, Record<MineableResourceType, number>> = {
-  comm_relay: { ore: 5, gas: 0, crystal: 2 },
-  mining_station: { ore: 30, gas: 15, crystal: 10 },
-  base: { ore: 50, gas: 30, crystal: 25 },
-  storage: { ore: 20, gas: 10, crystal: 5 },
-  trading_post: { ore: 30, gas: 20, crystal: 15 },
-  defense_turret: { ore: 40, gas: 10, crystal: 20 },
-  station_shield: { ore: 30, gas: 25, crystal: 30 },
-  ion_cannon: { ore: 60, gas: 30, crystal: 40 },
-  factory: { ore: 40, gas: 20, crystal: 15 },
-  research_lab: { ore: 30, gas: 25, crystal: 30 },
-  kontor: { ore: 20, gas: 10, crystal: 10 },
   jumpgate: { ore: 0, gas: 0, crystal: 20 },
 };
 
 export const STRUCTURE_AP_COSTS: Record<StructureType, number> = {
-  comm_relay: 5,
-  mining_station: 15,
-  base: 25,
-  storage: 10,
-  trading_post: 15,
-  defense_turret: 20,
-  station_shield: 20,
-  ion_cannon: 25,
-  factory: 20,
-  research_lab: 25,
-  kontor: 15,
   jumpgate: 10,
 };
 
@@ -136,19 +114,6 @@ export function calculateCostMultiplier(moduleTier: number, factoryLevel: number
   const tierDiff = Math.max(0, moduleTier - factoryLevel);
   return Math.pow(PRODUCTION_TIER_COST_FACTOR, tierDiff);
 }
-
-// ── Research Lab / Wissen ─────────────────────────────────────────────
-
-/** Lab tier Wissen multiplier for active generation (replaces passive tick) */
-export const LAB_WISSEN_MULTIPLIER: Record<number, number> = {
-  0: 1.0,
-  1: 1.5,
-  2: 2.0,
-  3: 3.0,
-  4: 4.0,
-  5: 5.0,
-};
-
 
 // Player Jumpgate costs
 export const JUMPGATE_BUILD_COST = { credits: 500, crystal: 20, artefact: 5 };
@@ -363,33 +328,6 @@ export const STATION_REPAIR_CR_PER_HP = 5;
 export const STATION_REPAIR_ORE_PER_HP = 1;
 export const STATION_COMBAT_MAX_ROUNDS = 10;
 
-export const STATION_DEFENSE_DEFS: Record<
-  string,
-  {
-    damage?: number;
-    shieldHp?: number;
-    shieldRegen?: number;
-    oncePer?: 'combat';
-    bypassShields?: boolean;
-    cost: { credits: number; ore?: number; crystal?: number; gas?: number };
-  }
-> = {
-  defense_turret_mk1: { damage: 15, cost: { credits: 500, ore: 50 } },
-  defense_turret_mk2: { damage: 30, cost: { credits: 1500, ore: 100, crystal: 20 } },
-  defense_turret_mk3: { damage: 50, cost: { credits: 4000, ore: 200, crystal: 60 } },
-  station_shield_mk1: { shieldHp: 150, shieldRegen: 10, cost: { credits: 1000, crystal: 50 } },
-  station_shield_mk2: {
-    shieldHp: 350,
-    shieldRegen: 25,
-    cost: { credits: 3000, crystal: 100, gas: 30 },
-  },
-  ion_cannon: {
-    damage: 80,
-    oncePer: 'combat',
-    bypassShields: true,
-    cost: { credits: 8000, ore: 300, crystal: 100, gas: 50 },
-  },
-};
 
 export const MAX_ACTIVE_QUESTS = 20;
 export const MAX_TRACKED_QUESTS = 5;
@@ -410,19 +348,6 @@ export const XP_LEVELS: Record<number, number> = {
   10: 5000,
 };
 
-// Storage tiers
-export const STORAGE_TIERS: Record<number, { capacity: number; upgradeCost: number }> = {
-  1: { capacity: 50, upgradeCost: 0 },
-  2: { capacity: 150, upgradeCost: 200 },
-  3: { capacity: 500, upgradeCost: 1000 },
-};
-
-// Trading Post tiers
-export const TRADING_POST_TIERS: Record<number, { name: string; upgradeCost: number }> = {
-  1: { name: 'NPC TRADE', upgradeCost: 0 },
-  2: { name: 'MARKTPLATZ', upgradeCost: 500 },
-  3: { name: 'AUTO-TRADE', upgradeCost: 3000 },
-};
 
 
 // ─── ACEP SLOT SYSTEM ────────────────────────────────────────────────────────

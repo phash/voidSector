@@ -16,13 +16,6 @@ describe('validateTransfer', () => {
     expect(result.error).toContain('Not enough');
   });
 
-  it('rejects toStorage when storage full', () => {
-    const fullStorage = { ore: 45, gas: 3, crystal: 2, artefact: 0 };
-    const result = validateTransfer('toStorage', 'ore', 1, cargo, fullStorage, 1);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Storage full');
-  });
-
   it('allows fromStorage when storage has enough', () => {
     const result = validateTransfer('fromStorage', 'ore', 10, cargo, storage, 1);
     expect(result.valid).toBe(true);
@@ -36,12 +29,6 @@ describe('validateTransfer', () => {
   it('rejects zero amount', () => {
     const result = validateTransfer('toStorage', 'ore', 0, cargo, storage, 1);
     expect(result.valid).toBe(false);
-  });
-
-  it('respects tier 2 capacity (150)', () => {
-    const bigStorage = { ore: 100, gas: 30, crystal: 10, artefact: 0 };
-    const result = validateTransfer('toStorage', 'ore', 10, cargo, bigStorage, 2);
-    expect(result.valid).toBe(true);
   });
 });
 
@@ -68,12 +55,5 @@ describe('validateNpcTrade', () => {
   it('rejects selling when storage empty', () => {
     const result = validateNpcTrade('sell', 'ore', 30, 0, storage, 1);
     expect(result.valid).toBe(false);
-  });
-
-  it('rejects buying when storage full', () => {
-    const fullStorage = { ore: 45, gas: 3, crystal: 2, artefact: 0 };
-    const result = validateNpcTrade('buy', 'ore', 5, 1000, fullStorage, 1);
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain('Storage full');
   });
 });

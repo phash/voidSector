@@ -14,14 +14,11 @@ import {
 import {
   getPlayerCredits,
   deductCredits,
-  getPlayerStructuresInSector,
-  installStationDefense,
   getStructureHp,
   updateStructureHp,
   getActiveShip,
 } from '../../db/queries.js';
 import {
-  STATION_DEFENSE_DEFS,
   STATION_REPAIR_CR_PER_HP,
   STATION_REPAIR_ORE_PER_HP,
   calculateShipStats,
@@ -45,74 +42,6 @@ export class CombatService {
       ore: enemyLevel >= 2 ? Math.floor(Math.random() * 5 * enemyLevel) : undefined,
       crystal: enemyLevel >= 4 ? Math.floor(Math.random() * 2 * enemyLevel) : undefined,
     };
-  }
-
-  async handleInstallDefense(client: Client, data: { defenseType: string }): Promise<void> {
-    if (rejectGuest(client, 'Verteidigung bauen')) return;
-    if (!this.ctx.checkRate(client.sessionId, 'build', 2000)) {
-      client.send('error', { code: 'RATE_LIMIT', message: 'Too fast' });
-      return;
-    }
-    const auth = client.auth as AuthPayload;
-    const def = STATION_DEFENSE_DEFS[data.defenseType];
-    if (!def) {
-      client.send('error', { code: 'INVALID_INPUT', message: 'Unknown defense type' });
-      return;
-    }
-
-    const sectorX = this.ctx._px(client.sessionId);
-    const sectorY = this.ctx._py(client.sessionId);
-    const structures = await getPlayerStructuresInSector(auth.userId, sectorX, sectorY);
-    const hasBase = structures.some((s) => s.type === 'base');
-    if (!hasBase) {
-      client.send('installDefenseResult', {
-        success: false,
-        error: 'Keine Basis in diesem Sektor',
-      });
-      return;
-    }
-
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < def.cost.credits) {
-      client.send('installDefenseResult', { success: false, error: 'Nicht genug Credits' });
-      return;
-    }
-    const cargo = await getCargoState(auth.userId);
-    for (const [resource, amount] of Object.entries(def.cost)) {
-      if (resource === 'credits') continue;
-      if ((cargo[resource as keyof typeof cargo] ?? 0) < (amount ?? 0)) {
-        client.send('installDefenseResult', { success: false, error: `Nicht genug ${resource}` });
-        return;
-      }
-    }
-
-    // Deduct resources
-    await deductCredits(auth.userId, def.cost.credits);
-    for (const [resource, amount] of Object.entries(def.cost)) {
-      if (resource === 'credits' || !amount) continue;
-      await removeFromInventory(auth.userId, 'resource', resource, amount);
-    }
-
-    try {
-      const result = await installStationDefense(auth.userId, sectorX, sectorY, data.defenseType);
-      client.send('installDefenseResult', {
-        success: true,
-        defenseType: data.defenseType,
-        id: result.id,
-      });
-      const updatedCargo = await getCargoState(auth.userId);
-      client.send('cargoUpdate', updatedCargo);
-      client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-    } catch (err: any) {
-      if (err.code === '23505') {
-        client.send('installDefenseResult', {
-          success: false,
-          error: 'Verteidigung bereits installiert',
-        });
-        return;
-      }
-      client.send('installDefenseResult', { success: false, error: 'Installation fehlgeschlagen' });
-    }
   }
 
   async handleRepairStation(
