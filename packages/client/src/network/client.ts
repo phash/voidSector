@@ -901,15 +901,22 @@ class GameNetwork {
       }
     });
 
-    // NPC trade result
-    room.onMessage('npcTradeResult', (data: NpcTradeResultMessage) => {
+    // NPC trade result (station NPC or NPC ship)
+    room.onMessage('npcTradeResult', (data: NpcTradeResultMessage & { resource?: string; amount?: number; credits?: number }) => {
       const store = useStore.getState();
       if (data.success) {
-        store.addLogEntry('Trade complete');
-        if (data.partial) {
-          store.setTradeMessage(`Nur ${data.soldAmount}x verkauft — Station ist fast voll`);
+        if (data.resource != null && data.amount != null) {
+          // NPC ship trade
+          store.addLogEntry(`NPC-Handel: ${data.amount}x ${data.resource}`);
+          if (data.credits != null) store.setCredits(data.credits);
         } else {
-          store.setTradeMessage(null);
+          // Station NPC trade
+          store.addLogEntry('Trade complete');
+          if (data.partial) {
+            store.setTradeMessage(`Nur ${data.soldAmount}x verkauft — Station ist fast voll`);
+          } else {
+            store.setTradeMessage(null);
+          }
         }
       } else {
         store.addLogEntry(`Trade failed: ${data.error}`);
@@ -919,6 +926,22 @@ class GameNetwork {
 
     room.onMessage('npcStationUpdate', (data: any) => {
       useStore.getState().setNpcStationData(data);
+    });
+
+    room.onMessage('npcsInSector', (data: any[]) => {
+      const store = useStore.getState();
+      store.setSectorNpcs(data);
+      for (const npc of data) {
+        if (npc.role === 'trader') store.showTip('first_npc_trade');
+        else if (npc.role === 'military') store.showTip('first_npc_military');
+        else if (npc.role === 'outlaw') store.showTip('first_npc_outlaw');
+      }
+    });
+
+    room.onMessage('npcCommunicateResult', (data: any) => {
+      if (data.success) {
+        useStore.getState().addLogEntry(`Kommunikation mit ${data.npcName}`);
+      }
     });
 
     room.onMessage('factoryUpdate', (data: any) => {
@@ -2913,6 +2936,18 @@ class GameNetwork {
 
   getPlayerCard(playerId: string) {
     this.sectorRoom?.send('getPlayerCard', { playerId });
+  }
+
+  sendNpcShipTrade(npcId: number, resource: string, amount: number, action: 'buy' | 'sell') {
+    this.sectorRoom?.send('npcShipTrade', { npcId, resource, amount, action });
+  }
+
+  sendCommunicateNpc(npcId: number) {
+    this.sectorRoom?.send('communicateNpc', { npcId });
+  }
+
+  sendAttackNpc(npcId: number) {
+    this.sectorRoom?.send('attackNpc', { npcId });
   }
 }
 

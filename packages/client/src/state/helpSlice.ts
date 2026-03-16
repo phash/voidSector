@@ -178,6 +178,41 @@ export const HELP_TIPS: HelpTip[] = [
       + '→ Nimm den nächsten Auftrag an einer Station an!',
     articleId: 'quests',
   },
+  {
+    id: 'first_npc_trade',
+    title: 'HANDELS-NPC ENTDECKT',
+    body: 'Ein fliegender Händler! Diese NPCs reisen zwischen Stationen.\n\n'
+      + '→ [HANDELN] öffnet den Ressourcen-Handel\n'
+      + '→ Preise sind besser je weiter von Stationen entfernt\n'
+      + '→ Der NPC hat begrenztes Inventar\n'
+      + '→ [KOMMUNIZIEREN] für Quest-Übergaben',
+  },
+  {
+    id: 'first_npc_military',
+    title: 'MILITÄR-PATROUILLE',
+    body: 'Eine Militär-Patrouille! Diese NPCs sichern die Quadrant-Grenzen.\n\n'
+      + '→ [KOMMUNIZIEREN] für Informationen oder Quest-Übergaben\n'
+      + '→ Militär-NPCs bieten keinen Handel an',
+  },
+  {
+    id: 'first_npc_outlaw',
+    title: 'OUTLAW ENTDECKT!',
+    body: 'Ein Outlaw wurde durch deinen Scan aufgedeckt!\n\n'
+      + '→ [ANGREIFEN] startet einen Kampf\n'
+      + '→ [HANDELN] nur mit NEUTRAL+ Reputation möglich (20% Rabatt)\n'
+      + '→ Bei HOSTILE Reputation greifen Outlaws automatisch an\n'
+      + '→ Besiegte Outlaws respawnen nach 2 Stunden',
+  },
+  {
+    id: 'first_npc_quest',
+    title: 'NPC-QUEST',
+    body: 'Dieser Quest führt zu einem NPC im Weltraum.\n\n'
+      + '→ NPC-Position wird im Quest-Tracker angezeigt\n'
+      + '→ Achtung: NPCs bewegen sich! Die Position aktualisiert sich\n'
+      + '→ Im gleichen Sektor: [KOMMUNIZIEREN] zum Abschließen\n'
+      + '→ Quest-Items werden automatisch übergeben',
+    articleId: 'quests',
+  },
 ];
 
 export interface HelpSlice {

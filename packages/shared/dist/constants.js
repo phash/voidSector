@@ -2000,7 +2000,7 @@ export const FACTION_UPGRADE_TIERS = {
 // JumpGates
 export const JUMPGATE_CHANCE = 0; // disabled — only ancient jumpgates remain
 export const JUMPGATE_SALT = 777;
-export const JUMPGATE_FUEL_COST = 0; // jumpgates cost credits only, no fuel
+export const JUMPGATE_FUEL_PER_HOP = 10; // fuel cost per hop through jumpgate network
 export const JUMPGATE_TRAVEL_COST_CREDITS = 50; // credits to use a public jumpgate
 export const PLAYER_GATE_TRAVEL_COST_CREDITS = 25; // credits to use a player-built gate (cheaper)
 export const JUMPGATE_MIN_RANGE = 50;
@@ -2393,6 +2393,37 @@ export const CIV_MAX_DRONES_PER_STATION = 3;
 export const CIV_MINING_TICKS_TO_FULL = 20;
 /** Max Ulam spiral steps before drone gives up and idles */
 export const CIV_SPIRAL_MAX_STEPS = 200;
+// NPC Ship Roles
+export const NPC_SPAWN_COUNTS = {
+    inner: { military: 3, outlaw: 2, trader: 4 },
+    middle: { military: 6, outlaw: 6, trader: 4 },
+    outer: { military: 12, outlaw: 2, trader: 4 },
+};
+export function getNpcZone(qx, qy) {
+    const dist = Math.max(Math.abs(qx), Math.abs(qy));
+    if (dist <= 3)
+        return 'inner';
+    if (dist <= 7)
+        return 'middle';
+    return 'outer';
+}
+export const NPC_MILITARY_LEVELS = { inner: 2, middle: 4, outer: 6 };
+export const NPC_OUTLAW_LEVEL_RANGE = {
+    inner: [1, 3], middle: [2, 5], outer: [3, 7],
+};
+export const NPC_TRADE_BASE_PRICES = { ore: 8, gas: 12, crystal: 20 };
+export const NPC_TRADE_MAX_DISTANCE_BONUS = 0.5;
+export const NPC_TRADE_DISTANCE_DIVISOR = 500;
+export const NPC_TRADE_CAPACITY = 100;
+export const NPC_OUTLAW_DISCOUNT = 0.8;
+export const NPC_OUTLAW_ARTEFACT_CHANCE = 0.3;
+export const NPC_OUTLAW_RESPAWN_MS = 2 * 60 * 60 * 1000;
+export const NPC_OUTLAW_AMBUSH_CHANCE = 0.7;
+export const NPC_OUTLAW_ROAM_RADIUS = 8;
+export const NPC_MILITARY_PATROL_STEPS = 50;
+export const NPC_TRADE_WAIT_TICKS = 5;
+export const NPC_TRADE_MAX_RANGE = 1000;
+export const NPC_OUTLAW_COMBAT_REP_GAIN = 5;
 export const FACTION_MAX_STATIONS_PER_QUADRANT = 5;
 export const HUMAN_CIVILIZATION_METER_MAX = 10_000; // max civ level
 /**

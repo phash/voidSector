@@ -2600,6 +2600,38 @@ export const CIV_MINING_TICKS_TO_FULL = 20;
 /** Max Ulam spiral steps before drone gives up and idles */
 export const CIV_SPIRAL_MAX_STEPS = 200;
 
+// NPC Ship Roles
+export const NPC_SPAWN_COUNTS = {
+  inner: { military: 3, outlaw: 2, trader: 4 },
+  middle: { military: 6, outlaw: 6, trader: 4 },
+  outer: { military: 12, outlaw: 2, trader: 4 },
+} as const;
+
+export function getNpcZone(qx: number, qy: number): 'inner' | 'middle' | 'outer' {
+  const dist = Math.max(Math.abs(qx), Math.abs(qy));
+  if (dist <= 3) return 'inner';
+  if (dist <= 7) return 'middle';
+  return 'outer';
+}
+
+export const NPC_MILITARY_LEVELS: Record<string, number> = { inner: 2, middle: 4, outer: 6 };
+export const NPC_OUTLAW_LEVEL_RANGE: Record<string, [number, number]> = {
+  inner: [1, 3], middle: [2, 5], outer: [3, 7],
+};
+export const NPC_TRADE_BASE_PRICES: Record<string, number> = { ore: 8, gas: 12, crystal: 20 };
+export const NPC_TRADE_MAX_DISTANCE_BONUS = 0.5;
+export const NPC_TRADE_DISTANCE_DIVISOR = 500;
+export const NPC_TRADE_CAPACITY = 100;
+export const NPC_OUTLAW_DISCOUNT = 0.8;
+export const NPC_OUTLAW_ARTEFACT_CHANCE = 0.3;
+export const NPC_OUTLAW_RESPAWN_MS = 2 * 60 * 60 * 1000;
+export const NPC_OUTLAW_AMBUSH_CHANCE = 0.7;
+export const NPC_OUTLAW_ROAM_RADIUS = 8;
+export const NPC_MILITARY_PATROL_STEPS = 50;
+export const NPC_TRADE_WAIT_TICKS = 5;
+export const NPC_TRADE_MAX_RANGE = 1000;
+export const NPC_OUTLAW_COMBAT_REP_GAIN = 5;
+
 export const FACTION_MAX_STATIONS_PER_QUADRANT = 5;
 export const HUMAN_CIVILIZATION_METER_MAX = 10_000; // max civ level
 

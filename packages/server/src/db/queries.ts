@@ -1,4 +1,5 @@
 import { query, withTransaction } from './client.js';
+import * as civQueries from './civQueries.js';
 import type {
   SectorData,
   PlayerData,
@@ -1233,7 +1234,7 @@ export async function getTrackedQuests(
      ORDER BY accepted_at DESC`,
     [playerId],
   );
-  return rows.map((r: any) => {
+  return Promise.all(rows.map(async (r: any) => {
     const objectives: any[] = r.objectives ?? [];
     const currentObj = objectives.find((o: any) => !o.fulfilled);
     const firstTarget = objectives.find(
@@ -1251,16 +1252,27 @@ export async function getTrackedQuests(
       }
     }
 
+    // NPC target: look up current position from civ_ships
+    let npcTargetX: number | undefined;
+    let npcTargetY: number | undefined;
+    if (currentObj?.targetNpcId) {
+      const npcPos = await civQueries.getNpcPosition(currentObj.targetNpcId);
+      if (npcPos) {
+        npcTargetX = npcPos.x;
+        npcTargetY = npcPos.y;
+      }
+    }
+
     return {
       questId: r.id,
       title: r.title ?? r.template_id,
       type: (r.template_id as string).split('_')[0] ?? 'quest',
       description: r.description ?? '',
-      targetX: firstTarget?.targetX ?? trailTargetX ?? currentObj?.stationX,
-      targetY: firstTarget?.targetY ?? trailTargetY ?? currentObj?.stationY,
+      targetX: firstTarget?.targetX ?? trailTargetX ?? npcTargetX ?? currentObj?.stationX,
+      targetY: firstTarget?.targetY ?? trailTargetY ?? npcTargetY ?? currentObj?.stationY,
       objectiveLabel: currentObj ? buildObjectiveLabel(currentObj) : undefined,
     };
-  });
+  }));
 }
 
 // --- Phase 4: Scan Events ---

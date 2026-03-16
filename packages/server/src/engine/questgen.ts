@@ -182,6 +182,17 @@ function fillQuestTemplate(
     }
   }
 
+  // NPC delivery quests without resource/distance: add a generic contact objective
+  if (objectives.length === 0 && template.type === 'delivery') {
+    objectives.push({
+      type: 'delivery',
+      description: template.title,
+      stationX,
+      stationY,
+      fulfilled: false,
+    });
+  }
+
   const difficultyMultiplier = 1 + (unsignedSeed % 50) / 100;
 
   return {

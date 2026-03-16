@@ -724,7 +724,37 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       ctx.lineWidth = 1.5;
       ctx.globalAlpha = 0.85;
 
-      if (ship.ship_type === 'mining_drone') {
+      const r = 3 + state.zoomLevel;
+      const role = (ship as any).role;
+      if (role === 'trader') {
+        ctx.fillStyle = '#00FF66';
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(px - r, py - r);
+        ctx.lineTo(px + r, py);
+        ctx.lineTo(px - r, py + r);
+        ctx.closePath();
+        ctx.fill();
+      } else if (role === 'military') {
+        ctx.strokeStyle = '#4488FF';
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(px, py - r);
+        ctx.lineTo(px + r, py);
+        ctx.lineTo(px, py + r);
+        ctx.lineTo(px - r, py);
+        ctx.closePath();
+        ctx.stroke();
+      } else if (role === 'outlaw') {
+        ctx.strokeStyle = '#FF3333';
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(px - r, py - r); ctx.lineTo(px + r, py + r);
+        ctx.moveTo(px + r, py - r); ctx.lineTo(px - r, py + r);
+        ctx.stroke();
+      } else if (ship.ship_type === 'mining_drone') {
         // Hollow circle ○ — slightly larger than player pixels
         const radius = 3 + state.zoomLevel;
         ctx.beginPath();

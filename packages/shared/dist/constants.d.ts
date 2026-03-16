@@ -317,7 +317,7 @@ export declare const FACTION_UPGRADE_TIERS: Record<number, {
 }>;
 export declare const JUMPGATE_CHANCE = 0;
 export declare const JUMPGATE_SALT = 777;
-export declare const JUMPGATE_FUEL_COST = 0;
+export declare const JUMPGATE_FUEL_PER_HOP = 10;
 export declare const JUMPGATE_TRAVEL_COST_CREDITS = 50;
 export declare const PLAYER_GATE_TRAVEL_COST_CREDITS = 25;
 export declare const JUMPGATE_MIN_RANGE = 50;
@@ -457,6 +457,39 @@ export declare const CIV_MAX_DRONES_PER_STATION = 3;
 export declare const CIV_MINING_TICKS_TO_FULL = 20;
 /** Max Ulam spiral steps before drone gives up and idles */
 export declare const CIV_SPIRAL_MAX_STEPS = 200;
+export declare const NPC_SPAWN_COUNTS: {
+    readonly inner: {
+        readonly military: 3;
+        readonly outlaw: 2;
+        readonly trader: 4;
+    };
+    readonly middle: {
+        readonly military: 6;
+        readonly outlaw: 6;
+        readonly trader: 4;
+    };
+    readonly outer: {
+        readonly military: 12;
+        readonly outlaw: 2;
+        readonly trader: 4;
+    };
+};
+export declare function getNpcZone(qx: number, qy: number): 'inner' | 'middle' | 'outer';
+export declare const NPC_MILITARY_LEVELS: Record<string, number>;
+export declare const NPC_OUTLAW_LEVEL_RANGE: Record<string, [number, number]>;
+export declare const NPC_TRADE_BASE_PRICES: Record<string, number>;
+export declare const NPC_TRADE_MAX_DISTANCE_BONUS = 0.5;
+export declare const NPC_TRADE_DISTANCE_DIVISOR = 500;
+export declare const NPC_TRADE_CAPACITY = 100;
+export declare const NPC_OUTLAW_DISCOUNT = 0.8;
+export declare const NPC_OUTLAW_ARTEFACT_CHANCE = 0.3;
+export declare const NPC_OUTLAW_RESPAWN_MS: number;
+export declare const NPC_OUTLAW_AMBUSH_CHANCE = 0.7;
+export declare const NPC_OUTLAW_ROAM_RADIUS = 8;
+export declare const NPC_MILITARY_PATROL_STEPS = 50;
+export declare const NPC_TRADE_WAIT_TICKS = 5;
+export declare const NPC_TRADE_MAX_RANGE = 1000;
+export declare const NPC_OUTLAW_COMBAT_REP_GAIN = 5;
 export declare const FACTION_MAX_STATIONS_PER_QUADRANT = 5;
 export declare const HUMAN_CIVILIZATION_METER_MAX = 10000;
 export type AlienFactionId = 'ancients' | 'scrappers' | 'archivists' | 'consortium' | 'kthari' | 'mycelians' | 'mirror_minds' | 'tourist_guild' | 'silent_swarm' | 'helions' | 'axioms';

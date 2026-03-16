@@ -733,6 +733,8 @@ export interface GameSlice {
   setWreckSlates: (slates: WreckSlateMetadata[]) => void;
   addWreckSlate: (meta: WreckSlateMetadata) => void;
   removeWreckSlate: (slateId: string) => void;
+  sectorNpcs: any[];
+  setSectorNpcs: (npcs: any[]) => void;
 }
 
 export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set, get) => ({
@@ -874,6 +876,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   activeWreck: null,
   salvageSession: null,
   wreckSlates: [],
+  sectorNpcs: [],
 
   setAuth: (token, playerId, username, isGuest = false) => {
     safeSetItem('vs_token', token);
@@ -1151,4 +1154,5 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setWreckSlates: (wreckSlates) => set({ wreckSlates }),
   addWreckSlate: (meta) => set((s) => ({ wreckSlates: [...s.wreckSlates, meta] })),
   removeWreckSlate: (slateId) => set((s) => ({ wreckSlates: s.wreckSlates.filter((m) => m.id !== slateId) })),
+  setSectorNpcs: (sectorNpcs) => set({ sectorNpcs }),
 });
