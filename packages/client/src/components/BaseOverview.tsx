@@ -4,30 +4,7 @@ import { network } from '../network/client';
 import { innerCoord } from '@void-sector/shared';
 import { BookmarkDialog } from './overlays/BookmarkDialog';
 
-const STRUCTURE_LABELS: Record<string, string> = {
-  base: 'COMMAND CENTER',
-  comm_relay: 'COMM RELAY',
-  mining_station: 'MINING STATION',
-  storage: 'STORAGE',
-  trading_post: 'TRADING POST',
-  factory: 'FACTORY',
-  kontor: 'KONTOR',
-  research_lab: 'RESEARCH LAB',
-};
-
-const STRUCTURE_ICONS: Record<string, string> = {
-  base: '[■]',
-  comm_relay: '[~]',
-  mining_station: '[M]',
-  storage: '[□]',
-  trading_post: '[T]',
-  factory: '[F]',
-  kontor: '[K]',
-  research_lab: '[R]',
-};
-
 const CONSTRUCTION_LABELS: Record<string, string> = {
-  mining_station: 'MINING STATION',
   jumpgate: 'JUMPGATE',
   station: 'STATION',
   jumpgate_conn_2: 'GATE VERBINDUNG L2',
@@ -37,12 +14,9 @@ const CONSTRUCTION_LABELS: Record<string, string> = {
 };
 
 export function BaseOverview() {
-  const baseStructures = useStore((s) => s.baseStructures);
   const constructionSites = useStore((s) => s.constructionSites);
   const baseName = useStore((s) => s.baseName);
   const credits = useStore((s) => s.credits);
-  const selectedId = useStore((s) => s.selectedBaseStructure);
-  const setSelected = useStore((s) => s.setSelectedBaseStructure);
   const bookmarks = useStore((s) => s.bookmarks);
   const [bookmarkTarget, setBookmarkTarget] = useState<{ x: number; y: number } | null>(null);
 
@@ -52,7 +26,7 @@ export function BaseOverview() {
     network.requestCredits();
   }, []);
 
-  const hasAnything = baseStructures.length > 0 || constructionSites.length > 0;
+  const hasAnything = constructionSites.length > 0;
 
   if (!hasAnything) {
     return (
@@ -101,47 +75,6 @@ export function BaseOverview() {
       <div style={{ color: 'var(--color-dim)', marginBottom: 8 }}>
         CREDITS: <span style={{ color: 'var(--color-primary)' }}>{credits.toLocaleString()}</span>
       </div>
-
-      <div
-        style={{
-          fontSize: '0.55rem',
-          letterSpacing: '0.1em',
-          color: 'var(--color-dim)',
-          marginBottom: 4,
-        }}
-      >
-        STRUCTURES ({baseStructures.length})
-      </div>
-
-      {baseStructures.map((s: any) => (
-        <div
-          key={s.id}
-          onClick={() => setSelected(s.id)}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '4px 6px',
-            cursor: 'pointer',
-            borderLeft:
-              selectedId === s.id ? '2px solid var(--color-primary)' : '2px solid transparent',
-            background: selectedId === s.id ? 'rgba(255,176,0,0.05)' : 'transparent',
-            marginBottom: 2,
-          }}
-        >
-          <span>
-            <span style={{ color: 'var(--color-dim)', marginRight: 4 }}>
-              {STRUCTURE_ICONS[s.type] || '[?]'}
-            </span>
-            <span style={{ color: 'var(--color-primary)' }}>
-              {STRUCTURE_LABELS[s.type] || s.type.toUpperCase()}
-            </span>
-          </span>
-          <span style={{ opacity: 0.5, fontSize: '0.55rem' }}>
-            {s.tier > 1 ? `T${s.tier}` : ''} ACTIVE
-          </span>
-        </div>
-      ))}
 
       {/* Construction Sites */}
       {constructionSites.length > 0 && (

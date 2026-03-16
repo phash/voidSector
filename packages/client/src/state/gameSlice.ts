@@ -32,7 +32,6 @@ import type {
   ShipModule,
   CombatV3State,
   CombatV3RoundResult,
-  StationDefense,
   StationCombatEvent,
   ResearchState,
   FirstContactEvent,
@@ -352,7 +351,6 @@ export interface GameSlice {
   reputations: PlayerReputation[];
   playerUpgrades: PlayerUpgrade[];
   bountyEncounter: BountyEncounterState | null;
-  stationDefenses: StationDefense[];
   stationCombatEvent: StationCombatEvent | null;
   scanEvents: ScanEvent[];
 
@@ -605,7 +603,6 @@ export interface GameSlice {
   setReputations: (reps: PlayerReputation[]) => void;
   setPlayerUpgrades: (upgrades: PlayerUpgrade[]) => void;
   setBountyEncounter: (encounter: BountyEncounterState | null) => void;
-  setStationDefenses: (stationDefenses: StationDefense[]) => void;
   setStationCombatEvent: (stationCombatEvent: StationCombatEvent | null) => void;
   setScanEvents: (events: ScanEvent[]) => void;
   addScanEvent: (event: ScanEvent) => void;
@@ -759,7 +756,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   reputations: [],
   playerUpgrades: [],
   bountyEncounter: null,
-  stationDefenses: [],
   stationCombatEvent: null,
   scanEvents: [],
   jumpGateInfo: null,
@@ -990,7 +986,6 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setReputations: (reputations) => set({ reputations }),
   setPlayerUpgrades: (playerUpgrades) => set({ playerUpgrades }),
   setBountyEncounter: (bountyEncounter) => set({ bountyEncounter }),
-  setStationDefenses: (stationDefenses) => set({ stationDefenses }),
   setStationCombatEvent: (stationCombatEvent) => set({ stationCombatEvent }),
   setScanEvents: (scanEvents) => set({ scanEvents }),
   addScanEvent: (event) => set((s) => ({ scanEvents: [...s.scanEvents, event] })),
