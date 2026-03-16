@@ -1242,26 +1242,7 @@ export interface AcepXpSnapshot {
   explorer: number;
 }
 
-export interface ModuleDefinition {
-  id: string;
-  category: ModuleCategory;
-  tier: ModuleTier;
-  name: string;
-  displayName: string;
-  primaryEffect: { stat: string; delta: number; label: string };
-  secondaryEffects: Array<{ stat: string; delta: number; label: string }>;
-  effects: Partial<ShipStats>;
-  cost: { credits: number; ore?: number; gas?: number; crystal?: number; artefact?: number };
-  researchCost?: ResearchCost;
-  researchDurationMin?: number;
-  prerequisite?: string;
-  factionRequirement?: { factionId: string; minTier: string };
-  isUnique?: boolean;
-  isFoundOnly?: boolean;
-  drawbacks?: ModuleDrawback[];
-  acepPaths?: AcepPath[];
-  maxHp?: number;
-}
+// Old ModuleDefinition removed — use the new one from moduleDefinitions.ts
 
 export interface ShipModule {
   moduleId: string;

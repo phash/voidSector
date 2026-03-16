@@ -1,4 +1,6 @@
-/** Returns true if a module is available without research (no researchCost) */
+/** Returns true if a module is available without research (no researchCost).
+ *  In the new module system, all non-foundOnly modules are freely available.
+ */
 export declare function isModuleFreelyAvailable(moduleId: string): boolean;
 /** Returns true if a module is unlocked (freely available, blueprint + tier, or tech-tree tier) */
 export declare function isModuleUnlocked(moduleId: string, mod: {

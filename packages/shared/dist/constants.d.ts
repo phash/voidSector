@@ -1,4 +1,4 @@
-import type { SectorType, MineableResourceType, StructureType, ModuleDefinition, ModuleCategory, SectorEnvironment, SectorContent, ProductionRecipe, WreckSize } from './types.js';
+import type { SectorType, MineableResourceType, StructureType, ModuleCategory, SectorEnvironment, SectorContent, ProductionRecipe, WreckSize } from './types.js';
 export declare const SECTOR_TYPES: SectorType[];
 export declare const AP_DEFAULTS: {
     max: number;
@@ -191,12 +191,9 @@ export declare const ACEP_LEVEL_THRESHOLDS: Record<number, number>;
 export declare const ACEP_LEVEL_MULTIPLIERS: Record<number, number>;
 /** Modul-HP pro Tier */
 export declare const MODULE_HP_BY_TIER: Record<number, number>;
-/** EP-Kosten pro Power-Level pro Modul-Kategorie (im Kampf) */
-export declare const MODULE_EP_COSTS: Partial<Record<ModuleCategory, Record<string, number>>>;
 /** Basis AP/s des Schiffs ohne Generator */
 export declare const BASE_HULL_AP_REGEN = 0.1;
-/** Power-Level-Multiplikatoren für AP-Regen und EP-Output */
-export declare const POWER_LEVEL_MULTIPLIERS: Record<string, number>;
+import type { ModuleDefinition } from './moduleDefinitions.js';
 export declare const MODULES: Record<string, ModuleDefinition>;
 export declare const SECTOR_COLORS: Record<string, string>;
 export declare const SPAWN_MIN_DISTANCE = 10000000;

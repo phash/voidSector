@@ -13,7 +13,6 @@ import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
 import { checkScanEvent } from '../../engine/scanEvents.js';
 import { generateSector } from '../../engine/worldgen.js';
-import { createPirateEncounter } from '../../engine/commands.js';
 import { getAPState, saveAPState } from './RedisAPStore.js';
 import {
   getSector,
@@ -26,7 +25,6 @@ import {
   completeScanEvent,
   getPlayerCredits,
   addCredits,
-  getPlayerReputation,
   hasScannedRuin,
   insertAncientRuinScan,
   getActiveShip,
@@ -47,7 +45,7 @@ import { getWreckAtSector } from '../../db/wreckQueries.js';
 import { redis } from './RedisAPStore.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
-import { AP_COSTS_LOCAL_SCAN, MODULES } from '@void-sector/shared';
+import { AP_COSTS_LOCAL_SCAN, MODULE_MAP } from '@void-sector/shared';
 
 export const WISSEN_DAILY_CAP_BASE = 200;
 export const WISSEN_DAILY_CAP_FRONTIER = 300;
@@ -401,20 +399,8 @@ export class ScanService {
 
       if (eventResult.isImmediate && eventResult.eventType === 'pirate_ambush') {
         if (!includeImmediateEvents) continue;
-        const pirateLevel = (eventResult.data?.pirateLevel as number) ?? 1;
-        const pirateRep = await getPlayerReputation(auth.userId, 'pirates');
-        const encounter = createPirateEncounter(pirateLevel, sector.x, sector.y, pirateRep);
-        // Frontier guard: pirates only fight in frontier quadrants
-        const { qx: v2Qx, qy: v2Qy } = sectorToQuadrant(sector.x, sector.y);
-        const v2Controls = await getAllQuadrantControls();
-        if (!isFrontierQuadrant(v2Qx, v2Qy, v2Controls)) {
-          client.send('logEntry', 'INFO: Dieser Sektor liegt tief im Zivilisationsgebiet. Keine Piraten aktiv.');
-          continue;
-        }
-        // TODO: Wire pirate encounters to CombatV3Service.handleCombatV3Start
-        // Current V2 flow remains until full legacy removal
-        client.send('pirateAmbush', { encounter, sectorX: sector.x, sectorY: sector.y });
-        client.send('logEntry', `WARNUNG: Piraten-Hinterhalt bei (${sector.x}, ${sector.y})!`);
+        // Pirate ambush from scan events — log only, combat V3 triggers on sector entry
+        client.send('logEntry', `WARNUNG: Piraten-Aktivität bei (${sector.x}, ${sector.y}) entdeckt!`);
       } else {
         const eventId = await insertScanEvent(
           auth.userId,
@@ -519,13 +505,13 @@ export class ScanService {
           await addToInventory(auth.userId, 'blueprint', moduleId, 1);
           client.send('blueprintFound', {
             moduleId,
-            moduleName: MODULES[moduleId]?.name ?? moduleId,
+            moduleName: MODULE_MAP.get(moduleId)?.name ?? moduleId,
           });
-          client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
+          client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULE_MAP.get(moduleId)?.name ?? moduleId}`);
         } else {
           client.send(
             'logEntry',
-            `BLAUPAUSE BEREITS BEKANNT: ${MODULES[moduleId]?.name ?? moduleId}`,
+            `BLAUPAUSE BEREITS BEKANNT: ${MODULE_MAP.get(moduleId)?.name ?? moduleId}`,
           );
         }
       }
@@ -561,7 +547,7 @@ export class ScanService {
       });
       return;
     }
-    const moduleName = MODULES[module]?.name ?? module;
+    const moduleName = MODULE_MAP.get(module)?.name ?? module;
     client.send('salvageResult', { success: true, module, moduleName });
     client.send('logEntry', `WRACK GEPLÜNDERT: Modul "${moduleName}" geborgen.`);
     // Record as salvage encounter for Scrapper access tracking

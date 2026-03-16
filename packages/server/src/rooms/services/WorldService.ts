@@ -69,7 +69,7 @@ import {
   STATION_BUILD_COSTS,
   STATION_MODULE_UPGRADE_COST,
   MAX_STATION_LEVEL,
-  MODULES,
+  MODULE_MAP,
   PRODUCTION_MAX_QUEUE,
   BASIC_FACTORY_RECIPES,
   calculateProductionTime,
@@ -826,20 +826,25 @@ export class WorldService {
       return;
     }
 
-    const mod = MODULES[data.moduleId];
-    if (!mod || !mod.cost) {
+    const mod = MODULE_MAP.get(data.moduleId);
+    if (!mod) {
       client.send('productionResult', { success: false, error: 'Modul nicht herstellbar' });
       return;
     }
+
+    // Build cost map from new module format
+    const resourceCosts: Record<string, number> = {};
+    if (mod.costOre > 0) resourceCosts['ore'] = mod.costOre;
+    if (mod.costGas > 0) resourceCosts['gas'] = mod.costGas;
+    if (mod.costCrystal > 0) resourceCosts['crystal'] = mod.costCrystal;
 
     // Calculate costs with tier multiplier
     const costMult = calculateCostMultiplier(mod.tier, station.factory_level);
     const cargo = station.cargo_contents ?? {};
 
     // Check resources in station cargo
-    for (const [res, base] of Object.entries(mod.cost)) {
-      if (res === 'credits') continue;
-      const needed = Math.ceil((base as number) * costMult) * qty;
+    for (const [res, base] of Object.entries(resourceCosts)) {
+      const needed = Math.ceil(base * costMult) * qty;
       if ((cargo[res] ?? 0) < needed) {
         client.send('productionResult', { success: false, error: `Nicht genug ${res.toUpperCase()} (${needed} benötigt)` });
         return;
@@ -847,7 +852,7 @@ export class WorldService {
     }
 
     // Check credits
-    const creditCost = Math.ceil((mod.cost.credits ?? 0) * costMult) * qty;
+    const creditCost = Math.ceil((mod.costCredits ?? 0) * costMult) * qty;
     if (creditCost > 0) {
       const credits = await getPlayerCredits(auth.userId);
       if (credits < creditCost) {
@@ -859,9 +864,8 @@ export class WorldService {
 
     // Deduct resources from station cargo
     const newCargo = { ...cargo };
-    for (const [res, base] of Object.entries(mod.cost)) {
-      if (res === 'credits') continue;
-      const needed = Math.ceil((base as number) * costMult) * qty;
+    for (const [res, base] of Object.entries(resourceCosts)) {
+      const needed = Math.ceil(base * costMult) * qty;
       newCargo[res] = (newCargo[res] ?? 0) - needed;
     }
     await updateStationCargoContents(data.stationId, newCargo);

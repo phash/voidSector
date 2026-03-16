@@ -1,21 +1,23 @@
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULES, isModuleFreelyAvailable, BLUEPRINT_COPY_BASE_COST } from '@void-sector/shared';
+import { MODULE_MAP, isModuleFreelyAvailable, BLUEPRINT_COPY_BASE_COST } from '@void-sector/shared';
+import type { ModuleDefinition } from '@void-sector/shared';
 
-function costLine(cost: {
-  credits: number;
-  ore?: number;
-  gas?: number;
-  crystal?: number;
-  artefact?: number;
-}): string {
-  const parts: string[] = [`${cost.credits} CR`];
-  if (cost.ore) parts.push(`${cost.ore} ERZ`);
-  if (cost.gas) parts.push(`${cost.gas} GAS`);
-  if (cost.crystal) parts.push(`${cost.crystal} KRI`);
-  if (cost.artefact) parts.push(`${cost.artefact} ART`);
+function costLine(mod: ModuleDefinition): string {
+  const parts: string[] = [`${mod.costCredits} CR`];
+  if (mod.costOre) parts.push(`${mod.costOre} ERZ`);
+  if (mod.costGas) parts.push(`${mod.costGas} GAS`);
+  if (mod.costCrystal) parts.push(`${mod.costCrystal} KRI`);
+  if (mod.costArtefact && mod.costArtefact !== '0') parts.push(`${mod.costArtefact} ART`);
   return parts.join(' | ');
+}
+
+/** Format stats object as readable lines */
+function statLines(stats: Record<string, number>): string[] {
+  return Object.entries(stats)
+    .filter(([, v]) => v !== 0)
+    .map(([k, v]) => `${k}: ${v > 0 ? '+' : ''}${v}`);
 }
 
 const btnStyle: React.CSSProperties = {
@@ -53,19 +55,18 @@ export function TechDetailPanel() {
     );
   }
 
-  const mod = MODULES[selectedModuleId];
+  const mod = MODULE_MAP.get(selectedModuleId);
   if (!mod) return null;
 
   const isAtStation = currentSector?.type === 'station';
   const hasBase = baseStructures.some((s: any) => s.type === 'base');
-  const isAtHome = hasBase;
   const canShop = isAtStation || hasBase;
 
   const isFree = isModuleFreelyAvailable(mod.id);
   const isUnlocked = research.unlockedModules.includes(mod.id);
   const hasBP = research.blueprints.includes(mod.id);
 
-  const prerequisiteMod = mod.prerequisite ? MODULES[mod.prerequisite] : null;
+  const prerequisiteMod = mod.prerequisiteModuleId ? MODULE_MAP.get(mod.prerequisiteModuleId) : null;
 
   return (
     <div
@@ -93,7 +94,7 @@ export function TechDetailPanel() {
         TIER {mod.tier} | {mod.category.toUpperCase()}
       </div>
 
-      {/* Effects */}
+      {/* Effects / Stats */}
       <div
         style={{ borderBottom: '1px solid var(--color-dim)', paddingBottom: 4, marginBottom: 6 }}
       >
@@ -107,10 +108,10 @@ export function TechDetailPanel() {
         >
           {t('tech.effects')}
         </div>
-        <div style={{ color: 'var(--color-primary)' }}>{mod.primaryEffect.label}</div>
-        {mod.secondaryEffects.map((eff, i) => (
+        <div style={{ color: 'var(--color-primary)' }}>{mod.description}</div>
+        {statLines(mod.stats).map((line, i) => (
           <div key={i} style={{ color: 'var(--color-dim)' }}>
-            {eff.label}
+            {line}
           </div>
         ))}
       </div>
@@ -129,23 +130,6 @@ export function TechDetailPanel() {
         </div>
       )}
 
-      {/* Research cost */}
-      {mod.researchCost && (
-        <div style={{ marginBottom: 6 }}>
-          <div
-            style={{
-              color: 'var(--color-dim)',
-              fontSize: '0.55rem',
-              letterSpacing: '0.1em',
-              marginBottom: 2,
-            }}
-          >
-            {t('tech.researchCost')}
-          </div>
-          <div>{costLine(mod.researchCost)}</div>
-        </div>
-      )}
-
       {/* Purchase cost */}
       <div style={{ marginBottom: 8 }}>
         <div
@@ -158,7 +142,7 @@ export function TechDetailPanel() {
         >
           {t('tech.purchasePrice')}
         </div>
-        <div>{costLine(mod.cost)}</div>
+        <div>{costLine(mod)}</div>
       </div>
 
       {/* Status + Actions */}
@@ -170,7 +154,7 @@ export function TechDetailPanel() {
             </div>
             {canShop && (
               <button style={btnStyle} onClick={() => network.sendBuyModule(mod.id)}>
-                {t('tech.buy', { cost: costLine(mod.cost) })}
+                {t('tech.buy', { cost: costLine(mod) })}
               </button>
             )}
             {!canShop && (
@@ -188,7 +172,7 @@ export function TechDetailPanel() {
             </button>
           </div>
         )}
-        {isUnlocked && mod.cost && (
+        {isUnlocked && mod.costCredits > 0 && (
           <div style={{ marginTop: 6 }}>
             <button
               style={btnStyle}
@@ -198,7 +182,7 @@ export function TechDetailPanel() {
             </button>
           </div>
         )}
-        {!isFree && !isUnlocked && !hasBP && mod.researchCost && (
+        {!isFree && !isUnlocked && !hasBP && (
           <div style={{ color: '#FF3333', fontSize: '0.55rem' }}>{t('tech.locked')}</div>
         )}
       </div>

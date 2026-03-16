@@ -8,7 +8,7 @@ import {
   validateModuleInstall,
   getActiveDrawbacks,
   isModuleUnlocked,
-  MODULES,
+  MODULE_MAP,
   MODULE_HP_BY_TIER,
   BLUEPRINT_COPY_BASE_COST,
 } from '@void-sector/shared';
@@ -89,8 +89,8 @@ export class ShipService {
     }
     await removeFromInventory(auth.userId, 'module', data.moduleId, 1);
     // Install — initialize currentHp to maxHp so the MODULE tab shows a full HP bar
-    const modDef = MODULES[data.moduleId];
-    const maxHp = modDef?.maxHp ?? MODULE_HP_BY_TIER[modDef?.tier ?? 1] ?? 20;
+    const modDef = MODULE_MAP.get(data.moduleId);
+    const maxHp = modDef?.hitpoints ?? MODULE_HP_BY_TIER[modDef?.tier ?? 1] ?? 20;
     const newModules: ShipModule[] = [
       ...ship.modules,
       { moduleId: data.moduleId, slotIndex: data.slotIndex, source: 'standard' as const, currentHp: maxHp },
@@ -130,7 +130,7 @@ export class ShipService {
 
   async handleBuyModule(client: Client, data: { moduleId: string }): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const moduleDef = MODULES[data.moduleId];
+    const moduleDef = MODULE_MAP.get(data.moduleId);
     if (!moduleDef) {
       client.send('error', { code: 'UNKNOWN_MODULE', message: 'Unknown module' });
       return;
@@ -160,32 +160,28 @@ export class ShipService {
     }
     // Check credits
     const credits = await getPlayerCredits(auth.userId);
-    if (credits < moduleDef.cost.credits) {
+    if (credits < moduleDef.costCredits) {
       client.send('error', { code: 'INSUFFICIENT_CREDITS', message: 'Not enough credits' });
       return;
     }
     // Check resource costs from cargo
     const cargo = await getCargoState(auth.userId);
-    const cargoMap: Record<string, number> = {
-      ore: cargo.ore,
-      gas: cargo.gas,
-      crystal: cargo.crystal,
-      artefact: cargo.artefact,
-    };
-    for (const [res, amount] of Object.entries(moduleDef.cost)) {
-      if (res === 'credits') continue;
-      const have = cargoMap[res] ?? 0;
-      if (have < (amount as number)) {
-        client.send('error', { code: 'INSUFFICIENT_RESOURCES', message: `Need ${amount} ${res}` });
+    const resourceCosts: [string, number][] = [];
+    if (moduleDef.costOre > 0) resourceCosts.push(['ore', moduleDef.costOre]);
+    if (moduleDef.costGas > 0) resourceCosts.push(['gas', moduleDef.costGas]);
+    if (moduleDef.costCrystal > 0) resourceCosts.push(['crystal', moduleDef.costCrystal]);
+    for (const [res, needed] of resourceCosts) {
+      const have = (cargo as any)[res] ?? 0;
+      if (have < needed) {
+        client.send('error', { code: 'INSUFFICIENT_RESOURCES', message: `Need ${needed} ${res}` });
         return;
       }
     }
     // Deduct credits
-    await deductCredits(auth.userId, moduleDef.cost.credits);
+    await deductCredits(auth.userId, moduleDef.costCredits);
     // Deduct resources from inventory
-    for (const [res, amount] of Object.entries(moduleDef.cost)) {
-      if (res === 'credits' || !amount) continue;
-      await removeFromInventory(auth.userId, 'resource', res, amount as number);
+    for (const [res, amount] of resourceCosts) {
+      await removeFromInventory(auth.userId, 'resource', res, amount);
     }
     // Add to unified inventory
     await addToInventory(auth.userId, 'module', data.moduleId, 1);
@@ -220,7 +216,7 @@ export class ShipService {
 
   async handleCraftModule(client: Client, data: { moduleId: string }): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const mod = MODULES[data.moduleId];
+    const mod = MODULE_MAP.get(data.moduleId);
 
     if (!mod) {
       client.send('craftResult', { success: false, error: 'Unknown module' });
@@ -243,7 +239,7 @@ export class ShipService {
     }
 
     // Check and deduct credits
-    const creditCost = mod.cost?.credits ?? 0;
+    const creditCost = mod.costCredits ?? 0;
     if (creditCost > 0) {
       const credits = await getPlayerCredits(auth.userId);
       if (credits < creditCost) {
@@ -255,12 +251,10 @@ export class ShipService {
 
     // Deduct resource costs from inventory
     try {
-      if (mod.cost?.ore) await removeFromInventory(auth.userId, 'resource', 'ore', mod.cost.ore);
-      if (mod.cost?.gas) await removeFromInventory(auth.userId, 'resource', 'gas', mod.cost.gas);
-      if (mod.cost?.crystal)
-        await removeFromInventory(auth.userId, 'resource', 'crystal', mod.cost.crystal);
-      if (mod.cost?.artefact)
-        await removeFromInventory(auth.userId, 'resource', 'artefact', mod.cost.artefact);
+      if (mod.costOre > 0) await removeFromInventory(auth.userId, 'resource', 'ore', mod.costOre);
+      if (mod.costGas > 0) await removeFromInventory(auth.userId, 'resource', 'gas', mod.costGas);
+      if (mod.costCrystal > 0)
+        await removeFromInventory(auth.userId, 'resource', 'crystal', mod.costCrystal);
     } catch (err) {
       client.send('craftResult', { success: false, error: 'Insufficient resources' });
       return;
@@ -302,13 +296,13 @@ export class ShipService {
     client.send('inventoryUpdated', {});
     client.send(
       'logEntry',
-      `BLAUPAUSE AKTIVIERT: ${MODULES[data.moduleId]?.name ?? data.moduleId}`,
+      `BLAUPAUSE AKTIVIERT: ${MODULE_MAP.get(data.moduleId)?.name ?? data.moduleId}`,
     );
   }
 
   async handleCreateBlueprintCopy(client: Client, data: { moduleId: string }): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const mod = MODULES[data.moduleId];
+    const mod = MODULE_MAP.get(data.moduleId);
     if (!mod) {
       client.send('blueprintCopyResult', { success: false, error: 'Unknown module' });
       return;

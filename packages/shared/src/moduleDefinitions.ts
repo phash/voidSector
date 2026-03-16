@@ -1479,3 +1479,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     prerequisiteModuleId: 'ecm_suite_2',
   },
 ];
+
+/** Keyed lookup map for MODULE_DEFINITIONS by module id */
+export const MODULE_MAP = new Map<string, ModuleDefinition>(
+  MODULE_DEFINITIONS.map((m) => [m.id, m]),
+);

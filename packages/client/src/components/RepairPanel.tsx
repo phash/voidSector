@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULES, getDamageState } from '@void-sector/shared';
+import { MODULE_MAP, getDamageState } from '@void-sector/shared';
 
 // ─── Damage state helpers (mirrors server-side getDamageState) ────────────────
 
@@ -117,14 +117,14 @@ export function RepairPanel() {
 
   // Find the player's repair module (category='repair', powerLevel != 'off')
   const repairModEntry = installedModules.find((m) => {
-    const def = MODULES[m.moduleId];
+    const def = MODULE_MAP.get(m.moduleId);
     return def?.category === 'repair' && (m.powerLevel ?? 'high') !== 'off';
   });
-  const repairModDef  = repairModEntry ? MODULES[repairModEntry.moduleId] : null;
+  const repairModDef  = repairModEntry ? MODULE_MAP.get(repairModEntry.moduleId) : null;
   const repairTier    = repairModDef?.tier ?? 0;
 
   // Determine if repair module itself is destroyed
-  const repairModMaxHp     = repairModDef ? (repairModDef.maxHp ?? 20) : 20;
+  const repairModMaxHp     = repairModDef ? (repairModDef.hitpoints ?? 20) : 20;
   const repairModCurrentHp = repairModEntry ? (repairModEntry.currentHp ?? repairModMaxHp) : repairModMaxHp;
   const repairModDestroyed =
     repairModEntry !== undefined &&
@@ -133,9 +133,9 @@ export function RepairPanel() {
   // Calculate station repair cost: sum of (maxHp - currentHp) × 2
   let stationRepairCost = 0;
   for (const m of installedModules) {
-    const def     = MODULES[m.moduleId];
+    const def     = MODULE_MAP.get(m.moduleId);
     if (!def) continue;
-    const maxHp    = def.maxHp ?? 20;
+    const maxHp    = def.hitpoints ?? 20;
     const curHp    = m.currentHp ?? maxHp;
     stationRepairCost += (maxHp - curHp) * 2;
   }
@@ -178,7 +178,7 @@ export function RepairPanel() {
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={dimStyle}>{t('repair.drone')}</span>
             <span style={{ color: repairModDestroyed ? DAMAGE_STATE_COLORS.destroyed : '#00ff41' }}>
-              {t('repair.droneName', { name: repairModDef.displayName ?? repairModDef.name, tier: repairTier })}
+              {t('repair.droneName', { name: repairModDef.name, tier: repairTier })}
             </span>
           </div>
           {repairModDestroyed && (
@@ -248,9 +248,9 @@ export function RepairPanel() {
         <div style={{ ...dimStyle, opacity: 0.5 }}>{t('repair.noModules')}</div>
       ) : (
         installedModules.map((m) => {
-          const def      = MODULES[m.moduleId];
+          const def      = MODULE_MAP.get(m.moduleId);
           if (!def) return null;
-          const maxHp    = def.maxHp ?? 20;
+          const maxHp    = def.hitpoints ?? 20;
           const curHp    = m.currentHp ?? maxHp;
           const dmgState = getDamageState(curHp, maxHp);
           const stateColor = DAMAGE_STATE_COLORS[dmgState];
@@ -272,7 +272,7 @@ export function RepairPanel() {
             ? (cargo.ore ?? 0) >= cost.ore && (cargo.crystal ?? 0) >= cost.crystal
             : false;
 
-          const moduleName = def.displayName ?? def.name;
+          const moduleName = def.name;
 
           return (
             <div

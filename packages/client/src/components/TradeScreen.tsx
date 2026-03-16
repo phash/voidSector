@@ -9,7 +9,7 @@ import {
   NPC_PRICES,
   NPC_BUY_SPREAD,
   NPC_SELL_SPREAD,
-  MODULES,
+  MODULE_MAP,
 } from '@void-sector/shared';
 
 const NPC_COLUMN_MAX_HEIGHT = '220px';
@@ -259,7 +259,7 @@ export function TradeScreen() {
                   </div>
                   <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {npcStationData.inventory.filter((item) =>
-                      npcSubTab === 'modules' ? item.itemType in MODULES : !(item.itemType in MODULES)
+                      npcSubTab === 'modules' ? MODULE_MAP.has(item.itemType) : !(MODULE_MAP.has(item.itemType))
                     ).map((item) => {
                       const filled =
                         item.maxStock > 0 ? Math.round((item.stock / item.maxStock) * 10) : 0;
@@ -336,7 +336,7 @@ export function TradeScreen() {
                   </div>
                   <div style={{ overflowY: 'auto', maxHeight: NPC_COLUMN_MAX_HEIGHT }}>
                     {npcStationData.inventory.filter((item) =>
-                      npcSubTab === 'modules' ? item.itemType in MODULES : !(item.itemType in MODULES)
+                      npcSubTab === 'modules' ? MODULE_MAP.has(item.itemType) : !(MODULE_MAP.has(item.itemType))
                     ).map((item) => {
                       // itemType is always a resource key for NPC station inventory items
                       const playerAmount =

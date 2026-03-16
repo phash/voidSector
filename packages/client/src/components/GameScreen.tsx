@@ -13,10 +13,6 @@ import { BookmarkBar } from './BookmarkBar';
 import { TradeScreen } from './TradeScreen';
 import { FactionScreen } from './FactionScreen';
 import { QuestsScreen } from './QuestsScreen';
-import { BattleDialog } from './BattleDialog';
-import { CombatV2Dialog } from './CombatV2Dialog';
-import { CombatDialog } from './CombatDialog';
-import { BattleResultDialog } from './BattleResultDialog';
 import { AcepProgram } from './AcepProgram';
 import { FriendsScreen } from './FriendsScreen';
 import { FabrikPanel } from './FabrikPanel';
@@ -24,7 +20,7 @@ import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
 import { StationCombatOverlay } from './StationCombatOverlay';
-import { TechTreeCanvas } from './TechTreeCanvas';
+import { TechTreeScreen } from './TechTreeScreen';
 import { TechDetailPanel } from './TechDetailPanel';
 import { BaseOverview } from './BaseOverview';
 import { BaseDetailPanel } from './BaseDetailPanel';
@@ -259,7 +255,7 @@ function TechScreen() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-          <TechTreeCanvas />
+          <TechTreeScreen />
         </div>
         <div
           style={{ width: 320, minHeight: 0, overflow: 'auto', borderLeft: '2px solid #2a2a2a' }}
@@ -410,7 +406,7 @@ function renderCockpitScreen(monitorId: string) {
     case MONITORS.NAV_COM:
       return <CockpitNavCom />;
     case MONITORS.TECH:
-      return <TechTreeCanvas />;
+      return <TechTreeScreen />;
     case MONITORS.BASE_LINK:
       return <BaseOverview />;
     default:
@@ -479,11 +475,7 @@ export function GameScreen() {
         ))}
       </div>
       <MehrOverlay monitors={mehrMonitors} />
-      <BattleDialog />
-      <CombatV2Dialog />
-      <CombatDialog />
       <StationCombatOverlay />
-      <BattleResultDialog />
       <BlueprintDialog />
       <CompendiumOverlay />
       <HelpOverlay />

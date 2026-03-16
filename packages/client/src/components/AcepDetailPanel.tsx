@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
-import { MODULES, calculateShipStats } from '@void-sector/shared';
+import { MODULE_MAP, calculateShipStats } from '@void-sector/shared';
 import type { ShipStats } from '@void-sector/shared';
 import { ModuleArtwork } from './ModuleArtwork';
 
@@ -82,7 +82,7 @@ export function AcepDetailPanel() {
     return <div style={dimStyle}>{t('acep.hoverModuleForDetails')}</div>;
   }
 
-  const def = MODULES[hoveredId];
+  const def = MODULE_MAP.get(hoveredId);
   if (!def) return <div style={dimStyle}>—</div>;
 
   // Build AcepXpSnapshot (without total field)
@@ -120,7 +120,7 @@ export function AcepDetailPanel() {
   // Find currently installed module in same category (for SHOP tab replacement note)
   const replacedModule = activeTab === 'shop'
     ? (ship.modules ?? []).find((m) => {
-        const d = MODULES[m.moduleId];
+        const d = MODULE_MAP.get(m.moduleId);
         return d && d.category === def.category;
       })
     : undefined;
@@ -128,23 +128,23 @@ export function AcepDetailPanel() {
   return (
     <div style={{ padding: 14, fontFamily: 'var(--font-mono)', fontSize: '0.9rem', overflow: 'auto', height: '100%' }}>
       <ModuleArtwork category={def.category} tier={def.tier} />
-      <div style={{ color: 'var(--color-primary)', fontSize: '1rem', marginBottom: 4 }}>{def.displayName ?? def.name}</div>
+      <div style={{ color: 'var(--color-primary)', fontSize: '1rem', marginBottom: 4 }}>{def.name}</div>
       <div style={{ color: '#666', fontSize: '0.8rem', marginBottom: 12 }}>[{def.category.toUpperCase()}]</div>
 
       {activeTab === 'shop' && (
         <>
           <div style={{ fontSize: '0.85rem', color: '#888', marginBottom: 6 }}>
             {replacedModule
-              ? t('acep.replaces', { name: MODULES[replacedModule.moduleId]?.name ?? replacedModule.moduleId })
-              : t('acep.installsIn', { cat: (MODULES[hoveredId]?.category ?? '?').toUpperCase().slice(0, 3) })}
+              ? t('acep.replaces', { name: MODULE_MAP.get(replacedModule.moduleId)?.name ?? replacedModule.moduleId })
+              : t('acep.installsIn', { cat: (MODULE_MAP.get(hoveredId)?.category ?? '?').toUpperCase().slice(0, 3) })}
           </div>
           <div style={{ fontSize: '0.85rem', color: '#4a9', marginBottom: 10 }}>
             {(() => {
-              const parts: string[] = [`${def.cost.credits} CR`];
-              if (def.cost.ore !== undefined) parts.push(`${def.cost.ore} ${t('resources.ore')}`);
-              if (def.cost.gas !== undefined) parts.push(`${def.cost.gas} ${t('resources.gas')}`);
-              if (def.cost.crystal !== undefined) parts.push(`${def.cost.crystal} ${t('resources.crystal')}`);
-              if (def.cost.artefact !== undefined) parts.push(`${def.cost.artefact} ${t('resources.artefact')}`);
+              const parts: string[] = [`${def.costCredits} CR`];
+              if (def.costOre) parts.push(`${def.costOre} ${t('resources.ore')}`);
+              if (def.costGas) parts.push(`${def.costGas} ${t('resources.gas')}`);
+              if (def.costCrystal) parts.push(`${def.costCrystal} ${t('resources.crystal')}`);
+              if (def.costArtefact && def.costArtefact !== '0') parts.push(`${def.costArtefact}`);
               return parts.join(' + ');
             })()}
           </div>
@@ -172,7 +172,7 @@ export function AcepDetailPanel() {
           {(() => {
             const installed = (ship.modules ?? []).find((m) => m.moduleId === hoveredId);
             if (!installed) return null;
-            const maxHp = MODULES[hoveredId]?.maxHp ?? 20;
+            const maxHp = MODULE_MAP.get(hoveredId)?.hitpoints ?? 20;
             const currentHp = installed.currentHp ?? maxHp;
             const filled = maxHp > 0 ? Math.round((currentHp / maxHp) * 6) : 6;
             const bar = '█'.repeat(filled) + '░'.repeat(6 - filled);

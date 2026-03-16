@@ -50,7 +50,7 @@ import { query } from './db/client.js';
 import { civQueries } from './db/civQueries.js';
 import { constructionBus } from './constructionBus.js';
 import { completeConstruction as completeConstructionFn } from './engine/constructionTickService.js';
-import { MODULES, QUADRANT_SIZE } from '@void-sector/shared';
+import { MODULE_DEFINITIONS, QUADRANT_SIZE } from '@void-sector/shared';
 import { STORY_CHAPTERS } from './engine/storyQuestChain.js';
 import { getStoryProgress, upsertStoryProgress } from './db/queries.js';
 import { gameConfig } from './engine/gameConfigService.js';
@@ -241,7 +241,7 @@ adminRouter.get('/catalog', (_req: Request, res: Response) => {
     'artefact_drive', 'artefact_cargo', 'artefact_scanner', 'artefact_armor',
     'artefact_weapon', 'artefact_shield', 'artefact_defense', 'artefact_special',
     'artefact_mining', 'artefact_generator', 'artefact_repair'];
-  const moduleIds = Object.keys(MODULES).sort();
+  const moduleIds = MODULE_DEFINITIONS.map((m) => m.id).sort();
   res.json({ resources, modules: moduleIds, blueprints: moduleIds });
 });
 
