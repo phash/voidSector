@@ -391,9 +391,10 @@ export const MODULE_HP_BY_TIER = {
 };
 /** Basis AP/s des Schiffs ohne Generator */
 export const BASE_HULL_AP_REGEN = 0.1;
-// NOTE: Old MODULES constant removed — use MODULE_DEFINITIONS from moduleDefinitions.ts
-// Legacy MODULES was a Record<string, ModuleDefinition> with ~80 entries.
-// New MODULE_DEFINITIONS is an array; use MODULE_MAP for keyed lookups.
+// NOTE: MODULES is a compatibility shim for the old Record<string, ModuleDefinition> shape.
+// Prefer MODULE_MAP (Map) or MODULE_DEFINITIONS (array) for new code.
+import { MODULE_MAP } from './moduleDefinitions.js';
+export const MODULES = Object.fromEntries(MODULE_MAP);
 export const SECTOR_COLORS = {
     empty: '#FFB000',
     asteroid_field: '#FF8C00',

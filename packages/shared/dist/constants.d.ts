@@ -193,6 +193,8 @@ export declare const ACEP_LEVEL_MULTIPLIERS: Record<number, number>;
 export declare const MODULE_HP_BY_TIER: Record<number, number>;
 /** Basis AP/s des Schiffs ohne Generator */
 export declare const BASE_HULL_AP_REGEN = 0.1;
+import type { ModuleDefinition } from './moduleDefinitions.js';
+export declare const MODULES: Record<string, ModuleDefinition>;
 export declare const SECTOR_COLORS: Record<string, string>;
 export declare const SPAWN_MIN_DISTANCE = 10000000;
 export declare const SPAWN_DISTANCE_VARIANCE = 2000000;
