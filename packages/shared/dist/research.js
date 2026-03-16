@@ -1,11 +1,13 @@
-import { MODULES } from './constants.js';
+import { MODULE_MAP } from './moduleDefinitions.js';
 import { getTechTreeEffects } from './techTreeEffects.js';
-/** Returns true if a module is available without research (no researchCost) */
+/** Returns true if a module is available without research (no researchCost).
+ *  In the new module system, all non-foundOnly modules are freely available.
+ */
 export function isModuleFreelyAvailable(moduleId) {
-    const mod = MODULES[moduleId];
+    const mod = MODULE_MAP.get(moduleId);
     if (!mod)
         return false;
-    return !mod.researchCost;
+    return !mod.isFoundOnly;
 }
 /** Returns true if a module is unlocked (freely available, blueprint + tier, or tech-tree tier) */
 export function isModuleUnlocked(moduleId, mod, researchedNodes, blueprints) {

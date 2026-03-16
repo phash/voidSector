@@ -9,7 +9,7 @@ export { isModuleFreelyAvailable, isModuleUnlocked } from './research.js';
 export * from './stationProduction.js';
 export * from './techTree.js';
 export * from './techTreeEffects.js';
-export { MODULE_DEFINITIONS } from './moduleDefinitions.js';
+export { MODULE_DEFINITIONS, MODULE_MAP } from './moduleDefinitions.js';
 export type { ModuleDefinition } from './moduleDefinitions.js';
 export { RESEARCH_DEFINITIONS } from './researchDefinitions.js';
 export type { ResearchNode } from './researchDefinitions.js';

@@ -4,12 +4,7 @@ export declare function getAcepLevel(xp: number): number;
 /** Returns the number of extra slots unlocked based on ausbau XP. */
 export declare function getExtraSlotCount(ausbauXp: number): number;
 /**
- * New V2 signature: accepts installedModules with moduleId + slot (new module system).
- * Also handles legacy ShipModule[] (with slotIndex) for backward compatibility.
- *
- * Routing: if any module has a `slot` string property → new system (V2).
- * If all modules use `slotIndex` number property → legacy system.
- * Empty array → V2 (returns zero/base stats).
+ * Calculates ship stats from installed modules using MODULE_DEFINITIONS.
  */
 export declare function calculateShipStats(installedModules: Array<{
     moduleId: string;
@@ -28,8 +23,10 @@ export declare function validateModuleInstall(currentModules: ShipModule[], modu
     valid: boolean;
     error?: string;
 };
-/** Returns all active runtime drawback IDs from installed modules */
-export declare function getActiveDrawbacks(modules: ShipModule[]): string[];
+/** Returns all active runtime drawback IDs from installed modules.
+ *  NOTE: New MODULE_DEFINITIONS don't have drawbacks — this returns [] for now.
+ */
+export declare function getActiveDrawbacks(_modules: ShipModule[]): string[];
 export type DamageState = 'intact' | 'light' | 'heavy' | 'destroyed';
 /** Derives damage state from currentHp/maxHp ratio */
 export declare function getDamageState(currentHp: number, maxHp: number): DamageState;

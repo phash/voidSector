@@ -1,6 +1,6 @@
 import { hashCoords } from './worldgen.js';
 import { generateDistressMessage } from './distressStories.js';
-import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULES } from '@void-sector/shared';
+import { WORLD_SEED, SCAN_EVENT_CHANCE, QUADRANT_SIZE, MODULE_DEFINITIONS } from '@void-sector/shared';
 import type { ScanEventType, SectorEnvironment } from '@void-sector/shared';
 
 const SCAN_EVENT_SALT = 5555;
@@ -114,7 +114,7 @@ function generateEventData(
         rewardArtefact: (seed >>> 16) % 100 < 50 ? 1 : 0,
       };
     case 'blueprint_find': {
-      const researchModules = Object.values(MODULES).filter((m) => m.researchCost);
+      const researchModules = MODULE_DEFINITIONS.filter((m) => !m.isFoundOnly && m.tier >= 2);
       if (researchModules.length === 0) {
         return { moduleId: 'unknown', moduleName: 'Unknown Blueprint' };
       }

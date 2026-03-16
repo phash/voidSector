@@ -1,6 +1,6 @@
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULES } from '@void-sector/shared';
+import { MODULE_MAP } from '@void-sector/shared';
 
 export function BlueprintDialog() {
   const pendingBlueprint = useStore((s) => s.pendingBlueprint);
@@ -8,7 +8,7 @@ export function BlueprintDialog() {
 
   if (!pendingBlueprint) return null;
 
-  const mod = MODULES[pendingBlueprint];
+  const mod = MODULE_MAP.get(pendingBlueprint);
   if (!mod) return null;
 
   const handleActivate = () => {
@@ -66,12 +66,7 @@ export function BlueprintDialog() {
         </div>
 
         <div style={{ color: '#FFB000', marginBottom: '12px', textAlign: 'center' }}>
-          <div style={{ fontSize: '0.75rem' }}>{mod.primaryEffect.label}</div>
-          {mod.secondaryEffects.map((eff, i) => (
-            <div key={i} style={{ fontSize: '0.65rem', opacity: 0.7 }}>
-              {eff.label}
-            </div>
-          ))}
+          <div style={{ fontSize: '0.75rem' }}>{mod.description}</div>
         </div>
 
         <div

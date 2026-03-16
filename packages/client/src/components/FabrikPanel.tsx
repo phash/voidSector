@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULES, SPECIALIZED_SLOT_INDEX } from '@void-sector/shared';
+import { MODULE_MAP, SPECIALIZED_SLOT_INDEX } from '@void-sector/shared';
 
 const green = '#00FF88';
 const dimGreen = 'rgba(0,255,136,0.3)';
@@ -67,7 +67,7 @@ function AcepTab() {
         <div style={{ opacity: 0.4, color: green }}>KEINE BLUEPRINTS EINGELEGT</div>
       ) : (
         acepBlueprints.map((moduleId) => {
-          const mod = MODULES[moduleId];
+          const mod = MODULE_MAP.get(moduleId);
           if (!mod) return null;
           return (
             <div key={moduleId} style={rowStyle}>
@@ -125,7 +125,7 @@ function AcepTab() {
                 style={{ ...btnStyle, opacity: installedIds.has(m.itemId) ? 0.4 : 1 }}
                 disabled={installedIds.has(m.itemId)}
                 onClick={() => {
-                  const modDef = MODULES[m.itemId];
+                  const modDef = MODULE_MAP.get(m.itemId);
                   const slot = modDef ? (SPECIALIZED_SLOT_INDEX[modDef.category] ?? 0) : 0;
                   network.sendInstallModule('', m.itemId, slot);
                 }}
@@ -147,14 +147,14 @@ function AcepTab() {
 }
 
 function CostDisplay({ moduleId }: { moduleId: string }) {
-  const mod = MODULES[moduleId];
-  if (!mod?.cost) return null;
+  const mod = MODULE_MAP.get(moduleId);
+  if (!mod) return null;
   const parts: string[] = [];
-  if (mod.cost.credits) parts.push(`${mod.cost.credits} CR`);
-  if (mod.cost.ore) parts.push(`${mod.cost.ore} ORE`);
-  if (mod.cost.gas) parts.push(`${mod.cost.gas} GAS`);
-  if (mod.cost.crystal) parts.push(`${mod.cost.crystal} CRYSTAL`);
-  if (mod.cost.artefact) parts.push(`${mod.cost.artefact} ART`);
+  if (mod.costCredits) parts.push(`${mod.costCredits} CR`);
+  if (mod.costOre) parts.push(`${mod.costOre} ORE`);
+  if (mod.costGas) parts.push(`${mod.costGas} GAS`);
+  if (mod.costCrystal) parts.push(`${mod.costCrystal} CRYSTAL`);
+  if (mod.costArtefact && mod.costArtefact !== '0') parts.push(`${mod.costArtefact} ART`);
   if (parts.length === 0) return null;
   return (
     <div style={{ fontSize: '0.55rem', opacity: 0.5, marginTop: 1 }}>
@@ -231,7 +231,7 @@ function StationTab() {
             </div>
           ) : (
             stationBlueprints.map((moduleId) => {
-              const mod = MODULES[moduleId];
+              const mod = MODULE_MAP.get(moduleId);
               if (!mod) return null;
               return (
                 <div key={moduleId} style={rowStyle}>

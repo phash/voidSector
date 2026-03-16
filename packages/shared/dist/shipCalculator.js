@@ -1,7 +1,5 @@
-import { MODULES, ACEP_LEVEL_THRESHOLDS, ACEP_LEVEL_MULTIPLIERS, ACEP_EXTRA_SLOT_THRESHOLDS, DEFENSE_ONLY_CATEGORIES, SPECIALIZED_SLOT_CATEGORIES, UNIQUE_MODULE_CATEGORIES, BASE_HULL_AP_REGEN, POWER_LEVEL_MULTIPLIERS, BASE_SCANNER_MEMORY, FUEL_MIN_TANK, BASE_FUEL_CAPACITY, BASE_FUEL_PER_JUMP, BASE_CARGO, BASE_HP, BASE_JUMP_RANGE, BASE_ENGINE_SPEED, BASE_COMM_RANGE, BASE_SCANNER_LEVEL, } from './constants.js';
-import { MODULE_DEFINITIONS } from './moduleDefinitions.js';
-// ─── Module lookup map for V2 calculator ──────────────────────────────────────
-const MODULE_MAP = new Map(MODULE_DEFINITIONS.map((m) => [m.id, m]));
+import { ACEP_LEVEL_THRESHOLDS, ACEP_EXTRA_SLOT_THRESHOLDS, DEFENSE_ONLY_CATEGORIES, SPECIALIZED_SLOT_CATEGORIES, UNIQUE_MODULE_CATEGORIES, BASE_HULL_AP_REGEN, BASE_SCANNER_MEMORY, FUEL_MIN_TANK, BASE_FUEL_CAPACITY, BASE_FUEL_PER_JUMP, BASE_CARGO, BASE_HP, BASE_JUMP_RANGE, BASE_ENGINE_SPEED, BASE_COMM_RANGE, BASE_SCANNER_LEVEL, } from './constants.js';
+import { MODULE_MAP } from './moduleDefinitions.js';
 /** Returns ACEP level (1–5) for a given XP value. */
 export function getAcepLevel(xp) {
     let level = 1;
@@ -18,21 +16,10 @@ export function getExtraSlotCount(ausbauXp) {
 }
 // ─── V2 calculateShipStats (new module system) ────────────────────────────────
 /**
- * New V2 signature: accepts installedModules with moduleId + slot (new module system).
- * Also handles legacy ShipModule[] (with slotIndex) for backward compatibility.
- *
- * Routing: if any module has a `slot` string property → new system (V2).
- * If all modules use `slotIndex` number property → legacy system.
- * Empty array → V2 (returns zero/base stats).
+ * Calculates ship stats from installed modules using MODULE_DEFINITIONS.
  */
 export function calculateShipStats(installedModules, acepXp) {
-    // Use V2 path when any module explicitly has a `slot` string (new system)
-    const isNewSystem = installedModules.length === 0 || installedModules.some((m) => typeof m.slot === 'string');
-    if (isNewSystem) {
-        return _calculateShipStatsV2(installedModules, acepXp);
-    }
-    // Legacy path: all modules have slotIndex (old system)
-    return _calculateShipStatsLegacy(installedModules, acepXp);
+    return _calculateShipStatsV2(installedModules, acepXp);
 }
 /** V2 calculator — uses MODULE_DEFINITIONS (new module system). */
 function _calculateShipStatsV2(installedModules, acepXp) {
@@ -130,84 +117,8 @@ function _calculateShipStatsV2(installedModules, acepXp) {
     }
     return stats;
 }
-/** Legacy calculator — uses old MODULES constant. */
-function _calculateShipStatsLegacy(modules, acepXp) {
-    const stats = {
-        fuelMax: BASE_FUEL_CAPACITY,
-        cargoCap: BASE_CARGO,
-        jumpRange: BASE_JUMP_RANGE,
-        apCostJump: 1,
-        fuelPerJump: BASE_FUEL_PER_JUMP,
-        hp: BASE_HP,
-        commRange: BASE_COMM_RANGE,
-        scannerLevel: BASE_SCANNER_LEVEL,
-        damageMod: 1.0,
-        shieldHp: 0,
-        shieldRegen: 0,
-        weaponAttack: 0,
-        weaponType: 'none',
-        weaponPiercing: 0,
-        pointDefense: 0,
-        ecmReduction: 0,
-        engineSpeed: BASE_ENGINE_SPEED,
-        artefactChanceBonus: 0,
-        safeSlotBonus: 0,
-        hyperdriveRange: 0,
-        hyperdriveSpeed: 0,
-        hyperdriveRegen: 0,
-        hyperdriveFuelEfficiency: 0,
-        miningBonus: 0,
-        generatorEpPerRound: 0,
-        repairHpPerRound: 0,
-        repairHpPerSecond: 0,
-        memory: BASE_SCANNER_MEMORY,
-    };
-    // Pre-compute ACEP levels per path
-    const levels = acepXp
-        ? {
-            ausbau: getAcepLevel(acepXp.ausbau),
-            intel: getAcepLevel(acepXp.intel),
-            kampf: getAcepLevel(acepXp.kampf),
-            explorer: getAcepLevel(acepXp.explorer),
-        }
-        : {};
-    for (const mod of modules) {
-        const def = MODULES[mod.moduleId];
-        if (!def)
-            continue;
-        // Determine multiplier: highest level among module's ACEP paths
-        const modPaths = def.acepPaths ?? [];
-        const multiplier = modPaths.length > 0 && acepXp
-            ? Math.max(...modPaths.map((p) => ACEP_LEVEL_MULTIPLIERS[levels[p]] ?? 1.0))
-            : 1.0;
-        for (const [key, value] of Object.entries(def.effects)) {
-            if (typeof value !== 'number') {
-                // e.g. weaponType — not a number, assign directly
-                stats[key] = value;
-                continue;
-            }
-            if (key === 'damageMod') {
-                // damageMod is always additive, never multiplied
-                stats.damageMod += value;
-            }
-            else {
-                // Positive values are multiplied by ACEP multiplier; negatives are not
-                stats[key] += value > 0 ? value * multiplier : value;
-            }
-        }
-    }
-    // Clamp minimums
-    stats.apCostJump = Math.max(0.5, stats.apCostJump);
-    stats.jumpRange = Math.max(1, stats.jumpRange);
-    stats.damageMod = Math.max(0.25, stats.damageMod);
-    stats.engineSpeed = Math.max(1, Math.min(5, stats.engineSpeed));
-    stats.hyperdriveFuelEfficiency = Math.max(0, Math.min(1, stats.hyperdriveFuelEfficiency));
-    stats.memory = Math.max(0, Math.round(stats.memory));
-    stats.fuelMax = Math.max(FUEL_MIN_TANK, stats.fuelMax);
-    return stats;
-}
 export function validateModuleInstall(currentModules, moduleId, slotIndex, acepXp = { ausbau: 0, intel: 0, kampf: 0, explorer: 0 }) {
-    const moduleDef = MODULES[moduleId];
+    const moduleDef = MODULE_MAP.get(moduleId);
     if (!moduleDef)
         return { valid: false, error: 'Unbekanntes Modul' };
     const category = moduleDef.category;
@@ -236,7 +147,7 @@ export function validateModuleInstall(currentModules, moduleId, slotIndex, acepX
     // Unique-Enforcement: max 1× pro Schiff (auch in Extra-Slots)
     if (moduleDef.isUnique || UNIQUE_MODULE_CATEGORIES.includes(category)) {
         const alreadyInstalled = currentModules.some((m) => {
-            const existingDef = MODULES[m.moduleId];
+            const existingDef = MODULE_MAP.get(m.moduleId);
             return existingDef?.category === category;
         });
         if (alreadyInstalled) {
@@ -249,19 +160,11 @@ export function validateModuleInstall(currentModules, moduleId, slotIndex, acepX
     }
     return { valid: true };
 }
-/** Returns all active runtime drawback IDs from installed modules */
-export function getActiveDrawbacks(modules) {
-    const effects = [];
-    for (const mod of modules) {
-        const def = MODULES[mod.moduleId];
-        if (!def?.drawbacks)
-            continue;
-        for (const drawback of def.drawbacks) {
-            if (drawback.runtimeEffect)
-                effects.push(drawback.runtimeEffect);
-        }
-    }
-    return effects;
+/** Returns all active runtime drawback IDs from installed modules.
+ *  NOTE: New MODULE_DEFINITIONS don't have drawbacks — this returns [] for now.
+ */
+export function getActiveDrawbacks(_modules) {
+    return [];
 }
 /** Derives damage state from currentHp/maxHp ratio */
 export function getDamageState(currentHp, maxHp) {
@@ -279,10 +182,10 @@ export function getDamageState(currentHp, maxHp) {
 /** Returns effective power level after applying damage state caps */
 export function getModuleEffectivePowerLevel(mod) {
     const requested = mod.powerLevel ?? 'high';
-    const def = MODULES[mod.moduleId];
+    const def = MODULE_MAP.get(mod.moduleId);
     if (!def)
         return requested;
-    const maxHp = def.maxHp ?? 20;
+    const maxHp = def.hitpoints ?? 20;
     const currentHp = mod.currentHp ?? maxHp;
     const state = getDamageState(currentHp, maxHp);
     if (state === 'destroyed')
@@ -293,17 +196,21 @@ export function getModuleEffectivePowerLevel(mod) {
         return 'mid';
     return requested;
 }
+/** Power-level multipliers for AP regen calculation */
+const POWER_LEVEL_MULTIPLIERS = {
+    off: 0.0, low: 0.4, mid: 0.7, high: 1.0,
+};
 /** Calculates AP/s based on installed generator module + base hull regen */
 export function calculateApRegen(modules) {
     let regen = BASE_HULL_AP_REGEN;
     for (const mod of modules) {
-        const def = MODULES[mod.moduleId];
+        const def = MODULE_MAP.get(mod.moduleId);
         if (!def || def.category !== 'generator')
             continue;
-        const apPerSecond = def.effects.apRegenPerSecond ?? 0;
+        const apPerSecond = def.stats['apRegen'] ?? Math.abs(def.apCost) ?? 0;
         const effectivePower = getModuleEffectivePowerLevel(mod);
         const multiplier = POWER_LEVEL_MULTIPLIERS[effectivePower] ?? 0;
-        const maxHp = def.maxHp ?? 20;
+        const maxHp = def.hitpoints ?? 20;
         const currentHp = mod.currentHp ?? maxHp;
         const hpRatio = maxHp > 0 ? currentHp / maxHp : 0;
         regen += apPerSecond * multiplier * hpRatio;

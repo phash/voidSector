@@ -5,7 +5,7 @@ import {
   getTechNode,
   calculateResearchCost,
   getTechTreeEffects,
-  MODULES,
+  MODULE_DEFINITIONS,
 } from '@void-sector/shared';
 import { getOrCreateTechTree, saveTechTree, resetTechTree as dbResetTree } from '../../db/techTreeQueries.js';
 import { deductWissen, getWissen } from '../../db/queries.js';
@@ -95,11 +95,19 @@ export class TechTreeService {
     if (node && node.type === 'branch') {
       // Branch level increased — tier = newLevel + 1 (level 1→tier 2, level 2→tier 3, level 3→tier 4)
       const newTier = (currentLevel + 1) + 1;
+      // Map branch to module categories
+      const branchCategories: Record<string, string[]> = {
+        kampf: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'],
+        ausbau: ['generator', 'shield', 'armor', 'defense', 'cargo', 'mining', 'repair'],
+        intel: ['scanner'],
+        explorer: ['drive'],
+      };
+      const eligibleCategories = branchCategories[node.branch] ?? [];
       try {
-        for (const mod of Object.values(MODULES)) {
-          if (!mod.cost || !mod.acepPaths) continue;
+        for (const mod of MODULE_DEFINITIONS) {
+          if (mod.isFoundOnly) continue;
           if (mod.tier !== newTier) continue;
-          if (!(mod.acepPaths as string[]).includes(node.branch)) continue;
+          if (!eligibleCategories.includes(mod.category)) continue;
           await addToInventory(auth.userId, 'blueprint', mod.id, 1);
           client.send('logEntry', `BLUEPRINT ERHALTEN: ${mod.name}`);
         }

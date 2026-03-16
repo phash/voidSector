@@ -45,7 +45,7 @@ import { getWreckAtSector } from '../../db/wreckQueries.js';
 import { redis } from './RedisAPStore.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
-import { AP_COSTS_LOCAL_SCAN, MODULES } from '@void-sector/shared';
+import { AP_COSTS_LOCAL_SCAN, MODULE_MAP } from '@void-sector/shared';
 
 export const WISSEN_DAILY_CAP_BASE = 200;
 export const WISSEN_DAILY_CAP_FRONTIER = 300;
@@ -505,13 +505,13 @@ export class ScanService {
           await addToInventory(auth.userId, 'blueprint', moduleId, 1);
           client.send('blueprintFound', {
             moduleId,
-            moduleName: MODULES[moduleId]?.name ?? moduleId,
+            moduleName: MODULE_MAP.get(moduleId)?.name ?? moduleId,
           });
-          client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULES[moduleId]?.name ?? moduleId}`);
+          client.send('logEntry', `BLAUPAUSE GEFUNDEN: ${MODULE_MAP.get(moduleId)?.name ?? moduleId}`);
         } else {
           client.send(
             'logEntry',
-            `BLAUPAUSE BEREITS BEKANNT: ${MODULES[moduleId]?.name ?? moduleId}`,
+            `BLAUPAUSE BEREITS BEKANNT: ${MODULE_MAP.get(moduleId)?.name ?? moduleId}`,
           );
         }
       }
@@ -547,7 +547,7 @@ export class ScanService {
       });
       return;
     }
-    const moduleName = MODULES[module]?.name ?? module;
+    const moduleName = MODULE_MAP.get(module)?.name ?? module;
     client.send('salvageResult', { success: true, module, moduleName });
     client.send('logEntry', `WRACK GEPLÜNDERT: Modul "${moduleName}" geborgen.`);
     // Record as salvage encounter for Scrapper access tracking

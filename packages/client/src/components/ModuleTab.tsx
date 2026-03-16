@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { SPECIALIZED_SLOT_CATEGORIES, MODULES, getExtraSlotCount, validateModuleInstall } from '@void-sector/shared';
+import { SPECIALIZED_SLOT_CATEGORIES, MODULE_MAP, getExtraSlotCount, validateModuleInstall } from '@void-sector/shared';
 
 const CAT_LABELS: Record<string, string> = {
   generator: 'GEN', drive: 'DRV', weapon: 'WPN', armor: 'ARM',
@@ -100,7 +100,7 @@ export function ModuleTab() {
       <div style={sectionHdr}>{t('module.installed', { count: installedCount, total: totalSlots })}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
         {slots.map(({ index, label, module }) => {
-          const def = module ? MODULES[module.moduleId] : null;
+          const def = module ? MODULE_MAP.get(module.moduleId) : null;
           const occupied = !!module && !!def;
           const isCompatible = compatibleSlots.has(index);
           return (
@@ -124,7 +124,7 @@ export function ModuleTab() {
                     <span style={{ color: '#666', fontSize: '0.8rem' }}>[{label}]</span>
                     <span style={{ color: 'var(--color-primary)', marginLeft: 6 }}>{def.name}</span>
                     <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 2 }}>
-                      HP {hpBar(module.currentHp ?? 0, def.maxHp ?? 20)}
+                      HP {hpBar(module.currentHp ?? 0, def.hitpoints ?? 20)}
                     </div>
                   </div>
                   <button
@@ -159,7 +159,7 @@ export function ModuleTab() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {moduleInventory.map((moduleId, idx) => {
-              const def = MODULES[moduleId];
+              const def = MODULE_MAP.get(moduleId);
               if (!def) return null;
               const isSelected = selectedInvIdx === idx;
               return (

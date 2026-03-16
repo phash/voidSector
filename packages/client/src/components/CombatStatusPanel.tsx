@@ -1,5 +1,5 @@
 import { useStore } from '../state/store';
-import { MODULES } from '@void-sector/shared';
+import { MODULE_MAP } from '@void-sector/shared';
 import type { ShipModule } from '@void-sector/shared';
 
 export function CombatStatusPanel() {
@@ -16,17 +16,20 @@ export function CombatStatusPanel() {
 
   const { modules, stats } = ship;
 
-  const weaponMod = modules.find((m: ShipModule) => MODULES[m.moduleId]?.category === 'weapon');
-  const shieldMod = modules.find((m: ShipModule) => MODULES[m.moduleId]?.category === 'shield');
-  const defenseMod = modules.find((m: ShipModule) => MODULES[m.moduleId]?.category === 'defense');
+  const weaponMod = modules.find((m: ShipModule) => {
+    const cat = MODULE_MAP.get(m.moduleId)?.category ?? '';
+    return cat.startsWith('weapon');
+  });
+  const shieldMod = modules.find((m: ShipModule) => MODULE_MAP.get(m.moduleId)?.category === 'shield');
+  const defenseMod = modules.find((m: ShipModule) => MODULE_MAP.get(m.moduleId)?.category === 'defense');
 
-  const weaponDef = weaponMod ? MODULES[weaponMod.moduleId] : null;
-  const shieldDef = shieldMod ? MODULES[shieldMod.moduleId] : null;
-  const defenseDef = defenseMod ? MODULES[defenseMod.moduleId] : null;
+  const weaponDef = weaponMod ? MODULE_MAP.get(weaponMod.moduleId) : null;
+  const shieldDef = shieldMod ? MODULE_MAP.get(shieldMod.moduleId) : null;
+  const defenseDef = defenseMod ? MODULE_MAP.get(defenseMod.moduleId) : null;
 
-  const wpnName = weaponDef?.displayName || '---';
+  const wpnName = weaponDef?.name || '---';
   const shdVal = shieldDef ? `${stats.shieldHp}` : '---';
-  const defName = defenseDef?.displayName || '---';
+  const defName = defenseDef?.name || '---';
 
   return (
     <div className="nav-block">

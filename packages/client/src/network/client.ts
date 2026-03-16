@@ -1,6 +1,6 @@
 import { Client, type Room } from 'colyseus.js';
 import { useStore } from '../state/store';
-import { QUADRANT_SIZE, MODULES, MONITORS, getPhysicalCargoTotal } from '@void-sector/shared';
+import { QUADRANT_SIZE, MODULE_MAP, MONITORS, getPhysicalCargoTotal } from '@void-sector/shared';
 import type {
   APState,
   SectorData,
@@ -1248,8 +1248,8 @@ class GameNetwork {
         const ship = store.ship;
         if (ship) {
           const updatedModules = ship.modules.map((m) => {
-            const def = MODULES[m.moduleId];
-            const maxHp = def?.maxHp ?? 20;
+            const def = MODULE_MAP.get(m.moduleId);
+            const maxHp = def?.hitpoints ?? 20;
             return { ...m, currentHp: maxHp };
           });
           store.setShip({ ...ship, modules: updatedModules });

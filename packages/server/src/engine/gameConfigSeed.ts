@@ -114,7 +114,7 @@ import {
   STALENESS_DIM_HOURS,
   STALENESS_FADE_DAYS,
   AUTOPILOT_STEP_MS,
-  MODULES,
+  MODULE_DEFINITIONS,
   STRUCTURE_COSTS,
   STRUCTURE_AP_COSTS,
   JUMPGATE_BUILD_COST,
@@ -430,19 +430,15 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   { key: 'WRECK_SLATE_JUMPGATE_HUMANITY_TAX', category: 'wrecks', description: 'Humanity tax for jumpgate data slates from wrecks', getDefault: () => WRECK_SLATE_JUMPGATE_HUMANITY_TAX },
 ];
 
-// ─── Module seed entries (generated from MODULES object) ─────────────────────
+// ─── Module seed entries (generated from MODULE_DEFINITIONS array) ────────────
 
 function buildModuleEntries(): ConfigSeedEntry[] {
-  const entries: ConfigSeedEntry[] = [];
-  for (const moduleId of Object.keys(MODULES)) {
-    entries.push({
-      key: `MODULES.${moduleId}`,
-      category: 'modules',
-      description: `Module definition: ${MODULES[moduleId].name}`,
-      getDefault: () => MODULES[moduleId],
-    });
-  }
-  return entries;
+  return MODULE_DEFINITIONS.map((mod) => ({
+    key: `MODULES.${mod.id}`,
+    category: 'modules',
+    description: `Module definition: ${mod.name}`,
+    getDefault: () => mod,
+  }));
 }
 
 // ─── Combined seed ───────────────────────────────────────────────────────────

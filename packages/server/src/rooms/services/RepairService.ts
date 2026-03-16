@@ -2,7 +2,7 @@ import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import { getDamageState } from '@void-sector/shared';
-import { MODULES } from '@void-sector/shared';
+import { MODULE_MAP } from '@void-sector/shared';
 import {
   getActiveShip,
   updateShipModules,
@@ -67,13 +67,13 @@ export class RepairService {
       return;
     }
 
-    const targetDef = MODULES[targetMod.moduleId];
+    const targetDef = MODULE_MAP.get(targetMod.moduleId);
     if (!targetDef) {
       client.send('repairModuleResult', { success: false, error: 'Unbekanntes Modul' });
       return;
     }
 
-    const maxHp = targetDef.maxHp ?? 20;
+    const maxHp = targetDef.hitpoints ?? 20;
     const currentHp = targetMod.currentHp ?? maxHp;
     const damageState = getDamageState(currentHp, maxHp);
 
@@ -87,7 +87,7 @@ export class RepairService {
 
     // 3. Find the player's repair module (category='repair', not powered off)
     const repairMod = ship.modules.find((m) => {
-      const def = MODULES[m.moduleId];
+      const def = MODULE_MAP.get(m.moduleId);
       return def?.category === 'repair' && (m.powerLevel ?? 'high') !== 'off';
     });
 
@@ -99,14 +99,14 @@ export class RepairService {
       return;
     }
 
-    const repairDef = MODULES[repairMod.moduleId];
+    const repairDef = MODULE_MAP.get(repairMod.moduleId);
     if (!repairDef) {
       client.send('repairModuleResult', { success: false, error: 'Reparatur-Modul unbekannt' });
       return;
     }
 
     // Check if repair module itself is destroyed
-    const repairModMaxHp = repairDef.maxHp ?? 20;
+    const repairModMaxHp = repairDef.hitpoints ?? 20;
     const repairModCurrentHp = repairMod.currentHp ?? repairModMaxHp;
     if (getDamageState(repairModCurrentHp, repairModMaxHp) === 'destroyed') {
       client.send('repairModuleResult', {
@@ -188,7 +188,7 @@ export class RepairService {
     client.send('cargoUpdate', await getCargoState(playerId));
     client.send(
       'logEntry',
-      `REPARATUR: ${targetDef.displayName ?? targetDef.name} — ${formatDamageState(damageState)} → ${formatDamageState(newDamageState)} (-${cost.ore} Erz, -${cost.crystal} Kristall)`,
+      `REPARATUR: ${targetDef.name} — ${formatDamageState(damageState)} → ${formatDamageState(newDamageState)} (-${cost.ore} Erz, -${cost.crystal} Kristall)`,
     );
   }
 
@@ -226,9 +226,9 @@ export class RepairService {
 
     // 3. Check whether any module needs repair
     const damagedModules = ship.modules.filter((m) => {
-      const def = MODULES[m.moduleId];
+      const def = MODULE_MAP.get(m.moduleId);
       if (!def) return false;
-      const maxHp = def.maxHp ?? 20;
+      const maxHp = def.hitpoints ?? 20;
       const currentHp = m.currentHp ?? maxHp;
       return currentHp < maxHp;
     });
@@ -244,9 +244,9 @@ export class RepairService {
     // 4. Calculate total credit cost: sum of (maxHp - currentHp) × 2
     let totalCost = 0;
     for (const mod of damagedModules) {
-      const def = MODULES[mod.moduleId];
+      const def = MODULE_MAP.get(mod.moduleId);
       if (!def) continue;
-      const maxHp = def.maxHp ?? 20;
+      const maxHp = def.hitpoints ?? 20;
       const currentHp = mod.currentHp ?? maxHp;
       totalCost += (maxHp - currentHp) * 2;
     }
@@ -267,9 +267,9 @@ export class RepairService {
 
     // 7. Set all module currentHp = maxHp
     const repairedModules = ship.modules.map((m) => {
-      const def = MODULES[m.moduleId];
+      const def = MODULE_MAP.get(m.moduleId);
       if (!def) return m;
-      const maxHp = def.maxHp ?? 20;
+      const maxHp = def.hitpoints ?? 20;
       return { ...m, currentHp: maxHp };
     });
     await updateShipModules(ship.id, repairedModules);

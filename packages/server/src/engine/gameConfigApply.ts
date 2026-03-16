@@ -41,7 +41,6 @@ import {
   WRECK_BASE_DIFFICULTY,
   WRECK_SALVAGE_DURATION_MS,
   WRECK_SIZE_ITEM_COUNT,
-  MODULES,
   RESCUE_REWARDS,
 } from '@void-sector/shared';
 
@@ -229,14 +228,7 @@ export function applyConfigValue(key: string, value: any): void {
     return;
   }
 
-  // ── MODULES — deep-merge individual module definitions ───────────────────
-  if (key.startsWith('MODULES.')) {
-    const moduleId = key.replace('MODULES.', '');
-    if ((MODULES as any)[moduleId]) {
-      Object.assign((MODULES as any)[moduleId], value);
-    }
-    return;
-  }
+  // NOTE: Old MODULES deep-merge removed — MODULE_DEFINITIONS is immutable.
 
   // ── Standalone scalar constants (cannot be reassigned from here) ─────────
   // These are handled exclusively via RUNTIME_CACHE + getConfig().

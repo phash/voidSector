@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULES, isModuleUnlocked } from '@void-sector/shared';
+import { MODULE_DEFINITIONS, isModuleUnlocked } from '@void-sector/shared';
 import type { ModuleDefinition, CargoState } from '@void-sector/shared';
 import { getModuleSourceColor } from './moduleUtils';
 
@@ -25,41 +25,41 @@ const btnStyle: CSSProperties = {
 };
 
 function canAfford(def: ModuleDefinition, credits: number, cargo: CargoState): boolean {
-  if (credits < def.cost.credits) return false;
-  if (def.cost.ore !== undefined && cargo.ore < def.cost.ore) return false;
-  if (def.cost.gas !== undefined && cargo.gas < def.cost.gas) return false;
-  if (def.cost.crystal !== undefined && cargo.crystal < def.cost.crystal) return false;
-  if (def.cost.artefact !== undefined && cargo.artefact < def.cost.artefact) return false;
+  if (credits < def.costCredits) return false;
+  if (def.costOre > 0 && cargo.ore < def.costOre) return false;
+  if (def.costGas > 0 && cargo.gas < def.costGas) return false;
+  if (def.costCrystal > 0 && cargo.crystal < def.costCrystal) return false;
+  // costArtefact is a string like "20 Engine Artefact" or "0"
+  if (def.costArtefact && def.costArtefact !== '0') {
+    const match = def.costArtefact.match(/^(\d+)/);
+    const needed = match ? parseInt(match[1], 10) : 0;
+    if (needed > 0 && cargo.artefact < needed) return false;
+  }
   return true;
 }
 
 function getAffordanceReason(def: ModuleDefinition, credits: number, cargo: CargoState, tFn: (k: string) => string): string | null {
-  if (credits < def.cost.credits) {
-    return `${tFn('shop.needCredits')}: ${def.cost.credits - credits} CR`;
+  if (credits < def.costCredits) {
+    return `${tFn('shop.needCredits')}: ${def.costCredits - credits} CR`;
   }
-  if (def.cost.ore !== undefined && cargo.ore < def.cost.ore) {
-    return `${tFn('shop.needOre')}: ${def.cost.ore - cargo.ore}`;
+  if (def.costOre > 0 && cargo.ore < def.costOre) {
+    return `${tFn('shop.needOre')}: ${def.costOre - cargo.ore}`;
   }
-  if (def.cost.gas !== undefined && cargo.gas < def.cost.gas) {
-    return `${tFn('shop.needGas')}: ${def.cost.gas - cargo.gas}`;
+  if (def.costGas > 0 && cargo.gas < def.costGas) {
+    return `${tFn('shop.needGas')}: ${def.costGas - cargo.gas}`;
   }
-  if (def.cost.crystal !== undefined && cargo.crystal < def.cost.crystal) {
-    return `${tFn('shop.needCrystal')}: ${def.cost.crystal - cargo.crystal}`;
-  }
-  if (def.cost.artefact !== undefined && cargo.artefact < def.cost.artefact) {
-    return `${tFn('shop.needArtefact')}: ${def.cost.artefact - cargo.artefact}`;
+  if (def.costCrystal > 0 && cargo.crystal < def.costCrystal) {
+    return `${tFn('shop.needCrystal')}: ${def.costCrystal - cargo.crystal}`;
   }
   return null;
 }
 
-// costLabel is a pure helper used only in ShopTab display — no i18n needed here
-// as resource names in cost strings are formatted inline
 function costLabel(def: ModuleDefinition, tFn: (k: string) => string): string {
-  const parts: string[] = [`${def.cost.credits} CR`];
-  if (def.cost.ore !== undefined) parts.push(`${def.cost.ore} ${tFn('resources.ore')}`);
-  if (def.cost.gas !== undefined) parts.push(`${def.cost.gas} ${tFn('resources.gas')}`);
-  if (def.cost.crystal !== undefined) parts.push(`${def.cost.crystal} ${tFn('resources.crystal')}`);
-  if (def.cost.artefact !== undefined) parts.push(`${def.cost.artefact} ${tFn('resources.artefact')}`);
+  const parts: string[] = [`${def.costCredits} CR`];
+  if (def.costOre) parts.push(`${def.costOre} ${tFn('resources.ore')}`);
+  if (def.costGas) parts.push(`${def.costGas} ${tFn('resources.gas')}`);
+  if (def.costCrystal) parts.push(`${def.costCrystal} ${tFn('resources.crystal')}`);
+  if (def.costArtefact && def.costArtefact !== '0') parts.push(`${def.costArtefact}`);
   return parts.join(' + ');
 }
 
@@ -99,7 +99,7 @@ export function ShopTab() {
   }
 
   const researchedNodes = techTree?.researchedNodes ?? {};
-  const availableModules = Object.values(MODULES).filter(
+  const availableModules = MODULE_DEFINITIONS.filter(
     (m) => !m.isFoundOnly && isModuleUnlocked(m.id, m, researchedNodes, research.blueprints),
   );
 
@@ -151,10 +151,10 @@ export function ShopTab() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ color: getModuleSourceColor(undefined), fontSize: '0.95rem' }}>
-                    {def.displayName ?? def.name}
+                    {def.name}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 3 }}>
-                    {def.primaryEffect.label} · {costLabel(def, t)}
+                    {def.description} · {costLabel(def, t)}
                   </div>
                 </div>
                 <button
@@ -171,7 +171,7 @@ export function ShopTab() {
               </div>
               {reason && (
                 <div style={{ fontSize: '0.75rem', color: '#ff6666', paddingTop: 4, borderTop: '1px solid #3a2a2a' }}>
-                  ⚠ {reason}
+                  {reason}
                 </div>
               )}
             </div>
@@ -204,7 +204,7 @@ export function ShopTab() {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ marginBottom: 12, color: 'var(--color-primary)', letterSpacing: '0.1em' }}>
-              {selectedModule.displayName ?? selectedModule.name}
+              {selectedModule.name}
             </div>
             <div style={{ marginBottom: 12, color: '#888', fontSize: '0.75rem', lineHeight: 1.6 }}>
               {costLabel(selectedModule, t)}
