@@ -267,10 +267,9 @@ export class MiningService {
 
     // Apply ship module bonus and faction mining bonus
     const bonuses = await this.ctx.getPlayerBonuses(auth.userId);
-    const baseRate = hasMiningLaser ? MINING_RATE_PER_SECOND : MINING_RATE_NO_LASER;
-    result.state!.rate = baseRate
-      * (1 + (ship.miningBonus ?? 0))
-      * bonuses.miningRateMultiplier;
+    // miningBonus = miningSpeed from module (1 for mk1, 4 for mk2, etc.)
+    const baseRate = hasMiningLaser ? (ship.miningBonus ?? MINING_RATE_PER_SECOND) : MINING_RATE_NO_LASER;
+    result.state!.rate = baseRate * bonuses.miningRateMultiplier;
 
     await saveMiningState(auth.userId, result.state!);
     client.send('miningUpdate', result.state!);

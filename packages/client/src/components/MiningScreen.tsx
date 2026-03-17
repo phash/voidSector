@@ -127,7 +127,7 @@ export function MiningScreen() {
                         <div style={{ color: 'var(--color-primary)', fontSize: '1.1rem', fontWeight: 'bold' }}>{remaining}</div>
                       </div>
                       <div style={{ flex: 1, textAlign: 'center', color: 'var(--color-dim)', fontSize: '0.7rem' }}>
-                        ── {mining.rate}u/s ──►
+                        ── {Math.round(mining.rate * 10) / 10}u/s ──►
                       </div>
                       <div style={{ textAlign: 'center', minWidth: 52 }}>
                         <div style={{ color: 'var(--color-dim)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>CARGO</div>

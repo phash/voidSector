@@ -892,7 +892,7 @@ export function DetailPanel() {
               }}
             >
               <div>MINING: {mining.resource?.toUpperCase()}</div>
-              <div style={{ color: 'var(--color-dim)' }}>RATE: {mining.rate}u/s</div>
+              <div style={{ color: 'var(--color-dim)' }}>RATE: {Math.round(mining.rate * 10) / 10}u/s</div>
             </div>
           )}
           {/* JumpGate visible on main view too */}

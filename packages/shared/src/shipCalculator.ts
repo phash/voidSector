@@ -126,7 +126,9 @@ function _calculateShipStatsV2(
     } else if (category === 'scanner') {
       stats.scanRange = def.stats['scanRange'] ?? 0;
     } else if (category === 'mining') {
-      stats.miningSpeed = (stats.miningSpeed ?? 0) + (def.stats['miningSpeed'] ?? 0);
+      const speed = def.stats['miningSpeed'] ?? 0;
+      stats.miningSpeed = (stats.miningSpeed ?? 0) + speed;
+      stats.miningBonus = stats.miningSpeed; // used for laser detection + rate calc
     } else if (category === 'cargo') {
       // base 20 + module cargoCapacity
       stats.cargoCap = BASE_CARGO + (def.stats['cargoCapacity'] ?? 0);
