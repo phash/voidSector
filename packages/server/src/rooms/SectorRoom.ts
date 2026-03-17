@@ -1409,6 +1409,10 @@ export class SectorRoom extends Room<SectorRoomState> {
         x: p.x,
         y: p.y,
       }));
+
+      // Broadcast player list to ALL clients (fallback for Colyseus schema sync)
+      this.broadcastPlayerPresence();
+
       logger.info(
         {
           username: auth.username,
@@ -1818,6 +1822,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.revealedOutlaws.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.state.playerCount = this.state.players.size;
+    this.broadcastPlayerPresence();
 
     const leaveAuth = client.auth as { userId?: string } | null;
     if (leaveAuth?.userId) {
@@ -1831,5 +1836,20 @@ export class SectorRoom extends Room<SectorRoomState> {
     for (const cb of this.disposeCallbacks) {
       cb();
     }
+  }
+
+  /** Broadcast current player list to all connected clients */
+  private broadcastPlayerPresence() {
+    const playerList = Array.from(this.state.players.entries()).map(([sid, p]) => ({
+      sessionId: sid,
+      userId: p.userId,
+      username: p.username,
+      x: p.x,
+      y: p.y,
+      connected: p.connected,
+      mining: p.mining,
+      acepTotal: p.acepTotal,
+    }));
+    this.broadcast('playerPresence', playerList);
   }
 }

@@ -257,6 +257,19 @@ class GameNetwork {
       },
     );
 
+    // Player presence (explicit broadcast fallback for Colyseus schema sync)
+    room.onMessage('playerPresence', (playerList: any[]) => {
+      const store = useStore.getState();
+      const newPlayers: Record<string, any> = {};
+      for (const p of playerList) {
+        newPlayers[p.sessionId] = p;
+      }
+      store.clearPlayers();
+      for (const [sid, p] of Object.entries(newPlayers)) {
+        store.setPlayer(sid, p);
+      }
+    });
+
     // Sector data (sent by server on join and on moveSector)
     room.onMessage('sectorData', (sector: SectorData) => {
       const store = useStore.getState();

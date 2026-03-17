@@ -1457,7 +1457,8 @@ export class NavigationService {
     if (fuelCost > 0) {
       const newFuel = currentFuel - fuelCost;
       await saveFuelState(auth.userId, newFuel);
-      client.send('fuelUpdate', { fuel: newFuel });
+      const ship = this.ctx.getShipForClient(client.sessionId);
+      client.send('fuelUpdate', { current: newFuel, max: ship.fuelMax });
     }
 
     const targetX = destination.sectorX;
