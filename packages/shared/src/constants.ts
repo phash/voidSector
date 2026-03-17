@@ -1172,9 +1172,9 @@ export const CIV_SPIRAL_MAX_STEPS = 200;
 
 // NPC Ship Roles
 export const NPC_SPAWN_COUNTS = {
-  inner: { military: 60, outlaw: 10, trader: 80 },   // x20 (outlaws x5, weak — training zone)
-  middle: { military: 120, outlaw: 120, trader: 80 }, // x20
-  outer: { military: 240, outlaw: 40, trader: 80 },   // x20
+  inner: { military: 8, outlaw: 5, trader: 10 },    // x2-3 (outlaws weak Lv1 — training)
+  middle: { military: 15, outlaw: 15, trader: 10 },  // x2-3
+  outer: { military: 25, outlaw: 8, trader: 10 },    // x2
 } as const;
 
 export function getNpcZone(qx: number, qy: number): 'inner' | 'middle' | 'outer' {
