@@ -481,6 +481,8 @@ export interface GameSlice {
   // Player Gates
   playerGateInfo: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null;
   gateNetworkOpen: boolean;
+  npcTradeOpen: { npcId: number } | null;
+  npcTradeInfo: any | null;
 
   // Player Stations
   playerStationInfo: any | null;
@@ -814,6 +816,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   shipMoveAnimation: null,
   playerGateInfo: null,
   gateNetworkOpen: false,
+  npcTradeOpen: null,
+  npcTradeInfo: null,
   playerStationInfo: null,
   acepFactoryBlueprints: [],
   craftSite: null,

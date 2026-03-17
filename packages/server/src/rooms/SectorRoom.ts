@@ -1182,6 +1182,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('npcShipTrade', async (client, data) => {
       await this.npcShips.handleNpcShipTrade(client, data);
     });
+    this.onMessage('getNpcTradeInfo', async (client, data) => {
+      await this.npcShips.handleGetNpcTradeInfo(client, data);
+    });
     this.onMessage('communicateNpc', async (client, data) => {
       await this.npcShips.handleCommunicateNpc(client, data);
     });

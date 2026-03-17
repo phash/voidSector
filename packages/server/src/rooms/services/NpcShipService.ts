@@ -52,12 +52,9 @@ export class NpcShipService {
         : npc.inventory
       : {};
     const basePrice = NPC_TRADE_BASE_PRICES[data.resource] ?? 10;
-    const distBonus = Math.min(
-      NPC_TRADE_MAX_DISTANCE_BONUS,
-      (Math.abs(npc.x - npc.home_x) + Math.abs(npc.y - npc.home_y)) / NPC_TRADE_DISTANCE_DIVISOR,
-    );
-    let price = Math.round(basePrice * (1 + distBonus));
-    if (npc.role === 'outlaw') price = Math.round(price * NPC_OUTLAW_DISCOUNT);
+    const cap = NPC_TRADE_CAPACITY;
+    const stock = inv[data.resource] ?? 0;
+    const discount = npc.role === 'outlaw' ? NPC_OUTLAW_DISCOUNT : 1;
 
     if (data.action === 'buy') {
       const available = inv[data.resource] ?? 0;
@@ -66,7 +63,8 @@ export class NpcShipService {
         client.send('error', { code: 'NPC_FAIL', message: 'Nicht vorrätig' });
         return;
       }
-      const totalCost = qty * price;
+      const buyPrice = Math.round(basePrice * (1 + (cap - stock) / cap) * discount);
+      const totalCost = qty * buyPrice;
       const credits = await getPlayerCredits(auth.userId);
       if (credits < totalCost) {
         client.send('error', { code: 'NPC_FAIL', message: 'Nicht genug Credits' });
@@ -90,7 +88,8 @@ export class NpcShipService {
         client.send('error', { code: 'NPC_FAIL', message: 'Nichts zu verkaufen' });
         return;
       }
-      const totalEarned = qty * Math.round(price * 0.8);
+      const sellPrice = Math.max(1, Math.round(basePrice * 0.6 * (1 - stock / cap) * discount));
+      const totalEarned = qty * sellPrice;
       await removeFromInventory(auth.userId, 'resource', data.resource, qty);
       await addCredits(auth.userId, totalEarned);
       inv[data.resource] = (inv[data.resource] ?? 0) + qty;
@@ -108,6 +107,52 @@ export class NpcShipService {
       { playerId: auth.userId, npcId: data.npcId, resource: data.resource, amount: data.amount, action: data.action },
       'NpcShipService: trade complete',
     );
+  }
+
+  async handleGetNpcTradeInfo(client: Client, data: { npcId: number }): Promise<void> {
+    const npc = await this.validateNpc(client, data.npcId);
+    if (!npc) return;
+    if (npc.role !== 'trader' && npc.role !== 'outlaw') {
+      client.send('error', { code: 'NPC_FAIL', message: 'Dieser NPC handelt nicht' });
+      return;
+    }
+
+    const inv = npc.inventory
+      ? typeof npc.inventory === 'string' ? JSON.parse(npc.inventory) : npc.inventory
+      : {};
+    const cap = NPC_TRADE_CAPACITY;
+    const isOutlaw = npc.role === 'outlaw';
+    const discount = isOutlaw ? NPC_OUTLAW_DISCOUNT : 1;
+
+    const prices: Record<string, { buy: number; sell: number; stock: number }> = {};
+    for (const [res, basePrice] of Object.entries(NPC_TRADE_BASE_PRICES)) {
+      const stock = inv[res] ?? 0;
+      const buyPrice = stock > 0
+        ? Math.round(basePrice * (1 + (cap - stock) / cap) * discount)
+        : 0;
+      const sellPrice = stock < cap
+        ? Math.round(basePrice * 0.6 * (1 - stock / cap) * discount)
+        : 0;
+      prices[res] = { buy: buyPrice, sell: Math.max(1, sellPrice), stock };
+    }
+
+    // Outlaws may have artefacts
+    const artefacts: Array<{ type: string; price: number }> = [];
+    if (isOutlaw && inv.artefacts) {
+      for (const art of inv.artefacts) {
+        artefacts.push({ type: art, price: Math.round((50 + Math.random() * 50) * discount) });
+      }
+    }
+
+    client.send('npcTradeInfo', {
+      npcId: npc.id,
+      name: npc.name,
+      role: npc.role,
+      level: npc.level ?? 1,
+      prices,
+      artefacts,
+      capacity: cap,
+    });
   }
 
   async handleCommunicateNpc(client: Client, data: { npcId: number }): Promise<void> {

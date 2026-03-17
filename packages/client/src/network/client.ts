@@ -952,6 +952,10 @@ class GameNetwork {
       }
     });
 
+    room.onMessage('npcTradeInfo', (data: any) => {
+      useStore.setState({ npcTradeInfo: data });
+    });
+
     room.onMessage('npcStationUpdate', (data: any) => {
       useStore.getState().setNpcStationData(data);
     });
@@ -2881,6 +2885,10 @@ class GameNetwork {
 
   sendNpcShipTrade(npcId: number, resource: string, amount: number, action: 'buy' | 'sell') {
     this.sectorRoom?.send('npcShipTrade', { npcId, resource, amount, action });
+  }
+
+  sendGetNpcTradeInfo(npcId: number) {
+    this.sectorRoom?.send('getNpcTradeInfo', { npcId });
   }
 
   sendCommunicateNpc(npcId: number) {

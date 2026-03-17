@@ -863,7 +863,7 @@ export function DetailPanel() {
                 {(npc.role === 'trader' || npc.role === 'outlaw') && (
                   <button className="vs-btn" style={{ fontSize: '0.65rem' }}
                     onClick={() => {
-                      navigateToProgram('TRADE');
+                      useStore.setState({ npcTradeOpen: { npcId: npc.id } });
                     }}>
                     [HANDELN]
                   </button>
