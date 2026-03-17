@@ -376,11 +376,61 @@ export const SPECIALIZED_SLOT_INDEX: Partial<Record<ModuleCategory, number>> = {
   factory:   8,
 };
 
-export const UNIQUE_MODULE_CATEGORIES: ModuleCategory[] = ['shield', 'scanner', 'factory'];
+export const UNIQUE_MODULE_CATEGORIES: ModuleCategory[] = ['factory']; // only factory stays unique
 export const DEFENSE_ONLY_CATEGORIES: ModuleCategory[] = ['defense', 'special'];
 
-/** ausbau-XP-Schwellwerte für Extra-Slot-Freischaltung */
-export const ACEP_EXTRA_SLOT_THRESHOLDS: number[] = [500, 2500, 7500, 20000];
+/** Legacy — replaced by ACEP_PATH_SLOT_UNLOCKS */
+export const ACEP_EXTRA_SLOT_THRESHOLDS: number[] = [];
+
+/** Pfad-Slot-Freischaltungen: path → [level, slotLabel, allowedCategories[]] */
+export interface AcepSlotDef {
+  path: import('./types.js').AcepPath;
+  level: number;
+  label: string;
+  categories: string[];
+}
+
+export const ACEP_PATH_SLOT_UNLOCKS: AcepSlotDef[] = [
+  // KAMPF: weapon slots at 2, 4, 7, 10
+  { path: 'kampf', level: 2, label: 'WPN', categories: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'] },
+  { path: 'kampf', level: 4, label: 'WPN', categories: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'] },
+  { path: 'kampf', level: 7, label: 'WPN', categories: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'] },
+  { path: 'kampf', level: 10, label: 'WPN', categories: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'] },
+  // DEFENSE: def-kombi slots at 2, 4, 6, 8, 10
+  { path: 'defense', level: 2, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+  { path: 'defense', level: 4, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+  { path: 'defense', level: 6, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+  { path: 'defense', level: 8, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+  { path: 'defense', level: 10, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+  // TRADER: cargo slots at 2, 4, 8, 10
+  { path: 'trader', level: 2, label: 'CGO', categories: ['cargo'] },
+  { path: 'trader', level: 4, label: 'CGO', categories: ['cargo'] },
+  { path: 'trader', level: 8, label: 'CGO', categories: ['cargo'] },
+  { path: 'trader', level: 10, label: 'CGO', categories: ['cargo'] },
+  // MINER: mining slots at 2, 4, 8, 10
+  { path: 'miner', level: 2, label: 'MIN', categories: ['mining'] },
+  { path: 'miner', level: 4, label: 'MIN', categories: ['mining'] },
+  { path: 'miner', level: 8, label: 'MIN', categories: ['mining'] },
+  { path: 'miner', level: 10, label: 'MIN', categories: ['mining'] },
+  // EXPLORER: kombi slots at 3, 6, 9
+  { path: 'explorer', level: 3, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
+  { path: 'explorer', level: 6, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
+  { path: 'explorer', level: 9, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
+  // AUSBAU: engine/gen/repair slots at 2, 4, 8, 10
+  { path: 'ausbau', level: 2, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+  { path: 'ausbau', level: 4, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+  { path: 'ausbau', level: 8, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+  { path: 'ausbau', level: 10, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+];
+
+/** Get unlocked extra slots based on ACEP path levels */
+export function getAcepUnlockedSlots(
+  pathLevels: Record<string, number>,
+): AcepSlotDef[] {
+  return ACEP_PATH_SLOT_UNLOCKS.filter(
+    (s) => (pathLevels[s.path] ?? 0) >= s.level,
+  );
+}
 
 // ─── ACEP LEVEL THRESHOLDS ───────────────────────────────────────────────────
 

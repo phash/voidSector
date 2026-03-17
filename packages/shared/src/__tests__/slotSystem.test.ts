@@ -4,9 +4,10 @@ import {
   SPECIALIZED_SLOT_INDEX,
   UNIQUE_MODULE_CATEGORIES,
   DEFENSE_ONLY_CATEGORIES,
-  ACEP_EXTRA_SLOT_THRESHOLDS,
+  ACEP_PATH_SLOT_UNLOCKS,
   ACEP_LEVEL_THRESHOLDS,
   ACEP_LEVEL_MULTIPLIERS,
+  getAcepUnlockedSlots,
 } from '../constants.js';
 
 describe('specialized slot system', () => {
@@ -26,9 +27,10 @@ describe('specialized slot system', () => {
     expect(SPECIALIZED_SLOT_INDEX['cargo']).toBe(7);
   });
 
-  it('shield and scanner are unique', () => {
-    expect(UNIQUE_MODULE_CATEGORIES).toContain('shield');
-    expect(UNIQUE_MODULE_CATEGORIES).toContain('scanner');
+  it('only factory is unique (shield and scanner are stackable)', () => {
+    expect(UNIQUE_MODULE_CATEGORIES).toContain('factory');
+    expect(UNIQUE_MODULE_CATEGORIES).not.toContain('shield');
+    expect(UNIQUE_MODULE_CATEGORIES).not.toContain('scanner');
   });
 
   it('defense and special are extra-slot-only', () => {
@@ -36,9 +38,16 @@ describe('specialized slot system', () => {
     expect(DEFENSE_ONLY_CATEGORIES).toContain('special');
   });
 
-  it('extra slot unlocks at ausbau XP 500, 2500, 7500, 20000', () => {
-    expect(ACEP_EXTRA_SLOT_THRESHOLDS[0]).toBe(500);
-    expect(ACEP_EXTRA_SLOT_THRESHOLDS[3]).toBe(20000);
+  it('extra slots unlocked via ACEP path levels (getAcepUnlockedSlots)', () => {
+    // kampf level 2 unlocks first WPN slot
+    const slots = getAcepUnlockedSlots({ kampf: 2 });
+    expect(slots).toHaveLength(1);
+    expect(slots[0].label).toBe('WPN');
+    // kampf level 4 unlocks two WPN slots
+    const slots2 = getAcepUnlockedSlots({ kampf: 4 });
+    expect(slots2).toHaveLength(2);
+    // ACEP_PATH_SLOT_UNLOCKS has entries for all paths
+    expect(ACEP_PATH_SLOT_UNLOCKS.length).toBeGreaterThan(0);
   });
 
   it('ACEP level 1 = 1.0 multiplier', () => {

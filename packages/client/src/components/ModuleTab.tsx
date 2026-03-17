@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { SPECIALIZED_SLOT_CATEGORIES, MODULE_MAP, getExtraSlotCount, validateModuleInstall } from '@void-sector/shared';
+import { SPECIALIZED_SLOT_CATEGORIES, MODULE_MAP, getExtraSlotCount, validateModuleInstall, getAcepUnlockedSlots } from '@void-sector/shared';
 
 const CAT_LABELS: Record<string, string> = {
   generator: 'GEN', drive: 'DRV', weapon: 'WPN', armor: 'ARM',
@@ -52,10 +52,9 @@ export function ModuleTab() {
     );
   }
 
-  const ausbauXp = ship.acepXp?.ausbau ?? 0;
-  const acepXp = ship.acepXp ?? { ausbau: 0, intel: 0, kampf: 0, explorer: 0 };
-  const extraSlotCount = getExtraSlotCount(ausbauXp);
-  const totalSlots = SPECIALIZED_SLOT_CATEGORIES.length + extraSlotCount;
+  const acepXp = ship.acepXp ?? { ausbau: 0, intel: 0, kampf: 0, explorer: 0, defense: 0, trader: 0, miner: 0 };
+  const unlockedExtraSlots = getAcepUnlockedSlots(acepXp as Record<string, number>);
+  const totalSlots = SPECIALIZED_SLOT_CATEGORIES.length + unlockedExtraSlots.length;
   const moduleBySlot = new Map(ship.modules.map((m) => [m.slotIndex, m]));
   const installedCount = ship.modules.length;
 
@@ -66,9 +65,9 @@ export function ModuleTab() {
       cat,
       module: moduleBySlot.get(idx) ?? null,
     })),
-    ...Array.from({ length: extraSlotCount }, (_, i) => ({
+    ...unlockedExtraSlots.map((slotDef, i) => ({
       index: SPECIALIZED_SLOT_CATEGORIES.length + i,
-      label: `+${i + 1}`,
+      label: slotDef.label,
       cat: null as string | null,
       module: moduleBySlot.get(SPECIALIZED_SLOT_CATEGORIES.length + i) ?? null,
     })),

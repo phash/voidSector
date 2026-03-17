@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { calculateShipStats, getAcepLevel, getExtraSlotCount } from '../shipCalculator.js';
 import type { AcepXpSnapshot } from '../types.js';
 
-const noAcep: AcepXpSnapshot = { ausbau: 0, intel: 0, kampf: 0, explorer: 0 };
+const noAcep: AcepXpSnapshot = { ausbau: 0, intel: 0, kampf: 0, explorer: 0, defense: 0, trader: 0, miner: 0 };
 
 describe('ACEP level calculation', () => {
   it('level 1 at 0 XP', () => expect(getAcepLevel(0)).toBe(1));
@@ -13,11 +13,11 @@ describe('ACEP level calculation', () => {
   it('level 2 at 499 XP (below threshold)', () => expect(getAcepLevel(499)).toBe(1));
 });
 
-describe('extra slot count', () => {
+describe('extra slot count (legacy — ACEP_EXTRA_SLOT_THRESHOLDS is empty)', () => {
   it('0 extra slots at ausbau 0', () => expect(getExtraSlotCount(0)).toBe(0));
-  it('1 extra slot at ausbau 500', () => expect(getExtraSlotCount(500)).toBe(1));
-  it('2 extra slots at ausbau 2500', () => expect(getExtraSlotCount(2500)).toBe(2));
-  it('4 extra slots at ausbau 20000', () => expect(getExtraSlotCount(20000)).toBe(4));
+  it('0 extra slots at ausbau 500 (legacy thresholds removed)', () => expect(getExtraSlotCount(500)).toBe(0));
+  it('0 extra slots at ausbau 2500 (legacy thresholds removed)', () => expect(getExtraSlotCount(2500)).toBe(0));
+  it('0 extra slots at ausbau 20000 (legacy thresholds removed)', () => expect(getExtraSlotCount(20000)).toBe(0));
   it('0 extra slots at ausbau 499', () => expect(getExtraSlotCount(499)).toBe(0));
 });
 

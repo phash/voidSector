@@ -1230,6 +1230,10 @@ export interface AcepXpSnapshot {
   intel: number;
   kampf: number;
   explorer: number;
+  defense: number;
+  trader: number;
+  miner: number;
+  [key: string]: number; // allow indexing by path name
 }
 
 // Old ModuleDefinition removed — use the new one from moduleDefinitions.ts

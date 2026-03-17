@@ -119,7 +119,7 @@ describe('validateModuleInstall', () => {
     // slot 6 is mining; ion_drive_mk1 is category drive → mismatch
     const result = validateModuleInstall([], 'ion_drive_mk1', 6);
     expect(result.valid).toBe(false);
-    expect(result.error).toContain('Specialized Slot');
+    expect(result.error).toMatch(/mining/i);
   });
 
   it('rejects occupied slot', () => {
