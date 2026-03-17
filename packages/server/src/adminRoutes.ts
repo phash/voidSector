@@ -1026,6 +1026,41 @@ adminRouter.get('/drones', async (_req: Request, res: Response) => {
   }
 });
 
+// ── NPC Spawn ────────────────────────────────────────────────────────
+
+adminRouter.post('/npc/spawn', async (req: Request, res: Response) => {
+  try {
+    const { role, x, y, level, name } = req.body;
+    if (!role || !['trader', 'military', 'outlaw'].includes(role)) {
+      res.status(400).json({ error: 'role must be trader, military, or outlaw' });
+      return;
+    }
+    if (typeof x !== 'number' || typeof y !== 'number') {
+      res.status(400).json({ error: 'x and y must be numbers' });
+      return;
+    }
+    const npcLevel = level ?? 1;
+    const npcName = name ?? `Admin-${role}-${Date.now() % 10000}`;
+    const id = await civQueries.spawnNpcShip({
+      faction: 'humans',
+      ship_type: 'combat',
+      role,
+      x, y,
+      home_x: x,
+      home_y: y,
+      level: npcLevel,
+      name: npcName,
+      inventory: role === 'trader' ? { ore: 50, gas: 30, crystal: 20 } : {},
+      patrol_state: role === 'outlaw' ? { anchorX: x, anchorY: y, roamRadius: 8 } : {},
+    });
+    await logAdminEvent('spawn_npc', { role, x, y, level: npcLevel, name: npcName, id });
+    res.json({ ok: true, id, name: npcName });
+  } catch (err) {
+    logger.error({ err }, 'Admin NPC spawn error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ── Helpers ─────────────────────────────────────────────────────────
 
 function getRawBody(req: Request): Promise<string> {

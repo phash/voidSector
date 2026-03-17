@@ -1172,9 +1172,9 @@ export const CIV_SPIRAL_MAX_STEPS = 200;
 
 // NPC Ship Roles
 export const NPC_SPAWN_COUNTS = {
-  inner: { military: 3, outlaw: 2, trader: 4 },
-  middle: { military: 6, outlaw: 6, trader: 4 },
-  outer: { military: 12, outlaw: 2, trader: 4 },
+  inner: { military: 60, outlaw: 10, trader: 80 },   // x20 (outlaws x5, weak — training zone)
+  middle: { military: 120, outlaw: 120, trader: 80 }, // x20
+  outer: { military: 240, outlaw: 40, trader: 80 },   // x20
 } as const;
 
 export function getNpcZone(qx: number, qy: number): 'inner' | 'middle' | 'outer' {
@@ -1186,7 +1186,7 @@ export function getNpcZone(qx: number, qy: number): 'inner' | 'middle' | 'outer'
 
 export const NPC_MILITARY_LEVELS: Record<string, number> = { inner: 2, middle: 4, outer: 6 };
 export const NPC_OUTLAW_LEVEL_RANGE: Record<string, [number, number]> = {
-  inner: [1, 3], middle: [2, 5], outer: [3, 7],
+  inner: [1, 1], middle: [2, 5], outer: [3, 7],
 };
 export const NPC_TRADE_BASE_PRICES: Record<string, number> = { ore: 8, gas: 12, crystal: 20 };
 export const NPC_TRADE_MAX_DISTANCE_BONUS = 0.5;
