@@ -182,7 +182,7 @@ export function ModuleTab() {
                 >
                   <div>
                     <div style={{ color: isSelected ? 'var(--color-primary)' : '#FFB000', fontSize: '0.95rem' }}>{def.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 2 }}>{def.primaryEffect.label}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 2 }}>{def.description ?? ''}</div>
                   </div>
                   <span style={{ color: isSelected ? 'var(--color-primary)' : '#666', fontSize: '0.8rem' }}>
                     {isSelected ? t('module.selectSlot') : t('module.select')}
