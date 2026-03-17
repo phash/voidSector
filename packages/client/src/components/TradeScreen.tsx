@@ -17,6 +17,7 @@ import type { ResourceType, DataSlate, ConfigureRouteMessage } from '@void-secto
 import { useTranslation } from 'react-i18next';
 import { btn } from '../ui-helpers';
 import { InlineError } from './InlineError';
+import { StationTradeTab } from './StationTradeTab';
 import { findNearestStation } from '../utils/sectorUtils';
 
 const btnStyle: React.CSSProperties = {
@@ -164,24 +165,26 @@ export function TradeScreen() {
         )}
       </div>
 
-      <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
-        <label>{t('status.amount')}: </label>
-        <input
-          type="number"
-          min={1}
-          value={amount}
-          onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
-          style={{
-            width: 50,
-            background: 'transparent',
-            border: '1px solid var(--color-dim)',
-            color: 'var(--color-primary)',
-            fontFamily: 'var(--font-mono)',
-            padding: '2px 4px',
-          }}
-        />
-      </div>
-      {tab === 'npc' && tradeMessage && (
+      {tab !== 'npc' && (
+        <div style={{ fontSize: '0.7rem', marginBottom: 8 }}>
+          <label>{t('status.amount')}: </label>
+          <input
+            type="number"
+            min={1}
+            value={amount}
+            onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
+            style={{
+              width: 50,
+              background: 'transparent',
+              border: '1px solid var(--color-dim)',
+              color: 'var(--color-primary)',
+              fontFamily: 'var(--font-mono)',
+              padding: '2px 4px',
+            }}
+          />
+        </div>
+      )}
+      {tradeMessage && (
         <div style={{
           color: '#FFB000',
           background: 'rgba(255,176,0,0.08)',
@@ -195,7 +198,10 @@ export function TradeScreen() {
         </div>
       )}
 
-      {tab === 'npc' && (
+      {tab === 'npc' && <StationTradeTab />}
+
+      {/* OLD NPC TAB — replaced by StationTradeTab */}
+      {false && (
         <div>
           {isStation && npcStationData ? (
             <>
