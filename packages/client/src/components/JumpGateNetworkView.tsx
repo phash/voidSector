@@ -181,11 +181,18 @@ export function JumpGateNetworkView() {
                 style={{ cursor: 'pointer' }}
                 onClick={() => setSelectedId(isSelected ? null : node.id)}
               >
+                {/* Invisible hit target for easy clicking */}
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={20}
+                  fill="transparent"
+                />
                 <circle
                   cx={node.x}
                   cy={node.y}
                   r={isSelected ? 12 : 9}
-                  fill={isSelected ? color : 'none'}
+                  fill={isSelected ? color : 'rgba(255,255,255,0.05)'}
                   stroke={color}
                   strokeWidth={isSelected ? 2.5 : 1.5}
                   filter={isSelected ? 'url(#glow)' : undefined}
@@ -210,6 +217,7 @@ export function JumpGateNetworkView() {
                   fontSize="8"
                   textAnchor="middle"
                   fontFamily="var(--font-mono)"
+                  style={{ pointerEvents: 'none' }}
                 >
                   ({innerCoord(node.sectorX)}, {innerCoord(node.sectorY)})
                 </text>
@@ -220,6 +228,7 @@ export function JumpGateNetworkView() {
                   fontSize="7"
                   textAnchor="middle"
                   fontFamily="var(--font-mono)"
+                  style={{ pointerEvents: 'none' }}
                 >
                   {node.hops}H · {node.fuelCost}F
                   {node.totalCost > 0 ? ` · ${node.totalCost}CR` : ''}
@@ -241,9 +250,10 @@ export function JumpGateNetworkView() {
       <div
         style={{
           padding: '8px 12px',
-          borderTop: '1px solid #333',
-          fontSize: '0.7rem',
-          minHeight: 40,
+          borderTop: selected ? '1px solid #00BFFF' : '1px solid #333',
+          background: selected ? 'rgba(0, 191, 255, 0.08)' : 'transparent',
+          fontSize: '0.75rem',
+          minHeight: 44,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
