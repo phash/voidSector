@@ -1122,25 +1122,37 @@ export function DetailPanel() {
             const isBlackHole = (selectedSector as any).environment === 'black_hole';
             if (!isPlayerHere && !isAdjacent && !autopilot?.active && !isBlackHole) {
               const shipStats = ship?.stats ?? null;
+              const hdRange = shipStats?.hyperdriveRange ?? 0;
+              const noHyperdrive = hdRange <= 0;
+              const isPartial = distance > hdRange && hdRange > 0;
               const apCost = shipStats ? calcHyperjumpAP(shipStats.engineSpeed) : 0;
-              const fuelCost = shipStats ? calcHyperjumpFuel(shipStats.fuelPerJump, distance) : 0;
+              const fuelCost = shipStats ? calcHyperjumpFuel(shipStats.fuelPerJump, isPartial ? hdRange : distance) : 0;
               const hasEnoughFuel = (fuel?.current ?? 0) >= fuelCost;
               return (
                 <>
                   <button
                     className="vs-btn"
-                    disabled={!hasEnoughFuel}
+                    disabled={noHyperdrive || !hasEnoughFuel}
                     style={{
                       marginTop: 8,
                       display: 'block',
                       width: '100%',
-                      opacity: hasEnoughFuel ? 1 : 0.5,
+                      opacity: noHyperdrive || !hasEnoughFuel ? 0.5 : 1,
                     }}
                     onClick={() => network.sendHyperJump(selectedSector.x, selectedSector.y)}
                   >
-                    [HYPERJUMP ({innerCoord(selectedSector.x)}, {innerCoord(selectedSector.y)})]
-                    {shipStats ? ` ${apCost}AP / ${fuelCost}F` : ''}
+                    {noHyperdrive
+                      ? '[HYPERDRIVE NICHT INSTALLIERT]'
+                      : isPartial
+                        ? `[PARTIAL JUMP — ${hdRange}/${distance} Sektoren] ${apCost}AP / ${fuelCost}F`
+                        : `[HYPERJUMP (${innerCoord(selectedSector.x)}, ${innerCoord(selectedSector.y)})] ${apCost}AP / ${fuelCost}F`
+                    }
                   </button>
+                  {noHyperdrive && (
+                    <div style={{ fontSize: '0.6rem', color: '#FF3333', marginTop: 2 }}>
+                      Antriebsmodul in ACEP → MODULE einbauen
+                    </div>
+                  )}
                   <InlineError codes={['HYPERJUMP_FAIL']} />
                 </>
               );
