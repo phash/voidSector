@@ -1,0 +1,4 @@
+-- Migration 082: Add 3 new ACEP paths (defense, trader, miner)
+ALTER TABLE ships ADD COLUMN IF NOT EXISTS acep_defense_xp INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE ships ADD COLUMN IF NOT EXISTS acep_trader_xp INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE ships ADD COLUMN IF NOT EXISTS acep_miner_xp INTEGER NOT NULL DEFAULT 0;

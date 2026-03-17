@@ -117,7 +117,7 @@ export class MiningService {
       await addToInventory(playerId, 'resource', result.resource, result.mined);
       const miningXp = Math.floor(result.mined / 5);
       if (miningXp > 0) {
-        addAcepXpForPlayer(playerId, 'ausbau', miningXp).catch(() => {});
+        addAcepXpForPlayer(playerId, 'miner', miningXp).catch(() => {});
       }
       awardWissenAndNotify(client, playerId, 1);  // +1 per mining load
     }

@@ -1122,22 +1122,37 @@ export function getAcepRadarPattern(xp: {
   return ACEP_RADAR_PATTERNS[tier][path];
 }
 
-export const ACEP_PATH_CAP_SHARED = 50;
+export const ACEP_PATH_CAP = 10; // max level per path
+export const ACEP_ALL_PATHS: import('./types.js').AcepPath[] = ['ausbau', 'intel', 'kampf', 'explorer', 'defense', 'trader', 'miner'];
+export const ACEP_PATH_COLORS: Record<string, string> = {
+  ausbau: '#FFB000', intel: '#4488FF', kampf: '#FF4444', explorer: '#44FFAA',
+  defense: '#FF44FF', trader: '#FFDD22', miner: '#88FF44',
+};
 
-export const ACEP_BOOST_COST_TIERS = [
-  { minXp: 40, credits: 600, wissen: 15 },
-  { minXp: 20, credits: 300, wissen: 8  },
-  { minXp: 0,  credits: 100, wissen: 3  },
-] as const;
-
-/** Returns boost cost for +5 XP at the given current-path XP, or null if at cap. */
+/** Boost cost for +1 level. Credits = 100×2^(level-1), Wissen = 5×2^(level-1).
+ *  Soft global cap: costMult = 1 + totalLevels/10 */
 export function getAcepBoostCost(
-  currentXp: number,
+  currentLevel: number,
+  totalLevels: number,
 ): { credits: number; wissen: number } | null {
-  if (currentXp >= ACEP_PATH_CAP_SHARED) return null;
-  const tier = ACEP_BOOST_COST_TIERS.find((t) => currentXp >= t.minXp)!;
-  return { credits: tier.credits, wissen: tier.wissen };
+  if (currentLevel >= ACEP_PATH_CAP) return null;
+  const nextLevel = currentLevel + 1;
+  const baseCr = 100 * Math.pow(2, nextLevel - 1);
+  const baseW = 5 * Math.pow(2, nextLevel - 1);
+  const mult = 1 + totalLevels / 10;
+  return {
+    credits: Math.round(baseCr * mult),
+    wissen: Math.round(baseW * mult),
+  };
 }
+
+/** Auto-XP threshold to reach a level passively */
+export function getAcepAutoXpThreshold(level: number): number {
+  return 10 * (Math.pow(2, level) - 1);
+}
+
+// Legacy compat
+export const ACEP_PATH_CAP_SHARED = ACEP_PATH_CAP;
 
 // Universe Tick Engine constants
 export const UNIVERSE_TICK_MS = 5_000; // 5 seconds per tick

@@ -5,11 +5,14 @@ import { network } from '../network/client';
 import type { AcepPath } from '@void-sector/shared';
 import { getAcepBoostCost } from '@void-sector/shared';
 
-const PATHS: Array<{ key: AcepPath; labelKey: string; color: string }> = [
-  { key: 'ausbau',   labelKey: 'acep.paths.ausbau',   color: '#FFB000' },
-  { key: 'intel',    labelKey: 'acep.paths.intel',     color: '#4af' },
-  { key: 'kampf',    labelKey: 'acep.paths.kampf',     color: '#f44' },
-  { key: 'explorer', labelKey: 'acep.paths.explorer',  color: '#4fa' },
+const PATHS: Array<{ key: AcepPath; label: string; color: string }> = [
+  { key: 'ausbau',   label: 'AUSBAU',   color: '#FFB000' },
+  { key: 'intel',    label: 'INTEL',     color: '#4488FF' },
+  { key: 'kampf',    label: 'KAMPF',     color: '#FF4444' },
+  { key: 'explorer', label: 'EXPLORER',  color: '#44FFAA' },
+  { key: 'defense',  label: 'DEFENSE',   color: '#FF44FF' },
+  { key: 'trader',   label: 'TRADER',    color: '#FFDD22' },
+  { key: 'miner',    label: 'MINER',     color: '#88FF44' },
 ];
 
 const TRAIT_LABEL_KEYS: Record<string, string> = {
@@ -128,41 +131,46 @@ export function AcepTab() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <div style={sectionHdr}>{t('acep.developmentPaths')}</div>
         <div style={{ color: '#555', fontSize: '0.85rem' }}>
-          {t('acep.total')}: {xp.total ?? 0}/100
+          STUFEN: {xp.total ?? 0}/70
         </div>
       </div>
       <div style={{ color: '#bb44ff', fontSize: '0.75rem', marginBottom: 8, letterSpacing: '0.06em' }}>
         WISSEN: {wissen} / [ {wissenSpent} ]
+        {(xp.total ?? 0) > 0 && (
+          <span style={{ color: '#555', marginLeft: 8 }}>
+            KOSTEN ×{(1 + (xp.total ?? 0) / 10).toFixed(1)}
+          </span>
+        )}
       </div>
-      {PATHS.map(({ key, labelKey, color }) => {
-        const pathXp = xp[key] ?? 0;
-        const cost = getAcepBoostCost(pathXp);
-        const canBoost = cost !== null && credits >= cost.credits && wissen >= cost.wissen && xp.total < 100;
+      {PATHS.map(({ key, label, color }) => {
+        const level = xp[key] ?? 0;
+        const cost = getAcepBoostCost(level, xp.total ?? 0);
+        const canBoost = cost !== null && credits >= cost.credits && wissen >= cost.wissen;
         return (
-          <div key={key} style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ color }}>{t(labelKey)}</span>
-              <span style={{ color: '#888', fontSize: '0.95rem' }}>{pathXp}/50 · Lv{Math.floor(pathXp / 10)}</span>
+          <div key={key} style={{ marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+              <span style={{ color, fontSize: '0.85rem' }}>{label}</span>
+              <span style={{ color: '#888', fontSize: '0.85rem' }}>{level}/10</span>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <div style={barTrack}>
-                <div style={{ width: `${(pathXp / 50) * 100}%`, height: '100%', background: color }} />
+                <div style={{ width: `${(level / 10) * 100}%`, height: '100%', background: color }} />
               </div>
               {cost ? (
                 <button
-                  style={{ ...btnStyle, border: `1px solid ${color}`, color, opacity: canBoost ? 1 : 0.35 }}
+                  style={{ ...btnStyle, border: `1px solid ${color}`, color, opacity: canBoost ? 1 : 0.35, fontSize: '0.7rem' }}
                   disabled={!canBoost}
-                  title={`+5 XP kostet ${cost.credits} CR · ${cost.wissen} W`}
+                  title={`+1 Level: ${cost.credits} CR · ${cost.wissen} W`}
                   onClick={() => network.sendAcepBoost(key)}
                 >
-                  [+5]
+                  [+1]
                 </button>
               ) : (
-                <span style={{ color: '#00FF88', fontSize: '0.8rem' }}>MAX</span>
+                <span style={{ color: '#00FF88', fontSize: '0.75rem' }}>MAX</span>
               )}
             </div>
             {cost && (
-              <div style={{ color: '#555', fontSize: '0.8rem', marginTop: 2 }}>
+              <div style={{ color: '#555', fontSize: '0.7rem', marginTop: 1 }}>
                 {cost.credits} CR · {cost.wissen} W
               </div>
             )}

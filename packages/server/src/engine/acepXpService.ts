@@ -1,101 +1,77 @@
 /**
- * ACEP XP Engine
- * Ships accumulate experience across 4 specialisation paths.
- * Budget: 100 XP total, max 50 per path — forces specialisation.
+ * ACEP XP Engine v2
+ * Ships accumulate experience across 7 specialisation paths.
+ * Levels 1-10 per path, exponential costs, soft global cap.
  */
 
 import { query } from '../db/client.js';
 import { calculateTraits } from './traitCalculator.js';
 import { deductCredits, addCredits, deductWissen } from '../db/queries.js';
 import {
-  ACEP_BOOST_COST_TIERS,
+  ACEP_PATH_CAP,
+  ACEP_ALL_PATHS,
   getAcepBoostCost,
   type AcepPath,
 } from '@void-sector/shared';
 
 // Re-export so existing server imports keep working
 export type { AcepPath };
-export { ACEP_BOOST_COST_TIERS, getAcepBoostCost };
-
-export const ACEP_PATH_CAP = 50;
-export const ACEP_TOTAL_CAP = 100;
+export { getAcepBoostCost };
 
 export interface AcepXpSummary {
   ausbau: number;
   intel: number;
   kampf: number;
   explorer: number;
+  defense: number;
+  trader: number;
+  miner: number;
   total: number;
 }
 
 /**
  * Gameplay bonuses derived from ACEP XP.
- * These are applied on top of faction bonuses.
  */
 export interface AcepEffects {
-  // AUSBAU — construction & logistics
-  extraModuleSlots: number; // 0–4 additional module slots
-  cargoMultiplier: number; // 1.0 – 1.5 (cargo capacity multiplier)
-  miningBonus: number; // additive fraction for mining rate: 0 – 0.3
-  // INTEL — scanning & navigation
-  scanRadiusBonus: number; // additional sectors added to scan radius: 0–3
-  stalenessMultiplier: number; // how much longer discovered sectors stay fresh: 1.0–2.0
-  // KAMPF — combat
-  combatDamageBonus: number; // additive faction to combatMultiplier: 0 – 0.2
-  shieldRegenBonus: number; // fraction: 0 – 0.3
-  // EXPLORER — exploration
-  ancientDetection: boolean; // reveals ancient ruin markers on radar
-  anomalyChanceBonus: number; // extra probability for anomaly scan events: 0 – 0.1
-  helionDecoderEnabled: boolean; // helion decoder without module at 50 XP
-  wreckDetection: boolean; // reveals Tier-4/5 wrecks on radar without local scan
+  extraModuleSlots: number;
+  cargoMultiplier: number;
+  miningBonus: number;
+  scanRadiusBonus: number;
+  stalenessMultiplier: number;
+  combatDamageBonus: number;
+  shieldRegenBonus: number;
+  ancientDetection: boolean;
+  anomalyChanceBonus: number;
+  helionDecoderEnabled: boolean;
+  wreckDetection: boolean;
 }
 
-/** Compute gameplay effects from current ACEP XP (pure, no DB call). */
 export function getAcepEffects(xp: AcepXpSummary): AcepEffects {
-  const a = xp.ausbau;
-  const i = xp.intel;
-  const k = xp.kampf;
-  const e = xp.explorer;
-
   return {
-    // AUSBAU: slots at 10/25/40/50, cargo grows linearly
-    extraModuleSlots: a >= 50 ? 4 : a >= 40 ? 3 : a >= 25 ? 2 : a >= 10 ? 1 : 0,
-    cargoMultiplier: 1.0 + a * 0.01, // +1% per XP, max +50% at cap
-    miningBonus: a * 0.006, // up to +30% mining rate at cap
-
-    // INTEL: +1 radius at 20 XP, +2 at 40 XP, +3 at 50 XP; staleness doubles at cap
-    scanRadiusBonus: i >= 50 ? 3 : i >= 40 ? 2 : i >= 20 ? 1 : 0,
-    stalenessMultiplier: 1.0 + i * 0.02, // up to 2.0× at cap
-
-    // KAMPF: damage up to +20%, shield regen up to +30%
-    combatDamageBonus: k * 0.004,
-    shieldRegenBonus: k * 0.006,
-
-    // EXPLORER: ancient detection at 25 XP, helion decoder at 50 XP
-    ancientDetection: e >= 25,
-    anomalyChanceBonus: e * 0.002, // up to +0.1 at cap
-    helionDecoderEnabled: e >= 50,
-    wreckDetection: e >= 25,
+    extraModuleSlots: Math.floor(xp.ausbau / 3),
+    cargoMultiplier: 1.0 + xp.ausbau * 0.03,
+    miningBonus: xp.miner * 0.03,
+    scanRadiusBonus: Math.floor(xp.intel / 3),
+    stalenessMultiplier: 1.0 + xp.intel * 0.1,
+    combatDamageBonus: xp.kampf * 0.02,
+    shieldRegenBonus: xp.defense * 0.03,
+    ancientDetection: xp.explorer >= 5,
+    anomalyChanceBonus: xp.explorer * 0.01,
+    helionDecoderEnabled: xp.explorer >= 10,
+    wreckDetection: xp.intel >= 5,
   };
 }
 
-/**
- * AUSBAU gates: research lab max tier and factory access based on AUSBAU XP.
- * - AUSBAU 0-9: Lab tier 1 only, no factory
- * - AUSBAU 10-24: Lab tier 2, factory basic recipes
- * - AUSBAU 25-39: Lab tier 3, factory advanced recipes
- * - AUSBAU 40-49: Lab tier 4, factory all recipes
- * - AUSBAU 50: Lab tier 5 (max), factory all recipes + speed bonus
- */
-export function getAusbauGating(ausbauXp: number): {
+/** AUSBAU gating for lab/factory access */
+export function getAusbauGating(ausbauLevel: number): {
   maxLabTier: number;
   factoryUnlocked: boolean;
-  factorySpeedBonus: number; // 0.0 to 0.5
+  factorySpeedBonus: number;
 } {
-  if (ausbauXp >= 50) return { maxLabTier: 5, factoryUnlocked: true, factorySpeedBonus: 0.5 };
-  if (ausbauXp >= 40) return { maxLabTier: 4, factoryUnlocked: true, factorySpeedBonus: 0.3 };
-  if (ausbauXp >= 25) return { maxLabTier: 3, factoryUnlocked: true, factorySpeedBonus: 0.15 };
-  if (ausbauXp >= 10) return { maxLabTier: 2, factoryUnlocked: true, factorySpeedBonus: 0 };
+  if (ausbauLevel >= 10) return { maxLabTier: 5, factoryUnlocked: true, factorySpeedBonus: 0.5 };
+  if (ausbauLevel >= 7) return { maxLabTier: 4, factoryUnlocked: true, factorySpeedBonus: 0.3 };
+  if (ausbauLevel >= 5) return { maxLabTier: 3, factoryUnlocked: true, factorySpeedBonus: 0.15 };
+  if (ausbauLevel >= 2) return { maxLabTier: 2, factoryUnlocked: true, factorySpeedBonus: 0 };
   return { maxLabTier: 1, factoryUnlocked: false, factorySpeedBonus: 0 };
 }
 
@@ -104,44 +80,49 @@ const COL: Record<AcepPath, string> = {
   intel: 'acep_intel_xp',
   kampf: 'acep_kampf_xp',
   explorer: 'acep_explorer_xp',
+  defense: 'acep_defense_xp',
+  trader: 'acep_trader_xp',
+  miner: 'acep_miner_xp',
 };
+
+const ALL_COLS = Object.values(COL).join(', ');
 
 /** Read current ACEP XP for a ship. Returns zeroes if ship not found. */
 export async function getAcepXpSummary(shipId: string): Promise<AcepXpSummary> {
-  const { rows } = await query<{
-    acep_ausbau_xp: number;
-    acep_intel_xp: number;
-    acep_kampf_xp: number;
-    acep_explorer_xp: number;
-  }>(
-    `SELECT acep_ausbau_xp, acep_intel_xp, acep_kampf_xp, acep_explorer_xp
-     FROM ships WHERE id = $1`,
+  const { rows } = await query<Record<string, number>>(
+    `SELECT ${ALL_COLS} FROM ships WHERE id = $1`,
     [shipId],
   );
-  if (rows.length === 0) return { ausbau: 0, intel: 0, kampf: 0, explorer: 0, total: 0 };
+  if (rows.length === 0) {
+    return { ausbau: 0, intel: 0, kampf: 0, explorer: 0, defense: 0, trader: 0, miner: 0, total: 0 };
+  }
   const r = rows[0];
-  const ausbau = r.acep_ausbau_xp;
-  const intel = r.acep_intel_xp;
-  const kampf = r.acep_kampf_xp;
-  const explorer = r.acep_explorer_xp;
-  return { ausbau, intel, kampf, explorer, total: ausbau + intel + kampf + explorer };
+  const ausbau = r.acep_ausbau_xp ?? 0;
+  const intel = r.acep_intel_xp ?? 0;
+  const kampf = r.acep_kampf_xp ?? 0;
+  const explorer = r.acep_explorer_xp ?? 0;
+  const defense = r.acep_defense_xp ?? 0;
+  const trader = r.acep_trader_xp ?? 0;
+  const miner = r.acep_miner_xp ?? 0;
+  return {
+    ausbau, intel, kampf, explorer, defense, trader, miner,
+    total: ausbau + intel + kampf + explorer + defense + trader + miner,
+  };
 }
 
 /**
  * Add XP to a ship's specialisation path.
- * Respects per-path cap (50) and total cap (100).
- * No-ops silently if caps are already reached.
+ * Respects per-path cap (10 levels).
  */
 export async function addAcepXp(shipId: string, path: AcepPath, amount: number): Promise<void> {
   if (amount <= 0) return;
   const current = await getAcepXpSummary(shipId);
 
   const pathValue = current[path];
-  const remaining_path = ACEP_PATH_CAP - pathValue;
-  const remaining_total = ACEP_TOTAL_CAP - current.total;
-  const effective = Math.min(amount, remaining_path, remaining_total);
+  const remaining = ACEP_PATH_CAP - pathValue;
+  const effective = Math.min(amount, remaining);
 
-  if (effective <= 0) return; // Already capped
+  if (effective <= 0) return;
 
   const col = COL[path];
   await query(`UPDATE ships SET ${col} = ${col} + $1 WHERE id = $2`, [effective, shipId]);
@@ -153,8 +134,8 @@ export async function addAcepXp(shipId: string, path: AcepPath, amount: number):
 }
 
 /**
- * Add ACEP XP for a player's active ship (looks up ship internally).
- * Fire-and-forget safe — call with .catch(() => {}) for non-critical hooks.
+ * Add ACEP XP for a player's active ship.
+ * Fire-and-forget safe.
  */
 export async function addAcepXpForPlayer(
   playerId: string,
@@ -169,12 +150,12 @@ export async function addAcepXpForPlayer(
   await addAcepXp(rows[0].id, path, amount);
 }
 
-// Backward-compat alias for server code that imported getBoostCost
+// Backward-compat alias
 export { getAcepBoostCost as getBoostCost };
 
 /**
- * Spend Credits + Wissen to add +5 XP to a specific ACEP path.
- * Returns an error string on failure, undefined on success.
+ * Spend Credits + Wissen to add +1 level to a specific ACEP path.
+ * Exponential costs with soft global cap.
  */
 export async function boostAcepPath(
   shipId: string,
@@ -182,21 +163,20 @@ export async function boostAcepPath(
   playerId: string,
 ): Promise<string | undefined> {
   const xp = await getAcepXpSummary(shipId);
-  if (xp.total >= ACEP_TOTAL_CAP) return 'ACEP-Gesamt-Cap erreicht';
+  const currentLevel = xp[path];
 
-  const currentPathXp = xp[path];
-  const cost = getAcepBoostCost(currentPathXp);
-  if (!cost) return 'Pfad-Cap erreicht';
+  const cost = getAcepBoostCost(currentLevel, xp.total);
+  if (!cost) return 'Pfad-Cap erreicht (Level 10)';
 
   const creditsOk = await deductCredits(playerId, cost.credits);
-  if (!creditsOk) return 'Zu wenig Credits';
+  if (!creditsOk) return `Zu wenig Credits (${cost.credits} benötigt)`;
 
   const wissenOk = await deductWissen(playerId, cost.wissen);
   if (!wissenOk) {
-    await addCredits(playerId, cost.credits); // refund credits
-    return 'Zu wenig Wissen';
+    await addCredits(playerId, cost.credits); // refund
+    return `Zu wenig Wissen (${cost.wissen} benötigt)`;
   }
 
-  await addAcepXp(shipId, path, 5);
-  return undefined; // success
+  await addAcepXp(shipId, path, 1);
+  return undefined;
 }

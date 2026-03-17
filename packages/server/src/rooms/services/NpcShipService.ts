@@ -103,6 +103,10 @@ export class NpcShipService {
       client.send('cargoUpdate', await getCargoState(auth.userId));
     }
 
+    // Auto-XP: trader path
+    const { addAcepXpForPlayer } = await import('../../engine/acepXpService.js');
+    addAcepXpForPlayer(auth.userId, 'trader', 1).catch(() => {});
+
     logger.info(
       { playerId: auth.userId, npcId: data.npcId, resource: data.resource, amount: data.amount, action: data.action },
       'NpcShipService: trade complete',
