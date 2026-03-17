@@ -10,6 +10,8 @@ export function CommsScreen() {
   const channel = useStore((s) => s.chatChannel);
   const setChatChannel = useStore((s) => s.setChatChannel);
   const clearAlert = useStore((s) => s.clearAlert);
+  const channelAlerts = useStore((s) => s.channelAlerts);
+  const clearChannelAlert = useStore((s) => s.clearChannelAlert);
   const recentContacts = useStore((s) => s.recentContacts);
   const addRecentContact = useStore((s) => s.addRecentContact);
   const openContextMenu = useStore((s) => s.openContextMenu);
@@ -104,21 +106,28 @@ export function CommsScreen() {
     >
       {/* Channel switcher */}
       <div style={{ display: 'flex', gap: '2px', fontFamily: 'monospace', fontSize: '0.75rem', flexShrink: 0 }}>
-        {(['quadrant', 'faction', 'direct', 'broadcast'] as const).map((ch) => (
-          <button
-            key={ch}
-            onClick={() => setChatChannel(ch)}
-            style={{
-              border: `1px solid ${channel === ch ? 'var(--color-primary)' : '#333'}`,
-              background: channel === ch ? '#001100' : 'none',
-              color: channel === ch ? 'var(--color-primary)' : '#555',
-              padding: '2px 6px', cursor: 'pointer', fontFamily: 'monospace',
-              textTransform: 'uppercase', flex: 1,
-            }}
-          >
-            {ch.slice(0, 4).toUpperCase()}
-          </button>
-        ))}
+        {(['quadrant', 'faction', 'direct', 'broadcast'] as const).map((ch) => {
+          const hasAlert = channelAlerts[ch];
+          return (
+            <button
+              key={ch}
+              onClick={() => {
+                setChatChannel(ch);
+                clearChannelAlert(ch);
+              }}
+              style={{
+                border: `1px solid ${channel === ch ? 'var(--color-primary)' : hasAlert ? '#FF3333' : '#333'}`,
+                background: channel === ch ? '#001100' : 'none',
+                color: channel === ch ? 'var(--color-primary)' : hasAlert ? '#FF3333' : '#555',
+                padding: '2px 6px', cursor: 'pointer', fontFamily: 'monospace',
+                textTransform: 'uppercase', flex: 1,
+                animation: hasAlert ? 'channel-blink 1s ease-in-out infinite' : 'none',
+              }}
+            >
+              {ch.slice(0, 4).toUpperCase()}{hasAlert ? ' ●' : ''}
+            </button>
+          );
+        })}
       </div>
 
       {/* Direct message recipient selector */}
