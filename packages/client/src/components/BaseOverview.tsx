@@ -18,15 +18,19 @@ export function BaseOverview() {
   const baseName = useStore((s) => s.baseName);
   const credits = useStore((s) => s.credits);
   const bookmarks = useStore((s) => s.bookmarks);
+  const myStations = useStore((s) => s.myStations);
+  const knownJumpGates = useStore((s) => s.knownJumpGates);
+  const playerId = useStore((s) => s.playerId);
   const [bookmarkTarget, setBookmarkTarget] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     network.requestBase();
     network.requestStorage();
     network.requestCredits();
+    network.requestMyStations();
   }, []);
 
-  const hasAnything = constructionSites.length > 0;
+  const hasAnything = constructionSites.length > 0 || myStations.length > 0 || knownJumpGates.length > 0;
 
   if (!hasAnything) {
     return (
@@ -41,9 +45,9 @@ export function BaseOverview() {
         <div style={{ letterSpacing: '0.2em', marginBottom: 4, opacity: 0.6 }}>
           BASE-LINK — NO SIGNAL
         </div>
-        <div style={{ opacity: 0.4, marginBottom: 12 }}>NO BASE CONSTRUCTED</div>
+        <div style={{ opacity: 0.4, marginBottom: 12 }}>KEINE STRUKTUREN GEBAUT</div>
         <div style={{ fontSize: '0.65rem', opacity: 0.5 }}>
-          Navigate to a sector and use [BUILD BASE] to establish your home base.
+          Navigiere zu einem Sektor und nutze [STATION BAUEN] oder [JUMPGATE BAUEN] im Detail-Panel.
         </div>
       </div>
     );
@@ -69,25 +73,80 @@ export function BaseOverview() {
           paddingBottom: 2,
         }}
       >
-        {baseName || 'HOME BASE'} — CONNECTED
+        {baseName || 'STRUKTUREN'} — ÜBERSICHT
       </div>
 
       <div style={{ color: 'var(--color-dim)', marginBottom: 8 }}>
         CREDITS: <span style={{ color: 'var(--color-primary)' }}>{credits.toLocaleString()}</span>
       </div>
 
+      {/* Player Stations */}
+      {myStations.length > 0 && (
+        <>
+          <div style={{ fontSize: '0.55rem', letterSpacing: '0.1em', color: '#00FF88', marginTop: 8, marginBottom: 4, borderBottom: '1px solid rgba(0,255,136,0.2)', paddingBottom: 2 }}>
+            STATIONEN ({myStations.length})
+          </div>
+          {myStations.map((st) => (
+            <div
+              key={st.id}
+              style={{
+                padding: '4px 6px',
+                marginBottom: 2,
+                borderLeft: '2px solid #00FF88',
+                background: 'rgba(0,255,136,0.05)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>
+                  <span style={{ color: '#00FF88', marginRight: 4 }}>◆</span>
+                  <span style={{ color: '#00FF88' }}>STATION LV.{st.level}</span>
+                </span>
+                <span style={{ fontSize: '0.5rem', color: 'var(--color-dim)' }}>
+                  ({innerCoord(st.sector_x)}, {innerCoord(st.sector_y)})
+                </span>
+              </div>
+              <div style={{ fontSize: '0.5rem', color: '#666', marginTop: 1 }}>
+                FAB:{st.factory_level} · CARGO:{st.cargo_level}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Player Jumpgates */}
+      {knownJumpGates.length > 0 && (
+        <>
+          <div style={{ fontSize: '0.55rem', letterSpacing: '0.1em', color: '#00BFFF', marginTop: 8, marginBottom: 4, borderBottom: '1px solid rgba(0,191,255,0.2)', paddingBottom: 2 }}>
+            JUMPGATES ({knownJumpGates.length})
+          </div>
+          {knownJumpGates.map((g) => (
+            <div
+              key={g.gateId}
+              style={{
+                padding: '4px 6px',
+                marginBottom: 2,
+                borderLeft: '2px solid #00BFFF',
+                background: 'rgba(0,191,255,0.05)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>
+                  <span style={{ color: '#00BFFF', marginRight: 4 }}>◎</span>
+                  <span style={{ color: '#00BFFF' }}>{g.gateType?.toUpperCase() ?? 'GATE'}</span>
+                </span>
+                <span style={{ fontSize: '0.5rem', color: 'var(--color-dim)' }}>
+                  ({innerCoord(g.fromX)}, {innerCoord(g.fromY)}) → ({innerCoord(g.toX)}, {innerCoord(g.toY)})
+                </span>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
       {/* Construction Sites */}
       {constructionSites.length > 0 && (
         <>
-          <div
-            style={{
-              fontSize: '0.55rem',
-              letterSpacing: '0.1em',
-              color: 'var(--color-dim)',
-              marginTop: 8,
-              marginBottom: 4,
-            }}
-          >
+          <div style={{ fontSize: '0.55rem', letterSpacing: '0.1em', color: '#ffaa00', marginTop: 8, marginBottom: 4, borderBottom: '1px solid rgba(255,170,0,0.2)', paddingBottom: 2 }}>
             BAUSTELLEN ({constructionSites.length})
           </div>
           {constructionSites.map((cs) => {
