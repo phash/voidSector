@@ -150,6 +150,7 @@ function AcepTab() {
   useEffect(() => {
     network.requestAcepBlueprints();
     network.sendGetCraftStatus();
+    useStore.getState().showTip('first_fabrik');
   }, []);
 
   if (craftSite) {

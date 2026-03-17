@@ -69,6 +69,7 @@ export function TradeScreen() {
   useEffect(() => {
     // Clear stale trade message when screen opens
     setTradeMessage(null);
+    if (isStation) useStore.getState().showTip('first_trade_station');
   }, []);
 
   useEffect(() => {

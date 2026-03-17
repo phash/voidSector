@@ -213,6 +213,119 @@ export const HELP_TIPS: HelpTip[] = [
       + '→ Quest-Items werden automatisch übergeben',
     articleId: 'quests',
   },
+  // ── Fehlende HelpSlices (#494) ────────────────────────────────────
+  {
+    id: 'first_nav_com',
+    title: '◈ NAV-COM — NAVIGATION',
+    body: 'Dein Navigationscomputer zeigt die Sektorkarte.\n\n'
+      + '→ Pfeiltasten oder D-Pad zum Bewegen (1 Sektor pro Klick)\n'
+      + '→ LOCAL SCAN: aktuellen Sektor scannen (5 AP)\n'
+      + '→ AREA SCAN: große Fläche aufdecken (3 AP)\n'
+      + '→ Klicke Sektoren auf der Karte für Details\n'
+      + '→ Bookmarks: speichere wichtige Positionen',
+  },
+  {
+    id: 'first_trade_station',
+    title: '◈ HANDEL AN STATION',
+    body: 'An Stationen kannst du Ressourcen kaufen und verkaufen.\n\n'
+      + '→ +/- Buttons: Menge wählen\n'
+      + '→ BUY: Kaufen vom NPC (Preis abhängig vom Bestand)\n'
+      + '→ SELL: Verkaufen an NPC\n'
+      + '→ Preise variieren je nach Angebot und Nachfrage\n'
+      + '→ [ANDOCKEN] für Reparatur und Auftanken',
+  },
+  {
+    id: 'first_tech_tree',
+    title: '◈ TECH-BAUM — FORSCHUNG',
+    body: 'Im Tech-Baum erforschst du neue Module und Upgrades.\n\n'
+      + '→ Wissen investieren (10 W pro Forschung)\n'
+      + '→ 13 Kategorien: Antrieb, Generator, Waffen, Schild...\n'
+      + '→ Höhere Tiers brauchen vorherige Stufen\n'
+      + '→ Erforschte Module können in der FABRIK hergestellt werden',
+  },
+  {
+    id: 'first_quad_map',
+    title: '◈ QUADRANTEN-KARTE',
+    body: 'Die QUAD-MAP zeigt die galaktische Übersicht.\n\n'
+      + '→ Jeder Quadrant = 500×500 Sektoren\n'
+      + '→ Farben zeigen Fraktionsgebiete\n'
+      + '→ Menschliches Territorium: Quadranten um (0,0)\n'
+      + '→ Alien-Fraktionen haben eigene Heimatwelten',
+  },
+  {
+    id: 'first_friends',
+    title: '◈ FRIENDS — SPIELER-NETZWERK',
+    body: 'Verwalte deine Kontakte und Freundschaften.\n\n'
+      + '→ Spieler-Karte: Klicke einen Spielernamen im Chat\n'
+      + '→ Freundschaftsanfrage senden\n'
+      + '→ Direktnachrichten an Freunde (cross-quadrant)\n'
+      + '→ Spieler blockieren bei Bedarf',
+  },
+  {
+    id: 'first_fabrik',
+    title: '◈ FABRIK — HERSTELLUNG',
+    body: 'In der Fabrik stellst du Module aus Blueprints her.\n\n'
+      + '→ Blueprint EINLEGEN: aus Cargo in die Fabrik laden\n'
+      + '→ HERSTELLEN: startet eine Baustelle (braucht Zeit)\n'
+      + '→ Rohstoffe EINZAHLEN: Ore, Gas, Crystal, Credits\n'
+      + '→ Fortschritt abhängig von Fabrik-Modul-Level\n'
+      + '→ Fertiges Modul erscheint im Cargo → INSTALLIEREN',
+  },
+  {
+    id: 'first_alien_contact',
+    title: '◈ ALIEN-KONTAKT',
+    body: 'Du bist einer fremden Spezies begegnet!\n\n'
+      + '→ Alien-Fraktionen kontrollieren eigene Quadranten\n'
+      + '→ Reputation bestimmt Handelspreise und Verhalten\n'
+      + '→ Positive Rep: bessere Preise, Quests, Zugang\n'
+      + '→ Negative Rep: höhere Preise, Angriffe',
+  },
+  {
+    id: 'first_combat_v3',
+    title: '◈ KAMPF — TAKTISCHES GEFECHT',
+    body: 'Ein Kampf hat begonnen! Wähle deine Taktik.\n\n'
+      + '→ Module ein/ausschalten für Energiemanagement\n'
+      + '→ Taktik: ANGRIFF (mehr Schaden) / AUSGEWOGEN / DEFENSIV (mehr Schutz)\n'
+      + '→ [AKTION] führt eine Kampfrunde aus\n'
+      + '→ [FLIEHEN] versucht den Kampf zu beenden\n'
+      + '→ Zerstörte Module können repariert werden',
+  },
+  {
+    id: 'first_bookmark',
+    title: '◈ LESEZEICHEN GESETZT',
+    body: 'Du hast einen Sektor als Lesezeichen gespeichert.\n\n'
+      + '→ Lesezeichen erscheinen in der NAV-COM Seitenleiste\n'
+      + '→ Klick auf ein Lesezeichen zentriert die Karte\n'
+      + '→ Doppelklick startet den Autopiloten\n'
+      + '→ Max 5 Lesezeichen gleichzeitig',
+  },
+  {
+    id: 'first_hyperjump',
+    title: '◈ HYPERJUMP',
+    body: 'Dein Antrieb kann Hyperjumps ausführen!\n\n'
+      + '→ Springe mehrere Sektoren auf einmal\n'
+      + '→ Kosten: AP + Fuel (abhängig von Distanz)\n'
+      + '→ Maximale Reichweite: abhängig von Antrieb-Level\n'
+      + '→ Aufladen nach jedem Jump nötig',
+  },
+  {
+    id: 'first_wreck',
+    title: '◈ WRACK ENTDECKT',
+    body: 'Ein Schiffswrack wurde gefunden!\n\n'
+      + '→ [UNTERSUCHEN] startet die Bergung\n'
+      + '→ Schwierigkeit variiert — höher = bessere Beute\n'
+      + '→ Mögliche Funde: Module, Blueprints, Data Slates\n'
+      + '→ Data Slates enthalten Koordinaten zu weiteren Orten',
+  },
+  {
+    id: 'first_gate_network',
+    title: '◈ GATE-NETZWERK',
+    body: 'Der Netzplan zeigt alle verbundenen Jumpgates.\n\n'
+      + '→ Klicke einen Knoten für Route und Kosten\n'
+      + '→ Fuel + Maut (CR) pro Hop\n'
+      + '→ [SPRINGEN] zum Reisen\n'
+      + '→ Gestrichelte Linien = indirekte Verbindungen',
+  },
 ];
 
 export interface HelpSlice {

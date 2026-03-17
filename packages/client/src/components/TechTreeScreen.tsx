@@ -43,6 +43,7 @@ export function TechTreeScreen() {
 
   useEffect(() => {
     network.requestPlayerResearch();
+    useStore.getState().showTip('first_tech_tree');
   }, []);
 
   function getModulesForBranch(branchId: string) {

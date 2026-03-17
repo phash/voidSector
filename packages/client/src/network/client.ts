@@ -1175,6 +1175,7 @@ class GameNetwork {
       const store = useStore.getState();
       store.clearCombatV3();
       store.setCombatV3(data.state);
+      store.showTip('first_combat_v3');
     });
 
     room.onMessage('combatV3Round', (data: { state: CombatV3State; roundResult: CombatV3RoundResult }) => {

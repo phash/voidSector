@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 import { JUMPGATE_FUEL_PER_HOP, innerCoord } from '@void-sector/shared';
@@ -59,6 +59,10 @@ function layoutNodes(
 export function JumpGateNetworkView() {
   const playerGateInfo = useStore((s) => s.playerGateInfo);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    useStore.getState().showTip('first_gate_network');
+  }, []);
 
   if (!playerGateInfo) return null;
   const { gate, destinations } = playerGateInfo;
