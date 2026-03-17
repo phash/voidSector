@@ -1479,8 +1479,14 @@ export class SectorRoom extends Room<SectorRoomState> {
 
       // Load active ship (or create default scout on first login)
       let shipRecord = await getActiveShip(auth.userId);
+      let isNewPlayer = false;
       if (!shipRecord) {
         shipRecord = await createShip(auth.userId, 'AEGIS', BASE_FUEL_CAPACITY);
+        isNewPlayer = true;
+        // Give starter modules to inventory (player must install them)
+        const { addToInventory } = await import('../engine/inventoryService.js');
+        await addToInventory(auth.userId, 'module', 'ion_drive_mk1', 1);
+        await addToInventory(auth.userId, 'module', 'mining_laser_mk1', 1);
       }
       const stats = calculateShipStats(shipRecord.modules);
       this.clientShips.set(client.sessionId, stats);
@@ -1525,9 +1531,12 @@ export class SectorRoom extends Room<SectorRoomState> {
       await saveAPState(auth.userId, updated);
       client.send('apUpdate', updated);
 
-      // Send initial cargo
+      // Send initial cargo + starter module notification
       const cargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', cargo);
+      if (isNewPlayer) {
+        client.send('logEntry', 'STARTER-MODULE: Ion Drive Mk1 + Mining Laser Mk1 im Inventar. Öffne ACEP → MODULE zum Einbauen!');
+      }
 
       // Send initial slates
       await this.world.handleGetMySlates(client);

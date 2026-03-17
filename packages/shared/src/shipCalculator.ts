@@ -118,7 +118,10 @@ function _calculateShipStatsV2(
       stats.fuelCapacity = def.stats['fuelCapacity'] ?? 0;
       stats.fuelPerSector = def.stats['fuelPerSector'] ?? 0;
       stats.msPerSector = def.stats['msPerSector'] ?? 0;
-      // Also update legacy fields
+      // Map V2 stats to legacy fields used by hyperjump system
+      stats.hyperdriveRange = def.stats['jumpDistance'] ?? 0;
+      stats.hyperdriveSpeed = def.stats['msPerSector'] ?? 0;
+      stats.hyperdriveRegen = def.stats['rechargeRate'] ?? 0;
       stats.fuelMax = Math.max(stats.fuelMax, def.stats['fuelCapacity'] ?? 0);
     } else if (category === 'scanner') {
       stats.scanRange = def.stats['scanRange'] ?? 0;

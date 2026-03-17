@@ -617,6 +617,13 @@ class GameNetwork {
 
     room.onMessage('moduleInventory', (data: { modules: string[] }) => {
       useStore.setState({ moduleInventory: data.modules });
+      // Show starter modules tip if player has uninstalled modules
+      if (data.modules.length > 0) {
+        const ship = useStore.getState().ship;
+        if (ship && ship.modules.length <= 2) {
+          useStore.getState().showTip('first_starter_modules');
+        }
+      }
     });
 
     room.onMessage('moduleInstalled', (data: { modules: any[]; stats: any }) => {

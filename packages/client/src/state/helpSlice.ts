@@ -318,6 +318,16 @@ export const HELP_TIPS: HelpTip[] = [
       + '→ Data Slates enthalten Koordinaten zu weiteren Orten',
   },
   {
+    id: 'first_starter_modules',
+    title: '◈ STARTER-MODULE',
+    body: 'Du hast 2 Module im Inventar erhalten!\n\n'
+      + '→ ION DRIVE MK1: Antrieb für schnelleres Reisen\n'
+      + '→ MINING LASER MK1: Zum Erz-Abbau in Asteroidenfeldern\n'
+      + '→ Öffne ACEP → [MODULE] Tab\n'
+      + '→ Wähle ein Modul aus dem Inventar (unten)\n'
+      + '→ Klicke auf den passenden leeren Slot zum Einbauen',
+  },
+  {
     id: 'first_gate_network',
     title: '◈ GATE-NETZWERK',
     body: 'Der Netzplan zeigt alle verbundenen Jumpgates.\n\n'
