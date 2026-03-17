@@ -474,7 +474,14 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       if (state.zoomLevel >= 2 && (sector || isPlayer)) {
         const features: string[] = [];
         if (state.jumpGateInfo && isPlayer) {
-          features.push('#00BFFF'); // cyan for jumpgate
+          features.push('#00BFFF'); // cyan for jumpgate at player position
+        }
+        // Show jumpgate icon at known gate positions
+        if (state.knownJumpGates && !isPlayer) {
+          const hasGate = state.knownJumpGates.some(
+            (g) => (g.fromX === sx && g.fromY === sy) || (g.toX === sx && g.toY === sy),
+          );
+          if (hasGate) features.push('#00BFFF');
         }
         if (state.scanEvents) {
           const sectorEvents = state.scanEvents.filter(

@@ -45,9 +45,17 @@ import {
   createDataSlate,
   updateSlateOwner,
   addSlateToCargo,
+  insertPlayerJumpGate,
+  upgradeJumpGate,
 } from './db/queries.js';
 import { query } from './db/client.js';
 import { civQueries, spawnNpcShip } from './db/civQueries.js';
+import {
+  insertPlayerStation,
+  getPlayerStationById,
+  upgradeStationLevel,
+  upgradeStationModule,
+} from './db/stationQueries.js';
 import { constructionBus } from './constructionBus.js';
 import { completeConstruction as completeConstructionFn } from './engine/constructionTickService.js';
 import { MODULE_DEFINITIONS, QUADRANT_SIZE } from '@void-sector/shared';
@@ -754,6 +762,111 @@ adminRouter.post('/structures/jumpgate', async (req: Request, res: Response) => 
     res.json({ success: true });
   } catch (err) {
     logger.error({ err }, 'Admin create jumpgate error');
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+// ── Player Structure Create ──────────────────────────────────────────
+
+adminRouter.post('/structures/create', async (req: Request, res: Response) => {
+  try {
+    const { type, playerId, sectorX, sectorY } = req.body as {
+      type: 'station' | 'jumpgate';
+      playerId: string;
+      sectorX: number;
+      sectorY: number;
+    };
+
+    if (!type || !playerId || typeof sectorX !== 'number' || typeof sectorY !== 'number') {
+      res.status(400).json({ error: 'type, playerId, sectorX, and sectorY required' });
+      return;
+    }
+
+    if (type === 'station') {
+      const qx = Math.floor(sectorX / QUADRANT_SIZE);
+      const qy = Math.floor(sectorY / QUADRANT_SIZE);
+      const station = await insertPlayerStation(playerId, sectorX, sectorY, qx, qy);
+      await logAdminEvent('create_player_station', { playerId, sectorX, sectorY });
+      logger.info({ playerId, sectorX, sectorY }, 'Admin created player station');
+      res.json({ success: true, station });
+    } else if (type === 'jumpgate') {
+      const gateId = `player_${playerId}_${sectorX}_${sectorY}`;
+      await insertPlayerJumpGate({ id: gateId, sectorX, sectorY, ownerId: playerId });
+      await logAdminEvent('create_player_jumpgate', { playerId, sectorX, sectorY });
+      logger.info({ playerId, sectorX, sectorY }, 'Admin created player jumpgate');
+      res.json({ success: true, gateId });
+    } else {
+      res.status(400).json({ error: 'type must be "station" or "jumpgate"' });
+    }
+  } catch (err) {
+    logger.error({ err }, 'Admin create player structure error');
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+// ── Structure Upgrade ───────────────────────────────────────────────
+
+adminRouter.post('/structures/upgrade', async (req: Request, res: Response) => {
+  try {
+    const { type, structureId } = req.body as {
+      type: 'jumpgate_connection' | 'jumpgate_distance' | 'station' | 'station_factory' | 'station_cargo';
+      structureId: string;
+    };
+
+    if (!type || !structureId) {
+      res.status(400).json({ error: 'type and structureId required' });
+      return;
+    }
+
+    if (type === 'jumpgate_connection' || type === 'jumpgate_distance') {
+      const field = type === 'jumpgate_connection' ? 'level_connection' : 'level_distance';
+      // Read current level and increment
+      const { rows } = await query<{ [key: string]: number }>(
+        `SELECT ${field} FROM jumpgates WHERE id = $1`,
+        [structureId],
+      );
+      if (rows.length === 0) {
+        res.status(404).json({ error: 'Jumpgate not found' });
+        return;
+      }
+      const currentLevel = rows[0][field];
+      const newLevel = currentLevel + 1;
+      await upgradeJumpGate(structureId, field, newLevel);
+      await logAdminEvent('upgrade_jumpgate', { structureId, field, newLevel });
+      logger.info({ structureId, field, newLevel }, 'Admin upgraded jumpgate');
+      res.json({ success: true, field, newLevel });
+    } else if (type === 'station') {
+      const station = await upgradeStationLevel(structureId);
+      if (!station) {
+        res.status(404).json({ error: 'Station not found or already at max level' });
+        return;
+      }
+      await logAdminEvent('upgrade_station', { structureId, newLevel: station.level });
+      logger.info({ structureId, newLevel: station.level }, 'Admin upgraded station');
+      res.json({ success: true, station });
+    } else if (type === 'station_factory' || type === 'station_cargo') {
+      const module = type === 'station_factory' ? 'factory' : 'cargo';
+      // Get station to know its current level (module cap)
+      const existing = await getPlayerStationById(structureId);
+      if (!existing) {
+        res.status(404).json({ error: 'Station not found' });
+        return;
+      }
+      // Admin bypass: use level 99 as cap so upgrade always succeeds
+      const station = await upgradeStationModule(structureId, module, 99);
+      if (!station) {
+        res.status(404).json({ error: 'Station not found or upgrade failed' });
+        return;
+      }
+      const levelField = module === 'factory' ? 'factory_level' : 'cargo_level';
+      await logAdminEvent('upgrade_station_module', { structureId, module, newLevel: station[levelField] });
+      logger.info({ structureId, module, newLevel: station[levelField] }, 'Admin upgraded station module');
+      res.json({ success: true, station });
+    } else {
+      res.status(400).json({ error: 'Invalid type. Must be jumpgate_connection, jumpgate_distance, station, station_factory, or station_cargo' });
+    }
+  } catch (err) {
+    logger.error({ err }, 'Admin upgrade structure error');
     res.status(500).json({ error: 'Internal error' });
   }
 });
