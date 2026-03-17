@@ -146,10 +146,12 @@ function AcepTab() {
   const ship = useStore((s) => s.ship);
   const acepBlueprints = useStore((s) => s.acepFactoryBlueprints);
   const craftSite = useStore((s) => s.craftSite);
+  const playerResearch = useStore((s) => s.playerResearch);
 
   useEffect(() => {
     network.requestAcepBlueprints();
     network.sendGetCraftStatus();
+    network.requestPlayerResearch();
     useStore.getState().showTip('first_fabrik');
   }, []);
 
@@ -161,14 +163,18 @@ function AcepTab() {
   const cargoModules = inventory.filter((i) => i.itemType === 'module');
   const installedIds = new Set((ship?.modules ?? []).map((m) => m.moduleId));
 
+  // Merge researched modules + blueprints into available recipes (deduplicated)
+  const researchedModuleIds = playerResearch.filter((id) => MODULE_MAP.has(id));
+  const allRecipeIds = [...new Set([...researchedModuleIds, ...acepBlueprints])];
+
   return (
     <div>
-      {/* Consumed blueprints — available for crafting */}
+      {/* Available recipes — researched + blueprints */}
       <div style={{ ...headerStyle, marginTop: 0, color: green }}>VERFÜGBARE REZEPTE</div>
-      {acepBlueprints.length === 0 ? (
-        <div style={{ opacity: 0.4, color: green }}>KEINE BLUEPRINTS EINGELEGT</div>
+      {allRecipeIds.length === 0 ? (
+        <div style={{ opacity: 0.4, color: green }}>KEINE REZEPTE — Erforsche Module im TECH-Baum</div>
       ) : (
-        acepBlueprints.map((moduleId) => {
+        allRecipeIds.map((moduleId) => {
           const mod = MODULE_MAP.get(moduleId);
           if (!mod) return null;
           return (
