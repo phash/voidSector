@@ -319,13 +319,13 @@ export const HELP_TIPS: HelpTip[] = [
   },
   {
     id: 'first_starter_modules',
-    title: '◈ STARTER-MODULE',
-    body: 'Du hast 2 Module im Inventar erhalten!\n\n'
-      + '→ ION DRIVE MK1: Antrieb für schnelleres Reisen\n'
-      + '→ MINING LASER MK1: Zum Erz-Abbau in Asteroidenfeldern\n'
-      + '→ Öffne ACEP → [MODULE] Tab\n'
-      + '→ Wähle ein Modul aus dem Inventar (unten)\n'
-      + '→ Klicke auf den passenden leeren Slot zum Einbauen',
+    title: '◈ WILLKOMMEN, PILOT!',
+    body: 'Du hast Starter-Ausrüstung erhalten!\n\n'
+      + '→ 1. Öffne ACEP → [MODULE] → Module einbauen\n'
+      + '→ 2. Öffne TECH → MINING → T1 erforschen (10 Wissen)\n'
+      + '→ 3. Öffne FABRIK → Mining Laser herstellen (10 Ore + 100 CR)\n'
+      + '→ 4. Mining Laser einbauen → Asteroidenfeld suchen → Minen!\n'
+      + '→ Tipp: AREA SCAN deckt viele Sektoren auf einmal auf',
   },
   {
     id: 'first_gate_network',
