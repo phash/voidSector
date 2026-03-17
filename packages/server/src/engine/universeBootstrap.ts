@@ -36,16 +36,19 @@ export async function startUniverseEngine(): Promise<void> {
   logger.info({ alienSeeded }, 'Universe seeded: Zentrum@(0,0) + alien homeworlds');
 
   await ensureCivStations();
-  await spawnMissingDrones();
-  logger.info('CivShips: stations seeded and initial drones spawned');
+  // DISABLED: Mining drones spawn for ALL faction stations (8000+), causing OOM.
+  // TODO #512/#513: Rework — only human stations, lazy quadrant-based spawning.
+  // await spawnMissingDrones();
+  logger.info('CivShips: stations seeded (drones DISABLED — see #512/#513)');
 
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   const strategicTick = new StrategicTickService(redis);
   await strategicTick.init();
 
   const engine = new UniverseTickEngine(async (result) => {
-    // CivShips: move + broadcast every tick (5s)
-    await processCivTick();
+    // CivShips: DISABLED — processCivTick loads ALL 24k+ ships every 5s → OOM
+    // TODO #512/#513: Rework to quadrant-based lazy ticking
+    // await processCivTick();
     await processConstructionTick();
 
     // Fuel production tick (every 10 s) — must come BEFORE strategic tick early-return guard
