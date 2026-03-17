@@ -47,7 +47,7 @@ import {
   addSlateToCargo,
 } from './db/queries.js';
 import { query } from './db/client.js';
-import { civQueries } from './db/civQueries.js';
+import { civQueries, spawnNpcShip } from './db/civQueries.js';
 import { constructionBus } from './constructionBus.js';
 import { completeConstruction as completeConstructionFn } from './engine/constructionTickService.js';
 import { MODULE_DEFINITIONS, QUADRANT_SIZE } from '@void-sector/shared';
@@ -1041,7 +1041,7 @@ adminRouter.post('/npc/spawn', async (req: Request, res: Response) => {
     }
     const npcLevel = level ?? 1;
     const npcName = name ?? `Admin-${role}-${Date.now() % 10000}`;
-    const id = await civQueries.spawnNpcShip({
+    const id = await spawnNpcShip({
       faction: 'humans',
       ship_type: 'combat',
       role,
