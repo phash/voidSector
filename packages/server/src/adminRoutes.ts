@@ -1026,6 +1026,56 @@ adminRouter.get('/drones', async (_req: Request, res: Response) => {
   }
 });
 
+// ── NPC Overview ─────────────────────────────────────────────────────
+
+adminRouter.get('/npcs', async (_req: Request, res: Response) => {
+  try {
+    const ships = await civQueries.getAllShips();
+    const npcs = ships.filter((s: any) => s.role && s.role !== 'drone');
+    const drones = ships.filter((s: any) => !s.role || s.role === 'drone');
+
+    const byRole: Record<string, number> = {};
+    const byRoleAndLevel: Record<string, Record<number, number>> = {};
+    const byState: Record<string, number> = {};
+    let deadCount = 0;
+
+    for (const npc of npcs) {
+      const role = npc.role ?? 'unknown';
+      byRole[role] = (byRole[role] ?? 0) + 1;
+      if (!byRoleAndLevel[role]) byRoleAndLevel[role] = {};
+      const lvl = (npc as any).level ?? 1;
+      byRoleAndLevel[role][lvl] = (byRoleAndLevel[role][lvl] ?? 0) + 1;
+      byState[npc.state] = (byState[npc.state] ?? 0) + 1;
+      if ((npc as any).dead_until) deadCount++;
+    }
+
+    res.json({
+      summary: {
+        totalNpcs: npcs.length,
+        totalDrones: drones.length,
+        totalAll: ships.length,
+        byRole,
+        byRoleAndLevel,
+        byState,
+        dead: deadCount,
+      },
+      npcs: npcs.map((n: any) => ({
+        id: n.id,
+        name: n.name,
+        role: n.role,
+        level: n.level,
+        x: n.x,
+        y: n.y,
+        state: n.state,
+        dead: !!n.dead_until,
+      })),
+    });
+  } catch (err) {
+    logger.error({ err }, 'Admin NPCs error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ── NPC Spawn ────────────────────────────────────────────────────────
 
 adminRouter.post('/npc/spawn', async (req: Request, res: Response) => {
