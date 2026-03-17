@@ -162,8 +162,18 @@ export declare const SPECIALIZED_SLOT_CATEGORIES: ModuleCategory[];
 export declare const SPECIALIZED_SLOT_INDEX: Partial<Record<ModuleCategory, number>>;
 export declare const UNIQUE_MODULE_CATEGORIES: ModuleCategory[];
 export declare const DEFENSE_ONLY_CATEGORIES: ModuleCategory[];
-/** ausbau-XP-Schwellwerte für Extra-Slot-Freischaltung */
+/** Legacy — replaced by ACEP_PATH_SLOT_UNLOCKS */
 export declare const ACEP_EXTRA_SLOT_THRESHOLDS: number[];
+/** Pfad-Slot-Freischaltungen: path → [level, slotLabel, allowedCategories[]] */
+export interface AcepSlotDef {
+    path: import('./types.js').AcepPath;
+    level: number;
+    label: string;
+    categories: string[];
+}
+export declare const ACEP_PATH_SLOT_UNLOCKS: AcepSlotDef[];
+/** Get unlocked extra slots based on ACEP path levels */
+export declare function getAcepUnlockedSlots(pathLevels: Record<string, number>): AcepSlotDef[];
 export declare const ACEP_LEVEL_THRESHOLDS: Record<number, number>;
 export declare const ACEP_LEVEL_MULTIPLIERS: Record<number, number>;
 /** Modul-HP pro Tier */
@@ -401,25 +411,18 @@ export declare function getAcepRadarPattern(xp: {
     explorer: number;
     total: number;
 }): number[][];
-export declare const ACEP_PATH_CAP_SHARED = 50;
-export declare const ACEP_BOOST_COST_TIERS: readonly [{
-    readonly minXp: 40;
-    readonly credits: 600;
-    readonly wissen: 15;
-}, {
-    readonly minXp: 20;
-    readonly credits: 300;
-    readonly wissen: 8;
-}, {
-    readonly minXp: 0;
-    readonly credits: 100;
-    readonly wissen: 3;
-}];
-/** Returns boost cost for +5 XP at the given current-path XP, or null if at cap. */
-export declare function getAcepBoostCost(currentXp: number): {
+export declare const ACEP_PATH_CAP = 10;
+export declare const ACEP_ALL_PATHS: import('./types.js').AcepPath[];
+export declare const ACEP_PATH_COLORS: Record<string, string>;
+/** Boost cost for +1 level. Credits = 100×2^(level-1), Wissen = 5×2^(level-1).
+ *  Soft global cap: costMult = 1 + totalLevels/10 */
+export declare function getAcepBoostCost(currentLevel: number, totalLevels: number): {
     credits: number;
     wissen: number;
 } | null;
+/** Auto-XP threshold to reach a level passively */
+export declare function getAcepAutoXpThreshold(level: number): number;
+export declare const ACEP_PATH_CAP_SHARED = 10;
 export declare const UNIVERSE_TICK_MS = 5000;
 export declare const FACTION_EXPANSION_INTERVAL_TICKS = 360;
 /** Expansion rate per faction: lower = faster. Base=10 → interval*1.0, rate=5 → interval*0.5 */
@@ -434,19 +437,19 @@ export declare const CIV_MINING_TICKS_TO_FULL = 20;
 export declare const CIV_SPIRAL_MAX_STEPS = 200;
 export declare const NPC_SPAWN_COUNTS: {
     readonly inner: {
-        readonly military: 3;
-        readonly outlaw: 2;
-        readonly trader: 4;
+        readonly military: 8;
+        readonly outlaw: 5;
+        readonly trader: 10;
     };
     readonly middle: {
-        readonly military: 6;
-        readonly outlaw: 6;
-        readonly trader: 4;
+        readonly military: 15;
+        readonly outlaw: 15;
+        readonly trader: 10;
     };
     readonly outer: {
-        readonly military: 12;
-        readonly outlaw: 2;
-        readonly trader: 4;
+        readonly military: 25;
+        readonly outlaw: 8;
+        readonly trader: 10;
     };
 };
 export declare function getNpcZone(qx: number, qy: number): 'inner' | 'middle' | 'outer';

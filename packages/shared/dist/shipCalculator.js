@@ -1,4 +1,4 @@
-import { ACEP_LEVEL_THRESHOLDS, ACEP_EXTRA_SLOT_THRESHOLDS, DEFENSE_ONLY_CATEGORIES, SPECIALIZED_SLOT_CATEGORIES, UNIQUE_MODULE_CATEGORIES, BASE_HULL_AP_REGEN, BASE_SCANNER_MEMORY, FUEL_MIN_TANK, BASE_FUEL_CAPACITY, BASE_FUEL_PER_JUMP, BASE_CARGO, BASE_HP, BASE_JUMP_RANGE, BASE_ENGINE_SPEED, BASE_COMM_RANGE, BASE_SCANNER_LEVEL, } from './constants.js';
+import { ACEP_LEVEL_THRESHOLDS, ACEP_EXTRA_SLOT_THRESHOLDS, getAcepUnlockedSlots, SPECIALIZED_SLOT_CATEGORIES, UNIQUE_MODULE_CATEGORIES, BASE_HULL_AP_REGEN, BASE_SCANNER_MEMORY, FUEL_MIN_TANK, BASE_FUEL_CAPACITY, BASE_FUEL_PER_JUMP, BASE_CARGO, BASE_HP, BASE_JUMP_RANGE, BASE_ENGINE_SPEED, BASE_COMM_RANGE, BASE_SCANNER_LEVEL, } from './constants.js';
 import { MODULE_MAP } from './moduleDefinitions.js';
 /** Returns ACEP level (1–5) for a given XP value. */
 export function getAcepLevel(xp) {
@@ -86,14 +86,19 @@ function _calculateShipStatsV2(installedModules, acepXp) {
             stats.fuelCapacity = def.stats['fuelCapacity'] ?? 0;
             stats.fuelPerSector = def.stats['fuelPerSector'] ?? 0;
             stats.msPerSector = def.stats['msPerSector'] ?? 0;
-            // Also update legacy fields
+            // Map V2 stats to legacy fields used by hyperjump system
+            stats.hyperdriveRange = def.stats['jumpDistance'] ?? 0;
+            stats.hyperdriveSpeed = def.stats['msPerSector'] ?? 0;
+            stats.hyperdriveRegen = def.stats['rechargeRate'] ?? 0;
             stats.fuelMax = Math.max(stats.fuelMax, def.stats['fuelCapacity'] ?? 0);
         }
         else if (category === 'scanner') {
             stats.scanRange = def.stats['scanRange'] ?? 0;
         }
         else if (category === 'mining') {
-            stats.miningSpeed = (stats.miningSpeed ?? 0) + (def.stats['miningSpeed'] ?? 0);
+            const speed = def.stats['miningSpeed'] ?? 0;
+            stats.miningSpeed = (stats.miningSpeed ?? 0) + speed;
+            stats.miningBonus = stats.miningSpeed; // used for laser detection + rate calc
         }
         else if (category === 'cargo') {
             // base 20 + module cargoCapacity
@@ -117,44 +122,44 @@ function _calculateShipStatsV2(installedModules, acepXp) {
     }
     return stats;
 }
-export function validateModuleInstall(currentModules, moduleId, slotIndex, acepXp = { ausbau: 0, intel: 0, kampf: 0, explorer: 0 }) {
+export function validateModuleInstall(currentModules, moduleId, slotIndex, acepXp = { ausbau: 0, intel: 0, kampf: 0, explorer: 0, defense: 0, trader: 0, miner: 0 }) {
     const moduleDef = MODULE_MAP.get(moduleId);
     if (!moduleDef)
         return { valid: false, error: 'Unbekanntes Modul' };
     const category = moduleDef.category;
-    const specializedSlotCount = SPECIALIZED_SLOT_CATEGORIES.length; // 8
+    const specializedSlotCount = SPECIALIZED_SLOT_CATEGORIES.length; // 9 (incl factory)
     const isSpecializedSlot = slotIndex < specializedSlotCount;
     const isExtraSlot = slotIndex >= specializedSlotCount;
-    const extraSlotCount = getExtraSlotCount(acepXp.ausbau);
-    const maxAllowedSlotIndex = specializedSlotCount + extraSlotCount - 1; // z.B. bei 1 extra slot = max index 8
-    // defense/special nur in Extra-Slots
-    if (DEFENSE_ONLY_CATEGORIES.includes(category) && isSpecializedSlot) {
-        return { valid: false, error: `${category}-Module können nur in Extra-Slots installiert werden` };
-    }
     // Specialized Slot: nur passende Kategorie
     if (isSpecializedSlot) {
         const expectedCategory = SPECIALIZED_SLOT_CATEGORIES[slotIndex];
-        if (expectedCategory && expectedCategory !== category && !DEFENSE_ONLY_CATEGORIES.includes(category)) {
-            return { valid: false, error: `Specialized Slot ${slotIndex} ist für '${expectedCategory}' reserviert` };
+        if (expectedCategory && expectedCategory !== category) {
+            return { valid: false, error: `Slot ${slotIndex} ist für '${expectedCategory}' reserviert` };
         }
     }
-    // Extra-Slot: AUSBAU-Gate
+    // Extra-Slot (ACEP path slots): check if unlocked and category allowed
     if (isExtraSlot) {
-        if (extraSlotCount === 0 || slotIndex > maxAllowedSlotIndex) {
-            return { valid: false, error: `Extra-Slot ${slotIndex} noch nicht freigeschaltet — benötigt höheres AUSBAU-Level` };
+        const unlockedSlots = getAcepUnlockedSlots(acepXp);
+        const extraIndex = slotIndex - specializedSlotCount;
+        if (extraIndex >= unlockedSlots.length) {
+            return { valid: false, error: `Slot ${slotIndex} noch nicht freigeschaltet` };
+        }
+        const slotDef = unlockedSlots[extraIndex];
+        if (!slotDef.categories.includes(category)) {
+            return { valid: false, error: `${slotDef.label}-Slot erlaubt nur: ${slotDef.categories.join(', ')}` };
         }
     }
-    // Unique-Enforcement: max 1× pro Schiff (auch in Extra-Slots)
+    // Unique-Enforcement: only factory stays unique
     if (moduleDef.isUnique || UNIQUE_MODULE_CATEGORIES.includes(category)) {
         const alreadyInstalled = currentModules.some((m) => {
             const existingDef = MODULE_MAP.get(m.moduleId);
             return existingDef?.category === category;
         });
         if (alreadyInstalled) {
-            return { valid: false, error: `Unique-Modul: ${category} bereits installiert. Nur 1× pro Schiff erlaubt.` };
+            return { valid: false, error: `${category} — nur 1× pro Schiff erlaubt` };
         }
     }
-    // Slot bereits belegt?
+    // Slot already occupied?
     if (currentModules.some((m) => m.slotIndex === slotIndex)) {
         return { valid: false, error: 'Slot bereits belegt' };
     }

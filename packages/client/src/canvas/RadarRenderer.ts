@@ -667,11 +667,14 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
     }
   }
 
-  // Draw other players — visible at all zoom levels
+  // Draw other players — visible at all zoom levels, colored by dominant ACEP path
   {
+    const PATH_COLORS: Record<string, string> = {
+      ausbau: '#FFB000', intel: '#4488FF', kampf: '#FF4444', explorer: '#44FFAA',
+      defense: '#FF44FF', trader: '#FFDD22', miner: '#88FF44',
+    };
     const otherPattern = DEFAULT_SHIP_RADAR_PATTERN;
     const otherPixelSize = Math.max(2, 1 + state.zoomLevel);
-    const otherColor = '#FFDD22';
     const playerList = Object.values(state.players);
     const drawnSectors = new Set<string>();
     const now = performance.now();
@@ -690,12 +693,15 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
         const px = gridCenterX + pdx * CELL_W + 12;
         const py = gridCenterY + pdy * CELL_H;
 
+        // Color by dominant ACEP path
+        const playerColor = PATH_COLORS[(player as any).dominantPath] ?? '#FFDD22';
+
         // Mining pulse: oscillate alpha when mining
         if ((player as any).mining) {
           const pulse = 0.4 + 0.6 * Math.abs(Math.sin(now / 400));
           ctx.globalAlpha = pulse;
         }
-        drawHullIcon(ctx, otherPattern, px, py, otherColor, otherPixelSize);
+        drawHullIcon(ctx, otherPattern, px, py, playerColor, otherPixelSize);
         ctx.globalAlpha = 1;
 
         // Player username at zoom >= 2
@@ -703,7 +709,7 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
           const displayName = player.username?.slice(0, 8) ?? '';
           if (displayName) {
             ctx.font = COORD_FONT;
-            ctx.fillStyle = otherColor;
+            ctx.fillStyle = playerColor;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
             ctx.fillText(displayName, px + 10, py);

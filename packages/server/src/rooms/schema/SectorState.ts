@@ -9,6 +9,7 @@ export class PlayerSchema extends Schema {
   connected: boolean = true;
   mining: boolean = false;
   acepTotal: number = 0;
+  dominantPath: string = '';
 }
 
 defineTypes(PlayerSchema, {
@@ -20,6 +21,7 @@ defineTypes(PlayerSchema, {
   connected: 'boolean',
   mining: 'boolean',
   acepTotal: 'uint16',
+  dominantPath: 'string',
 });
 
 export class SectorSchema extends Schema {

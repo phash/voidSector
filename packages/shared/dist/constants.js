@@ -307,10 +307,46 @@ export const SPECIALIZED_SLOT_INDEX = {
     cargo: 7,
     factory: 8,
 };
-export const UNIQUE_MODULE_CATEGORIES = ['shield', 'scanner', 'factory'];
+export const UNIQUE_MODULE_CATEGORIES = ['factory']; // only factory stays unique
 export const DEFENSE_ONLY_CATEGORIES = ['defense', 'special'];
-/** ausbau-XP-Schwellwerte für Extra-Slot-Freischaltung */
-export const ACEP_EXTRA_SLOT_THRESHOLDS = [500, 2500, 7500, 20000];
+/** Legacy — replaced by ACEP_PATH_SLOT_UNLOCKS */
+export const ACEP_EXTRA_SLOT_THRESHOLDS = [];
+export const ACEP_PATH_SLOT_UNLOCKS = [
+    // KAMPF: weapon slots at 2, 4, 7, 10
+    { path: 'kampf', level: 2, label: 'WPN', categories: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'] },
+    { path: 'kampf', level: 4, label: 'WPN', categories: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'] },
+    { path: 'kampf', level: 7, label: 'WPN', categories: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'] },
+    { path: 'kampf', level: 10, label: 'WPN', categories: ['weapon_energy', 'weapon_kinetic', 'weapon_missile'] },
+    // DEFENSE: def-kombi slots at 2, 4, 6, 8, 10
+    { path: 'defense', level: 2, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+    { path: 'defense', level: 4, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+    { path: 'defense', level: 6, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+    { path: 'defense', level: 8, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+    { path: 'defense', level: 10, label: 'DEF', categories: ['armor', 'shield', 'defense_pv', 'defense_ecm'] },
+    // TRADER: cargo slots at 2, 4, 8, 10
+    { path: 'trader', level: 2, label: 'CGO', categories: ['cargo'] },
+    { path: 'trader', level: 4, label: 'CGO', categories: ['cargo'] },
+    { path: 'trader', level: 8, label: 'CGO', categories: ['cargo'] },
+    { path: 'trader', level: 10, label: 'CGO', categories: ['cargo'] },
+    // MINER: mining slots at 2, 4, 8, 10
+    { path: 'miner', level: 2, label: 'MIN', categories: ['mining'] },
+    { path: 'miner', level: 4, label: 'MIN', categories: ['mining'] },
+    { path: 'miner', level: 8, label: 'MIN', categories: ['mining'] },
+    { path: 'miner', level: 10, label: 'MIN', categories: ['mining'] },
+    // EXPLORER: kombi slots at 3, 6, 9
+    { path: 'explorer', level: 3, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
+    { path: 'explorer', level: 6, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
+    { path: 'explorer', level: 9, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
+    // AUSBAU: engine/gen/repair slots at 2, 4, 8, 10
+    { path: 'ausbau', level: 2, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+    { path: 'ausbau', level: 4, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+    { path: 'ausbau', level: 8, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+    { path: 'ausbau', level: 10, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+];
+/** Get unlocked extra slots based on ACEP path levels */
+export function getAcepUnlockedSlots(pathLevels) {
+    return ACEP_PATH_SLOT_UNLOCKS.filter((s) => (pathLevels[s.path] ?? 0) >= s.level);
+}
 // ─── ACEP LEVEL THRESHOLDS ───────────────────────────────────────────────────
 export const ACEP_LEVEL_THRESHOLDS = {
     1: 0,
@@ -967,19 +1003,32 @@ export function getAcepRadarPattern(xp) {
     const path = getAcepDominantPath(xp);
     return ACEP_RADAR_PATTERNS[tier][path];
 }
-export const ACEP_PATH_CAP_SHARED = 50;
-export const ACEP_BOOST_COST_TIERS = [
-    { minXp: 40, credits: 600, wissen: 15 },
-    { minXp: 20, credits: 300, wissen: 8 },
-    { minXp: 0, credits: 100, wissen: 3 },
-];
-/** Returns boost cost for +5 XP at the given current-path XP, or null if at cap. */
-export function getAcepBoostCost(currentXp) {
-    if (currentXp >= ACEP_PATH_CAP_SHARED)
+export const ACEP_PATH_CAP = 10; // max level per path
+export const ACEP_ALL_PATHS = ['ausbau', 'intel', 'kampf', 'explorer', 'defense', 'trader', 'miner'];
+export const ACEP_PATH_COLORS = {
+    ausbau: '#FFB000', intel: '#4488FF', kampf: '#FF4444', explorer: '#44FFAA',
+    defense: '#FF44FF', trader: '#FFDD22', miner: '#88FF44',
+};
+/** Boost cost for +1 level. Credits = 100×2^(level-1), Wissen = 5×2^(level-1).
+ *  Soft global cap: costMult = 1 + totalLevels/10 */
+export function getAcepBoostCost(currentLevel, totalLevels) {
+    if (currentLevel >= ACEP_PATH_CAP)
         return null;
-    const tier = ACEP_BOOST_COST_TIERS.find((t) => currentXp >= t.minXp);
-    return { credits: tier.credits, wissen: tier.wissen };
+    const nextLevel = currentLevel + 1;
+    const baseCr = 100 * Math.pow(2, nextLevel - 1);
+    const baseW = 5 * Math.pow(2, nextLevel - 1);
+    const mult = 1 + totalLevels / 10;
+    return {
+        credits: Math.round(baseCr * mult),
+        wissen: Math.round(baseW * mult),
+    };
 }
+/** Auto-XP threshold to reach a level passively */
+export function getAcepAutoXpThreshold(level) {
+    return 10 * (Math.pow(2, level) - 1);
+}
+// Legacy compat
+export const ACEP_PATH_CAP_SHARED = ACEP_PATH_CAP;
 // Universe Tick Engine constants
 export const UNIVERSE_TICK_MS = 5_000; // 5 seconds per tick
 export const FACTION_EXPANSION_INTERVAL_TICKS = 360; // 30 min (360 × 5s) — base interval, scaled per faction
@@ -1007,9 +1056,9 @@ export const CIV_MINING_TICKS_TO_FULL = 20;
 export const CIV_SPIRAL_MAX_STEPS = 200;
 // NPC Ship Roles
 export const NPC_SPAWN_COUNTS = {
-    inner: { military: 3, outlaw: 2, trader: 4 },
-    middle: { military: 6, outlaw: 6, trader: 4 },
-    outer: { military: 12, outlaw: 2, trader: 4 },
+    inner: { military: 8, outlaw: 5, trader: 10 }, // x2-3 (outlaws weak Lv1 — training)
+    middle: { military: 15, outlaw: 15, trader: 10 }, // x2-3
+    outer: { military: 25, outlaw: 8, trader: 10 }, // x2
 };
 export function getNpcZone(qx, qy) {
     const dist = Math.max(Math.abs(qx), Math.abs(qy));
@@ -1021,7 +1070,7 @@ export function getNpcZone(qx, qy) {
 }
 export const NPC_MILITARY_LEVELS = { inner: 2, middle: 4, outer: 6 };
 export const NPC_OUTLAW_LEVEL_RANGE = {
-    inner: [1, 3], middle: [2, 5], outer: [3, 7],
+    inner: [1, 1], middle: [2, 5], outer: [3, 7],
 };
 export const NPC_TRADE_BASE_PRICES = { ore: 8, gas: 12, crystal: 20 };
 export const NPC_TRADE_MAX_DISTANCE_BONUS = 0.5;

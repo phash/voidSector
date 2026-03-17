@@ -1,5 +1,5 @@
 export type SectorType = 'empty' | 'nebula' | 'asteroid_field' | 'station' | 'anomaly' | 'pirate';
-export type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer';
+export type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer' | 'defense' | 'trader' | 'miner';
 export type SectorEnvironment = 'empty' | 'nebula' | 'star' | 'planet' | 'asteroid' | 'black_hole';
 export type PlanetSubtype = 'terrestrial' | 'water' | 'ice' | 'lava' | 'exotic_a' | 'exotic_b' | 'exotic_c';
 export type SectorContent = 'asteroid_field' | 'station' | 'anomaly' | 'pirate_zone' | 'player_base' | 'meteor' | 'relic' | 'npc_ship' | 'ruin';
@@ -1007,6 +1007,10 @@ export interface AcepXpSnapshot {
     intel: number;
     kampf: number;
     explorer: number;
+    defense: number;
+    trader: number;
+    miner: number;
+    [key: string]: number;
 }
 export interface ShipModule {
     moduleId: string;

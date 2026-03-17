@@ -1395,6 +1395,14 @@ export class SectorRoom extends Room<SectorRoomState> {
         if (shipRows.length > 0) {
           const acep = await getAcepXpSummary(shipRows[0].id);
           player.acepTotal = acep.total;
+          // Find dominant path (highest level)
+          const paths = ['ausbau', 'intel', 'kampf', 'explorer', 'defense', 'trader', 'miner'] as const;
+          let maxVal = 0;
+          let dominant = '';
+          for (const p of paths) {
+            if (acep[p] > maxVal) { maxVal = acep[p]; dominant = p; }
+          }
+          player.dominantPath = dominant;
         }
       } catch { /* non-critical */ }
 
@@ -1863,6 +1871,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       connected: p.connected,
       mining: p.mining,
       acepTotal: p.acepTotal,
+      dominantPath: (p as any).dominantPath ?? null,
     }));
     this.broadcast('playerPresence', playerList);
   }
