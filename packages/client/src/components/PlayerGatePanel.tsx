@@ -363,6 +363,16 @@ export function PlayerGatePanel() {
         BESITZER: {gate.ownerName ?? 'Unbekannt'}
       </div>
 
+      {destinations.length > 0 && (
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.65rem', marginBottom: 6, borderColor: '#00BFFF', color: '#00BFFF' }}
+          onClick={() => useStore.setState({ gateNetworkOpen: true })}
+        >
+          [NETZPLAN]
+        </button>
+      )}
+
       {isOwner ? (
         <OwnerView gate={gate} destinations={destinations} gateSlates={gateSlates} />
       ) : (

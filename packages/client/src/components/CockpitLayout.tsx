@@ -34,6 +34,7 @@ import { PlayerCardModal } from './PlayerCardModal';
 import { AreaScanSummaryOverlay } from './overlays/AreaScanSummaryOverlay';
 import { getPhysicalCargoTotal } from '@void-sector/shared';
 import { CombatV3Screen } from './CombatV3Screen';
+import { JumpGateNetworkView } from './JumpGateNetworkView';
 
 interface CockpitLayoutProps {
   renderScreen: (monitorId: string) => ReactNode;
@@ -118,8 +119,14 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
   };
 
   const combatV3Active = useStore((s) => s.combatV3 !== null);
+  const gateNetworkOpen = useStore((s) => s.gateNetworkOpen);
+  const playerGateInfo = useStore((s) => s.playerGateInfo);
 
-  const mainContent = combatV3Active ? <CombatV3Screen /> : renderScreen(activeProgram);
+  const mainContent = combatV3Active
+    ? <CombatV3Screen />
+    : (gateNetworkOpen && playerGateInfo)
+      ? <JumpGateNetworkView />
+      : renderScreen(activeProgram);
   const detailContent = activeWreck ? <WreckPanel /> : getDetailForProgram(activeProgram);
 
   return (

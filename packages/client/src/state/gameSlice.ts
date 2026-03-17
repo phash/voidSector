@@ -480,6 +480,7 @@ export interface GameSlice {
 
   // Player Gates
   playerGateInfo: { gate: PlayerJumpGate; destinations: JumpGateDestination[] } | null;
+  gateNetworkOpen: boolean;
 
   // Player Stations
   playerStationInfo: any | null;
@@ -812,6 +813,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   playerStats: loadPlayerStats(),
   shipMoveAnimation: null,
   playerGateInfo: null,
+  gateNetworkOpen: false,
   playerStationInfo: null,
   acepFactoryBlueprints: [],
   craftSite: null,
@@ -1049,7 +1051,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       shipMoveAnimation: { fromX, fromY, toX, toY, startTime: performance.now(), duration: 600 },
     }),
   clearShipMoveAnimation: () => set({ shipMoveAnimation: null }),
-  setPlayerGateInfo: (playerGateInfo) => set({ playerGateInfo }),
+  setPlayerGateInfo: (playerGateInfo) => set(playerGateInfo ? { playerGateInfo } : { playerGateInfo, gateNetworkOpen: false }),
   setKnownQuadrants: (knownQuadrants) => set({ knownQuadrants }),
   setCurrentQuadrant: (currentQuadrant) => set({ currentQuadrant }),
   setFirstContactEvent: (firstContactEvent) => set({ firstContactEvent }),
