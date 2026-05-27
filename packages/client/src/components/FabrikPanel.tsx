@@ -347,11 +347,15 @@ function StationTab() {
                     {mod.name ?? moduleId}
                     <CostDisplay moduleId={moduleId} />
                   </div>
+                  {/* #526: station-production (startProduction) is disabled for launch —
+                      there is no handler to load resources into / withdraw goods from
+                      the station, so it always fails. Re-enable once wired. */}
                   <button
-                    style={{ ...btnStyle, borderColor: '#00BFFF', color: '#00BFFF' }}
-                    onClick={() => network.sendStartProduction(selected.id, moduleId, 1)}
+                    style={{ ...btnStyle, borderColor: '#555', color: '#555', cursor: 'not-allowed' }}
+                    disabled
+                    title="Stationsproduktion noch nicht verfügbar"
                   >
-                    [HERSTELLEN]
+                    [BALD]
                   </button>
                 </div>
               );
