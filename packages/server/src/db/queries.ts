@@ -337,6 +337,10 @@ export async function updateSectorResources(
   resources: { ore: number; gas: number; crystal: number },
   minedResource: string,
 ): Promise<void> {
+  // #536: minedResource is interpolated into the jsonb path — whitelist at the sink (defense-in-depth)
+  if (minedResource !== 'ore' && minedResource !== 'gas' && minedResource !== 'crystal') {
+    throw new Error(`Invalid minedResource: ${minedResource}`);
+  }
   const currentTick = getUniverseTickCount();
   await query(
     `UPDATE sectors SET

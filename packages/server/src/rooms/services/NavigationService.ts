@@ -124,6 +124,12 @@ export class NavigationService {
       await saveSector(sectorData);
     }
 
+    // #536: black holes are impassable — block entry via moveSector too (jump already does)
+    if (sectorData.environment === 'black_hole') {
+      client.send('error', { code: 'BLACK_HOLE', message: 'Schwarzes Loch — Sektor unpassierbar' });
+      return;
+    }
+
     // Update player position
     const player = this.ctx.state.players.get(client.sessionId);
     if (player) {

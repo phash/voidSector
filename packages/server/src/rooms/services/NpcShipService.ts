@@ -5,7 +5,7 @@ import { logger } from '../../utils/logger.js';
 import { rejectGuest } from './utils.js';
 import * as civQueries from '../../db/civQueries.js';
 import { getPlayerCredits, addCredits, deductCredits } from '../../db/queries.js';
-import { getCargoState, addToInventory, removeFromInventory, getInventoryItem } from '../../engine/inventoryService.js';
+import { getCargoState, addToInventory, removeFromInventory, getInventoryItem, canAddResource } from '../../engine/inventoryService.js';
 import {
   NPC_TRADE_BASE_PRICES,
   NPC_TRADE_MAX_DISTANCE_BONUS,
@@ -68,6 +68,11 @@ export class NpcShipService {
       const credits = await getPlayerCredits(auth.userId);
       if (credits < totalCost) {
         client.send('error', { code: 'NPC_FAIL', message: 'Nicht genug Credits' });
+        return;
+      }
+      // #536: enforce cargo cap on NPC-ship buys (was bypassed)
+      if (!(await canAddResource(auth.userId, qty))) {
+        client.send('error', { code: 'NPC_FAIL', message: 'Nicht genug Frachtraum' });
         return;
       }
       await deductCredits(auth.userId, totalCost);
