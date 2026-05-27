@@ -2,13 +2,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: voidsector
-      POSTGRES_PASSWORD: voidsector_dev
-      POSTGRES_DB: voidsector
+      POSTGRES_USER: ${POSTGRES_USER:-voidsector}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-voidsector_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-voidsector}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U voidsector"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-voidsector}"]
       interval: 2s
       timeout: 5s
       retries: 10
@@ -16,6 +16,11 @@ services:
 
   redis:
     image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
   server:
@@ -25,16 +30,18 @@ services:
     ports:
       - "2567:2567"
     environment:
-      DATABASE_URL: postgres://voidsector:voidsector_dev@postgres:5432/voidsector
+      DATABASE_URL: postgres://${POSTGRES_USER:-voidsector}:${POSTGRES_PASSWORD:-voidsector_dev}@postgres:5432/${POSTGRES_DB:-voidsector}
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: voidsector-dev-secret
-      ADMIN_TOKEN: vs-admin-2026
+      # Production MUST override JWT_SECRET and ADMIN_TOKEN via .env / environment.
+      # The defaults below are dev-only and are publicly known — never ship them.
+      JWT_SECRET: ${JWT_SECRET:-voidsector-dev-secret}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-vs-admin-2026}
       PORT: "2567"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   client:
@@ -49,6 +56,9 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
+    # Dev: quick tunnel (rotating URL). Production: use a named tunnel —
+    #   command: tunnel --no-autoupdate run
+    #   environment: { TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN} }
     command: tunnel --no-autoupdate --url http://client:3201
     depends_on:
       - client
