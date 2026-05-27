@@ -105,7 +105,7 @@ describe('TradeScreen', () => {
     expect(screen.getByText(/STATION/)).toBeTruthy();
   });
 
-  it('shows market tab at tier 2 at home base', () => {
+  it('hides market tab even at tier 2 (removed for launch — #525)', () => {
     mockStoreState({
       baseStructures: [{ id: 'tp1', type: 'trading_post', tier: 2, sector_x: 0, sector_y: 0 }],
       credits: 500,
@@ -114,7 +114,7 @@ describe('TradeScreen', () => {
       myOrders: [],
     });
     render(<TradeScreen />);
-    expect(screen.getByText('tabs.market')).toBeTruthy();
+    expect(screen.queryByText('tabs.market')).toBeNull();
   });
 
   it('hides market tab at tier 1 at home base', () => {
@@ -165,7 +165,7 @@ describe('TradeScreen', () => {
     expect(screen.queryByText('tabs.routes')).toBeNull();
   });
 
-  it('shows TRADING POST tab when kontorOrders are present at station', () => {
+  it('hides TRADING POST tab even with kontorOrders (removed for launch — #525)', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
@@ -210,7 +210,7 @@ describe('TradeScreen', () => {
       ],
     });
     render(<TradeScreen />);
-    expect(screen.getByText('programs.tradingPost')).toBeTruthy();
+    expect(screen.queryByText('programs.tradingPost')).toBeNull();
   });
 
   it('hides TRADING POST tab when no kontorOrders', () => {
@@ -363,64 +363,6 @@ describe('TradeScreen', () => {
     expect(screen.queryByTestId('sell-all-ore')).toBeNull();
   });
 
-  it('disables SELL button for own orders in TRADING POST tab', () => {
-    mockStoreState({
-      baseStructures: [],
-      position: { x: 10, y: 10 },
-      currentSector: {
-        x: 10,
-        y: 10,
-        type: 'station',
-        seed: 42,
-        discoveredBy: null,
-        discoveredAt: null,
-        metadata: {},
-        environment: 'empty' as const,
-        contents: ['station' as const],
-      },
-      credits: 200,
-      cargo: {
-        ore: 5,
-        gas: 0,
-        crystal: 0,
-        slates: 0,
-        artefact: 0,
-        artefact_drive: 0,
-        artefact_cargo: 0,
-        artefact_scanner: 0,
-        artefact_armor: 0,
-        artefact_weapon: 0,
-        artefact_shield: 0,
-        artefact_defense: 0,
-        artefact_special: 0,
-        artefact_mining: 0,
-      },
-      kontorOrders: [
-        {
-          id: 'ko1',
-          ownerId: 'test-id',
-          itemType: 'ore',
-          amountWanted: 500,
-          amountFilled: 0,
-          pricePerUnit: 2,
-          active: true,
-        },
-        {
-          id: 'ko2',
-          ownerId: 'other-player',
-          itemType: 'gas',
-          amountWanted: 200,
-          amountFilled: 0,
-          pricePerUnit: 5,
-          active: true,
-        },
-      ],
-    });
-    render(<TradeScreen />);
-    const kontorTab = screen.getByText('programs.tradingPost');
-    fireEvent.click(kontorTab);
-    const sellButtons = screen.getAllByText('SELL');
-    expect(sellButtons[0]).toHaveProperty('disabled', true);
-    expect(sellButtons[1]).toHaveProperty('disabled', false);
-  });
+  // Removed: 'disables SELL button for own orders in TRADING POST tab' — the
+  // KONTOR/TRADING POST tab was hidden for launch (#525).
 });
