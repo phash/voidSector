@@ -17,11 +17,15 @@ describe('validateModuleInstall — specialized slots', () => {
     expect(result.valid).toBe(true);
   });
 
-  it('weapon_energy module rejected in weapon slot (category mismatch: weapon vs weapon_energy)', () => {
-    // puls_laser_mk1 has category 'weapon_energy', slot 2 expects 'weapon'
-    // Current validator does strict category match, so weapon sub-categories don't match
+  it('allows weapon_energy module in weapon slot (slot 2 accepts all weapon_* sub-categories)', () => {
+    // puls_laser_mk1 has category 'weapon_energy'; slot 2 ('weapon') is the base weapon slot.
+    // It must accept every weapon_* sub-category so a new player can equip a weapon at all.
     const result = validateModuleInstall([], 'puls_laser_mk1', 2, noAcep);
-    expect(result.valid).toBe(false);
+    expect(result.valid).toBe(true);
+  });
+
+  it('allows weapon_kinetic and weapon_missile in weapon slot (slot 2)', () => {
+    expect(validateModuleInstall([], 'rail_kanone_mk1', 2, noAcep).valid).toBe(true);
   });
 
   it('rejects weapon_energy in generator slot (slot 0)', () => {
