@@ -16,7 +16,8 @@ const mockShip = {
   id: 'ship-1',
   name: 'Test Ship',
   modules: [],
-  acepXp: { ausbau: 20, intel: 0, kampf: 0, explorer: 0, total: 20 },
+  // Per-path levels are capped at 10 (ACEP_PATH_CAP); total is the summed budget.
+  acepXp: { ausbau: 2, intel: 0, kampf: 0, explorer: 0, total: 20 },
   acepEffects: {
     extraModuleSlots: 1,
     cargoMultiplier: 1,
@@ -38,17 +39,22 @@ beforeEach(() => {
 });
 
 describe('AcepTab', () => {
-  it('renders all 4 XP path labels', () => {
+  it('renders all 7 XP path labels', () => {
     render(<AcepTab />);
-    expect(screen.getByText('acep.paths.ausbau')).toBeInTheDocument();
-    expect(screen.getByText('acep.paths.intel')).toBeInTheDocument();
-    expect(screen.getByText('acep.paths.kampf')).toBeInTheDocument();
-    expect(screen.getByText('acep.paths.explorer')).toBeInTheDocument();
+    // Path labels are hardcoded uppercase strings in the component (PATHS array)
+    expect(screen.getByText('AUSBAU')).toBeInTheDocument();
+    expect(screen.getByText('INTEL')).toBeInTheDocument();
+    expect(screen.getByText('KAMPF')).toBeInTheDocument();
+    expect(screen.getByText('EXPLORER')).toBeInTheDocument();
+    expect(screen.getByText('DEFENSE')).toBeInTheDocument();
+    expect(screen.getByText('TRADER')).toBeInTheDocument();
+    expect(screen.getByText('MINER')).toBeInTheDocument();
   });
 
   it('renders total XP budget', () => {
     render(<AcepTab />);
-    expect(screen.getByText(/20\/100/)).toBeInTheDocument();
+    // Budget line renders "STUFEN: <total>/70" (level 1-10 across 7 paths)
+    expect(screen.getByText(/20\/70/)).toBeInTheDocument();
   });
 
   it('renders active effects', () => {
@@ -70,10 +76,16 @@ describe('AcepTab', () => {
   });
 
   it('boost button calls sendAcepBoost when enabled', () => {
+    // Fresh ship (all paths level 0, total 0) so AUSBAU boost cost (100 CR / 5 W) is affordable.
+    mockStoreState({
+      ship: { ...mockShip, acepXp: { ausbau: 0, intel: 0, kampf: 0, explorer: 0, total: 0 } } as any,
+      credits: 500,
+      research: { wissen: 10 } as any,
+    });
     render(<AcepTab />);
-    const boostBtns = screen.getAllByText(/\[\+5\]/i);
+    const boostBtns = screen.getAllByText(/\[\+1\]/i);
     expect(boostBtns.length).toBeGreaterThan(0);
-    // Click the first [+5] button (AUSBAU path, xp=20, cost=300cr/8w — covered by credits:500, wissen:10)
+    // Click the first [+1] button (AUSBAU path) — affordable at level 0
     fireEvent.click(boostBtns[0]);
     expect(network.sendAcepBoost).toHaveBeenCalledWith('ausbau');
   });
@@ -102,10 +114,10 @@ describe('AcepTab', () => {
     expect(network.sendRenameShip).toHaveBeenCalledWith('ship-1', 'Another Name');
   });
 
-  it('[+5] button is disabled when credits are insufficient', () => {
+  it('[+1] button is disabled when credits are insufficient', () => {
     mockStoreState({ ship: mockShip as any, credits: 0, research: { wissen: 10 } as any });
     render(<AcepTab />);
-    const boostBtns = screen.getAllByText(/\[\+5\]/i) as HTMLButtonElement[];
+    const boostBtns = screen.getAllByText(/\[\+1\]/i) as HTMLButtonElement[];
     expect(boostBtns.every((btn) => btn.disabled)).toBe(true);
   });
 

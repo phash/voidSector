@@ -14,60 +14,64 @@ import { network } from '../network/client';
 
 // ─── Mock ship data helpers ───────────────────────────────────────────────────
 
+// NOTE (post #508 tech rework): the RepairPanel reads category/tier/hitpoints
+// from MODULE_MAP.get(moduleId), NOT from the inline mock fields. Only
+// `moduleId`, `currentHp` and `powerLevel` are read off these mock objects.
+// So module IDs must be REAL MODULE_DEFINITIONS ids, and HP brackets must be
+// computed against the real def.hitpoints.
+
 /**
- * A repair drone MK.I (tier 1, repair category).
- * MODULES['repair_mk1'].maxHp = 20 (from constants).
- * Set currentHp to 20 so getDamageState(20, 20) = intact.
+ * A repair drone MK.I — real id 'repair_drone_mk1' (tier 1, hitpoints 20).
+ * currentHp 20 = maxHp → intact.
  */
 const repairDroneMk1 = {
-  moduleId: 'repair_mk1',
+  moduleId: 'repair_drone_mk1',
   category: 'repair',
   tier: 1,
-  currentHp: 20,  // = maxHp from constants → intact
+  currentHp: 20,  // = maxHp from def → intact
   maxHp: 20,
   powerLevel: 'high' as const,
 };
 
 /**
- * A repair drone MK.III (tier 3).
- * MODULES['repair_mk3'].maxHp = 55 (from constants).
- * Set currentHp to 55 so getDamageState(55, 55) = intact.
+ * A repair drone MK.III — real id 'repair_drone_mk3' (tier 3, hitpoints 20).
+ * currentHp 20 = maxHp → intact.
  */
 const repairDroneMk3 = {
-  moduleId: 'repair_mk3',
+  moduleId: 'repair_drone_mk3',
   category: 'repair',
   tier: 3,
-  currentHp: 55,  // = maxHp from constants → intact
-  maxHp: 55,
+  currentHp: 20,  // = maxHp from def → intact
+  maxHp: 20,
   powerLevel: 'high' as const,
 };
 
-/** A laser MK.1 at full health (intact). maxHp = 25 from constants. */
+/** A pulse laser MK.1 (real id 'puls_laser_mk1', weapon_energy, hitpoints 40) at full health (intact). */
 const laserIntact = {
-  moduleId: 'laser_mk1',
-  category: 'weapon',
+  moduleId: 'puls_laser_mk1',
+  category: 'weapon_energy',
   tier: 1,
-  currentHp: 25,
-  maxHp: 25,
+  currentHp: 40,
+  maxHp: 40,
   powerLevel: 'high' as const,
 };
 
-/** A laser MK.1 at light damage (60% = 15/25). */
+/** Pulse laser at light damage (28/40 = 70% → light). */
 const laserLightDamage = {
   ...laserIntact,
-  currentHp: 15,  // 60% → light
+  currentHp: 28,  // 70% → light
 };
 
-/** A laser MK.1 at heavy damage (35% = 9/25). */
+/** Pulse laser at heavy damage (16/40 = 40% → heavy). */
 const laserHeavyDamage = {
   ...laserIntact,
-  currentHp: 9,  // 36% → heavy
+  currentHp: 16,  // 40% → heavy
 };
 
-/** A laser MK.1 destroyed (20% = 5/25). */
+/** Pulse laser destroyed (8/40 = 20% → destroyed). */
 const laserDestroyed = {
   ...laserIntact,
-  currentHp: 5,  // 20% → destroyed
+  currentHp: 8,  // 20% → destroyed
 };
 
 const baseShip = {
@@ -167,8 +171,8 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('repair.damageState.intact');
-    expect(screen.queryByTestId('repair-btn-laser_mk1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('damage-state-puls_laser_mk1')).toHaveTextContent('repair.damageState.intact');
+    expect(screen.queryByTestId('repair-btn-puls_laser_mk1')).not.toBeInTheDocument();
   });
 
   it('shows LEICHT damage state for a lightly damaged module', () => {
@@ -179,7 +183,7 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('repair.damageState.light');
+    expect(screen.getByTestId('damage-state-puls_laser_mk1')).toHaveTextContent('repair.damageState.light');
   });
 
   it('shows repair button with cost for light damage when repair module is installed', () => {
@@ -191,7 +195,7 @@ describe('RepairPanel', () => {
     });
     render(<RepairPanel />);
     // Repair button should be present
-    expect(screen.getByTestId('repair-btn-laser_mk1')).toBeInTheDocument();
+    expect(screen.getByTestId('repair-btn-puls_laser_mk1')).toBeInTheDocument();
     // Cost: tier 1 × 5 ore = 5 ore for light → intact (shown as "5 resources.ore" from i18n mock)
     expect(screen.getByText(/5 resources\.ore/i)).toBeInTheDocument();
   });
@@ -204,8 +208,8 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    fireEvent.click(screen.getByTestId('repair-btn-laser_mk1'));
-    expect(network.sendRepairModule).toHaveBeenCalledWith('laser_mk1');
+    fireEvent.click(screen.getByTestId('repair-btn-puls_laser_mk1'));
+    expect(network.sendRepairModule).toHaveBeenCalledWith('puls_laser_mk1');
   });
 
   it('disables repair button when insufficient resources', () => {
@@ -216,7 +220,7 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    const btn = screen.getByTestId('repair-btn-laser_mk1');
+    const btn = screen.getByTestId('repair-btn-puls_laser_mk1');
     expect(btn).toBeDisabled();
   });
 
@@ -228,9 +232,9 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('repair.damageState.heavy');
+    expect(screen.getByTestId('damage-state-puls_laser_mk1')).toHaveTextContent('repair.damageState.heavy');
     // No repair button — T1 can't do heavy
-    expect(screen.queryByTestId('repair-btn-laser_mk1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('repair-btn-puls_laser_mk1')).not.toBeInTheDocument();
     // Shows "repair.needsT3Drone" key
     expect(screen.getByText(/repair\.needsT3Drone/i)).toBeInTheDocument();
   });
@@ -243,7 +247,7 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('repair-btn-laser_mk1')).toBeInTheDocument();
+    expect(screen.getByTestId('repair-btn-puls_laser_mk1')).toBeInTheDocument();
     // Cost: tier 3 × 3 ore + tier 3 × 2 crystal = 9 ore + 6 crystal
     // With i18n mock: "9 resources.ore" and "6 resources.crystal"
     expect(screen.getAllByText(/9 resources\.ore/i).length).toBeGreaterThanOrEqual(1);
@@ -258,7 +262,7 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('damage-state-laser_mk1')).toHaveTextContent('repair.damageState.destroyed');
+    expect(screen.getByTestId('damage-state-puls_laser_mk1')).toHaveTextContent('repair.damageState.destroyed');
     // Cost: tier 3 × 5 crystal = 15 crystal (shown as "15 resources.crystal")
     expect(screen.getByText(/15 resources\.crystal/i)).toBeInTheDocument();
   });
@@ -311,11 +315,11 @@ describe('RepairPanel', () => {
   it('shows all modules in the module list', () => {
     // Use two different module IDs to avoid React key collision warning
     const railgunIntact = {
-      moduleId: 'railgun_mk1',
-      category: 'weapon',
+      moduleId: 'rail_kanone_mk1',
+      category: 'weapon_kinetic',
       tier: 1,
-      currentHp: 20,
-      maxHp: 20,
+      currentHp: 40,  // = def hitpoints → intact
+      maxHp: 40,
       powerLevel: 'high' as const,
     };
     mockStoreState({
@@ -325,8 +329,8 @@ describe('RepairPanel', () => {
       credits: 500,
     });
     render(<RepairPanel />);
-    expect(screen.getByTestId('module-row-repair_mk1')).toBeInTheDocument();
-    expect(screen.getByTestId('module-row-laser_mk1')).toBeInTheDocument();
-    expect(screen.getByTestId('module-row-railgun_mk1')).toBeInTheDocument();
+    expect(screen.getByTestId('module-row-repair_drone_mk1')).toBeInTheDocument();
+    expect(screen.getByTestId('module-row-puls_laser_mk1')).toBeInTheDocument();
+    expect(screen.getByTestId('module-row-rail_kanone_mk1')).toBeInTheDocument();
   });
 });

@@ -41,6 +41,10 @@ vi.mock('../state/store', () => ({
       navReturnProgram: null,
       setActiveProgram: vi.fn(),
       clearNavReturn: vi.fn(),
+      setSelectedQuest: vi.fn(),
+      showTip: vi.fn(),
+      actionError: null,
+      setActionError: vi.fn(),
       alienReputations: {},
       humanityReps: {},
       activeCommunityQuest: null,
@@ -79,17 +83,23 @@ describe('QuestsScreen quest filter after accept', () => {
     const availableQuestData: AvailableQuest[] = [
       {
         templateId: 'tpl-1',
+        npcName: 'Trader Joe',
+        npcFactionId: 'traders',
         title: 'Quest Alpha',
         description: 'Find something',
         objectives: [],
         rewards: { credits: 100, xp: 50, reputation: 10 },
+        requiredTier: 'neutral',
       },
       {
         templateId: 'tpl-2',
+        npcName: 'Trader Joe',
+        npcFactionId: 'traders',
         title: 'Quest Beta',
         description: 'Find something else',
         objectives: [],
         rewards: { credits: 200, xp: 100, reputation: 20 },
+        requiredTier: 'neutral',
       },
     ];
 
@@ -145,10 +155,13 @@ describe('QuestsScreen quest filter after accept', () => {
     const availableQuestData: AvailableQuest[] = [
       {
         templateId: 'tpl-1',
+        npcName: 'Trader Joe',
+        npcFactionId: 'traders',
         title: 'Quest Alpha',
         description: 'Find something',
         objectives: [],
         rewards: { credits: 100, xp: 50, reputation: 10 },
+        requiredTier: 'neutral',
       },
     ];
 

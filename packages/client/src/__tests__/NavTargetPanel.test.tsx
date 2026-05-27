@@ -162,6 +162,8 @@ describe('NavTargetPanel', () => {
   it('sends hyperjump flag when checkbox is checked', () => {
     mockStoreState({
       position: { x: 0, y: 0 },
+      // Hyperjump checkbox is only enabled when the ship has a hyperdrive module
+      ship: { stats: { hyperdriveRange: 5 } } as any,
       discoveries: {
         '0:0': {
           x: 0,

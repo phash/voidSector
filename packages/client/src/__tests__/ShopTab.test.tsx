@@ -73,19 +73,29 @@ describe('ShopTab', () => {
     expect(buyBtns.length).toBeGreaterThan(0);
   });
 
-  it('KAUFEN calls sendBuyModule with module id', () => {
+  it('KAUFEN opens confirm modal, then confirming calls sendBuyModule', () => {
+    // Buying now goes through a confirmation modal: the list "buy" button
+    // opens the modal, and the modal's confirm "buy" button calls sendBuyModule.
     render(<ShopTab />);
-    const buyBtns = screen.getAllByText(/shop\.buy/i);
-    fireEvent.click(buyBtns[0]);
+    const listBuyBtns = screen.getAllByText(/shop\.buy/i);
+    fireEvent.click(listBuyBtns[0]);
+    // Clicking the list button only opens the modal — no purchase yet.
+    expect(network.sendBuyModule).not.toHaveBeenCalled();
+    // Now a second shop.buy button (the modal confirm) appears.
+    const allBuyBtns = screen.getAllByText(/shop\.buy/i);
+    expect(allBuyBtns.length).toBeGreaterThan(listBuyBtns.length);
+    fireEvent.click(allBuyBtns[allBuyBtns.length - 1]);
     expect(network.sendBuyModule).toHaveBeenCalledTimes(1);
+    expect(network.sendBuyModule).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('KAUFEN button is disabled when credits insufficient', () => {
     mockStoreState({ ...baseStore, credits: 0 });
     render(<ShopTab />);
-    // All buttons should be disabled (no credits)
+    // With no credits, all modules that cost credits must be disabled.
+    // (A free module like factory_mk1 stays enabled — so assert "some" not "all".)
     const buyBtns = screen.getAllByRole('button', { name: /shop\.buy/i });
-    expect(buyBtns.every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
+    expect(buyBtns.some((b) => (b as HTMLButtonElement).disabled)).toBe(true);
   });
 
   it('ore: 0 in cargo does not disable buttons for modules that do not require ore (undefined !== 0)', () => {

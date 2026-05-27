@@ -57,11 +57,12 @@ describe('CargoScreen inventory tabs', () => {
   it('MODULES tab shows module with INSTALL button', async () => {
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
+      // Unknown ids fall back to UPPERCASE with underscores replaced by spaces.
       inventory: [{ itemType: 'module', itemId: 'drive_mk2', quantity: 1 }],
     });
     render(<CargoScreen />);
     await userEvent.click(screen.getByText('tabs.modules'));
-    expect(screen.getByText(/DRIVE_MK2/)).toBeDefined();
+    expect(screen.getByText(/DRIVE MK2/)).toBeDefined();
     expect(screen.getByText('[actions.install]')).toBeDefined();
   });
 
@@ -72,15 +73,23 @@ describe('CargoScreen inventory tabs', () => {
     });
     render(<CargoScreen />);
     await userEvent.click(screen.getByText('tabs.blueprints'));
-    expect(screen.getByText(/SHIELD_MK1/)).toBeDefined();
+    expect(screen.getByText(/SHIELD MK1/)).toBeDefined();
     expect(screen.getByText('[actions.activate]')).toBeDefined();
     expect(screen.queryByText('[actions.craft]')).toBeNull();
   });
 
   it('INSTALL calls sendInstallModule', async () => {
+    // INSTALL now auto-resolves a valid slot via validateModuleInstall, so it
+    // needs a ship and a real, installable module id (unknown ids find no slot).
     mockStoreState({
       cargo: { ore: 0, gas: 0, crystal: 0, slates: 0, artefact: 0 },
-      inventory: [{ itemType: 'module', itemId: 'laser_mk1', quantity: 1 }],
+      inventory: [{ itemType: 'module', itemId: 'cargo_bay_mk1', quantity: 1 }],
+      ship: {
+        id: 's1',
+        modules: [],
+        acepXp: { ausbau: 0, intel: 0, kampf: 0, explorer: 0 },
+        stats: { cargoCap: 50 },
+      } as any,
     });
     render(<CargoScreen />);
     await userEvent.click(screen.getByText('tabs.modules'));
