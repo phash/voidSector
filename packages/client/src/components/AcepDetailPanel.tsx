@@ -43,7 +43,7 @@ export function AcepDetailPanel() {
   if (activeTab === 'acep') {
     const traits = ship.acepTraits ?? [];
     if (traits.length === 0) {
-      const xp = ship.acepXp ?? { ausbau: 0, intel: 0, kampf: 0, explorer: 0, total: 0 };
+      const xp = ship.acepXp ?? { ausbau: 0, intel: 0, kampf: 0, explorer: 0, defense: 0, trader: 0, miner: 0, total: 0 };
       return (
         <div style={{ padding: 14, fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
           <div style={hdrStyle}>{t('acep.traits')}</div>
@@ -52,10 +52,15 @@ export function AcepDetailPanel() {
             {t('acep.traitsExplain')}
           </div>
           <div style={{ color: '#888', fontSize: '0.85rem', marginTop: 12 }}>
-            {t('acep.budget', { current: xp.total, max: 100 })}
+            {t('acep.budget', { current: xp.total, max: 70 })}
           </div>
           <div style={{ color: '#666', fontSize: '0.8rem', marginTop: 6 }}>
-            {t('acep.xpDistribution', { ausbau: xp.ausbau, intel: xp.intel, kampf: xp.kampf, explorer: xp.explorer })}
+            {t('acep.xpDistribution', {
+              ausbau: xp.ausbau, intel: xp.intel, kampf: xp.kampf, explorer: xp.explorer,
+              defense: (xp as { defense?: number }).defense ?? 0,
+              trader: (xp as { trader?: number }).trader ?? 0,
+              miner: (xp as { miner?: number }).miner ?? 0,
+            })}
           </div>
         </div>
       );
