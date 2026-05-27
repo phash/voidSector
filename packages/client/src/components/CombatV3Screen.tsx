@@ -25,6 +25,7 @@ type _CombatV3RoundResult = CombatV3RoundResult;
 export function CombatV3Screen() {
   const combatState = useStore((s) => s.combatV3);
   const combatLog = useStore((s) => s.combatV3Log);
+  const clearCombatV3 = useStore((s) => s.clearCombatV3);
   const [activeModules, setActiveModules] = useState<Set<string>>(new Set());
   const [tactic, setTactic] = useState<'assault' | 'balanced' | 'defensive'>('balanced');
 
@@ -186,6 +187,14 @@ export function CombatV3Screen() {
             [FLIEHEN]
           </button>
         </div>
+      )}
+
+      {/* Close button — dismiss the result screen once combat has ended */}
+      {state.outcome && (
+        <button className="vs-btn" onClick={clearCombatV3}
+          style={{ width: '100%', fontSize: '0.7rem' }}>
+          [SCHLIESSEN]
+        </button>
       )}
 
       {/* Round log */}

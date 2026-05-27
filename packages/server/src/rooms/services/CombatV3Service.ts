@@ -1,11 +1,28 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import type { CombatV3State, CombatModule, NpcCombatStats } from '@void-sector/shared';
+import type { CombatV3State, NpcCombatStats, ShipModule } from '@void-sector/shared';
+import { MODULE_MAP } from '@void-sector/shared';
 import { logger } from '../../utils/logger.js';
 import { rejectGuest } from './utils.js';
-import { initCombatV3, validateEnergyBudget, resolveRoundV3, attemptFleeV3 } from '../../engine/combatV3Engine.js';
+import {
+  initCombatV3,
+  validateEnergyBudget,
+  resolveRoundV3,
+  attemptFleeV3,
+  buildCombatModules,
+} from '../../engine/combatV3Engine.js';
 import { generateNpcCombatStats } from '../../engine/npcCombatStats.js';
+import { getActiveShip, updateShipModules, addCredits } from '../../db/queries.js';
+import { markCivShipDead } from '../../db/civQueries.js';
+import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
+
+/** How long a defeated outlaw NPC stays destroyed before respawning. */
+const OUTLAW_RESPAWN_MS = 30 * 60 * 1000;
+/** Fraction of each resource lost on combat defeat. */
+const DEFEAT_CARGO_LOSS = 0.25;
+/** Module HP fraction retained after a combat defeat. */
+const DEFEAT_MODULE_HP = 0.5;
 
 export class CombatV3Service {
   private sessions = new Map<string, { state: CombatV3State; npcStats: NpcCombatStats; npcId?: number }>();
@@ -21,13 +38,19 @@ export class CombatV3Service {
       return;
     }
 
-    // TODO: Load player modules from DB (player_modules_v2)
-    // For now, create mock modules from ship stats
     const npcStats = generateNpcCombatStats(data.npcLevel);
 
-    // Placeholder: build CombatModule[] from player's installed modules
-    // This will be wired to the DB in the integration task
-    const playerModules: CombatModule[] = []; // TODO: load from DB
+    // Build the player's combat loadout from the modules installed on the active ship.
+    const ship = await getActiveShip(auth.userId);
+    const playerModules = buildCombatModules(ship?.modules ?? []);
+
+    if (playerModules.length === 0) {
+      client.send('error', {
+        code: 'NO_MODULES',
+        message: 'Kein kampftaugliches Modul installiert — rüste dein Schiff aus (ACEP → Module).',
+      });
+      return;
+    }
 
     const state = initCombatV3(playerModules, npcStats);
     this.sessions.set(auth.userId, { state, npcStats, npcId: data.npcId });
@@ -115,17 +138,50 @@ export class CombatV3Service {
     this.sessions.delete(auth.userId);
 
     if (outcome === 'victory') {
-      // TODO: Generate loot, add credits, handle NPC death (outlaw dead_until)
       const lootCredits = 50 + session.npcStats.armorHp;
+      try {
+        await addCredits(auth.userId, lootCredits);
+        // Destroy a defeated outlaw NPC ship (revived later by resetDeadOutlaws).
+        if (session.npcId != null) {
+          await markCivShipDead(session.npcId, new Date(Date.now() + OUTLAW_RESPAWN_MS));
+        }
+      } catch (err) {
+        logger.error({ err, userId: auth.userId }, 'combatV3 victory reward failed');
+      }
       client.send('combatV3End', { outcome, lootCredits });
       client.send('logEntry', `SIEG! +${lootCredits} Credits`);
     } else if (outcome === 'defeat') {
-      // TODO: Set all modules to 50% HP in DB, lose cargo
+      try {
+        await this.applyDefeatPenalty(auth.userId);
+      } catch (err) {
+        logger.error({ err, userId: auth.userId }, 'combatV3 defeat penalty failed');
+      }
       client.send('combatV3End', { outcome });
       client.send('logEntry', 'NIEDERLAGE — Module beschädigt, Cargo verloren');
     } else if (outcome === 'draw') {
       client.send('combatV3End', { outcome });
       client.send('logEntry', 'UNENTSCHIEDEN — Gegner zieht sich zurück');
+    }
+  }
+
+  /** Defeat penalty: every installed module drops to 50% HP and a quarter of each resource is lost. */
+  private async applyDefeatPenalty(userId: string): Promise<void> {
+    const ship = await getActiveShip(userId);
+    if (ship) {
+      const damaged: ShipModule[] = ship.modules.map((m) => {
+        const def = MODULE_MAP.get(m.moduleId);
+        const maxHp = def?.hitpoints ?? m.currentHp ?? 0;
+        return { ...m, currentHp: Math.floor(maxHp * DEFEAT_MODULE_HP) };
+      });
+      await updateShipModules(ship.id, damaged);
+    }
+
+    const cargo = await getCargoState(userId);
+    for (const resource of ['ore', 'gas', 'crystal'] as const) {
+      const lost = Math.floor((cargo[resource] ?? 0) * DEFEAT_CARGO_LOSS);
+      if (lost > 0) {
+        await removeFromInventory(userId, 'resource', resource, lost);
+      }
     }
   }
 }
