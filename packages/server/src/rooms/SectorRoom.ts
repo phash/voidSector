@@ -54,6 +54,7 @@ import {
   getStorageInventory,
   getPlayerCredits,
   getAlienCredits,
+  addCredits,
   getPlayerBookmarks,
   getPlayerFaction,
   getFactionUpgrades,
