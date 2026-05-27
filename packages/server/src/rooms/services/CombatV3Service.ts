@@ -52,6 +52,16 @@ export class CombatV3Service {
       return;
     }
 
+    // Apply faction/ACEP combat bonus (#528 combat_plating, ACEP kampf) to weapon attack.
+    const bonuses = await this.ctx.getPlayerBonuses(auth.userId);
+    if (bonuses.combatMultiplier && bonuses.combatMultiplier !== 1) {
+      for (const m of playerModules) {
+        if (m.category.startsWith('weapon') && typeof m.stats.atk === 'number') {
+          m.stats = { ...m.stats, atk: Math.round(m.stats.atk * bonuses.combatMultiplier) };
+        }
+      }
+    }
+
     const state = initCombatV3(playerModules, npcStats);
     this.sessions.set(auth.userId, { state, npcStats, npcId: data.npcId });
 

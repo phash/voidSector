@@ -55,6 +55,7 @@ import {
   getPlayerCredits,
   getAlienCredits,
   addCredits,
+  getPlayerUpgrades,
   getPlayerBookmarks,
   getPlayerFaction,
   getFactionUpgrades,
@@ -267,6 +268,21 @@ export class SectorRoom extends Room<SectorRoomState> {
       bonuses.extraModuleSlots = fx.extraModuleSlots;
       bonuses.ancientDetection = fx.ancientDetection;
       bonuses.helionDecoderEnabled = fx.helionDecoderEnabled;
+    }
+
+    // Honored-tier NPC faction perks (#528). Previously stored/displayed only.
+    // Effects feed the same bonus fields as ACEP. NOTE: cargoCapBonus and
+    // apRegenMultiplier are not yet consumed downstream (cargo cap lives in the
+    // DB layer, AP regen in a separate path) — tracked in #528.
+    const playerUpgrades = await getPlayerUpgrades(playerId).catch(() => []);
+    for (const u of playerUpgrades) {
+      if (!u.active) continue;
+      switch (u.upgrade_id) {
+        case 'cargo_expansion':  bonuses.cargoCapBonus += 3; break;
+        case 'advanced_scanner': bonuses.scanRadiusBonus += 1; break;
+        case 'combat_plating':   bonuses.combatMultiplier *= 1.2; break;
+        case 'void_drive':       bonuses.apRegenMultiplier *= 1.1; break;
+      }
     }
 
     return bonuses;
