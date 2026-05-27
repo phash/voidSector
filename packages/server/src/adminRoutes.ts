@@ -607,7 +607,7 @@ adminRouter.get('/construction-sites', async (_req: Request, res: Response) => {
 adminRouter.post('/construction-sites/:id/complete', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const site = await getConstructionSiteById(id);
+    const site = await getConstructionSiteById(String(id));
     if (!site) {
       res.status(404).json({ error: 'Construction site not found' });
       return;
@@ -887,7 +887,7 @@ adminRouter.get('/errors', async (req: Request, res: Response) => {
 
 adminRouter.post('/errors/:id/ignore', async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
     const ok = await updateErrorLogStatus(id, 'ignored');
     await logAdminEvent('ignore_error', { id });
@@ -900,7 +900,7 @@ adminRouter.post('/errors/:id/ignore', async (req: Request, res: Response) => {
 
 adminRouter.post('/errors/:id/resolve', async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
     const ok = await updateErrorLogStatus(id, 'resolved');
     await logAdminEvent('resolve_error', { id });
@@ -913,7 +913,7 @@ adminRouter.post('/errors/:id/resolve', async (req: Request, res: Response) => {
 
 adminRouter.delete('/errors/:id', async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
     const ok = await deleteErrorLog(id);
     await logAdminEvent('delete_error', { id });

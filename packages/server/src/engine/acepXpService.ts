@@ -29,6 +29,7 @@ export interface AcepXpSummary {
   trader: number;
   miner: number;
   total: number;
+  [key: string]: number; // assignable to AcepXpSnapshot (which is path-indexed)
 }
 
 /**

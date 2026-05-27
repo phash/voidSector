@@ -30,7 +30,9 @@ export async function addPlayerResearchV2(playerId: string, nodeId: string): Pro
 export async function getPlayerModulesV2(playerId: string): Promise<Array<{
   id: number; moduleId: string; slot: string; currentHp: number; installed: boolean;
 }>> {
-  const { rows } = await query(
+  const { rows } = await query<{
+    id: number; moduleId: string; slot: string; currentHp: number; installed: boolean;
+  }>(
     'SELECT id, module_id as "moduleId", slot, current_hp as "currentHp", installed FROM player_modules_v2 WHERE player_id = $1 ORDER BY slot',
     [playerId],
   );

@@ -1027,6 +1027,20 @@ export function getAcepBoostCost(currentLevel, totalLevels) {
 export function getAcepAutoXpThreshold(level) {
     return 10 * (Math.pow(2, level) - 1);
 }
+/**
+ * Derives the ACEP path level (0..ACEP_PATH_CAP) from accumulated raw XP,
+ * using the exponential auto-XP thresholds. Inverse of getAcepAutoXpThreshold.
+ */
+export function getAcepLevelForXp(rawXp) {
+    let level = 0;
+    for (let l = 1; l <= ACEP_PATH_CAP; l++) {
+        if (rawXp >= getAcepAutoXpThreshold(l))
+            level = l;
+        else
+            break;
+    }
+    return level;
+}
 // Legacy compat
 export const ACEP_PATH_CAP_SHARED = ACEP_PATH_CAP;
 // Universe Tick Engine constants

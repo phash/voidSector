@@ -30,6 +30,7 @@ vi.mock('../engine/acepXpService.js', () => ({
 vi.mock('../db/queries.js', () => ({
   getInventory: vi.fn().mockResolvedValue([]),
   getSector: vi.fn().mockResolvedValue(null),
+  getJumpGate: vi.fn().mockResolvedValue(null),
   saveSector: vi.fn().mockResolvedValue(undefined),
   addDiscovery: vi.fn().mockResolvedValue(undefined),
   insertJumpGate: vi.fn().mockResolvedValue(undefined),
@@ -268,7 +269,7 @@ describe('WreckService.handleConsumeSlate', () => {
 
 describe('WreckService.handleFeedSlateToGate', () => {
   it('sends actionError NO_GATE when sector has no jumpgate', async () => {
-    vi.mocked(queries.getSector).mockResolvedValue(null);
+    vi.mocked(queries.getJumpGate).mockResolvedValue(null);
 
     const ctx = makeCtx();
     const service = new WreckService(ctx as any);
@@ -280,7 +281,7 @@ describe('WreckService.handleFeedSlateToGate', () => {
   });
 
   it('sends actionError NOT_OWNER when slate belongs to another player', async () => {
-    vi.mocked(queries.getSector).mockResolvedValue({ jumpgate: true } as any);
+    vi.mocked(queries.getJumpGate).mockResolvedValue({ id: 'g1' } as any);
     vi.mocked(wreckQueries.getWreckSlateMetadata).mockResolvedValue({
       id: 'slate-1',
       playerId: 'other-player',

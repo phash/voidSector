@@ -1453,7 +1453,7 @@ export class SectorRoom extends Room<SectorRoomState> {
             environment: 'empty',
             contents: ['station'],
             metadata: {},
-          } as any;
+          } as SectorData;
         } else {
           const { qx, qy } = sectorToQuadrant(sectorX, sectorY);
           const _controls = await getAllQuadrantControls();

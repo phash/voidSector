@@ -422,6 +422,11 @@ export declare function getAcepBoostCost(currentLevel: number, totalLevels: numb
 } | null;
 /** Auto-XP threshold to reach a level passively */
 export declare function getAcepAutoXpThreshold(level: number): number;
+/**
+ * Derives the ACEP path level (0..ACEP_PATH_CAP) from accumulated raw XP,
+ * using the exponential auto-XP thresholds. Inverse of getAcepAutoXpThreshold.
+ */
+export declare function getAcepLevelForXp(rawXp: number): number;
 export declare const ACEP_PATH_CAP_SHARED = 10;
 export declare const UNIVERSE_TICK_MS = 5000;
 export declare const FACTION_EXPANSION_INTERVAL_TICKS = 360;

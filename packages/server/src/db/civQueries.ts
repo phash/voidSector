@@ -288,6 +288,6 @@ export async function markCivShipDead(npcId: number, deadUntil: Date): Promise<v
 }
 
 export async function getNpcPosition(npcId: number): Promise<{ x: number; y: number } | null> {
-  const { rows } = await query('SELECT x, y FROM civ_ships WHERE id = $1', [npcId]);
+  const { rows } = await query<{ x: number; y: number }>('SELECT x, y FROM civ_ships WHERE id = $1', [npcId]);
   return rows[0] ?? null;
 }
