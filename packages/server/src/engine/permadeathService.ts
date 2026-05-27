@@ -11,6 +11,7 @@ import { query } from '../db/client.js';
 import { getAcepXpSummary } from './acepXpService.js';
 import { calculateTraits, dominantTrait } from './traitCalculator.js';
 import { addToInventory } from './inventoryService.js';
+import { getAcepAutoXpThreshold } from '@void-sector/shared';
 
 export interface WreckData {
   id: string;
@@ -166,8 +167,9 @@ export async function destroyShipAndCreateLegacy(params: {
     `INSERT INTO ships
        (owner_id, name, fuel, active,
         acep_ausbau_xp, acep_intel_xp, acep_kampf_xp, acep_explorer_xp,
+        acep_ausbau_xp_raw, acep_intel_xp_raw, acep_kampf_xp_raw, acep_explorer_xp_raw,
         acep_traits, acep_generation, acep_legacy_from_ship_id)
-     VALUES ($1, $2, 50, true, $3, $4, $5, $6, $7, $8, $9)
+     VALUES ($1, $2, 50, true, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING id`,
     [
       params.playerId,
@@ -176,6 +178,10 @@ export async function destroyShipAndCreateLegacy(params: {
       legacyXp.intel,
       legacyXp.kampf,
       legacyXp.explorer,
+      getAcepAutoXpThreshold(legacyXp.ausbau),
+      getAcepAutoXpThreshold(legacyXp.intel),
+      getAcepAutoXpThreshold(legacyXp.kampf),
+      getAcepAutoXpThreshold(legacyXp.explorer),
       JSON.stringify(legacyTraits),
       oldGen + 1,
       params.shipId,

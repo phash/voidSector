@@ -11,6 +11,8 @@ import {
   ACEP_PATH_CAP,
   ACEP_ALL_PATHS,
   getAcepBoostCost,
+  getAcepAutoXpThreshold,
+  getAcepLevelForXp,
   type AcepPath,
 } from '@void-sector/shared';
 
@@ -75,6 +77,7 @@ export function getAusbauGating(ausbauLevel: number): {
   return { maxLabTier: 1, factoryUnlocked: false, factorySpeedBonus: 0 };
 }
 
+/** Level columns (0..ACEP_PATH_CAP) — read by all gameplay consumers. */
 const COL: Record<AcepPath, string> = {
   ausbau: 'acep_ausbau_xp',
   intel: 'acep_intel_xp',
@@ -84,6 +87,20 @@ const COL: Record<AcepPath, string> = {
   trader: 'acep_trader_xp',
   miner: 'acep_miner_xp',
 };
+
+/** Raw accumulated-XP columns — the level is derived from these (migration 083). */
+const RAW_COL: Record<AcepPath, string> = {
+  ausbau: 'acep_ausbau_xp_raw',
+  intel: 'acep_intel_xp_raw',
+  kampf: 'acep_kampf_xp_raw',
+  explorer: 'acep_explorer_xp_raw',
+  defense: 'acep_defense_xp_raw',
+  trader: 'acep_trader_xp_raw',
+  miner: 'acep_miner_xp_raw',
+};
+
+/** Raw XP ceiling — the threshold for the maximum level. */
+const MAX_RAW_XP = getAcepAutoXpThreshold(ACEP_PATH_CAP);
 
 const ALL_COLS = Object.values(COL).join(', ');
 
@@ -111,23 +128,28 @@ export async function getAcepXpSummary(shipId: string): Promise<AcepXpSummary> {
 }
 
 /**
- * Add XP to a ship's specialisation path.
- * Respects per-path cap (10 levels).
+ * Award raw XP to a ship's specialisation path. The raw XP accumulates toward
+ * the exponential level thresholds; the derived level (0..ACEP_PATH_CAP) is
+ * recomputed and persisted to the level column. A single action therefore nudges
+ * progress instead of clamping the path straight to max.
  */
 export async function addAcepXp(shipId: string, path: AcepPath, amount: number): Promise<void> {
   if (amount <= 0) return;
-  const current = await getAcepXpSummary(shipId);
 
-  const pathValue = current[path];
-  const remaining = ACEP_PATH_CAP - pathValue;
-  const effective = Math.min(amount, remaining);
+  const rawCol = RAW_COL[path];
+  const levelCol = COL[path];
 
-  if (effective <= 0) return;
+  // Accumulate raw XP (capped at the level-10 threshold) and read it back.
+  const { rows } = await query<{ raw: number }>(
+    `UPDATE ships SET ${rawCol} = LEAST(${rawCol} + $1, $2) WHERE id = $3 RETURNING ${rawCol} AS raw`,
+    [amount, MAX_RAW_XP, shipId],
+  );
+  if (rows.length === 0) return;
 
-  const col = COL[path];
-  await query(`UPDATE ships SET ${col} = ${col} + $1 WHERE id = $2`, [effective, shipId]);
+  const newLevel = getAcepLevelForXp(rows[0].raw ?? 0);
+  await query(`UPDATE ships SET ${levelCol} = $1 WHERE id = $2`, [newLevel, shipId]);
 
-  // Recalculate and persist traits after XP change
+  // Recalculate and persist traits after the level change.
   const updated = await getAcepXpSummary(shipId);
   const traits = calculateTraits(updated);
   await query(`UPDATE ships SET acep_traits = $1 WHERE id = $2`, [JSON.stringify(traits), shipId]);
@@ -177,6 +199,16 @@ export async function boostAcepPath(
     return `Zu wenig Wissen (${cost.wissen} benötigt)`;
   }
 
-  await addAcepXp(shipId, path, 1);
+  // Buy the next level outright: bump the level column and pull raw XP up to that
+  // level's threshold so future auto-XP continues from a consistent baseline.
+  const newLevel = currentLevel + 1;
+  await query(
+    `UPDATE ships SET ${COL[path]} = $1, ${RAW_COL[path]} = GREATEST(${RAW_COL[path]}, $2) WHERE id = $3`,
+    [newLevel, getAcepAutoXpThreshold(newLevel), shipId],
+  );
+
+  const updated = await getAcepXpSummary(shipId);
+  const traits = calculateTraits(updated);
+  await query(`UPDATE ships SET acep_traits = $1 WHERE id = $2`, [JSON.stringify(traits), shipId]);
   return undefined;
 }

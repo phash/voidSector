@@ -1,134 +1,66 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// Mock DB + query dependencies so pure function imports work
-vi.mock('../../db/client.js', () => ({
-  query: vi.fn(),
-}));
+// Mock DB so the pure functions import without a live connection.
+vi.mock('../../db/client.js', () => ({ query: vi.fn() }));
 vi.mock('../../db/queries.js', () => ({
   deductCredits: vi.fn(),
   addCredits: vi.fn(),
   deductWissen: vi.fn(),
 }));
 
-import { getAusbauGating } from '../acepXpService.js';
+import { getAusbauGating, getAcepEffects, type AcepXpSummary } from '../acepXpService.js';
 
-/**
- * Unit tests for ACEP XP budget logic.
- * The cap enforcement logic lives inside addAcepXp() which requires a DB.
- * Here we test the budget calculation logic in isolation (no DB import needed).
- */
-
-type AcepPath = 'ausbau' | 'intel' | 'kampf' | 'explorer';
-const ACEP_PATH_CAP = 50;
-const ACEP_TOTAL_CAP = 100;
-
-describe('ACEP XP constants', () => {
-  it('per-path cap is 50', () => {
-    expect(ACEP_PATH_CAP).toBe(50);
-  });
-
-  it('total cap is 100', () => {
-    expect(ACEP_TOTAL_CAP).toBe(100);
-  });
-
-  it('total cap equals 2 × per-path cap (forces specialisation)', () => {
-    expect(ACEP_TOTAL_CAP).toBe(2 * ACEP_PATH_CAP);
-  });
+const summary = (over: Partial<AcepXpSummary> = {}): AcepXpSummary => ({
+  ausbau: 0, intel: 0, kampf: 0, explorer: 0, defense: 0, trader: 0, miner: 0, total: 0, ...over,
 });
 
-describe('ACEP XP budget logic', () => {
-  /** Mirrors the cap logic in addAcepXp without DB */
-  function computeEffectiveGain(
-    current: Record<AcepPath, number>,
-    path: AcepPath,
-    amount: number,
-  ): number {
-    const total = Object.values(current).reduce((a, b) => a + b, 0);
-    const pathValue = current[path];
-    const remaining_path = ACEP_PATH_CAP - pathValue;
-    const remaining_total = ACEP_TOTAL_CAP - total;
-    return Math.max(0, Math.min(amount, remaining_path, remaining_total));
-  }
-
-  const empty = (): Record<AcepPath, number> => ({
-    ausbau: 0,
-    intel: 0,
-    kampf: 0,
-    explorer: 0,
-  });
-
-  it('gains full amount when budget is available', () => {
-    const result = computeEffectiveGain(empty(), 'intel', 10);
-    expect(result).toBe(10);
-  });
-
-  it('caps gain at per-path limit', () => {
-    const current = { ...empty(), intel: 48 };
-    const result = computeEffectiveGain(current, 'intel', 10);
-    expect(result).toBe(2); // only 2 remaining of 50
-  });
-
-  it('caps gain at total budget limit', () => {
-    // 90 XP already spent across paths
-    const current = { ausbau: 50, intel: 40, kampf: 0, explorer: 0 };
-    const result = computeEffectiveGain(current, 'kampf', 20);
-    expect(result).toBe(10); // only 10 remaining of 100
-  });
-
-  it('returns 0 when path is already at cap', () => {
-    const current = { ...empty(), kampf: 50 };
-    const result = computeEffectiveGain(current, 'kampf', 5);
-    expect(result).toBe(0);
-  });
-
-  it('returns 0 when total budget is exhausted', () => {
-    const current = { ausbau: 50, intel: 50, kampf: 0, explorer: 0 };
-    const result = computeEffectiveGain(current, 'kampf', 5);
-    expect(result).toBe(0);
-  });
-
-  it('each path can reach cap independently', () => {
-    // Max out ausbau and intel — these together hit total cap
-    const current = { ausbau: 50, intel: 50, kampf: 0, explorer: 0 };
-    expect(computeEffectiveGain(current, 'kampf', 1)).toBe(0);
-    expect(computeEffectiveGain(current, 'explorer', 1)).toBe(0);
-  });
-
-  it('respects both caps simultaneously', () => {
-    // 45 intel (5 remaining on path), 50 total remaining on budget → path wins
-    const current = { ...empty(), intel: 45 };
-    expect(computeEffectiveGain(current, 'intel', 10)).toBe(5);
-
-    // 50 ausbau, 45 kampf (5 remaining on path) — but total is 95, so 5 remaining on budget
-    const current2 = { ausbau: 50, intel: 0, kampf: 45, explorer: 0 };
-    expect(computeEffectiveGain(current2, 'kampf', 10)).toBe(5); // path cap limits
-  });
-});
-
-describe('getAusbauGating', () => {
-  it('0 XP: lab 1, no factory', () => {
+// getAusbauGating is keyed on the AUSBAU *level* (0..10), not raw XP.
+describe('getAusbauGating (level-based)', () => {
+  it('level 0: lab tier 1, no factory', () => {
     const g = getAusbauGating(0);
     expect(g.maxLabTier).toBe(1);
     expect(g.factoryUnlocked).toBe(false);
   });
 
-  it('10 XP: lab 2, factory unlocked', () => {
-    const g = getAusbauGating(10);
+  it('level 1: still lab tier 1, no factory', () => {
+    expect(getAusbauGating(1).maxLabTier).toBe(1);
+    expect(getAusbauGating(1).factoryUnlocked).toBe(false);
+  });
+
+  it('level 2: lab tier 2, factory unlocked', () => {
+    const g = getAusbauGating(2);
     expect(g.maxLabTier).toBe(2);
     expect(g.factoryUnlocked).toBe(true);
   });
 
-  it('25 XP: lab 3', () => {
-    expect(getAusbauGating(25).maxLabTier).toBe(3);
+  it('levels 5 / 7 / 10 map to lab tiers 3 / 4 / 5', () => {
+    expect(getAusbauGating(5).maxLabTier).toBe(3);
+    expect(getAusbauGating(7).maxLabTier).toBe(4);
+    expect(getAusbauGating(10).maxLabTier).toBe(5);
+    expect(getAusbauGating(10).factorySpeedBonus).toBe(0.5);
+  });
+});
+
+describe('getAcepEffects (level-based bonuses)', () => {
+  it('scales with path levels', () => {
+    const e = getAcepEffects(summary({ ausbau: 6, intel: 6, kampf: 5, miner: 4, defense: 3 }));
+    expect(e.extraModuleSlots).toBe(2); // floor(6/3)
+    expect(e.scanRadiusBonus).toBe(2); // floor(6/3)
+    expect(e.combatDamageBonus).toBeCloseTo(0.10); // 5 * 0.02
+    expect(e.miningBonus).toBeCloseTo(0.12); // 4 * 0.03
+    expect(e.shieldRegenBonus).toBeCloseTo(0.09); // 3 * 0.03
   });
 
-  it('40 XP: lab 4', () => {
-    expect(getAusbauGating(40).maxLabTier).toBe(4);
+  it('gates explorer perks at level thresholds', () => {
+    expect(getAcepEffects(summary({ explorer: 4 })).ancientDetection).toBe(false);
+    expect(getAcepEffects(summary({ explorer: 5 })).ancientDetection).toBe(true);
+    expect(getAcepEffects(summary({ explorer: 10 })).helionDecoderEnabled).toBe(true);
   });
 
-  it('50 XP: lab 5, speed bonus 0.5', () => {
-    const g = getAusbauGating(50);
-    expect(g.maxLabTier).toBe(5);
-    expect(g.factorySpeedBonus).toBe(0.5);
+  it('zero levels yield no bonuses', () => {
+    const e = getAcepEffects(summary());
+    expect(e.extraModuleSlots).toBe(0);
+    expect(e.combatDamageBonus).toBe(0);
+    expect(e.cargoMultiplier).toBe(1);
   });
 });

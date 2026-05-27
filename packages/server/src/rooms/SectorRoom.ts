@@ -9,7 +9,7 @@ import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
-import { getAcepXpSummary, getAcepEffects, type AcepPath } from '../engine/acepXpService.js';
+import { getAcepXpSummary, getAcepEffects, getAusbauGating, type AcepPath } from '../engine/acepXpService.js';
 import { recordVisit } from '../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../engine/quadrantEngine.js';
 import { isFrontierQuadrant } from '../engine/expansionEngine.js';
@@ -95,7 +95,6 @@ import {
   STATION_REP_VISIT,
   COSMIC_FACTION_IDS,
   HYPERDRIVE_CHARGE_PER_GAS,
-  getAcepLevel,
   FUEL_MIN_TANK,
   BASE_FUEL_CAPACITY,
   CONQUEST_POOL_MAX,
@@ -1629,7 +1628,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const wissen = await getWissen(auth.userId);
       const wissenSpent = await getWissenSpent(auth.userId);
       const typedArtefacts = await getTypedArtefacts(auth.userId);
-      const labTier = getAcepLevel(acepXp.ausbau);
+      const labTier = getAusbauGating(acepXp.ausbau).maxLabTier;
       client.send('researchState', {
         unlockedModules: researchData.unlockedModules,
         blueprints: researchData.blueprints,
