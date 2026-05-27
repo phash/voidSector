@@ -1036,6 +1036,10 @@ export class SectorRoom extends Room<SectorRoomState> {
           const humanityDelta = data.accepted ? 3 : -2;
           await contributeHumanityRep(data.factionId, humanityDelta).catch(() => {});
         }
+        // Community quest: a positive (accepted) alien interaction counts toward the goal (#531)
+        if (data.accepted) {
+          this.communityQuests.contribute(auth.userId, 1, 'community_alien_interaction').catch(() => {});
+        }
         client.send('alienEncounterResolved', { factionId: data.factionId, repDelta: delta });
       },
     );

@@ -460,6 +460,8 @@ export class QuestService {
 
     if (objectives.every((o) => o.fulfilled)) {
       await updateQuestStatus(row.id, 'completed');
+      // Community quest: each completed quest counts toward the interaction goal (#531)
+      this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_interaction').catch(() => {});
       const rewards = row.rewards as QuestRewards;
 
       if (rewards.credits) {

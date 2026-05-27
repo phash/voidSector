@@ -910,6 +910,8 @@ export class WorldService {
     client.send('buildResult', { success: true, constructionSite });
     this.ctx.broadcast('constructionSiteCreated', { site: constructionSite });
     client.send('logEntry', `Jumpgate-Baustelle eröffnet bei (${sx}, ${sy})`);
+    // Community quest: opening a jumpgate construction counts toward the delivery goal (#531)
+    this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_delivery').catch(() => {});
   }
 
   // ── Jumpgate Upgrade / Dismantle / Toll ───────────────────────────
