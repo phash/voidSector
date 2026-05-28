@@ -4,7 +4,7 @@ export { calculateShipStats, validateModuleInstall, getAcepLevel, getExtraSlotCo
 export { calcHyperjumpAP, calcHyperjumpFuel, calcHyperjumpFuelV2, getEngineSpeed, } from './jumpCalc.js';
 export { createHyperdriveState, calculateCurrentCharge, spendCharge } from './hyperdriveCalc.js';
 export { generateStationName } from './stationNames.js';
-export { isModuleFreelyAvailable, isModuleUnlocked } from './research.js';
+export * from './techGating.js';
 export * from './stationProduction.js';
 export * from './techTree.js';
 export * from './techTreeEffects.js';
