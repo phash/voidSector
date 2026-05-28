@@ -129,11 +129,9 @@ describe('ShopTab', () => {
   });
 
   it('hides tier-2 modules when categoryTiers is empty (default tier 1)', () => {
-    // Make isModuleUnlocked use real logic for this test
+    // Make isModuleUnlocked simulate real gating: tier-2+ weapon_energy locked without tier unlock
     (isModuleUnlocked as ReturnType<typeof vi.fn>).mockImplementation(
-      (id: string, categoryTiers: Record<string, number>, blueprints: string[]) => {
-        // Re-import real logic inline: tier-2 modules need categoryTier >= 2
-        // We simulate: weapon_energy modules at tier > 1 are locked
+      (id: string, categoryTiers: Record<string, number>, _blueprints: string[]) => {
         if (id.includes('mk2') || id.includes('mk3') || id.includes('mk4') || id.includes('mk5')) {
           return (categoryTiers['weapon_energy'] ?? 1) >= 2;
         }
@@ -142,23 +140,25 @@ describe('ShopTab', () => {
     );
     mockStoreState({ ...baseStore, categoryTiers: {} });
     render(<ShopTab />);
-    // puls_laser_mk2 should be hidden (no tier-2 unlock)
-    expect(screen.queryByText(/Puls-Laser MK\.II/i)).not.toBeInTheDocument();
+    // puls_laser_mk2 renders as 'Puls-Laser Mk2' — must be absent when tier-2 is locked
+    expect(screen.queryByText('Puls-Laser Mk2')).not.toBeInTheDocument();
+    // puls_laser_mk1 renders as 'Puls-Laser Mk1' — must be present (proves the list rendered, not empty)
+    expect(screen.getByText('Puls-Laser Mk1')).toBeInTheDocument();
   });
 
   it('shows tier-2 weapon_energy modules when categoryTiers has weapon_energy: 2', () => {
     (isModuleUnlocked as ReturnType<typeof vi.fn>).mockImplementation(
       (id: string, categoryTiers: Record<string, number>, _blueprints: string[]) => {
-        if (id.includes('mk2')) return (categoryTiers['weapon_energy'] ?? 1) >= 2;
+        if (id.includes('mk2') || id.includes('mk3') || id.includes('mk4') || id.includes('mk5')) {
+          return (categoryTiers['weapon_energy'] ?? 1) >= 2;
+        }
         return true;
       },
     );
     mockStoreState({ ...baseStore, categoryTiers: { weapon_energy: 2 } });
     render(<ShopTab />);
-    // With weapon_energy tier 2, mk2 modules pass the filter
-    // The mock isModuleUnlocked now returns true for mk2 items
-    const buyBtns = screen.getAllByText(/shop\.buy/i);
-    expect(buyBtns.length).toBeGreaterThan(0);
+    // puls_laser_mk2 renders as 'Puls-Laser Mk2' — must be present when tier-2 is unlocked
+    expect(screen.getByText('Puls-Laser Mk2')).toBeInTheDocument();
   });
 
   it('isModuleUnlocked is called with (id, categoryTiers, blueprints) — new 3-arg signature', () => {
