@@ -22,4 +22,11 @@ export function isModuleUnlocked(moduleId, categoryTiers, blueprints) {
     const unlocked = categoryTiers[def.category] ?? 1;
     return def.tier <= unlocked;
 }
+/** True if a module is available at tier 1 (no research needed) and not blueprint-only. */
+export function isModuleFreelyAvailable(moduleId) {
+    const def = MODULE_MAP.get(moduleId);
+    if (!def)
+        return false;
+    return !def.isFoundOnly && def.tier === 1;
+}
 //# sourceMappingURL=techGating.js.map

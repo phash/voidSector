@@ -722,6 +722,11 @@ class GameNetwork {
     room.onMessage('playerResearch', (data: { research: string[] }) => {
       useStore.getState().setPlayerResearch(data.research);
     });
+
+    // Tech tier-gating: category tier map
+    room.onMessage('categoryTechUpdate', (data: { categoryTiers: Record<string, number> }) => {
+      useStore.getState().setCategoryTiers(data.categoryTiers);
+    });
     room.onMessage('researchResult', (data: { success: boolean; nodeId?: string; error?: string }) => {
       if (data.success && data.nodeId) {
         const store = useStore.getState();
@@ -2905,6 +2910,16 @@ class GameNetwork {
 
   sendResearchNode(nodeId: string) {
     this.sectorRoom?.send('researchNode', { nodeId });
+  }
+
+  // ── Tech Tier-Gating ───────────────────────────────────────────────────────
+
+  sendResearchCategoryTier(category: string) {
+    this.sectorRoom?.send('researchCategoryTier', { category });
+  }
+
+  requestCategoryTech() {
+    this.sectorRoom?.send('getCategoryTech');
   }
 }
 
