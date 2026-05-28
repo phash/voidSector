@@ -106,3 +106,22 @@ export async function resetTechTree(playerId: string): Promise<void> {
     [playerId],
   );
 }
+
+// ─── category_tech (tier gating #527) ────────────────────────────────────────
+
+/** Returns the player's per-category unlocked-tier map (missing category => caller treats as 1). */
+export async function getCategoryTiers(playerId: string): Promise<Record<string, number>> {
+  const { rows } = await query<{ category_tech: Record<string, number> }>(
+    'SELECT category_tech FROM players WHERE id = $1',
+    [playerId],
+  );
+  return rows[0]?.category_tech ?? {};
+}
+
+/** Sets a category's unlocked tier (atomic jsonb_set; category key whitelisted by caller). */
+export async function bumpCategoryTier(playerId: string, category: string, newTier: number): Promise<void> {
+  await query(
+    `UPDATE players SET category_tech = jsonb_set(COALESCE(category_tech, '{}'), $2, to_jsonb($3::int), true) WHERE id = $1`,
+    [playerId, `{${category}}`, newTier],
+  );
+}
