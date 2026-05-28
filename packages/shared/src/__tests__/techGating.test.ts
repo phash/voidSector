@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getMaxTier, getResearchCost, isModuleUnlocked } from '../techGating.js';
+import { getMaxTier, getResearchCost, isModuleUnlocked, isModuleFreelyAvailable } from '../techGating.js';
 import { MODULE_DEFINITIONS } from '../moduleDefinitions.js';
 
 describe('getMaxTier', () => {
@@ -37,5 +37,24 @@ describe('isModuleUnlocked', () => {
   });
   it('unknown module is not unlocked', () => {
     expect(isModuleUnlocked('nope', { weapon_energy: 9 }, [])).toBe(false);
+  });
+});
+
+describe('isModuleFreelyAvailable', () => {
+  it('tier-1 non-found module is freely available', () => {
+    // puls_laser_mk1 is tier 1 and not found-only
+    expect(isModuleFreelyAvailable('puls_laser_mk1')).toBe(true);
+  });
+  it('tier-2 module is not freely available', () => {
+    expect(isModuleFreelyAvailable('puls_laser_mk2')).toBe(false);
+  });
+  it('found-only module is not freely available even if tier 1', () => {
+    const foundOnly = MODULE_DEFINITIONS.find((m) => m.isFoundOnly);
+    if (foundOnly) {
+      expect(isModuleFreelyAvailable(foundOnly.id)).toBe(false);
+    }
+  });
+  it('unknown module is not freely available', () => {
+    expect(isModuleFreelyAvailable('does_not_exist')).toBe(false);
   });
 });
