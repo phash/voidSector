@@ -12,8 +12,6 @@ export { createHyperdriveState, calculateCurrentCharge, spendCharge } from './hy
 export { generateStationName } from './stationNames.js';
 export * from './techGating.js';
 export * from './stationProduction.js';
-export * from './techTree.js';
-export * from './techTreeEffects.js';
 export { MODULE_DEFINITIONS, MODULE_MAP } from './moduleDefinitions.js';
 export type { ModuleDefinition } from './moduleDefinitions.js';
 export { RESEARCH_DEFINITIONS } from './researchDefinitions.js';

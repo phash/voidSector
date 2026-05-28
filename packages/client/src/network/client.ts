@@ -2697,16 +2697,6 @@ class GameNetwork {
     this.sectorRoom?.send('getModuleInventory');
   }
 
-  // Tech-Baum: Tech Tree (node-based)
-  getTechTree(): void {
-    this.sectorRoom?.send('getTechTree');
-  }
-  researchTechNode(nodeId: string): void {
-    this.sectorRoom?.send('researchTechNode', { nodeId });
-  }
-  resetTechTree(): void {
-    this.sectorRoom?.send('resetTechTree');
-  }
   sendActivateBlueprint(moduleId: string) {
     this.sectorRoom?.send('activateBlueprint', { moduleId });
   }
