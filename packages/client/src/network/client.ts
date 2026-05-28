@@ -733,6 +733,10 @@ class GameNetwork {
         store.setPlayerResearch([...store.playerResearch, data.nodeId]);
         store.addLogEntry(`Forschung abgeschlossen: ${data.nodeId}`);
         store.showSuccessToast('FORSCHUNG ABGESCHLOSSEN');
+      } else if (data.success && !data.nodeId) {
+        const store = useStore.getState();
+        store.addLogEntry('Forschung abgeschlossen');
+        store.showSuccessToast('FORSCHUNG ABGESCHLOSSEN');
       } else if (!data.success) {
         const store = useStore.getState();
         store.addLogEntry(`Forschung fehlgeschlagen: ${data.error ?? 'Unbekannter Fehler'}`);
