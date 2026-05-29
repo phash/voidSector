@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { Hint } from './Hint';
 import type { AcepPath } from '@void-sector/shared';
 import { getAcepBoostCost } from '@void-sector/shared';
 
@@ -157,14 +158,24 @@ export function AcepTab() {
                 <div style={{ width: `${(level / 10) * 100}%`, height: '100%', background: color }} />
               </div>
               {cost ? (
-                <button
-                  style={{ ...btnStyle, border: `1px solid ${color}`, color, opacity: canBoost ? 1 : 0.35, fontSize: '0.7rem' }}
-                  disabled={!canBoost}
-                  title={`+1 Level: ${cost.credits} CR · ${cost.wissen} W`}
-                  onClick={() => network.sendAcepBoost(key)}
+                <Hint
+                  reason={
+                    canBoost
+                      ? null
+                      : credits < cost.credits
+                        ? t('reasons.insufficientCredits')
+                        : t('reasons.insufficientWissen')
+                  }
                 >
-                  [+1]
-                </button>
+                  <button
+                    style={{ ...btnStyle, border: `1px solid ${color}`, color, opacity: canBoost ? 1 : 0.35, fontSize: '0.7rem' }}
+                    disabled={!canBoost}
+                    title={`+1 Level: ${cost.credits} CR · ${cost.wissen} W`}
+                    onClick={() => network.sendAcepBoost(key)}
+                  >
+                    [+1]
+                  </button>
+                </Hint>
               ) : (
                 <span style={{ color: '#00FF88', fontSize: '0.75rem' }}>MAX</span>
               )}

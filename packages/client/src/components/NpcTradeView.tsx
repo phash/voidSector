@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
+import { Hint } from './Hint';
 
 const RESOURCES = ['ore', 'gas', 'crystal'] as const;
 const RES_COLORS: Record<string, string> = { ore: '#FFB000', gas: '#00BFFF', crystal: '#FF44FF' };
@@ -22,12 +24,18 @@ function ResourceTradeRow({
   playerCredits: number;
   playerStock: number;
 }) {
+  const { t } = useTranslation('ui');
   const [qty, setQty] = useState(1);
   const color = RES_COLORS[resource] ?? '#FFB000';
   const isBuy = action === 'buy';
   const maxQty = isBuy ? Math.min(stock, Math.floor(playerCredits / Math.max(1, price))) : playerStock;
   const totalCost = qty * price;
   const canTrade = price > 0 && qty > 0 && qty <= maxQty;
+  const tradeReason = canTrade
+    ? null
+    : isBuy
+      ? t('reasons.insufficientCredits')
+      : t('reasons.insufficientResources');
   const unavailable = isBuy ? stock <= 0 : false;
 
   useEffect(() => {
@@ -68,23 +76,25 @@ function ResourceTradeRow({
         </button>
       </div>
       <span style={{ color: '#555', fontSize: '0.6rem', width: 50 }}>= {totalCost} CR</span>
-      <button
-        className="vs-btn"
-        style={{
-          fontSize: '0.6rem',
-          padding: '2px 8px',
-          borderColor: isBuy ? '#00FF66' : '#FF6644',
-          color: isBuy ? '#00FF66' : '#FF6644',
-        }}
-        disabled={!canTrade}
-        onClick={() => {
-          network.sendNpcShipTrade(npcId, resource, qty, action);
-          // Refresh trade info after short delay
-          setTimeout(() => network.sendGetNpcTradeInfo(npcId), 300);
-        }}
-      >
-        {isBuy ? '[BUY]' : '[SELL]'}
-      </button>
+      <Hint reason={tradeReason}>
+        <button
+          className="vs-btn"
+          style={{
+            fontSize: '0.6rem',
+            padding: '2px 8px',
+            borderColor: isBuy ? '#00FF66' : '#FF6644',
+            color: isBuy ? '#00FF66' : '#FF6644',
+          }}
+          disabled={!canTrade}
+          onClick={() => {
+            network.sendNpcShipTrade(npcId, resource, qty, action);
+            // Refresh trade info after short delay
+            setTimeout(() => network.sendGetNpcTradeInfo(npcId), 300);
+          }}
+        >
+          {isBuy ? '[BUY]' : '[SELL]'}
+        </button>
+      </Hint>
     </div>
   );
 }
