@@ -261,6 +261,7 @@ export declare const MONITORS: {
     readonly ACEP: "ACEP";
     readonly FRIENDS: "FRIENDS";
     readonly FABRIK: "FABRIK";
+    readonly XENO: "XENO";
 };
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
 /** Programs selectable in Section 1 of the cockpit layout (#107) */

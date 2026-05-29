@@ -655,6 +655,7 @@ export const MONITORS = {
   ACEP: 'ACEP',
   FRIENDS: 'FRIENDS',
   FABRIK: 'FABRIK',
+  XENO: 'XENO',
 } as const;
 
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
@@ -675,6 +676,7 @@ export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.ACEP,
   MONITORS.FRIENDS,
   MONITORS.FABRIK,
+  MONITORS.XENO,
 ];
 
 /** Labels for cockpit program buttons */
@@ -694,6 +696,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
   ACEP: 'ACEP',
   FRIENDS: 'FRIENDS',
   FABRIK: 'FABRIK',
+  XENO: 'XENO',
 };
 
 // --- Phase 5: Deep Systems ---

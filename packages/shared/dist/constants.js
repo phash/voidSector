@@ -546,6 +546,7 @@ export const MONITORS = {
     ACEP: 'ACEP',
     FRIENDS: 'FRIENDS',
     FABRIK: 'FABRIK',
+    XENO: 'XENO',
 };
 /** Programs selectable in Section 1 of the cockpit layout (#107) */
 export const COCKPIT_PROGRAMS = [
@@ -563,6 +564,7 @@ export const COCKPIT_PROGRAMS = [
     MONITORS.ACEP,
     MONITORS.FRIENDS,
     MONITORS.FABRIK,
+    MONITORS.XENO,
 ];
 /** Labels for cockpit program buttons */
 export const COCKPIT_PROGRAM_LABELS = {
@@ -581,6 +583,7 @@ export const COCKPIT_PROGRAM_LABELS = {
     ACEP: 'ACEP',
     FRIENDS: 'FRIENDS',
     FABRIK: 'FABRIK',
+    XENO: 'XENO',
 };
 // --- Phase 5: Deep Systems ---
 // Fuel
