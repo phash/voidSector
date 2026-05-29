@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { logger } from './utils/logger.js';
+import { renderVerificationEmail } from './emailTemplates.js';
 
 const FROM = process.env.EMAIL_FROM || 'noreply@mr-development.de';
 const HOST = process.env.EMAIL_SMTP_HOST || 'mail.mr-development.de';
@@ -29,13 +30,6 @@ export function isEmailEnabled(): boolean {
   return !!PASS;
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
-  );
-}
-
 /**
  * Sends the verification email. Best-effort: if SMTP is not configured the call is a no-op
  * (logged), so registration still succeeds in dev/test.
@@ -51,19 +45,7 @@ export async function sendVerificationEmail(
     logger.warn({ to }, 'Email disabled (no EMAIL_SMTP_PASS) — skipping verification mail');
     return;
   }
-  await t.sendMail({
-    from: FROM,
-    to,
-    subject: 'VOID SECTOR — E-Mail bestätigen',
-    text:
-      `Willkommen an Bord, ${username}!\n\n` +
-      `Bitte bestätige deine E-Mail-Adresse über diesen Link:\n${link}\n\n` +
-      `Wenn du dich nicht registriert hast, ignoriere diese Nachricht.`,
-    html:
-      `<p>Willkommen an Bord, <strong>${escapeHtml(username)}</strong>!</p>` +
-      `<p>Bitte bestätige deine E-Mail-Adresse:</p>` +
-      `<p><a href="${link}">${link}</a></p>` +
-      `<p style="color:#888">Wenn du dich nicht registriert hast, ignoriere diese Nachricht.</p>`,
-  });
+  const mail = renderVerificationEmail(username, link);
+  await t.sendMail({ from: FROM, to, subject: mail.subject, text: mail.text, html: mail.html });
   logger.info({ to }, 'Verification email sent');
 }

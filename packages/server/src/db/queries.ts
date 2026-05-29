@@ -105,13 +105,16 @@ export async function findPlayerByUsername(
   };
 }
 
-/** Returns the player id owning a verification token, or null. */
-export async function findPlayerIdByVerificationToken(token: string): Promise<string | null> {
-  const result = await query<{ id: string }>(
-    'SELECT id FROM players WHERE verification_token = $1',
+/** Returns the player id + current verified state for a verification token, or null if unknown. */
+export async function getVerificationByToken(
+  token: string,
+): Promise<{ id: string; emailVerified: boolean } | null> {
+  const result = await query<{ id: string; email_verified: boolean }>(
+    'SELECT id, email_verified FROM players WHERE verification_token = $1',
     [token],
   );
-  return result.rows[0]?.id ?? null;
+  const row = result.rows[0];
+  return row ? { id: row.id, emailVerified: row.email_verified } : null;
 }
 
 /**
@@ -132,11 +135,39 @@ export async function recentRegistrationForEmail(
   return result.rows[0]?.exists ?? false;
 }
 
-/** Marks a player's email verified and clears the one-time verification token. */
+/**
+ * Marks a player's email verified. Keeps the token so a re-click of the same link can be
+ * recognized as "already verified" (idempotent — re-clicks never change anything else).
+ */
 export async function markEmailVerified(playerId: string): Promise<void> {
-  await query('UPDATE players SET email_verified = TRUE, verification_token = NULL WHERE id = $1', [
-    playerId,
-  ]);
+  await query('UPDATE players SET email_verified = TRUE WHERE id = $1', [playerId]);
+}
+
+/** Email/verification state for a player (for resend). */
+export async function getPlayerVerificationInfo(
+  playerId: string,
+): Promise<{ email: string | null; emailVerified: boolean; verificationSentAt: string | null } | null> {
+  const result = await query<{
+    email: string | null;
+    email_verified: boolean;
+    verification_sent_at: string | null;
+  }>('SELECT email, email_verified, verification_sent_at FROM players WHERE id = $1', [playerId]);
+  const row = result.rows[0];
+  return row
+    ? {
+        email: row.email,
+        emailVerified: row.email_verified,
+        verificationSentAt: row.verification_sent_at,
+      }
+    : null;
+}
+
+/** Sets a fresh verification token + send timestamp (for resend). */
+export async function setVerificationToken(playerId: string, token: string): Promise<void> {
+  await query(
+    'UPDATE players SET verification_token = $1::text, verification_sent_at = NOW() WHERE id = $2',
+    [token, playerId],
+  );
 }
 
 export async function getMiningStoryIndex(playerId: string): Promise<number> {

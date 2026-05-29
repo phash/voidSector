@@ -10,13 +10,17 @@ import { SectorRoom } from './rooms/SectorRoom.js';
 import { register, login, loginAsGuest, verifyToken, type AuthPayload } from './auth.js';
 import { validateFeedbackInput } from './feedbackValidation.js';
 import { validateRegisterInput } from './emailValidation.js';
+import { sendVerificationEmail } from './emailService.js';
 import { createFeedback } from './db/feedbackQueries.js';
 import {
   deleteExpiredGuestPlayers,
-  findPlayerIdByVerificationToken,
+  getVerificationByToken,
   markEmailVerified,
   recentRegistrationForEmail,
+  getPlayerVerificationInfo,
+  setVerificationToken,
 } from './db/queries.js';
+import crypto from 'crypto';
 import { runMigrations } from './db/client.js';
 import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
 import { adminRouter } from './adminRoutes.js';
@@ -95,37 +99,105 @@ export default config({
 
     app.get('/api/verify', async (req: Request, res: Response) => {
       const token = typeof req.query.token === 'string' ? req.query.token : '';
-      const page = (title: string, body: string) =>
+      const appUrl = process.env.APP_PUBLIC_URL || 'http://localhost:3201';
+      const page = (title: string, heading: string, body: string, accent = '#ffb000') =>
         `<!doctype html><html lang="de"><head><meta charset="utf-8">` +
-        `<meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>` +
-        `<style>body{background:#0a0a0a;color:#ffb000;font-family:monospace;display:flex;` +
-        `align-items:center;justify-content:center;height:100vh;margin:0}` +
-        `.box{border:1px solid #ffb000;padding:24px 32px;max-width:420px;text-align:center}` +
-        `a{color:#ffb000}</style></head><body><div class="box">${body}</div></body></html>`;
+        `<meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · VOID SECTOR</title>` +
+        `<style>*{box-sizing:border-box}body{background:#05060a;color:#cdd3dc;` +
+        `font-family:'Segoe UI',Arial,Helvetica,sans-serif;display:flex;align-items:center;` +
+        `justify-content:center;min-height:100vh;margin:0;padding:16px}` +
+        `.box{background:#0d1018;border:1px solid #1d2433;border-radius:10px;max-width:420px;width:100%;padding:32px;text-align:center}` +
+        `.brand{font-size:13px;letter-spacing:4px;color:${accent};font-weight:bold;margin-bottom:18px}` +
+        `h2{font-size:18px;margin:0 0 10px;color:#e6eaf0}p{font-size:14px;line-height:1.6;color:#aab2c0;margin:0 0 20px}` +
+        `.btn{display:inline-block;background:${accent};color:#0a0d14;text-decoration:none;font-weight:bold;` +
+        `letter-spacing:1px;padding:11px 26px;border-radius:6px;font-size:13px}</style></head>` +
+        `<body><div class="box"><div class="brand">◈ VOID SECTOR</div><h2>${heading}</h2><p>${body}</p>` +
+        `<a class="btn" href="${appUrl}">ZUM SPIEL &rarr;</a></div></body></html>`;
       try {
         if (!token) {
-          res.status(400).send(page('Ungültig', '<h2>VOID SECTOR</h2><p>Ungültiger Bestätigungslink.</p>'));
+          res
+            .status(400)
+            .send(page('Ungültig', 'Ungültiger Link', 'Dieser Bestätigungslink ist unvollständig.', '#ff6b6b'));
           return;
         }
-        const playerId = await findPlayerIdByVerificationToken(token);
-        if (!playerId) {
+        const info = await getVerificationByToken(token);
+        if (!info) {
           res
             .status(404)
-            .send(page('Abgelaufen', '<h2>VOID SECTOR</h2><p>Link ungültig oder bereits benutzt.</p>'));
+            .send(
+              page(
+                'Abgelaufen',
+                'Link nicht gültig',
+                'Dieser Bestätigungslink ist ungültig oder abgelaufen. Falls deine E-Mail bereits bestätigt ist, logge dich einfach ein.',
+                '#ff6b6b',
+              ),
+            );
           return;
         }
-        await markEmailVerified(playerId);
-        const appUrl = process.env.APP_PUBLIC_URL || 'http://localhost:3201';
+        if (info.emailVerified) {
+          res.send(
+            page(
+              'Bereits bestätigt',
+              'Bereits bestätigt ✓',
+              'Diese E-Mail-Adresse ist bereits bestätigt. Du kannst dich direkt einloggen.',
+            ),
+          );
+          return;
+        }
+        await markEmailVerified(info.id);
         res.send(
-          page(
-            'Bestätigt',
-            '<h2>VOID SECTOR</h2><p>✔ E-Mail bestätigt. Du kannst dich jetzt einloggen.</p>' +
-              `<p><a href="${appUrl}">Zum Spiel →</a></p>`,
-          ),
+          page('Bestätigt', 'E-Mail bestätigt ✓', 'Willkommen an Bord, Pilot! Dein Zugang ist jetzt aktiv.'),
         );
       } catch (err) {
         logger.error({ err }, 'Email verify error');
-        res.status(500).send(page('Fehler', '<h2>VOID SECTOR</h2><p>Interner Fehler.</p>'));
+        res
+          .status(500)
+          .send(page('Fehler', 'Interner Fehler', 'Bitte versuche es später erneut.', '#ff6b6b'));
+      }
+    });
+
+    app.post('/api/resend-verification', async (req: Request, res: Response) => {
+      try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          res.status(401).json({ error: 'Authentication required' });
+          return;
+        }
+        let auth: AuthPayload;
+        try {
+          auth = verifyToken(authHeader.slice(7));
+        } catch {
+          res.status(401).json({ error: 'Invalid token' });
+          return;
+        }
+        if (auth.isGuest) {
+          res.status(403).json({ error: 'Guests have no email' });
+          return;
+        }
+        const info = await getPlayerVerificationInfo(auth.userId);
+        if (!info || !info.email) {
+          res.status(400).json({ error: 'Kein E-Mail-Konto für diesen Account.' });
+          return;
+        }
+        if (info.emailVerified) {
+          res.json({ status: 'already_verified' });
+          return;
+        }
+        if (await recentRegistrationForEmail(info.email, 120)) {
+          res
+            .status(429)
+            .json({ error: 'Bitte warte ein paar Minuten, bevor du es erneut versuchst.' });
+          return;
+        }
+        const token = crypto.randomBytes(32).toString('hex');
+        await setVerificationToken(auth.userId, token);
+        sendVerificationEmail(info.email, auth.username, token).catch((err) =>
+          logger.error({ err }, 'resend verification email failed'),
+        );
+        res.json({ status: 'sent' });
+      } catch (err) {
+        logger.error({ err }, 'Resend verification error');
+        res.status(500).json({ error: 'Internal server error' });
       }
     });
 
