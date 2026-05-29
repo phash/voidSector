@@ -573,7 +573,7 @@ adminRouter.get('/stories/:id', async (req: Request, res: Response) => {
 // ── Feedback ─────────────────────────────────────────────────────────
 adminRouter.get('/feedback', async (req: Request, res: Response) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 100;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) || 100 : 100;
     const feedback = await getFeedback(limit);
     res.json({ feedback });
   } catch (err) {
@@ -585,6 +585,10 @@ adminRouter.get('/feedback', async (req: Request, res: Response) => {
 adminRouter.patch('/feedback/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id as string, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: 'Invalid id' });
+      return;
+    }
     const status = (req.body as { status?: string }).status;
     if (status !== 'new' && status !== 'done') {
       res.status(400).json({ error: 'status must be new or done' });
