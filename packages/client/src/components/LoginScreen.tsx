@@ -6,6 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 
 export function LoginScreen() {
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isRegister, setIsRegister] = useState(false);
@@ -13,6 +14,7 @@ export function LoginScreen() {
   const [guestLoading, setGuestLoading] = useState(false);
 
   const setAuth = useStore((s) => s.setAuth);
+  const setEmailVerified = useStore((s) => s.setEmailVerified);
   const setScreen = useStore((s) => s.setScreen);
   const openCompendium = useStore((s) => s.openCompendium);
 
@@ -26,7 +28,7 @@ export function LoginScreen() {
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(isRegister ? { username, email, password } : { username, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -34,6 +36,7 @@ export function LoginScreen() {
         return;
       }
       setAuth(data.token, data.player.id, data.player.username);
+      setEmailVerified(data.player.emailVerified !== false);
       const pos = data.lastPosition ?? { x: 0, y: 0 };
       await network.joinSector(pos.x, pos.y);
       setScreen('game');
@@ -80,6 +83,17 @@ export function LoginScreen() {
           maxLength={32}
           required
         />
+        {isRegister && (
+          <input
+            type="email"
+            placeholder="EMAIL"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={inputStyle}
+            data-testid="register-email"
+            required
+          />
+        )}
         <input
           type="password"
           placeholder="PASSWORD"
