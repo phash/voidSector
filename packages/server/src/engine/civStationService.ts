@@ -1,6 +1,5 @@
 import { QUADRANT_SIZE, CIV_MAX_DRONES_PER_STATION } from '@void-sector/shared';
 import { civQueries } from '../db/civQueries.js';
-import { getAllQuadrantControls } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
 
 /** Returns the center sector coordinates of a quadrant */
@@ -19,20 +18,13 @@ export function shouldSpawnDrone(currentCount: number, max: number): boolean {
 
 /**
  * Ensure all faction-controlled quadrants have a civ station at their center.
- * Idempotent — uses INSERT ON CONFLICT DO NOTHING.
+ * Idempotent — uses INSERT ON CONFLICT DO NOTHING. Runs as ONE set-based query
+ * (centers computed in SQL) so it stays O(1) round-trips even on huge worlds;
+ * the previous per-quadrant loop blocked startup at 76k+ alien-controlled quadrants.
  */
 export async function ensureCivStations(): Promise<void> {
-  const controls = await getAllQuadrantControls();
-  let seeded = 0;
-
-  for (const q of controls) {
-    if (!q.controlling_faction || q.controlling_faction === 'humans') continue;
-
-    const center = getQuadrantCenter(q.qx, q.qy);
-    await civQueries.upsertStation(center.x, center.y, q.controlling_faction);
-    seeded++;
-  }
-
+  const half = Math.floor(QUADRANT_SIZE / 2);
+  const seeded = await civQueries.bulkEnsureFactionStations(QUADRANT_SIZE, half);
   logger.info({ seeded }, 'CivStations: ensured stations for faction quadrants');
 }
 
