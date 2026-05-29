@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
-import { MODULE_MAP, isModuleFreelyAvailable, BLUEPRINT_COPY_BASE_COST } from '@void-sector/shared';
+import { MODULE_MAP, isModuleFreelyAvailable, isModuleUnlocked, BLUEPRINT_COPY_BASE_COST } from '@void-sector/shared';
 import type { ModuleDefinition } from '@void-sector/shared';
 
 function costLine(mod: ModuleDefinition): string {
@@ -35,6 +35,7 @@ export function TechDetailPanel() {
   const { t } = useTranslation('ui');
   const selectedModuleId = useStore((s) => s.selectedTechModule);
   const research = useStore((s) => s.research);
+  const categoryTiers = useStore((s) => s.categoryTiers);
   const currentSector = useStore((s) => s.currentSector);
   const baseStructures = useStore((s) => s.baseStructures);
 
@@ -63,7 +64,7 @@ export function TechDetailPanel() {
   const canShop = isAtStation || hasBase;
 
   const isFree = isModuleFreelyAvailable(mod.id);
-  const isUnlocked = research.unlockedModules.includes(mod.id);
+  const isUnlocked = isModuleUnlocked(mod.id, categoryTiers, research.blueprints);
   const hasBP = research.blueprints.includes(mod.id);
 
   const prerequisiteMod = mod.prerequisiteModuleId ? MODULE_MAP.get(mod.prerequisiteModuleId) : null;

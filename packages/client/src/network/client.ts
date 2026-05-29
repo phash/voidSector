@@ -722,11 +722,20 @@ class GameNetwork {
     room.onMessage('playerResearch', (data: { research: string[] }) => {
       useStore.getState().setPlayerResearch(data.research);
     });
+
+    // Tech tier-gating: category tier map
+    room.onMessage('categoryTechUpdate', (data: { categoryTiers: Record<string, number> }) => {
+      useStore.getState().setCategoryTiers(data.categoryTiers);
+    });
     room.onMessage('researchResult', (data: { success: boolean; nodeId?: string; error?: string }) => {
       if (data.success && data.nodeId) {
         const store = useStore.getState();
         store.setPlayerResearch([...store.playerResearch, data.nodeId]);
         store.addLogEntry(`Forschung abgeschlossen: ${data.nodeId}`);
+        store.showSuccessToast('FORSCHUNG ABGESCHLOSSEN');
+      } else if (data.success && !data.nodeId) {
+        const store = useStore.getState();
+        store.addLogEntry('Forschung abgeschlossen');
         store.showSuccessToast('FORSCHUNG ABGESCHLOSSEN');
       } else if (!data.success) {
         const store = useStore.getState();
@@ -2697,16 +2706,6 @@ class GameNetwork {
     this.sectorRoom?.send('getModuleInventory');
   }
 
-  // Tech-Baum: Tech Tree (node-based)
-  getTechTree(): void {
-    this.sectorRoom?.send('getTechTree');
-  }
-  researchTechNode(nodeId: string): void {
-    this.sectorRoom?.send('researchTechNode', { nodeId });
-  }
-  resetTechTree(): void {
-    this.sectorRoom?.send('resetTechTree');
-  }
   sendActivateBlueprint(moduleId: string) {
     this.sectorRoom?.send('activateBlueprint', { moduleId });
   }
@@ -2915,6 +2914,16 @@ class GameNetwork {
 
   sendResearchNode(nodeId: string) {
     this.sectorRoom?.send('researchNode', { nodeId });
+  }
+
+  // ── Tech Tier-Gating ───────────────────────────────────────────────────────
+
+  sendResearchCategoryTier(category: string) {
+    this.sectorRoom?.send('researchCategoryTier', { category });
+  }
+
+  requestCategoryTech() {
+    this.sectorRoom?.send('getCategoryTech');
   }
 }
 

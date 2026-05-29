@@ -68,7 +68,7 @@ export function ShopTab() {
   const credits = useStore((s) => s.credits);
   const cargo = useStore((s) => s.cargo);
   const research = useStore((s) => s.research);
-  const techTree = useStore((s) => s.techTree);
+  const categoryTiers = useStore((s) => s.categoryTiers);
   const currentSector = useStore((s) => s.currentSector);
   const baseStructures = useStore((s) => s.baseStructures);
   const setHovered = useStore((s) => s.setAcepHoveredModuleId);
@@ -98,9 +98,8 @@ export function ShopTab() {
     );
   }
 
-  const researchedNodes = techTree?.researchedNodes ?? {};
   const availableModules = MODULE_DEFINITIONS.filter(
-    (m) => !m.isFoundOnly && isModuleUnlocked(m.id, m, researchedNodes, research.blueprints),
+    (m) => !m.isFoundOnly && isModuleUnlocked(m.id, categoryTiers, research.blueprints),
   );
 
   return (

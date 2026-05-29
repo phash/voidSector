@@ -1,39 +1,37 @@
 import { describe, it, expect } from 'vitest';
-import { isModuleUnlocked, isModuleFreelyAvailable } from '@void-sector/shared';
+import { isModuleUnlocked } from '@void-sector/shared';
 import { MODULES } from '@void-sector/shared';
 
 describe('research flow integration', () => {
-  it('non-foundOnly modules are freely available (all tiers)', () => {
-    const driveMk1 = MODULES['ion_drive_mk1'];
-    const driveMk2 = MODULES['ion_drive_mk2'];
-    const voidDrive = MODULES['void_drive'];
-    // All non-foundOnly modules are freely available in the new system
-    expect(isModuleUnlocked('ion_drive_mk1', driveMk1, {}, [])).toBe(true);
-    expect(isModuleUnlocked('ion_drive_mk2', driveMk2, {}, [])).toBe(true);
-    // foundOnly modules require blueprint + tech tree tier
-    expect(isModuleUnlocked('void_drive', voidDrive, {}, [])).toBe(false);
+  it('non-foundOnly tier-1 modules are unlocked with empty categoryTiers (default tier 1)', () => {
+    // ion_drive_mk1 is tier 1, non-foundOnly → unlocked when categoryTiers defaults to 1
+    expect(isModuleUnlocked('ion_drive_mk1', {}, [])).toBe(true);
+    // puls_laser_mk1 is tier 1, non-foundOnly → unlocked
+    expect(isModuleUnlocked('puls_laser_mk1', {}, [])).toBe(true);
   });
 
-  it('tech tree branch unlock satisfies tier for foundOnly modules', () => {
-    const riftDrive = MODULES['rift_drive'];
-    // rift_drive is foundOnly, tier 5 — tech tree alone can unlock via tier
-    expect(isModuleUnlocked('rift_drive', riftDrive, { explorer: 4 }, [])).toBe(true);
-    // But without sufficient tier, it stays locked
-    expect(isModuleUnlocked('rift_drive', riftDrive, { explorer: 2 }, [])).toBe(false);
+  it('non-foundOnly tier-2 modules are locked when category tier is 1 (default)', () => {
+    // ion_drive_mk2 is tier 2 → locked without category tier unlock
+    expect(isModuleUnlocked('ion_drive_mk2', {}, [])).toBe(false);
+    expect(isModuleUnlocked('ion_drive_mk2', { drive: 1 }, [])).toBe(false);
+    expect(isModuleUnlocked('ion_drive_mk2', { drive: 2 }, [])).toBe(true);
   });
 
-  it('blueprint alone does NOT unlock foundOnly module without tech tree tier', () => {
-    const riftDrive = MODULES['rift_drive'];
-    // rift_drive is foundOnly, tier 5, category drive → branch explorer
-    // Blueprint without required tier → NOT unlocked
-    expect(isModuleUnlocked('rift_drive', riftDrive, {}, ['rift_drive'])).toBe(false);
+  it('foundOnly modules are gated by blueprint (isFoundOnly flag)', () => {
+    // void_drive is foundOnly → only unlocked via blueprint (isFoundOnly uses blueprints path)
+    expect(isModuleUnlocked('void_drive', {}, [])).toBe(false);
+    expect(isModuleUnlocked('void_drive', {}, ['void_drive'])).toBe(true);
   });
 
-  it('blueprint + required tech tree tier unlocks foundOnly module', () => {
-    const riftDrive = MODULES['rift_drive'];
-    // rift_drive is foundOnly, tier 5, category drive → branch explorer
-    // explorer branch level 4 → unlockedTiers.explorer = 5; blueprint provides the recipe
-    expect(isModuleUnlocked('rift_drive', riftDrive, { explorer: 4 }, ['rift_drive'])).toBe(true);
+  it('tech tree category tier unlocks higher tiers for non-foundOnly modules', () => {
+    // puls_laser_mk2 is tier 2, weapon_energy category
+    expect(isModuleUnlocked('puls_laser_mk2', { weapon_energy: 1 }, [])).toBe(false);
+    expect(isModuleUnlocked('puls_laser_mk2', { weapon_energy: 2 }, [])).toBe(true);
+  });
+
+  it('blueprint alone unlocks foundOnly module (isFoundOnly check only)', () => {
+    // void_drive is foundOnly → blueprint is sufficient
+    expect(isModuleUnlocked('void_drive', {}, ['void_drive'])).toBe(true);
   });
 
   it('all research modules have valid prerequisites', () => {

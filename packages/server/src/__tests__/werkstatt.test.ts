@@ -75,7 +75,7 @@ vi.mock('@void-sector/shared', () => {
     validateModuleInstall: vi.fn().mockReturnValue({ valid: true }),
     getActiveDrawbacks: vi.fn().mockReturnValue([]),
     isModuleUnlocked: vi.fn().mockImplementation(
-      (_id: string, _mod: unknown, _nodes: unknown, blueprints: string[]) =>
+      (_id: string, _categoryTiers: unknown, blueprints: string[]) =>
         blueprints.length > 0,
     ),
     RESEARCH_TICK_MS: 60000,
@@ -84,12 +84,7 @@ vi.mock('@void-sector/shared', () => {
 
 // ── Mock techTreeQueries ─────────────────────────────────────────────────────
 vi.mock('../db/techTreeQueries.js', () => ({
-  getOrCreateTechTree: vi.fn().mockResolvedValue({
-    player_id: 'player-1',
-    researched_nodes: {},
-    total_researched: 0,
-    last_reset_at: null,
-  }),
+  getCategoryTiers: vi.fn().mockResolvedValue({}),
 }));
 
 // ── Mock craftSiteQueries ────────────────────────────────────────────────────
