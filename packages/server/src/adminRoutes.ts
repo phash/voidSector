@@ -28,6 +28,7 @@ import {
   deleteErrorLog,
 } from './db/adminQueries.js';
 import type { AdminQuestInput, AdminMessageInput, AdminStoryInput } from './db/adminQueries.js';
+import { getFeedback, setFeedbackStatus } from './db/feedbackQueries.js';
 import type { AdminPlayerUpdateEvent } from './adminBus.js';
 import { getPlayerPosition, savePlayerPosition } from './rooms/services/RedisAPStore.js';
 import { adminBus } from './adminBus.js';
@@ -565,6 +566,39 @@ adminRouter.get('/stories/:id', async (req: Request, res: Response) => {
     res.json({ story });
   } catch (err) {
     logger.error({ err }, 'Admin get story error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Feedback ─────────────────────────────────────────────────────────
+adminRouter.get('/feedback', async (req: Request, res: Response) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) || 100 : 100;
+    const feedback = await getFeedback(limit);
+    res.json({ feedback });
+  } catch (err) {
+    logger.error({ err }, 'Admin list feedback error');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+adminRouter.patch('/feedback/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id as string, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: 'Invalid id' });
+      return;
+    }
+    const status = (req.body as { status?: string }).status;
+    if (status !== 'new' && status !== 'done') {
+      res.status(400).json({ error: 'status must be new or done' });
+      return;
+    }
+    await setFeedbackStatus(id, status);
+    await logAdminEvent('set_feedback_status', { id, status });
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, 'Admin set feedback status error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

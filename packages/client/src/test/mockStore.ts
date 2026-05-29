@@ -126,6 +126,7 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     showTip: vi.fn(),
     dismissTip: vi.fn(),
     hasSeenTip: vi.fn(),
+    addLogEntry: vi.fn(),
     onboardingStep: null,
     advanceOnboarding: vi.fn(),
     skipOnboarding: vi.fn(),

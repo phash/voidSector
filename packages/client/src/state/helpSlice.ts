@@ -26,6 +26,15 @@ export const HELP_TIPS: HelpTip[] = [
       '→ Dein Ruf bestimmt, was eine Fraktion dir anbietet',
   },
   {
+    id: 'first_feedback',
+    title: '◈ FEEDBACK',
+    body:
+      'Sag uns, was du denkst!\n\n' +
+      '→ Kategorie wählen: Bug, Idee, Lob oder Sonstiges\n' +
+      '→ Nachricht schreiben und [SENDEN]\n' +
+      '→ Dein Feedback landet direkt beim Admin-Team',
+  },
+  {
     id: 'first_nebula',
     title: 'NEBULA-SEKTOR',
     body: 'Nebula-Sektoren enthalten Gas-Ressourcen. Scanne den Sektor zuerst um Ressourcen zu sehen. Gas kann an Handelsstationen verkauft werden.',
