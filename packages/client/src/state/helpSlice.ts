@@ -16,6 +16,16 @@ export const HELP_TIPS: HelpTip[] = [
     articleId: 'grundlagen-start',
   },
   {
+    id: 'first_xeno',
+    title: '◈ XENO — FREMDE FRAKTIONEN',
+    body:
+      'Hier kontaktierst du außerirdische Fraktionen.\n\n' +
+      '→ Erreichbare Fraktionen sind aktiv, ferne zeigen "außer Reichweite"\n' +
+      '→ [ERSTKONTAKT] startet die erste Begegnung\n' +
+      '→ [GREET] grüßt und zeigt deinen Ruf-Status\n' +
+      '→ Dein Ruf bestimmt, was eine Fraktion dir anbietet',
+  },
+  {
     id: 'first_nebula',
     title: 'NEBULA-SEKTOR',
     body: 'Nebula-Sektoren enthalten Gas-Ressourcen. Scanne den Sektor zuerst um Ressourcen zu sehen. Gas kann an Handelsstationen verkauft werden.',
