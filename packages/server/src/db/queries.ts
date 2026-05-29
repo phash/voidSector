@@ -2587,6 +2587,15 @@ export async function setAlienFirstContact(playerId: string, factionId: string):
   );
 }
 
+/** Get faction IDs the player has made first contact with (first_contact_at is set). */
+export async function getAlienFirstContacts(playerId: string): Promise<string[]> {
+  const { rows } = await query<{ alien_faction_id: string }>(
+    'SELECT alien_faction_id FROM alien_reputation WHERE player_id = $1 AND first_contact_at IS NOT NULL',
+    [playerId],
+  );
+  return rows.map((r) => r.alien_faction_id);
+}
+
 /** Record an alien encounter event. */
 export async function recordAlienEncounter(params: {
   playerId: string;
