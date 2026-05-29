@@ -46,6 +46,24 @@ export const civQueries = {
     );
   },
 
+  /**
+   * Set-based upsert: ensure a civ station exists at the center of every
+   * non-human faction-controlled quadrant, in ONE query. Replaces the per-quadrant
+   * loop that blocked startup on large worlds (76k+ quadrants). The center sector is
+   * computed in SQL as qx*size + half / qy*size + half. Returns rows newly inserted.
+   */
+  async bulkEnsureFactionStations(quadrantSize: number, halfSize: number): Promise<number> {
+    const res = await query<{ sector_x: number }>(
+      `INSERT INTO civ_stations (sector_x, sector_y, faction, has_shipyard, has_warehouse, has_kontor)
+       SELECT qx * $1 + $2, qy * $1 + $2, controlling_faction, true, true, false
+         FROM quadrant_control
+        WHERE controlling_faction IS NOT NULL AND controlling_faction <> 'humans'
+       ON CONFLICT (sector_x, sector_y) DO NOTHING`,
+      [quadrantSize, halfSize],
+    );
+    return res.rowCount ?? 0;
+  },
+
   async createShip(data: {
     faction: string; ship_type: string; state: string;
     x: number; y: number; home_x: number; home_y: number;

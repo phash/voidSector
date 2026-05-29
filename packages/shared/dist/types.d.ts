@@ -1354,4 +1354,25 @@ export interface PlayerCardData {
     isBlocked: boolean;
     pendingDirection: 'sent' | 'received' | null;
 }
+/** Per-faction reachability + reputation snapshot for the XENO program (#534). */
+export interface XenoFactionStatus {
+    factionId: string;
+    reachable: boolean;
+    firstContacted: boolean;
+    reputation: number;
+    /** German reputation-tier label, e.g. 'NEUTRAL'. */
+    tier: string;
+}
+/** Result of an alien interaction action, rendered by the XENO program (#534). */
+export interface AlienInteractResult {
+    success: boolean;
+    factionId?: string;
+    action?: string;
+    message?: string;
+    error?: string;
+    repBefore?: number;
+    repAfter?: number;
+    repTier?: string;
+    reputations?: Record<string, number>;
+}
 //# sourceMappingURL=types.d.ts.map

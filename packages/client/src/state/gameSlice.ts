@@ -58,6 +58,8 @@ import type {
   FriendRequestEntry,
   BlockEntry,
   PlayerCardData,
+  XenoFactionStatus,
+  AlienInteractResult,
 } from '@void-sector/shared';
 
 export interface QuestCompleteEntry {
@@ -345,6 +347,11 @@ export interface GameSlice {
   alienCredits: number;
   alienReputations: Record<string, number>;
   humanityReps: Record<string, { repValue: number; tier: 'FEINDSELIG' | 'NEUTRAL' | 'FREUNDLICH' }> | null;
+  // XENO alien-interaction program (#534)
+  xenoStatus: XenoFactionStatus[];
+  alienInteractResult: AlienInteractResult | null;
+  setXenoStatus: (status: XenoFactionStatus[]) => void;
+  setAlienInteractResult: (result: AlienInteractResult | null) => void;
 
   // Storage
   storage: StorageInventory;
@@ -767,6 +774,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   credits: 0,
   alienCredits: 0,
   alienReputations: {},
+  xenoStatus: [],
+  alienInteractResult: null,
   humanityReps: null,
   storage: { ore: 0, gas: 0, crystal: 0, artefact: 0 },
   tradeOrders: [],
@@ -1109,6 +1118,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setStoryProgress: (p) => set({ storyProgress: p }),
   setActiveCommunityQuest: (q) => set({ activeCommunityQuest: q }),
   setHumanityReps: (reps) => set({ humanityReps: reps }),
+  setXenoStatus: (status) => set({ xenoStatus: status }),
+  setAlienInteractResult: (result) => set({ alienInteractResult: result }),
   setQuadrantControls: (controls) => set({ quadrantControls: controls }),
   setNpcFleets: (fleets) => set({ npcFleets: fleets }),
   setCivShips: (ships) => set({ civShips: ships }),

@@ -69,6 +69,8 @@ import type {
   FriendRequestEntry,
   BlockEntry,
   PlayerCardData,
+  XenoFactionStatus,
+  AlienInteractResult,
 } from '@void-sector/shared';
 
 /** Schema-level player object from Colyseus room state. */
@@ -906,29 +908,27 @@ class GameNetwork {
     });
 
     // Alien interaction result — show in log and update rep store
-    room.onMessage(
-      'alienInteractResult',
-      (data: {
-        success: boolean;
-        factionId?: string;
-        action?: string;
-        message?: string;
-        error?: string;
-        repAfter?: number;
-        repTier?: string;
-        reputations?: Record<string, number>;
-      }) => {
-        const store = useStore.getState();
-        if (data.message) {
-          store.addLogEntry(data.message);
-        } else if (!data.success && data.error) {
-          store.addLogEntry(`[${data.factionId?.toUpperCase() ?? 'ALIEN'}] ${data.error}`);
-        }
-        if (data.reputations) {
-          useStore.setState({ alienReputations: data.reputations });
-        }
-      },
-    );
+    room.onMessage('alienInteractResult', (data: AlienInteractResult) => {
+      const store = useStore.getState();
+      store.setAlienInteractResult(data);
+      if (data.message) {
+        store.addLogEntry(data.message);
+      } else if (!data.success && data.error) {
+        store.addLogEntry(`[${data.factionId?.toUpperCase() ?? 'ALIEN'}] ${data.error}`);
+      }
+      // Surface failures via InlineError (alien errors come on this channel, not actionError).
+      if (!data.success && data.error) {
+        store.setActionError({ code: 'XENO_ERROR', message: data.error });
+      }
+      if (data.reputations) {
+        useStore.setState({ alienReputations: data.reputations });
+      }
+    });
+
+    // XENO status (#534): per-faction reachability + reputation snapshot
+    room.onMessage('xenoStatusUpdate', (data: { factions: XenoFactionStatus[] }) => {
+      useStore.getState().setXenoStatus(data.factions);
+    });
 
     // Storage update
     room.onMessage('storageUpdate', (data: StorageInventory) => {
@@ -2513,6 +2513,15 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('alienInteract', { factionId, action, payload });
+  }
+
+  /** Request the per-faction XENO status (reachability/rep) for the current quadrant (#534). */
+  requestXenoStatus() {
+    if (!this.sectorRoom) {
+      useStore.getState().addLogEntry('NOT CONNECTED');
+      return;
+    }
+    this.sectorRoom.send('alienInteract', { factionId: '_', action: 'xenoStatus' });
   }
 
   requestReputation() {

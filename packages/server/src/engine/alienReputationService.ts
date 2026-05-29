@@ -4,6 +4,8 @@
  * unlocking different dialogue, quests, and abilities.
  */
 
+import type { XenoFactionStatus } from '@void-sector/shared';
+
 export type AlienFactionId =
   | 'archivists'
   | 'consortium'
@@ -157,4 +159,28 @@ export function getEncounterableFactions(playerQx: number, playerQy: number): Al
   return (Object.entries(ALIEN_FIRST_CONTACT_DISTANCE) as [AlienFactionId, number][])
     .filter(([, minDist]) => chebyshev >= minDist)
     .map(([factionId]) => factionId);
+}
+
+/**
+ * Builds the per-faction reachability + reputation snapshot for the XENO program (#534).
+ * Pure: given the player's quadrant, their reputation map, and the factions they have made
+ * first contact with, returns one entry per known alien faction. Testable without DB/context.
+ */
+export function buildXenoStatus(
+  playerQx: number,
+  playerQy: number,
+  reputations: Record<string, number>,
+  firstContacted: string[],
+): XenoFactionStatus[] {
+  const contacted = new Set(firstContacted);
+  return (Object.keys(ALIEN_FIRST_CONTACT_DISTANCE) as AlienFactionId[]).map((factionId) => {
+    const reputation = reputations[factionId] ?? 0;
+    return {
+      factionId,
+      reachable: isInFirstContactRange(playerQx, playerQy, factionId),
+      firstContacted: contacted.has(factionId),
+      reputation,
+      tier: getRepTierLabel(getRepTier(reputation)),
+    };
+  });
 }

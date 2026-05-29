@@ -16,6 +16,7 @@ import { QuestsScreen } from './QuestsScreen';
 import { AcepProgram } from './AcepProgram';
 import { FriendsScreen } from './FriendsScreen';
 import { FabrikPanel } from './FabrikPanel';
+import { XenoScreen } from './XenoScreen';
 import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
@@ -353,6 +354,8 @@ function renderScreen(monitorId: string) {
       return <FriendsScreen />;
     case MONITORS.FABRIK:
       return <FabrikPanel />;
+    case MONITORS.XENO:
+      return <XenoScreen />;
     default:
       return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }
