@@ -26,11 +26,13 @@ import {
   getRepTierLabel,
   getRepChangeForAction,
   isInFirstContactRange,
+  buildXenoStatus,
   ALIEN_FIRST_CONTACT_FLAVOR,
 } from '../../engine/alienReputationService.js';
 import {
   getAlienReputation,
   getAllAlienReputations,
+  getAlienFirstContacts,
   addAlienReputation,
   setAlienFirstContact,
   recordAlienEncounter,
@@ -97,6 +99,24 @@ export class AlienInteractionService {
   async handleAlienInteract(client: Client, data: AlienInteractMessage): Promise<void> {
     const auth = client.auth as AuthPayload;
     const { factionId, action, payload } = data;
+
+    // XENO program status query (#534): per-faction reachability + reputation for the player's
+    // quadrant. Handled first so it bypasses faction-validation + range gate (factionId may be a
+    // placeholder like '_'), mirroring how getReputation is exempted from the range check.
+    if (action === 'xenoStatus') {
+      const [reputations, firstContacts] = await Promise.all([
+        getAllAlienReputations(auth.userId),
+        getAlienFirstContacts(auth.userId),
+      ]);
+      const factions = buildXenoStatus(
+        this.ctx.quadrantX,
+        this.ctx.quadrantY,
+        reputations,
+        firstContacts,
+      );
+      client.send('xenoStatusUpdate', { factions });
+      return;
+    }
 
     // Validate faction exists
     const validFactions: AlienFactionId[] = [
