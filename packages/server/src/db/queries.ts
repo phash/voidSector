@@ -22,17 +22,22 @@ import { getUniverseTickCount } from '../engine/universeBootstrap.js';
 export async function createPlayer(
   username: string,
   passwordHash: string,
+  email: string | null = null,
+  verificationToken: string | null = null,
 ): Promise<PlayerData> {
+  // New email registrations start unverified; legacy (email-less) accounts stay verified.
+  const emailVerified = email === null;
   const result = await query<{
     id: string;
     username: string;
     xp: number;
     level: number;
+    email_verified: boolean;
   }>(
-    `INSERT INTO players (username, password_hash)
-     VALUES ($1, $2)
-     RETURNING id, username, xp, level`,
-    [username, passwordHash],
+    `INSERT INTO players (username, password_hash, email, email_verified, verification_token, verification_sent_at)
+     VALUES ($1, $2, $3, $4, $5, CASE WHEN $3 IS NULL THEN NULL ELSE NOW() END)
+     RETURNING id, username, xp, level, email_verified`,
+    [username, passwordHash, email, emailVerified, verificationToken],
   );
   const row = result.rows[0];
   return {
@@ -40,6 +45,7 @@ export async function createPlayer(
     username: row.username,
     xp: row.xp,
     level: row.level,
+    emailVerified: row.email_verified,
   };
 }
 
@@ -82,8 +88,9 @@ export async function findPlayerByUsername(
     password_hash: string;
     xp: number;
     level: number;
+    email_verified: boolean;
   }>(
-    'SELECT id, username, password_hash, xp, level FROM players WHERE LOWER(username) = LOWER($1)',
+    'SELECT id, username, password_hash, xp, level, email_verified FROM players WHERE LOWER(username) = LOWER($1)',
     [username],
   );
   if (result.rows.length === 0) return null;
@@ -94,7 +101,42 @@ export async function findPlayerByUsername(
     passwordHash: row.password_hash,
     xp: row.xp,
     level: row.level,
+    emailVerified: row.email_verified,
   };
+}
+
+/** Returns the player id owning a verification token, or null. */
+export async function findPlayerIdByVerificationToken(token: string): Promise<string | null> {
+  const result = await query<{ id: string }>(
+    'SELECT id FROM players WHERE verification_token = $1',
+    [token],
+  );
+  return result.rows[0]?.id ?? null;
+}
+
+/**
+ * True if a verification email was already sent for this address within the cooldown window.
+ * Throttles verification-mail spam to a victim address (the SMTP server is shared across projects).
+ */
+export async function recentRegistrationForEmail(
+  email: string,
+  withinSeconds: number,
+): Promise<boolean> {
+  const result = await query<{ exists: boolean }>(
+    `SELECT EXISTS(
+       SELECT 1 FROM players
+       WHERE email = $1 AND verification_sent_at > NOW() - make_interval(secs => $2)
+     ) AS exists`,
+    [email, withinSeconds],
+  );
+  return result.rows[0]?.exists ?? false;
+}
+
+/** Marks a player's email verified and clears the one-time verification token. */
+export async function markEmailVerified(playerId: string): Promise<void> {
+  await query('UPDATE players SET email_verified = TRUE, verification_token = NULL WHERE id = $1', [
+    playerId,
+  ]);
 }
 
 export async function getMiningStoryIndex(playerId: string): Promise<number> {

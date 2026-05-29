@@ -165,6 +165,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     removeFriendRequest: vi.fn(),
     addRecentContact: vi.fn(),
     isGuest: false,
+    emailVerified: true,
+    setEmailVerified: vi.fn(),
     autoFollow: false,
     monitorPower: {},
     monitorChromeVisible: {},

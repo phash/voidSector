@@ -18,6 +18,7 @@ import { FriendsScreen } from './FriendsScreen';
 import { FabrikPanel } from './FabrikPanel';
 import { XenoScreen } from './XenoScreen';
 import { FeedbackButton } from './FeedbackButton';
+import { EmailVerifyBanner } from './EmailVerifyBanner';
 import { HelpOverlay } from './HelpOverlay';
 import { AncientRuinDialog } from './AncientRuinDialog';
 import { CompendiumOverlay } from './CompendiumOverlay';
@@ -484,6 +485,7 @@ export function GameScreen() {
       <CompendiumOverlay />
       <HelpOverlay />
       <FeedbackButton />
+      <EmailVerifyBanner />
       <AncientRuinDialog />
       <StationTerminalGate />
     </div>

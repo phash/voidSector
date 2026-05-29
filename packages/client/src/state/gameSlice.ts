@@ -262,6 +262,7 @@ export interface GameSlice {
   playerId: string | null;
   username: string | null;
   isGuest: boolean;
+  emailVerified: boolean;
 
   // Position
   position: Coords;
@@ -584,6 +585,7 @@ export interface GameSlice {
 
   // Actions
   setAuth: (token: string, playerId: string, username: string, isGuest?: boolean) => void;
+  setEmailVerified: (emailVerified: boolean) => void;
   clearAuth: () => void;
   setPosition: (pos: Coords) => void;
   pushTrail: (pos: Coords) => void;
@@ -729,6 +731,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   playerId: safeGetItem('vs_playerId'),
   username: safeGetItem('vs_username'),
   isGuest: safeGetItem('vs_isGuest') === 'true',
+  emailVerified: true,
   position: { x: 0, y: 0 },
   visitedTrail: [],
   ap: null,
@@ -878,6 +881,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     else safeRemoveItem('vs_isGuest');
     set({ token, playerId, username, isGuest });
   },
+
+  setEmailVerified: (emailVerified) => set({ emailVerified }),
 
   clearAuth: () => {
     safeRemoveItem('vs_token');

@@ -199,6 +199,7 @@ export interface PlayerData {
   credits?: number;
   alienCredits?: number;
   isGuest?: boolean;
+  emailVerified?: boolean;
 }
 
 export interface FuelState {
