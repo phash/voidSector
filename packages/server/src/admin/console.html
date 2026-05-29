@@ -571,6 +571,7 @@ button.success:hover {
     <div class="tab" data-tab="errors">ERRORS <span id="errors-badge" style="display:none;background:#ff4444;color:#fff;border-radius:10px;padding:0 5px;font-size:10px;margin-left:4px;vertical-align:middle"></span></div>
     <div class="tab" data-tab="config">CONFIG</div>
     <div class="tab" data-tab="drones">DROHNEN</div>
+    <div class="tab" data-tab="feedback">FEEDBACK</div>
   </div>
 
   <div id="content">
@@ -857,6 +858,16 @@ expiresDays: 14"></textarea>
       </div>
       <div id="stories-empty" class="empty-state" style="display:none">No stories yet. Run /playtest to create one.</div>
       <div id="stories-list" style="display:flex;flex-direction:column;gap:16px;overflow:auto;max-height:calc(100vh - 200px);padding-right:8px"></div>
+    </div>
+
+    <!-- ── FEEDBACK Tab ─────────────────────────────────────────── -->
+    <div class="tab-panel" id="panel-feedback">
+      <div class="section-title">Feedback</div>
+      <div style="color:var(--amber-dim);font-size:11px;margin-bottom:16px;letter-spacing:0.5px">
+        Spieler-Feedback aus dem schwebenden FEEDBACK-Button
+      </div>
+      <div id="feedback-empty" class="empty-state" style="display:none">Noch kein Feedback.</div>
+      <div id="feedback-list" style="display:flex;flex-direction:column;gap:12px;overflow:auto;max-height:calc(100vh - 200px);padding-right:8px"></div>
     </div>
 
     <!-- ── QUAD-MAP Tab ─────────────────────────────────────────── -->
@@ -1258,6 +1269,7 @@ expiresDays: 14"></textarea>
     }
     else if (name === 'errors') loadErrors('new');
     else if (name === 'config') loadConfig();
+    else if (name === 'feedback') loadFeedback();
   }
 
   function switchQuestSubTab(name) {
@@ -2134,6 +2146,52 @@ expiresDays: 14"></textarea>
   }
 
   // ── STORIES ─────────────────────────────────────────────────────
+
+  function loadFeedback() {
+    api('GET', '/feedback?limit=100').then(function (data) {
+      var items = data.feedback || [];
+      var container = document.getElementById('feedback-list');
+      var empty = document.getElementById('feedback-empty');
+      clearChildren(container);
+      if (items.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+      items.forEach(function (fb) {
+        var done = fb.status === 'done';
+        var card = el('div', { className: 'card' });
+        card.style.opacity = done ? '0.5' : '1';
+
+        var head = el('div');
+        var cat = el('strong');
+        cat.textContent = '[' + fb.category + '] ';
+        var who = document.createTextNode((fb.username || 'anonym') + ' ');
+        var when = el('small');
+        when.textContent = formatDate(fb.createdAt || fb.created_at);
+        head.appendChild(cat); head.appendChild(who); head.appendChild(when);
+
+        // textContent (not innerHTML) — message is untrusted user input
+        var msg = el('div');
+        msg.style.margin = '6px 0';
+        msg.style.whiteSpace = 'pre-wrap';
+        msg.textContent = fb.message;
+
+        var btn = el('button');
+        btn.style.cssText = 'margin-top:8px;background:#0d0d0d;border:1px solid var(--amber-dim);color:var(--amber);font-family:var(--font);font-size:11px;padding:4px 8px;cursor:pointer';
+        btn.textContent = done ? 'als NEU markieren' : 'als ERLEDIGT markieren';
+        btn.onclick = function () {
+          api('PATCH', '/feedback/' + fb.id, { status: done ? 'new' : 'done' })
+            .then(loadFeedback)
+            .catch(function (err) { toast('Status-Update fehlgeschlagen: ' + err.message, 'error'); });
+        };
+
+        card.appendChild(head);
+        card.appendChild(msg);
+        card.appendChild(btn);
+        container.appendChild(card);
+      });
+    }).catch(function (err) {
+      toast('Feedback laden fehlgeschlagen: ' + err.message, 'error');
+    });
+  }
 
   function loadStories() {
     api('GET', '/stories').then(function(data) {
