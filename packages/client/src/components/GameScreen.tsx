@@ -447,6 +447,9 @@ export function GameScreen() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* In-flow top banner (reserves space; must not overlay the cockpit/NAV button) */}
+      <EmailVerifyBanner />
+
       {/* Desktop layout (>= 1024px) */}
       <CockpitLayout renderScreen={renderCockpitScreen} />
 
@@ -485,7 +488,6 @@ export function GameScreen() {
       <CompendiumOverlay />
       <HelpOverlay />
       <FeedbackButton />
-      <EmailVerifyBanner />
       <AncientRuinDialog />
       <StationTerminalGate />
     </div>

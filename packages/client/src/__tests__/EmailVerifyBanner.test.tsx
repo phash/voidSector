@@ -16,6 +16,13 @@ describe('EmailVerifyBanner', () => {
     expect(screen.getByTestId('resend-verification-btn')).toBeInTheDocument();
   });
 
+  it('renders in-flow (not a fixed overlay) so it reserves space and cannot cover the cockpit', () => {
+    // Regression: a position:fixed top banner overlaid the NAV-COM program button.
+    mockStoreState({ token: 'tok', isGuest: false, emailVerified: false } as any);
+    render(<EmailVerifyBanner />);
+    expect(screen.getByTestId('email-verify-banner').style.position).not.toBe('fixed');
+  });
+
   it('is hidden when the email is verified', () => {
     mockStoreState({ token: 'tok', isGuest: false, emailVerified: true } as any);
     render(<EmailVerifyBanner />);

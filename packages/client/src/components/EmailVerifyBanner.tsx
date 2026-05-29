@@ -44,11 +44,8 @@ export function EmailVerifyBanner() {
     <div
       data-testid="email-verify-banner"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9500,
+        flexShrink: 0,
+        width: '100%',
         background: '#3a2a00',
         borderBottom: '1px solid var(--color-primary)',
         color: 'var(--color-primary)',
