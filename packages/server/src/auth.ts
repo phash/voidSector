@@ -2,6 +2,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createPlayer, createGuestPlayer, findPlayerByUsername } from './db/queries.js';
+import { sendVerificationEmail } from './emailService.js';
+import { logger } from './utils/logger.js';
 import type { PlayerData } from '@void-sector/shared';
 
 if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
@@ -18,10 +20,16 @@ export interface AuthPayload {
 
 export async function register(
   username: string,
+  email: string,
   password: string,
 ): Promise<{ player: PlayerData; token: string }> {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-  const player = await createPlayer(username, passwordHash);
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const player = await createPlayer(username, passwordHash, email, verificationToken);
+  // Best-effort verification email — no-op if SMTP isn't configured (dev/test).
+  sendVerificationEmail(email, player.username, verificationToken).catch((err) =>
+    logger.error({ err }, 'sendVerificationEmail failed'),
+  );
   const token = jwt.sign(
     { userId: player.id, username: player.username } satisfies AuthPayload,
     JWT_SECRET,
