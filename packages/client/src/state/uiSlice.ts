@@ -36,6 +36,7 @@ export interface UISlice {
   theme: ThemeColor;
   jumpPending: boolean;
   brightness: number;
+  fontScale: number;
   colorProfile: ColorProfileName;
   zoomLevel: number;
   panOffset: { x: number; y: number };
@@ -66,6 +67,7 @@ export interface UISlice {
   setTheme: (theme: ThemeColor) => void;
   setJumpPending: (pending: boolean) => void;
   setBrightness: (val: number) => void;
+  setFontScale: (val: number) => void;
   setColorProfile: (profile: ColorProfileName) => void;
   setZoomLevel: (level: number) => void;
   setPanOffset: (offset: { x: number; y: number }) => void;
@@ -105,6 +107,7 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   theme: (safeGetItem('vs_theme') as ThemeColor) || 'amber',
   jumpPending: false,
   brightness: parseFloat(safeGetItem('vs-brightness') || '1'),
+  fontScale: parseFloat(safeGetItem('vs-font-scale') || '1'),
   colorProfile: (safeGetItem('vs-color-profile') as ColorProfileName) || 'Amber Classic',
   zoomLevel: 2,
   panOffset: { x: 0, y: 0 },
@@ -134,6 +137,10 @@ export const createUISlice: StateCreator<UISlice, [], [], UISlice> = (set, get) 
   setBrightness: (val) => {
     safeSetItem('vs-brightness', String(val));
     set({ brightness: val });
+  },
+  setFontScale: (val) => {
+    safeSetItem('vs-font-scale', String(val));
+    set({ fontScale: val });
   },
   setColorProfile: (profile) => {
     safeSetItem('vs-color-profile', profile);

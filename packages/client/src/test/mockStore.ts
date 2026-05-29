@@ -243,6 +243,8 @@ export function mockStoreState(overrides: Partial<StoreState> = {}) {
     setPanOffset: vi.fn(),
     brightness: 1.0,
     setBrightness: vi.fn(),
+    fontScale: 1.0,
+    setFontScale: vi.fn(),
     colorProfile: 'Amber Classic',
     setColorProfile: vi.fn(),
     scanPending: false,
