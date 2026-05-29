@@ -7,7 +7,9 @@ import type { Server } from '@colyseus/core';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { SectorRoom } from './rooms/SectorRoom.js';
-import { register, login, loginAsGuest } from './auth.js';
+import { register, login, loginAsGuest, verifyToken, type AuthPayload } from './auth.js';
+import { validateFeedbackInput } from './feedbackValidation.js';
+import { createFeedback } from './db/feedbackQueries.js';
 import { deleteExpiredGuestPlayers } from './db/queries.js';
 import { runMigrations } from './db/client.js';
 import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
@@ -101,6 +103,42 @@ export default config({
         });
       } catch (err) {
         logger.error({ err }, 'Guest login error');
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
+    app.post('/api/feedback', async (req: Request, res: Response) => {
+      try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          res.status(401).json({ error: 'Authentication required' });
+          return;
+        }
+        let auth: AuthPayload;
+        try {
+          auth = verifyToken(authHeader.slice(7));
+        } catch {
+          res.status(401).json({ error: 'Invalid token' });
+          return;
+        }
+        if (auth.isGuest) {
+          res.status(403).json({ error: 'Guests cannot submit feedback' });
+          return;
+        }
+        const result = validateFeedbackInput(req.body);
+        if ('error' in result) {
+          res.status(400).json({ error: result.error });
+          return;
+        }
+        const id = await createFeedback({
+          playerId: auth.userId,
+          username: auth.username,
+          category: result.category,
+          message: result.message,
+        });
+        res.status(201).json({ id });
+      } catch (err) {
+        logger.error({ err }, 'Feedback submit error');
         res.status(500).json({ error: 'Internal server error' });
       }
     });
