@@ -444,5 +444,10 @@
   "detail.refuelLabel": "REFUEL — {{price}}",
   "detail.crPerUnit": "CR/u",
   "detail.refuel": "[AUFTANKEN]",
-  "detail.ancientXenostation": "ANCIENT XENOSTATION"
+  "detail.ancientXenostation": "ANCIENT XENOSTATION",
+  "settings.fontSize": "Schriftgröße",
+  "reasons.insufficientResources": "KEINE RESSOURCEN",
+  "reasons.insufficientWissen": "KEIN WISSEN",
+  "reasons.techLocked": "TECH GESPERRT",
+  "reasons.maxLevel": "MAX LEVEL"
 }

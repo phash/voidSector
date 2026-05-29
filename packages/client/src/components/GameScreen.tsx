@@ -419,8 +419,12 @@ function renderCockpitScreen(monitorId: string) {
   }
 }
 
+/** Base root font-size (px); the font-size setting scales this. */
+const BASE_FONT_PX = 25;
+
 export function GameScreen() {
   const colorProfile = useStore((s) => s.colorProfile);
+  const fontScale = useStore((s) => s.fontScale);
   const activeMonitor = useStore((s) => s.activeMonitor);
   const setActiveMonitor = useStore((s) => s.setActiveMonitor);
   const clearAlert = useStore((s) => s.clearAlert);
@@ -435,6 +439,11 @@ export function GameScreen() {
     document.documentElement.style.setProperty('--color-primary', profile.primary);
     document.documentElement.style.setProperty('--color-dim', profile.dim);
   }, [colorProfile]);
+
+  // Apply the text-size setting (everything is rem-anchored, so this scales the whole UI).
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${BASE_FONT_PX * fontScale}px`;
+  }, [fontScale]);
 
   useEffect(() => {
     // Only run on mobile viewports to avoid affecting desktop activeProgram logic

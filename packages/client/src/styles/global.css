@@ -7,7 +7,8 @@
 }
 
 :root {
-  font-size: 23px;
+  /* Base size; the game screen overrides this from the font-size setting (BASE 25 * fontScale). */
+  font-size: 25px;
   /* Font size tiers */
   --fs-xs:   0.43rem;  /* ~10px — bezel chrome */
   --fs-sm:   0.52rem;  /* ~12px — chrome labels */
@@ -15,7 +16,7 @@
   --fs-base: 0.81rem;  /* ~19px — default content */
   --fs-lg:   0.90rem;  /* ~21px — headers, primary buttons */
   --color-primary: #FFB000;
-  --color-dim: rgba(255, 176, 0, 0.6);
+  --color-dim: rgba(255, 176, 0, 0.75);
   --color-bg: #050505;
   --color-danger: #FF3333;
   --color-bezel: #1a1a1a;

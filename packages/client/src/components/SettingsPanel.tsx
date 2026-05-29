@@ -26,6 +26,8 @@ export const SettingsPanel: React.FC = () => {
   const setColorProfile = useStore((s) => s.setColorProfile);
   const brightness = useStore((s) => s.brightness);
   const setBrightness = useStore((s) => s.setBrightness);
+  const fontScale = useStore((s) => s.fontScale);
+  const setFontScale = useStore((s) => s.setFontScale);
   const openCompendium = useStore((s) => s.openCompendium);
 
   const handleLogout = () => {
@@ -75,6 +77,34 @@ export const SettingsPanel: React.FC = () => {
           data-testid="brightness-slider"
         />
         <span>{brightness.toFixed(1)}</span>
+      </div>
+
+      <div className="settings-row">
+        <span className="settings-label">{t('settings.fontSize')}</span>
+        <div style={{ display: 'flex', gap: 6 }} data-testid="font-size-control">
+          {([
+            ['S', 0.92],
+            ['M', 1.0],
+            ['L', 1.16],
+          ] as const).map(([lbl, val]) => (
+            <button
+              key={lbl}
+              onClick={() => setFontScale(val)}
+              data-testid={`font-size-${lbl}`}
+              style={{
+                background: Math.abs(fontScale - val) < 0.01 ? 'rgba(255,176,0,0.15)' : 'transparent',
+                color: Math.abs(fontScale - val) < 0.01 ? 'var(--color-primary)' : '#666',
+                border: '1px solid #333',
+                padding: '2px 10px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ marginTop: 12 }}>
