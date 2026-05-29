@@ -76,12 +76,7 @@ vi.mock('@void-sector/shared', () => {
 
 // ── Mock techTreeQueries ─────────────────────────────────────────────────────
 vi.mock('../db/techTreeQueries.js', () => ({
-  getOrCreateTechTree: vi.fn().mockResolvedValue({
-    player_id: 'player-1',
-    researched_nodes: {},
-    total_researched: 0,
-    last_reset_at: null,
-  }),
+  getCategoryTiers: vi.fn().mockResolvedValue({}),
 }));
 
 // ── Mock engine deps for ScanService ─────────────────────────────────────────

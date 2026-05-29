@@ -55,8 +55,8 @@ describe('AcepProgram', () => {
 
   it('ACEP tab is active by default', () => {
     render(<AcepProgram />);
-    // AcepTab content visible — path label key returned by i18n mock
-    expect(screen.getByText('acep.paths.ausbau')).toBeInTheDocument();
+    // AcepTab content visible — path labels are hardcoded uppercase strings
+    expect(screen.getByText('AUSBAU')).toBeInTheDocument();
   });
 
   it('clicking MODULE tab calls setAcepActiveTab', () => {

@@ -144,11 +144,8 @@ export function TradeScreen() {
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>
           {isStation ? 'KONTOR' : `NPC ${t('tabs.trade')}`}
         </button>
-        {!isStation && tier >= 2 && (
-          <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>
-            {t('tabs.market')}
-          </button>
-        )}
+        {/* MARKET + KONTOR tabs hidden for launch (#525): server has no placeOrder/
+            kontor handlers, so the lists never populate. Re-enable once wired. */}
         {!isStation && tier >= 2 && (
           <button style={tabStyle(tab === 'slates')} onClick={() => setTab('slates')}>
             {btn('SLATES')}
@@ -157,11 +154,6 @@ export function TradeScreen() {
         {!isStation && tier >= 3 && (
           <button style={tabStyle(tab === 'routes')} onClick={() => setTab('routes')}>
             {t('tabs.routes')}
-          </button>
-        )}
-        {hasKontorOrders && (
-          <button style={tabStyle(tab === 'kontor')} onClick={() => setTab('kontor')}>
-            {t('programs.tradingPost')}
           </button>
         )}
       </div>

@@ -1,7 +1,7 @@
 import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import {
   WRECK_SALVAGE_DURATION_MS,
   WRECK_DIFFICULTY_FAIL_DELTA,
@@ -45,6 +45,7 @@ import {
   getInventory,
   addDiscovery,
   getSector,
+  getJumpGate,
   saveSector,
   insertJumpGate,
   contributeHumanityRep,
@@ -221,7 +222,7 @@ export class WreckService {
       addAcepXpForPlayer(playerId, 'explorer', 2).catch(() => {});
 
       if (item.itemType === 'data_slate') {
-        const slateId = uuidv4();
+        const slateId = randomUUID();
         const targetX = 50 + Math.floor(Math.random() * 200);
         const targetY = 50 + Math.floor(Math.random() * 200);
         const hasJumpgate = w.tier >= 5 && Math.random() < 0.3;
@@ -316,8 +317,8 @@ export class WreckService {
     const sectorX = this.ctx._px(client.sessionId);
     const sectorY = this.ctx._py(client.sessionId);
 
-    const sector = await getSector(sectorX, sectorY);
-    if (!sector?.jumpgate) {
+    const gate = await getJumpGate(sectorX, sectorY);
+    if (!gate) {
       client.send('actionError', { code: 'NO_GATE', message: 'Kein Jumpgate in diesem Sektor' });
       return;
     }
@@ -342,7 +343,7 @@ export class WreckService {
     await deleteWreckSlateMetadata(data.slateId);
 
     await insertJumpGate({
-      id: uuidv4(),
+      id: randomUUID(),
       sectorX,
       sectorY,
       targetX: meta.sectorX,

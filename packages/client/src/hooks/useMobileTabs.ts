@@ -31,6 +31,8 @@ export const MEHR_MONITORS: Array<{ id: string; icon: string; label: string }> =
   { id: MONITORS.LOG, icon: '\u25B6', label: 'LOG' },
   { id: MONITORS.NEWS, icon: '\u2261', label: 'NEWS' },
   { id: MONITORS.ACEP, icon: '\u26C9', label: 'ACEP' },
+  { id: MONITORS.FABRIK, icon: '\u2692', label: 'FABRIK' },
+  { id: MONITORS.FRIENDS, icon: '\u263A', label: 'FREUNDE' },
 ];
 
 /**

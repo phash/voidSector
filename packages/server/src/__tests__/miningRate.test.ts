@@ -56,9 +56,9 @@ describe('MiningService mining rate includes miningBonus', () => {
 
     await svc.handleMine(client, { resource: 'ore' });
 
-    // rate should be 1 * (1 + 0.5) * 1 = 1.5
+    // With a laser, miningBonus (= module miningSpeed) IS the base rate: 0.5 * 1 = 0.5
     const savedState = vi.mocked(saveMiningState).mock.calls[0]?.[1];
-    expect(savedState?.rate).toBeCloseTo(1.5);
+    expect(savedState?.rate).toBeCloseTo(0.5);
   });
 
   it('rate is 0.1 when miningBonus is 0 (no mining laser)', async () => {

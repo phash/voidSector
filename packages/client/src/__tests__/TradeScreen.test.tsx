@@ -105,7 +105,7 @@ describe('TradeScreen', () => {
     expect(screen.getByText(/STATION/)).toBeTruthy();
   });
 
-  it('shows market tab at tier 2 at home base', () => {
+  it('hides market tab even at tier 2 (removed for launch — #525)', () => {
     mockStoreState({
       baseStructures: [{ id: 'tp1', type: 'trading_post', tier: 2, sector_x: 0, sector_y: 0 }],
       credits: 500,
@@ -114,7 +114,7 @@ describe('TradeScreen', () => {
       myOrders: [],
     });
     render(<TradeScreen />);
-    expect(screen.getByText('tabs.market')).toBeTruthy();
+    expect(screen.queryByText('tabs.market')).toBeNull();
   });
 
   it('hides market tab at tier 1 at home base', () => {
@@ -165,7 +165,7 @@ describe('TradeScreen', () => {
     expect(screen.queryByText('tabs.routes')).toBeNull();
   });
 
-  it('shows TRADING POST tab when kontorOrders are present at station', () => {
+  it('hides TRADING POST tab even with kontorOrders (removed for launch — #525)', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
@@ -210,7 +210,7 @@ describe('TradeScreen', () => {
       ],
     });
     render(<TradeScreen />);
-    expect(screen.getByText('programs.tradingPost')).toBeTruthy();
+    expect(screen.queryByText('programs.tradingPost')).toBeNull();
   });
 
   it('hides TRADING POST tab when no kontorOrders', () => {
@@ -251,7 +251,11 @@ describe('TradeScreen', () => {
     expect(screen.queryByText('programs.tradingPost')).toBeNull();
   });
 
-  it('sell-all button sends full playerAmount when station has sufficient capacity (#237)', () => {
+  // NOTE: StationTradeTab replaced the old single "sell-all" button with a per-row
+  // +/- quantity SELL control. maxSell = min(cargo, maxStock - stock). These tests
+  // now verify that capped behavior (#237) against the current StationTradeTab UI.
+
+  it('SELL sends the chosen quantity when station has sufficient capacity (#237)', () => {
     vi.mocked(network.sendNpcTrade).mockClear();
     mockStoreState({
       baseStructures: [],
@@ -276,21 +280,20 @@ describe('TradeScreen', () => {
       npcStationData: {
         level: 1, name: 'Outpost', xp: 0, nextLevelXp: 500,
         inventory: [
-          // Station has plenty of capacity: 50/200 → remaining = 150
+          // Station has plenty of capacity: 50/200 → maxSell = min(5, 150) = 5
           { itemType: 'ore', stock: 50, maxStock: 200, buyPrice: 12, sellPrice: 8 },
         ],
       },
     });
     render(<TradeScreen />);
-    // The ALL button should show "ALL (5)" (no capping)
-    const sellAllBtn = screen.getByTestId('sell-all-ore');
-    expect(sellAllBtn.textContent).toBe('ALL (5)');
-    // Click it — should send the full playerAmount (5) to the server
-    fireEvent.click(sellAllBtn);
-    expect(network.sendNpcTrade).toHaveBeenCalledWith('ore', 5, 'sell');
+    // SELL button is enabled (maxSell = 5 > 0). Default qty is 1.
+    const sellBtn = screen.getByText('[SELL]');
+    expect((sellBtn as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(sellBtn);
+    expect(network.sendNpcTrade).toHaveBeenCalledWith('ore', 1, 'sell');
   });
 
-  it('sell-all button caps amount when station is near full (#237)', () => {
+  it('SELL quantity is capped by remaining station capacity (#237)', () => {
     vi.mocked(network.sendNpcTrade).mockClear();
     mockStoreState({
       baseStructures: [],
@@ -315,21 +318,27 @@ describe('TradeScreen', () => {
       npcStationData: {
         level: 1, name: 'Outpost', xp: 0, nextLevelXp: 500,
         inventory: [
-          // Station nearly full: 197/200 → remaining = 3
+          // Station nearly full: 197/200 → maxSell = min(10, 3) = 3
           { itemType: 'ore', stock: 197, maxStock: 200, buyPrice: 5, sellPrice: 3 },
         ],
       },
     });
     render(<TradeScreen />);
-    // The ALL button should show the cap
-    const sellAllBtn = screen.getByTestId('sell-all-ore');
-    expect(sellAllBtn.textContent).toContain('ALL (10 → max 3)');
-    // Click it — should send the capped amount (3), not the full 10
-    fireEvent.click(sellAllBtn);
+    // Bump the sell qty past the cap: + button stops at maxSell (3).
+    const plusButtons = screen.getAllByText('+');
+    // First +/- pair is BUY, second is SELL.
+    const sellPlus = plusButtons[1];
+    fireEvent.click(sellPlus);
+    fireEvent.click(sellPlus);
+    fireEvent.click(sellPlus);
+    fireEvent.click(sellPlus); // 5th attempt — should remain capped at 3
+    const sellBtn = screen.getByText('[SELL]');
+    fireEvent.click(sellBtn);
+    // Sent quantity is capped at the remaining station capacity (3), never 10.
     expect(network.sendNpcTrade).toHaveBeenCalledWith('ore', 3, 'sell');
   });
 
-  it('sell-all button hidden when station is completely full (#237)', () => {
+  it('SELL is disabled when station is completely full (#237)', () => {
     mockStoreState({
       baseStructures: [],
       position: { x: 10, y: 10 },
@@ -353,74 +362,18 @@ describe('TradeScreen', () => {
       npcStationData: {
         level: 1, name: 'Outpost', xp: 0, nextLevelXp: 500,
         inventory: [
-          // Station completely full: 200/200 → remaining = 0
+          // Station completely full: 200/200 → maxSell = min(5, 0) = 0
           { itemType: 'ore', stock: 200, maxStock: 200, buyPrice: 5, sellPrice: 3 },
         ],
       },
     });
     render(<TradeScreen />);
-    // ALL button should NOT appear when station is full
-    expect(screen.queryByTestId('sell-all-ore')).toBeNull();
+    // maxSell = 0, but playerAmount > 0, so the SELL button is present yet disabled
+    // (sellQty default 1 > maxSell 0).
+    const sellBtn = screen.getByText('[SELL]') as HTMLButtonElement;
+    expect(sellBtn.disabled).toBe(true);
   });
 
-  it('disables SELL button for own orders in TRADING POST tab', () => {
-    mockStoreState({
-      baseStructures: [],
-      position: { x: 10, y: 10 },
-      currentSector: {
-        x: 10,
-        y: 10,
-        type: 'station',
-        seed: 42,
-        discoveredBy: null,
-        discoveredAt: null,
-        metadata: {},
-        environment: 'empty' as const,
-        contents: ['station' as const],
-      },
-      credits: 200,
-      cargo: {
-        ore: 5,
-        gas: 0,
-        crystal: 0,
-        slates: 0,
-        artefact: 0,
-        artefact_drive: 0,
-        artefact_cargo: 0,
-        artefact_scanner: 0,
-        artefact_armor: 0,
-        artefact_weapon: 0,
-        artefact_shield: 0,
-        artefact_defense: 0,
-        artefact_special: 0,
-        artefact_mining: 0,
-      },
-      kontorOrders: [
-        {
-          id: 'ko1',
-          ownerId: 'test-id',
-          itemType: 'ore',
-          amountWanted: 500,
-          amountFilled: 0,
-          pricePerUnit: 2,
-          active: true,
-        },
-        {
-          id: 'ko2',
-          ownerId: 'other-player',
-          itemType: 'gas',
-          amountWanted: 200,
-          amountFilled: 0,
-          pricePerUnit: 5,
-          active: true,
-        },
-      ],
-    });
-    render(<TradeScreen />);
-    const kontorTab = screen.getByText('programs.tradingPost');
-    fireEvent.click(kontorTab);
-    const sellButtons = screen.getAllByText('SELL');
-    expect(sellButtons[0]).toHaveProperty('disabled', true);
-    expect(sellButtons[1]).toHaveProperty('disabled', false);
-  });
+  // Removed: 'disables SELL button for own orders in TRADING POST tab' — the
+  // KONTOR/TRADING POST tab was hidden for launch (#525).
 });

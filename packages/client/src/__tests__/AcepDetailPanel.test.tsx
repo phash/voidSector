@@ -40,10 +40,10 @@ describe('AcepDetailPanel', () => {
   });
 
   it('shows module detail for MODULE tab with hover', () => {
-    mockStoreState({ ship: mockShip as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'drive_mk1' });
+    mockStoreState({ ship: mockShip as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'ion_drive_mk1' });
     render(<AcepDetailPanel />);
-    // drive_mk1 should show name
-    expect(screen.getByText(/drive/i)).toBeInTheDocument();
+    // ion_drive_mk1 should show its module name
+    expect(screen.getByText('Ion Drive Mk1')).toBeInTheDocument();
   });
 
   it('shows hover prompt for SHOP tab without hover', () => {
@@ -62,10 +62,10 @@ describe('AcepDetailPanel', () => {
   it('MODULE tab with hover shows HP line', () => {
     const shipWithModule = {
       ...mockShip,
-      // maxHp on ShipModule is not used — max HP comes from MODULES['drive_mk1'].maxHp (= 20)
-      modules: [{ moduleId: 'drive_mk1', slotIndex: 0, currentHp: 6, source: 'standard' as const }],
+      // currentHp on ShipModule is the live value; max HP comes from MODULE_MAP['ion_drive_mk1'].hitpoints (= 20)
+      modules: [{ moduleId: 'ion_drive_mk1', slotIndex: 0, currentHp: 6, source: 'standard' as const }],
     };
-    mockStoreState({ ship: shipWithModule as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'drive_mk1' });
+    mockStoreState({ ship: shipWithModule as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'ion_drive_mk1' });
     render(<AcepDetailPanel />);
     expect(screen.getByText(/HP: 6\/20/)).toBeInTheDocument();
   });
@@ -74,21 +74,20 @@ describe('AcepDetailPanel', () => {
     mockStoreState({
       ship: mockShip as any,
       acepActiveTab: 'shop' as const,
-      acepHoveredModuleId: 'drive_mk1',
+      acepHoveredModuleId: 'ion_drive_mk1',
       currentSector: { type: 'station' } as any,
     });
     render(<AcepDetailPanel />);
-    // drive_mk1 costs 100 CR + 10 resources.ore (via i18n mock)
-    expect(screen.getByText(/100 CR/)).toBeInTheDocument();
-    expect(screen.getByText(/resources\.ore/)).toBeInTheDocument();
+    // ion_drive_mk1 costs 250 CR (no resource cost at tier 1)
+    expect(screen.getByText(/250 CR/)).toBeInTheDocument();
   });
 
   it('MODULE tab with hover renders ModuleArtwork canvas', () => {
     const shipWithModule = {
       ...mockShip,
-      modules: [{ moduleId: 'drive_mk1', slotIndex: 0, currentHp: 20, source: 'standard' as const }],
+      modules: [{ moduleId: 'ion_drive_mk1', slotIndex: 0, currentHp: 20, source: 'standard' as const }],
     };
-    mockStoreState({ ship: shipWithModule as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'drive_mk1' });
+    mockStoreState({ ship: shipWithModule as any, acepActiveTab: 'module' as const, acepHoveredModuleId: 'ion_drive_mk1' });
     const { container } = render(<AcepDetailPanel />);
     const canvas = container.querySelector('canvas');
     expect(canvas).toBeTruthy();
@@ -99,7 +98,7 @@ describe('AcepDetailPanel', () => {
     mockStoreState({
       ship: mockShip as any,
       acepActiveTab: 'shop' as const,
-      acepHoveredModuleId: 'drive_mk1',
+      acepHoveredModuleId: 'ion_drive_mk1',
       currentSector: { type: 'station' } as any,
     });
     const { container } = render(<AcepDetailPanel />);

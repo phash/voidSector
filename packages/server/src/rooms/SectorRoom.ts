@@ -9,7 +9,7 @@ import { calculateCurrentAP, spendAP } from '../engine/ap.js';
 import { stopMining } from '../engine/mining.js';
 import { calculateBonuses } from '../engine/factionBonuses.js';
 import type { FactionBonuses } from '../engine/factionBonuses.js';
-import { getAcepXpSummary, getAcepEffects, type AcepPath } from '../engine/acepXpService.js';
+import { getAcepXpSummary, getAcepEffects, getAusbauGating, type AcepPath } from '../engine/acepXpService.js';
 import { recordVisit } from '../engine/npcStationEngine.js';
 import { sectorToQuadrant } from '../engine/quadrantEngine.js';
 import { isFrontierQuadrant } from '../engine/expansionEngine.js';
@@ -54,6 +54,8 @@ import {
   getStorageInventory,
   getPlayerCredits,
   getAlienCredits,
+  addCredits,
+  getPlayerUpgrades,
   getPlayerBookmarks,
   getPlayerFaction,
   getFactionUpgrades,
@@ -84,7 +86,8 @@ import {
 import { getQuadrant, addPlayerKnownQuadrant } from '../db/quadrantQueries.js';
 import { civQueries } from '../db/civQueries.js';
 import { query } from '../db/client.js';
-import { getPlayerResearchV2, addPlayerResearchV2 } from '../db/techTreeQueries.js';
+import { getPlayerResearchV2, getCategoryTiers, bumpCategoryTier } from '../db/techTreeQueries.js';
+import { planCategoryResearch } from '../engine/categoryTechService.js';
 import {
   RECONNECTION_TIMEOUT_S,
   calculateShipStats,
@@ -94,7 +97,6 @@ import {
   STATION_REP_VISIT,
   COSMIC_FACTION_IDS,
   HYPERDRIVE_CHARGE_PER_GAS,
-  getAcepLevel,
   FUEL_MIN_TANK,
   BASE_FUEL_CAPACITY,
   CONQUEST_POOL_MAX,
@@ -149,7 +151,6 @@ import { StoryQuestChainService } from './services/StoryQuestChainService.js';
 import { CommunityQuestService } from './services/CommunityQuestService.js';
 import { StationProductionService } from './services/StationProductionService.js';
 import { RepairService } from './services/RepairService.js';
-import { TechTreeService } from './services/TechTreeService.js';
 import { NpcShipService } from './services/NpcShipService.js';
 import { CombatV3Service } from './services/CombatV3Service.js';
 import {
@@ -203,7 +204,6 @@ export class SectorRoom extends Room<SectorRoomState> {
   private communityQuests!: CommunityQuestService;
   private stationProduction!: StationProductionService;
   private repair!: RepairService;
-  private techTree!: TechTreeService;
   private npcShips!: NpcShipService;
   private combatV3!: CombatV3Service;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
@@ -267,6 +267,21 @@ export class SectorRoom extends Room<SectorRoomState> {
       bonuses.extraModuleSlots = fx.extraModuleSlots;
       bonuses.ancientDetection = fx.ancientDetection;
       bonuses.helionDecoderEnabled = fx.helionDecoderEnabled;
+    }
+
+    // Honored-tier NPC faction perks (#528). Previously stored/displayed only.
+    // Effects feed the same bonus fields as ACEP. NOTE: cargoCapBonus and
+    // apRegenMultiplier are not yet consumed downstream (cargo cap lives in the
+    // DB layer, AP regen in a separate path) — tracked in #528.
+    const playerUpgrades = await getPlayerUpgrades(playerId).catch(() => []);
+    for (const u of playerUpgrades) {
+      if (!u.active) continue;
+      switch (u.upgrade_id) {
+        case 'cargo_expansion':  bonuses.cargoCapBonus += 3; break;
+        case 'advanced_scanner': bonuses.scanRadiusBonus += 1; break;
+        case 'combat_plating':   bonuses.combatMultiplier *= 1.2; break;
+        case 'void_drive':       bonuses.apRegenMultiplier *= 1.1; break;
+      }
     }
 
     return bonuses;
@@ -363,7 +378,6 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.ships = new ShipService(this.serviceCtx);
     this.world = new WorldService(this.serviceCtx);
     this.repair = new RepairService(this.serviceCtx);
-    this.techTree = new TechTreeService(this.serviceCtx);
     this.alienInteraction = new AlienInteractionService(this.serviceCtx);
     this.territory = new TerritoryService(this.serviceCtx);
     this.storyChain = new StoryQuestChainService();
@@ -769,39 +783,39 @@ export class SectorRoom extends Room<SectorRoomState> {
       this.ships.handleAcepBoost(client, data),
     );
 
-    // ── Tech Tree ───────────────────────────────────────────────────
-    this.onMessage('getTechTree', (client) => this.techTree.handleGetTechTree(client));
-    this.onMessage('researchTechNode', (client, data) => this.techTree.handleResearchNode(client, data));
-    this.onMessage('resetTechTree', (client) => this.techTree.handleResetTree(client));
+    // ── Category Tech (tier gating #527) ───────────────────────────
+    this.onMessage('researchCategoryTier', async (client, data: { category: string }) => {
+      const auth = client.auth as AuthPayload;
+      const [tiers, wissen] = await Promise.all([
+        getCategoryTiers(auth.userId),
+        getWissen(auth.userId),
+      ]);
+      const plan = planCategoryResearch(data.category, tiers, wissen);
+      if (!plan.ok) {
+        client.send('researchResult', { success: false, error: plan.error });
+        return;
+      }
+      const paid = await deductWissen(auth.userId, plan.cost!);
+      if (!paid) {
+        client.send('researchResult', { success: false, error: 'Nicht genug Wissen' });
+        return;
+      }
+      await bumpCategoryTier(auth.userId, data.category, plan.nextTier!);
+      const updated = await getCategoryTiers(auth.userId);
+      client.send('categoryTechUpdate', { categoryTiers: updated });
+      client.send('researchResult', { success: true });
+    });
+
+    this.onMessage('getCategoryTech', async (client) => {
+      const auth = client.auth as AuthPayload;
+      client.send('categoryTechUpdate', { categoryTiers: await getCategoryTiers(auth.userId) });
+    });
 
     // ── Tech Rework v2: flat research list ──────────────────────────
     this.onMessage('getPlayerResearch', async (client) => {
       const auth = client.auth as AuthPayload;
       const research = await getPlayerResearchV2(auth.userId);
       client.send('playerResearch', { research });
-    });
-
-    this.onMessage('researchNode', async (client, data: { nodeId: string }) => {
-      const auth = client.auth as AuthPayload;
-      // Check if already researched
-      const current = await getPlayerResearchV2(auth.userId);
-      if (current.includes(data.nodeId)) {
-        client.send('researchResult', { success: false, error: 'Bereits erforscht' });
-        return;
-      }
-      // Deduct Wissen (10 per node)
-      const deducted = await deductWissen(auth.userId, 10);
-      if (!deducted) {
-        client.send('researchResult', { success: false, error: 'Nicht genug Wissen (10 benötigt)' });
-        return;
-      }
-      await addPlayerResearchV2(auth.userId, data.nodeId);
-      const research = await getPlayerResearchV2(auth.userId);
-      const wissen = await getWissen(auth.userId);
-      client.send('researchResult', { success: true, nodeId: data.nodeId });
-      client.send('playerResearch', { research });
-      client.send('wissenUpdate', { wissen });
-      client.send('logEntry', `Forschung abgeschlossen: ${data.nodeId} (-10 Wissen)`);
     });
 
     // ── World / Data Queries ────────────────────────────────────────
@@ -1035,6 +1049,10 @@ export class SectorRoom extends Room<SectorRoomState> {
         if (isInteractiveEncounter(data.factionId)) {
           const humanityDelta = data.accepted ? 3 : -2;
           await contributeHumanityRep(data.factionId, humanityDelta).catch(() => {});
+        }
+        // Community quest: a positive (accepted) alien interaction counts toward the goal (#531)
+        if (data.accepted) {
+          this.communityQuests.contribute(auth.userId, 1, 'community_alien_interaction').catch(() => {});
         }
         client.send('alienEncounterResolved', { factionId: data.factionId, repDelta: delta });
       },
@@ -1453,7 +1471,7 @@ export class SectorRoom extends Room<SectorRoomState> {
             environment: 'empty',
             contents: ['station'],
             metadata: {},
-          } as any;
+          } as SectorData;
         } else {
           const { qx, qy } = sectorToQuadrant(sectorX, sectorY);
           const _controls = await getAllQuadrantControls();
@@ -1628,7 +1646,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const wissen = await getWissen(auth.userId);
       const wissenSpent = await getWissenSpent(auth.userId);
       const typedArtefacts = await getTypedArtefacts(auth.userId);
-      const labTier = getAcepLevel(acepXp.ausbau);
+      const labTier = getAusbauGating(acepXp.ausbau).maxLabTier;
       client.send('researchState', {
         unlockedModules: researchData.unlockedModules,
         blueprints: researchData.blueprints,

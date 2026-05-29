@@ -17,7 +17,7 @@ const mockShip = {
   id: 'ship-1',
   name: 'Test Ship',
   modules: [
-    { slotIndex: 0, moduleId: 'generator_mk2', currentHp: 2, maxHp: 3, source: 'standard' as const },
+    { slotIndex: 0, moduleId: 'fusion_cell_mk2', currentHp: 2, maxHp: 3, source: 'standard' as const },
   ],
   acepXp: { ausbau: 0, intel: 0, kampf: 0, explorer: 0, total: 0 },
   acepEffects: { extraModuleSlots: 0, cargoMultiplier: 1, miningBonus: 0, scanRadiusBonus: 0, combatDamageBonus: 0, ancientDetection: false, helionDecoderEnabled: false },
@@ -67,7 +67,7 @@ describe('ModuleTab', () => {
   it('renders inventory item with select prompt', () => {
     mockStoreState({
       ship: mockShip as any,
-      moduleInventory: ['drive_mk1'],
+      moduleInventory: ['ion_drive_mk1'],
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<ModuleTab />);
@@ -77,7 +77,7 @@ describe('ModuleTab', () => {
   it('selecting inventory module highlights compatible slots with [+] button', () => {
     mockStoreState({
       ship: mockShip as any,
-      moduleInventory: ['drive_mk1'],
+      moduleInventory: ['ion_drive_mk1'],
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<ModuleTab />);
@@ -93,7 +93,7 @@ describe('ModuleTab', () => {
   it('clicking [+] on a compatible slot calls sendInstallModule', () => {
     mockStoreState({
       ship: mockShip as any,
-      moduleInventory: ['drive_mk1'],
+      moduleInventory: ['ion_drive_mk1'],
       setAcepHoveredModuleId: vi.fn(),
     });
     render(<ModuleTab />);
@@ -101,6 +101,6 @@ describe('ModuleTab', () => {
     fireEvent.click(screen.getByText('module.select'));
     // Click install on compatible slot
     fireEvent.click(screen.getByText('[+]'));
-    expect(network.sendInstallModule).toHaveBeenCalledWith('ship-1', 'drive_mk1', 1);
+    expect(network.sendInstallModule).toHaveBeenCalledWith('ship-1', 'ion_drive_mk1', 1);
   });
 });

@@ -359,11 +359,20 @@ export class WorldService {
 
     await saveAPState(auth.userId, result.newAP!);
 
+    // #536: track deductions so we can refund AP + resources if a later step fails.
+    const removed: Array<[string, number]> = [];
+    const refund = async () => {
+      await saveAPState(auth.userId, ap);
+      for (const [r, a] of removed) await addToInventory(auth.userId, 'resource', r, a);
+    };
+
     for (const [resource, amount] of Object.entries(result.costs)) {
       if (amount > 0) {
         try {
           await removeFromInventory(auth.userId, 'resource', resource, amount);
+          removed.push([resource, amount]);
         } catch {
+          await refund();
           client.send('buildResult', {
             success: false,
             error: `Insufficient ${resource} (concurrent modification)`,
@@ -382,6 +391,7 @@ export class WorldService {
         this.ctx._py(client.sessionId),
       );
     } catch (err: any) {
+      await refund();
       if (err.code === '23505') {
         client.send('buildResult', {
           success: false,
@@ -910,6 +920,8 @@ export class WorldService {
     client.send('buildResult', { success: true, constructionSite });
     this.ctx.broadcast('constructionSiteCreated', { site: constructionSite });
     client.send('logEntry', `Jumpgate-Baustelle eröffnet bei (${sx}, ${sy})`);
+    // Community quest: opening a jumpgate construction counts toward the delivery goal (#531)
+    this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_delivery').catch(() => {});
   }
 
   // ── Jumpgate Upgrade / Dismantle / Toll ───────────────────────────

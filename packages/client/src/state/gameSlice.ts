@@ -563,6 +563,9 @@ export interface GameSlice {
   // Tech rework: v2 research nodes (flat list of researched node IDs)
   playerResearch: string[];
 
+  // Tech tier-gating: category → tier unlocked (0 = locked)
+  categoryTiers: Record<string, number>;
+
   // Trade feedback (partial sell message)
   tradeMessage: string | null;
 
@@ -693,6 +696,7 @@ export interface GameSlice {
   setTrackedQuests: (quests: TrackedQuest[]) => void;
   setTechTree: (data: { researchedNodes: Record<string, number>; totalResearched: number; resetCooldownRemaining: number }) => void;
   setPlayerResearch: (research: string[]) => void;
+  setCategoryTiers: (t: Record<string, number>) => void;
   setConstructionSites: (sites: ConstructionSiteState[]) => void;
   upsertConstructionSite: (site: ConstructionSiteState) => void;
   removeConstructionSite: (siteId: string) => void;
@@ -846,6 +850,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   trackedQuests: [],
   techTree: null,
   playerResearch: [],
+  categoryTiers: {},
   constructionSites: [],
   tradeMessage: null,
   sectorWrecks: {},
@@ -1113,6 +1118,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setTrackedQuests: (trackedQuests) => set({ trackedQuests }),
   setTechTree: (data) => set({ techTree: data }),
   setPlayerResearch: (playerResearch) => set({ playerResearch }),
+  setCategoryTiers: (categoryTiers) => set({ categoryTiers }),
   setConstructionSites: (sites) => set({ constructionSites: sites }),
   upsertConstructionSite: (site) => set((s) => ({
     constructionSites: s.constructionSites.some((c) => c.id === site.id)

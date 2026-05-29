@@ -1,4 +1,29 @@
-import type { CombatV3State, CombatModule, CombatV3RoundResult, NpcCombatStats } from '@void-sector/shared';
+import type { CombatV3State, CombatModule, CombatV3RoundResult, NpcCombatStats, ShipModule } from '@void-sector/shared';
+import { MODULE_MAP } from '@void-sector/shared';
+
+/**
+ * Maps a player's installed ship modules (ShipModule[], as stored on the ship)
+ * to the combat representation the engine consumes. Unknown module ids are
+ * skipped. currentHp falls back to the definition's full hitpoints.
+ */
+export function buildCombatModules(modules: ShipModule[]): CombatModule[] {
+  const result: CombatModule[] = [];
+  for (const m of modules) {
+    const def = MODULE_MAP.get(m.moduleId);
+    if (!def) continue;
+    result.push({
+      moduleId: def.id,
+      name: def.name,
+      category: def.category,
+      hp: m.currentHp ?? def.hitpoints,
+      maxHp: def.hitpoints,
+      active: true,
+      energyCost: def.energyCost,
+      stats: def.stats,
+    });
+  }
+  return result;
+}
 
 const TACTIC_MODIFIERS = {
   assault: { weaponDmg: 1.25, shieldRegen: 0.8 },

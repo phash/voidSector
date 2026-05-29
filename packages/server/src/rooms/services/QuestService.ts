@@ -439,7 +439,7 @@ export class QuestService {
       if (obj.type !== 'delivery' || !obj.resource || obj.amount == null || obj.fulfilled) continue;
       const currentProgress = obj.progress ?? 0;
       const remaining = obj.amount - currentProgress;
-      const available = (cargo as Record<string, number>)[obj.resource] ?? 0;
+      const available = (cargo as unknown as Record<string, number>)[obj.resource] ?? 0;
       const toDeliver = Math.min(remaining, available);
       if (toDeliver <= 0) continue;
 
@@ -460,6 +460,8 @@ export class QuestService {
 
     if (objectives.every((o) => o.fulfilled)) {
       await updateQuestStatus(row.id, 'completed');
+      // Community quest: each completed quest counts toward the interaction goal (#531)
+      this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_interaction').catch(() => {});
       const rewards = row.rewards as QuestRewards;
 
       if (rewards.credits) {
@@ -803,9 +805,9 @@ export class QuestService {
           obj.targetNpcId === context.npcId
         ) {
           if (obj.type === 'deliver_to_npc' && obj.cargoItem) {
-            const hasItem = await getInventoryItem(playerId, 'quest_item', obj.cargoItem);
+            const hasItem = await getInventoryItem(playerId, 'prisoner', obj.cargoItem);
             if (hasItem <= 0) continue;
-            await removeFromInventory(playerId, 'quest_item', obj.cargoItem, 1);
+            await removeFromInventory(playerId, 'prisoner', obj.cargoItem, 1);
           }
           obj.fulfilled = true;
           updated = true;

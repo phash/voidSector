@@ -166,10 +166,15 @@ export function validateModuleInstall(
   const isSpecializedSlot = slotIndex < specializedSlotCount;
   const isExtraSlot = slotIndex >= specializedSlotCount;
 
-  // Specialized Slot: nur passende Kategorie
+  // Specialized Slot: nur passende Kategorie.
+  // The 'weapon' base slot is a meta-category that accepts every weapon_* sub-category
+  // (weapon_energy/weapon_kinetic/weapon_missile) — otherwise no weapon fits the base slot.
   if (isSpecializedSlot) {
     const expectedCategory = SPECIALIZED_SLOT_CATEGORIES[slotIndex];
-    if (expectedCategory && expectedCategory !== category) {
+    const matchesSlot =
+      expectedCategory === category ||
+      (expectedCategory === 'weapon' && category.startsWith('weapon_'));
+    if (expectedCategory && !matchesSlot) {
       return { valid: false, error: `Slot ${slotIndex} ist für '${expectedCategory}' reserviert` };
     }
   }

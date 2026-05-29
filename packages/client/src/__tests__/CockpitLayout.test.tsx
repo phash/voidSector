@@ -60,6 +60,7 @@ vi.mock('../components/CommsScreen', () => ({
 vi.mock('../components/ShipBlock', () => ({
   ShipBlock: () => <div data-testid="ship-block">ShipBlock</div>,
   CargoBlock: () => <div data-testid="cargo-block">CargoBlock</div>,
+  StatsBlock: () => <div data-testid="stats-block">StatsBlock</div>,
 }));
 vi.mock('../components/CombatStatusPanel', () => ({
   CombatStatusPanel: () => <div data-testid="combat-status-panel">CombatStatusPanel</div>,

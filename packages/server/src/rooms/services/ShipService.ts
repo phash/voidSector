@@ -44,7 +44,7 @@ import {
   depositCraftResources,
   deleteCraftSite,
 } from '../../db/craftSiteQueries.js';
-import { getOrCreateTechTree } from '../../db/techTreeQueries.js';
+import { getCategoryTiers } from '../../db/techTreeQueries.js';
 
 export class ShipService {
   constructor(private ctx: ServiceContext) {}
@@ -141,12 +141,12 @@ export class ShipService {
       return;
     }
     // Check if module is unlocked (freely available, blueprint, or tech-tree tier)
-    const [techTree, dbResearch] = await Promise.all([
-      getOrCreateTechTree(auth.userId),
+    const [categoryTiers, dbResearch] = await Promise.all([
+      getCategoryTiers(auth.userId),
       getPlayerResearch(auth.userId),
     ]);
-    if (!isModuleUnlocked(data.moduleId, moduleDef, techTree.researched_nodes, dbResearch.blueprints)) {
-      client.send('error', { code: 'MODULE_LOCKED', message: 'Module not researched' });
+    if (!isModuleUnlocked(data.moduleId, categoryTiers, dbResearch.blueprints)) {
+      client.send('error', { code: 'MODULE_LOCKED', message: 'Modul-Tier noch nicht erforscht' });
       return;
     }
     // Must be at station
@@ -218,17 +218,17 @@ export class ShipService {
     }
 
     // 1. Check recipe access
-    const [research, bpQty, techTree] = await Promise.all([
+    const [research, bpQty, categoryTiers] = await Promise.all([
       getPlayerResearch(auth.userId),
       getInventoryItem(auth.userId, 'blueprint', data.moduleId),
-      getOrCreateTechTree(auth.userId),
+      getCategoryTiers(auth.userId),
     ]);
 
     const blueprints = bpQty >= 1 ? [data.moduleId] : [];
     const hasRecipe = research.unlockedModules.includes(data.moduleId) ||
-      isModuleUnlocked(data.moduleId, mod, techTree.researched_nodes, blueprints);
+      isModuleUnlocked(data.moduleId, categoryTiers, blueprints);
     if (!hasRecipe) {
-      client.send('craftResult', { success: false, error: 'No recipe available' });
+      client.send('craftResult', { success: false, error: 'Modul-Tier noch nicht erforscht' });
       return;
     }
 

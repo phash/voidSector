@@ -39,7 +39,10 @@ describe('migration 052 — module_source', () => {
   });
 
   // ── Live DB: verify the migration SQL logic in a temp table ─────────────
+  // Requires a reachable Postgres (DATABASE_URL); skipped in DB-less environments.
+  const hasDb = !!process.env.DATABASE_URL;
   beforeAll(async () => {
+    if (!hasDb) return;
     // Create an isolated temp table (no FK constraints) for testing the UPDATE logic
     await query(`
       CREATE TEMP TABLE IF NOT EXISTS _mig052_test (
@@ -56,10 +59,11 @@ describe('migration 052 — module_source', () => {
   });
 
   afterAll(async () => {
+    if (!hasDb) return;
     await query(`DROP TABLE IF EXISTS _mig052_test`);
   });
 
-  it('backfills source=standard for modules without source field', async () => {
+  it.skipIf(!hasDb)('backfills source=standard for modules without source field', async () => {
     // Apply the migration logic against our temp table
     await query(`
       UPDATE _mig052_test
@@ -90,7 +94,7 @@ describe('migration 052 — module_source', () => {
     expect(shieldRow!.modules[0].source).toBe('existing');
   });
 
-  it('leaves empty modules arrays untouched', async () => {
+  it.skipIf(!hasDb)('leaves empty modules arrays untouched', async () => {
     const res = await query<{ modules: unknown[] }>(
       `SELECT modules FROM _mig052_test WHERE jsonb_array_length(modules) = 0`,
     );

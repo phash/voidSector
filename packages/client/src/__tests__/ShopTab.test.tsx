@@ -12,11 +12,17 @@ vi.mock('@void-sector/shared', async (importOriginal) => {
   const actual = await importOriginal() as any;
   return {
     ...actual,
-    isModuleUnlocked: vi.fn().mockReturnValue(true),
+    isModuleUnlocked: vi.fn().mockImplementation(
+      (_id: string, categoryTiers: Record<string, number>, _blueprints: string[]) => {
+        // Default: return true to show all modules (mirrors tier-1 unlocked for all)
+        return true;
+      },
+    ),
   };
 });
 
 import { network } from '../network/client';
+import { isModuleUnlocked } from '@void-sector/shared';
 import { ShopTab } from '../components/ShopTab';
 import type { CargoState } from '@void-sector/shared';
 
@@ -41,7 +47,8 @@ const baseStore = {
   ship: { id: 'ship-1', modules: [] } as any,
   credits: 9999,
   cargo: fullCargo,
-  research: { wissen: 0 } as any,
+  research: { wissen: 0, blueprints: [], unlockedModules: [] } as any,
+  categoryTiers: {} as Record<string, number>,
   currentSector: { type: 'station' } as any,
   baseStructures: [] as any[],
   setAcepHoveredModuleId: vi.fn(),
@@ -73,19 +80,29 @@ describe('ShopTab', () => {
     expect(buyBtns.length).toBeGreaterThan(0);
   });
 
-  it('KAUFEN calls sendBuyModule with module id', () => {
+  it('KAUFEN opens confirm modal, then confirming calls sendBuyModule', () => {
+    // Buying now goes through a confirmation modal: the list "buy" button
+    // opens the modal, and the modal's confirm "buy" button calls sendBuyModule.
     render(<ShopTab />);
-    const buyBtns = screen.getAllByText(/shop\.buy/i);
-    fireEvent.click(buyBtns[0]);
+    const listBuyBtns = screen.getAllByText(/shop\.buy/i);
+    fireEvent.click(listBuyBtns[0]);
+    // Clicking the list button only opens the modal — no purchase yet.
+    expect(network.sendBuyModule).not.toHaveBeenCalled();
+    // Now a second shop.buy button (the modal confirm) appears.
+    const allBuyBtns = screen.getAllByText(/shop\.buy/i);
+    expect(allBuyBtns.length).toBeGreaterThan(listBuyBtns.length);
+    fireEvent.click(allBuyBtns[allBuyBtns.length - 1]);
     expect(network.sendBuyModule).toHaveBeenCalledTimes(1);
+    expect(network.sendBuyModule).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('KAUFEN button is disabled when credits insufficient', () => {
     mockStoreState({ ...baseStore, credits: 0 });
     render(<ShopTab />);
-    // All buttons should be disabled (no credits)
+    // With no credits, all modules that cost credits must be disabled.
+    // (A free module like factory_mk1 stays enabled — so assert "some" not "all".)
     const buyBtns = screen.getAllByRole('button', { name: /shop\.buy/i });
-    expect(buyBtns.every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
+    expect(buyBtns.some((b) => (b as HTMLButtonElement).disabled)).toBe(true);
   });
 
   it('ore: 0 in cargo does not disable buttons for modules that do not require ore (undefined !== 0)', () => {
@@ -109,5 +126,48 @@ describe('ShopTab', () => {
     fireEvent.mouseEnter(moduleRow);
     expect(setHovered).toHaveBeenCalledTimes(1);
     expect(setHovered).toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it('hides tier-2 modules when categoryTiers is empty (default tier 1)', () => {
+    // Make isModuleUnlocked simulate real gating: tier-2+ weapon_energy locked without tier unlock
+    (isModuleUnlocked as ReturnType<typeof vi.fn>).mockImplementation(
+      (id: string, categoryTiers: Record<string, number>, _blueprints: string[]) => {
+        if (id.includes('mk2') || id.includes('mk3') || id.includes('mk4') || id.includes('mk5')) {
+          return (categoryTiers['weapon_energy'] ?? 1) >= 2;
+        }
+        return true;
+      },
+    );
+    mockStoreState({ ...baseStore, categoryTiers: {} });
+    render(<ShopTab />);
+    // puls_laser_mk2 renders as 'Puls-Laser Mk2' — must be absent when tier-2 is locked
+    expect(screen.queryByText('Puls-Laser Mk2')).not.toBeInTheDocument();
+    // puls_laser_mk1 renders as 'Puls-Laser Mk1' — must be present (proves the list rendered, not empty)
+    expect(screen.getByText('Puls-Laser Mk1')).toBeInTheDocument();
+  });
+
+  it('shows tier-2 weapon_energy modules when categoryTiers has weapon_energy: 2', () => {
+    (isModuleUnlocked as ReturnType<typeof vi.fn>).mockImplementation(
+      (id: string, categoryTiers: Record<string, number>, _blueprints: string[]) => {
+        if (id.includes('mk2') || id.includes('mk3') || id.includes('mk4') || id.includes('mk5')) {
+          return (categoryTiers['weapon_energy'] ?? 1) >= 2;
+        }
+        return true;
+      },
+    );
+    mockStoreState({ ...baseStore, categoryTiers: { weapon_energy: 2 } });
+    render(<ShopTab />);
+    // puls_laser_mk2 renders as 'Puls-Laser Mk2' — must be present when tier-2 is unlocked
+    expect(screen.getByText('Puls-Laser Mk2')).toBeInTheDocument();
+  });
+
+  it('isModuleUnlocked is called with (id, categoryTiers, blueprints) — new 3-arg signature', () => {
+    render(<ShopTab />);
+    expect(isModuleUnlocked).toHaveBeenCalled();
+    // Verify 3-arg signature: first call should have id (string), object, array
+    const firstCall = (isModuleUnlocked as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(typeof firstCall[0]).toBe('string');
+    expect(typeof firstCall[1]).toBe('object');
+    expect(Array.isArray(firstCall[2])).toBe(true);
   });
 });

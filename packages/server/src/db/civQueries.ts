@@ -282,7 +282,12 @@ export async function resetDeadOutlaws(): Promise<number> {
   return rowCount ?? 0;
 }
 
+/** Marks an NPC ship as destroyed until `deadUntil` (resetDeadOutlaws revives it later). */
+export async function markCivShipDead(npcId: number, deadUntil: Date): Promise<void> {
+  await query(`UPDATE civ_ships SET dead_until = $2 WHERE id = $1`, [npcId, deadUntil.toISOString()]);
+}
+
 export async function getNpcPosition(npcId: number): Promise<{ x: number; y: number } | null> {
-  const { rows } = await query('SELECT x, y FROM civ_ships WHERE id = $1', [npcId]);
+  const { rows } = await query<{ x: number; y: number }>('SELECT x, y FROM civ_ships WHERE id = $1', [npcId]);
   return rows[0] ?? null;
 }

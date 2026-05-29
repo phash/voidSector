@@ -131,7 +131,6 @@ import {
   ACEP_LEVEL_MULTIPLIERS,
   ACEP_EXTRA_SLOT_THRESHOLDS,
   ACEP_PATH_CAP_SHARED,
-  ACEP_BOOST_COST_TIERS,
   XP_LEVELS,
   SLATE_AP_COST_SECTOR,
   SLATE_AP_COST_AREA,
@@ -354,7 +353,7 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   { key: 'ACEP_LEVEL_MULTIPLIERS', category: 'acep', description: 'ACEP stat multipliers per level', getDefault: () => ACEP_LEVEL_MULTIPLIERS },
   { key: 'ACEP_EXTRA_SLOT_THRESHOLDS', category: 'acep', description: 'Ausbau XP thresholds for extra module slots', getDefault: () => ACEP_EXTRA_SLOT_THRESHOLDS },
   { key: 'ACEP_PATH_CAP_SHARED', category: 'acep', description: 'Maximum XP per ACEP path', getDefault: () => ACEP_PATH_CAP_SHARED },
-  { key: 'ACEP_BOOST_COST_TIERS', category: 'acep', description: 'ACEP boost cost tiers (credits + wissen)', getDefault: () => ACEP_BOOST_COST_TIERS },
+  // ACEP_BOOST_COST_TIERS removed in #523 — boost cost is now computed via getAcepBoostCost().
 
   // ══════════════════════════════════════════════════════════════════════════════
   // Progression

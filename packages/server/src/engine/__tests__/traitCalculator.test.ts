@@ -13,50 +13,51 @@ describe('calculateTraits', () => {
     expect(calculateTraits(xp())).toEqual([]);
   });
 
-  it('grants veteran at kampf >= 20', () => {
-    expect(calculateTraits(xp({ kampf: 20 }))).toContain('veteran');
-    expect(calculateTraits(xp({ kampf: 19 }))).not.toContain('veteran');
+  // Thresholds are on the ACEP path LEVEL scale (0-10) since #523/#524.
+  it('grants veteran at kampf level >= 7', () => {
+    expect(calculateTraits(xp({ kampf: 7 }))).toContain('veteran');
+    expect(calculateTraits(xp({ kampf: 6 }))).not.toContain('veteran');
   });
 
-  it('grants curious at intel >= 20', () => {
-    expect(calculateTraits(xp({ intel: 20 }))).toContain('curious');
-    expect(calculateTraits(xp({ intel: 19 }))).not.toContain('curious');
+  it('grants curious at intel level >= 7', () => {
+    expect(calculateTraits(xp({ intel: 7 }))).toContain('curious');
+    expect(calculateTraits(xp({ intel: 6 }))).not.toContain('curious');
   });
 
-  it('grants ancient-touched at explorer >= 15', () => {
-    expect(calculateTraits(xp({ explorer: 15 }))).toContain('ancient-touched');
-    expect(calculateTraits(xp({ explorer: 14 }))).not.toContain('ancient-touched');
+  it('grants ancient-touched at explorer level >= 5', () => {
+    expect(calculateTraits(xp({ explorer: 5 }))).toContain('ancient-touched');
+    expect(calculateTraits(xp({ explorer: 4 }))).not.toContain('ancient-touched');
   });
 
-  it('grants reckless when kampf >= 15 and ausbau <= 5', () => {
-    expect(calculateTraits(xp({ kampf: 15, ausbau: 5 }))).toContain('reckless');
-    expect(calculateTraits(xp({ kampf: 15, ausbau: 6 }))).not.toContain('reckless');
-    expect(calculateTraits(xp({ kampf: 14, ausbau: 0 }))).not.toContain('reckless');
+  it('grants reckless when kampf >= 5 and ausbau <= 2', () => {
+    expect(calculateTraits(xp({ kampf: 5, ausbau: 2 }))).toContain('reckless');
+    expect(calculateTraits(xp({ kampf: 5, ausbau: 3 }))).not.toContain('reckless');
+    expect(calculateTraits(xp({ kampf: 4, ausbau: 0 }))).not.toContain('reckless');
   });
 
-  it('grants cautious when ausbau >= 20 and kampf <= 5', () => {
-    expect(calculateTraits(xp({ ausbau: 20, kampf: 5 }))).toContain('cautious');
-    expect(calculateTraits(xp({ ausbau: 20, kampf: 6 }))).not.toContain('cautious');
-    expect(calculateTraits(xp({ ausbau: 19, kampf: 0 }))).not.toContain('cautious');
+  it('grants cautious when ausbau >= 7 and kampf <= 2', () => {
+    expect(calculateTraits(xp({ ausbau: 7, kampf: 2 }))).toContain('cautious');
+    expect(calculateTraits(xp({ ausbau: 7, kampf: 3 }))).not.toContain('cautious');
+    expect(calculateTraits(xp({ ausbau: 6, kampf: 0 }))).not.toContain('cautious');
   });
 
   it('grants scarred for tunnel-vision fighter', () => {
-    // kampf=15, intel+ausbau+explorer must be <= 15*0.4 = 6
-    expect(calculateTraits(xp({ kampf: 15, intel: 2, ausbau: 2, explorer: 2 }))).toContain(
+    // kampf=10, intel+ausbau+explorer must be <= 10*0.4 = 4
+    expect(calculateTraits(xp({ kampf: 10, intel: 1, ausbau: 1, explorer: 1 }))).toContain(
       'scarred',
     );
-    // kampf=10, others must be <= 4
+    // kampf=10, others sum 5 > 4
     expect(calculateTraits(xp({ kampf: 10, intel: 5 }))).not.toContain('scarred');
   });
 
   it('can have multiple traits simultaneously', () => {
-    const traits = calculateTraits(xp({ kampf: 25, intel: 22 }));
+    const traits = calculateTraits(xp({ kampf: 8, intel: 8 }));
     expect(traits).toContain('veteran');
     expect(traits).toContain('curious');
   });
 
   it('reckless and veteran can coexist', () => {
-    const traits = calculateTraits(xp({ kampf: 20, ausbau: 0 }));
+    const traits = calculateTraits(xp({ kampf: 7, ausbau: 0 }));
     expect(traits).toContain('veteran');
     expect(traits).toContain('reckless');
   });

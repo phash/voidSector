@@ -312,7 +312,8 @@ export class MiningService {
       );
       const miningXp = Math.floor(result.mined / 5);
       if (miningXp > 0) {
-        addAcepXpForPlayer(auth.userId, 'ausbau', miningXp).catch(() => {});
+        // #536: mining always awards the 'miner' path (handleAutoStop already did)
+        addAcepXpForPlayer(auth.userId, 'miner', miningXp).catch(() => {});
       }
       awardWissenAndNotify(client, auth.userId, 1);  // +1 per mining load
     }
