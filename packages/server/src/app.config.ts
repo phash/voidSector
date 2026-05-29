@@ -15,6 +15,7 @@ import {
   deleteExpiredGuestPlayers,
   findPlayerIdByVerificationToken,
   markEmailVerified,
+  recentRegistrationForEmail,
 } from './db/queries.js';
 import { runMigrations } from './db/client.js';
 import { getPlayerPosition } from './rooms/services/RedisAPStore.js';
@@ -49,6 +50,13 @@ export default config({
         const valid = validateRegisterInput(req.body);
         if (!valid.ok) {
           res.status(400).json({ error: valid.error });
+          return;
+        }
+        // Throttle verification-mail spam to a victim address (shared SMTP server).
+        if (await recentRegistrationForEmail(valid.email, 120)) {
+          res
+            .status(429)
+            .json({ error: 'Bitte warte ein paar Minuten, bevor du es erneut versuchst.' });
           return;
         }
         const result = await register(req.body.username, valid.email, req.body.password);

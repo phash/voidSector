@@ -114,6 +114,24 @@ export async function findPlayerIdByVerificationToken(token: string): Promise<st
   return result.rows[0]?.id ?? null;
 }
 
+/**
+ * True if a verification email was already sent for this address within the cooldown window.
+ * Throttles verification-mail spam to a victim address (the SMTP server is shared across projects).
+ */
+export async function recentRegistrationForEmail(
+  email: string,
+  withinSeconds: number,
+): Promise<boolean> {
+  const result = await query<{ exists: boolean }>(
+    `SELECT EXISTS(
+       SELECT 1 FROM players
+       WHERE email = $1 AND verification_sent_at > NOW() - make_interval(secs => $2)
+     ) AS exists`,
+    [email, withinSeconds],
+  );
+  return result.rows[0]?.exists ?? false;
+}
+
 /** Marks a player's email verified and clears the one-time verification token. */
 export async function markEmailVerified(playerId: string): Promise<void> {
   await query('UPDATE players SET email_verified = TRUE, verification_token = NULL WHERE id = $1', [
