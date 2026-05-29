@@ -35,7 +35,7 @@ export async function createPlayer(
     email_verified: boolean;
   }>(
     `INSERT INTO players (username, password_hash, email, email_verified, verification_token, verification_sent_at)
-     VALUES ($1, $2, $3, $4, $5, CASE WHEN $3 IS NULL THEN NULL ELSE NOW() END)
+     VALUES ($1, $2, $3::text, $4, $5, CASE WHEN $3::text IS NULL THEN NULL ELSE NOW() END)
      RETURNING id, username, xp, level, email_verified`,
     [username, passwordHash, email, emailVerified, verificationToken],
   );
