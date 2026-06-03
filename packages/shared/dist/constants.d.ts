@@ -15,7 +15,7 @@ export declare const AP_COSTS_BY_SCANNER: Record<number, {
     areaScanRadius: number;
 }>;
 export declare const AP_COSTS_LOCAL_SCAN = 1;
-export declare const WORLD_SEED = 77;
+export declare const WORLD_SEED = 104729;
 export declare const RECONNECTION_TIMEOUT_S = 15;
 export declare const SECTOR_RESOURCE_YIELDS: Record<SectorType, Record<MineableResourceType, number>>;
 export declare const MINING_RATE_PER_SECOND = 1;

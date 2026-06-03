@@ -25,7 +25,7 @@ export const AP_COSTS_BY_SCANNER = {
     5: { areaScan: 18, areaScanRadius: 20 },
 };
 export const AP_COSTS_LOCAL_SCAN = 1;
-export const WORLD_SEED = 77;
+export const WORLD_SEED = 104729;
 export const RECONNECTION_TIMEOUT_S = 15;
 export const SECTOR_RESOURCE_YIELDS = {
     empty: { ore: 0, gas: 0, crystal: 0 },

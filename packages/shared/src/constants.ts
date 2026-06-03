@@ -43,7 +43,7 @@ export const AP_COSTS_BY_SCANNER: Record<number, { areaScan: number; areaScanRad
 
 export const AP_COSTS_LOCAL_SCAN = 1;
 
-export const WORLD_SEED = 77;
+export const WORLD_SEED = 104729;
 
 export const RECONNECTION_TIMEOUT_S = 15;
 
