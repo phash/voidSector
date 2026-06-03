@@ -202,6 +202,8 @@ export declare const DENSITY_PIRATE_NEAR = 0.3;
 export declare const DENSITY_PIRATE_FAR = 3;
 export declare const DENSITY_DISTANCE_THRESHOLD = 5000;
 export declare const CONTENT_WEIGHTS: Record<string, number>;
+export declare const EMPTY_ANOMALY_CHANCE = 0.0001;
+export declare const NEBULA_ANOMALY_CHANCE = 0.1;
 export declare const BLACK_HOLE_SPAWN_CHANCE = 0.005;
 export declare const BLACK_HOLE_MIN_DISTANCE = 50;
 export declare const BLACK_HOLE_CLUSTER_GRID = 200;

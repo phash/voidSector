@@ -437,14 +437,17 @@ export const DENSITY_PIRATE_FAR = 3.0;
 export const DENSITY_DISTANCE_THRESHOLD = 5000; // Chebyshev distance in absolute sectors
 // Two-stage worldgen: content weights (second roll, for non-blackhole).
 // Target: 90% of all sectors completely empty; remaining 10% keep prior ratios.
+// Note: anomaly is no longer part of this roll — it uses its own environment-aware roll (see below).
 export const CONTENT_WEIGHTS = {
-    none: 0.9,
+    none: 0.91,
     asteroid_field: 0.05,
     pirate: 0.02,
-    anomaly: 0.01,
     station: 0.016,
     ruin: 0.004,
 };
+// Umgebungsabhängige Anomalie-Wahrscheinlichkeit (eigener, dekorrelierter Roll).
+export const EMPTY_ANOMALY_CHANCE = 0.0001; // 0,01 % im normalen, leeren Raum
+export const NEBULA_ANOMALY_CHANCE = 0.1; // 10 % im Nebel (jedes 10. Nebelfeld)
 // Black hole generation
 export const BLACK_HOLE_SPAWN_CHANCE = 0.005; // 0.5% of sectors far from origin
 export const BLACK_HOLE_MIN_DISTANCE = 50; // minimum Chebyshev distance from origin
