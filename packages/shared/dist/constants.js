@@ -25,7 +25,7 @@ export const AP_COSTS_BY_SCANNER = {
     5: { areaScan: 18, areaScanRadius: 20 },
 };
 export const AP_COSTS_LOCAL_SCAN = 1;
-export const WORLD_SEED = 77;
+export const WORLD_SEED = 104729;
 export const RECONNECTION_TIMEOUT_S = 15;
 export const SECTOR_RESOURCE_YIELDS = {
     empty: { ore: 0, gas: 0, crystal: 0 },
@@ -394,11 +394,11 @@ export const ANCIENT_STATION_CHANCE = 0.15; // 15% of stations are ancient/speci
 // Nebula zone system — seed-based blob generation
 // Target: 1–2 contiguous nebula blobs per quadrant (500×500 quadrant),
 // each blob 20–200 sectors in area (circular radius 3–8 sectors).
-export const NEBULA_ZONE_GRID = 250; // was 5_000; 1-2 clusters per 500×500 quadrant
-export const NEBULA_ZONE_CHANCE = 0.4; // 40% of centers activate → ~1.6 blobs per quadrant
-export const NEBULA_ZONE_MIN_RADIUS = 2.5; // was 3; ~20 sectors min (π×r²)
-export const NEBULA_ZONE_MAX_RADIUS = 8; // max radius → ~201 sectors per blob
-export const NEBULA_SAFE_ORIGIN = 250; // no nebula zones within this many sectors of origin — spawn zone of humans
+export const NEBULA_ZONE_GRID = 25; // dichtes Zentren-Raster für ~5 % Abdeckung
+export const NEBULA_ZONE_CHANCE = 0.54; // gemessen: ~5,0–5,3 % Abdeckung
+export const NEBULA_ZONE_MIN_RADIUS = 2.5; // gefüllte Scheibe ≈ 21 Sektoren (≥ 12)
+export const NEBULA_ZONE_MAX_RADIUS = 6; // gefüllte Scheibe ≈ 113 Sektoren
+export const NEBULA_SAFE_ORIGIN = 25; // nebelfreie Start-Blase um (0,0)
 // Two-stage worldgen: environment weights (first roll).
 // Nebula is handled purely via zone system (NEBULA_ZONE_*) — no scattered random nebula.
 // The entire 'empty' weight falls to 'empty'; the gap falls through to 'empty' as well.
@@ -437,14 +437,17 @@ export const DENSITY_PIRATE_FAR = 3.0;
 export const DENSITY_DISTANCE_THRESHOLD = 5000; // Chebyshev distance in absolute sectors
 // Two-stage worldgen: content weights (second roll, for non-blackhole).
 // Target: 90% of all sectors completely empty; remaining 10% keep prior ratios.
+// Note: anomaly is no longer part of this roll — it uses its own environment-aware roll (see below).
 export const CONTENT_WEIGHTS = {
-    none: 0.9,
+    none: 0.91,
     asteroid_field: 0.05,
     pirate: 0.02,
-    anomaly: 0.01,
     station: 0.016,
     ruin: 0.004,
 };
+// Umgebungsabhängige Anomalie-Wahrscheinlichkeit (eigener, dekorrelierter Roll).
+export const EMPTY_ANOMALY_CHANCE = 0.0001; // 0,01 % im normalen, leeren Raum
+export const NEBULA_ANOMALY_CHANCE = 0.1; // 10 % im Nebel (jedes 10. Nebelfeld)
 // Black hole generation
 export const BLACK_HOLE_SPAWN_CHANCE = 0.005; // 0.5% of sectors far from origin
 export const BLACK_HOLE_MIN_DISTANCE = 50; // minimum Chebyshev distance from origin
@@ -755,17 +758,9 @@ export const COSMIC_FACTION_IDS = [
     'axioms',
     'scrappers',
 ];
-// Human starting territory: quadrants 0:0 to 2:2 (9 quadrants)
+// Human starting territory: quadrant 0:0 only (single starting base)
 export const HUMAN_STARTING_TERRITORY = [
     [0, 0],
-    [0, 1],
-    [0, 2],
-    [1, 0],
-    [1, 1],
-    [1, 2],
-    [2, 0],
-    [2, 1],
-    [2, 2],
 ];
 // Alien starting regions (distant from humans, no overlap with 0:0–4:4)
 export const ALIEN_STARTING_REGIONS = {

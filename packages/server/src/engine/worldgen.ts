@@ -16,6 +16,8 @@ import {
   ENVIRONMENT_WEIGHTS,
   CONTENT_WEIGHTS,
   NEBULA_CONTENT_ENABLED,
+  EMPTY_ANOMALY_CHANCE,
+  NEBULA_ANOMALY_CHANCE,
 } from '@void-sector/shared';
 import { legacySectorType } from '@void-sector/shared';
 import type {
@@ -66,12 +68,31 @@ function hashTertiary(seed: number): number {
   return (h >>> 0) / 0x100000000; // 0..1
 }
 
+// Quaternary hash — uncorrelated with primary/secondary/tertiary (anomaly roll)
+function hashQuaternary(seed: number): number {
+  let h = seed ^ 0x27d4eb2f;
+  h = Math.imul(h, 0x165667b1);
+  h = h ^ (h >>> 15);
+  h = Math.imul(h, 0xc2b2ae35);
+  h = h ^ (h >>> 16);
+  return (h >>> 0) / 0x100000000; // 0..1
+}
+
+/** Anomaly probability for a sector, by environment. */
+export function anomalyChanceForEnvironment(env: SectorEnvironment): number {
+  if (env === 'nebula') return NEBULA_ANOMALY_CHANCE;
+  if (env === 'black_hole') return 0;
+  return EMPTY_ANOMALY_CHANCE;
+}
+
 /**
  * Determines whether a coordinate falls inside a seed-based nebula zone.
  * Nebula zones are organic blobs generated on a coarse grid; zone centers
  * further than NEBULA_SAFE_ORIGIN from the origin are potential nebula seeds.
  */
 export function isInNebulaZone(x: number, y: number): boolean {
+  // Hard nebula-free bubble around the origin (independent of blob centers).
+  if (x * x + y * y < NEBULA_SAFE_ORIGIN * NEBULA_SAFE_ORIGIN) return false;
   const grid = NEBULA_ZONE_GRID;
   const gridX = Math.round(x / grid);
   const gridY = Math.round(y / grid);
@@ -186,7 +207,13 @@ function rollEnvironment(x: number, y: number, seed: number): SectorEnvironment 
 function rollContent(seed: number, environment: SectorEnvironment): SectorContent[] {
   if (environment === 'black_hole') return [];
 
-  // For nebula, only roll content if enabled
+  // Environment-aware anomaly roll (independent hash) takes precedence — this is
+  // what produces "every 10th nebula field is also an anomaly".
+  if (hashQuaternary(seed) < anomalyChanceForEnvironment(environment)) {
+    return ['anomaly'];
+  }
+
+  // For nebula, only roll other content if enabled
   if (environment === 'nebula' && !NEBULA_CONTENT_ENABLED) return [];
 
   // Use tertiary hash for content roll (uncorrelated with environment roll)

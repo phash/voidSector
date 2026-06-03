@@ -21,7 +21,7 @@ import {
 describe('initializeTerritoryState', () => {
   it('seeds human starting territory correctly', () => {
     const state = initializeTerritoryState();
-    expect(state.factionQuadrants.get('humans')?.size).toBe(9);
+    expect(state.factionQuadrants.get('humans')?.size).toBe(1);
   });
 
   it('human territory includes 0:0', () => {
@@ -29,9 +29,11 @@ describe('initializeTerritoryState', () => {
     expect(state.dominantFactions.get('0:0')).toBe('humans');
   });
 
-  it('human territory includes 2:2', () => {
+  it('human territory includes 0:0 only', () => {
     const state = initializeTerritoryState();
-    expect(state.dominantFactions.get('2:2')).toBe('humans');
+    expect(state.dominantFactions.get('0:0')).toBe('humans');
+    // 2:2 is no longer human territory (only 0:0 now)
+    expect(state.dominantFactions.get('2:2')).not.toBe('humans');
   });
 
   it('alien factions have territory far from origin', () => {
@@ -142,7 +144,7 @@ describe('UniverseTickEngine', () => {
   it('returns dominant faction for seeded human quadrant', () => {
     const engine = new UniverseTickEngine();
     expect(engine.getDominantFaction(0, 0)).toBe('humans');
-    expect(engine.getDominantFaction(2, 2)).toBe('humans');
+    expect(engine.getDominantFaction(2, 2)).not.toBe('humans'); // 2:2 is no longer human territory
   });
 
   it('returns null for unclaimed quadrant', () => {
@@ -154,7 +156,7 @@ describe('UniverseTickEngine', () => {
   it('getFactionStats returns counts for all factions', () => {
     const engine = new UniverseTickEngine();
     const stats = engine.getFactionStats();
-    expect(stats['humans']).toBe(9);
+    expect(stats['humans']).toBe(1);
     expect(stats['axioms']).toBeGreaterThanOrEqual(0);
   });
 });
@@ -204,16 +206,13 @@ describe('cosmic faction constants', () => {
     expect(COSMIC_FACTION_IDS[0]).toBe('humans');
   });
 
-  it('has exactly 9 human starting territory quadrants', () => {
-    expect(HUMAN_STARTING_TERRITORY).toHaveLength(9);
+  it('has exactly 1 human starting territory quadrant', () => {
+    expect(HUMAN_STARTING_TERRITORY).toHaveLength(1);
   });
 
-  it('human territory covers 0:0 to 2:2', () => {
+  it('human territory is quadrant 0:0 only', () => {
     const humanSet = new Set(HUMAN_STARTING_TERRITORY.map(([x, y]) => `${x}:${y}`));
-    for (let x = 0; x <= 2; x++) {
-      for (let y = 0; y <= 2; y++) {
-        expect(humanSet.has(`${x}:${y}`)).toBe(true);
-      }
-    }
+    expect(humanSet.has('0:0')).toBe(true);
+    expect(humanSet.size).toBe(1);
   });
 });

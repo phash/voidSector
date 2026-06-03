@@ -32,6 +32,10 @@ vi.mock('../db/queries.js', () => ({
   ensureZentrumQuadrant: vi.fn().mockResolvedValue(undefined),
   ensureAlienHomeQuadrants: vi.fn().mockResolvedValue(false),
   getAllQuadrantControls: vi.fn().mockResolvedValue([]),
+  getAllFactionConfigs: vi.fn().mockResolvedValue([
+    { faction_id: 'human', home_qx: 0, home_qy: 0 },
+    { faction_id: 'kthari', home_qx: 20, home_qy: -15 },
+  ]),
 }));
 
 vi.mock('../engine/civStationService.js', () => ({

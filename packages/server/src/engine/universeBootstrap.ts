@@ -3,8 +3,10 @@ import Redis from 'ioredis';
 import dotenv from 'dotenv';
 import { UniverseTickEngine } from './universeTickEngine.js';
 import { StrategicTickService } from './strategicTickService.js';
-import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant, ensureAlienHomeQuadrants } from '../db/queries.js';
+import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant, ensureAlienHomeQuadrants, getAllFactionConfigs } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
+import { QUADRANT_SIZE } from '@void-sector/shared';
+import { assertAlienHomesFarFromOrigin } from './alienHomeGuard.js';
 import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
 import { processCivTick } from './civShipService.js';
 import { processConstructionTick } from './constructionTickService.js';
@@ -34,6 +36,8 @@ export async function startUniverseEngine(): Promise<void> {
   await ensureZentrumQuadrant();
   const alienSeeded = await ensureAlienHomeQuadrants();
   logger.info({ alienSeeded }, 'Universe seeded: Zentrum@(0,0) + alien homeworlds');
+  const factionHomes = await getAllFactionConfigs();
+  assertAlienHomesFarFromOrigin(factionHomes, QUADRANT_SIZE, 1000);
 
   await ensureCivStations();
   // DISABLED: Mining drones spawn for ALL faction stations (8000+), causing OOM.
