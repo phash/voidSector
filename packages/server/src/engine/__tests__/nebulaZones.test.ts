@@ -18,6 +18,8 @@ function sampleRegion(x0: number, y0: number, n: number): boolean[][] {
 function smallestInteriorCluster(grid: boolean[][]): number {
   const n = grid.length;
   const seen = Array.from({ length: n }, () => new Array<boolean>(n).fill(false));
+  // Returns Infinity if no interior (non-border-touching) cluster exists;
+  // safe here because the sampled region reliably contains interior clusters.
   let smallest = Infinity;
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
@@ -72,7 +74,11 @@ describe('nebula generation', () => {
     }
   });
 
-  it('is deterministic for the same coordinates', () => {
-    expect(isInNebulaZone(1234, 5678)).toBe(isInNebulaZone(1234, 5678));
+  it('is deterministic — pinned golden values guard the worldgen seed/constants', () => {
+    // These coordinates are pinned against the current WORLD_SEED + nebula
+    // constants. If the hash, seed, or zone constants change, update them
+    // deliberately — a surprise failure here means worldgen output shifted.
+    expect(isInNebulaZone(1000, 1020)).toBe(true);
+    expect(isInNebulaZone(1000, 1000)).toBe(false);
   });
 });
