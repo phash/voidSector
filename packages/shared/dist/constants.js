@@ -758,7 +758,7 @@ export const COSMIC_FACTION_IDS = [
     'axioms',
     'scrappers',
 ];
-// Human starting territory: quadrants 0:0 to 2:2 (9 quadrants)
+// Human starting territory: quadrant 0:0 only (single starting base)
 export const HUMAN_STARTING_TERRITORY = [
     [0, 0],
 ];

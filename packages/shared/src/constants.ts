@@ -902,7 +902,7 @@ export const COSMIC_FACTION_IDS = [
 ] as const;
 export type CosmicFactionId = (typeof COSMIC_FACTION_IDS)[number];
 
-// Human starting territory: quadrants 0:0 to 2:2 (9 quadrants)
+// Human starting territory: quadrant 0:0 only (single starting base)
 export const HUMAN_STARTING_TERRITORY: Array<[number, number]> = [
   [0, 0],
 ];
