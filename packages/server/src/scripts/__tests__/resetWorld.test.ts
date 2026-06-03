@@ -26,6 +26,12 @@ describe('resetWorld table lists', () => {
     }
   });
 
+  it('clears ship wrecks from the world', () => {
+    for (const t of ['wrecks', 'ship_wrecks', 'wreck_slate_metadata']) {
+      expect(WORLD_RESET_TABLES).toContain(t);
+    }
+  });
+
   it('wipes per-player progress (ships reset ACEP) including legacy research, but not accounts', () => {
     for (const t of ['ships', 'cargo', 'inventory', 'player_discoveries', 'player_research', 'player_research_v2']) {
       expect(PLAYER_PROGRESS_TABLES).toContain(t);
