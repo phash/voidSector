@@ -5,32 +5,66 @@ import { logger } from '../utils/logger.js';
 
 dotenv.config();
 
-/** World + cosmic + npc tables — fully cleared. Re-seeded on next server start. */
+/**
+ * World + cosmic + npc + world-activity tables — fully cleared. The fresh world
+ * is re-seeded on next server start by the ensure* functions. Reference/config
+ * tables (game_config, faction_config, *_definitions, etc.) are intentionally NOT
+ * here — deleting them would break the game.
+ */
 export const WORLD_RESET_TABLES = [
+  // NPC / civ presence
   'civ_ships',
   'civ_stations',
   'npc_station_inventory',
   'npc_station_data',
   'cosmic_npc_fleets',
   'npc_fleet',
+  // structures / production (children before player_stations)
+  'station_production_queue',
+  'station_production',
+  'station_blueprints',
+  'station_battle_log',
+  'factory_state',
   'construction_sites',
   'craft_sites',
-  'wreck_slate_metadata',
-  'ship_wrecks',
-  'wrecks',
+  'drone_missions',
+  'drone_routes',
   'player_drones',
   'player_stations',
-  'void_cluster_quadrants',
+  // economy / trade
+  'trade_orders',
+  'trade_routes',
+  'kontor_orders',
+  // jumpgates (links before gates)
+  'jumpgate_links',
+  'jumpgates',
+  // world activity / events / logs
+  'distress_calls',
+  'rescued_survivors',
+  'alien_encounters',
+  'news_events',
+  'battle_log',
+  'combat_log',
+  'spawn_clusters',
+  'territory_claims',
+  // expansion + quadrant control (control deleted before void_clusters: FK void_cluster_id)
   'expansion_log',
-  'quadrant_territory',
   'quadrant_control',
+  'quadrant_territory',
+  // void lifecycle (children before parent void_clusters)
+  'void_hives',
+  'void_frontier_sectors',
+  'void_cluster_quadrants',
+  'void_clusters',
+  // map (last)
   'sectors',
   'quadrants',
 ];
 
 /**
  * Per-player progress tables — rows deleted, but the `players` account rows are
- * kept. Order matters: children before parents (e.g. cargo/inventory before ships).
+ * kept. Lazy regeneration on next login restores a fresh ship/position/ACEP.
+ * `ships` is last (other player tables may reference it).
  */
 export const PLAYER_PROGRESS_TABLES = [
   'cargo',
@@ -49,6 +83,8 @@ export const PLAYER_PROGRESS_TABLES = [
   'alien_reputation',
   'player_quests',
   'story_quest_progress',
+  'player_research',
+  'active_research',
   'player_research_v2',
   'player_modules_v2',
   'player_tech_tree',
@@ -68,12 +104,35 @@ export const PLAYER_PROGRESS_TABLES = [
   'ships',
 ];
 
-async function deleteTable(table: string): Promise<void> {
+/** Deletes one table. Returns true on success, false on error (e.g. FK order). */
+async function deleteTable(table: string): Promise<boolean> {
   try {
     const del = await query(`DELETE FROM ${table}`);
     logger.info({ table, rowCount: del.rowCount }, 'Cleared table');
+    return true;
   } catch (err) {
-    logger.info({ table, error: (err as Error).message }, 'Skipped table');
+    logger.info({ table, error: (err as Error).message }, 'Delete failed (will retry)');
+    return false;
+  }
+}
+
+/**
+ * Wipe tables with retry-until-stable: a table whose delete fails due to FK order
+ * is retried on a later pass once its dependents are gone. Tables still failing
+ * after the passes are warned (likely a missing table or a real FK we can't clear).
+ */
+async function wipeTables(tables: string[]): Promise<void> {
+  let remaining = [...tables];
+  for (let pass = 0; pass < 3 && remaining.length > 0; pass++) {
+    const stillFailing: string[] = [];
+    for (const table of remaining) {
+      const ok = await deleteTable(table);
+      if (!ok) stillFailing.push(table);
+    }
+    remaining = stillFailing;
+  }
+  if (remaining.length > 0) {
+    logger.warn({ tables: remaining }, 'Tables could not be cleared after retries');
   }
 }
 
@@ -81,8 +140,8 @@ async function resetWorld(): Promise<void> {
   await runMigrations();
   logger.info('Migrations complete');
 
-  for (const table of WORLD_RESET_TABLES) await deleteTable(table);
-  for (const table of PLAYER_PROGRESS_TABLES) await deleteTable(table);
+  await wipeTables(WORLD_RESET_TABLES);
+  await wipeTables(PLAYER_PROGRESS_TABLES);
 
   // Keep accounts, reset their scalar progress fields.
   try {
