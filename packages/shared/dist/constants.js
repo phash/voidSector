@@ -761,14 +761,6 @@ export const COSMIC_FACTION_IDS = [
 // Human starting territory: quadrants 0:0 to 2:2 (9 quadrants)
 export const HUMAN_STARTING_TERRITORY = [
     [0, 0],
-    [0, 1],
-    [0, 2],
-    [1, 0],
-    [1, 1],
-    [1, 2],
-    [2, 0],
-    [2, 1],
-    [2, 2],
 ];
 // Alien starting regions (distant from humans, no overlap with 0:0–4:4)
 export const ALIEN_STARTING_REGIONS = {
