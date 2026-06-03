@@ -1,30 +1,78 @@
 import { describe, it, expect } from 'vitest';
 import { isInNebulaZone } from '../worldgen.js';
+import { NEBULA_SAFE_ORIGIN } from '@void-sector/shared';
 
-describe('isInNebulaZone distribution', () => {
-  it('produces nebula sectors in a 500x500 quadrant far from origin', () => {
-    // Sample a 500×500 quadrant at (1000, 1000) — safely past NEBULA_SAFE_ORIGIN=200
-    let nebulaCount = 0;
-    const total = 500 * 500;
-    for (let dx = 0; dx < 500; dx++) {
-      for (let dy = 0; dy < 500; dy++) {
-        if (isInNebulaZone(1000 + dx, 1000 + dy)) nebulaCount++;
-      }
+/** Sample a square region and return a boolean nebula grid. */
+function sampleRegion(x0: number, y0: number, n: number): boolean[][] {
+  const grid: boolean[][] = [];
+  for (let dx = 0; dx < n; dx++) {
+    grid[dx] = [];
+    for (let dy = 0; dy < n; dy++) {
+      grid[dx][dy] = isInNebulaZone(x0 + dx, y0 + dy);
     }
-    const fraction = nebulaCount / total;
-    // With 1-2 blobs of ~20-200 sectors in 250,000 total sectors:
-    // expect at least some nebula exists, but less than 1% coverage
-    expect(fraction).toBeLessThan(0.01);
-    expect(nebulaCount).toBeGreaterThan(0);
+  }
+  return grid;
+}
+
+/** Smallest 4-connected nebula component NOT touching the region border. */
+function smallestInteriorCluster(grid: boolean[][]): number {
+  const n = grid.length;
+  const seen = Array.from({ length: n }, () => new Array<boolean>(n).fill(false));
+  let smallest = Infinity;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (!grid[i][j] || seen[i][j]) continue;
+      let touchesBorder = false;
+      let size = 0;
+      const stack: [number, number][] = [[i, j]];
+      seen[i][j] = true;
+      while (stack.length) {
+        const [a, b] = stack.pop()!;
+        size++;
+        if (a === 0 || b === 0 || a === n - 1 || b === n - 1) touchesBorder = true;
+        for (const [da, db] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          const na = a + da;
+          const nb = b + db;
+          if (na >= 0 && nb >= 0 && na < n && nb < n && grid[na][nb] && !seen[na][nb]) {
+            seen[na][nb] = true;
+            stack.push([na, nb]);
+          }
+        }
+      }
+      if (!touchesBorder && size < smallest) smallest = size;
+    }
+  }
+  return smallest;
+}
+
+describe('nebula generation', () => {
+  it('covers ~5% of a region far from origin', () => {
+    const n = 500;
+    const grid = sampleRegion(1000, 1000, n);
+    let count = 0;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (grid[i][j]) count++;
+    const fraction = count / (n * n);
+    expect(fraction).toBeGreaterThanOrEqual(0.04);
+    expect(fraction).toBeLessThanOrEqual(0.06);
   });
 
-  it('has no nebula within NEBULA_SAFE_ORIGIN of origin', () => {
-    let found = false;
-    for (let x = -200; x <= 200 && !found; x++) {
-      for (let y = -200; y <= 200 && !found; y++) {
-        if (isInNebulaZone(x, y)) found = true;
+  it('every contiguous nebula cluster has at least 12 sectors', () => {
+    const grid = sampleRegion(1000, 1000, 500);
+    expect(smallestInteriorCluster(grid)).toBeGreaterThanOrEqual(12);
+  });
+
+  it('has no nebula within NEBULA_SAFE_ORIGIN of the origin', () => {
+    const r = NEBULA_SAFE_ORIGIN;
+    for (let x = -r; x <= r; x++) {
+      for (let y = -r; y <= r; y++) {
+        if (x * x + y * y < r * r) {
+          expect(isInNebulaZone(x, y)).toBe(false);
+        }
       }
     }
-    expect(found).toBe(false);
+  });
+
+  it('is deterministic for the same coordinates', () => {
+    expect(isInNebulaZone(1234, 5678)).toBe(isInNebulaZone(1234, 5678));
   });
 });

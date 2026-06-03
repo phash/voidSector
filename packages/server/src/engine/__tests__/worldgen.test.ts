@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateSector, hashCoords, isInNebulaZone, isInBlackHoleCluster } from '../worldgen.js';
-import { WORLD_SEED, SECTOR_TYPES, RESOURCE_TYPES, NEBULA_CONTENT_ENABLED, CONTENT_WEIGHTS } from '@void-sector/shared';
+import { WORLD_SEED, SECTOR_TYPES, RESOURCE_TYPES, NEBULA_CONTENT_ENABLED, CONTENT_WEIGHTS, NEBULA_SAFE_ORIGIN } from '@void-sector/shared';
 
 describe('worldgen', () => {
   it('hashCoords is deterministic', () => {
@@ -73,11 +73,12 @@ describe('worldgen', () => {
     expect(unique.size).toBeGreaterThan(1);
   });
 
-  it('isInNebulaZone: origin area is safe (no nebula zones near spawn)', () => {
-    // The safe origin zone guarantees no nebula zones within 200 sectors of origin
-    for (let x = -50; x <= 50; x++) {
-      for (let y = -50; y <= 50; y++) {
-        expect(isInNebulaZone(x, y)).toBe(false);
+  it('isInNebulaZone: origin area is safe (no nebula within NEBULA_SAFE_ORIGIN)', () => {
+    for (let x = -NEBULA_SAFE_ORIGIN; x <= NEBULA_SAFE_ORIGIN; x++) {
+      for (let y = -NEBULA_SAFE_ORIGIN; y <= NEBULA_SAFE_ORIGIN; y++) {
+        if (x * x + y * y < NEBULA_SAFE_ORIGIN * NEBULA_SAFE_ORIGIN) {
+          expect(isInNebulaZone(x, y)).toBe(false);
+        }
       }
     }
   });

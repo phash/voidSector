@@ -72,6 +72,8 @@ function hashTertiary(seed: number): number {
  * further than NEBULA_SAFE_ORIGIN from the origin are potential nebula seeds.
  */
 export function isInNebulaZone(x: number, y: number): boolean {
+  // Hard nebula-free bubble around the origin (independent of blob centers).
+  if (x * x + y * y < NEBULA_SAFE_ORIGIN * NEBULA_SAFE_ORIGIN) return false;
   const grid = NEBULA_ZONE_GRID;
   const gridX = Math.round(x / grid);
   const gridY = Math.round(y / grid);
