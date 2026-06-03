@@ -79,7 +79,7 @@ Nach Änderung **Pflicht**: `cd packages/shared && npm run build` (re-export aus
 | Konstante | Alt | Neu | Begründung |
 |-----------|-----|-----|-----------|
 | `NEBULA_ZONE_GRID` | 250 | **25** | dichteres Zentren-Raster |
-| `NEBULA_ZONE_CHANCE` | 0.4 | **0.5** | Aktivierungsrate |
+| `NEBULA_ZONE_CHANCE` | 0.4 | **0.54** | Aktivierungsrate (empirisch auf ~5 % getunt) |
 | `NEBULA_ZONE_MIN_RADIUS` | 2.5 | **2.5** | Scheibe ≈ 21 Sektoren ≥ 12 ✓ |
 | `NEBULA_ZONE_MAX_RADIUS` | 8 | **6** | Scheibe ≈ 113 Sektoren |
 | `NEBULA_SAFE_ORIGIN` | 250 | **25** | nebelfreie Start-Blase |
