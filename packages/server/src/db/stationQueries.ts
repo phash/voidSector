@@ -32,9 +32,6 @@ export function expansionLevelColumn(type: StationExpansionType): string {
   return `${type}_level`;
 }
 
-export function emptyExpansionLevels(): Record<StationExpansionType, number> {
-  return { factory: 0, cargo: 0, markt: 0, werft: 0, refinery: 0, sensor: 0 };
-}
 
 export async function getPlayerStationAt(sectorX: number, sectorY: number): Promise<PlayerStationRow | null> {
   const result = await query<PlayerStationRow>(
@@ -262,10 +259,3 @@ export async function setStationLevel(stationId: string, level: number): Promise
   await query(`UPDATE player_stations SET level = $2 WHERE id = $1`, [stationId, level]);
 }
 
-/** Overwrite station cargo_contents (resource storage). */
-export async function setStationCargo(stationId: string, contents: Record<string, number>): Promise<void> {
-  await query(
-    `UPDATE player_stations SET cargo_contents = $2::jsonb WHERE id = $1`,
-    [stationId, JSON.stringify(contents)],
-  );
-}

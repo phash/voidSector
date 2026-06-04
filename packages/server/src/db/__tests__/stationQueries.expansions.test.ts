@@ -1,13 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { emptyExpansionLevels, expansionLevelColumn, type PlayerStationRow } from '../stationQueries.js';
+import { expansionLevelColumn, type PlayerStationRow } from '../stationQueries.js';
 
 describe('PlayerStationRow expansion fields', () => {
-  it('emptyExpansionLevels returns all six expansion levels at 0', () => {
-    expect(emptyExpansionLevels()).toEqual({
-      factory: 0, cargo: 0, markt: 0, werft: 0, refinery: 0, sensor: 0,
-    });
-  });
-
   it('row type carries the new columns', () => {
     const row: PlayerStationRow = {
       id: 'x', owner_id: 'o', sector_x: 1, sector_y: 2, quadrant_x: 0, quadrant_y: 0,
