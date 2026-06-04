@@ -1,8 +1,6 @@
 import { query } from './client.js';
 import { QUADRANT_SIZE, STATION_EXPANSION_TYPES, type StationExpansionType } from '@void-sector/shared';
 
-const QUADRANT_SIZE_VALUE = QUADRANT_SIZE;
-const QUADRANT_SIZE_HALF = Math.floor(QUADRANT_SIZE / 2);
 
 export interface PlayerStationRow {
   id: string;
@@ -290,12 +288,13 @@ export async function getPlayerSensorLevelInQuadrant(
   qx: number,
   qy: number,
 ): Promise<number> {
+  const half = Math.floor(QUADRANT_SIZE / 2);
   const result = await query<{ max: number | null }>(
     `SELECT MAX(sensor_level) AS max FROM player_stations
        WHERE owner_id = $1
          AND FLOOR((sector_x + $4) / $5) = $2
          AND FLOOR((sector_y + $4) / $5) = $3`,
-    [ownerId, qx, qy, QUADRANT_SIZE_HALF, QUADRANT_SIZE_VALUE],
+    [ownerId, qx, qy, half, QUADRANT_SIZE],
   );
   return result.rows[0]?.max ?? 0;
 }
