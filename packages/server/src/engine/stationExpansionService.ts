@@ -9,7 +9,7 @@ export interface StationLevels {
   werft_level: number;
   refinery_level: number;
   sensor_level: number;
-  building_expansion: string | null;
+  building_expansion: StationExpansionType | null;
 }
 
 export type BuildValidation =

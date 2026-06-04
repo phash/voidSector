@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
+import type { StationExpansionType } from '@void-sector/shared';
 import { validateExpansionBuild } from '../stationExpansionService.js';
 
 const baseStation = {
   level: 2, factory_level: 0, cargo_level: 0, markt_level: 0,
   werft_level: 0, refinery_level: 0, sensor_level: 0,
-  building_expansion: null as string | null,
+  building_expansion: null as StationExpansionType | null,
 };
 
 describe('validateExpansionBuild', () => {
