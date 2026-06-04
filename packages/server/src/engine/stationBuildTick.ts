@@ -1,7 +1,7 @@
-import { getDueStationBuilds, completeStationBuild, getAllPlayerStationsWithRefinery } from '../db/stationQueries.js';
+import { getDueStationBuilds, completeStationBuild, getAllPlayerStationsWithRefinery, getRefineryStationsWithCargo, updateStationCargo } from '../db/stationQueries.js';
 import { addCredits } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
-import { refineryCreditsPerTick } from './stationPassiveEffects.js';
+import { refineryCreditsPerTick, refineGasToFuel } from './stationPassiveEffects.js';
 
 /**
  * Completes any player-station expansion builds whose timer has elapsed.
@@ -29,5 +29,19 @@ export async function processStationBuildTick(): Promise<void> {
     }
   } catch (err) {
     logger.error({ err }, 'Refinery trickle failed');
+  }
+
+  // Refinery: convert stored gas into stored fuel (cargo_contents.fuel).
+  try {
+    const refineryCargoStations = await getRefineryStationsWithCargo();
+    for (const r of refineryCargoStations) {
+      const before = r.cargo_contents ?? {};
+      const newCargo = refineGasToFuel(before, r.refinery_level);
+      if ((newCargo.fuel ?? 0) !== (before.fuel ?? 0)) {
+        await updateStationCargo(r.id, newCargo);
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, 'Refinery gas->fuel conversion failed');
   }
 }
