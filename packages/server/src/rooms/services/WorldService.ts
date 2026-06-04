@@ -590,18 +590,18 @@ export class WorldService {
     }
 
     const { cost, targetLevel } = decision;
-    await deductCredits(auth.userId, cost.credits);
-    if (cost.ore > 0) await removeFromInventory(auth.userId, 'resource', 'ore', cost.ore);
-    if (cost.gas > 0) await removeFromInventory(auth.userId, 'resource', 'gas', cost.gas);
-    if (cost.crystal > 0) await removeFromInventory(auth.userId, 'resource', 'crystal', cost.crystal);
-    if (cost.artefact > 0) await removeFromInventory(auth.userId, 'resource', 'artefact', cost.artefact);
-
     const completeAt = new Date(Date.now() + STATION_EXPANSION_BUILD_TIME_MS(targetLevel)).toISOString();
     const started = await startStationBuild(data.stationId, type, completeAt);
     if (!started) {
       client.send('error', { code: 'BUSY', message: 'Station baut bereits' });
       return;
     }
+    // Build slot claimed atomically; now charge the player.
+    await deductCredits(auth.userId, cost.credits);
+    if (cost.ore > 0) await removeFromInventory(auth.userId, 'resource', 'ore', cost.ore);
+    if (cost.gas > 0) await removeFromInventory(auth.userId, 'resource', 'gas', cost.gas);
+    if (cost.crystal > 0) await removeFromInventory(auth.userId, 'resource', 'crystal', cost.crystal);
+    if (cost.artefact > 0) await removeFromInventory(auth.userId, 'resource', 'artefact', cost.artefact);
 
     client.send('buildStationExpansionResult', { success: true, station: started });
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });

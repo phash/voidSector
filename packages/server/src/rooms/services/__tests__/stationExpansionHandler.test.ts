@@ -33,4 +33,12 @@ describe('resolveExpansionBuild', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.code).toBe('TIER_LOCKED');
   });
+
+  it('fails with BUSY when the station is already building', () => {
+    const r = resolveExpansionBuild({ ...station, building_expansion: 'factory' }, 'markt', {
+      credits: 99999, cargo: { ore: 999, gas: 999, crystal: 999, artefact: 999 },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe('BUSY');
+  });
 });
