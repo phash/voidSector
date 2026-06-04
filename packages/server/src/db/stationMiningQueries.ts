@@ -74,11 +74,11 @@ export async function updateStationMiningShip(
     state: string;
     x: number;
     y: number;
-    target_x?: number | null;
-    target_y?: number | null;
-    spiral_step?: number;
-    resources_carried?: number;
-    mined_resource?: string | null;
+    target_x: number | null;
+    target_y: number | null;
+    spiral_step: number;
+    resources_carried: number;
+    mined_resource: string | null;
   },
 ): Promise<void> {
   await query(
@@ -96,11 +96,11 @@ export async function updateStationMiningShip(
 }
 
 export async function countStationMiningShips(stationId: string): Promise<number> {
-  const res = await query<{ count: string }>(
+  const res = await query<{ count: number }>(
     'SELECT COUNT(*)::int AS count FROM station_mining_ships WHERE station_id = $1',
     [stationId],
   );
-  return Number(res.rows[0]?.count ?? 0);
+  return res.rows[0]?.count ?? 0;
 }
 
 /** Player stations that have at least one Werft level — eligible to operate mining ships. */
