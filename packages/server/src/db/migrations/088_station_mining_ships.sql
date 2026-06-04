@@ -1,3 +1,5 @@
+-- id is BIGSERIAL (not UUID): CivShip.id is a number; this matches the reused
+-- nextShipState state machine + the civShipBus broadcast/radar render path.
 CREATE TABLE IF NOT EXISTS station_mining_ships (
   id                BIGSERIAL PRIMARY KEY,
   station_id        UUID NOT NULL REFERENCES player_stations(id) ON DELETE CASCADE,

@@ -99,4 +99,14 @@ describe('processStationMiningTick', () => {
     expect(addCredits).toHaveBeenCalledWith('o1', expect.any(Number));
     expect(station.addTradeVolume).toHaveBeenCalledWith('st1', expect.any(Number));
   });
+
+  it('promotes the station tier when delivery pushes trade volume over a threshold', async () => {
+    q.getAllStationMiningShips.mockResolvedValue([
+      { id: 1, station_id: 'st1', owner_id: 'o1', state: 'returning', x: 6, y: 5, home_x: 5, home_y: 5, target_x: 5, target_y: 5, spiral_step: 10, resources_carried: 20, mined_resource: 'ore' },
+    ]);
+    station.getPlayerStationById.mockResolvedValue({ id: 'st1', owner_id: 'o1', markt_level: 1, cargo_level: 0, cargo_contents: {}, level: 1, trade_volume: 0 });
+    station.addTradeVolume.mockResolvedValue({ trade_volume: 1000, level: 1 }); // crosses tier-2 threshold
+    await processStationMiningTick();
+    expect(station.setStationLevel).toHaveBeenCalledWith('st1', 2);
+  });
 });

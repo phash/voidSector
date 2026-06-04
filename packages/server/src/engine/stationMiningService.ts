@@ -91,36 +91,40 @@ export async function processStationMiningTick(): Promise<void> {
     const quadrantShips = new Map<string, CivShip[]>();
 
     for (const row of rows) {
-      const ship = toCivShip(row);
-      const updates = nextShipState(ship, null, 0);
-      if (Object.keys(updates).length === 0) continue;
-      const updated: CivShip = { ...ship, ...updates };
+      try {
+        const ship = toCivShip(row);
+        const updates = nextShipState(ship, null, 0);
+        if (Object.keys(updates).length === 0) continue;
+        const updated: CivShip = { ...ship, ...updates };
 
-      await updateStationMiningShip(row.id, {
-        state: updated.state,
-        x: updated.x,
-        y: updated.y,
-        target_x: updated.target_x ?? null,
-        target_y: updated.target_y ?? null,
-        spiral_step: updated.spiral_step ?? 0,
-        resources_carried: updated.resources_carried ?? 0,
-        mined_resource: updated.mined_resource ?? null,
-      });
+        await updateStationMiningShip(row.id, {
+          state: updated.state,
+          x: updated.x,
+          y: updated.y,
+          target_x: updated.target_x ?? null,
+          target_y: updated.target_y ?? null,
+          spiral_step: updated.spiral_step ?? 0,
+          resources_carried: updated.resources_carried ?? 0,
+          mined_resource: updated.mined_resource ?? null,
+        });
 
-      // Delivery: ship just arrived home with a haul.
-      if (row.state === 'returning' && updated.state === 'idle' && (row.resources_carried ?? 0) > 0) {
-        const resource = (row.mined_resource ?? 'ore') as MineableResourceType;
-        try {
-          await deliverHaul(row.station_id, resource, row.resources_carried);
-        } catch (err) {
-          logger.error({ err, stationId: row.station_id }, 'Station mining delivery failed');
+        // Delivery: ship just arrived home with a haul.
+        if (row.state === 'returning' && updated.state === 'idle' && (row.resources_carried ?? 0) > 0) {
+          const resource = (row.mined_resource ?? 'ore') as MineableResourceType;
+          try {
+            await deliverHaul(row.station_id, resource, row.resources_carried);
+          } catch (err) {
+            logger.error({ err, stationId: row.station_id }, 'Station mining delivery failed');
+          }
         }
-      }
 
-      const { qx, qy } = sectorToQuadrant(updated.x, updated.y);
-      const key = `${qx}:${qy}`;
-      if (!quadrantShips.has(key)) quadrantShips.set(key, []);
-      quadrantShips.get(key)!.push(updated);
+        const { qx, qy } = sectorToQuadrant(updated.x, updated.y);
+        const key = `${qx}:${qy}`;
+        if (!quadrantShips.has(key)) quadrantShips.set(key, []);
+        quadrantShips.get(key)!.push(updated);
+      } catch (err) {
+        logger.error({ err, shipId: row.id }, 'Station mining ship tick failed');
+      }
     }
 
     for (const [key, ships] of quadrantShips) {
