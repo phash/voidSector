@@ -42,6 +42,8 @@ import { addToInventory, getInventoryItem, getCargoState } from '../../engine/in
 import { resolveAncientRuinScan } from '../../engine/ancientRuinsService.js';
 import { getWrecksInSector, salvageWreckModule } from '../../engine/permadeathService.js';
 import { getWreckAtSector } from '../../db/wreckQueries.js';
+import { getPlayerStationAt } from '../../db/stationQueries.js';
+import { sensorScanBonus } from '../../engine/stationPassiveEffects.js';
 import { redis } from './RedisAPStore.js';
 import { WORLD_SEED } from '@void-sector/shared';
 import type { SectorData } from '@void-sector/shared';
@@ -292,7 +294,13 @@ export class ScanService {
 
     // Apply faction scan radius bonus
     const bonuses = await this.ctx.getPlayerBonuses(auth.userId);
-    const radius = scanResult.radius + bonuses.scanRadiusBonus;
+    let radius = scanResult.radius + bonuses.scanRadiusBonus;
+
+    // Apply sensor array bonus from player-owned station at current sector
+    const stationHere = await getPlayerStationAt(sectorX, sectorY);
+    if (stationHere && stationHere.owner_id === auth.userId) {
+      radius += sensorScanBonus(stationHere.sensor_level);
+    }
 
     // Batch load existing sectors
     const existingSectors = await getSectorsInRange(sectorX, sectorY, radius);

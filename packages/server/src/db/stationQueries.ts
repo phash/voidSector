@@ -1,4 +1,5 @@
 import { query } from './client.js';
+import { STATION_EXPANSION_TYPES, type StationExpansionType } from '@void-sector/shared';
 
 export interface PlayerStationRow {
   id: string;
@@ -10,9 +11,27 @@ export interface PlayerStationRow {
   level: number;
   factory_level: number;
   cargo_level: number;
+  markt_level: number;
+  werft_level: number;
+  refinery_level: number;
+  sensor_level: number;
   cargo_contents: Record<string, number>;
+  trade_volume: number;
+  building_expansion: StationExpansionType | null;
+  build_complete_at: string | null;
   created_at: string;
 }
+
+/** Column name on player_stations for an expansion's level.
+ *  Validates against the shared allowlist so the interpolated column name can
+ *  never be attacker-controlled (defense in depth for the SQL in completeStationBuild). */
+export function expansionLevelColumn(type: StationExpansionType): string {
+  if (!STATION_EXPANSION_TYPES.includes(type)) {
+    throw new Error(`Invalid station expansion type: ${String(type)}`);
+  }
+  return `${type}_level`;
+}
+
 
 export async function getPlayerStationAt(sectorX: number, sectorY: number): Promise<PlayerStationRow | null> {
   const result = await query<PlayerStationRow>(
@@ -184,4 +203,65 @@ export async function consumeBlueprintIntoAcep(playerId: string, moduleId: strin
   } catch {
     return false;
   }
+}
+
+/** Start a timed expansion build. Returns null if the station is already building. */
+export async function startStationBuild(
+  stationId: string,
+  type: StationExpansionType,
+  completeAtIso: string,
+): Promise<PlayerStationRow | null> {
+  const result = await query<PlayerStationRow>(
+    `UPDATE player_stations
+       SET building_expansion = $2, build_complete_at = $3
+     WHERE id = $1 AND building_expansion IS NULL
+     RETURNING *`,
+    [stationId, type, completeAtIso],
+  );
+  return result.rows[0] ?? null;
+}
+
+/** Fetch stations whose timed build is due. */
+export async function getDueStationBuilds(): Promise<PlayerStationRow[]> {
+  const result = await query<PlayerStationRow>(
+    `SELECT * FROM player_stations
+     WHERE building_expansion IS NOT NULL AND build_complete_at <= NOW()`,
+  );
+  return result.rows;
+}
+
+/** Complete a build: bump the expansion level and clear the build fields. */
+export async function completeStationBuild(
+  stationId: string,
+  type: StationExpansionType,
+): Promise<void> {
+  const col = expansionLevelColumn(type);
+  await query(
+    `UPDATE player_stations
+       SET ${col} = ${col} + 1, building_expansion = NULL, build_complete_at = NULL
+     WHERE id = $1`,
+    [stationId],
+  );
+}
+
+/** Add to trade volume; returns the updated row. */
+export async function addTradeVolume(stationId: string, amount: number): Promise<PlayerStationRow | null> {
+  const result = await query<PlayerStationRow>(
+    `UPDATE player_stations
+       SET trade_volume = trade_volume + $2
+     WHERE id = $1 RETURNING *`,
+    [stationId, amount],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function setStationLevel(stationId: string, level: number): Promise<void> {
+  await query(`UPDATE player_stations SET level = $2 WHERE id = $1`, [stationId, level]);
+}
+
+export async function getAllPlayerStationsWithRefinery(): Promise<Pick<PlayerStationRow, 'owner_id' | 'refinery_level'>[]> {
+  const result = await query<Pick<PlayerStationRow, 'owner_id' | 'refinery_level'>>(
+    `SELECT owner_id, refinery_level FROM player_stations WHERE refinery_level > 0`,
+  );
+  return result.rows;
 }

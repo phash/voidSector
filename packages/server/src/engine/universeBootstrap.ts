@@ -10,6 +10,7 @@ import { assertAlienHomesFarFromOrigin } from './alienHomeGuard.js';
 import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
 import { processCivTick } from './civShipService.js';
 import { processConstructionTick } from './constructionTickService.js';
+import { processStationBuildTick } from './stationBuildTick.js';
 import { runStationFuelProductionTick } from './stationFuelEngine.js';
 
 dotenv.config();
@@ -54,6 +55,7 @@ export async function startUniverseEngine(): Promise<void> {
     // TODO #512/#513: Rework to quadrant-based lazy ticking
     // await processCivTick();
     await processConstructionTick();
+    await processStationBuildTick();
 
     // Fuel production tick (every 10 s) — must come BEFORE strategic tick early-return guard
     if (result.tickCount % FUEL_PRODUCTION_TICK_INTERVAL === 0) {

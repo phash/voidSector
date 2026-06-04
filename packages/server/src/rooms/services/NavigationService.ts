@@ -1335,6 +1335,19 @@ export class NavigationService {
       cargoLevel: station.cargo_level,
       cargoContents: station.cargo_contents,
       createdAt: new Date(station.created_at).getTime(),
+      // New expansion fields (snake_case, matches PlayerStationRow)
+      factory_level: station.factory_level,
+      cargo_level: station.cargo_level,
+      markt_level: station.markt_level,
+      werft_level: station.werft_level,
+      refinery_level: station.refinery_level,
+      sensor_level: station.sensor_level,
+      trade_volume: station.trade_volume,
+      building_expansion: station.building_expansion,
+      build_complete_at: station.build_complete_at,
+      cargo_contents: station.cargo_contents,
+      sector_x: station.sector_x,
+      sector_y: station.sector_y,
     });
   }
 

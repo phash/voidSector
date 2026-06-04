@@ -858,11 +858,11 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('buildStation', async (client) => {
       await this.world.handleBuildStation(client);
     });
-    this.onMessage('upgradeStation', async (client, data) => {
-      await this.world.handleUpgradeStation(client, data);
+    this.onMessage('buildStationExpansion', async (client, data: { stationId: string; expansionType: string }) => {
+      await this.world.handleBuildStationExpansion(client, data);
     });
-    this.onMessage('upgradeStationModule', async (client, data) => {
-      await this.world.handleUpgradeStationModule(client, data);
+    this.onMessage('stationMarketTrade', async (client, data: { stationId: string; action: 'buy' | 'sell'; resource: 'ore' | 'gas' | 'crystal'; amount: number }) => {
+      await this.world.handleStationMarketTrade(client, data);
     });
     this.onMessage('getMyStations', async (client) => {
       await this.world.handleGetMyStations(client);
