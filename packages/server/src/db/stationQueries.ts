@@ -1,5 +1,5 @@
 import { query } from './client.js';
-import type { StationExpansionType } from '@void-sector/shared';
+import { STATION_EXPANSION_TYPES, type StationExpansionType } from '@void-sector/shared';
 
 export interface PlayerStationRow {
   id: string;
@@ -22,8 +22,13 @@ export interface PlayerStationRow {
   created_at: string;
 }
 
-/** Column name on player_stations for an expansion's level. */
+/** Column name on player_stations for an expansion's level.
+ *  Validates against the shared allowlist so the interpolated column name can
+ *  never be attacker-controlled (defense in depth for the SQL in completeStationBuild). */
 export function expansionLevelColumn(type: StationExpansionType): string {
+  if (!STATION_EXPANSION_TYPES.includes(type)) {
+    throw new Error(`Invalid station expansion type: ${String(type)}`);
+  }
   return `${type}_level`;
 }
 

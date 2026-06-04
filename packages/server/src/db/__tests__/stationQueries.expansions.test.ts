@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptyExpansionLevels, type PlayerStationRow } from '../stationQueries.js';
+import { emptyExpansionLevels, expansionLevelColumn, type PlayerStationRow } from '../stationQueries.js';
 
 describe('PlayerStationRow expansion fields', () => {
   it('emptyExpansionLevels returns all six expansion levels at 0', () => {
@@ -16,5 +16,16 @@ describe('PlayerStationRow expansion fields', () => {
       building_expansion: null, build_complete_at: null, created_at: 'now',
     };
     expect(row.markt_level).toBe(0);
+  });
+});
+
+describe('expansionLevelColumn', () => {
+  it('returns the level column for valid expansion types', () => {
+    expect(expansionLevelColumn('markt')).toBe('markt_level');
+    expect(expansionLevelColumn('werft')).toBe('werft_level');
+  });
+  it('throws on a value outside the allowlist (SQL-injection guard)', () => {
+    // @ts-expect-error deliberately invalid value to exercise the runtime guard
+    expect(() => expansionLevelColumn('sectors; DROP TABLE players;--')).toThrow(/Invalid station expansion type/);
   });
 });
