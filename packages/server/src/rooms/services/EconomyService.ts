@@ -302,8 +302,9 @@ export class EconomyService {
       );
       if (own.ok) {
         const newFuel = currentFuel + own.amount;
-        await saveFuelState(auth.userId, newFuel);
+        // Deduct the station's fuel first — if this write fails, the ship is not credited.
         await updateStationCargo(ownStation!.id, { ...ownStation!.cargo_contents, fuel: own.newStationFuel });
+        await saveFuelState(auth.userId, newFuel);
         client.send('refuelResult', {
           success: true,
           fuel: { current: newFuel, max: ship.fuelMax },
