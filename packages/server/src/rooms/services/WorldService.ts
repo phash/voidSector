@@ -67,8 +67,9 @@ import {
   CUSTOM_SLATE_AP_COST,
   CUSTOM_SLATE_CREDIT_COST,
   STATION_BUILD_COSTS,
-  STATION_MODULE_UPGRADE_COST,
-  MAX_STATION_LEVEL,
+  STATION_EXPANSION_TYPES,
+  STATION_EXPANSION_BUILD_TIME_MS,
+  type StationExpansionType,
   MODULE_MAP,
   PRODUCTION_MAX_QUEUE,
   BASIC_FACTORY_RECIPES,
@@ -82,8 +83,7 @@ import {
   getPlayerStations as getPlayerStationsList,
   getPlayerStationById,
   insertPlayerStation,
-  upgradeStationLevel as dbUpgradeStationLevel,
-  upgradeStationModule as dbUpgradeStationModule,
+  startStationBuild,
   getStationBlueprints as getStationBlueprintsList,
   consumeBlueprintIntoStation as consumeBlueprintInStation,
   getAcepBlueprints as getAcepBlueprintsList,
@@ -175,6 +175,7 @@ import {
   playerKnowsQuadrant,
 } from '../../db/quadrantQueries.js';
 import { isInt, rejectGuest } from './utils.js';
+import { resolveExpansionBuild } from './stationExpansionDecision.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import {
   createConstructionSite,
@@ -558,97 +559,54 @@ export class WorldService {
     client.send('logEntry', `Station-Baustelle eröffnet bei (${sx}, ${sy})`);
   }
 
-  async handleUpgradeStation(client: Client, data: { stationId: string }): Promise<void> {
-    if (rejectGuest(client, 'Station upgraden')) return;
+  async handleBuildStationExpansion(
+    client: Client,
+    data: { stationId: string; expansionType: string },
+  ): Promise<void> {
+    if (rejectGuest(client, 'Erweiterung bauen')) return;
     const auth = client.auth as AuthPayload;
 
+    const type = data.expansionType as StationExpansionType;
+    if (!STATION_EXPANSION_TYPES.includes(type)) {
+      client.send('error', { code: 'INVALID_INPUT', message: 'Unbekannte Erweiterung' });
+      return;
+    }
     const station = await getPlayerStationById(data.stationId);
     if (!station || station.owner_id !== auth.userId) {
-      client.send('upgradeStationResult', { success: false, error: 'Station nicht gefunden' });
+      client.send('error', { code: 'NOT_FOUND', message: 'Station nicht gefunden' });
       return;
     }
-
-    const sx = this.ctx._px(client.sessionId);
-    const sy = this.ctx._py(client.sessionId);
-    if (sx !== station.sector_x || sy !== station.sector_y) {
-      client.send('upgradeStationResult', { success: false, error: 'Du musst an der Station sein' });
-      return;
-    }
-
-    if (station.level >= MAX_STATION_LEVEL) {
-      client.send('upgradeStationResult', { success: false, error: 'Maximales Level erreicht' });
-      return;
-    }
-
-    const nextLevel = station.level + 1;
-    const costs = STATION_BUILD_COSTS[nextLevel as keyof typeof STATION_BUILD_COSTS];
-    if (!costs) {
-      client.send('upgradeStationResult', { success: false, error: 'Ungültiges Level' });
+    if (this.ctx._px(client.sessionId) !== station.sector_x || this.ctx._py(client.sessionId) !== station.sector_y) {
+      client.send('error', { code: 'TOO_FAR', message: 'Du musst an der Station sein' });
       return;
     }
 
     const credits = await getPlayerCredits(auth.userId);
-    if (credits < costs.credits) {
-      client.send('upgradeStationResult', { success: false, error: `${costs.credits} Credits benötigt` });
-      return;
-    }
     const cargo = await getCargoState(auth.userId);
-    if ((cargo.crystal ?? 0) < costs.crystal || (cargo.artefact ?? 0) < costs.artefact) {
-      client.send('upgradeStationResult', { success: false, error: 'Nicht genug Ressourcen' });
+    const decision = resolveExpansionBuild(station, type, { credits, cargo });
+    if (!decision.ok) {
+      client.send('error', { code: decision.code, message: decision.message });
       return;
     }
 
-    await deductCredits(auth.userId, costs.credits);
-    await removeFromInventory(auth.userId, 'resource', 'crystal', costs.crystal);
-    await removeFromInventory(auth.userId, 'resource', 'artefact', costs.artefact);
+    const { cost, targetLevel } = decision;
+    await deductCredits(auth.userId, cost.credits);
+    if (cost.ore > 0) await removeFromInventory(auth.userId, 'resource', 'ore', cost.ore);
+    if (cost.gas > 0) await removeFromInventory(auth.userId, 'resource', 'gas', cost.gas);
+    if (cost.crystal > 0) await removeFromInventory(auth.userId, 'resource', 'crystal', cost.crystal);
+    if (cost.artefact > 0) await removeFromInventory(auth.userId, 'resource', 'artefact', cost.artefact);
 
-    const updated = await dbUpgradeStationLevel(data.stationId);
-    client.send('upgradeStationResult', { success: true, station: updated });
+    const completeAt = new Date(Date.now() + STATION_EXPANSION_BUILD_TIME_MS(targetLevel)).toISOString();
+    const started = await startStationBuild(data.stationId, type, completeAt);
+    if (!started) {
+      client.send('error', { code: 'BUSY', message: 'Station baut bereits' });
+      return;
+    }
+
+    client.send('buildStationExpansionResult', { success: true, station: started });
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     client.send('cargoUpdate', await getCargoState(auth.userId));
-    client.send('logEntry', `STATION UPGRADE → Level ${nextLevel}`);
-  }
-
-  async handleUpgradeStationModule(
-    client: Client,
-    data: { stationId: string; module: 'factory' | 'cargo' },
-  ): Promise<void> {
-    if (rejectGuest(client, 'Modul upgraden')) return;
-    const auth = client.auth as AuthPayload;
-
-    const station = await getPlayerStationById(data.stationId);
-    if (!station || station.owner_id !== auth.userId) {
-      client.send('upgradeStationModuleResult', { success: false, error: 'Station nicht gefunden' });
-      return;
-    }
-
-    const currentModuleLevel = data.module === 'factory' ? station.factory_level : station.cargo_level;
-    if (currentModuleLevel >= station.level) {
-      client.send('upgradeStationModuleResult', {
-        success: false,
-        error: `Modul-Level kann Station-Level (${station.level}) nicht überschreiten`,
-      });
-      return;
-    }
-
-    const nextLevel = currentModuleLevel + 1;
-    const cost = STATION_MODULE_UPGRADE_COST(nextLevel);
-    const credits = await getPlayerCredits(auth.userId);
-    if (credits < cost) {
-      client.send('upgradeStationModuleResult', { success: false, error: `${cost} Credits benötigt` });
-      return;
-    }
-
-    await deductCredits(auth.userId, cost);
-    const updated = await dbUpgradeStationModule(data.stationId, data.module, station.level);
-    if (!updated) {
-      client.send('upgradeStationModuleResult', { success: false, error: 'Upgrade fehlgeschlagen' });
-      return;
-    }
-
-    client.send('upgradeStationModuleResult', { success: true, station: updated });
-    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
-    client.send('logEntry', `${data.module.toUpperCase()} UPGRADE → Level ${nextLevel}`);
+    client.send('logEntry', `STATION baut ${type.toUpperCase()} → Stufe ${targetLevel}`);
   }
 
   async handleGetMyStations(client: Client): Promise<void> {
