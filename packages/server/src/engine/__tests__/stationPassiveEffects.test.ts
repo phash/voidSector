@@ -40,6 +40,14 @@ describe('refineGasToFuel', () => {
     refineGasToFuel(cargo, 1);
     expect(cargo).toEqual({ gas: 10 });
   });
+  it('does nothing when fuel is already at the cap', () => {
+    const r = refineGasToFuel({ gas: 10, fuel: 20000 }, 3);
+    expect(r.gas).toBe(10);
+    expect(r.fuel).toBe(20000);
+  });
+  it('handles cargo with no gas key', () => {
+    expect(refineGasToFuel({}, 1)).toEqual({});
+  });
 });
 
 describe('pirateCombatAvoidable', () => {
@@ -53,6 +61,9 @@ describe('pirateCombatAvoidable', () => {
   it('caps at SENSOR_PIRATE_REDUCTION_MAX (0.9)', () => {
     expect(pirateCombatAvoidable(10, 0.89)).toBe(true);
     expect(pirateCombatAvoidable(10, 0.95)).toBe(false);
+  });
+  it('is not avoidable when the roll equals the chance (strict <)', () => {
+    expect(pirateCombatAvoidable(3, 0.45)).toBe(false); // chance is exactly 0.45
   });
 });
 
