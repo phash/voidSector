@@ -62,9 +62,14 @@ erweiterte Query ersetzt werden, um eine doppelte Abfrage zu vermeiden — beide
 dieselbe Stationsmenge.)
 
 ### 1.4 Auftanken an eigener Station (`EconomyService`, Refuel-Handler)
-Der bestehende Refuel-Handler liest `getStationFuelAndGas(sx, sy)` (NPC-Bestand). Erweitern:
+Der bestehende Refuel-Handler (`EconomyService.handleRefuel`) liest `getStationFuelAndGas(sx, sy)`
+(NPC-Bestand) und **blockiert vorher per Gate `_pst(sid) === 'station'`**. Spieler-Stations-Sektoren
+haben aber **nicht** den Typ `'station'` (nichts setzt `sectors.type='station'` beim Spieler-Stationsbau).
+Daher muss das Gate erweitert werden: Refuel auch zulassen, wenn am Sektor eine **eigene** Station steht.
+Erweitern:
 - Zuerst prüfen, ob am aktuellen Sektor eine **Spieler-Station des Anfragenden** steht
   (`getPlayerStationAt(sx, sy)` mit `owner_id === auth.userId`) und `cargo_contents.fuel > 0`.
+  Das Gate `_pst === 'station'` so anpassen, dass es ODER „eigene Station hier" akzeptiert.
 - Wenn ja: Schiff aus dem Stations-Fuel auftanken — `amount = min(tankSpace, station.cargo_contents.fuel)`,
   Schiff-Fuel erhöhen (`saveFuelState`), `cargo_contents.fuel -= amount` (`updateStationCargo`),
   **keine Credits**. Ergebnis an Client (`refuelResult { success, ... }`) + cargo/fuel-Updates.
@@ -82,33 +87,46 @@ Der bestehende Refuel-Handler liest `getStationFuelAndGas(sx, sy)` (NPC-Bestand)
 
 ---
 
-## Teil 2 — Sensor pirate_ambush-Reduktion
+## Teil 2 — Sensor: pirate_zone-Kampf optional machen
+
+**Korrektur (in der Planung entdeckt):** Der `pirate_ambush`-Scan-Event ist nur eine
+**Warnmeldung** (`ScanService.ts:408-411`, „combat V3 triggers on sector entry"). Der echte
+Piratenkampf ist der **Auto-Kampf beim Betreten eines `pirate_zone`-Sektors**
+(`SectorRoom` moveSector/jump, ~Z. 427/481: `if contents.includes('pirate_zone') → combatV3Start`).
+Den richtigen, spürbaren Sensor-Nutzen liefert daher: im **Quadranten der eigenen Sensor-Station**
+wird der Auto-Kampf beim Betreten einer pirate_zone mit Wahrscheinlichkeit
+`min(MAX, PER_LEVEL·level)` **nicht erzwungen** — der Spieler wird gewarnt und darf **selbst
+entscheiden**: angreifen (bestehender `combatV3Start`) oder ausweichen (weiterfliegen). Ohne Sensor
+bzw. wenn der Roll nicht greift, startet der Kampf wie bisher automatisch.
 
 ### 2.1 Konstanten (`packages/shared/src/constants.ts`)
 ```typescript
 export const SENSOR_PIRATE_REDUCTION_PER_LEVEL = 0.15; // 15 % je Sensor-Stufe
-export const SENSOR_PIRATE_REDUCTION_MAX = 0.9;        // max 90 % Unterdrückung
+export const SENSOR_PIRATE_REDUCTION_MAX = 0.9;        // max 90 %
 ```
 
 ### 2.2 Pure Helper (`packages/server/src/engine/stationPassiveEffects.ts`)
-`pirateAmbushSuppressed(sensorLevel: number, roll: number): boolean`:
+`pirateCombatAvoidable(sensorLevel: number, roll: number): boolean`:
 - `chance = Math.min(SENSOR_PIRATE_REDUCTION_MAX, SENSOR_PIRATE_REDUCTION_PER_LEVEL * sensorLevel)`
-- liefert `roll < chance` (true = unterdrückt). `sensorLevel <= 0` → immer false.
+- liefert `roll < chance` (true = Auto-Kampf wird übersprungen, Spieler entscheidet). `sensorLevel <= 0` → immer false.
 
-### 2.3 Hook (`packages/server/src/rooms/services/ScanService.ts`)
-Am Punkt, wo ein **`pirate_ambush`**-Scan-Event für den Spieler ausgelöst würde
-(immediate event in `handleScan`/Scan-Event-Verarbeitung): wenn der Spieler eine Sensor-Station
-(`sensor_level > 0`) **im aktuellen Quadranten** besitzt, `pirateAmbushSuppressed(level, Math.random())`
-prüfen; wenn true, den Ambush **nicht** auslösen (Event überspringen/herunterstufen, z. B. als
-harmlosen Log-Eintrag „Sensor-Array hat eine Piratenfalle erkannt und umgangen").
-- Quadranten-Besitz: Query `getPlayerSensorLevelInQuadrant(ownerId, qx, qy)` → höchstes
-  `sensor_level` einer eigenen Station im Quadranten (oder 0). `sectorToQuadrant` aus `quadrantEngine`.
+### 2.3 Query (`packages/server/src/db/stationQueries.ts`)
+`getPlayerSensorLevelInQuadrant(ownerId, qx, qy)` → höchstes `sensor_level` einer eigenen Station,
+deren Sektor in Quadrant (qx,qy) liegt (`sector_x/sector_y` → `sectorToQuadrant`); 0 wenn keine.
 
-### 2.4 Tests
-- `pirateAmbushSuppressed`: Stufe 0 → nie; skaliert mit Stufe; Cap 0.9; deterministisch je `roll`
-  (z. B. level 3 → chance 0.45: roll 0.4 → true, roll 0.5 → false).
-- Sensor-Hook (Handler-Pfad mit Mocks): pirate_ambush wird unterdrückt, wenn der Besitzer eine
-  Sensor-Station im Quadranten hat und der Roll unter der Chance liegt; sonst nicht.
+### 2.4 Hook (`packages/server/src/rooms/SectorRoom.ts`)
+An den beiden Stellen, wo bei pirate_zone-Eintritt der Auto-Kampf gestartet wird (moveSector ~Z.427,
+jump ~Z.481): vor `combatV3Start` prüfen, ob der Spieler eine Sensor-Station (`sensor_level>0`) im
+aktuellen Quadranten besitzt; wenn ja und `pirateCombatAvoidable(level, Math.random())` true →
+**Auto-Kampf NICHT starten**, stattdessen Hinweis senden (`logEntry`: „Sensor-Array hat die
+Piratenzone früh erkannt — du kannst angreifen oder ausweichen."). Der Spieler kann weiterhin per
+bestehendem `combatV3Start` selbst angreifen. Sonst: Auto-Kampf wie bisher.
+
+### 2.5 Tests
+- `pirateCombatAvoidable`: Stufe 0 → nie; skaliert mit Stufe; Cap 0.9; deterministisch je `roll`
+  (level 3 → chance 0.45: roll 0.4 → true, roll 0.5 → false).
+- Der SectorRoom-Hook wird pragmatisch über den pure Helper + die Query abgedeckt; der genaue
+  Auto-Kampf-Einsprungpunkt wird in der Umsetzung verifiziert (zwei Call-Sites).
 
 ---
 
