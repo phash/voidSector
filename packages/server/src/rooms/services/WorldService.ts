@@ -76,6 +76,7 @@ import {
   calculateProductionTime,
   calculateCostMultiplier,
   isBuildable,
+  stationTierForVolume,
 } from '@void-sector/shared';
 import {
   getPlayerStationAt,
@@ -93,6 +94,8 @@ import {
   updateProductionCompleted as updateProductionCompletedRow,
   deleteProductionJob as deleteProductionJobRow,
   updateStationCargo as updateStationCargoContents,
+  addTradeVolume,
+  setStationLevel,
 } from '../../db/stationQueries.js';
 import {
   getAPState,
@@ -176,6 +179,7 @@ import {
 } from '../../db/quadrantQueries.js';
 import { isInt, rejectGuest } from './utils.js';
 import { resolveExpansionBuild } from './stationExpansionDecision.js';
+import { resolveMarketTrade } from './stationMarketDecision.js';
 import { addAcepXpForPlayer } from '../../engine/acepXpService.js';
 import {
   createConstructionSite,
@@ -607,6 +611,56 @@ export class WorldService {
     client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
     client.send('cargoUpdate', await getCargoState(auth.userId));
     client.send('logEntry', `STATION baut ${type.toUpperCase()} → Stufe ${targetLevel}`);
+  }
+
+  async handleStationMarketTrade(
+    client: Client,
+    data: { stationId: string; action: 'buy' | 'sell'; resource: MineableResourceType; amount: number },
+  ): Promise<void> {
+    if (rejectGuest(client, 'Handel')) return;
+    const auth = client.auth as AuthPayload;
+    const station = await getPlayerStationById(data.stationId);
+    if (!station || station.owner_id !== auth.userId) {
+      client.send('error', { code: 'NOT_FOUND', message: 'Station nicht gefunden' });
+      return;
+    }
+    if (this.ctx._px(client.sessionId) !== station.sector_x || this.ctx._py(client.sessionId) !== station.sector_y) {
+      client.send('error', { code: 'TOO_FAR', message: 'Du musst an der Station sein' });
+      return;
+    }
+
+    const cargo = await getCargoState(auth.userId);
+    const credits = await getPlayerCredits(auth.userId);
+    const decision = resolveMarketTrade(
+      station,
+      { action: data.action, resource: data.resource, amount: data.amount },
+      { cargoAmount: cargo[data.resource] ?? 0, credits },
+    );
+    if (!decision.ok) {
+      client.send('error', { code: decision.code, message: decision.message });
+      return;
+    }
+
+    if (decision.resourceFromPlayer > 0) {
+      await removeFromInventory(auth.userId, 'resource', data.resource, decision.resourceFromPlayer);
+    }
+    if (decision.resourceToPlayer > 0) {
+      await addToInventory(auth.userId, 'resource', data.resource, decision.resourceToPlayer);
+    }
+    if (decision.creditsToPlayer > 0) await addCredits(auth.userId, decision.creditsToPlayer);
+    if (decision.creditsFromPlayer > 0) await deductCredits(auth.userId, decision.creditsFromPlayer);
+    await updateStationCargoContents(data.stationId, decision.newStationContents);
+
+    const updated = await addTradeVolume(data.stationId, decision.volume);
+    if (updated) {
+      const newTier = stationTierForVolume(updated.trade_volume);
+      if (newTier > updated.level) await setStationLevel(data.stationId, newTier);
+    }
+
+    const fresh = await getPlayerStationById(data.stationId);
+    client.send('stationMarketResult', { success: true, station: fresh });
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    client.send('cargoUpdate', await getCargoState(auth.userId));
   }
 
   async handleGetMyStations(client: Client): Promise<void> {
