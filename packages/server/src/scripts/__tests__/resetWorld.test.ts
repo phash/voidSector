@@ -49,7 +49,9 @@ describe('resetWorld table lists', () => {
     expect(idx('quadrant_control')).toBeLessThan(idx('void_clusters'));
   });
 
-  it('wipes player-station mining ships', () => {
+  it('wipes player-station mining ships before player_stations (FK child-first)', () => {
+    const idx = (t: string) => WORLD_RESET_TABLES.indexOf(t);
     expect(WORLD_RESET_TABLES).toContain('station_mining_ships');
+    expect(idx('station_mining_ships')).toBeLessThan(idx('player_stations'));
   });
 });
