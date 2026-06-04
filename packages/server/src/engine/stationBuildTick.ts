@@ -1,6 +1,7 @@
-import { getDueStationBuilds, completeStationBuild } from '../db/stationQueries.js';
+import { getDueStationBuilds, completeStationBuild, getAllPlayerStationsWithRefinery } from '../db/stationQueries.js';
+import { addCredits } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
-import type { StationExpansionType } from '@void-sector/shared';
+import { refineryCreditsPerTick } from './stationPassiveEffects.js';
 
 /**
  * Completes any player-station expansion builds whose timer has elapsed.
@@ -9,7 +10,7 @@ import type { StationExpansionType } from '@void-sector/shared';
 export async function processStationBuildTick(): Promise<void> {
   const due = await getDueStationBuilds();
   for (const station of due) {
-    const type = station.building_expansion as StationExpansionType | null;
+    const type = station.building_expansion;
     if (!type) continue;
     try {
       await completeStationBuild(station.id, type);
@@ -17,5 +18,16 @@ export async function processStationBuildTick(): Promise<void> {
     } catch (err) {
       logger.error({ err, stationId: station.id }, 'Station build completion failed');
     }
+  }
+
+  // Refinery passive income: pay each station owner a credits trickle.
+  try {
+    const refineries = await getAllPlayerStationsWithRefinery();
+    for (const r of refineries) {
+      const credits = refineryCreditsPerTick(r.refinery_level);
+      if (credits > 0) await addCredits(r.owner_id, credits);
+    }
+  } catch (err) {
+    logger.error({ err }, 'Refinery trickle failed');
   }
 }

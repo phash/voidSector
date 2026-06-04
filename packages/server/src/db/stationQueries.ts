@@ -259,3 +259,9 @@ export async function setStationLevel(stationId: string, level: number): Promise
   await query(`UPDATE player_stations SET level = $2 WHERE id = $1`, [stationId, level]);
 }
 
+export async function getAllPlayerStationsWithRefinery(): Promise<Pick<PlayerStationRow, 'owner_id' | 'refinery_level'>[]> {
+  const result = await query<Pick<PlayerStationRow, 'owner_id' | 'refinery_level'>>(
+    `SELECT owner_id, refinery_level FROM player_stations WHERE refinery_level > 0`,
+  );
+  return result.rows;
+}
