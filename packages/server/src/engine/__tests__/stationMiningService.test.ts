@@ -80,6 +80,16 @@ describe('processStationMiningTick', () => {
     expect(broadcastTick).toHaveBeenCalled();
   });
 
+  it('stores the haul into station cargo when the station has no Markt', async () => {
+    q.getAllStationMiningShips.mockResolvedValue([
+      { id: 1, station_id: 'st1', owner_id: 'o1', state: 'returning', x: 6, y: 5, home_x: 5, home_y: 5, target_x: 5, target_y: 5, spiral_step: 10, resources_carried: 20, mined_resource: 'ore' },
+    ]);
+    station.getPlayerStationById.mockResolvedValue({ id: 'st1', owner_id: 'o1', markt_level: 0, cargo_level: 1, cargo_contents: {}, level: 1, trade_volume: 0 });
+    await processStationMiningTick();
+    expect(station.updateStationCargo).toHaveBeenCalledWith('st1', expect.objectContaining({ ore: 20 }));
+    expect(addCredits).not.toHaveBeenCalled();
+  });
+
   it('auto-sells the haul on delivery when the station has a Markt', async () => {
     q.getAllStationMiningShips.mockResolvedValue([
       { id: 1, station_id: 'st1', owner_id: 'o1', state: 'returning', x: 6, y: 5, home_x: 5, home_y: 5, target_x: 5, target_y: 5, spiral_step: 10, resources_carried: 20, mined_resource: 'ore' },
