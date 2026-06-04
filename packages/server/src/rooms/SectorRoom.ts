@@ -164,6 +164,8 @@ import { getDirectTradeService } from '../engine/directTradeService.js';
 import { ensureQuadrantNpcs } from '../engine/npcSpawner.js';
 import { logger } from '../utils/logger.js';
 import { captureError } from '../utils/errorLogTransport.js';
+import { pirateCombatAvoidable } from '../engine/stationPassiveEffects.js';
+import { getPlayerSensorLevelInQuadrant } from '../db/stationQueries.js';
 
 interface SectorRoomOptions {
   quadrantX: number;
@@ -424,12 +426,9 @@ export class SectorRoom extends Room<SectorRoomState> {
           );
         }
 
-        // Auto-start combat v3 if pirate_zone sector
+        // Auto-start combat v3 if pirate_zone sector (sensor may make it optional)
         if (sectorData?.contents?.includes('pirate_zone')) {
-          const pirateLevel = Math.min(10, Math.floor(
-            Math.sqrt(data.sectorX * data.sectorX + data.sectorY * data.sectorY) / 50,
-          ) + 1);
-          await this.combatV3.handleCombatV3Start(client, { npcLevel: pirateLevel });
+          await this.maybeStartPirateCombat(client, data.sectorX, data.sectorY);
         }
 
         // Story trigger + spontaneous encounter
@@ -478,12 +477,9 @@ export class SectorRoom extends Room<SectorRoomState> {
           );
         }
 
-        // Auto-start combat v3 if pirate_zone sector
+        // Auto-start combat v3 if pirate_zone sector (sensor may make it optional)
         if (sectorData?.contents?.includes('pirate_zone')) {
-          const pirateLevel = Math.min(10, Math.floor(
-            Math.sqrt(data.targetX * data.targetX + data.targetY * data.targetY) / 50,
-          ) + 1);
-          await this.combatV3.handleCombatV3Start(client, { npcLevel: pirateLevel });
+          await this.maybeStartPirateCombat(client, data.targetX, data.targetY);
         }
       } catch (err) {
         logger.error({ err }, 'Jump unhandled error');
@@ -1876,6 +1872,28 @@ export class SectorRoom extends Room<SectorRoomState> {
     for (const cb of this.disposeCallbacks) {
       cb();
     }
+  }
+
+  /**
+   * Auto-start pirate_zone combat on sector entry — UNLESS the player owns a sensor
+   * station in this quadrant and the sensor lets them avoid it, in which case the
+   * fight is made optional (the player may still engage via combatV3Start).
+   */
+  private async maybeStartPirateCombat(client: Client, sectorX: number, sectorY: number): Promise<void> {
+    const auth = client.auth as AuthPayload | undefined;
+    const pirateLevel = Math.min(10, Math.floor(
+      Math.sqrt(sectorX * sectorX + sectorY * sectorY) / 50,
+    ) + 1);
+    if (auth?.userId) {
+      const sensorLevel = await getPlayerSensorLevelInQuadrant(
+        auth.userId, this.quadrantX, this.quadrantY,
+      ).catch(() => 0);
+      if (pirateCombatAvoidable(sensorLevel, Math.random())) {
+        client.send('logEntry', 'SENSOR-ARRAY: Piratenzone früh erkannt — du kannst angreifen oder ausweichen.');
+        return;
+      }
+    }
+    await this.combatV3.handleCombatV3Start(client, { npcLevel: pirateLevel });
   }
 
   /** Broadcast current player list to all connected clients */

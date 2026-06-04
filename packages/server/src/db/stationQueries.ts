@@ -1,5 +1,6 @@
 import { query } from './client.js';
-import { STATION_EXPANSION_TYPES, type StationExpansionType } from '@void-sector/shared';
+import { QUADRANT_SIZE, STATION_EXPANSION_TYPES, type StationExpansionType } from '@void-sector/shared';
+
 
 export interface PlayerStationRow {
   id: string;
@@ -264,4 +265,36 @@ export async function getAllPlayerStationsWithRefinery(): Promise<Pick<PlayerSta
     `SELECT owner_id, refinery_level FROM player_stations WHERE refinery_level > 0`,
   );
   return result.rows;
+}
+
+/** Player stations with a refinery — id + cargo for the gas→fuel conversion tick. */
+export async function getRefineryStationsWithCargo(): Promise<
+  Pick<PlayerStationRow, 'id' | 'owner_id' | 'refinery_level' | 'cargo_contents'>[]
+> {
+  const result = await query<Pick<PlayerStationRow, 'id' | 'owner_id' | 'refinery_level' | 'cargo_contents'>>(
+    `SELECT id, owner_id, refinery_level, cargo_contents
+       FROM player_stations WHERE refinery_level > 0`,
+  );
+  return result.rows;
+}
+
+/**
+ * Highest sensor_level among the owner's stations located in quadrant (qx,qy).
+ * Uses the centered quadrant convention: quadrant = FLOOR((sector + half) / size),
+ * matching quadrantEngine.sectorToQuadrant.
+ */
+export async function getPlayerSensorLevelInQuadrant(
+  ownerId: string,
+  qx: number,
+  qy: number,
+): Promise<number> {
+  const half = Math.floor(QUADRANT_SIZE / 2);
+  const result = await query<{ max: number | null }>(
+    `SELECT MAX(sensor_level) AS max FROM player_stations
+       WHERE owner_id = $1
+         AND FLOOR((sector_x + $4) / $5) = $2
+         AND FLOOR((sector_y + $4) / $5) = $3`,
+    [ownerId, qx, qy, half, QUADRANT_SIZE],
+  );
+  return result.rows[0]?.max ?? 0;
 }

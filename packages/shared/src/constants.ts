@@ -153,6 +153,15 @@ export const REFINERY_CREDITS_PER_TICK = 2;
 // Sensor: +1 scan sector per sensor level around the station's quadrant.
 export const SENSOR_SCAN_BONUS_PER_LEVEL = 1;
 
+// Refinery: passive gas → fuel conversion stored in the station's cargo_contents.fuel.
+export const REFINERY_GAS_PER_TICK = 1;   // gas consumed per universe tick per refinery level
+export const REFINERY_FUEL_PER_GAS = 100; // fuel produced per gas consumed
+export const REFINERY_FUEL_MAX = 20000;   // cap on a station's stored fuel
+
+// Sensor: chance that pirate_zone auto-combat is made optional in the sensor station's quadrant.
+export const SENSOR_PIRATE_REDUCTION_PER_LEVEL = 0.15; // per sensor level
+export const SENSOR_PIRATE_REDUCTION_MAX = 0.9;        // cap
+
 // Phase 2 (#549) — mining ships per werft level.
 export const STATION_MINING_SHIPS_PER_WERFT_LEVEL = 1;
 

@@ -26,6 +26,11 @@ import {
   getStationFuelAndGas,
   deductStationFuelStock,
 } from '../../db/npcStationQueries.js';
+import {
+  getPlayerStationAt,
+  updateStationCargo,
+} from '../../db/stationQueries.js';
+import { resolveOwnStationRefuel } from './stationRefuelDecision.js';
 import { getFuelState, saveFuelState } from './RedisAPStore.js';
 import {
   getPlayerCredits,
@@ -263,20 +268,23 @@ export class EconomyService {
       return;
     }
     const auth = client.auth as AuthPayload;
+    const sx = this.ctx._px(client.sessionId);
+    const sy = this.ctx._py(client.sessionId);
+    const ship = this.ctx.getShipForClient(client.sessionId);
+    const currentFuel = (await getFuelState(auth.userId)) ?? 0;
+    const tankSpace = ship.fuelMax - currentFuel;
 
-    // Must be at a station
+    // Must be at an NPC station OR at the player's own station
+    const ownStation = await getPlayerStationAt(sx, sy);
+    const atOwnStation = !!ownStation && ownStation.owner_id === auth.userId;
     const isStation = this.ctx._pst(client.sessionId) === 'station';
-    if (!isStation) {
+    if (!isStation && !atOwnStation) {
       client.send('refuelResult', {
         success: false,
         error: 'Must be at a station to refuel',
       });
       return;
     }
-
-    const ship = this.ctx.getShipForClient(client.sessionId);
-    const currentFuel = (await getFuelState(auth.userId)) ?? 0;
-    const tankSpace = ship.fuelMax - currentFuel;
 
     if (tankSpace <= 0) {
       client.send('refuelResult', { success: false, error: 'Fuel tank is full' });
@@ -285,9 +293,29 @@ export class EconomyService {
 
     const amount = Math.min(data.amount, tankSpace);
 
+    // Free refuel from own station's stored fuel — no credits deducted
+    if (atOwnStation) {
+      const own = resolveOwnStationRefuel(
+        { owner_id: ownStation!.owner_id, cargo_contents: ownStation!.cargo_contents },
+        auth.userId,
+        amount,
+      );
+      if (own.ok) {
+        const newFuel = currentFuel + own.amount;
+        // Deduct the station's fuel first — if this write fails, the ship is not credited.
+        await updateStationCargo(ownStation!.id, { ...ownStation!.cargo_contents, fuel: own.newStationFuel });
+        await saveFuelState(auth.userId, newFuel);
+        client.send('refuelResult', {
+          success: true,
+          fuel: { current: newFuel, max: ship.fuelMax },
+          credits: await getPlayerCredits(auth.userId),
+        });
+        return;
+      }
+    }
+
+    // NPC station refuel path
     // Check station fuel stock — cap fill amount to what the station has available
-    const sx = this.ctx._px(client.sessionId);
-    const sy = this.ctx._py(client.sessionId);
     const { fuel: stationFuel } = await getStationFuelAndGas(sx, sy);
     const availableAmount = Math.min(amount, stationFuel);
     if (availableAmount <= 0) {

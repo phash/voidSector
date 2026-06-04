@@ -3,11 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const getDueStationBuilds = vi.fn();
 const completeStationBuild = vi.fn().mockResolvedValue(undefined);
 const getAllPlayerStationsWithRefinery = vi.fn().mockResolvedValue([]);
+const getRefineryStationsWithCargo = vi.fn().mockResolvedValue([]);
+const updateStationCargo = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../../db/stationQueries.js', () => ({
   getDueStationBuilds: (...a: unknown[]) => getDueStationBuilds(...a),
   completeStationBuild: (...a: unknown[]) => completeStationBuild(...a),
   getAllPlayerStationsWithRefinery: (...a: unknown[]) => getAllPlayerStationsWithRefinery(...a),
+  getRefineryStationsWithCargo: (...a: unknown[]) => getRefineryStationsWithCargo(...a),
+  updateStationCargo: (...a: unknown[]) => updateStationCargo(...a),
 }));
 vi.mock('../../db/queries.js', () => ({
   addCredits: vi.fn().mockResolvedValue(0),
@@ -22,6 +26,8 @@ beforeEach(() => {
   getDueStationBuilds.mockReset();
   completeStationBuild.mockReset().mockResolvedValue(undefined);
   getAllPlayerStationsWithRefinery.mockReset().mockResolvedValue([]);
+  getRefineryStationsWithCargo.mockReset().mockResolvedValue([]);
+  updateStationCargo.mockReset().mockResolvedValue(undefined);
 });
 
 describe('processStationBuildTick', () => {
@@ -51,5 +57,25 @@ describe('processStationBuildTick', () => {
     await processStationBuildTick();
     // s2 still attempted despite s1 throwing
     expect(completeStationBuild).toHaveBeenCalledWith('s2', 'werft');
+  });
+
+  it('refines gas into fuel for stations with a refinery', async () => {
+    getDueStationBuilds.mockResolvedValue([]);
+    getAllPlayerStationsWithRefinery.mockResolvedValue([]);
+    getRefineryStationsWithCargo.mockResolvedValue([
+      { id: 'st1', owner_id: 'o1', refinery_level: 2, cargo_contents: { gas: 10 } },
+    ]);
+    await processStationBuildTick();
+    expect(updateStationCargo).toHaveBeenCalledWith('st1', expect.objectContaining({ gas: 8, fuel: 200 }));
+  });
+
+  it('skips stations whose cargo is unchanged by refining', async () => {
+    getDueStationBuilds.mockResolvedValue([]);
+    getAllPlayerStationsWithRefinery.mockResolvedValue([]);
+    getRefineryStationsWithCargo.mockResolvedValue([
+      { id: 'st1', owner_id: 'o1', refinery_level: 2, cargo_contents: { gas: 0 } },
+    ]);
+    await processStationBuildTick();
+    expect(updateStationCargo).not.toHaveBeenCalled();
   });
 });
