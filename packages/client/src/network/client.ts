@@ -838,20 +838,26 @@ class GameNetwork {
         store.setActionError({ code: 'BUILD_STATION_FAIL', message: data.error });
       }
     });
-    room.onMessage('upgradeStationResult', (data: any) => {
+    room.onMessage('buildStationExpansionResult', (data: any) => {
       const store = useStore.getState();
       if (data.success) {
-        store.addLogEntry('STATION UPGRADED');
+        store.addLogEntry('ERWEITERUNG GESTARTET');
+        if (data.station) {
+          useStore.setState({ playerStationInfo: { ...useStore.getState().playerStationInfo, ...data.station } });
+        }
       } else {
-        store.addLogEntry(`UPGRADE FEHLER: ${data.error}`);
+        store.addLogEntry(`ERWEITERUNG FEHLER: ${data.error ?? data.message ?? 'Unbekannt'}`);
       }
     });
-    room.onMessage('upgradeStationModuleResult', (data: any) => {
+    room.onMessage('stationMarketResult', (data: any) => {
       const store = useStore.getState();
       if (data.success) {
-        store.addLogEntry('MODUL UPGRADED');
+        store.addLogEntry('MARKT-HANDEL ABGESCHLOSSEN');
+        if (data.station) {
+          useStore.setState({ playerStationInfo: { ...useStore.getState().playerStationInfo, ...data.station } });
+        }
       } else {
-        store.addLogEntry(`MODUL FEHLER: ${data.error}`);
+        store.addLogEntry(`MARKT FEHLER: ${data.error ?? data.message ?? 'Unbekannt'}`);
       }
     });
 
@@ -2271,12 +2277,12 @@ class GameNetwork {
     this.sectorRoom?.send('buildStation');
   }
 
-  sendUpgradeStation(stationId: string) {
-    this.sectorRoom?.send('upgradeStation', { stationId });
+  sendBuildStationExpansion(stationId: string, expansionType: string) {
+    this.sectorRoom?.send('buildStationExpansion', { stationId, expansionType });
   }
 
-  sendUpgradeStationModule(stationId: string, module: 'factory' | 'cargo') {
-    this.sectorRoom?.send('upgradeStationModule', { stationId, module });
+  sendStationMarketTrade(stationId: string, action: 'buy' | 'sell', resource: 'ore' | 'gas' | 'crystal', amount: number) {
+    this.sectorRoom?.send('stationMarketTrade', { stationId, action, resource, amount });
   }
 
   requestMyStations() {

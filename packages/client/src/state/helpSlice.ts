@@ -355,6 +355,16 @@ export const HELP_TIPS: HelpTip[] = [
       + '→ [SPRINGEN] zum Reisen\n'
       + '→ Gestrichelte Linien = indirekte Verbindungen',
   },
+  {
+    id: 'first_station_expansions',
+    title: '◈ STATION VERWALTUNG',
+    body: 'Deine Station wächst durch Handel (Betrieb-Punkte).\n\n'
+      + '→ An die Station fliegen, Rohstoffe mitbringen\n'
+      + '→ [BAUEN] startet eine Erweiterung (Rohstoffe + Zeit)\n'
+      + '→ Markt: Ressourcen kaufen/verkaufen wenn MARKT ≥ LV1\n'
+      + '→ Werft (LV1+): schaltet Minenschiffe frei\n'
+      + '→ Immer nur eine Erweiterung gleichzeitig baubar',
+  },
 ];
 
 export interface HelpSlice {

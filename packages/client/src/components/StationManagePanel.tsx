@@ -1,186 +1,267 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useStore } from '../state/store';
 import { network } from '../network/client';
 import {
-  STATION_BUILD_COSTS,
-  STATION_MODULE_UPGRADE_COST,
+  STATION_EXPANSION_TYPES,
+  expansionCost,
+  STATION_TIER_THRESHOLDS,
+  stationCargoCapacity,
   MAX_STATION_LEVEL,
 } from '@void-sector/shared';
-import type { PlayerStation } from '@void-sector/shared';
 
 interface Props {
-  station: PlayerStation;
+  station: any;
 }
 
-function formatCosts(costs: { credits: number; crystal: number; artefact: number }): string {
-  return `${costs.credits} CR · ${costs.crystal} CRYSTAL · ${costs.artefact} ARTEFAKT`;
+const EXPANSION_LABELS: Record<string, string> = {
+  factory:  'Fabrik',
+  cargo:    'Lager',
+  markt:    'Markt',
+  werft:    'Werft',
+  refinery: 'Raffinerie',
+  sensor:   'Sensor',
+};
+
+function formatCost(cost: ReturnType<typeof expansionCost>): string {
+  const parts: string[] = [];
+  if (cost.ore > 0)      parts.push(`${cost.ore} ORE`);
+  if (cost.gas > 0)      parts.push(`${cost.gas} GAS`);
+  if (cost.crystal > 0)  parts.push(`${cost.crystal} CRYSTAL`);
+  if (cost.credits > 0)  parts.push(`${cost.credits} CR`);
+  if (cost.artefact > 0) parts.push(`${cost.artefact} ART`);
+  return parts.join(' · ');
+}
+
+function useCountdown(buildCompleteAt: string | null): string {
+  const [remaining, setRemaining] = useState('');
+  useEffect(() => {
+    if (!buildCompleteAt) { setRemaining(''); return; }
+    const update = () => {
+      const ms = Date.parse(buildCompleteAt) - Date.now();
+      if (ms <= 0) { setRemaining('FERTIG'); return; }
+      const secs = Math.ceil(ms / 1000);
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      setRemaining(`${m}:${String(s).padStart(2, '0')}`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [buildCompleteAt]);
+  return remaining;
+}
+
+function BuildInProgress({ station }: { station: any }) {
+  const countdown = useCountdown(station.build_complete_at);
+  const label = EXPANSION_LABELS[station.building_expansion] ?? station.building_expansion;
+  return (
+    <div style={{
+      margin: '6px 0',
+      padding: '4px 6px',
+      border: '1px solid rgba(255,176,0,0.4)',
+      background: 'rgba(255,176,0,0.06)',
+    }}>
+      <span style={{ color: '#FFB000' }}>⚙ {label.toUpperCase()} BAUT</span>
+      {' — '}
+      <span style={{ color: '#00BFFF' }}>{countdown}</span>
+    </div>
+  );
+}
+
+function BetriebBar({ station }: { station: any }) {
+  const volume: number = station.trade_volume ?? 0;
+  const stationLevel: number = station.level ?? 1;
+
+  // Find the threshold for the next tier above current station level
+  const nextThreshold = stationLevel < MAX_STATION_LEVEL
+    ? STATION_TIER_THRESHOLDS[stationLevel] ?? null  // index = current level (0-based: threshold[stationLevel] is for level stationLevel+1)
+    : null;
+
+  const currentThreshold = STATION_TIER_THRESHOLDS[stationLevel - 1] ?? 0;
+  const progress = nextThreshold != null && nextThreshold > currentThreshold
+    ? Math.min(1, (volume - currentThreshold) / (nextThreshold - currentThreshold))
+    : 1;
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ color: '#888', fontSize: '0.6rem', letterSpacing: '0.08em', marginBottom: 2 }}>
+        BETRIEB
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ color: '#00FF88', minWidth: 50 }}>{volume.toLocaleString()}</span>
+        <div style={{ flex: 1, height: 4, background: 'rgba(0,255,136,0.15)' }}>
+          <div style={{ height: '100%', width: `${progress * 100}%`, background: '#00FF88' }} />
+        </div>
+        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.55rem' }}>
+          {nextThreshold != null ? `→ ${nextThreshold.toLocaleString()}` : 'MAX'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function StationMarketSection({ station }: { station: any }) {
+  const [amounts, setAmounts] = useState<Record<string, number>>({ ore: 1, gas: 1, crystal: 1 });
+  const resources = ['ore', 'gas', 'crystal'] as const;
+  const capacity = stationCargoCapacity(station.cargo_level ?? 0);
+  const contents: Record<string, number> = station.cargo_contents ?? {};
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ color: '#FFB000', fontSize: '0.6rem', letterSpacing: '0.1em', marginBottom: 4 }}>
+        ─── MARKT ───
+      </div>
+      <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>
+        Kapazität: {Object.values(contents).reduce((a, b) => a + b, 0)}/{capacity}
+      </div>
+      {resources.map((res) => (
+        <div key={res} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4, flexWrap: 'wrap' }}>
+          <span style={{ color: '#888', minWidth: 42, fontSize: '0.65rem' }}>{res.toUpperCase()}</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem', minWidth: 28 }}>
+            [{contents[res] ?? 0}]
+          </span>
+          <input
+            type="number"
+            min={1}
+            value={amounts[res]}
+            onChange={(e) => setAmounts((prev) => ({ ...prev, [res]: Math.max(1, parseInt(e.target.value, 10) || 1) }))}
+            style={{
+              width: 40,
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(255,176,0,0.3)',
+              color: '#FFB000',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.6rem',
+              padding: '1px 3px',
+              textAlign: 'center',
+            }}
+          />
+          <button
+            className="vs-btn"
+            style={{ fontSize: '0.55rem' }}
+            onClick={() => network.sendStationMarketTrade(station.id, 'buy', res, amounts[res])}
+          >
+            [KAUFEN]
+          </button>
+          <button
+            className="vs-btn"
+            style={{ fontSize: '0.55rem' }}
+            onClick={() => network.sendStationMarketTrade(station.id, 'sell', res, amounts[res])}
+          >
+            [VERKAUFEN]
+          </button>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function StationManagePanel({ station }: Props) {
-  const [confirmUpgrade, setConfirmUpgrade] = useState<string | null>(null);
+  const showTip = useStore((s) => s.showTip);
 
-  // Reset confirm on station change
+  // Show help tip on first visit
   useEffect(() => {
-    setConfirmUpgrade(null);
-  }, [station.level, station.factoryLevel, station.cargoLevel]);
+    showTip('first_station_expansions');
+  }, [showTip]);
 
-  const canUpgradeStation = station.level < MAX_STATION_LEVEL;
-  const nextStationCosts = canUpgradeStation
-    ? STATION_BUILD_COSTS[(station.level + 1) as keyof typeof STATION_BUILD_COSTS]
-    : null;
+  const stationLevel: number = station.level ?? 1;
+  const buildingExpansion: string | null = station.building_expansion ?? null;
 
-  const canUpgradeFactory = station.factoryLevel < station.level;
-  const nextFactoryCost = canUpgradeFactory ? STATION_MODULE_UPGRADE_COST(station.factoryLevel + 1) : 0;
-
-  const canUpgradeCargo = station.cargoLevel < station.level;
-  const nextCargoCost = canUpgradeCargo ? STATION_MODULE_UPGRADE_COST(station.cargoLevel + 1) : 0;
-
-  const handleUpgrade = (key: string, action: () => void) => {
-    if (confirmUpgrade === key) {
-      action();
-      setConfirmUpgrade(null);
-    } else {
-      setConfirmUpgrade(key);
-    }
-  };
+  const handleBuild = useCallback((type: string) => {
+    network.sendBuildStationExpansion(station.id, type);
+  }, [station.id]);
 
   return (
     <div style={{ padding: '8px 0', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-      <div style={{ letterSpacing: '0.1em', opacity: 0.6, marginBottom: 6 }}>
-        ─── STATION VERWALTUNG ───
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <span style={{ letterSpacing: '0.1em', opacity: 0.6 }}>─── STATION VERWALTUNG ───</span>
+        <button
+          onClick={() => showTip('first_station_expansions')}
+          style={{
+            background: 'none',
+            border: '1px solid var(--color-dim)',
+            color: 'var(--color-dim)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.65rem',
+            padding: '0 4px',
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+          title="Hilfe"
+        >[?]</button>
       </div>
 
-      {/* Station Level */}
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ color: '#FFB000', marginBottom: 4 }}>
-          STATION LEVEL: {station.level}/{MAX_STATION_LEVEL}
-        </div>
-        <div style={{
-          height: 4,
-          background: 'rgba(255,176,0,0.15)',
-          marginBottom: 4,
-        }}>
-          <div style={{
-            height: '100%',
-            width: `${(station.level / MAX_STATION_LEVEL) * 100}%`,
-            background: '#FFB000',
-          }} />
-        </div>
-        {canUpgradeStation && nextStationCosts && (
-          <button
-            className="vs-btn"
-            style={{
-              fontSize: '0.65rem',
-              borderColor: confirmUpgrade === 'station' ? '#00FF88' : undefined,
-              color: confirmUpgrade === 'station' ? '#00FF88' : undefined,
-            }}
-            onClick={() => handleUpgrade('station', () => network.sendUpgradeStation(station.id))}
-          >
-            {confirmUpgrade === 'station'
-              ? `[BESTÄTIGEN — ${formatCosts(nextStationCosts)}]`
-              : `[UPGRADE → LV${station.level + 1}] ${formatCosts(nextStationCosts)}`}
-          </button>
-        )}
-        {!canUpgradeStation && (
-          <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.6rem' }}>MAX LEVEL</div>
-        )}
+      {/* Station tier */}
+      <div style={{ color: '#FFB000', marginBottom: 6, fontSize: '0.65rem' }}>
+        STATION STUFE: {stationLevel}/{MAX_STATION_LEVEL}
       </div>
 
-      {/* Factory Module */}
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ color: '#00BFFF', marginBottom: 4 }}>
-          FACTORY: LV {station.factoryLevel}/{station.level}
-        </div>
-        {station.factoryLevel > 0 && (
-          <div style={{
-            height: 3,
-            background: 'rgba(0,191,255,0.15)',
-            marginBottom: 4,
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${(station.factoryLevel / station.level) * 100}%`,
-              background: '#00BFFF',
-            }} />
-          </div>
-        )}
-        {canUpgradeFactory && (
-          <button
-            className="vs-btn"
-            style={{
-              fontSize: '0.65rem',
-              borderColor: confirmUpgrade === 'factory' ? '#00FF88' : undefined,
-              color: confirmUpgrade === 'factory' ? '#00FF88' : undefined,
-            }}
-            onClick={() => handleUpgrade('factory', () =>
-              network.sendUpgradeStationModule(station.id, 'factory'),
+      {/* Betrieb bar */}
+      <BetriebBar station={station} />
+
+      {/* Build in progress */}
+      {buildingExpansion && <BuildInProgress station={station} />}
+
+      {/* Expansion list */}
+      <div style={{ marginBottom: 4, color: '#888', fontSize: '0.6rem', letterSpacing: '0.08em' }}>
+        ERWEITERUNGEN
+      </div>
+      {STATION_EXPANSION_TYPES.map((type) => {
+        const currentLevel: number = station[`${type}_level`] ?? 0;
+        const nextLevel = currentLevel + 1;
+        const tierLocked = nextLevel > stationLevel;
+        const atMax = currentLevel >= 5;
+        const busy = buildingExpansion !== null;
+        const cost = !atMax ? expansionCost(type, nextLevel) : null;
+
+        return (
+          <div key={type} style={{ marginBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2, flexWrap: 'wrap' }}>
+              <span style={{ color: '#00BFFF', minWidth: 70 }}>{EXPANSION_LABELS[type]}</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.6rem' }}>
+                LV {currentLevel}/5
+              </span>
+              {!atMax && cost && (
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.55rem', flex: 1 }}>
+                  {formatCost(cost)}
+                </span>
+              )}
+            </div>
+            {atMax && (
+              <div style={{ color: 'rgba(0,191,255,0.4)', fontSize: '0.6rem' }}>MAX</div>
             )}
-          >
-            {confirmUpgrade === 'factory'
-              ? `[BESTÄTIGEN — ${nextFactoryCost} CR]`
-              : `[UPGRADE → LV${station.factoryLevel + 1}] ${nextFactoryCost} CR`}
-          </button>
-        )}
-        {!canUpgradeFactory && station.factoryLevel > 0 && (
-          <div style={{ color: 'rgba(0,191,255,0.4)', fontSize: '0.6rem' }}>
-            STATION LEVEL ERHÖHEN FÜR WEITERES UPGRADE
-          </div>
-        )}
-        {station.factoryLevel === 0 && !canUpgradeFactory && (
-          <div style={{ color: 'rgba(0,191,255,0.4)', fontSize: '0.6rem' }}>
-            STATION LEVEL ERHÖHEN UM FACTORY FREIZUSCHALTEN
-          </div>
-        )}
-      </div>
-
-      {/* Cargo Module */}
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ color: '#00FF88', marginBottom: 4 }}>
-          CARGO: LV {station.cargoLevel}/{station.level}
-        </div>
-        {station.cargoLevel > 0 && (
-          <div style={{
-            height: 3,
-            background: 'rgba(0,255,136,0.15)',
-            marginBottom: 4,
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${(station.cargoLevel / station.level) * 100}%`,
-              background: '#00FF88',
-            }} />
-          </div>
-        )}
-        {canUpgradeCargo && (
-          <button
-            className="vs-btn"
-            style={{
-              fontSize: '0.65rem',
-              borderColor: confirmUpgrade === 'cargo' ? '#00FF88' : undefined,
-              color: confirmUpgrade === 'cargo' ? '#00FF88' : undefined,
-            }}
-            onClick={() => handleUpgrade('cargo', () =>
-              network.sendUpgradeStationModule(station.id, 'cargo'),
+            {!atMax && tierLocked && (
+              <div style={{ color: 'rgba(255,176,0,0.4)', fontSize: '0.6rem' }}>
+                STATION STUFE {nextLevel} NÖTIG
+              </div>
             )}
-          >
-            {confirmUpgrade === 'cargo'
-              ? `[BESTÄTIGEN — ${nextCargoCost} CR]`
-              : `[UPGRADE → LV${station.cargoLevel + 1}] ${nextCargoCost} CR`}
-          </button>
-        )}
-        {!canUpgradeCargo && station.cargoLevel > 0 && (
-          <div style={{ color: 'rgba(0,255,136,0.4)', fontSize: '0.6rem' }}>
-            STATION LEVEL ERHÖHEN FÜR WEITERES UPGRADE
+            {!atMax && !tierLocked && (
+              <button
+                className="vs-btn"
+                style={{
+                  fontSize: '0.6rem',
+                  opacity: busy ? 0.4 : 1,
+                  cursor: busy ? 'not-allowed' : 'pointer',
+                }}
+                disabled={busy}
+                onClick={() => handleBuild(type)}
+                title={busy ? 'Station baut bereits eine Erweiterung' : undefined}
+              >
+                [BAUEN → LV{nextLevel}]
+              </button>
+            )}
           </div>
-        )}
-        {station.cargoLevel === 0 && !canUpgradeCargo && (
-          <div style={{ color: 'rgba(0,255,136,0.4)', fontSize: '0.6rem' }}>
-            STATION LEVEL ERHÖHEN UM CARGO FREIZUSCHALTEN
-          </div>
-        )}
-      </div>
+        );
+      })}
 
-      <div style={{ fontSize: '0.55rem', color: 'rgba(255,176,0,0.3)', marginTop: 4 }}>
-        Sektor ({station.sectorX}, {station.sectorY}) · Quadrant ({station.quadrantX}:{station.quadrantY})
+      {/* Market section (markt_level >= 1) */}
+      {(station.markt_level ?? 0) >= 1 && (
+        <StationMarketSection station={station} />
+      )}
+
+      <div style={{ fontSize: '0.55rem', color: 'rgba(255,176,0,0.3)', marginTop: 6 }}>
+        Sektor ({station.sectorX ?? station.sector_x}, {station.sectorY ?? station.sector_y})
       </div>
     </div>
   );
