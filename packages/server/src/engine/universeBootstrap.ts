@@ -11,6 +11,7 @@ import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
 import { processCivTick } from './civShipService.js';
 import { processConstructionTick } from './constructionTickService.js';
 import { processStationBuildTick } from './stationBuildTick.js';
+import { processStationMiningTick } from './stationMiningService.js';
 import { runStationFuelProductionTick } from './stationFuelEngine.js';
 
 dotenv.config();
@@ -56,6 +57,7 @@ export async function startUniverseEngine(): Promise<void> {
     // await processCivTick();
     await processConstructionTick();
     await processStationBuildTick();
+    await processStationMiningTick();
 
     // Fuel production tick (every 10 s) — must come BEFORE strategic tick early-return guard
     if (result.tickCount % FUEL_PRODUCTION_TICK_INTERVAL === 0) {

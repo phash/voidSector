@@ -33,6 +33,7 @@ export const WORLD_RESET_TABLES = [
   'drone_missions',
   'drone_routes',
   'player_drones',
+  'station_mining_ships',
   'player_stations',
   // economy / trade
   'trade_orders',
