@@ -168,6 +168,7 @@ import {
   addToInventory,
   removeFromInventory,
   getInventoryItem,
+  canAddResource,
 } from '../../engine/inventoryService.js';
 import {
   getPlayerKnownQuadrants,
@@ -641,6 +642,22 @@ export class WorldService {
       return;
     }
 
+    // Buy: ensure the player's ship has cargo space before anything is charged/granted.
+    if (decision.resourceToPlayer > 0) {
+      const space = await canAddResource(auth.userId, decision.resourceToPlayer);
+      if (!space) {
+        client.send('error', { code: 'CARGO_FULL', message: 'Nicht genug Frachtraum im Schiff' });
+        return;
+      }
+    }
+    // Charge credits first (atomic guard) so a failed payment never grants free resources.
+    if (decision.creditsFromPlayer > 0) {
+      const paid = await deductCredits(auth.userId, decision.creditsFromPlayer);
+      if (!paid) {
+        client.send('error', { code: 'INSUFFICIENT', message: 'Nicht genug Credits' });
+        return;
+      }
+    }
     if (decision.resourceFromPlayer > 0) {
       await removeFromInventory(auth.userId, 'resource', data.resource, decision.resourceFromPlayer);
     }
@@ -648,7 +665,6 @@ export class WorldService {
       await addToInventory(auth.userId, 'resource', data.resource, decision.resourceToPlayer);
     }
     if (decision.creditsToPlayer > 0) await addCredits(auth.userId, decision.creditsToPlayer);
-    if (decision.creditsFromPlayer > 0) await deductCredits(auth.userId, decision.creditsFromPlayer);
     await updateStationCargoContents(data.stationId, decision.newStationContents);
 
     const updated = await addTradeVolume(data.stationId, decision.volume);

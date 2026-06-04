@@ -44,6 +44,7 @@ export function resolveMarketTrade(
   const levelBonus = MARKT_SPREAD_PER_LEVEL * station.markt_level;
   const sellPrice = base * (NPC_SELL_SPREAD + levelBonus);
   const buyPrice = base * Math.max(1, NPC_BUY_SPREAD - levelBonus);
+  const safeSellPrice = Math.min(sellPrice, buyPrice);
   const cap = stationCargoCapacity(station.cargo_level);
   const have = station.cargo_contents[req.resource] ?? 0;
   const contents = { ...station.cargo_contents };
@@ -55,7 +56,7 @@ export function resolveMarketTrade(
     contents[req.resource] = have + req.amount;
     return {
       ok: true,
-      creditsToPlayer: Math.round(sellPrice * req.amount),
+      creditsToPlayer: Math.round(safeSellPrice * req.amount),
       creditsFromPlayer: 0,
       volume: tradeVolumeDelta(req.resource, req.amount),
       newStationContents: contents,

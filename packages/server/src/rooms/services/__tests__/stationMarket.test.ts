@@ -38,4 +38,31 @@ describe('resolveMarketTrade', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.code).toBe('NO_MARKET');
   });
+
+  it('buy: reduces station stock and charges the expected amount', () => {
+    const stocked = { markt_level: 2, cargo_level: 2, cargo_contents: { crystal: 100 } };
+    const r = resolveMarketTrade(stocked, { action: 'buy', resource: 'crystal', amount: 5 }, { cargoAmount: 0, credits: 100000 });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.newStationContents.crystal).toBe(95);
+      expect(r.creditsFromPlayer).toBeGreaterThan(0);
+    }
+  });
+
+  it('buy: rejects when the player cannot afford it', () => {
+    const stocked = { markt_level: 1, cargo_level: 2, cargo_contents: { crystal: 100 } };
+    const r = resolveMarketTrade(stocked, { action: 'buy', resource: 'crystal', amount: 5 }, { cargoAmount: 0, credits: 1 });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe('INSUFFICIENT');
+  });
+
+  it('never lets sell price exceed buy price (no arbitrage at any level)', () => {
+    for (let lvl = 1; lvl <= 5; lvl++) {
+      const st = { markt_level: lvl, cargo_level: 5, cargo_contents: { ore: 0 } };
+      const sell = resolveMarketTrade(st, { action: 'sell', resource: 'ore', amount: 100 }, { cargoAmount: 1000, credits: 0 });
+      const buy = resolveMarketTrade({ ...st, cargo_contents: { ore: 1000 } }, { action: 'buy', resource: 'ore', amount: 100 }, { cargoAmount: 0, credits: 1_000_000 });
+      expect(sell.ok && buy.ok).toBe(true);
+      if (sell.ok && buy.ok) expect(sell.creditsToPlayer).toBeLessThanOrEqual(buy.creditsFromPlayer);
+    }
+  });
 });
