@@ -34,6 +34,29 @@ export declare const STATION_BUILD_COSTS: Record<number, {
     artefact: number;
 }>;
 export declare const STATION_MODULE_UPGRADE_COST: (level: number) => number;
+export declare const STATION_TIER_THRESHOLDS: readonly [0, 1000, 4000, 12000, 30000];
+export declare function stationTierForVolume(volume: number): number;
+export type StationExpansionType = 'factory' | 'cargo' | 'markt' | 'werft' | 'refinery' | 'sensor';
+export declare const STATION_EXPANSION_TYPES: StationExpansionType[];
+export interface ExpansionResourceCost {
+    ore: number;
+    gas: number;
+    crystal: number;
+    credits: number;
+    artefact: number;
+}
+/** Base cost for level 1; expansionCost() scales by target level. */
+export declare const STATION_EXPANSION_BASE_COSTS: Record<StationExpansionType, ExpansionResourceCost>;
+export declare function expansionCost(type: StationExpansionType, targetLevel: number): ExpansionResourceCost;
+/** Build time for reaching targetLevel of any expansion. */
+export declare const STATION_EXPANSION_BUILD_TIME_MS: (targetLevel: number) => number;
+export declare const STATION_CARGO_BASE = 200;
+export declare const STATION_CARGO_PER_LEVEL = 300;
+export declare function stationCargoCapacity(cargoLevel: number): number;
+export declare const MARKT_SPREAD_PER_LEVEL = 0.04;
+export declare const REFINERY_CREDITS_PER_TICK = 2;
+export declare const SENSOR_SCAN_BONUS_PER_LEVEL = 1;
+export declare const STATION_MINING_SHIPS_PER_WERFT_LEVEL = 1;
 export declare const PRODUCTION_BASE_TIME_MS = 60000;
 export declare const PRODUCTION_TIER_COST_FACTOR = 2;
 export declare const PRODUCTION_MAX_QUEUE = 9;

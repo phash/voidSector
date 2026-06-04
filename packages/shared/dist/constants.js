@@ -58,6 +58,56 @@ export const STATION_BUILD_COSTS = {
     5: { credits: 8000, crystal: 80, artefact: 16 },
 };
 export const STATION_MODULE_UPGRADE_COST = (level) => 200 * level * level;
+// ── Station tiers (Betrieb-driven growth) ──────────────────────────────
+// trade_volume thresholds; index = tier-1. Station level auto-rises to the
+// highest tier whose threshold the volume meets.
+export const STATION_TIER_THRESHOLDS = [0, 1000, 4000, 12000, 30000];
+export function stationTierForVolume(volume) {
+    let tier = 1;
+    for (let i = 0; i < STATION_TIER_THRESHOLDS.length; i++) {
+        if (volume >= STATION_TIER_THRESHOLDS[i])
+            tier = i + 1;
+    }
+    return Math.min(tier, MAX_STATION_LEVEL);
+}
+export const STATION_EXPANSION_TYPES = [
+    'factory', 'cargo', 'markt', 'werft', 'refinery', 'sensor',
+];
+/** Base cost for level 1; expansionCost() scales by target level. */
+export const STATION_EXPANSION_BASE_COSTS = {
+    factory: { ore: 20, gas: 10, crystal: 15, credits: 200, artefact: 0 },
+    cargo: { ore: 30, gas: 5, crystal: 5, credits: 100, artefact: 0 },
+    markt: { ore: 15, gas: 20, crystal: 10, credits: 300, artefact: 0 },
+    werft: { ore: 40, gas: 20, crystal: 25, credits: 400, artefact: 2 },
+    refinery: { ore: 25, gas: 30, crystal: 10, credits: 250, artefact: 0 },
+    sensor: { ore: 20, gas: 15, crystal: 20, credits: 250, artefact: 1 },
+};
+export function expansionCost(type, targetLevel) {
+    const b = STATION_EXPANSION_BASE_COSTS[type];
+    return {
+        ore: b.ore * targetLevel,
+        gas: b.gas * targetLevel,
+        crystal: b.crystal * targetLevel,
+        credits: b.credits * targetLevel,
+        artefact: b.artefact * targetLevel,
+    };
+}
+/** Build time for reaching targetLevel of any expansion. */
+export const STATION_EXPANSION_BUILD_TIME_MS = (targetLevel) => 60_000 * targetLevel;
+// Station cargo (resource storage) capacity by cargo_level.
+export const STATION_CARGO_BASE = 200;
+export const STATION_CARGO_PER_LEVEL = 300;
+export function stationCargoCapacity(cargoLevel) {
+    return STATION_CARGO_BASE + cargoLevel * STATION_CARGO_PER_LEVEL;
+}
+// Markt: each level improves the trade spread in the player's favour.
+export const MARKT_SPREAD_PER_LEVEL = 0.04;
+// Refinery: credits trickle per universe tick per refinery level.
+export const REFINERY_CREDITS_PER_TICK = 2;
+// Sensor: +1 scan sector per sensor level around the station's quadrant.
+export const SENSOR_SCAN_BONUS_PER_LEVEL = 1;
+// Phase 2 (#549) — mining ships per werft level.
+export const STATION_MINING_SHIPS_PER_WERFT_LEVEL = 1;
 // Station production
 export const PRODUCTION_BASE_TIME_MS = 60_000; // 60s base per item
 export const PRODUCTION_TIER_COST_FACTOR = 2; // cost multiplier per tier above factory level
