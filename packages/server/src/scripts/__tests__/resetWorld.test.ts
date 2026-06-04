@@ -48,4 +48,8 @@ describe('resetWorld table lists', () => {
     const idx = (t: string) => WORLD_RESET_TABLES.indexOf(t);
     expect(idx('quadrant_control')).toBeLessThan(idx('void_clusters'));
   });
+
+  it('wipes player-station mining ships', () => {
+    expect(WORLD_RESET_TABLES).toContain('station_mining_ships');
+  });
 });

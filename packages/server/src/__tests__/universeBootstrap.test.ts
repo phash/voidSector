@@ -55,6 +55,10 @@ vi.mock('../engine/stationBuildTick.js', () => ({
   processStationBuildTick: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../engine/stationMiningService.js', () => ({
+  processStationMiningTick: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('ioredis', () => ({
   default: vi.fn().mockImplementation(() => ({
     lpush: vi.fn(),
