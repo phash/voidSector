@@ -286,6 +286,11 @@ export function CargoScreen() {
                     }
                     if (targetSlot >= 0) {
                       network.sendInstallModule(ship.id, item.itemId, targetSlot);
+                    } else {
+                      useStore.getState().setActionError({
+                        code: 'NO_SLOT',
+                        message: 'Kein passender Slot frei',
+                      });
                     }
                   }}
                 >

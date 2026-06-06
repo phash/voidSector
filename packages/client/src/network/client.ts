@@ -629,13 +629,18 @@ class GameNetwork {
     });
 
     room.onMessage('moduleInstalled', (data: { modules: any[]; stats: any }) => {
-      const ship = useStore.getState().ship;
+      const store = useStore.getState();
+      const ship = store.ship;
       if (ship) {
         useStore.setState({
           ship: { ...ship, modules: data.modules, stats: data.stats },
         });
       }
       this.sendGetModuleInventory();
+      // Refresh the unified inventory too, so the installed module disappears
+      // from the CARGO module list (#521).
+      this.sectorRoom?.send('getInventory');
+      store.showSuccessToast('Modul installiert');
     });
 
     room.onMessage(
@@ -926,9 +931,11 @@ class GameNetwork {
     room.onMessage('transferResult', (data: { success: boolean; error?: string }) => {
       const store = useStore.getState();
       if (data.success) {
-        store.addLogEntry('Transfer complete');
+        store.addLogEntry('Transfer abgeschlossen');
+        store.showSuccessToast('Transfer abgeschlossen');
       } else {
-        store.addLogEntry(`Transfer failed: ${data.error}`);
+        store.addLogEntry(`Transfer fehlgeschlagen: ${data.error}`);
+        store.setActionError({ code: 'TRANSFER_FAIL', message: data.error ?? 'Transfer fehlgeschlagen' });
       }
     });
 

@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { btn } from '../ui-helpers';
 import { InlineError } from './InlineError';
 import { StationTradeTab } from './StationTradeTab';
+import { LagerPanel } from './LagerPanel';
 import { findNearestStation } from '../utils/sectorUtils';
 
 const btnStyle: React.CSSProperties = {
@@ -55,7 +56,7 @@ export function TradeScreen() {
   const tradeMessage = useStore((s) => s.tradeMessage);
   const setTradeMessage = useStore((s) => s.setTradeMessage);
   const [amount, setAmount] = useState(1);
-  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor'>('npc');
+  const [tab, setTab] = useState<'npc' | 'market' | 'slates' | 'routes' | 'kontor' | 'lager'>('npc');
   const [npcSubTab, setNpcSubTab] = useState<'resources' | 'modules'>('resources');
 
   const tradingPost = baseStructures.find((s: any) => s.type === 'trading_post');
@@ -144,6 +145,11 @@ export function TradeScreen() {
         <button style={tabStyle(tab === 'npc')} onClick={() => setTab('npc')}>
           {isStation ? 'KONTOR' : `NPC ${t('tabs.trade')}`}
         </button>
+        {!isStation && (
+          <button style={tabStyle(tab === 'lager')} onClick={() => setTab('lager')}>
+            LAGER
+          </button>
+        )}
         {/* MARKET + KONTOR tabs hidden for launch (#525): server has no placeOrder/
             kontor handlers, so the lists never populate. Re-enable once wired. */}
         {!isStation && tier >= 2 && (
@@ -192,6 +198,8 @@ export function TradeScreen() {
       )}
 
       {tab === 'npc' && <StationTradeTab />}
+
+      {tab === 'lager' && !isStation && <LagerPanel />}
 
       {/* OLD NPC TAB — replaced by StationTradeTab */}
       {false && (

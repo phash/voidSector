@@ -170,6 +170,7 @@ import {
   getInventoryItem,
   canAddResource,
 } from '../../engine/inventoryService.js';
+import { resolveTransfer } from './transferDecision.js';
 import {
   getPlayerKnownQuadrants,
   addPlayerKnownQuadrant,
@@ -268,6 +269,42 @@ export class WorldService {
     const auth = client.auth as AuthPayload;
     const storage = await getStorageInventory(auth.userId);
     client.send('storageUpdate', storage);
+  }
+
+  async handleTransfer(
+    client: Client,
+    data: { resource: string; amount: number; direction: 'toStorage' | 'fromStorage' },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const { resource, amount, direction } = data ?? {};
+
+    const [cargo, storage, hasSpace] = await Promise.all([
+      getCargoState(auth.userId),
+      getStorageInventory(auth.userId),
+      canAddResource(auth.userId, amount),
+    ]);
+
+    const shipAmount = (cargo as Record<string, number>)[resource] ?? 0;
+    const storageAmount = (storage as Record<string, number>)[resource] ?? 0;
+    const decision = resolveTransfer(direction, resource, amount, shipAmount, storageAmount, hasSpace);
+
+    if (!decision.ok) {
+      client.send('transferResult', { success: false, error: decision.message });
+      return;
+    }
+
+    // Take before give: remove from source first, then add to destination.
+    if (direction === 'toStorage') {
+      await removeFromInventory(auth.userId, 'resource', resource, amount);
+      await updateStorageResource(auth.userId, resource, amount);
+    } else {
+      await updateStorageResource(auth.userId, resource, -amount);
+      await addToInventory(auth.userId, 'resource', resource, amount);
+    }
+
+    client.send('transferResult', { success: true });
+    client.send('storageUpdate', await getStorageInventory(auth.userId));
+    client.send('cargoUpdate', await getCargoState(auth.userId));
   }
 
   async handleGetTradeOrders(client: Client): Promise<void> {

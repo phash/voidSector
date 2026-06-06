@@ -10,6 +10,15 @@ export interface HelpTip {
 
 export const HELP_TIPS: HelpTip[] = [
   {
+    id: 'first_lager',
+    title: '◈ LAGER (TRESOR)',
+    body:
+      'Dein persönliches Lager am Heimat-Stützpunkt — unabhängig vom Frachtraum.\n\n' +
+      '→ [→ Lager] legt Ressourcen aus dem Schiff ein\n' +
+      '→ [→ Schiff] holt sie zurück (braucht freien Frachtraum)\n' +
+      '→ Handelsrouten kaufen/verkaufen aus diesem Lager',
+  },
+  {
     id: 'first_tech_tab',
     title: 'TECH-BAUM',
     body: 'Im TECH-Tab schaltest du Forschungsknoten mit Wissen frei. Höhere Stufen brauchen Voraussetzungen → erst Basis-Knoten, dann Spezialisierung freischalten.',
