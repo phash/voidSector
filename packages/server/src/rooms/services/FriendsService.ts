@@ -5,6 +5,7 @@ import type { FriendEntry, FriendRequestEntry, BlockEntry, PlayerCardData } from
 import { friendQueries } from '../../db/friendQueries.js';
 import { friendsBus } from '../../friendsBus.js';
 import { logger } from '../../utils/logger.js';
+import { getPlayerPosition } from './RedisAPStore.js';
 import Redis from 'ioredis';
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
@@ -146,12 +147,13 @@ export class FriendsService {
       return;
     }
 
-    const [isFriend, isBlocked, pendingSent, pendingReceived, isOnline] = await Promise.all([
+    const [isFriend, isBlocked, pendingSent, pendingReceived, isOnline, position] = await Promise.all([
       friendQueries.isFriend(auth.userId, targetId),
       friendQueries.isBlocked(auth.userId, targetId),
       friendQueries.hasPendingRequest(auth.userId, targetId),
       friendQueries.hasPendingRequest(targetId, auth.userId),
       redis.sismember('online_players', targetId),
+      getPlayerPosition(targetId),
     ]);
 
     const data: PlayerCardData = {
@@ -159,7 +161,7 @@ export class FriendsService {
       name: player.username,
       level: player.level,
       online: isOnline === 1,
-      position: null,
+      position,
       isFriend,
       isBlocked,
       pendingDirection: pendingSent ? 'sent' : pendingReceived ? 'received' : null,

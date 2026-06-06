@@ -10,6 +10,12 @@ export interface HelpTip {
 
 export const HELP_TIPS: HelpTip[] = [
   {
+    id: 'first_tech_tab',
+    title: 'TECH-BAUM',
+    body: 'Im TECH-Tab schaltest du Forschungsknoten mit Wissen frei. Höhere Stufen brauchen Voraussetzungen → erst Basis-Knoten, dann Spezialisierung freischalten.',
+    articleId: 'tech-tree',
+  },
+  {
     id: 'first_login',
     title: 'WILLKOMMEN AN BORD',
     body: 'Klicke auf eine Zelle im Radar-Grid um einen Sektor auszuwählen. Doppelklick zentriert die Ansicht. Scroll-Rad ändert den Zoom-Level.',

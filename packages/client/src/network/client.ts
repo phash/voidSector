@@ -685,25 +685,6 @@ class GameNetwork {
       }
     });
 
-    room.onMessage('researchResult_legacy', (data) => {
-      if (data.success) {
-        const current = useStore.getState().research;
-        const patch: any = {};
-        if (data.unlockedModules !== undefined) {
-          patch.research = {
-            ...current,
-            unlockedModules: data.unlockedModules,
-            blueprints: data.blueprints ?? current.blueprints,
-            wissen: data.wissen !== undefined ? data.wissen : current.wissen,
-          };
-        }
-        if (data.activated) {
-          patch.pendingBlueprint = null;
-        }
-        if (Object.keys(patch).length) useStore.setState(patch);
-      }
-    });
-
     room.onMessage('blueprintFound', (data) => {
       const current = useStore.getState().research;
       useStore.setState({
