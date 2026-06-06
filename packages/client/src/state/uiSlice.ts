@@ -55,9 +55,9 @@ export interface UISlice {
   contextMenu: { playerId: string; playerName: string; x: number; y: number } | null;
 
   // ACEP program tab state
-  acepActiveTab: 'acep' | 'module' | 'shop' | 'tech';
+  acepActiveTab: 'acep' | 'module' | 'shop' | 'tech' | 'repair';
   acepHoveredModuleId: string | null;
-  setAcepActiveTab: (tab: 'acep' | 'module' | 'shop' | 'tech') => void;
+  setAcepActiveTab: (tab: 'acep' | 'module' | 'shop' | 'tech' | 'repair') => void;
   setAcepHoveredModuleId: (id: string | null) => void;
 
   selectedSlateId: string | null;

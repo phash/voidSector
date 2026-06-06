@@ -99,6 +99,7 @@ export function RepairPanel() {
   const cargo         = useStore((s) => s.cargo);
   const credits       = useStore((s) => s.credits);
   const currentSector = useStore((s) => s.currentSector);
+  const showTip       = useStore((s) => s.showTip);
 
   const [busy, setBusy] = useState<string | null>(null);  // moduleId currently being repaired
   const [stationBusy, setStationBusy] = useState(false);
@@ -172,7 +173,17 @@ export function RepairPanel() {
       </div>
 
       {/* Repair Module Status */}
-      <div style={hdrStyle}>{t('repair.repairSystem')}</div>
+      <div style={{ ...hdrStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>{t('repair.repairSystem')}</span>
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.6rem', padding: '0 5px' }}
+          title="Hilfe"
+          onClick={() => showTip('first_repair_tab')}
+        >
+          [?]
+        </button>
+      </div>
       {repairModEntry && repairModDef ? (
         <div style={{ marginBottom: 6 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>

@@ -4,19 +4,22 @@ import { AcepTab } from './AcepTab';
 import { ModuleTab } from './ModuleTab';
 import { ShopTab } from './ShopTab';
 import { TechTreeScreen } from './TechTreeScreen';
+import { RepairPanel } from './RepairPanel';
 
-type AcepTabId = 'acep' | 'module' | 'shop' | 'tech';
+type AcepTabId = 'acep' | 'module' | 'shop' | 'tech' | 'repair';
 
 const TAB_TIP_MAP: Record<AcepTabId, string> = {
   acep: 'first_acep_tab',
   module: 'first_module_tab',
   shop: 'first_shop_tab',
   tech: 'first_tech_tab',
+  repair: 'first_repair_tab',
 };
 
 const TABS: Array<{ id: AcepTabId; label: string }> = [
   { id: 'acep',   label: '[ACEP]' },
   { id: 'module', label: '[MODULE]' },
+  { id: 'repair', label: '[REPAIR]' },
   { id: 'shop',   label: '[SHOP]' },
   { id: 'tech',   label: '[TECH]' },
 ];
@@ -68,6 +71,7 @@ export function AcepProgram() {
       <div style={{ flex: 1, overflow: 'auto' }}>
         {activeTab === 'acep'   && <AcepTab />}
         {activeTab === 'module' && <ModuleTab />}
+        {activeTab === 'repair' && <RepairPanel />}
         {activeTab === 'shop'   && <ShopTab />}
         {activeTab === 'tech'   && <TechTreeScreen />}
       </div>

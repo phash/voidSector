@@ -19,6 +19,15 @@ export const HELP_TIPS: HelpTip[] = [
       '→ Handelsrouten kaufen/verkaufen aus diesem Lager',
   },
   {
+    id: 'first_repair_tab',
+    title: '◈ REPARATUR',
+    body:
+      'Repariere beschädigte Module deines Schiffs.\n\n' +
+      '→ Bordreparatur braucht ein installiertes Reparatur-Modul + Erz/Kristall (überall)\n' +
+      '→ [VOLLREPARATUR] an einer Station repariert alles gegen Credits\n' +
+      '→ Zerstörte Module brauchen mehr Material als leicht beschädigte',
+  },
+  {
     id: 'first_tech_tab',
     title: 'TECH-BAUM',
     body: 'Im TECH-Tab schaltest du Forschungsknoten mit Wissen frei. Höhere Stufen brauchen Voraussetzungen → erst Basis-Knoten, dann Spezialisierung freischalten.',
