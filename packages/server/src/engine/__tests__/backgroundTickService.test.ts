@@ -7,6 +7,9 @@ vi.mock('../../db/civQueries.js', () => ({
 vi.mock('../civShipService.js', () => ({
   nextShipState: vi.fn(),
 }));
+vi.mock('../npcStationEngine.js', () => ({
+  applyTraderExport: vi.fn().mockResolvedValue(null),
+}));
 
 import {
   advanceCursor,

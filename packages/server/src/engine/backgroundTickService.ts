@@ -10,6 +10,7 @@ import type { CivShip } from '@void-sector/shared';
 import { BACKGROUND_CHUNK_SIZE, BACKGROUND_CATCHUP_STEPS } from '@void-sector/shared';
 import { civQueries, getShipsAfterId } from '../db/civQueries.js';
 import { nextShipState } from './civShipService.js';
+import { applyTraderExport } from './npcStationEngine.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -59,6 +60,18 @@ export async function processBackgroundTick(): Promise<number> {
         mined_resource: s.mined_resource,
         patrol_state: s.patrol_state ?? null,
       });
+
+      // BB2: distant trader returning home exports surplus (same circulation as the
+      // anchor tick, so the economy breathes across the whole map, not just near players).
+      if (
+        (ship as any).role === 'trader' &&
+        (ship as any).state === 'traveling' &&
+        s.state === 'idle' &&
+        s.x === (ship as any).home_x &&
+        s.y === (ship as any).home_y
+      ) {
+        await applyTraderExport((ship as any).home_x, (ship as any).home_y).catch(() => {});
+      }
     }
 
     cursor = advanceCursor(ships[ships.length - 1].id as number, ships.length, BACKGROUND_CHUNK_SIZE);

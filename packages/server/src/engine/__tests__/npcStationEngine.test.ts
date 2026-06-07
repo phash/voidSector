@@ -27,7 +27,31 @@ import {
   recordTrade,
   canBuyFromStation,
   canSellToStation,
+  resolveTraderExport,
 } from '../npcStationEngine.js';
+
+describe('resolveTraderExport (BB2)', () => {
+  it('returns null when nothing is in real surplus (all <= 60%)', () => {
+    expect(
+      resolveTraderExport([
+        { itemType: 'ore', stock: 50, maxStock: 100 },
+        { itemType: 'gas', stock: 30, maxStock: 100 },
+      ]),
+    ).toBeNull();
+  });
+
+  it('exports 10% of the most-surplus resource', () => {
+    const r = resolveTraderExport([
+      { itemType: 'ore', stock: 90, maxStock: 100 }, // 0.9 — most surplus
+      { itemType: 'gas', stock: 65, maxStock: 100 }, // 0.65
+    ]);
+    expect(r).toEqual({ itemType: 'ore', amount: 9 });
+  });
+
+  it('ignores zero-capacity items', () => {
+    expect(resolveTraderExport([{ itemType: 'x', stock: 5, maxStock: 0 }])).toBeNull();
+  });
+});
 
 const mockGetStationData = vi.mocked(getStationData);
 const mockUpsertStationData = vi.mocked(upsertStationData);

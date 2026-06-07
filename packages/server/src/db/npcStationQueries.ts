@@ -105,6 +105,20 @@ export async function upsertInventoryItem(item: NpcStationInventoryItem): Promis
   );
 }
 
+/** Decrement a station's stock of one resource (BB2 trader export). Clamps at 0. */
+export async function decrementStationStock(
+  stationX: number,
+  stationY: number,
+  itemType: string,
+  amount: number,
+): Promise<void> {
+  await query(
+    `UPDATE npc_station_inventory SET stock = GREATEST(0, stock - $4), last_updated = NOW()
+     WHERE station_x = $1 AND station_y = $2 AND item_type = $3`,
+    [stationX, stationY, itemType, amount],
+  );
+}
+
 export async function getStationInventoryItem(
   x: number,
   y: number,

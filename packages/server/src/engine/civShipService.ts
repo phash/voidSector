@@ -8,6 +8,7 @@ import { civQueries, getShipsInRange } from '../db/civQueries.js';
 import { civShipBus } from '../civShipBus.js';
 import { generateSector } from './worldgen.js';
 import { query } from '../db/client.js';
+import { applyTraderExport } from './npcStationEngine.js';
 import { logger } from '../utils/logger.js';
 import { nextTraderState, nextMilitaryState, nextOutlawState } from './npcShipAI.js';
 import { redis, getPlayerPosition } from '../rooms/services/RedisAPStore.js';
@@ -200,13 +201,26 @@ export async function processCivTick(anchors?: Array<{ x: number; y: number }>):
         const delivered = ship.resources_carried!;
         const resource = ship.mined_resource ?? 'ore';
         await query(
+          // BB2: new resource rows get a consumption sink (was 0,0 → piled forever).
           `INSERT INTO npc_station_inventory (station_x, station_y, item_type, stock, max_stock, restock_rate, consumption_rate, last_updated)
-           VALUES ($1, $2, $4, $3, 500, 0, 0, NOW())
+           VALUES ($1, $2, $4, $3, 500, 0, 7, NOW())
            ON CONFLICT (station_x, station_y, item_type)
            DO UPDATE SET stock = LEAST(npc_station_inventory.max_stock, npc_station_inventory.stock + $3), last_updated = NOW()`,
           [ship.home_x, ship.home_y, delivered, resource],
         ).catch(() => {});
         logger.info({ droneId: ship.id, homeX: ship.home_x, homeY: ship.home_y, delivered, resource }, 'Drone delivered resources');
+      }
+
+      // BB2: a trader returning to its home station exports surplus stock (drains
+      // the most-abundant resource → scarcity → price movement → real circulation).
+      if (
+        (ship as any).role === 'trader' &&
+        ship.state === 'traveling' &&
+        updated.state === 'idle' &&
+        updated.x === (ship as any).home_x &&
+        updated.y === (ship as any).home_y
+      ) {
+        await applyTraderExport((ship as any).home_x, (ship as any).home_y).catch(() => {});
       }
 
       const { qx, qy } = sectorToQuadrant(updated.x, updated.y);

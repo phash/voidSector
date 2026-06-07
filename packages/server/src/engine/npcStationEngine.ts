@@ -22,6 +22,7 @@ import {
   getStationInventoryItem,
   upsertInventoryItem,
   getStationInventory,
+  decrementStationStock,
 } from '../db/npcStationQueries.js';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,52 @@ export function getStationLevel(xp: number): { level: number; name: string; maxS
     }
   }
   return { level: best.level, name: best.name, maxStock: best.maxStock };
+}
+
+/** Fraction of a surplus resource a visiting trader exports per stop. */
+export const TRADER_EXPORT_FRACTION = 0.1;
+/** A trader only exports from a resource above this fill ratio (only real surplus). */
+export const TRADER_EXPORT_MIN_RATIO = 0.6;
+
+/**
+ * BB2 — the economic effect of a trader stopping at a station: it buys/exports
+ * some of the station's most-abundant (surplus) resource and carries it off,
+ * draining surplus toward scarcity so prices actually move. Pure: returns the
+ * resource + amount to remove, or null if nothing is in real surplus.
+ */
+export function resolveTraderExport(
+  items: { itemType: string; stock: number; maxStock: number }[],
+): { itemType: string; amount: number } | null {
+  let best: { itemType: string; amount: number } | null = null;
+  let bestRatio = TRADER_EXPORT_MIN_RATIO;
+  for (const it of items) {
+    if (it.maxStock <= 0) continue;
+    const ratio = it.stock / it.maxStock;
+    if (ratio > bestRatio) {
+      const amount = Math.max(1, Math.floor(it.stock * TRADER_EXPORT_FRACTION));
+      best = { itemType: it.itemType, amount };
+      bestRatio = ratio;
+    }
+  }
+  return best;
+}
+
+/**
+ * Apply a visiting trader's export at a station: read inventory, drain some of the
+ * most-surplus resource (BB2 circulation). Returns what was exported, or null.
+ */
+export async function applyTraderExport(
+  stationX: number,
+  stationY: number,
+): Promise<{ itemType: string; amount: number } | null> {
+  const items = await getStationInventory(stationX, stationY);
+  if (!items || items.length === 0) return null;
+  const exp = resolveTraderExport(
+    items.map((i) => ({ itemType: i.itemType, stock: i.stock, maxStock: i.maxStock })),
+  );
+  if (!exp) return null;
+  await decrementStationStock(stationX, stationY, exp.itemType, exp.amount);
+  return exp;
 }
 
 /**
