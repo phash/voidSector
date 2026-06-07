@@ -19,6 +19,7 @@ import { redis } from './RedisAPStore.js';
 import { generateStationNpcs, getStationFaction } from '../../engine/npcgen.js';
 import { generateStationQuests } from '../../engine/questgen.js';
 import { awardWissenAndNotify } from '../../engine/wissenService.js';
+import { recordCivContribution } from '../../engine/civilizationMeter.js';
 import { validateAcceptQuest, getReputationTier, calculateLevel } from '../../engine/commands.js';
 import {
   getPlayerReputations,
@@ -463,6 +464,10 @@ export class QuestService {
       await updateQuestStatus(row.id, 'completed');
       // Community quest: each completed quest counts toward the interaction goal (#531)
       this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_interaction').catch(() => {});
+      // SP8: advance the global civilization meter and push the new state.
+      recordCivContribution('quest_completed')
+        .then((s) => this.ctx.broadcast('civMeterUpdate', s))
+        .catch(() => {});
       const rewards = row.rewards as QuestRewards;
 
       if (rewards.credits) {

@@ -7,6 +7,7 @@ import {
 import { createStructure, insertPlayerJumpGate, upgradeJumpGate } from '../db/queries.js';
 import { insertPlayerStation } from '../db/stationQueries.js';
 import { sectorToQuadrant } from './quadrantEngine.js';
+import { recordCivContribution } from './civilizationMeter.js';
 import { logger } from '../utils/logger.js';
 import { constructionBus } from '../constructionBus.js';
 
@@ -105,6 +106,8 @@ export async function completeConstruction(site: {
   if (type === 'station') {
     const { qx, qy } = sectorToQuadrant(sector_x, sector_y);
     await insertPlayerStation(owner_id, sector_x, sector_y, qx, qy);
+    // SP8: a completed station advances humanity's civilization meter.
+    await recordCivContribution('station_built').catch(() => {});
     return;
   }
 

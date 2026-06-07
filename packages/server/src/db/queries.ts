@@ -2105,16 +2105,17 @@ export async function getSectorsInRange(
 export async function addDiscoveriesBatch(
   playerId: string,
   coords: { x: number; y: number }[],
-): Promise<void> {
-  if (coords.length === 0) return;
+): Promise<number> {
+  if (coords.length === 0) return 0;
   const xs = coords.map((c) => c.x);
   const ys = coords.map((c) => c.y);
-  await query(
+  const res = await query(
     `INSERT INTO player_discoveries (player_id, sector_x, sector_y)
      SELECT $1, unnest($2::int[]), unnest($3::int[])
      ON CONFLICT DO NOTHING`,
     [playerId, xs, ys],
   );
+  return res.rowCount ?? 0;
 }
 
 export async function getStructureHp(
@@ -2993,6 +2994,26 @@ export async function getAllHumanityReps(): Promise<Record<string, number>> {
     result[row.alien_faction_id] = row.rep_value;
   }
   return result;
+}
+
+// ── Civilization meter (global humanity progress, SP8) ──────────────────────
+
+export async function getCivTotal(): Promise<number> {
+  const res = await query<{ total_points: string | number }>(
+    'SELECT total_points FROM civilization_meter WHERE id = 1',
+  );
+  return Number(res.rows[0]?.total_points ?? 0);
+}
+
+/** Increment the global civilization total and return the new value. */
+export async function addCivPoints(points: number): Promise<number> {
+  const res = await query<{ total_points: string | number }>(
+    `INSERT INTO civilization_meter (id, total_points) VALUES (1, $1)
+     ON CONFLICT (id) DO UPDATE SET total_points = civilization_meter.total_points + $1
+     RETURNING total_points`,
+    [points],
+  );
+  return Number(res.rows[0]?.total_points ?? 0);
 }
 
 // ── Community Alien Quests ────────────────────────────────────────────────────

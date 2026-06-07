@@ -10,6 +10,16 @@ export interface HelpTip {
 
 export const HELP_TIPS: HelpTip[] = [
   {
+    id: 'first_civ_meter',
+    title: '◈ ZIVILISATIONS-METER',
+    body:
+      'Der gemeinsame Fortschritt der Menschheit im VOID.\n\n' +
+      '→ Stationen bauen, Quests abschließen, Piraten besiegen und Sektoren\n' +
+      '  erkunden füllen den Balken\n' +
+      '→ Höhere Stufen schalten neue Zivilisations-Tiers frei\n' +
+      '→ Ein serverweiter Wert — alle Piloten tragen gemeinsam bei',
+  },
+  {
     id: 'first_market',
     title: '◈ MARKT (SPIELERBÖRSE)',
     body:

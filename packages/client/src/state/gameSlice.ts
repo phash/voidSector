@@ -315,6 +315,8 @@ export interface GameSlice {
   // P2P direct trade (#225 / SP3)
   activeTrade: TradeStateView | null;
   tradeInvitePending: { tradeId: string; fromPlayerId: string; fromPlayerName: string } | null;
+  // Global civilization meter (#SP8)
+  civMeter: { total: number; level: number; tier: string } | null;
   channelAlerts: Record<string, boolean>;
 
   // Alerts
@@ -618,6 +620,7 @@ export interface GameSlice {
   setBlockedPlayers: (blockedPlayers: BlockEntry[]) => void;
   setPlayerCardTarget: (playerCardTarget: PlayerCardData | null) => void;
   setActiveTrade: (activeTrade: TradeStateView | null) => void;
+  setCivMeter: (civMeter: { total: number; level: number; tier: string } | null) => void;
   setTradeInvitePending: (
     tradeInvitePending: { tradeId: string; fromPlayerId: string; fromPlayerName: string } | null,
   ) => void;
@@ -780,6 +783,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   playerCardTarget: null,
   activeTrade: null,
   tradeInvitePending: null,
+  civMeter: null,
   channelAlerts: {},
   alerts: {},
   selectedSector: null,
@@ -993,6 +997,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setBlockedPlayers: (blockedPlayers) => set({ blockedPlayers }),
   setPlayerCardTarget: (playerCardTarget) => set({ playerCardTarget }),
   setActiveTrade: (activeTrade) => set({ activeTrade }),
+  setCivMeter: (civMeter) => set({ civMeter }),
   setTradeInvitePending: (tradeInvitePending) => set({ tradeInvitePending }),
   addFriend: (friend) => set((s) => ({ friends: [...s.friends, friend] })),
   removeFriendFromList: (friendId) => set((s) => ({

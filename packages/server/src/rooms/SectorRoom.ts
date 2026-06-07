@@ -863,6 +863,9 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getStorage', async (client) => {
       await this.world.handleGetStorage(client);
     });
+    this.onMessage('getCivMeter', async (client) => {
+      await this.world.handleGetCivMeter(client);
+    });
     this.onMessage(
       'transfer',
       async (

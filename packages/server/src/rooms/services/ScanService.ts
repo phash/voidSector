@@ -8,6 +8,7 @@ import { calculateCurrentAP } from '../../engine/ap.js';
 import { logger } from '../../utils/logger.js';
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
 import { awardWissenAndNotify } from '../../engine/wissenService.js';
+import { recordCivContribution } from '../../engine/civilizationMeter.js';
 import { calculateTraits } from '../../engine/traitCalculator.js';
 import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
@@ -331,7 +332,13 @@ export class ScanService {
 
     // Batch save new sectors and discoveries
     for (const s of newSectors) await saveSector(s);
-    await addDiscoveriesBatch(auth.userId, allCoords);
+    const newlyDiscovered = await addDiscoveriesBatch(auth.userId, allCoords);
+    // SP8: each newly explored sector advances the global civilization meter.
+    if (newlyDiscovered > 0) {
+      recordCivContribution('territory_explored', newlyDiscovered)
+        .then((s) => this.ctx.broadcast('civMeterUpdate', s))
+        .catch(() => {});
+    }
 
     // Phase 4: Check for scan events in scanned sectors (skip pirate ambush — remote scan can't trigger physical encounters)
     await this.checkAndEmitScanEvents(

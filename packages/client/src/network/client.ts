@@ -928,6 +928,11 @@ class GameNetwork {
       useStore.getState().setStorage(data);
     });
 
+    // Global civilization meter (SP8)
+    room.onMessage('civMeterUpdate', (data: { total: number; level: number; tier: string }) => {
+      useStore.getState().setCivMeter(data);
+    });
+
     // Transfer result
     room.onMessage('transferResult', (data: { success: boolean; error?: string }) => {
       const store = useStore.getState();
@@ -2408,6 +2413,10 @@ class GameNetwork {
   requestStorage() {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('getStorage', {});
+  }
+
+  requestCivMeter() {
+    this.sectorRoom?.send('getCivMeter');
   }
 
   requestCredits() {

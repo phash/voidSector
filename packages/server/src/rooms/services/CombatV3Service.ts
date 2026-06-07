@@ -13,6 +13,7 @@ import {
   buildCombatModules,
 } from '../../engine/combatV3Engine.js';
 import { generateNpcCombatStats } from '../../engine/npcCombatStats.js';
+import { recordCivContribution } from '../../engine/civilizationMeter.js';
 import { getActiveShip, updateShipModules, addCredits } from '../../db/queries.js';
 import { markCivShipDead } from '../../db/civQueries.js';
 import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
@@ -160,6 +161,10 @@ export class CombatV3Service {
       }
       client.send('combatV3End', { outcome, lootCredits });
       client.send('logEntry', `SIEG! +${lootCredits} Credits`);
+      // SP8: a defeated pirate advances the global civilization meter.
+      recordCivContribution('pirate_defeated')
+        .then((s) => this.ctx.broadcast('civMeterUpdate', s))
+        .catch(() => {});
     } else if (outcome === 'defeat') {
       try {
         await this.applyDefeatPenalty(auth.userId);

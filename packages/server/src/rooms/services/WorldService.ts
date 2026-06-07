@@ -116,6 +116,7 @@ import {
   fillKontorOrder,
   getKontorOrders,
 } from '../../engine/kontorEngine.js';
+import { getCivMeterState } from '../../engine/civilizationMeter.js';
 import {
   getSector,
   getPlayerDiscoveries,
@@ -281,6 +282,10 @@ export class WorldService {
     const auth = client.auth as AuthPayload;
     const storage = await getStorageInventory(auth.userId);
     client.send('storageUpdate', storage);
+  }
+
+  async handleGetCivMeter(client: Client): Promise<void> {
+    client.send('civMeterUpdate', await getCivMeterState());
   }
 
   async handleTransfer(

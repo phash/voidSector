@@ -1,4 +1,30 @@
 import { HUMAN_CIVILIZATION_METER_MAX } from '@void-sector/shared';
+import { getCivTotal, addCivPoints } from '../db/queries.js';
+
+export interface CivMeterState {
+  total: number;
+  level: number;
+  tier: string;
+}
+
+/** Current global civilization meter state. */
+export async function getCivMeterState(): Promise<CivMeterState> {
+  const total = await getCivTotal();
+  return { total, level: getCivLevel(total), tier: getCivTier(total) };
+}
+
+/**
+ * Persist a civilization contribution and return the new global state.
+ * Fire-and-forget at action sites (station built, quest done, pirate defeated,
+ * territory explored).
+ */
+export async function recordCivContribution(
+  actionType: CivContributionType['type'],
+  count = 1,
+): Promise<CivMeterState> {
+  const total = await addCivPoints(calculateContributionPoints(actionType) * count);
+  return { total, level: getCivLevel(total), tier: getCivTier(total) };
+}
 
 export interface CivContributionType {
   type: 'station_built' | 'quest_completed' | 'pirate_defeated' | 'territory_explored';

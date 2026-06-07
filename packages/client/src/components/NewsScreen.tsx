@@ -129,6 +129,8 @@ function NewsItem({
 
 export function NewsScreen() {
   const newsItems = useStore((s) => s.newsItems);
+  const civMeter = useStore((s) => s.civMeter);
+  const showTip = useStore((s) => s.showTip);
   const [loading, setLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [newestId, setNewestId] = useState<number | null>(null);
@@ -136,6 +138,7 @@ export function NewsScreen() {
   const refresh = () => {
     setLoading(true);
     network.requestNews();
+    network.requestCivMeter();
     setTimeout(() => {
       setLoading(false);
       setLastRefresh(new Date());
@@ -144,6 +147,7 @@ export function NewsScreen() {
 
   useEffect(() => {
     refresh();
+    showTip('first_civ_meter');
     const interval = setInterval(refresh, 60_000); // auto-refresh every 60s
     return () => clearInterval(interval);
   }, []);
@@ -221,6 +225,28 @@ export function NewsScreen() {
           {loading ? '…' : '↺'}
         </button>
       </div>
+
+      {/* Civilization meter (SP8) */}
+      {civMeter && (
+        <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--color-dim)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--color-primary)' }}>
+            <span style={{ letterSpacing: '0.08em' }}>ZIVILISATION: {civMeter.tier}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'var(--color-dim)' }}>{Math.round(civMeter.level * 100)}%</span>
+              <button
+                onClick={() => showTip('first_civ_meter')}
+                title="Hilfe"
+                style={{ background: 'transparent', border: '1px solid var(--color-dim)', color: 'var(--color-dim)', fontSize: '0.55rem', cursor: 'pointer', padding: '0 5px', fontFamily: 'monospace' }}
+              >
+                ?
+              </button>
+            </span>
+          </div>
+          <div style={{ marginTop: 3, height: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--color-dim)' }}>
+            <div style={{ height: '100%', width: `${Math.round(civMeter.level * 100)}%`, background: 'var(--color-primary)', transition: 'width 0.4s' }} />
+          </div>
+        </div>
+      )}
 
       {/* Category filter hint */}
       <div
