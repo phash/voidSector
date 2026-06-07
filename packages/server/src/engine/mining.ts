@@ -1,5 +1,6 @@
 import { MINING_RATE_PER_SECOND } from '@void-sector/shared';
 import type { MiningState, ResourceType } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 
 export function createMiningState(): MiningState {
   return {
@@ -28,7 +29,7 @@ export function startMining(
     sectorX,
     sectorY,
     startedAt: now,
-    rate: MINING_RATE_PER_SECOND,
+    rate: (getConfig('MINING_RATE_PER_SECOND') as typeof MINING_RATE_PER_SECOND) ?? MINING_RATE_PER_SECOND,
     sectorYield,
     mineAll,
   };

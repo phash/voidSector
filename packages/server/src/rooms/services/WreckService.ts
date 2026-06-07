@@ -52,6 +52,7 @@ import {
 } from '../../db/queries.js';
 import { generateSector } from '../../engine/worldgen.js';
 import { logger } from '../../utils/logger.js';
+import { getConfig } from '../../engine/gameConfigApply.js';
 
 export class WreckService {
   private salvageTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -82,7 +83,7 @@ export class WreckService {
       return;
     }
 
-    const apOk = await this.ctx.deductAP(auth.userId, WRECK_INVESTIGATE_AP_COST);
+    const apOk = await this.ctx.deductAP(auth.userId, (getConfig('WRECK_INVESTIGATE_AP_COST') as typeof WRECK_INVESTIGATE_AP_COST) ?? WRECK_INVESTIGATE_AP_COST);
     if (!apOk) {
       client.send('actionError', { code: 'NO_AP', message: 'Zu wenig AP' });
       return;
@@ -139,13 +140,13 @@ export class WreckService {
     if (item.itemType === 'data_slate') {
       const inv = await getInventory(auth.userId);
       const slates = (inv as any[]).filter((i: any) => i.itemType === 'data_slate').length;
-      if (slates >= WRECK_SLATE_CAP) {
+      if (slates >= ((getConfig('WRECK_SLATE_CAP') as typeof WRECK_SLATE_CAP) ?? WRECK_SLATE_CAP)) {
         client.send('actionError', { code: 'SLATE_CAP', message: 'Max. 5 Slates im Inventar' });
         return;
       }
     }
 
-    const apOk = await this.ctx.deductAP(auth.userId, WRECK_SALVAGE_AP_COST);
+    const apOk = await this.ctx.deductAP(auth.userId, (getConfig('WRECK_SALVAGE_AP_COST') as typeof WRECK_SALVAGE_AP_COST) ?? WRECK_SALVAGE_AP_COST);
     if (!apOk) {
       client.send('actionError', { code: 'NO_AP', message: 'Zu wenig AP' });
       return;
@@ -208,10 +209,12 @@ export class WreckService {
     const item = (w.items as WreckItem[])[itemIndex];
     if (!item) return;
 
-    const delta = success ? WRECK_DIFFICULTY_SUCCESS_DELTA : WRECK_DIFFICULTY_FAIL_DELTA;
+    const delta = success
+      ? (getConfig('WRECK_DIFFICULTY_SUCCESS_DELTA') as typeof WRECK_DIFFICULTY_SUCCESS_DELTA) ?? WRECK_DIFFICULTY_SUCCESS_DELTA
+      : (getConfig('WRECK_DIFFICULTY_FAIL_DELTA') as typeof WRECK_DIFFICULTY_FAIL_DELTA) ?? WRECK_DIFFICULTY_FAIL_DELTA;
     const newModifier = Math.max(
-      WRECK_DIFFICULTY_MIN,
-      Math.min(WRECK_DIFFICULTY_MAX, w.difficulty_modifier + delta),
+      (getConfig('WRECK_DIFFICULTY_MIN') as typeof WRECK_DIFFICULTY_MIN) ?? WRECK_DIFFICULTY_MIN,
+      Math.min((getConfig('WRECK_DIFFICULTY_MAX') as typeof WRECK_DIFFICULTY_MAX) ?? WRECK_DIFFICULTY_MAX, w.difficulty_modifier + delta),
     );
     await updateWreckModifier(wreckId, newModifier);
     await updateWreckItem(wreckId, itemIndex, true);
@@ -354,7 +357,7 @@ export class WreckService {
       accessCode: null,
     });
 
-    await contributeHumanityRep('human', WRECK_SLATE_JUMPGATE_HUMANITY_TAX);
+    await contributeHumanityRep('human', (getConfig('WRECK_SLATE_JUMPGATE_HUMANITY_TAX') as typeof WRECK_SLATE_JUMPGATE_HUMANITY_TAX) ?? WRECK_SLATE_JUMPGATE_HUMANITY_TAX);
 
     client.send('gateConnectionAdded', {
       fromX: sectorX,

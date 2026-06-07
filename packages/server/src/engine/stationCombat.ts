@@ -7,6 +7,7 @@ import {
   COMBAT_V2_ROLL_MIN,
   COMBAT_V2_ROLL_MAX,
 } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 
 interface StationCombatInput {
   stationHp: number;
@@ -37,19 +38,28 @@ function seededRng(seed: number, offset: number): number {
 /** Roll within combat range */
 function combatRoll(seed: number, offset: number): number {
   const r = seededRng(seed, offset);
-  return COMBAT_V2_ROLL_MIN + r * (COMBAT_V2_ROLL_MAX - COMBAT_V2_ROLL_MIN);
+  const rollMin = (getConfig('COMBAT_V2_ROLL_MIN') as typeof COMBAT_V2_ROLL_MIN) ?? COMBAT_V2_ROLL_MIN;
+  const rollMax = (getConfig('COMBAT_V2_ROLL_MAX') as typeof COMBAT_V2_ROLL_MAX) ?? COMBAT_V2_ROLL_MAX;
+  return rollMin + r * (rollMax - rollMin);
 }
 
 export function resolveStationCombat(input: StationCombatInput): StationCombatResult {
   let stationHp = input.stationHp;
   let shield = input.stationShieldHp;
   const shieldMax = input.stationShieldHp;
-  let pirateHp = PIRATE_BASE_HP + input.pirateLevel * PIRATE_HP_PER_LEVEL;
-  const pirateDmg = PIRATE_BASE_DAMAGE + input.pirateLevel * PIRATE_DAMAGE_PER_LEVEL;
+  let pirateHp =
+    ((getConfig('PIRATE_BASE_HP') as typeof PIRATE_BASE_HP) ?? PIRATE_BASE_HP) +
+    input.pirateLevel * ((getConfig('PIRATE_HP_PER_LEVEL') as typeof PIRATE_HP_PER_LEVEL) ?? PIRATE_HP_PER_LEVEL);
+  const pirateDmg =
+    ((getConfig('PIRATE_BASE_DAMAGE') as typeof PIRATE_BASE_DAMAGE) ?? PIRATE_BASE_DAMAGE) +
+    input.pirateLevel *
+      ((getConfig('PIRATE_DAMAGE_PER_LEVEL') as typeof PIRATE_DAMAGE_PER_LEVEL) ?? PIRATE_DAMAGE_PER_LEVEL);
   let ionFired = false;
   let round = 0;
 
-  for (round = 1; round <= STATION_COMBAT_MAX_ROUNDS; round++) {
+  const maxRounds =
+    (getConfig('STATION_COMBAT_MAX_ROUNDS') as typeof STATION_COMBAT_MAX_ROUNDS) ?? STATION_COMBAT_MAX_ROUNDS;
+  for (round = 1; round <= maxRounds; round++) {
     // Shield regen
     shield = Math.min(shieldMax, shield + input.stationShieldRegen);
 

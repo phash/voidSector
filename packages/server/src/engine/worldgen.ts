@@ -20,6 +20,7 @@ import {
   NEBULA_ANOMALY_CHANCE,
 } from '@void-sector/shared';
 import { legacySectorType } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 import type {
   SectorData,
   SectorType,
@@ -92,8 +93,13 @@ export function anomalyChanceForEnvironment(env: SectorEnvironment): number {
  */
 export function isInNebulaZone(x: number, y: number): boolean {
   // Hard nebula-free bubble around the origin (independent of blob centers).
-  if (x * x + y * y < NEBULA_SAFE_ORIGIN * NEBULA_SAFE_ORIGIN) return false;
-  const grid = NEBULA_ZONE_GRID;
+  if (
+    x * x + y * y <
+    ((getConfig('NEBULA_SAFE_ORIGIN') as typeof NEBULA_SAFE_ORIGIN) ?? NEBULA_SAFE_ORIGIN) *
+      ((getConfig('NEBULA_SAFE_ORIGIN') as typeof NEBULA_SAFE_ORIGIN) ?? NEBULA_SAFE_ORIGIN)
+  )
+    return false;
+  const grid = (getConfig('NEBULA_ZONE_GRID') as typeof NEBULA_ZONE_GRID) ?? NEBULA_ZONE_GRID;
   const gridX = Math.round(x / grid);
   const gridY = Math.round(y / grid);
 
@@ -103,17 +109,24 @@ export function isInNebulaZone(x: number, y: number): boolean {
       const cy = (gridY + dgy) * grid;
 
       // Keep a safe zone around the origin
-      if (cx * cx + cy * cy < NEBULA_SAFE_ORIGIN * NEBULA_SAFE_ORIGIN) continue;
+      if (
+        cx * cx + cy * cy <
+        ((getConfig('NEBULA_SAFE_ORIGIN') as typeof NEBULA_SAFE_ORIGIN) ?? NEBULA_SAFE_ORIGIN) *
+          ((getConfig('NEBULA_SAFE_ORIGIN') as typeof NEBULA_SAFE_ORIGIN) ?? NEBULA_SAFE_ORIGIN)
+      )
+        continue;
 
       // Use XOR-mixed seed so nebula zones are uncorrelated with normal sector types
       const centerSeed = hashCoords(cx, cy, WORLD_SEED ^ 0xa5a5a5a5);
       const roll = (centerSeed >>> 0) / 0x100000000;
 
-      if (roll < NEBULA_ZONE_CHANCE) {
+      if (roll < ((getConfig('NEBULA_ZONE_CHANCE') as typeof NEBULA_ZONE_CHANCE) ?? NEBULA_ZONE_CHANCE)) {
         const radiusFraction = hashSecondary(centerSeed);
         const radius =
-          NEBULA_ZONE_MIN_RADIUS +
-          radiusFraction * (NEBULA_ZONE_MAX_RADIUS - NEBULA_ZONE_MIN_RADIUS);
+          ((getConfig('NEBULA_ZONE_MIN_RADIUS') as typeof NEBULA_ZONE_MIN_RADIUS) ?? NEBULA_ZONE_MIN_RADIUS) +
+          radiusFraction *
+            (((getConfig('NEBULA_ZONE_MAX_RADIUS') as typeof NEBULA_ZONE_MAX_RADIUS) ?? NEBULA_ZONE_MAX_RADIUS) -
+              ((getConfig('NEBULA_ZONE_MIN_RADIUS') as typeof NEBULA_ZONE_MIN_RADIUS) ?? NEBULA_ZONE_MIN_RADIUS));
         const dx = x - cx;
         const dy = y - cy;
         if (dx * dx + dy * dy < radius * radius) return true;
@@ -130,9 +143,9 @@ export function isInNebulaZone(x: number, y: number): boolean {
  */
 export function isInBlackHoleCluster(x: number, y: number): BlackHoleCluster | null {
   const distFromOrigin = Math.max(Math.abs(x), Math.abs(y));
-  if (distFromOrigin <= BLACK_HOLE_MIN_DISTANCE) return null;
+  if (distFromOrigin <= ((getConfig('BLACK_HOLE_MIN_DISTANCE') as typeof BLACK_HOLE_MIN_DISTANCE) ?? BLACK_HOLE_MIN_DISTANCE)) return null;
 
-  const grid = BLACK_HOLE_CLUSTER_GRID;
+  const grid = (getConfig('BLACK_HOLE_CLUSTER_GRID') as typeof BLACK_HOLE_CLUSTER_GRID) ?? BLACK_HOLE_CLUSTER_GRID;
   const gridX = Math.round(x / grid);
   const gridY = Math.round(y / grid);
 
@@ -142,17 +155,19 @@ export function isInBlackHoleCluster(x: number, y: number): BlackHoleCluster | n
       const cy = (gridY + dgy) * grid;
 
       // Must be far enough from origin
-      if (Math.max(Math.abs(cx), Math.abs(cy)) <= BLACK_HOLE_MIN_DISTANCE) continue;
+      if (Math.max(Math.abs(cx), Math.abs(cy)) <= ((getConfig('BLACK_HOLE_MIN_DISTANCE') as typeof BLACK_HOLE_MIN_DISTANCE) ?? BLACK_HOLE_MIN_DISTANCE)) continue;
 
       // Use distinct XOR-mixed seed for black hole clusters
       const centerSeed = hashCoords(cx, cy, WORLD_SEED ^ 0xb1ac4001);
       const roll = (centerSeed >>> 0) / 0x100000000;
 
-      if (roll < BLACK_HOLE_CLUSTER_CHANCE) {
+      if (roll < ((getConfig('BLACK_HOLE_CLUSTER_CHANCE') as typeof BLACK_HOLE_CLUSTER_CHANCE) ?? BLACK_HOLE_CLUSTER_CHANCE)) {
         const radiusFraction = hashSecondary(centerSeed);
         const radius =
-          BLACK_HOLE_CLUSTER_MIN_RADIUS +
-          radiusFraction * (BLACK_HOLE_CLUSTER_MAX_RADIUS - BLACK_HOLE_CLUSTER_MIN_RADIUS);
+          ((getConfig('BLACK_HOLE_CLUSTER_MIN_RADIUS') as typeof BLACK_HOLE_CLUSTER_MIN_RADIUS) ?? BLACK_HOLE_CLUSTER_MIN_RADIUS) +
+          radiusFraction *
+            (((getConfig('BLACK_HOLE_CLUSTER_MAX_RADIUS') as typeof BLACK_HOLE_CLUSTER_MAX_RADIUS) ?? BLACK_HOLE_CLUSTER_MAX_RADIUS) -
+              ((getConfig('BLACK_HOLE_CLUSTER_MIN_RADIUS') as typeof BLACK_HOLE_CLUSTER_MIN_RADIUS) ?? BLACK_HOLE_CLUSTER_MIN_RADIUS));
         const dx = x - cx;
         const dy = y - cy;
         // Use Chebyshev distance for square-ish clusters
@@ -173,9 +188,9 @@ function rollEnvironment(x: number, y: number, seed: number): SectorEnvironment 
   const distFromOrigin = Math.max(Math.abs(x), Math.abs(y));
 
   // Black hole: standalone chance (rare, far from origin)
-  if (distFromOrigin > BLACK_HOLE_MIN_DISTANCE) {
+  if (distFromOrigin > ((getConfig('BLACK_HOLE_MIN_DISTANCE') as typeof BLACK_HOLE_MIN_DISTANCE) ?? BLACK_HOLE_MIN_DISTANCE)) {
     const bhRoll = (seed >>> 0) / 0x100000000;
-    if (bhRoll < BLACK_HOLE_SPAWN_CHANCE) {
+    if (bhRoll < ((getConfig('BLACK_HOLE_SPAWN_CHANCE') as typeof BLACK_HOLE_SPAWN_CHANCE) ?? BLACK_HOLE_SPAWN_CHANCE)) {
       return 'black_hole';
     }
   }
@@ -214,7 +229,11 @@ function rollContent(seed: number, environment: SectorEnvironment): SectorConten
   }
 
   // For nebula, only roll other content if enabled
-  if (environment === 'nebula' && !NEBULA_CONTENT_ENABLED) return [];
+  if (
+    environment === 'nebula' &&
+    !((getConfig('NEBULA_CONTENT_ENABLED') as typeof NEBULA_CONTENT_ENABLED) ?? NEBULA_CONTENT_ENABLED)
+  )
+    return [];
 
   // Use tertiary hash for content roll (uncorrelated with environment roll)
   const roll = hashTertiary(seed);
@@ -284,7 +303,7 @@ export function generateSector(x: number, y: number, discoveredBy: string | null
   const metadata: Record<string, unknown> = {};
   if (contents.includes('station')) {
     const secondaryRoll = hashSecondary(seed);
-    if (secondaryRoll < ANCIENT_STATION_CHANCE) {
+    if (secondaryRoll < ((getConfig('ANCIENT_STATION_CHANCE') as typeof ANCIENT_STATION_CHANCE) ?? ANCIENT_STATION_CHANCE)) {
       metadata.stationVariant = 'ancient';
     }
   }

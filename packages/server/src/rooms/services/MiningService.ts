@@ -23,6 +23,7 @@ import {
   getCargoState,
 } from '../../engine/inventoryService.js';
 import { rejectGuest } from './utils.js';
+import { getConfig } from '../../engine/gameConfigApply.js';
 
 const VALID_MINE_RESOURCES = ['ore', 'gas', 'crystal'];
 const MINE_ALL_ORDER: MineableResourceType[] = ['ore', 'gas', 'crystal'];
@@ -156,7 +157,7 @@ export class MiningService {
               if (nextResult.valid && nextResult.state) {
                 const bonuses = await this.ctx.getPlayerBonuses(playerId);
                 const chainHasLaser = (ship.miningBonus ?? 0) > 0;
-                const chainBaseRate = chainHasLaser ? MINING_RATE_PER_SECOND : MINING_RATE_NO_LASER;
+                const chainBaseRate = chainHasLaser ? ((getConfig('MINING_RATE_PER_SECOND') as typeof MINING_RATE_PER_SECOND) ?? MINING_RATE_PER_SECOND) : MINING_RATE_NO_LASER;
                 nextResult.state.rate = chainBaseRate
                   * (1 + (ship.miningBonus ?? 0))
                   * bonuses.miningRateMultiplier;
@@ -268,7 +269,7 @@ export class MiningService {
     // Apply ship module bonus and faction mining bonus
     const bonuses = await this.ctx.getPlayerBonuses(auth.userId);
     // miningBonus = miningSpeed from module (1 for mk1, 4 for mk2, etc.)
-    const baseRate = hasMiningLaser ? (ship.miningBonus ?? MINING_RATE_PER_SECOND) : MINING_RATE_NO_LASER;
+    const baseRate = hasMiningLaser ? (ship.miningBonus ?? ((getConfig('MINING_RATE_PER_SECOND') as typeof MINING_RATE_PER_SECOND) ?? MINING_RATE_PER_SECOND)) : MINING_RATE_NO_LASER;
     result.state!.rate = baseRate * bonuses.miningRateMultiplier;
 
     await saveMiningState(auth.userId, result.state!);

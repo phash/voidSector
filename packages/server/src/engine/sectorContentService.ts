@@ -10,6 +10,7 @@ import {
 } from '@void-sector/shared';
 import type { SectorEnvironment, PlanetSubtype, SectorContent } from '@void-sector/shared';
 import { hashCoords } from './worldgen.js';
+import { getConfig } from './gameConfigApply.js';
 
 export interface SectorEnvironmentRecord {
   sectorX: number;
@@ -39,7 +40,12 @@ function chebyshevDistance(x: number, y: number): number {
 
 function getDistanceMultiplier(x: number, y: number, nearValue: number, farValue: number): number {
   const dist = chebyshevDistance(x, y);
-  const t = Math.min(dist / DENSITY_DISTANCE_THRESHOLD, 1.0);
+  const t = Math.min(
+    dist /
+      ((getConfig('DENSITY_DISTANCE_THRESHOLD') as typeof DENSITY_DISTANCE_THRESHOLD) ??
+        DENSITY_DISTANCE_THRESHOLD),
+    1.0,
+  );
   return nearValue + (farValue - nearValue) * t;
 }
 
@@ -118,8 +124,8 @@ export function generateSectorContents(
   const stationMult = getDistanceMultiplier(
     sectorX,
     sectorY,
-    DENSITY_STATION_NEAR,
-    DENSITY_STATION_FAR,
+    (getConfig('DENSITY_STATION_NEAR') as typeof DENSITY_STATION_NEAR) ?? DENSITY_STATION_NEAR,
+    (getConfig('DENSITY_STATION_FAR') as typeof DENSITY_STATION_FAR) ?? DENSITY_STATION_FAR,
   );
   if (
     (environmentType === 'empty' || environmentType === 'planet') &&
@@ -141,8 +147,8 @@ export function generateSectorContents(
   const pirateMult = getDistanceMultiplier(
     sectorX,
     sectorY,
-    DENSITY_PIRATE_NEAR,
-    DENSITY_PIRATE_FAR,
+    (getConfig('DENSITY_PIRATE_NEAR') as typeof DENSITY_PIRATE_NEAR) ?? DENSITY_PIRATE_NEAR,
+    (getConfig('DENSITY_PIRATE_FAR') as typeof DENSITY_PIRATE_FAR) ?? DENSITY_PIRATE_FAR,
   );
   if (environmentType !== 'nebula' && rngPirate < 0.1 * pirateMult * contentVariance) {
     contents.push({
@@ -226,12 +232,22 @@ export function generateSectorContents(
  * Returns distance-based density multiplier for stations (utility for tests/admin).
  */
 export function getStationDensityMultiplier(sectorX: number, sectorY: number): number {
-  return getDistanceMultiplier(sectorX, sectorY, DENSITY_STATION_NEAR, DENSITY_STATION_FAR);
+  return getDistanceMultiplier(
+    sectorX,
+    sectorY,
+    (getConfig('DENSITY_STATION_NEAR') as typeof DENSITY_STATION_NEAR) ?? DENSITY_STATION_NEAR,
+    (getConfig('DENSITY_STATION_FAR') as typeof DENSITY_STATION_FAR) ?? DENSITY_STATION_FAR,
+  );
 }
 
 /**
  * Returns distance-based density multiplier for pirates (utility for tests/admin).
  */
 export function getPirateDensityMultiplier(sectorX: number, sectorY: number): number {
-  return getDistanceMultiplier(sectorX, sectorY, DENSITY_PIRATE_NEAR, DENSITY_PIRATE_FAR);
+  return getDistanceMultiplier(
+    sectorX,
+    sectorY,
+    (getConfig('DENSITY_PIRATE_NEAR') as typeof DENSITY_PIRATE_NEAR) ?? DENSITY_PIRATE_NEAR,
+    (getConfig('DENSITY_PIRATE_FAR') as typeof DENSITY_PIRATE_FAR) ?? DENSITY_PIRATE_FAR,
+  );
 }

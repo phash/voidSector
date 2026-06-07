@@ -1,5 +1,6 @@
 import type { SectorEnvironment } from '@void-sector/shared';
 import { DENSITY_DISTANCE_THRESHOLD } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 
 export type TradeResource = 'ore' | 'gas' | 'crystal' | 'exotic';
 
@@ -30,7 +31,14 @@ export function getDynamicPrice(
 
   // Distance factor: prices increase up to 2× at far distances
   const chebyshev = Math.max(Math.abs(sectorX), Math.abs(sectorY));
-  const distanceFactor = 1.0 + Math.min(chebyshev / DENSITY_DISTANCE_THRESHOLD, 1.0);
+  const distanceFactor =
+    1.0 +
+    Math.min(
+      chebyshev /
+        ((getConfig('DENSITY_DISTANCE_THRESHOLD') as typeof DENSITY_DISTANCE_THRESHOLD) ??
+          DENSITY_DISTANCE_THRESHOLD),
+      1.0,
+    );
 
   // Environment factor
   const nebulaPremium = environment === 'nebula' ? 1.2 : 1.0;

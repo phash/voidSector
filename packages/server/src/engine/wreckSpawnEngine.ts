@@ -15,6 +15,7 @@ import {
 } from '../db/wreckQueries.js';
 import { getAllQuadrantControls } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
+import { getConfig } from './gameConfigApply.js';
 
 const ARTEFACT_IDS = [
   'artefact_drive', 'artefact_cargo', 'artefact_scanner',
@@ -132,14 +133,29 @@ export function calcSalvageChance(
   explorerXp: number,
   helionDecoder = false,
 ): number {
-  const clampedModifier = Math.max(WRECK_DIFFICULTY_MIN, Math.min(WRECK_DIFFICULTY_MAX, modifier));
+  const clampedModifier = Math.max(
+    (getConfig('WRECK_DIFFICULTY_MIN') as typeof WRECK_DIFFICULTY_MIN) ?? WRECK_DIFFICULTY_MIN,
+    Math.min(
+      (getConfig('WRECK_DIFFICULTY_MAX') as typeof WRECK_DIFFICULTY_MAX) ?? WRECK_DIFFICULTY_MAX,
+      modifier,
+    ),
+  );
   const base = 1.0 - baseDifficulty;
-  const explorerBonus = Math.min(explorerXp * WRECK_EXPLORER_CHANCE_PER_XP, 0.25);
+  const explorerBonus = Math.min(
+    explorerXp *
+      ((getConfig('WRECK_EXPLORER_CHANCE_PER_XP') as typeof WRECK_EXPLORER_CHANCE_PER_XP) ??
+        WRECK_EXPLORER_CHANCE_PER_XP),
+    0.25,
+  );
   const modBonus = clampedModifier * 0.15;
   const chance = base + explorerBonus - modBonus;
   const clamped = Math.max(0.05, Math.min(0.95, chance));
   if (helionDecoder && baseDifficulty === WRECK_BASE_DIFFICULTY['artefact']) {
-    return Math.max(WRECK_HELION_ARTEFACT_MIN_CHANCE, clamped);
+    return Math.max(
+      (getConfig('WRECK_HELION_ARTEFACT_MIN_CHANCE') as typeof WRECK_HELION_ARTEFACT_MIN_CHANCE) ??
+        WRECK_HELION_ARTEFACT_MIN_CHANCE,
+      clamped,
+    );
   }
   return clamped;
 }

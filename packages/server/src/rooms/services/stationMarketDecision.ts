@@ -2,6 +2,7 @@ import {
   NPC_PRICES, NPC_BUY_SPREAD, NPC_SELL_SPREAD, MARKT_SPREAD_PER_LEVEL,
   stationCargoCapacity, type MineableResourceType,
 } from '@void-sector/shared';
+import { getConfig } from '../../engine/gameConfigApply.js';
 
 export interface MarketStation {
   markt_level: number;
@@ -42,8 +43,8 @@ export function resolveMarketTrade(
 
   const base = NPC_PRICES[req.resource];
   const levelBonus = MARKT_SPREAD_PER_LEVEL * station.markt_level;
-  const sellPrice = base * (NPC_SELL_SPREAD + levelBonus);
-  const buyPrice = base * Math.max(1, NPC_BUY_SPREAD - levelBonus);
+  const sellPrice = base * (((getConfig('NPC_SELL_SPREAD') as typeof NPC_SELL_SPREAD) ?? NPC_SELL_SPREAD) + levelBonus);
+  const buyPrice = base * Math.max(1, ((getConfig('NPC_BUY_SPREAD') as typeof NPC_BUY_SPREAD) ?? NPC_BUY_SPREAD) - levelBonus);
   const safeSellPrice = Math.min(sellPrice, buyPrice);
   const cap = stationCargoCapacity(station.cargo_level);
   const have = station.cargo_contents[req.resource] ?? 0;

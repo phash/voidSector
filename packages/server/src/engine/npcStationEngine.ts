@@ -15,6 +15,7 @@ import type {
   MineableResourceType,
 } from '@void-sector/shared';
 import { hashCoords } from './worldgen.js';
+import { getConfig } from './gameConfigApply.js';
 import {
   getStationData,
   upsertStationData,
@@ -67,7 +68,9 @@ export function applyXpDecay(station: NpcStationData, now: Date = new Date()): N
   const elapsedHours = elapsedMs / (1000 * 60 * 60);
   if (elapsedHours <= 0) return station;
 
-  const decay = NPC_XP_DECAY_PER_HOUR * elapsedHours;
+  const decay =
+    ((getConfig('NPC_XP_DECAY_PER_HOUR') as typeof NPC_XP_DECAY_PER_HOUR) ??
+      NPC_XP_DECAY_PER_HOUR) * elapsedHours;
   const currentLevel = getStationLevel(station.xp);
   const levelThreshold = NPC_STATION_LEVELS.find(
     (l) => l.level === currentLevel.level,
@@ -173,7 +176,7 @@ export async function getOrInitStation(x: number, y: number): Promise<NpcStation
 export async function recordVisit(x: number, y: number): Promise<void> {
   const station = await getOrInitStation(x, y);
   const decayed = applyXpDecay(station);
-  const newXp = decayed.xp + NPC_XP_VISIT;
+  const newXp = decayed.xp + ((getConfig('NPC_XP_VISIT') as typeof NPC_XP_VISIT) ?? NPC_XP_VISIT);
   const newLevel = getStationLevel(newXp);
 
   await upsertStationData({
@@ -190,7 +193,9 @@ export async function recordVisit(x: number, y: number): Promise<void> {
 export async function recordTrade(x: number, y: number, units: number): Promise<void> {
   const station = await getOrInitStation(x, y);
   const decayed = applyXpDecay(station);
-  const newXp = decayed.xp + units * NPC_XP_PER_TRADE_UNIT;
+  const newXp =
+    decayed.xp +
+    units * ((getConfig('NPC_XP_PER_TRADE_UNIT') as typeof NPC_XP_PER_TRADE_UNIT) ?? NPC_XP_PER_TRADE_UNIT);
   const newLevel = getStationLevel(newXp);
 
   await upsertStationData({
@@ -219,7 +224,9 @@ export async function canBuyFromStation(
   const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
   const basePrice = NPC_PRICES[itemType as MineableResourceType] ?? 0;
   const dynamicPrice = calculatePrice(basePrice, stockRatio);
-  const unitPrice = Math.round(dynamicPrice * NPC_BUY_SPREAD);
+  const unitPrice = Math.round(
+    dynamicPrice * ((getConfig('NPC_BUY_SPREAD') as typeof NPC_BUY_SPREAD) ?? NPC_BUY_SPREAD),
+  );
   const totalPrice = unitPrice * amount;
 
   return {
@@ -249,7 +256,9 @@ export async function canSellToStation(
   const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
   const basePrice = NPC_PRICES[itemType as MineableResourceType] ?? 0;
   const dynamicPrice = calculatePrice(basePrice, stockRatio);
-  const unitPrice = Math.round(dynamicPrice * NPC_SELL_SPREAD);
+  const unitPrice = Math.round(
+    dynamicPrice * ((getConfig('NPC_SELL_SPREAD') as typeof NPC_SELL_SPREAD) ?? NPC_SELL_SPREAD),
+  );
   const totalPrice = unitPrice * effectiveAmount;
 
   return {

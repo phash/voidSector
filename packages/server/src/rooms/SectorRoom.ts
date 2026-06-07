@@ -165,6 +165,7 @@ import { getDirectTradeService } from '../engine/directTradeService.js';
 import { ensureQuadrantNpcs } from '../engine/npcSpawner.js';
 import { logger } from '../utils/logger.js';
 import { captureError } from '../utils/errorLogTransport.js';
+import { getConfig } from '../engine/gameConfigApply.js';
 import { pirateCombatAvoidable } from '../engine/stationPassiveEffects.js';
 import { getPlayerSensorLevelInQuadrant } from '../db/stationQueries.js';
 
@@ -527,7 +528,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         return;
       }
       await removeFromInventory(auth.userId, 'resource', 'gas', 1);
-      const newCharge = Math.min(hdState.maxCharge, currentCharge + HYPERDRIVE_CHARGE_PER_GAS);
+      const newCharge = Math.min(hdState.maxCharge, currentCharge + ((getConfig('HYPERDRIVE_CHARGE_PER_GAS') as typeof HYPERDRIVE_CHARGE_PER_GAS) ?? HYPERDRIVE_CHARGE_PER_GAS));
       const newState = { ...hdState, charge: newCharge, lastTick: Date.now() };
       await setHyperdriveState(auth.userId, newState);
       client.send('hyperdriveUpdate', newState);
@@ -1222,14 +1223,14 @@ export class SectorRoom extends Room<SectorRoomState> {
         return;
       }
 
-      const remaining = CONQUEST_POOL_MAX - station.conquest_pool;
+      const remaining = ((getConfig('CONQUEST_POOL_MAX') as typeof CONQUEST_POOL_MAX) ?? CONQUEST_POOL_MAX) - station.conquest_pool;
       const actual = Math.min(amount, remaining);
       if (actual <= 0) {
         client.send('actionError', { code: 'CONQUEST_POOL_FULL', message: 'Conquest-Pool bereits voll.' });
         return;
       }
 
-      const newPool = await civQueries.depositConquestPool(msg.stationId, actual, CONQUEST_POOL_MAX);
+      const newPool = await civQueries.depositConquestPool(msg.stationId, actual, (getConfig('CONQUEST_POOL_MAX') as typeof CONQUEST_POOL_MAX) ?? CONQUEST_POOL_MAX);
       client.send('CONQUEST_POOL_UPDATED', { stationId: msg.stationId, newPool, newMode: station.mode });
       const auth = client.auth as AuthPayload;
       logger.info({ playerId: auth.userId, stationId: msg.stationId, deposited: actual, newPool }, 'conquest pool deposit');
@@ -1575,7 +1576,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       let shipRecord = await getActiveShip(auth.userId);
       let isNewPlayer = false;
       if (!shipRecord) {
-        shipRecord = await createShip(auth.userId, 'AEGIS', BASE_FUEL_CAPACITY);
+        shipRecord = await createShip(auth.userId, 'AEGIS', (getConfig('BASE_FUEL_CAPACITY') as typeof BASE_FUEL_CAPACITY) ?? BASE_FUEL_CAPACITY);
         isNewPlayer = true;
         // Give starter modules + resources to inventory
         const { addToInventory } = await import('../engine/inventoryService.js');
@@ -1591,7 +1592,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       const fuelState = await getFuelState(auth.userId);
       const acepXp = await getAcepXpSummary(shipRecord.id);
       // Init fuel state in Redis; migrate stale pre-overhaul values (< FUEL_MIN_TANK)
-      const stale = fuelState !== null && fuelState < FUEL_MIN_TANK;
+      const stale = fuelState !== null && fuelState < ((getConfig('FUEL_MIN_TANK') as typeof FUEL_MIN_TANK) ?? FUEL_MIN_TANK);
       if (fuelState === null || stale) {
         await saveFuelState(auth.userId, stats.fuelMax);
       }
@@ -1740,7 +1741,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Record NPC station visit for XP and per-station reputation
       if (sectorData.type === 'station') {
         recordVisit(sectorX, sectorY).catch(() => {});
-        updatePlayerStationRep(auth.userId, sectorX, sectorY, STATION_REP_VISIT).catch(() => {});
+        updatePlayerStationRep(auth.userId, sectorX, sectorY, (getConfig('STATION_REP_VISIT') as typeof STATION_REP_VISIT) ?? STATION_REP_VISIT).catch(() => {});
 
         // Auto-refuel at station
         await this.navigation.tryAutoRefuel(client, auth, stats);

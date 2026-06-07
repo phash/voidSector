@@ -18,6 +18,7 @@ import {
   calculateShipStats,
 } from '@void-sector/shared';
 import { getUniverseTickCount } from '../engine/universeBootstrap.js';
+import { getConfig } from '../engine/gameConfigApply.js';
 
 export async function createPlayer(
   username: string,
@@ -349,9 +350,9 @@ export async function getSector(x: number, y: number): Promise<SectorData | null
     const regenResource = (current: number, max: number, resLastTick: number | null): number => {
       if (resLastTick === null || max <= 0) return current;
       const ticksSinceMined = currentTick - resLastTick;
-      if (ticksSinceMined <= RESOURCE_REGEN_DELAY_TICKS) return current;
+      if (ticksSinceMined <= ((getConfig('RESOURCE_REGEN_DELAY_TICKS') as typeof RESOURCE_REGEN_DELAY_TICKS) ?? RESOURCE_REGEN_DELAY_TICKS)) return current;
       const regen = Math.floor(
-        (ticksSinceMined - RESOURCE_REGEN_DELAY_TICKS) / RESOURCE_REGEN_INTERVAL_TICKS,
+        (ticksSinceMined - ((getConfig('RESOURCE_REGEN_DELAY_TICKS') as typeof RESOURCE_REGEN_DELAY_TICKS) ?? RESOURCE_REGEN_DELAY_TICKS)) / ((getConfig('RESOURCE_REGEN_INTERVAL_TICKS') as typeof RESOURCE_REGEN_INTERVAL_TICKS) ?? RESOURCE_REGEN_INTERVAL_TICKS),
       );
       return Math.min(max, current + regen);
     };
@@ -2067,9 +2068,9 @@ export async function getSectorsInRange(
       const regenResource = (current: number, max: number, resLastTick: number | null): number => {
         if (resLastTick === null || max <= 0) return current;
         const ticksSinceMined = rangeTick - resLastTick;
-        if (ticksSinceMined <= RESOURCE_REGEN_DELAY_TICKS) return current;
+        if (ticksSinceMined <= ((getConfig('RESOURCE_REGEN_DELAY_TICKS') as typeof RESOURCE_REGEN_DELAY_TICKS) ?? RESOURCE_REGEN_DELAY_TICKS)) return current;
         const regen = Math.floor(
-          (ticksSinceMined - RESOURCE_REGEN_DELAY_TICKS) / RESOURCE_REGEN_INTERVAL_TICKS,
+          (ticksSinceMined - ((getConfig('RESOURCE_REGEN_DELAY_TICKS') as typeof RESOURCE_REGEN_DELAY_TICKS) ?? RESOURCE_REGEN_DELAY_TICKS)) / ((getConfig('RESOURCE_REGEN_INTERVAL_TICKS') as typeof RESOURCE_REGEN_INTERVAL_TICKS) ?? RESOURCE_REGEN_INTERVAL_TICKS),
         );
         return Math.min(max, current + regen);
       };

@@ -31,6 +31,7 @@ import {
 } from '@void-sector/shared';
 import { spendAP } from './ap.js';
 import { startMining, createMiningState } from './mining.js';
+import { getConfig } from './gameConfigApply.js';
 
 export interface JumpValidation {
   valid: boolean;
@@ -75,7 +76,7 @@ export function validateScan(ap: APState, apCost: number): ScanValidation {
 
 export function validateLocalScan(
   ap: APState,
-  cost: number = AP_COSTS_LOCAL_SCAN,
+  cost: number = (getConfig('AP_COSTS_LOCAL_SCAN') as typeof AP_COSTS_LOCAL_SCAN) ?? AP_COSTS_LOCAL_SCAN,
   _scannerLevel: number = 1,
 ): { valid: boolean; error?: string; newAP?: APState; hiddenSignatures: boolean } {
   const newAP = spendAP(ap, cost);
@@ -242,12 +243,12 @@ export function validateNpcTrade(
   const basePrice = NPC_PRICES[resource as MineableResourceType];
 
   if (action === 'buy') {
-    const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);
+    const totalPrice = Math.ceil(basePrice * ((getConfig('NPC_BUY_SPREAD') as typeof NPC_BUY_SPREAD) ?? NPC_BUY_SPREAD) * amount);
     if (credits < totalPrice)
       return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
     return { valid: true, totalPrice };
   } else {
-    const totalPrice = Math.floor(basePrice * NPC_SELL_SPREAD * amount);
+    const totalPrice = Math.floor(basePrice * ((getConfig('NPC_SELL_SPREAD') as typeof NPC_SELL_SPREAD) ?? NPC_SELL_SPREAD) * amount);
     if (storage[resource as MineableResourceType] < amount)
       return { valid: false, error: `Not enough ${resource} in storage`, totalPrice };
     return { valid: true, totalPrice };
@@ -276,7 +277,7 @@ export function validateNpcCargoTrade(
   const basePrice = NPC_PRICES[resource as MineableResourceType];
 
   if (action === 'buy') {
-    const totalPrice = Math.ceil(basePrice * NPC_BUY_SPREAD * amount);
+    const totalPrice = Math.ceil(basePrice * ((getConfig('NPC_BUY_SPREAD') as typeof NPC_BUY_SPREAD) ?? NPC_BUY_SPREAD) * amount);
     if (credits < totalPrice)
       return { valid: false, error: `Need ${totalPrice} credits (have ${credits})`, totalPrice };
     if (cargoTotal + amount > cargoCap) {
@@ -284,7 +285,7 @@ export function validateNpcCargoTrade(
     }
     return { valid: true, totalPrice };
   } else {
-    const totalPrice = Math.floor(basePrice * NPC_SELL_SPREAD * amount);
+    const totalPrice = Math.floor(basePrice * ((getConfig('NPC_SELL_SPREAD') as typeof NPC_SELL_SPREAD) ?? NPC_SELL_SPREAD) * amount);
     if (cargo[resource] < amount)
       return { valid: false, error: `Not enough ${resource} in cargo`, totalPrice };
     return { valid: true, totalPrice };
@@ -309,7 +310,10 @@ interface CreateSlateResult {
 
 export function validateCreateSlate(state: CreateSlateState, slateType: string): CreateSlateResult {
   const apCost =
-    slateType === 'sector' ? SLATE_AP_COST_SECTOR : SLATE_AP_COST_AREA + state.scannerLevel * 2;
+    slateType === 'sector'
+      ? (getConfig('SLATE_AP_COST_SECTOR') as typeof SLATE_AP_COST_SECTOR) ?? SLATE_AP_COST_SECTOR
+      : ((getConfig('SLATE_AP_COST_AREA') as typeof SLATE_AP_COST_AREA) ?? SLATE_AP_COST_AREA) +
+        state.scannerLevel * 2;
 
   if (state.ap < apCost) {
     return { valid: false, error: `Not enough AP (need ${apCost}, have ${state.ap})` };
@@ -337,7 +341,13 @@ export function validateNpcBuyback(hasTradingPost: boolean, sectorCount: number)
   if (!hasTradingPost) {
     return { valid: false, error: 'No trading post — cannot sell to NPC' };
   }
-  return { valid: true, payout: sectorCount * SLATE_NPC_PRICE_PER_SECTOR };
+  return {
+    valid: true,
+    payout:
+      sectorCount *
+      ((getConfig('SLATE_NPC_PRICE_PER_SECTOR') as typeof SLATE_NPC_PRICE_PER_SECTOR) ??
+        SLATE_NPC_PRICE_PER_SECTOR),
+  };
 }
 
 // --- Faction Validation ---
@@ -383,12 +393,21 @@ export function createPirateEncounter(
 ): PirateEncounter {
   return {
     pirateLevel,
-    pirateHp: PIRATE_BASE_HP + pirateLevel * PIRATE_HP_PER_LEVEL,
-    pirateDamage: PIRATE_BASE_DAMAGE + pirateLevel * PIRATE_DAMAGE_PER_LEVEL,
+    pirateHp:
+      ((getConfig('PIRATE_BASE_HP') as typeof PIRATE_BASE_HP) ?? PIRATE_BASE_HP) +
+      pirateLevel * ((getConfig('PIRATE_HP_PER_LEVEL') as typeof PIRATE_HP_PER_LEVEL) ?? PIRATE_HP_PER_LEVEL),
+    pirateDamage:
+      ((getConfig('PIRATE_BASE_DAMAGE') as typeof PIRATE_BASE_DAMAGE) ?? PIRATE_BASE_DAMAGE) +
+      pirateLevel *
+        ((getConfig('PIRATE_DAMAGE_PER_LEVEL') as typeof PIRATE_DAMAGE_PER_LEVEL) ??
+          PIRATE_DAMAGE_PER_LEVEL),
     sectorX,
     sectorY,
     canNegotiate: pirateReputation >= 1,
-    negotiateCost: pirateLevel * BATTLE_NEGOTIATE_COST_PER_LEVEL,
+    negotiateCost:
+      pirateLevel *
+      ((getConfig('BATTLE_NEGOTIATE_COST_PER_LEVEL') as typeof BATTLE_NEGOTIATE_COST_PER_LEVEL) ??
+        BATTLE_NEGOTIATE_COST_PER_LEVEL),
   };
 }
 
@@ -400,8 +419,9 @@ export interface AcceptQuestValidation {
 }
 
 export function validateAcceptQuest(activeQuestCount: number): AcceptQuestValidation {
-  if (activeQuestCount >= MAX_ACTIVE_QUESTS) {
-    return { valid: false, error: `Maximum ${MAX_ACTIVE_QUESTS} active quests reached` };
+  const maxActiveQuests = (getConfig('MAX_ACTIVE_QUESTS') as typeof MAX_ACTIVE_QUESTS) ?? MAX_ACTIVE_QUESTS;
+  if (activeQuestCount >= maxActiveQuests) {
+    return { valid: false, error: `Maximum ${maxActiveQuests} active quests reached` };
   }
   return { valid: true };
 }

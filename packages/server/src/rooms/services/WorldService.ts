@@ -46,6 +46,7 @@ import {
   nameQuadrant as nameQuadrantEngine,
   generateQuadrantName,
 } from '../../engine/quadrantEngine.js';
+import { getConfig } from '../../engine/gameConfigApply.js';
 import {
   JUMPGATE_TRAVEL_COST_CREDITS,
   PLAYER_GATE_TRAVEL_COST_CREDITS,
@@ -284,8 +285,8 @@ export class WorldService {
       canAddResource(auth.userId, amount),
     ]);
 
-    const shipAmount = (cargo as Record<string, number>)[resource] ?? 0;
-    const storageAmount = (storage as Record<string, number>)[resource] ?? 0;
+    const shipAmount = (cargo as unknown as Record<string, number>)[resource] ?? 0;
+    const storageAmount = (storage as unknown as Record<string, number>)[resource] ?? 0;
     const decision = resolveTransfer(direction, resource, amount, shipAmount, storageAmount, hasSpace);
 
     if (!decision.ok) {
@@ -1275,27 +1276,27 @@ export class WorldService {
 
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-    if (currentAP.current < CUSTOM_SLATE_AP_COST) {
+    if (currentAP.current < ((getConfig('CUSTOM_SLATE_AP_COST') as typeof CUSTOM_SLATE_AP_COST) ?? CUSTOM_SLATE_AP_COST)) {
       client.send('createSlateResult', {
         success: false,
-        error: `Not enough AP (need ${CUSTOM_SLATE_AP_COST})`,
+        error: `Not enough AP (need ${(getConfig('CUSTOM_SLATE_AP_COST') as typeof CUSTOM_SLATE_AP_COST) ?? CUSTOM_SLATE_AP_COST})`,
       });
       return;
     }
 
     const credits = await getPlayerCredits(auth.userId);
-    if (credits < CUSTOM_SLATE_CREDIT_COST) {
+    if (credits < ((getConfig('CUSTOM_SLATE_CREDIT_COST') as typeof CUSTOM_SLATE_CREDIT_COST) ?? CUSTOM_SLATE_CREDIT_COST)) {
       client.send('createSlateResult', {
         success: false,
-        error: `Not enough credits (need ${CUSTOM_SLATE_CREDIT_COST})`,
+        error: `Not enough credits (need ${(getConfig('CUSTOM_SLATE_CREDIT_COST') as typeof CUSTOM_SLATE_CREDIT_COST) ?? CUSTOM_SLATE_CREDIT_COST})`,
       });
       return;
     }
 
     // Deduct AP and credits
-    currentAP.current -= CUSTOM_SLATE_AP_COST;
+    currentAP.current -= (getConfig('CUSTOM_SLATE_AP_COST') as typeof CUSTOM_SLATE_AP_COST) ?? CUSTOM_SLATE_AP_COST;
     await saveAPState(auth.userId, currentAP);
-    await deductCredits(auth.userId, CUSTOM_SLATE_CREDIT_COST);
+    await deductCredits(auth.userId, (getConfig('CUSTOM_SLATE_CREDIT_COST') as typeof CUSTOM_SLATE_CREDIT_COST) ?? CUSTOM_SLATE_CREDIT_COST);
 
     // Create slate + add to cargo
     const customData = {
@@ -1638,8 +1639,8 @@ export class WorldService {
     // Deduct credits (player gates are cheaper)
     const isPlayerGate = gate.ownerId != null;
     const travelCost = isPlayerGate
-      ? PLAYER_GATE_TRAVEL_COST_CREDITS
-      : JUMPGATE_TRAVEL_COST_CREDITS;
+      ? (getConfig('PLAYER_GATE_TRAVEL_COST_CREDITS') as typeof PLAYER_GATE_TRAVEL_COST_CREDITS) ?? PLAYER_GATE_TRAVEL_COST_CREDITS
+      : (getConfig('JUMPGATE_TRAVEL_COST_CREDITS') as typeof JUMPGATE_TRAVEL_COST_CREDITS) ?? JUMPGATE_TRAVEL_COST_CREDITS;
     const currentCredits = await getPlayerCredits(auth.userId);
     if (currentCredits < travelCost) {
       client.send('useJumpGateResult', { success: false, error: 'Not enough credits' });
@@ -1676,8 +1677,8 @@ export class WorldService {
     // Deduct credits (player gates are cheaper)
     const isPlayerGate = gate.ownerId != null;
     const travelCost = isPlayerGate
-      ? PLAYER_GATE_TRAVEL_COST_CREDITS
-      : JUMPGATE_TRAVEL_COST_CREDITS;
+      ? (getConfig('PLAYER_GATE_TRAVEL_COST_CREDITS') as typeof PLAYER_GATE_TRAVEL_COST_CREDITS) ?? PLAYER_GATE_TRAVEL_COST_CREDITS
+      : (getConfig('JUMPGATE_TRAVEL_COST_CREDITS') as typeof JUMPGATE_TRAVEL_COST_CREDITS) ?? JUMPGATE_TRAVEL_COST_CREDITS;
     const currentCredits = await getPlayerCredits(auth.userId);
     if (currentCredits < travelCost) {
       client.send('useJumpGateResult', { success: false, error: 'Not enough credits' });
@@ -1720,11 +1721,11 @@ export class WorldService {
     // Check AP
     const ap = await getAPState(auth.userId);
     const currentAP = calculateCurrentAP(ap, Date.now());
-    if (currentAP.current < RESCUE_AP_COST) {
+    if (currentAP.current < ((getConfig('RESCUE_AP_COST') as typeof RESCUE_AP_COST) ?? RESCUE_AP_COST)) {
       client.send('rescueResult', { success: false, error: 'Not enough AP' });
       return;
     }
-    const newAP = { ...currentAP, current: currentAP.current - RESCUE_AP_COST };
+    const newAP = { ...currentAP, current: currentAP.current - ((getConfig('RESCUE_AP_COST') as typeof RESCUE_AP_COST) ?? RESCUE_AP_COST) };
     await saveAPState(auth.userId, newAP);
 
     // Add survivor
@@ -1814,7 +1815,7 @@ export class WorldService {
 
         if (checkDistressCall(sx, sy)) {
           const distressId = `distress_${sx}_${sy}_${Math.floor(now / 3600000)}`;
-          const expiresAt = new Date(now + RESCUE_EXPIRY_MINUTES * 60 * 1000);
+          const expiresAt = new Date(now + ((getConfig('RESCUE_EXPIRY_MINUTES') as typeof RESCUE_EXPIRY_MINUTES) ?? RESCUE_EXPIRY_MINUTES) * 60 * 1000);
 
           try {
             await insertDistressCall(distressId, sx, sy, 1, expiresAt);
@@ -1852,8 +1853,8 @@ export class WorldService {
           });
 
           // Set cooldown: random 1-2 hours before next distress in this quadrant
-          const cooldownMs = DISTRESS_INTERVAL_MIN_MS +
-            Math.random() * (DISTRESS_INTERVAL_MAX_MS - DISTRESS_INTERVAL_MIN_MS);
+          const cooldownMs = ((getConfig('DISTRESS_INTERVAL_MIN_MS') as typeof DISTRESS_INTERVAL_MIN_MS) ?? DISTRESS_INTERVAL_MIN_MS) +
+            Math.random() * (((getConfig('DISTRESS_INTERVAL_MAX_MS') as typeof DISTRESS_INTERVAL_MAX_MS) ?? DISTRESS_INTERVAL_MAX_MS) - ((getConfig('DISTRESS_INTERVAL_MIN_MS') as typeof DISTRESS_INTERVAL_MIN_MS) ?? DISTRESS_INTERVAL_MIN_MS));
           this.distressCooldowns.set(cooldownKey, now + cooldownMs);
           return; // Only one distress call per check
         }
@@ -1977,7 +1978,7 @@ export class WorldService {
                 const sellQty = Math.min(route.sellAmount, available);
                 if (sellQty > 0) {
                   const price =
-                    NPC_PRICES[route.sellResource as MineableResourceType] * NPC_SELL_SPREAD;
+                    NPC_PRICES[route.sellResource as MineableResourceType] * ((getConfig('NPC_SELL_SPREAD') as typeof NPC_SELL_SPREAD) ?? NPC_SELL_SPREAD);
                   await addCredits(ownerId, Math.floor(sellQty * price));
                   await updateStorageResource(ownerId, route.sellResource, -sellQty);
                 }
@@ -1987,7 +1988,7 @@ export class WorldService {
             // Execute buy
             if (route.buyResource && route.buyAmount > 0) {
               const credits = await getPlayerCredits(ownerId);
-              const price = NPC_PRICES[route.buyResource as MineableResourceType] * NPC_BUY_SPREAD;
+              const price = NPC_PRICES[route.buyResource as MineableResourceType] * ((getConfig('NPC_BUY_SPREAD') as typeof NPC_BUY_SPREAD) ?? NPC_BUY_SPREAD);
               const affordable = Math.floor(credits / price);
               const buyQty = Math.min(route.buyAmount, affordable);
               if (buyQty > 0) {

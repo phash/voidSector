@@ -47,6 +47,7 @@ import {
   getResourceTotal,
 } from '../../engine/inventoryService.js';
 import { isPositiveInt } from './utils.js';
+import { getConfig } from '../../engine/gameConfigApply.js';
 import {
   NPC_PRICES,
   NPC_BUY_SPREAD,
@@ -80,8 +81,8 @@ export class EconomyService {
         itemType: item.itemType,
         stock: currentStock,
         maxStock: item.maxStock,
-        buyPrice: Math.ceil(calculatePrice(basePrice, stockRatio) * NPC_BUY_SPREAD),
-        sellPrice: Math.floor(calculatePrice(basePrice, stockRatio) * NPC_SELL_SPREAD),
+        buyPrice: Math.ceil(calculatePrice(basePrice, stockRatio) * ((getConfig('NPC_BUY_SPREAD') as typeof NPC_BUY_SPREAD) ?? NPC_BUY_SPREAD)),
+        sellPrice: Math.floor(calculatePrice(basePrice, stockRatio) * ((getConfig('NPC_SELL_SPREAD') as typeof NPC_SELL_SPREAD) ?? NPC_SELL_SPREAD)),
       };
     });
     // Snapshot calculated stock to DB so subsequent canSellToStation/canBuyFromStation
@@ -187,7 +188,7 @@ export class EconomyService {
         }
         const newCredits = await addCredits(auth.userId, sellCheck.price);
         await recordTrade(sx, sy, effectiveAmount);
-        updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
+        updatePlayerStationRep(auth.userId, sx, sy, (getConfig('STATION_REP_TRADE') as typeof STATION_REP_TRADE) ?? STATION_REP_TRADE).catch(() => {});
         const updatedCargo = await getCargoState(auth.userId);
         const partial = effectiveAmount < amount;
         client.send('npcTradeResult', {
@@ -248,7 +249,7 @@ export class EconomyService {
         }
         const newCredits = await getPlayerCredits(auth.userId);
         await recordTrade(sx, sy, amount);
-        updatePlayerStationRep(auth.userId, sx, sy, STATION_REP_TRADE).catch(() => {});
+        updatePlayerStationRep(auth.userId, sx, sy, (getConfig('STATION_REP_TRADE') as typeof STATION_REP_TRADE) ?? STATION_REP_TRADE).catch(() => {});
         const updatedCargo = await getCargoState(auth.userId);
         client.send('npcTradeResult', { success: true, credits: newCredits });
         client.send('creditsUpdate', { credits: newCredits });
@@ -337,7 +338,7 @@ export class EconomyService {
     const stationModifier = getFuelRepPriceModifier(stationRep);
     const priceModifier = Math.min(factionModifier, stationModifier);
 
-    const cost = Math.ceil(availableAmount * FUEL_COST_PER_UNIT * priceModifier);
+    const cost = Math.ceil(availableAmount * ((getConfig('FUEL_COST_PER_UNIT') as typeof FUEL_COST_PER_UNIT) ?? FUEL_COST_PER_UNIT) * priceModifier);
 
     if (cost > 0) {
       const credits = await getPlayerCredits(auth.userId);

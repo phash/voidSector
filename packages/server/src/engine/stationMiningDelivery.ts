@@ -2,6 +2,7 @@ import {
   NPC_PRICES, NPC_SELL_SPREAD, MARKT_SPREAD_PER_LEVEL,
   stationCargoCapacity, type MineableResourceType,
 } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 
 export interface DeliveryStation {
   markt_level: number;
@@ -25,7 +26,7 @@ export function resolveMiningDelivery(
 ): MiningDelivery {
   const base = NPC_PRICES[resource];
   if (station.markt_level >= 1) {
-    const unit = base * (NPC_SELL_SPREAD + MARKT_SPREAD_PER_LEVEL * station.markt_level);
+    const unit = base * (((getConfig('NPC_SELL_SPREAD') as typeof NPC_SELL_SPREAD) ?? NPC_SELL_SPREAD) + MARKT_SPREAD_PER_LEVEL * station.markt_level);
     return {
       mode: 'sell',
       credits: Math.round(unit * amount),

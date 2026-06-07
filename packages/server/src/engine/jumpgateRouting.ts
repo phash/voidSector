@@ -1,5 +1,6 @@
 import { JUMPGATE_MAX_CHAIN_HOPS } from '@void-sector/shared';
 import type { JumpGateDestination } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 
 interface GateInfo {
   id: string;
@@ -44,7 +45,7 @@ export function findReachableGates(
       hops,
     });
 
-    if (hops >= JUMPGATE_MAX_CHAIN_HOPS) continue;
+    if (hops >= ((getConfig('JUMPGATE_MAX_CHAIN_HOPS') as typeof JUMPGATE_MAX_CHAIN_HOPS) ?? JUMPGATE_MAX_CHAIN_HOPS)) continue;
 
     const nextNeighbors = links.get(currentId) ?? [];
     for (const nextId of nextNeighbors) {

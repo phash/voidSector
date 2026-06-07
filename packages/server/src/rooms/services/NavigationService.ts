@@ -19,6 +19,7 @@ import {
   STEP_INTERVAL_MIN_MS,
 } from '../../engine/autopilot.js';
 import { hashCoords, isInBlackHoleCluster } from '../../engine/worldgen.js';
+import { getConfig } from '../../engine/gameConfigApply.js';
 import { findReachableGates } from '../../engine/jumpgateRouting.js';
 import { getReputationTier } from '../../engine/commands.js';
 import { getStationFaction } from '../../engine/npcgen.js';
@@ -167,7 +168,7 @@ export class NavigationService {
     // Station visit tracking
     if (sectorData.type === 'station') {
       recordVisit(sectorX, sectorY).catch(() => {});
-      updatePlayerStationRep(auth.userId, sectorX, sectorY, STATION_REP_VISIT).catch(() => {});
+      updatePlayerStationRep(auth.userId, sectorX, sectorY, (getConfig('STATION_REP_VISIT') as typeof STATION_REP_VISIT) ?? STATION_REP_VISIT).catch(() => {});
       const ship = this.ctx.getShipForClient(client.sessionId);
       await this.tryAutoRefuel(client, auth, ship);
     }
@@ -605,7 +606,7 @@ export class NavigationService {
 
     // Fuel cost: V2 formula with drive efficiency
     const fuelCost = calcHyperjumpFuelV2(
-      BASE_FUEL_PER_JUMP,
+      (getConfig('BASE_FUEL_PER_JUMP') as typeof BASE_FUEL_PER_JUMP) ?? BASE_FUEL_PER_JUMP,
       actualDistance,
       ship.hyperdriveFuelEfficiency,
     );
@@ -615,7 +616,7 @@ export class NavigationService {
       sourceSector?.contents?.includes('pirate_zone') ||
       targetSectorNebula?.contents?.includes('pirate_zone');
     const finalFuelCost = isPirate
-      ? Math.ceil(fuelCost * HYPERJUMP_PIRATE_FUEL_PENALTY)
+      ? Math.ceil(fuelCost * ((getConfig('HYPERJUMP_PIRATE_FUEL_PENALTY') as typeof HYPERJUMP_PIRATE_FUEL_PENALTY) ?? HYPERJUMP_PIRATE_FUEL_PENALTY))
       : fuelCost;
 
     // Validate AP
@@ -670,8 +671,8 @@ export class NavigationService {
     // Use hyperdriveSpeed for autopilot tick rate
     const autopilotMs =
       ship.hyperdriveSpeed > 0
-        ? Math.max(20, Math.floor(AUTOPILOT_STEP_MS / ship.hyperdriveSpeed))
-        : AUTOPILOT_STEP_MS;
+        ? Math.max(20, Math.floor(((getConfig('AUTOPILOT_STEP_MS') as typeof AUTOPILOT_STEP_MS) ?? AUTOPILOT_STEP_MS) / ship.hyperdriveSpeed))
+        : ((getConfig('AUTOPILOT_STEP_MS') as typeof AUTOPILOT_STEP_MS) ?? AUTOPILOT_STEP_MS);
     const steps: { x: number; y: number }[] = [];
     {
       const pdx = actualTargetX - pos.x;
@@ -848,10 +849,10 @@ export class NavigationService {
     const isBlackHole = (x: number, y: number): boolean => {
       if (isInBlackHoleCluster(x, y)) return true;
       const dist = Math.max(Math.abs(x), Math.abs(y));
-      if (dist > BLACK_HOLE_MIN_DISTANCE) {
+      if (dist > ((getConfig('BLACK_HOLE_MIN_DISTANCE') as typeof BLACK_HOLE_MIN_DISTANCE) ?? BLACK_HOLE_MIN_DISTANCE)) {
         const seed = hashCoords(x, y, WORLD_SEED);
         const bhRoll = (seed >>> 0) / 0x100000000;
-        if (bhRoll < BLACK_HOLE_SPAWN_CHANCE) return true;
+        if (bhRoll < ((getConfig('BLACK_HOLE_SPAWN_CHANCE') as typeof BLACK_HOLE_SPAWN_CHANCE) ?? BLACK_HOLE_SPAWN_CHANCE)) return true;
       }
       return false;
     };
@@ -1154,7 +1155,7 @@ export class NavigationService {
 
         let fuelCost = 0;
         if (segment.isHyperjump) {
-          fuelCost = calcHyperjumpFuelV2(BASE_FUEL_PER_JUMP, segment.moves.length, ship.hyperdriveFuelEfficiency);
+          fuelCost = calcHyperjumpFuelV2((getConfig('BASE_FUEL_PER_JUMP') as typeof BASE_FUEL_PER_JUMP) ?? BASE_FUEL_PER_JUMP, segment.moves.length, ship.hyperdriveFuelEfficiency);
 
           const currentFuel = await getFuelState(auth.userId);
           if (currentFuel === null || currentFuel < fuelCost) {
@@ -1263,7 +1264,7 @@ export class NavigationService {
       modifier = Math.min(modifier, stationModifier);
 
       const credits = await getPlayerCredits(auth.userId);
-      const cost = Math.ceil(tankSpace * FUEL_COST_PER_UNIT * modifier);
+      const cost = Math.ceil(tankSpace * ((getConfig('FUEL_COST_PER_UNIT') as typeof FUEL_COST_PER_UNIT) ?? FUEL_COST_PER_UNIT) * modifier);
       if (credits < cost) return; // silently skip if can't afford full refuel
 
       await deductCredits(auth.userId, cost);

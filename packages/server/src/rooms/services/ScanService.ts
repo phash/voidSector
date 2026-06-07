@@ -35,6 +35,7 @@ import {
   getPlayerJumpGate,
   getActiveQuests,
 } from '../../db/queries.js';
+import { getConfig } from '../../engine/gameConfigApply.js';
 import { getUniverseTickCount } from '../../engine/universeBootstrap.js';
 import { isFrontierQuadrant } from '../../engine/expansionEngine.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
@@ -95,7 +96,7 @@ export class ScanService {
     }
     const scannerLevel = ship.scannerLevel;
 
-    const result = validateLocalScan(currentAP, AP_COSTS_LOCAL_SCAN, scannerLevel);
+    const result = validateLocalScan(currentAP, (getConfig('AP_COSTS_LOCAL_SCAN') as typeof AP_COSTS_LOCAL_SCAN) ?? AP_COSTS_LOCAL_SCAN, scannerLevel);
     if (!result.valid) {
       client.send('error', { code: 'LOCAL_SCAN_FAIL', message: result.error! });
       return;

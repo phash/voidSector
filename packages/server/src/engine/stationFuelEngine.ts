@@ -11,6 +11,7 @@ import {
   updateStationFuelStock,
   consumeStationGas,
 } from '../db/npcStationQueries.js';
+import { getConfig } from './gameConfigApply.js';
 
 export interface FuelProductionInput {
   gasStock: number;
@@ -31,15 +32,15 @@ export function calculateFuelProduction(input: FuelProductionInput): FuelProduct
   if (space <= 0) return { fuelToAdd: 0, gasToConsume: 0 };
 
   const efficiency = STATION_FUEL_LEVEL_EFFICIENCY[stationLevel] ?? 1.0;
-  const hasGas = gasStock >= STATION_FUEL_PER_GAS;
+  const hasGas = gasStock >= ((getConfig('STATION_FUEL_PER_GAS') as typeof STATION_FUEL_PER_GAS) ?? STATION_FUEL_PER_GAS);
 
   const rawFuel = hasGas
-    ? Math.round(STATION_FUEL_GAS_RATE_PER_TICK * efficiency)
-    : STATION_FUEL_BASELINE_PER_TICK;
+    ? Math.round(((getConfig('STATION_FUEL_GAS_RATE_PER_TICK') as typeof STATION_FUEL_GAS_RATE_PER_TICK) ?? STATION_FUEL_GAS_RATE_PER_TICK) * efficiency)
+    : ((getConfig('STATION_FUEL_BASELINE_PER_TICK') as typeof STATION_FUEL_BASELINE_PER_TICK) ?? STATION_FUEL_BASELINE_PER_TICK);
 
   return {
     fuelToAdd: Math.min(rawFuel, space),
-    gasToConsume: hasGas ? STATION_FUEL_PER_GAS : 0,
+    gasToConsume: hasGas ? ((getConfig('STATION_FUEL_PER_GAS') as typeof STATION_FUEL_PER_GAS) ?? STATION_FUEL_PER_GAS) : 0,
   };
 }
 
@@ -52,11 +53,16 @@ export async function runStationFuelProductionTick(): Promise<void> {
       const { fuelToAdd, gasToConsume } = calculateFuelProduction({
         gasStock: gas,
         fuelStock: fuel,
-        maxFuelStock: STATION_FUEL_MAX_STOCK,
+        maxFuelStock: (getConfig('STATION_FUEL_MAX_STOCK') as typeof STATION_FUEL_MAX_STOCK) ?? STATION_FUEL_MAX_STOCK,
         stationLevel: station.level,
       });
       if (fuelToAdd > 0) {
-        await updateStationFuelStock(station.x, station.y, fuel + fuelToAdd, STATION_FUEL_MAX_STOCK);
+        await updateStationFuelStock(
+          station.x,
+          station.y,
+          fuel + fuelToAdd,
+          (getConfig('STATION_FUEL_MAX_STOCK') as typeof STATION_FUEL_MAX_STOCK) ?? STATION_FUEL_MAX_STOCK,
+        );
       }
       if (gasToConsume > 0) {
         await consumeStationGas(station.x, station.y, gasToConsume);

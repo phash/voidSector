@@ -1,5 +1,6 @@
 // packages/server/src/engine/conquestEngine.ts
 import { CONQUEST_RATE, CONQUEST_POOL_DRAIN_PER_TICK } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 import { sectorToQuadrant } from './quadrantEngine.js';
 import { civQueries } from '../db/civQueries.js';
 import { getQuadrantControl, upsertQuadrantControl, getAllQuadrantControls } from '../db/queries.js';
@@ -177,7 +178,7 @@ export class ConquestEngine {
       station_tier: Math.max(qc.station_tier, station.level),
     });
 
-    await civQueries.drainConquestPool(station.id, CONQUEST_POOL_DRAIN_PER_TICK);
+    await civQueries.drainConquestPool(station.id, (getConfig('CONQUEST_POOL_DRAIN_PER_TICK') as typeof CONQUEST_POOL_DRAIN_PER_TICK) ?? CONQUEST_POOL_DRAIN_PER_TICK);
 
     logger.debug(
       { stationId: station.id, faction: station.faction, qx, qy, gain: effectiveGain },

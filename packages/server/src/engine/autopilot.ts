@@ -6,6 +6,7 @@ import {
   HYPERJUMP_MIN_AP,
   calcHyperjumpFuelV2,
 } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
 
 /**
  * Autopilot Engine — pure functions for path calculation, cost estimation,
@@ -196,10 +197,10 @@ export function calculateAutopilotCosts(
   const numBatches = Math.ceil(totalSteps / speed);
 
   // Fuel: total fuel cost using V2 formula
-  const totalFuel = calcHyperjumpFuelV2(BASE_FUEL_PER_JUMP, totalSteps, shipStats.hyperdriveFuelEfficiency);
+  const totalFuel = calcHyperjumpFuelV2((getConfig('BASE_FUEL_PER_JUMP') as typeof BASE_FUEL_PER_JUMP) ?? BASE_FUEL_PER_JUMP, totalSteps, shipStats.hyperdriveFuelEfficiency);
 
   // AP: one AP charge per batch
-  const apPerBatch = Math.max(HYPERJUMP_MIN_AP, HYPERJUMP_BASE_AP - speed * HYPERJUMP_AP_PER_SPEED);
+  const apPerBatch = Math.max((getConfig('HYPERJUMP_MIN_AP') as typeof HYPERJUMP_MIN_AP) ?? HYPERJUMP_MIN_AP, ((getConfig('HYPERJUMP_BASE_AP') as typeof HYPERJUMP_BASE_AP) ?? HYPERJUMP_BASE_AP) - speed * ((getConfig('HYPERJUMP_AP_PER_SPEED') as typeof HYPERJUMP_AP_PER_SPEED) ?? HYPERJUMP_AP_PER_SPEED));
   const totalAP = numBatches * apPerBatch;
 
   // Time estimate: one tick per batch

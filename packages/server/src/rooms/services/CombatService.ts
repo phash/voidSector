@@ -23,6 +23,7 @@ import {
   STATION_REPAIR_ORE_PER_HP,
   calculateShipStats,
 } from '@void-sector/shared';
+import { getConfig } from '../../engine/gameConfigApply.js';
 import { logger } from '../../utils/logger.js';
 
 // ─── CombatService ────────────────────────────────────────────────────────────
@@ -62,8 +63,8 @@ export class CombatService {
     }
 
     const hpToRepair = hp.maxHp - hp.currentHp;
-    const costCredits = hpToRepair * STATION_REPAIR_CR_PER_HP;
-    const costOre = hpToRepair * STATION_REPAIR_ORE_PER_HP;
+    const costCredits = hpToRepair * ((getConfig('STATION_REPAIR_CR_PER_HP') as typeof STATION_REPAIR_CR_PER_HP) ?? STATION_REPAIR_CR_PER_HP);
+    const costOre = hpToRepair * ((getConfig('STATION_REPAIR_ORE_PER_HP') as typeof STATION_REPAIR_ORE_PER_HP) ?? STATION_REPAIR_ORE_PER_HP);
 
     const credits = await getPlayerCredits(auth.userId);
     if (credits < costCredits) {

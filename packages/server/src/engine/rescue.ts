@@ -1,5 +1,6 @@
 import { hashCoords } from './worldgen.js';
 import { calculateDirection, estimateDistance } from './jumpgates.js';
+import { getConfig } from './gameConfigApply.js';
 import {
   WORLD_SEED,
   DISTRESS_CALL_CHANCE,
@@ -11,7 +12,10 @@ const DISTRESS_SALT = 999;
 
 export function checkDistressCall(sectorX: number, sectorY: number): boolean {
   const hash = hashCoords(sectorX, sectorY, WORLD_SEED + DISTRESS_SALT);
-  return ((hash >>> 0) % 10000) / 10000 < DISTRESS_CALL_CHANCE;
+  return (
+    ((hash >>> 0) % 10000) / 10000 <
+    ((getConfig('DISTRESS_CALL_CHANCE') as typeof DISTRESS_CALL_CHANCE) ?? DISTRESS_CALL_CHANCE)
+  );
 }
 
 export function generateDistressCallData(
@@ -22,7 +26,11 @@ export function generateDistressCallData(
 ): { direction: string; estimatedDistance: number } {
   const actualDistance = Math.sqrt((targetX - playerX) ** 2 + (targetY - playerY) ** 2);
   const direction = calculateDirection(playerX, playerY, targetX, targetY);
-  const estimated = estimateDistance(actualDistance, DISTRESS_DIRECTION_VARIANCE);
+  const estimated = estimateDistance(
+    actualDistance,
+    (getConfig('DISTRESS_DIRECTION_VARIANCE') as typeof DISTRESS_DIRECTION_VARIANCE) ??
+      DISTRESS_DIRECTION_VARIANCE,
+  );
   return { direction, estimatedDistance: estimated };
 }
 

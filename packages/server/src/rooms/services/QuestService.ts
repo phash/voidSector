@@ -52,6 +52,7 @@ import {
 import { generateBountyTrail } from '../../engine/bountyQuestGen.js';
 import { hashCoords } from '../../engine/worldgen.js';
 import { QUEST_TEMPLATES } from '../../engine/questTemplates.js';
+import { getConfig } from '../../engine/gameConfigApply.js';
 
 // Douglas Adams-style jettison messages
 const JETTISON_MESSAGES = [
@@ -195,7 +196,7 @@ export class QuestService {
       description = description.replace('???', trail.targetName);
     }
 
-    const expiresAt = new Date(Date.now() + QUEST_EXPIRY_DAYS * 86400000);
+    const expiresAt = new Date(Date.now() + ((getConfig('QUEST_EXPIRY_DAYS') as typeof QUEST_EXPIRY_DAYS) ?? QUEST_EXPIRY_DAYS) * 86400000);
     const questId = await insertQuest(
       auth.userId,
       data.templateId,

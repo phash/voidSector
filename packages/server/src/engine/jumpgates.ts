@@ -1,4 +1,5 @@
 import { hashCoords } from './worldgen.js';
+import { getConfig } from './gameConfigApply.js';
 import {
   WORLD_SEED,
   JUMPGATE_SALT,
@@ -42,8 +43,12 @@ export function generateGateTarget(
 
   // Distance: ancient gates span multiple quadrants, normal gates are intra-quadrant
   const distNorm = ((hash >>> 0) % 10000) / 10000;
-  const minRange = isAncient ? ANCIENT_JUMPGATE_MIN_RANGE : JUMPGATE_MIN_RANGE;
-  const maxRange = isAncient ? ANCIENT_JUMPGATE_MAX_RANGE : JUMPGATE_MAX_RANGE;
+  const minRange = isAncient
+    ? ANCIENT_JUMPGATE_MIN_RANGE
+    : (getConfig('JUMPGATE_MIN_RANGE') as typeof JUMPGATE_MIN_RANGE) ?? JUMPGATE_MIN_RANGE;
+  const maxRange = isAncient
+    ? ANCIENT_JUMPGATE_MAX_RANGE
+    : (getConfig('JUMPGATE_MAX_RANGE') as typeof JUMPGATE_MAX_RANGE) ?? JUMPGATE_MAX_RANGE;
   const distance = Math.floor(minRange + distNorm ** 2 * (maxRange - minRange));
 
   // Angle for target direction
@@ -59,8 +64,15 @@ export function generateGateTarget(
       : 'wormhole';
 
   // Code/minigame requirements (ancient always requires minigame)
-  const requiresCode = isAncient ? false : ((hash3 >>> 8) % 100) / 100 < JUMPGATE_CODE_CHANCE;
-  const requiresMinigame = isAncient || ((hash3 >>> 16) % 100) / 100 < JUMPGATE_MINIGAME_CHANCE;
+  const requiresCode = isAncient
+    ? false
+    : ((hash3 >>> 8) % 100) / 100 <
+      ((getConfig('JUMPGATE_CODE_CHANCE') as typeof JUMPGATE_CODE_CHANCE) ?? JUMPGATE_CODE_CHANCE);
+  const requiresMinigame =
+    isAncient ||
+    ((hash3 >>> 16) % 100) / 100 <
+      ((getConfig('JUMPGATE_MINIGAME_CHANCE') as typeof JUMPGATE_MINIGAME_CHANCE) ??
+        JUMPGATE_MINIGAME_CHANCE);
 
   const accessCode = requiresCode ? generateAccessCode(hash3) : null;
 
