@@ -19,6 +19,8 @@ import { btn } from '../ui-helpers';
 import { InlineError } from './InlineError';
 import { StationTradeTab } from './StationTradeTab';
 import { LagerPanel } from './LagerPanel';
+import { MarketTab } from './MarketTab';
+import { KontorTab } from './KontorTab';
 import { findNearestStation } from '../utils/sectorUtils';
 
 const btnStyle: React.CSSProperties = {
@@ -37,7 +39,6 @@ export function TradeScreen() {
   const storage = useStore((s) => s.storage);
   const baseStructures = useStore((s) => s.baseStructures);
   const tradeOrders = useStore((s) => s.tradeOrders);
-  const myOrders = useStore((s) => s.myOrders);
   const mySlates = useStore((s) => s.mySlates);
   const playerId = useStore((s) => s.playerId);
   const tradeRoutes = useStore((s) => s.tradeRoutes);
@@ -48,7 +49,6 @@ export function TradeScreen() {
   const ship = useStore((s) => s.ship);
   const cargo = useStore((s) => s.cargo);
   const npcStationData = useStore((s) => s.npcStationData);
-  const kontorOrders = useStore((s) => s.kontorOrders);
   const navReturnProgram = useStore((s) => s.navReturnProgram);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
   const clearNavReturn = useStore((s) => s.clearNavReturn);
@@ -65,7 +65,6 @@ export function TradeScreen() {
   const isStation = currentSector?.type === 'station';
   const hasBase = baseStructures.some((s: any) => s.type === 'trading_post' || s.type === 'base');
   const canTrade = isStation || hasBase;
-  const hasKontorOrders = kontorOrders.length > 0;
 
   useEffect(() => {
     // Clear stale trade message when screen opens
@@ -150,8 +149,17 @@ export function TradeScreen() {
             LAGER
           </button>
         )}
-        {/* MARKET + KONTOR tabs hidden for launch (#525): server has no placeOrder/
-            kontor handlers, so the lists never populate. Re-enable once wired. */}
+        {/* Player market (#525 / SP6): global MARKT at home base, per-sector BÖRSE at stations. */}
+        {!isStation && tier >= 2 && (
+          <button style={tabStyle(tab === 'market')} onClick={() => setTab('market')}>
+            MARKT
+          </button>
+        )}
+        {isStation && (
+          <button style={tabStyle(tab === 'kontor')} onClick={() => setTab('kontor')}>
+            BÖRSE
+          </button>
+        )}
         {!isStation && tier >= 2 && (
           <button style={tabStyle(tab === 'slates')} onClick={() => setTab('slates')}>
             {btn('SLATES')}
@@ -200,6 +208,10 @@ export function TradeScreen() {
       {tab === 'npc' && <StationTradeTab />}
 
       {tab === 'lager' && !isStation && <LagerPanel />}
+
+      {tab === 'market' && !isStation && tier >= 2 && <MarketTab />}
+
+      {tab === 'kontor' && isStation && <KontorTab />}
 
       {/* OLD NPC TAB — replaced by StationTradeTab */}
       {false && (
@@ -529,56 +541,6 @@ export function TradeScreen() {
         </div>
       )}
 
-      {tab === 'market' && !isStation && tier >= 2 && (
-        <div>
-          <div
-            style={{
-              borderBottom: '1px solid var(--color-dim)',
-              paddingBottom: '4px',
-              marginBottom: '8px',
-            }}
-          >
-            MARKET ORDERS
-          </div>
-          {tradeOrders.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>NO ORDERS</div>
-          ) : (
-            tradeOrders.map((o: any) => (
-              <div key={o.id} style={{ fontSize: '0.7rem', marginBottom: 4 }}>
-                [{o.type.toUpperCase()}] {o.amount}x {o.resource.toUpperCase()} @ {o.price_per_unit}{' '}
-                CR — {o.player_name}
-              </div>
-            ))
-          )}
-
-          <div
-            style={{
-              borderBottom: '1px solid var(--color-dim)',
-              paddingBottom: '4px',
-              marginBottom: '8px',
-              marginTop: '12px',
-            }}
-          >
-            MY ORDERS
-          </div>
-          {myOrders.length === 0 ? (
-            <div style={{ opacity: 0.4 }}>NO ORDERS</div>
-          ) : (
-            myOrders.map((o: any) => (
-              <div key={o.id} style={{ fontSize: '0.7rem', display: 'flex', gap: 8 }}>
-                [{o.type}] {o.amount}x {o.resource} @ {o.price_per_unit}
-                <button
-                  style={{ ...btnStyle, fontSize: '0.6rem' }}
-                  onClick={() => network.sendCancelOrder(o.id)}
-                >
-                  X
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
       {tab === 'slates' && !isStation && (
         <div>
           <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '8px' }}>
@@ -728,52 +690,6 @@ export function TradeScreen() {
         </div>
       )}
 
-      {tab === 'kontor' && hasKontorOrders && (
-        <div>
-          <div
-            style={{
-              borderBottom: '1px solid var(--color-dim)',
-              paddingBottom: '4px',
-              marginBottom: '8px',
-            }}
-          >
-            KONTOR ORDERS
-          </div>
-          {kontorOrders.map((order, idx) => {
-            const remaining = order.amountWanted - order.amountFilled;
-            const isOwn = order.ownerId === playerId;
-            return (
-              <div
-                key={order.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 4,
-                  fontSize: '0.7rem',
-                }}
-              >
-                <span>
-                  #{idx + 1} BUYING {order.itemType.toUpperCase()} {remaining}u remaining @
-                  {order.pricePerUnit}cr/u
-                </span>
-                <button
-                  style={{
-                    ...btnStyle,
-                    fontSize: '0.6rem',
-                    opacity: isOwn ? 0.3 : 1,
-                    cursor: isOwn ? 'default' : 'pointer',
-                  }}
-                  disabled={isOwn}
-                  onClick={() => !isOwn && network.sendKontorSellTo(order.id, amount)}
-                >
-                  SELL
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
       <InlineError codes={['INSUFFICIENT', 'BUILD_FAIL']} />
     </div>
   );

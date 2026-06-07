@@ -10,6 +10,25 @@ export interface HelpTip {
 
 export const HELP_TIPS: HelpTip[] = [
   {
+    id: 'first_market',
+    title: '◈ MARKT (SPIELERBÖRSE)',
+    body:
+      'Globaler Markt für Aufträge zwischen Spielern.\n\n' +
+      '→ VERKAUFEN reserviert deine Ware, KAUFEN reserviert Credits\n' +
+      '→ [PLATZIEREN] stellt deinen Auftrag ein\n' +
+      '→ [FÜLLEN] bedient einen fremden Auftrag (atomarer Tausch)\n' +
+      '→ [X] storniert deinen Auftrag und gibt das Reservierte zurück',
+  },
+  {
+    id: 'first_kontor',
+    title: '◈ BÖRSE (SEKTOR-AUFTRÄGE)',
+    body:
+      'Lokale Kaufgesuche an dieser Station.\n\n' +
+      '→ Stelle ein [AUFTRAG]-Kaufgesuch ein (Credits werden reserviert)\n' +
+      '→ Andere Piloten im selben Sektor verkaufen dir die Ware\n' +
+      '→ [VERKAUFEN] bedient ein fremdes Kaufgesuch aus deinem Cargo',
+  },
+  {
     id: 'first_p2p_trade',
     title: '◈ DIREKTHANDEL',
     body:

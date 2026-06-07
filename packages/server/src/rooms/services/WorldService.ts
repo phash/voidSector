@@ -104,7 +104,18 @@ import {
   getMiningState,
   getFuelState,
   saveFuelState,
+  getPlayerPosition,
 } from './RedisAPStore.js';
+import {
+  placeMarketOrder,
+  fulfillMarketOrder,
+  cancelMarketOrder,
+} from '../../engine/marketOrderService.js';
+import {
+  placeKontorOrder,
+  fillKontorOrder,
+  getKontorOrders,
+} from '../../engine/kontorEngine.js';
 import {
   getSector,
   getPlayerDiscoveries,
@@ -321,8 +332,90 @@ export class WorldService {
 
   async handleCancelOrder(client: Client, data: { orderId: string }): Promise<void> {
     const auth = client.auth as AuthPayload;
-    const cancelled = await cancelTradeOrder(data.orderId, auth.userId);
-    client.send('cancelOrderResult', { success: cancelled });
+    const result = await cancelMarketOrder(auth.userId, data.orderId);
+    client.send('cancelOrderResult', { success: result.success });
+    if (result.success) await this.refreshMarketAndWallet(client, auth.userId);
+  }
+
+  async handlePlaceOrder(
+    client: Client,
+    data: { resource: string; amount: number; pricePerUnit: number; type: 'buy' | 'sell' },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const result = await placeMarketOrder(
+      auth.userId,
+      data.resource,
+      data.amount,
+      data.pricePerUnit,
+      data.type,
+    );
+    client.send('orderPlaced', { success: result.success, error: result.success ? undefined : result.error });
+    if (result.success) await this.refreshMarketAndWallet(client, auth.userId);
+  }
+
+  async handleFulfillOrder(client: Client, data: { orderId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const result = await fulfillMarketOrder(auth.userId, data.orderId);
+    client.send('orderResult', { success: result.success, error: result.success ? undefined : result.error });
+    if (result.success) await this.refreshMarketAndWallet(client, auth.userId);
+  }
+
+  /** Push refreshed market lists + the player's cargo/credits after a market mutation. */
+  private async refreshMarketAndWallet(client: Client, playerId: string): Promise<void> {
+    client.send('tradeOrders', { orders: await getActiveTradeOrders() });
+    client.send('myOrders', { orders: await getPlayerTradeOrders(playerId) });
+    client.send('cargoUpdate', await getCargoState(playerId));
+    client.send('creditsUpdate', { credits: await getPlayerCredits(playerId) });
+  }
+
+  // ── KONTOR (per-sector station consignment board) ─────────────────────────
+  async handleKontorGetOrders(client: Client): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const pos = await getPlayerPosition(auth.userId);
+    if (!pos) {
+      client.send('kontorUpdate', { orders: [] });
+      return;
+    }
+    const orders = await getKontorOrders(pos.x, pos.y);
+    client.send('kontorUpdate', { orders });
+  }
+
+  async handleKontorPlaceOrder(
+    client: Client,
+    data: { resource: string; amount: number; pricePerUnit: number },
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const pos = await getPlayerPosition(auth.userId);
+    if (!pos) {
+      client.send('error', { code: 'NO_POSITION', message: 'Position unbekannt' });
+      return;
+    }
+    const result = await placeKontorOrder(
+      auth.userId,
+      pos.x,
+      pos.y,
+      'resource',
+      data.resource,
+      data.amount,
+      data.pricePerUnit,
+    );
+    if (!result.success) {
+      client.send('error', { code: 'KONTOR_PLACE_FAIL', message: result.error ?? 'Order fehlgeschlagen' });
+    }
+    client.send('kontorUpdate', { orders: await getKontorOrders(pos.x, pos.y) });
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+  }
+
+  async handleKontorSellTo(client: Client, data: { orderId: string; amount: number }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const result = await fillKontorOrder(data.orderId, auth.userId, data.amount);
+    if (!result.success) {
+      client.send('error', { code: 'KONTOR_SELL_FAIL', message: result.error ?? 'Verkauf fehlgeschlagen' });
+    }
+    const pos = await getPlayerPosition(auth.userId);
+    if (pos) client.send('kontorUpdate', { orders: await getKontorOrders(pos.x, pos.y) });
+    client.send('cargoUpdate', await getCargoState(auth.userId));
+    client.send('creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
   }
 
   async handleGetMySlates(client: Client): Promise<void> {

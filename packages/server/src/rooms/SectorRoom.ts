@@ -874,6 +874,30 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('cancelOrder', async (client, data: { orderId: string }) => {
       await this.world.handleCancelOrder(client, data);
     });
+    this.onMessage(
+      'placeOrder',
+      async (
+        client,
+        data: { resource: string; amount: number; pricePerUnit: number; type: 'buy' | 'sell' },
+      ) => {
+        await this.world.handlePlaceOrder(client, data);
+      },
+    );
+    this.onMessage('fulfillOrder', async (client, data: { orderId: string }) => {
+      await this.world.handleFulfillOrder(client, data);
+    });
+    this.onMessage('kontorGetOrders', async (client) => {
+      await this.world.handleKontorGetOrders(client);
+    });
+    this.onMessage(
+      'kontorPlaceOrder',
+      async (client, data: { resource: string; amount: number; pricePerUnit: number }) => {
+        await this.world.handleKontorPlaceOrder(client, data);
+      },
+    );
+    this.onMessage('kontorSellTo', async (client, data: { orderId: string; amount: number }) => {
+      await this.world.handleKontorSellTo(client, data);
+    });
     this.onMessage('getMySlates', async (client) => {
       await this.world.handleGetMySlates(client);
     });

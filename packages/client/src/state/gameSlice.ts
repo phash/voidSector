@@ -458,6 +458,7 @@ export interface GameSlice {
     id: string;
     ownerId: string;
     itemType: string;
+    itemId: string;
     amountWanted: number;
     amountFilled: number;
     pricePerUnit: number;

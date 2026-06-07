@@ -1044,15 +1044,28 @@ class GameNetwork {
       useStore.getState().setMyOrders(data.orders);
     });
 
-    room.onMessage('orderPlaced', (data: { success: boolean }) => {
+    room.onMessage('orderPlaced', (data: { success: boolean; error?: string }) => {
+      const store = useStore.getState();
       if (data.success) {
-        useStore.getState().addLogEntry('Order placed');
+        store.addLogEntry('Order platziert');
+        store.showSuccessToast('Order platziert');
+      } else {
+        store.setActionError({ code: 'ORDER_FAIL', message: data.error ?? 'Order fehlgeschlagen' });
+      }
+    });
+
+    room.onMessage('orderResult', (data: { success: boolean; error?: string }) => {
+      const store = useStore.getState();
+      if (data.success) {
+        store.showSuccessToast('Order erfüllt');
+      } else {
+        store.setActionError({ code: 'ORDER_FAIL', message: data.error ?? 'Order fehlgeschlagen' });
       }
     });
 
     room.onMessage('cancelOrderResult', (data: { success: boolean }) => {
       if (data.success) {
-        useStore.getState().addLogEntry('Order cancelled');
+        useStore.getState().addLogEntry('Order storniert');
       }
     });
 
@@ -2776,6 +2789,12 @@ class GameNetwork {
   }
   sendKontorSellTo(orderId: string, amount: number): void {
     this.sectorRoom?.send('kontorSellTo', { orderId, amount });
+  }
+  sendKontorPlaceOrder(resource: string, amount: number, pricePerUnit: number): void {
+    this.sectorRoom?.send('kontorPlaceOrder', { resource, amount, pricePerUnit });
+  }
+  sendFulfillOrder(orderId: string): void {
+    this.sectorRoom?.send('fulfillOrder', { orderId });
   }
 
   // News
