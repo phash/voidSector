@@ -31,6 +31,8 @@ import { AlienEncounterToast } from './overlays/AlienEncounterToast';
 import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
 import { LocalScanResultOverlay } from './overlays/LocalScanResultOverlay';
 import { PlayerCardModal } from './PlayerCardModal';
+import { TradeWindow } from './TradeWindow';
+import { TradeInviteModal } from './TradeInviteModal';
 import { AreaScanSummaryOverlay } from './overlays/AreaScanSummaryOverlay';
 import { getPhysicalCargoTotal } from '@void-sector/shared';
 import { CombatV3Screen } from './CombatV3Screen';
@@ -229,6 +231,8 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       <PlayerContextMenu />
       <LocalScanResultOverlay />
       <PlayerCardModal />
+      <TradeInviteModal />
+      <TradeWindow />
       <AreaScanSummaryOverlay />
       <StoryEventOverlay />
       <FirstContactNewsOverlay />

@@ -11,6 +11,20 @@ export interface InventoryItem {
     itemId: string;
     quantity: number;
 }
+/** Full direct-trade (P2P) session view broadcast to both participants. */
+export interface TradeStateView {
+    tradeId: string;
+    fromPlayerId: string;
+    fromPlayerName: string;
+    toPlayerId: string;
+    toPlayerName: string;
+    fromItems: InventoryItem[];
+    fromCredits: number;
+    toItems: InventoryItem[];
+    toCredits: number;
+    confirmedBy: string[];
+    expiresAt: number;
+}
 export type WreckSize = 'small' | 'medium' | 'large';
 export type WreckStatus = 'intact' | 'investigated' | 'exhausted';
 export interface WreckItem {

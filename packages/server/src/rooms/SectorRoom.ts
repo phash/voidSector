@@ -33,6 +33,7 @@ import {
   getAPState,
   saveAPState,
   savePlayerPosition,
+  getPlayerPosition,
   getMiningState,
   saveMiningState,
   getFuelState,
@@ -245,6 +246,24 @@ export class SectorRoom extends Room<SectorRoomState> {
 
   private getShipForClient(sessionId: string): ShipStats {
     return this.clientShips.get(sessionId) ?? calculateShipStats([]);
+  }
+
+  /** Send a message to every connected client whose userId is in `playerIds`. */
+  private sendToPlayers(playerIds: string[], type: string, payload: unknown): void {
+    const ids = new Set(playerIds);
+    this.clients.forEach((c) => {
+      if (ids.has((c.auth as AuthPayload)?.userId)) {
+        c.send(type, payload);
+      }
+    });
+  }
+
+  /** Push the full direct-trade session (both offers + confirm state) to both participants. */
+  private async broadcastTradeState(tradeId: string): Promise<void> {
+    const session = await getDirectTradeService().getSession(tradeId);
+    if (!session) return;
+    const view = { tradeId, ...session };
+    this.sendToPlayers([session.fromPlayerId, session.toPlayerId], 'tradeState', view);
   }
 
   private async getPlayerBonuses(playerId: string): Promise<FactionBonuses> {
@@ -1075,22 +1094,47 @@ export class SectorRoom extends Room<SectorRoomState> {
     // ── Direct Trade ─────────────────────────────────────────────────
     this.onMessage('tradeRequest', (client, data: { targetPlayerId: string }) => {
       const auth = client.auth as AuthPayload;
-      getDirectTradeService()
-        .initiateTrade(auth.userId, data.targetPlayerId)
-        .then((tradeId) => {
+      void (async () => {
+        try {
+          const targetClient = this.clients.find(
+            (c) => (c.auth as AuthPayload)?.userId === data.targetPlayerId,
+          );
+          if (!targetClient || data.targetPlayerId === auth.userId) {
+            client.send('error', { code: 'TRADE_NOT_IN_RANGE', message: 'Spieler nicht in Reichweite' });
+            return;
+          }
+          // Both must stand on the same sector.
+          const [myPos, theirPos] = await Promise.all([
+            getPlayerPosition(auth.userId),
+            getPlayerPosition(data.targetPlayerId),
+          ]);
+          if (!myPos || !theirPos || myPos.x !== theirPos.x || myPos.y !== theirPos.y) {
+            client.send('error', { code: 'TRADE_NOT_IN_RANGE', message: 'Spieler nicht im selben Sektor' });
+            return;
+          }
+          const targetName = (targetClient.auth as AuthPayload)?.username ?? 'Pilot';
+          const tradeId = await getDirectTradeService().initiateTrade(
+            auth.userId,
+            auth.username,
+            data.targetPlayerId,
+            targetName,
+          );
           client.send('tradeStarted', { tradeId });
-          // Notify target if in same room
-          this.clients.forEach((c) => {
-            if ((c.auth as AuthPayload)?.userId === data.targetPlayerId) {
-              c.send('tradeInvite', { tradeId, fromPlayerId: auth.userId });
-            }
+          targetClient.send('tradeInvite', {
+            tradeId,
+            fromPlayerId: auth.userId,
+            fromPlayerName: auth.username,
           });
-        })
-        .catch((err) => {
+          // Initiator opens their window now; the target's window opens only after
+          // they accept the invite (which triggers getTradeState → broadcast to both).
+          const session = await getDirectTradeService().getSession(tradeId);
+          if (session) client.send('tradeState', { tradeId, ...session });
+        } catch (err) {
           logger.error({ err }, 'tradeRequest error');
           captureError(err as Error, 'initiateTrade').catch(() => {});
           client.send('error', { code: 'TRADE_FAILED', message: 'Failed to start trade' });
-        });
+        }
+      })();
     });
     this.onMessage(
       'tradeOffer',
@@ -1098,54 +1142,73 @@ export class SectorRoom extends Room<SectorRoomState> {
         const auth = client.auth as AuthPayload;
         getDirectTradeService()
           .updateOffer(data.tradeId, auth.userId, data.items, data.credits)
-          .then(() => {
-            client.send('tradeOfferUpdated', { tradeId: data.tradeId });
-          })
+          .then(() => this.broadcastTradeState(data.tradeId))
           .catch((err) => {
             client.send('error', { code: 'TRADE_ERROR', message: err.message });
           });
       },
     );
+    this.onMessage('getTradeState', (client, data: { tradeId: string }) => {
+      void this.broadcastTradeState(data.tradeId).catch((err) => {
+        logger.error({ err }, 'getTradeState error');
+      });
+    });
     this.onMessage('tradeConfirm', (client, data: { tradeId: string }) => {
       const auth = client.auth as AuthPayload;
-      getDirectTradeService()
-        .getSession(data.tradeId)
-        .then(async (session) => {
+      void (async () => {
+        try {
+          const session = await getDirectTradeService().getSession(data.tradeId);
           const bothConfirmed = await getDirectTradeService().confirm(data.tradeId, auth.userId);
-          if (bothConfirmed) {
-            await getDirectTradeService().executeTrade(data.tradeId);
-            client.send('tradeComplete', { tradeId: data.tradeId });
-            // Notify the other player too
-            const otherPlayerId =
-              session?.fromPlayerId === auth.userId ? session?.toPlayerId : session?.fromPlayerId;
-            if (otherPlayerId) {
-              this.clients.forEach((c) => {
-                if ((c.auth as AuthPayload)?.userId === otherPlayerId) {
-                  c.send('tradeComplete', { tradeId: data.tradeId });
-                }
-              });
-            }
+          if (!bothConfirmed) {
+            await this.broadcastTradeState(data.tradeId);
+            return;
           }
-        })
-        .catch((err) => {
+          const participants = session
+            ? [session.fromPlayerId, session.toPlayerId]
+            : [auth.userId];
+          try {
+            await getDirectTradeService().executeTrade(data.tradeId);
+          } catch (execErr) {
+            logger.warn({ execErr, tradeId: data.tradeId }, 'trade execution rejected');
+            this.sendToPlayers(participants, 'error', {
+              code: 'TRADE_REJECTED',
+              message: 'Trade fehlgeschlagen — Bestand reicht nicht',
+            });
+            this.sendToPlayers(participants, 'tradeCancelled', { tradeId: data.tradeId });
+            await getDirectTradeService().cancelTrade(data.tradeId);
+            return;
+          }
+          this.sendToPlayers(participants, 'tradeComplete', { tradeId: data.tradeId });
+          // Refresh both players' cargo, credits and inventory views.
+          for (const pid of participants) {
+            const target = this.clients.find((c) => (c.auth as AuthPayload)?.userId === pid);
+            if (!target) continue;
+            target.send('cargoUpdate', await getCargoState(pid));
+            target.send('creditsUpdate', { credits: await getPlayerCredits(pid) });
+            target.send('inventoryUpdated', {});
+          }
+        } catch (err) {
           logger.error({ err }, 'tradeConfirm error');
           captureError(err as Error, 'confirmTrade').catch(() => {});
           client.send('error', {
             code: 'TRADE_CONFIRM_FAILED',
             message: 'Failed to confirm trade',
           });
-        });
+        }
+      })();
     });
     this.onMessage('tradeCancel', (client, data: { tradeId: string }) => {
-      getDirectTradeService()
-        .cancelTrade(data.tradeId)
-        .then(() => {
-          client.send('tradeCancelled', { tradeId: data.tradeId });
-        })
-        .catch((err) => {
+      void (async () => {
+        try {
+          const session = await getDirectTradeService().getSession(data.tradeId);
+          await getDirectTradeService().cancelTrade(data.tradeId);
+          const participants = session ? [session.fromPlayerId, session.toPlayerId] : [];
+          this.sendToPlayers(participants, 'tradeCancelled', { tradeId: data.tradeId });
+        } catch (err) {
           logger.error({ err }, 'tradeCancel error');
           captureError(err as Error, 'cancelTrade').catch(() => {});
-        });
+        }
+      })();
     });
 
     // ── Conquest Pool Deposit ────────────────────────────────────────

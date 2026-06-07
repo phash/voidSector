@@ -8,6 +8,7 @@ export function PlayerCardModal() {
   const setPlayerCardTarget = useStore((s) => s.setPlayerCardTarget);
   const friendRequests = useStore((s) => s.friendRequests);
   const currentPlayerId = useStore((s) => s.playerId);
+  const myPosition = useStore((s) => s.position);
   const [confirm, setConfirm] = useState<'remove' | 'block' | null>(null);
   const [localSent, setLocalSent] = useState(false);
 
@@ -64,6 +65,19 @@ export function PlayerCardModal() {
       chatChannel: 'direct' as ChatChannel,
       directChatRecipient: { id: target.id, name: target.name },
     });
+    close();
+  };
+
+  // Direct trade only with an online player on the same sector.
+  const sameSector =
+    !!target.position &&
+    !!myPosition &&
+    target.position.x === myPosition.x &&
+    target.position.y === myPosition.y;
+  const canTrade = !isSelf && !target.isBlocked && target.online && sameSector;
+
+  const handleTrade = () => {
+    network.sendTradeRequest(target.id);
     close();
   };
 
@@ -200,6 +214,16 @@ export function PlayerCardModal() {
                   onClick={handleMessage}
                 >
                   [NACHRICHT]
+                </button>
+              )}
+
+              {canTrade && (
+                <button
+                  className="vs-btn"
+                  style={{ fontSize: '0.75rem', borderColor: '#00FF88', color: '#00FF88' }}
+                  onClick={handleTrade}
+                >
+                  [HANDELN]
                 </button>
               )}
 

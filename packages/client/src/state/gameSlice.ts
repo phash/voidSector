@@ -58,6 +58,7 @@ import type {
   FriendRequestEntry,
   BlockEntry,
   PlayerCardData,
+  TradeStateView,
   XenoFactionStatus,
   AlienInteractResult,
 } from '@void-sector/shared';
@@ -311,6 +312,9 @@ export interface GameSlice {
   friendRequests: FriendRequestEntry[];
   blockedPlayers: BlockEntry[];
   playerCardTarget: PlayerCardData | null;
+  // P2P direct trade (#225 / SP3)
+  activeTrade: TradeStateView | null;
+  tradeInvitePending: { tradeId: string; fromPlayerId: string; fromPlayerName: string } | null;
   channelAlerts: Record<string, boolean>;
 
   // Alerts
@@ -612,6 +616,10 @@ export interface GameSlice {
   setFriendRequests: (friendRequests: FriendRequestEntry[]) => void;
   setBlockedPlayers: (blockedPlayers: BlockEntry[]) => void;
   setPlayerCardTarget: (playerCardTarget: PlayerCardData | null) => void;
+  setActiveTrade: (activeTrade: TradeStateView | null) => void;
+  setTradeInvitePending: (
+    tradeInvitePending: { tradeId: string; fromPlayerId: string; fromPlayerName: string } | null,
+  ) => void;
   addFriend: (friend: FriendEntry) => void;
   removeFriendFromList: (friendId: string) => void;
   addFriendRequest: (req: FriendRequestEntry) => void;
@@ -769,6 +777,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   friendRequests: [],
   blockedPlayers: [],
   playerCardTarget: null,
+  activeTrade: null,
+  tradeInvitePending: null,
   channelAlerts: {},
   alerts: {},
   selectedSector: null,
@@ -981,6 +991,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setFriendRequests: (friendRequests) => set({ friendRequests }),
   setBlockedPlayers: (blockedPlayers) => set({ blockedPlayers }),
   setPlayerCardTarget: (playerCardTarget) => set({ playerCardTarget }),
+  setActiveTrade: (activeTrade) => set({ activeTrade }),
+  setTradeInvitePending: (tradeInvitePending) => set({ tradeInvitePending }),
   addFriend: (friend) => set((s) => ({ friends: [...s.friends, friend] })),
   removeFriendFromList: (friendId) => set((s) => ({
     friends: s.friends.filter((f) => f.id !== friendId),

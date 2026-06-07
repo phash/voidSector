@@ -45,6 +45,7 @@ import type {
   CivShip,
   WarTickerEvent,
   InventoryItem,
+  TradeStateView,
   ConstructionSiteState,
   NpcTradeResultMessage,
   AcepPath,
@@ -937,6 +938,35 @@ class GameNetwork {
         store.addLogEntry(`Transfer fehlgeschlagen: ${data.error}`);
         store.setActionError({ code: 'TRANSFER_FAIL', message: data.error ?? 'Transfer fehlgeschlagen' });
       }
+    });
+
+    // ── P2P direct trade (#225 / SP3) ──────────────────────────────────────
+    room.onMessage('tradeStarted', (data: { tradeId: string }) => {
+      // Window opens once the broadcast tradeState arrives; just log here.
+      useStore.getState().addLogEntry(`Handel gestartet (${data.tradeId.slice(-6)})`);
+    });
+    room.onMessage(
+      'tradeInvite',
+      (data: { tradeId: string; fromPlayerId: string; fromPlayerName: string }) => {
+        useStore.getState().setTradeInvitePending(data);
+      },
+    );
+    room.onMessage('tradeState', (data: TradeStateView) => {
+      useStore.getState().setActiveTrade(data);
+    });
+    room.onMessage('tradeComplete', () => {
+      const store = useStore.getState();
+      store.setActiveTrade(null);
+      store.setTradeInvitePending(null);
+      store.showSuccessToast('Handel abgeschlossen');
+    });
+    room.onMessage('tradeCancelled', () => {
+      const store = useStore.getState();
+      if (store.activeTrade || store.tradeInvitePending) {
+        store.addLogEntry('Handel abgebrochen');
+      }
+      store.setActiveTrade(null);
+      store.setTradeInvitePending(null);
     });
 
     // NPC trade result (station NPC or NPC ship)
@@ -2312,6 +2342,27 @@ class GameNetwork {
   sendTransfer(resource: string, amount: number, direction: 'toStorage' | 'fromStorage') {
     if (!this.sectorRoom) return;
     this.sectorRoom.send('transfer', { resource, amount, direction });
+  }
+
+  // ── P2P direct trade (#225 / SP3) ────────────────────────────────────────
+  sendTradeRequest(targetPlayerId: string) {
+    this.sectorRoom?.send('tradeRequest', { targetPlayerId });
+  }
+
+  sendTradeOffer(tradeId: string, items: InventoryItem[], credits: number) {
+    this.sectorRoom?.send('tradeOffer', { tradeId, items, credits });
+  }
+
+  sendTradeConfirm(tradeId: string) {
+    this.sectorRoom?.send('tradeConfirm', { tradeId });
+  }
+
+  sendTradeCancel(tradeId: string) {
+    this.sectorRoom?.send('tradeCancel', { tradeId });
+  }
+
+  requestTradeState(tradeId: string) {
+    this.sectorRoom?.send('getTradeState', { tradeId });
   }
 
   sendNpcTrade(resource: string, amount: number, action: 'buy' | 'sell') {

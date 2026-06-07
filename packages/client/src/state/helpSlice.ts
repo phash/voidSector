@@ -10,6 +10,16 @@ export interface HelpTip {
 
 export const HELP_TIPS: HelpTip[] = [
   {
+    id: 'first_p2p_trade',
+    title: '◈ DIREKTHANDEL',
+    body:
+      'Tausche direkt mit einem Spieler im selben Sektor.\n\n' +
+      '→ Items aus deinem Cargo + Credits anbieten (+/-)\n' +
+      '→ Du siehst live, was die Gegenseite bietet\n' +
+      '→ Beide müssen [BESTÄTIGEN]; jede Änderung setzt das zurück\n' +
+      '→ Erst wenn beide bestätigen, wird getauscht',
+  },
+  {
     id: 'first_lager',
     title: '◈ LAGER (TRESOR)',
     body:

@@ -26,11 +26,16 @@ describe('DirectTradeService', () => {
   });
 
   it('initiateTrade stores session in Redis with 60s TTL', async () => {
-    const tradeId = await service.initiateTrade('playerA', 'playerB');
+    const tradeId = await service.initiateTrade('playerA', 'Alice', 'playerB', 'Bob');
     expect(mockRedis.setex).toHaveBeenCalledWith(
       expect.stringContaining('trade:'),
       60,
       expect.stringContaining('"fromPlayerId":"playerA"'),
+    );
+    expect(mockRedis.setex).toHaveBeenCalledWith(
+      expect.anything(),
+      60,
+      expect.stringContaining('"toPlayerName":"Bob"'),
     );
     expect(tradeId).toBeTruthy();
   });
@@ -101,5 +106,54 @@ describe('DirectTradeService', () => {
       'drive_mk2',
       1,
     );
+  });
+
+  it('updateOffer drops non-positive/non-integer quantities and clamps credits', async () => {
+    const session = {
+      fromPlayerId: 'playerA',
+      fromPlayerName: 'Alice',
+      toPlayerId: 'playerB',
+      toPlayerName: 'Bob',
+      fromItems: [],
+      fromCredits: 0,
+      toItems: [],
+      toCredits: 0,
+      confirmedBy: [],
+      expiresAt: Date.now() + 60000,
+    };
+    mockRedis.get.mockResolvedValue(JSON.stringify(session));
+    await service.updateOffer(
+      'tradeId',
+      'playerA',
+      [
+        { itemType: 'resource', itemId: 'ore', quantity: 3 },
+        { itemType: 'resource', itemId: 'gas', quantity: -2 },
+        { itemType: 'resource', itemId: 'crystal', quantity: 1.5 },
+      ] as any,
+      -50,
+    );
+    const written = JSON.parse(mockRedis.setex.mock.calls.at(-1)![2]);
+    expect(written.fromItems).toEqual([{ itemType: 'resource', itemId: 'ore', quantity: 3 }]);
+    expect(written.fromCredits).toBe(0);
+  });
+
+  it('executeTrade throws (no dupe) when a side cannot cover its offer', async () => {
+    const { getInventoryItem, transferInventoryItem } = await import('../db/queries.js');
+    vi.mocked(getInventoryItem).mockResolvedValueOnce(1); // has only 1, offered 3
+    const session = {
+      fromPlayerId: 'playerA',
+      fromPlayerName: 'Alice',
+      toPlayerId: 'playerB',
+      toPlayerName: 'Bob',
+      fromItems: [{ itemType: 'resource', itemId: 'ore', quantity: 3 }],
+      fromCredits: 0,
+      toItems: [],
+      toCredits: 0,
+      confirmedBy: ['playerA', 'playerB'],
+      expiresAt: Date.now() + 60000,
+    };
+    mockRedis.get.mockResolvedValue(JSON.stringify(session));
+    await expect(service.executeTrade('tradeId')).rejects.toThrow('INSUFFICIENT_ITEMS');
+    expect(vi.mocked(transferInventoryItem)).not.toHaveBeenCalled();
   });
 });

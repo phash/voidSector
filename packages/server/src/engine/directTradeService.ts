@@ -1,11 +1,19 @@
 import type { Redis as RedisType } from 'ioredis';
 import type { InventoryItem } from '@void-sector/shared';
-import { transferInventoryItem, deductCredits, addCredits } from '../db/queries.js';
+import {
+  transferInventoryItem,
+  deductCredits,
+  addCredits,
+  getInventoryItem,
+  getPlayerCredits,
+} from '../db/queries.js';
 import { redis as sharedRedis } from '../rooms/services/RedisAPStore.js';
 
-interface TradeSession {
+export interface TradeSession {
   fromPlayerId: string;
+  fromPlayerName: string;
   toPlayerId: string;
+  toPlayerName: string;
   fromItems: InventoryItem[];
   fromCredits: number;
   toItems: InventoryItem[];
@@ -14,16 +22,31 @@ interface TradeSession {
   expiresAt: number;
 }
 
+/** Keep only positive integer quantities; drop junk/negative offers. */
+function sanitizeItems(items: InventoryItem[]): InventoryItem[] {
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((i) => i && Number.isInteger(i.quantity) && i.quantity > 0)
+    .map((i) => ({ itemType: i.itemType, itemId: i.itemId, quantity: i.quantity }));
+}
+
 const TRADE_TTL_S = 60;
 
 export class DirectTradeService {
   constructor(private redis: RedisType) {}
 
-  async initiateTrade(fromPlayerId: string, toPlayerId: string): Promise<string> {
+  async initiateTrade(
+    fromPlayerId: string,
+    fromPlayerName: string,
+    toPlayerId: string,
+    toPlayerName: string,
+  ): Promise<string> {
     const tradeId = `trade:${fromPlayerId}:${toPlayerId}:${Date.now()}`;
     const session: TradeSession = {
       fromPlayerId,
+      fromPlayerName,
       toPlayerId,
+      toPlayerName,
       fromItems: [],
       fromCredits: 0,
       toItems: [],
@@ -49,12 +72,16 @@ export class DirectTradeService {
   ): Promise<void> {
     const session = await this.getSession(tradeId);
     if (!session || Date.now() > session.expiresAt) throw new Error('Trade expired');
+    const safeItems = sanitizeItems(items);
+    const safeCredits = Math.max(0, Math.floor(credits) || 0);
     if (playerId === session.fromPlayerId) {
-      session.fromItems = items;
-      session.fromCredits = credits;
+      session.fromItems = safeItems;
+      session.fromCredits = safeCredits;
+    } else if (playerId === session.toPlayerId) {
+      session.toItems = safeItems;
+      session.toCredits = safeCredits;
     } else {
-      session.toItems = items;
-      session.toCredits = credits;
+      throw new Error('Not a participant');
     }
     session.confirmedBy = []; // reset on offer change
     await this.redis.setex(tradeId, TRADE_TTL_S, JSON.stringify(session));
@@ -73,9 +100,35 @@ export class DirectTradeService {
     );
   }
 
+  /** Throws if the player cannot cover the offered items + credits. */
+  private async assertCanCover(
+    playerId: string,
+    items: InventoryItem[],
+    credits: number,
+  ): Promise<void> {
+    for (const item of items) {
+      const have = await getInventoryItem(playerId, item.itemType, item.itemId);
+      if (have < item.quantity) {
+        throw new Error('INSUFFICIENT_ITEMS');
+      }
+    }
+    if (credits > 0) {
+      const have = await getPlayerCredits(playerId);
+      if (have < credits) {
+        throw new Error('INSUFFICIENT_CREDITS');
+      }
+    }
+  }
+
   async executeTrade(tradeId: string): Promise<void> {
     const session = await this.getSession(tradeId);
     if (!session) throw new Error('Trade session not found');
+
+    // Validate both sides actually own what they offered BEFORE moving anything.
+    // (deductInventory silently no-ops on shortfall while the receiver is still
+    // credited → without this check, offering items you don't have dupes them.)
+    await this.assertCanCover(session.fromPlayerId, session.fromItems, session.fromCredits);
+    await this.assertCanCover(session.toPlayerId, session.toItems, session.toCredits);
 
     // Transfer items A→B
     for (const item of session.fromItems) {
