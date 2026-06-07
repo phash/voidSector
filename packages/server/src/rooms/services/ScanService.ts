@@ -347,6 +347,24 @@ export class ScanService {
       false,
     );
 
+    // QW4: report alien faction presence in the swept region so the galaxy feels
+    // inhabited (reuses the already-loaded scanControls — no extra query).
+    const controlByQuad = new Map(
+      scanControls.map((c: any) => [`${c.qx}:${c.qy}`, c.controlling_faction]),
+    );
+    const factionsSeen = new Set<string>();
+    for (const s of sectors) {
+      const { qx, qy } = sectorToQuadrant(s.x, s.y);
+      const f = controlByQuad.get(`${qx}:${qy}`);
+      if (f && f !== 'humans') factionsSeen.add(f);
+    }
+    if (factionsSeen.size > 0) {
+      const names = [...factionsSeen]
+        .map((f) => f.replace(/_/g, ' ').toUpperCase())
+        .join(', ');
+      client.send('logEntry', `◈ SENSOR: Fremde Präsenz im Sektor — ${names}`);
+    }
+
     // Nebula fog: hide contents of nebula sectors when scanned from outside
     const foggedSectors = sectors.map((s) => {
       if (s.environment === 'nebula') {
