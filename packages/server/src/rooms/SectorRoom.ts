@@ -25,6 +25,7 @@ import { constructionBus } from '../constructionBus.js';
 import type { ConstructionCompletedEvent } from '../constructionBus.js';
 import { friendsBus } from '../friendsBus.js';
 import type { FriendBusEvent } from '../friendsBus.js';
+import { warBus } from '../warBus.js';
 import { FriendsService } from './services/FriendsService.js';
 import Redis from 'ioredis';
 
@@ -132,6 +133,7 @@ import type {
   QuadrantControlState,
   NpcFleetState,
   InventoryItem,
+  WarTickerEvent,
 } from '@void-sector/shared';
 import type { ServiceContext } from './services/ServiceContext.js';
 import { NavigationService } from './services/NavigationService.js';
@@ -1476,6 +1478,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     };
     friendsBus.on('friendEvent', onFriendEvent);
 
+    // War bus (QW2) — server-wide strategic news, broadcast live to everyone here.
+    const onWarEvent = (event: WarTickerEvent) => this.broadcast('warTicker', event);
+    warBus.on('warEvent', onWarEvent);
+
     this.disposeCallbacks.push(() => {
       adminBus.off('adminBroadcast', onBroadcast);
       adminBus.off('adminQuestCreated', onQuestCreated);
@@ -1484,6 +1490,7 @@ export class SectorRoom extends Room<SectorRoomState> {
       civShipBus.off('civShipsTick', onCivShipsTick);
       constructionBus.off('completed', onConstructionCompleted);
       friendsBus.off('friendEvent', onFriendEvent);
+      warBus.off('warEvent', onWarEvent);
     });
   }
 

@@ -11,6 +11,7 @@ import {
   updateQuestStatus,
 } from '../db/queries.js';
 import { removeFromInventory } from './inventoryService.js';
+import { warBus } from '../warBus.js';
 import type { QuadrantControlRow } from '../db/queries.js';
 import { FactionConfigService } from './factionConfigService.js';
 import { calculateFriction, repValueToTier } from './frictionEngine.js';
@@ -221,8 +222,10 @@ export class StrategicTickService {
   }
 
   async pushWarTickerEvent(message: string): Promise<void> {
-    const event = JSON.stringify({ message, ts: Date.now() });
-    await this.redis.lpush('war_ticker', event);
+    const ts = Date.now();
+    await this.redis.lpush('war_ticker', JSON.stringify({ message, ts }));
     await this.redis.ltrim('war_ticker', 0, 9);
+    // Push live to connected players (QW2) — rooms subscribe and broadcast.
+    warBus.broadcast({ message, ts });
   }
 }
