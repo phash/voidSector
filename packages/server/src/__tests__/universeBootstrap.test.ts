@@ -45,6 +45,7 @@ vi.mock('../engine/civStationService.js', () => ({
 
 vi.mock('../engine/civShipService.js', () => ({
   processCivTick: vi.fn().mockResolvedValue(undefined),
+  getOnlinePlayerAnchors: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('../engine/constructionTickService.js', () => ({

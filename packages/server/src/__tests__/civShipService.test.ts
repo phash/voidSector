@@ -1,6 +1,13 @@
 import { describe, test, expect } from 'vitest';
-import { ulamSpiralStep, stepToward, nextShipState } from '../engine/civShipService.js';
+import { ulamSpiralStep, stepToward, nextShipState, processCivTick } from '../engine/civShipService.js';
 import type { CivShip } from '@void-sector/shared';
+
+describe('processCivTick lazy ticking (SP10)', () => {
+  test('no online players (empty anchors) → early return, no DB access', async () => {
+    // anchors=[] returns before any query, so this resolves without a DB mock.
+    await expect(processCivTick([])).resolves.toBeUndefined();
+  });
+});
 
 describe('ulamSpiralStep', () => {
   test('step 0 returns origin', () => {

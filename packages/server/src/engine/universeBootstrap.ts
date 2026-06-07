@@ -8,7 +8,7 @@ import { logger } from '../utils/logger.js';
 import { QUADRANT_SIZE } from '@void-sector/shared';
 import { assertAlienHomesFarFromOrigin } from './alienHomeGuard.js';
 import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
-import { processCivTick } from './civShipService.js';
+import { processCivTick, getOnlinePlayerAnchors } from './civShipService.js';
 import { processConstructionTick } from './constructionTickService.js';
 import { processStationBuildTick } from './stationBuildTick.js';
 import { processStationMiningTick } from './stationMiningService.js';
@@ -42,19 +42,26 @@ export async function startUniverseEngine(): Promise<void> {
   assertAlienHomesFarFromOrigin(factionHomes, QUADRANT_SIZE, 1000);
 
   await ensureCivStations();
-  // DISABLED: Mining drones spawn for ALL faction stations (8000+), causing OOM.
-  // TODO #512/#513: Rework — only human stations, lazy quadrant-based spawning.
-  // await spawnMissingDrones();
-  logger.info('CivShips: stations seeded (drones DISABLED — see #512/#513)');
+  // SP10 (#512/#513/#537): drones now spawn LAZILY in-tick, only near online
+  // players (spawnMissingDrones(anchors)) — no startup all-stations sweep.
+  logger.info('CivShips: stations seeded (drones spawn lazily near players)');
 
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   const strategicTick = new StrategicTickService(redis);
   await strategicTick.init();
 
   const engine = new UniverseTickEngine(async (result) => {
-    // CivShips: DISABLED — processCivTick loads ALL 24k+ ships every 5s → OOM
-    // TODO #512/#513: Rework to quadrant-based lazy ticking
-    // await processCivTick();
+    // SP10 (#512/#513/#537): lazy civ ticking — only ships/stations near online
+    // players are simulated, bounded + capped, so it no longer OOMs on the full
+    // ~24k ships / ~8k stations. With nobody online both calls early-return.
+    const anchors = await getOnlinePlayerAnchors();
+    await processCivTick(anchors);
+    // Spawn drones near players every ~12 ticks (60s) to keep it cheap.
+    if (result.tickCount % STRATEGIC_TICK_INTERVAL === 0) {
+      await spawnMissingDrones(anchors).catch((err) =>
+        logger.error({ err }, 'spawnMissingDrones error'),
+      );
+    }
     await processConstructionTick();
     await processStationBuildTick();
     await processStationMiningTick();

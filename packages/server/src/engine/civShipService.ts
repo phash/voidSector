@@ -4,12 +4,27 @@ import {
   CIV_SPIRAL_MAX_STEPS,
 } from '@void-sector/shared';
 import type { CivShip } from '@void-sector/shared';
-import { civQueries } from '../db/civQueries.js';
+import { civQueries, getShipsInRange } from '../db/civQueries.js';
 import { civShipBus } from '../civShipBus.js';
 import { generateSector } from './worldgen.js';
 import { query } from '../db/client.js';
 import { logger } from '../utils/logger.js';
 import { nextTraderState, nextMilitaryState, nextOutlawState } from './npcShipAI.js';
+import { redis, getPlayerPosition } from '../rooms/services/RedisAPStore.js';
+
+/** SP10 lazy ticking: only civ ships within this Manhattan range of an online
+ *  player are simulated, capped per tick — bounds work by player count, not by
+ *  the ~24k total ships (fixes the OOM that disabled this tick). */
+export const CIV_TICK_RADIUS = 200;
+export const CIV_MAX_SHIPS_PER_TICK = 600;
+
+/** Positions of currently-online players (the lazy-tick anchors). */
+export async function getOnlinePlayerAnchors(): Promise<Array<{ x: number; y: number }>> {
+  const ids = await redis.smembers('online_players').catch(() => [] as string[]);
+  if (ids.length === 0) return [];
+  const positions = await Promise.all(ids.map((id) => getPlayerPosition(id).catch(() => null)));
+  return positions.filter((p): p is { x: number; y: number } => p != null);
+}
 
 export function ulamSpiralStep(n: number): { dx: number; dy: number } {
   if (n === 0) return { dx: 0, dy: 0 };
@@ -138,9 +153,25 @@ function sectorToQuadrant(x: number, y: number): { qx: number; qy: number } {
   };
 }
 
-export async function processCivTick(): Promise<void> {
+export async function processCivTick(anchors?: Array<{ x: number; y: number }>): Promise<void> {
   try {
-    const ships = await civQueries.getAllShips();
+    // Lazy ticking: only ships near online players (deduped, capped). With no
+    // anchors there is nothing to simulate. Falls back to all ships only when
+    // anchors is explicitly undefined (legacy/tests) — callers pass [] to opt in.
+    let ships: CivShip[];
+    if (anchors === undefined) {
+      ships = await civQueries.getAllShips();
+    } else {
+      if (anchors.length === 0) return;
+      const budget = Math.ceil(CIV_MAX_SHIPS_PER_TICK / anchors.length);
+      const byId = new Map<number, CivShip>();
+      for (const a of anchors) {
+        const near = (await getShipsInRange(a.x, a.y, CIV_TICK_RADIUS, budget)) as CivShip[];
+        for (const s of near) byId.set(s.id as number, s);
+        if (byId.size >= CIV_MAX_SHIPS_PER_TICK) break;
+      }
+      ships = Array.from(byId.values());
+    }
     if (ships.length === 0) return;
 
     const quadrantShips = new Map<string, CivShip[]>();

@@ -250,6 +250,22 @@ export async function getStationsInRange(x: number, y: number, maxDist: number):
   return rows;
 }
 
+/** Civ ships within Manhattan `maxDist` of (x,y), capped (SP10 lazy ticking). */
+export async function getShipsInRange(
+  x: number,
+  y: number,
+  maxDist: number,
+  limit: number,
+): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT * FROM civ_ships
+     WHERE ABS(x - $1) + ABS(y - $2) <= $3
+     LIMIT $4`,
+    [x, y, maxDist, limit],
+  );
+  return rows;
+}
+
 export async function updateNpcShip(
   id: number,
   fields: Partial<{

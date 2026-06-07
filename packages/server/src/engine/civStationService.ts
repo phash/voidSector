@@ -1,6 +1,9 @@
 import { QUADRANT_SIZE, CIV_MAX_DRONES_PER_STATION } from '@void-sector/shared';
-import { civQueries } from '../db/civQueries.js';
+import { civQueries, getStationsInRange } from '../db/civQueries.js';
 import { logger } from '../utils/logger.js';
+
+/** SP10: only spawn drones at shipyard stations within this range of an online player. */
+export const DRONE_SPAWN_RADIUS = 200;
 
 /** Returns the center sector coordinates of a quadrant */
 export function getQuadrantCenter(
@@ -29,10 +32,26 @@ export async function ensureCivStations(): Promise<void> {
 }
 
 /**
- * Spawn mining drones at shipyard stations that are below drone cap.
+ * Spawn mining drones at shipyard stations below the drone cap.
+ *
+ * SP10: when `anchors` (online-player positions) are given, only stations within
+ * DRONE_SPAWN_RADIUS of a player are considered — this bounds the work by player
+ * count instead of iterating all ~8k stations (the OOM that disabled this).
+ * With no anchors there is nothing to do. `undefined` = legacy all-stations.
  */
-export async function spawnMissingDrones(): Promise<void> {
-  const stations = await civQueries.getAllStations();
+export async function spawnMissingDrones(anchors?: Array<{ x: number; y: number }>): Promise<void> {
+  let stations: any[];
+  if (anchors === undefined) {
+    stations = await civQueries.getAllStations();
+  } else {
+    if (anchors.length === 0) return;
+    const byKey = new Map<string, any>();
+    for (const a of anchors) {
+      const near = await getStationsInRange(a.x, a.y, DRONE_SPAWN_RADIUS);
+      for (const s of near) byKey.set(`${s.sector_x}:${s.sector_y}`, s);
+    }
+    stations = Array.from(byKey.values());
+  }
   let spawned = 0;
 
   for (const station of stations) {
