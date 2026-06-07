@@ -12,6 +12,7 @@ import {
 } from '../db/queries.js';
 import { removeFromInventory } from './inventoryService.js';
 import { warBus } from '../warBus.js';
+import { resetDeadOutlaws } from '../db/civQueries.js';
 import type { QuadrantControlRow } from '../db/queries.js';
 import { FactionConfigService } from './factionConfigService.js';
 import { calculateFriction, repValueToTier } from './frictionEngine.js';
@@ -45,6 +46,12 @@ export class StrategicTickService {
 
   async tick(repStore: RepStore): Promise<void> {
     await this.processArrivedFleets();
+    // QW3: revive outlaws whose death timer has expired (was never called → outlaws
+    // stayed dead permanently, bleeding the hostile NPC population to zero).
+    const revived = await resetDeadOutlaws().catch(() => 0);
+    if (revived > 0) {
+      await this.pushWarTickerEvent(`${revived} Outlaw-Schiff(e) wieder gesichtet.`).catch(() => {});
+    }
     const allControls = await getAllQuadrantControls();
 
     // 1. Update friction + handle warfare at all human<→alien borders
