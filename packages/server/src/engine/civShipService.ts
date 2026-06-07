@@ -190,6 +190,9 @@ export async function processCivTick(anchors?: Array<{ x: number; y: number }>):
         spiral_step: updated.spiral_step ?? 0,
         resources_carried: updated.resources_carried ?? 0,
         mined_resource: updated.mined_resource,
+        // Persist AI navigation state (trader targets, military legs, outlaw roam) —
+        // was silently dropped, so traders/military/outlaws never kept their state.
+        patrol_state: (updated as any).patrol_state ?? null,
       });
 
       // Deliver mined resources when drone returns home

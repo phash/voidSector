@@ -14,3 +14,6 @@ class WarBus extends EventEmitter {
 }
 
 export const warBus = new WarBus();
+// Every SectorRoom subscribes; raise the cap so many concurrent rooms don't trip
+// Node's default 10-listener warning (mirrors constructionBus).
+warBus.setMaxListeners(50);

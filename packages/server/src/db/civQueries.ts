@@ -81,14 +81,17 @@ export const civQueries = {
     target_x?: number | null; target_y?: number | null;
     spiral_step?: number; resources_carried?: number;
     mined_resource?: string;
+    patrol_state?: Record<string, unknown> | null;
   }): Promise<void> {
     await query(
       `UPDATE civ_ships SET state=$2, x=$3, y=$4, target_x=$5, target_y=$6,
-       spiral_step=$7, resources_carried=$8, mined_resource=COALESCE($9, mined_resource) WHERE id=$1`,
+       spiral_step=$7, resources_carried=$8, mined_resource=COALESCE($9, mined_resource),
+       patrol_state=COALESCE($10, patrol_state) WHERE id=$1`,
       [id, data.state, data.x, data.y,
        data.target_x ?? null, data.target_y ?? null,
        data.spiral_step ?? 0, data.resources_carried ?? 0,
-       data.mined_resource ?? null],
+       data.mined_resource ?? null,
+       data.patrol_state != null ? JSON.stringify(data.patrol_state) : null],
     );
   },
 
