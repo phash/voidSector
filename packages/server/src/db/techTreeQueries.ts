@@ -10,14 +10,6 @@ export async function getPlayerResearchV2(playerId: string): Promise<string[]> {
   return rows.map((r: any) => r.node_id);
 }
 
-export async function addPlayerResearchV2(playerId: string, nodeId: string): Promise<void> {
-  await query(
-    `INSERT INTO player_research_v2 (player_id, node_id) VALUES ($1, $2)
-     ON CONFLICT DO NOTHING`,
-    [playerId, nodeId],
-  );
-}
-
 // ─── player_modules_v2 ───────────────────────────────────────────────────────
 
 export async function getPlayerModulesV2(playerId: string): Promise<Array<{

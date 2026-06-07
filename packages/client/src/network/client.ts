@@ -2997,10 +2997,6 @@ class GameNetwork {
     this.sectorRoom?.send('getPlayerResearch');
   }
 
-  sendResearchNode(nodeId: string) {
-    this.sectorRoom?.send('researchNode', { nodeId });
-  }
-
   // ── Tech Tier-Gating ───────────────────────────────────────────────────────
 
   sendResearchCategoryTier(category: string) {
