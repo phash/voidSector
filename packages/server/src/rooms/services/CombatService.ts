@@ -159,6 +159,13 @@ export class CombatService {
         '[ PERMADEATH ] Schiff zerstört — Erbschafts-Protokoll aktiviert. Neue Einheit übernimmt Kommando.',
     });
     client.send('logEntry', '[ PERMADEATH ] Schiff vernichtet. Erbschafts-Protokoll aktiviert.');
+
+    // QW5: a death is a witnessed event — tell everyone else in the quadrant.
+    this.ctx.broadcast(
+      'logEntry',
+      `☠ ${auth.username} wurde bei [${sectorX}:${sectorY}] zerstört — ein Wrack treibt nun dort.`,
+      { except: client },
+    );
   }
 
   private async _emitPersonalityComment(
