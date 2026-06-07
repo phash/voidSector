@@ -237,6 +237,11 @@ export const PRODUCTION_RECIPES = [
 // QW6: gentle decay (was 1) so unvisited stations keep surplus XP and can grow
 // toward higher levels instead of constantly eroding to their level floor.
 export const NPC_XP_DECAY_PER_HOUR = 0.1;
+// BB1 — Background Universe Tick: a slow, chunked, global sweep so the world away
+// from players keeps evolving without re-introducing the OOM that disabled ticks.
+export const BACKGROUND_TICK_INTERVAL = 60; // universe ticks (×5s = 5 min cadence)
+export const BACKGROUND_CHUNK_SIZE = 300; // civ ships processed per sweep run
+export const BACKGROUND_CATCHUP_STEPS = 8; // AI steps applied per ship per sweep (logical time)
 export const NPC_XP_VISIT = 5;
 export const NPC_XP_PER_TRADE_UNIT = 1;
 export const NPC_XP_QUEST_COMPLETE = 15;

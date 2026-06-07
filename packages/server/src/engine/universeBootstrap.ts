@@ -5,10 +5,11 @@ import { UniverseTickEngine } from './universeTickEngine.js';
 import { StrategicTickService } from './strategicTickService.js';
 import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant, ensureAlienHomeQuadrants, getAllFactionConfigs } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
-import { QUADRANT_SIZE } from '@void-sector/shared';
+import { QUADRANT_SIZE, BACKGROUND_TICK_INTERVAL } from '@void-sector/shared';
 import { assertAlienHomesFarFromOrigin } from './alienHomeGuard.js';
 import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
 import { processCivTick, getOnlinePlayerAnchors } from './civShipService.js';
+import { processBackgroundTick } from './backgroundTickService.js';
 import { processConstructionTick } from './constructionTickService.js';
 import { processStationBuildTick } from './stationBuildTick.js';
 import { processStationMiningTick } from './stationMiningService.js';
@@ -60,6 +61,12 @@ export async function startUniverseEngine(): Promise<void> {
     if (result.tickCount % STRATEGIC_TICK_INTERVAL === 0) {
       await spawnMissingDrones(anchors).catch((err) =>
         logger.error({ err }, 'spawnMissingDrones error'),
+      );
+    }
+    // BB1: slow chunked global sweep so the world away from players keeps moving.
+    if (result.tickCount % BACKGROUND_TICK_INTERVAL === 0) {
+      await processBackgroundTick().catch((err) =>
+        logger.error({ err }, 'backgroundTick error'),
       );
     }
     await processConstructionTick();

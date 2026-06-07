@@ -266,6 +266,15 @@ export async function getStationsInRange(
   return rows;
 }
 
+/** Next page of civ ships by id (cursor-paged) for the BB1 background sweep. */
+export async function getShipsAfterId(afterId: number, limit: number): Promise<any[]> {
+  const { rows } = await query(
+    `SELECT * FROM civ_ships WHERE id > $1 ORDER BY id LIMIT $2`,
+    [afterId, limit],
+  );
+  return rows;
+}
+
 /** Civ ships within a bounding box of (x,y), capped (SP10 lazy ticking). */
 export async function getShipsInRange(
   x: number,

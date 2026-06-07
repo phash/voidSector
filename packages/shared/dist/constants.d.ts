@@ -121,6 +121,9 @@ export declare const NPC_STATION_LEVELS: readonly [{
 }];
 export declare const PRODUCTION_RECIPES: ProductionRecipe[];
 export declare const NPC_XP_DECAY_PER_HOUR = 0.1;
+export declare const BACKGROUND_TICK_INTERVAL = 60;
+export declare const BACKGROUND_CHUNK_SIZE = 300;
+export declare const BACKGROUND_CATCHUP_STEPS = 8;
 export declare const NPC_XP_VISIT = 5;
 export declare const NPC_XP_PER_TRADE_UNIT = 1;
 export declare const NPC_XP_QUEST_COMPLETE = 15;
