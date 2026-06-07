@@ -2999,21 +2999,22 @@ export async function getAllHumanityReps(): Promise<Record<string, number>> {
 // ── Civilization meter (global humanity progress, SP8) ──────────────────────
 
 export async function getCivTotal(): Promise<number> {
-  const res = await query<{ total_points: string | number }>(
-    'SELECT total_points FROM civilization_meter WHERE id = 1',
+  // Column total_contributions comes from migration 033 (civilization_meter).
+  const res = await query<{ total_contributions: string | number }>(
+    'SELECT total_contributions FROM civilization_meter WHERE id = 1',
   );
-  return Number(res.rows[0]?.total_points ?? 0);
+  return Number(res.rows[0]?.total_contributions ?? 0);
 }
 
 /** Increment the global civilization total and return the new value. */
 export async function addCivPoints(points: number): Promise<number> {
-  const res = await query<{ total_points: string | number }>(
-    `INSERT INTO civilization_meter (id, total_points) VALUES (1, $1)
-     ON CONFLICT (id) DO UPDATE SET total_points = civilization_meter.total_points + $1
-     RETURNING total_points`,
+  const res = await query<{ total_contributions: string | number }>(
+    `INSERT INTO civilization_meter (id, total_contributions) VALUES (1, $1)
+     ON CONFLICT (id) DO UPDATE SET total_contributions = civilization_meter.total_contributions + $1
+     RETURNING total_contributions`,
     [points],
   );
-  return Number(res.rows[0]?.total_points ?? 0);
+  return Number(res.rows[0]?.total_contributions ?? 0);
 }
 
 // ── Community Alien Quests ────────────────────────────────────────────────────
