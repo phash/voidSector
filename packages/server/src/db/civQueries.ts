@@ -241,16 +241,29 @@ export async function getAliveNpcsByRole(
   return rows;
 }
 
-export async function getStationsInRange(x: number, y: number, maxDist: number): Promise<any[]> {
+/**
+ * Civ stations within a bounding box of (x,y), capped. Uses BETWEEN (not ABS) so
+ * the UNIQUE(sector_x,sector_y) btree index is usable, and LIMIT to bound memory
+ * (SP10 + Phase-E review). Returns a square box (≈Chebyshev), slightly looser
+ * than strict Manhattan — fine for "stations near the player".
+ */
+export async function getStationsInRange(
+  x: number,
+  y: number,
+  maxDist: number,
+  limit = 2000,
+): Promise<any[]> {
   const { rows } = await query(
     `SELECT * FROM civ_stations
-     WHERE ABS(sector_x - $1) + ABS(sector_y - $2) <= $3`,
-    [x, y, maxDist],
+     WHERE sector_x BETWEEN $1 - $3 AND $1 + $3
+       AND sector_y BETWEEN $2 - $3 AND $2 + $3
+     LIMIT $4`,
+    [x, y, maxDist, limit],
   );
   return rows;
 }
 
-/** Civ ships within Manhattan `maxDist` of (x,y), capped (SP10 lazy ticking). */
+/** Civ ships within a bounding box of (x,y), capped (SP10 lazy ticking). */
 export async function getShipsInRange(
   x: number,
   y: number,
@@ -259,7 +272,8 @@ export async function getShipsInRange(
 ): Promise<any[]> {
   const { rows } = await query(
     `SELECT * FROM civ_ships
-     WHERE ABS(x - $1) + ABS(y - $2) <= $3
+     WHERE x BETWEEN $1 - $3 AND $1 + $3
+       AND y BETWEEN $2 - $3 AND $2 + $3
      LIMIT $4`,
     [x, y, maxDist, limit],
   );

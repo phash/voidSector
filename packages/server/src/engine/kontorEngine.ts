@@ -12,6 +12,7 @@ import {
   deductCredits,
   addCredits,
   transferInventoryItem,
+  getInventoryItem,
 } from '../db/queries.js';
 import type { ItemType } from '@void-sector/shared';
 
@@ -110,23 +111,31 @@ export async function fillKontorOrder(
 
   const fillAmount = Math.min(amount, remaining);
 
-  try {
-    await transferInventoryItem(
-      sellerId,
-      order.ownerId,
-      order.itemType as ItemType,
-      order.itemId,
-      fillAmount,
-    );
-  } catch {
+  // Validate the seller actually has the goods, then reserve the fill slot
+  // ATOMICALLY before transferring. updateKontorOrderFilled only succeeds if the
+  // increment stays within amount_wanted, so concurrent sellers can never
+  // over-fill (which would have paid out more than the buyer reserved → dupe).
+  const have = await getInventoryItem(sellerId, order.itemType as ItemType, order.itemId);
+  if (have < fillAmount) {
     return { success: false, earned: 0, error: 'Insufficient inventory' };
   }
+  const reserved = await updateKontorOrderFilled(orderId, fillAmount);
+  if (!reserved) {
+    return { success: false, earned: 0, error: 'Order already fully filled' };
+  }
+
+  await transferInventoryItem(
+    sellerId,
+    order.ownerId,
+    order.itemType as ItemType,
+    order.itemId,
+    fillAmount,
+  );
 
   const earned = fillAmount * order.pricePerUnit;
   await addCredits(sellerId, earned);
-  await updateKontorOrderFilled(orderId, fillAmount);
 
-  if (fillAmount >= remaining) {
+  if (order.amountFilled + fillAmount >= order.amountWanted) {
     await deactivateKontorOrder(orderId);
   }
 

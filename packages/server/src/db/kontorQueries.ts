@@ -96,11 +96,22 @@ export async function getPlayerKontorOrders(ownerId: string): Promise<KontorOrde
   return rows.map(rowToOrder);
 }
 
-export async function updateKontorOrderFilled(id: string, additionalFilled: number): Promise<void> {
-  await query('UPDATE kontor_orders SET amount_filled = amount_filled + $2 WHERE id = $1', [
-    id,
-    additionalFilled,
-  ]);
+/**
+ * Atomically reserve `additionalFilled` of an order's remaining capacity.
+ * Returns false if the order is inactive or the increment would exceed
+ * amount_wanted — this prevents two concurrent sellers from over-filling (which
+ * would pay out more than the buyer reserved). Returns true on success.
+ */
+export async function updateKontorOrderFilled(
+  id: string,
+  additionalFilled: number,
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE kontor_orders SET amount_filled = amount_filled + $2
+     WHERE id = $1 AND active = TRUE AND amount_filled + $2 <= amount_wanted`,
+    [id, additionalFilled],
+  );
+  return (res.rowCount ?? 0) > 0;
 }
 
 export async function deactivateKontorOrder(id: string): Promise<void> {

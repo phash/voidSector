@@ -21,16 +21,20 @@ const mockAddCredits = vi.fn();
 const mockGetPlayerCredits = vi.fn();
 const mockDeductCredits = vi.fn();
 const mockTransferInventoryItem = vi.fn();
+const mockGetInventoryItem = vi.fn();
 
 vi.mock('../db/queries.js', () => ({
   addCredits: mockAddCredits,
   getPlayerCredits: mockGetPlayerCredits,
   deductCredits: mockDeductCredits,
   transferInventoryItem: mockTransferInventoryItem,
+  getInventoryItem: mockGetInventoryItem,
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: seller has plenty of the item being sold into a kontor order.
+  mockGetInventoryItem.mockResolvedValue(100000);
 });
 
 // ─── kontorQueries tests ──────────────────────────────────────────────────────
@@ -268,11 +272,13 @@ describe('kontorEngine — fillKontorOrder uses transferInventoryItem not deduct
       ],
     });
 
-    mockTransferInventoryItem.mockRejectedValue(new Error('Insufficient inventory'));
+    // New logic validates the seller's inventory BEFORE reserving/transferring.
+    mockGetInventoryItem.mockResolvedValueOnce(0); // seller has none
 
     const { fillKontorOrder } = await import('../engine/kontorEngine.js');
     const result = await fillKontorOrder('ord-fail', 'seller-3', 1);
 
     expect(result.success).toBe(false);
+    expect(mockTransferInventoryItem).not.toHaveBeenCalled();
   });
 });

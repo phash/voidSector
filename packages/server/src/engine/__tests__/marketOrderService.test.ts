@@ -93,6 +93,40 @@ describe('marketOrderService', () => {
     expect(vi.mocked(addCredits)).toHaveBeenCalledWith('seller', 16);
   });
 
+  it('losing the claim on a sell order refunds the buyer and aborts (no double-transfer)', async () => {
+    vi.mocked(getTradeOrderById).mockResolvedValue({
+      id: 'o', player_id: 'seller', resource: 'ore', amount: 4, price_per_unit: 5, type: 'sell', fulfilled: false,
+    });
+    vi.mocked(deductCredits).mockResolvedValue(true);
+    vi.mocked(fulfillTradeOrder).mockResolvedValueOnce(false); // another request already claimed it
+    const r = await fulfillMarketOrder('buyer', 'o');
+    expect(r.success).toBe(false);
+    expect(vi.mocked(addCredits)).toHaveBeenCalledWith('buyer', 20); // refunded
+    expect(vi.mocked(addToInventory)).not.toHaveBeenCalled(); // no goods delivered
+  });
+
+  it('losing the claim on a buy order aborts without transferring', async () => {
+    vi.mocked(getTradeOrderById).mockResolvedValue({
+      id: 'o', player_id: 'buyer', resource: 'ore', amount: 2, price_per_unit: 5, type: 'buy', fulfilled: false,
+    });
+    vi.mocked(getInventoryItem).mockResolvedValue(10);
+    vi.mocked(fulfillTradeOrder).mockResolvedValueOnce(false); // lost the claim
+    const r = await fulfillMarketOrder('seller', 'o');
+    expect(r.success).toBe(false);
+    expect(vi.mocked(removeFromInventory)).not.toHaveBeenCalled();
+    expect(vi.mocked(addCredits)).not.toHaveBeenCalled();
+  });
+
+  it('cancel does not refund when the delete loses the race', async () => {
+    vi.mocked(getTradeOrderById).mockResolvedValue({
+      id: 'o', player_id: 'me', resource: 'ore', amount: 4, price_per_unit: 5, type: 'sell', fulfilled: false,
+    });
+    vi.mocked(cancelTradeOrder).mockResolvedValueOnce(false); // already cancelled by a concurrent request
+    const r = await cancelMarketOrder('me', 'o');
+    expect(r.success).toBe(false);
+    expect(vi.mocked(addToInventory)).not.toHaveBeenCalled(); // no double-refund
+  });
+
   it('cannot fulfill own order or an already-fulfilled order', async () => {
     vi.mocked(getTradeOrderById).mockResolvedValue({ id: 'o', player_id: 'me', type: 'sell', fulfilled: false });
     expect((await fulfillMarketOrder('me', 'o')).success).toBe(false);

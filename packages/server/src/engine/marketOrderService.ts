@@ -64,22 +64,33 @@ export async function fulfillMarketOrder(
 
   const total = o.amount * o.price_per_unit;
 
+  // Claim-before-transfer: fulfillTradeOrder is an atomic UPDATE … SET fulfilled=
+  // TRUE WHERE id=$1 AND fulfilled=FALSE returning rowCount. Exactly one
+  // concurrent request can claim a given order, so the goods/credits can never
+  // be transferred twice (closes the double-fulfilment dupe).
   if (o.type === 'sell') {
-    // Owner is selling escrowed goods; the fulfiller buys them.
+    // Owner is selling escrowed goods; the fulfiller buys them. Take payment
+    // first (atomic), then claim; refund if another request won the claim.
     const paid = await deductCredits(fulfillerId, total);
     if (!paid) return { success: false, error: 'Nicht genug Credits' };
+    const claimed = await fulfillTradeOrder(orderId);
+    if (!claimed) {
+      await addCredits(fulfillerId, total);
+      return { success: false, error: 'Order nicht verfügbar' };
+    }
     await addCredits(o.player_id, total);
     await addToInventory(fulfillerId, 'resource', o.resource, o.amount);
   } else {
     // Owner is buying (credits escrowed); the fulfiller sells the goods.
     const have = await getInventoryItem(fulfillerId, 'resource', o.resource);
     if (have < o.amount) return { success: false, error: 'Nicht genug Ressourcen' };
+    const claimed = await fulfillTradeOrder(orderId);
+    if (!claimed) return { success: false, error: 'Order nicht verfügbar' };
     await removeFromInventory(fulfillerId, 'resource', o.resource, o.amount);
     await addToInventory(o.player_id, 'resource', o.resource, o.amount);
     await addCredits(fulfillerId, total);
   }
 
-  await fulfillTradeOrder(orderId);
   return { success: true };
 }
 
@@ -89,11 +100,17 @@ export async function cancelMarketOrder(playerId: string, orderId: string): Prom
   if (!o || o.fulfilled || o.player_id !== playerId) {
     return { success: false, error: 'Order nicht gefunden' };
   }
+  // Claim-before-refund: cancelTradeOrder is an atomic DELETE … WHERE id=$1 AND
+  // player_id=$2 returning rowCount. Only the request that actually deletes the
+  // row refunds, so concurrent cancels cannot double-refund the escrow.
+  const cancelled = await cancelTradeOrder(orderId, playerId);
+  if (!cancelled) {
+    return { success: false, error: 'Order nicht gefunden' };
+  }
   if (o.type === 'sell') {
     await addToInventory(playerId, 'resource', o.resource, o.amount);
   } else {
     await addCredits(playerId, o.amount * o.price_per_unit);
   }
-  await cancelTradeOrder(orderId, playerId);
   return { success: true };
 }

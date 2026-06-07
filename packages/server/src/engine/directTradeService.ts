@@ -124,6 +124,12 @@ export class DirectTradeService {
     const session = await this.getSession(tradeId);
     if (!session) throw new Error('Trade session not found');
 
+    // Claim the session atomically before transferring: redis.del returns the
+    // number of keys removed, so exactly one of two concurrent confirmations can
+    // win (del === 1). A loser (del === 0) aborts — prevents double-execution.
+    const claimed = await this.redis.del(tradeId);
+    if (claimed === 0) return;
+
     // Validate both sides actually own what they offered BEFORE moving anything.
     // (deductInventory silently no-ops on shortfall while the receiver is still
     // credited → without this check, offering items you don't have dupes them.)
@@ -160,8 +166,7 @@ export class DirectTradeService {
       await deductCredits(session.toPlayerId, session.toCredits);
       await addCredits(session.fromPlayerId, session.toCredits);
     }
-
-    await this.redis.del(tradeId);
+    // Session already removed by the atomic claim above.
   }
 
   async cancelTrade(tradeId: string): Promise<void> {
