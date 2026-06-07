@@ -1,6 +1,29 @@
 import { stepToward } from './civShipService.js';
 import { NPC_TRADE_WAIT_TICKS, NPC_MILITARY_PATROL_STEPS } from '@void-sector/shared';
 
+/** Sectors a trader ranges out from home on a run. */
+const TRADER_RUN_RADIUS = 30;
+
+/**
+ * Deterministic next waypoint for a trader's run: at home it heads OUT to a
+ * seeded waypoint (stable per ship), away from home it heads back. This turns
+ * the never-moving idle trader into a visible ferry. (Station-aware routing is a
+ * later economy step — this just makes traders move.)
+ */
+function pickTraderTarget(ship: any): { x: number; y: number } {
+  const homeX = ship.home_x ?? ship.x;
+  const homeY = ship.home_y ?? ship.y;
+  if (ship.x === homeX && ship.y === homeY) {
+    const h = Math.imul((ship.id ?? 1) | 0, 2654435761) >>> 0;
+    const span = TRADER_RUN_RADIUS * 2 + 1;
+    const dx = (h % span) - TRADER_RUN_RADIUS;
+    const dy = (Math.floor(h / span) % span) - TRADER_RUN_RADIUS;
+    // Never a zero offset (would target home and never move).
+    return { x: homeX + (dx === 0 ? TRADER_RUN_RADIUS : dx), y: homeY + (dy === 0 ? -TRADER_RUN_RADIUS : dy) };
+  }
+  return { x: homeX, y: homeY };
+}
+
 export function nextTraderState(ship: any): any {
   const ps = ship.patrol_state ?? {};
 
@@ -11,7 +34,9 @@ export function nextTraderState(ship: any): any {
     if (ps.targetX != null && ps.targetY != null) {
       return { state: 'traveling' };
     }
-    return {};
+    // No target → begin the next leg of a trade run so traders actually move (QW1).
+    const t = pickTraderTarget(ship);
+    return { state: 'traveling', patrol_state: { ...ps, targetX: t.x, targetY: t.y } };
   }
 
   if (ship.state === 'traveling') {

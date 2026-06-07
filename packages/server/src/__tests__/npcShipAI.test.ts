@@ -26,6 +26,31 @@ describe('nextTraderState', () => {
     const update = nextTraderState(ship);
     expect(update.patrol_state?.waitTicks).toBe(2);
   });
+
+  it('idle at home with no target heads OUT to a seeded waypoint (QW1: no longer frozen)', () => {
+    const ship = { id: 7, state: 'idle', x: 100, y: 100, home_x: 100, home_y: 100, patrol_state: {} };
+    const update = nextTraderState(ship);
+    expect(update.state).toBe('traveling');
+    expect(update.patrol_state.targetX != null && update.patrol_state.targetY != null).toBe(true);
+    const moved = update.patrol_state.targetX !== 100 || update.patrol_state.targetY !== 100;
+    expect(moved).toBe(true);
+  });
+
+  it('idle away from home with no target heads back home', () => {
+    const ship = { id: 7, state: 'idle', x: 130, y: 80, home_x: 100, home_y: 100, patrol_state: {} };
+    const update = nextTraderState(ship);
+    expect(update.state).toBe('traveling');
+    expect(update.patrol_state.targetX).toBe(100);
+    expect(update.patrol_state.targetY).toBe(100);
+  });
+
+  it('seeded waypoint is deterministic per ship id', () => {
+    const mk = () => ({ id: 42, state: 'idle', x: 0, y: 0, home_x: 0, home_y: 0, patrol_state: {} });
+    const a = nextTraderState(mk());
+    const b = nextTraderState(mk());
+    expect(a.patrol_state.targetX).toBe(b.patrol_state.targetX);
+    expect(a.patrol_state.targetY).toBe(b.patrol_state.targetY);
+  });
 });
 
 describe('nextMilitaryState', () => {
