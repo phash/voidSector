@@ -53,11 +53,13 @@ export function FriendsScreen() {
   const recentContacts = useStore((s) => s.recentContacts);
   const clearAlert = useStore((s) => s.clearAlert);
   const removeFriendRequest = useStore((s) => s.removeFriendRequest);
+  const showTip = useStore((s) => s.showTip);
   const [tab, setTab] = useState<Tab>('FREUNDE');
 
-  // Clear FRIENDS alert when screen opens
+  // Clear FRIENDS alert + surface the help tip when the screen opens
   useState(() => {
     clearAlert('FRIENDS');
+    showTip('first_friends');
   });
 
   const sortedFriends = [...friends].sort((a, b) => {
@@ -177,6 +179,14 @@ export function FriendsScreen() {
             {t}
           </button>
         ))}
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', padding: '0 6px', flexShrink: 0 }}
+          title="Hilfe"
+          onClick={() => showTip('first_friends')}
+        >
+          [?]
+        </button>
       </div>
 
       {/* Tab content */}

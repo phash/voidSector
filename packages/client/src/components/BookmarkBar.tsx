@@ -89,6 +89,11 @@ export function BookmarkBar() {
   const { t } = useTranslation('ui');
   const bookmarks = useStore((s) => s.bookmarks);
   const trackedQuests = useStore((s) => s.trackedQuests);
+
+  // Surface the bookmark help tip once the player has set their first bookmark.
+  useEffect(() => {
+    if (bookmarks.length > 0) useStore.getState().showTip('first_bookmark');
+  }, [bookmarks.length]);
   const position = useStore((s) => s.position);
   const setPanOffset = useStore((s) => s.setPanOffset);
   const setSelectedSector = useStore((s) => s.setSelectedSector);

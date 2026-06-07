@@ -92,6 +92,11 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
 
   const activeProgram = useStore((s) => s.activeProgram);
   const activeWreck = useStore((s) => s.activeWreck);
+
+  // Surface the wreck help tip the first time a wreck is encountered.
+  useEffect(() => {
+    if (activeWreck) useStore.getState().showTip('first_wreck');
+  }, [activeWreck]);
   const zoomLevel = useStore((s) => s.zoomLevel);
   const setZoomLevel = useStore((s) => s.setZoomLevel);
   const panOffset = useStore((s) => s.panOffset);

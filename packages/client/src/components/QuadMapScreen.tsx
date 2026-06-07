@@ -204,10 +204,11 @@ export function QuadMapScreen() {
   const currentQuadrant = sectorToQuadrantCoords(position.x, position.y);
   const zoomMax = QUAD_ZOOM_MAX_NORMAL;
 
-  // Request known quadrants + territory data on mount
+  // Request known quadrants + territory data on mount, surface help tip
   useEffect(() => {
     network.requestKnownQuadrants();
     network.requestAllTerritories();
+    useStore.getState().showTip('first_quad_map');
   }, []);
 
   // Update current quadrant in store
@@ -376,6 +377,13 @@ export function QuadMapScreen() {
             </span>
           </span>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => useStore.getState().showTip('first_quad_map')}
+              style={zoomBtnStyle}
+              title="Hilfe"
+            >
+              ?
+            </button>
             <button
               onClick={() => setZoomLevel((prev) => Math.max(0, prev - 1))}
               style={zoomBtnStyle}

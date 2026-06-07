@@ -1164,6 +1164,9 @@ class GameNetwork {
           store.showTip('first_quest_fetch');
         else if (data.quest.objectives?.some((o: any) => o.type === 'delivery'))
           store.showTip('first_quest_delivery');
+        // NPC-targeted quests (find/deliver-to NPC) — orthogonal to the type above.
+        if (data.quest.objectives?.some((o: any) => o.type === 'find_npc' || o.type === 'deliver_to_npc'))
+          store.showTip('first_npc_quest');
       } else {
         store.addLogEntry(`Quest-Fehler: ${data.error}`);
         store.setActionError({ code: 'QUEST_ERROR', message: data.error });

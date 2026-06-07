@@ -230,7 +230,10 @@ export function NavTargetPanel() {
                     <input
                       type="checkbox"
                       checked={useHyperjump}
-                      onChange={(e) => setUseHyperjump(e.target.checked)}
+                      onChange={(e) => {
+                        setUseHyperjump(e.target.checked);
+                        if (e.target.checked) useStore.getState().showTip('first_hyperjump');
+                      }}
                       disabled={!hasHyperdrive}
                       style={{ marginRight: 4 }}
                     />

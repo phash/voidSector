@@ -119,7 +119,10 @@ export function XenoScreen() {
                   <button
                     className="vs-btn"
                     data-testid="xeno-firstcontact-btn"
-                    onClick={() => runAction(selected.factionId, 'firstContact')}
+                    onClick={() => {
+                      showTip('first_alien_contact');
+                      runAction(selected.factionId, 'firstContact');
+                    }}
                   >
                     [ERSTKONTAKT]
                   </button>

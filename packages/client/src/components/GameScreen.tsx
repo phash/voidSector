@@ -365,23 +365,35 @@ function renderScreen(monitorId: string) {
 
 function CockpitNavCom() {
   const q = useStore((s) => s.currentQuadrant);
+  useEffect(() => {
+    useStore.getState().showTip('first_nav_com');
+  }, []);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {q && (
-        <div
-          style={{
-            padding: '2px 6px',
-            fontSize: '0.65rem',
-            color: 'var(--color-dim)',
-            borderBottom: '1px solid var(--color-dim)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '2px 6px',
+          fontSize: '0.65rem',
+          color: 'var(--color-dim)',
+          borderBottom: '1px solid var(--color-dim)',
+          gap: 6,
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {q ? `[${q.qx}][${q.qy}]${q.name ? ` ${q.name}` : ''}` : ''}
+        </span>
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.6rem', padding: '0 5px', flexShrink: 0 }}
+          title="Hilfe"
+          onClick={() => useStore.getState().showTip('first_nav_com')}
         >
-          [{q.qx}][{q.qy}]{q.name ? ` ${q.name}` : ''}
-        </div>
-      )}
+          [?]
+        </button>
+      </div>
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
           <RadarCanvas />
