@@ -1,5 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { resolveStationCombat } from '../stationCombat.js';
+import { resolveStationCombat, deriveStationDefenseInput } from '../stationCombat.js';
+
+describe('deriveStationDefenseInput', () => {
+  it('scales HP/turret/shield off station level and ion off werft level', () => {
+    const input = deriveStationDefenseInput(3, 2, null, 4, 7);
+    expect(input.stationMaxHp).toBe(500 * 3); // STATION_BASE_HP × level
+    expect(input.stationHp).toBe(500 * 3); // null currentHp → full
+    expect(input.turretDamage).toBe(3 * 18);
+    expect(input.ionCannonDamage).toBe(2 * 25);
+    expect(input.pirateLevel).toBe(4);
+  });
+
+  it('uses persisted currentHp when the station is damaged', () => {
+    const input = deriveStationDefenseInput(2, 0, 250, 1, 1);
+    expect(input.stationHp).toBe(250);
+    expect(input.ionCannonDamage).toBe(0); // no shipyard
+  });
+});
 
 describe('resolveStationCombat', () => {
   it('station defends against weak pirate', () => {

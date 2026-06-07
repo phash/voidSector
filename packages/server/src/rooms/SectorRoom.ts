@@ -167,7 +167,12 @@ import { logger } from '../utils/logger.js';
 import { captureError } from '../utils/errorLogTransport.js';
 import { getConfig } from '../engine/gameConfigApply.js';
 import { pirateCombatAvoidable } from '../engine/stationPassiveEffects.js';
-import { getPlayerSensorLevelInQuadrant } from '../db/stationQueries.js';
+import {
+  getPlayerSensorLevelInQuadrant,
+  getPlayerStationAt,
+  updateStationHp,
+} from '../db/stationQueries.js';
+import { deriveStationDefenseInput, resolveStationCombat } from '../engine/stationCombat.js';
 
 interface SectorRoomOptions {
   quadrantX: number;
@@ -450,6 +455,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         if (sectorData?.contents?.includes('pirate_zone')) {
           await this.maybeStartPirateCombat(client, data.sectorX, data.sectorY);
         }
+        await this.maybeRaidPlayerStation(client, data.sectorX, data.sectorY, sectorData);
 
         // Story trigger + spontaneous encounter
         const moveSectorAuth = client.auth as { userId: string; username?: string } | null;
@@ -501,6 +507,7 @@ export class SectorRoom extends Room<SectorRoomState> {
         if (sectorData?.contents?.includes('pirate_zone')) {
           await this.maybeStartPirateCombat(client, data.targetX, data.targetY);
         }
+        await this.maybeRaidPlayerStation(client, data.targetX, data.targetY, sectorData);
       } catch (err) {
         logger.error({ err }, 'Jump unhandled error');
         captureError(err as Error, 'handleJump').catch(() => {});
@@ -1991,6 +1998,54 @@ export class SectorRoom extends Room<SectorRoomState> {
       }
     }
     await this.combatV3.handleCombatV3Start(client, { npcLevel: pirateLevel });
+  }
+
+  /**
+   * SP7: when the owner enters a pirate_zone sector where they own a station,
+   * pirates raid it. Event-driven (no global tick → OOM-safe) and throttled per
+   * station (RAID_COOLDOWN). The station defends with level-derived turrets/
+   * shield; the outcome is sent to the owner's StationCombatOverlay.
+   */
+  private async maybeRaidPlayerStation(
+    client: Client,
+    sectorX: number,
+    sectorY: number,
+    sectorData: SectorData | undefined,
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload | undefined;
+    if (!auth?.userId) return;
+    if (!sectorData?.contents?.includes('pirate_zone')) return;
+
+    const station = await getPlayerStationAt(sectorX, sectorY).catch(() => null);
+    if (!station || station.owner_id !== auth.userId) return;
+
+    const RAID_COOLDOWN_MS = 10 * 60 * 1000;
+    if (station.last_raid_at && Date.now() - station.last_raid_at < RAID_COOLDOWN_MS) return;
+
+    const pirateLevel = Math.min(10, Math.floor(Math.sqrt(sectorX * sectorX + sectorY * sectorY) / 50) + 1);
+    const seed = (Math.imul(sectorX, 92821) ^ Math.imul(sectorY, 53987) ^ (Date.now() & 0xffff)) >>> 0;
+    const input = deriveStationDefenseInput(
+      station.level,
+      station.werft_level ?? 0,
+      station.current_hp,
+      pirateLevel,
+      seed,
+    );
+    const result = resolveStationCombat(input);
+    const newHp = Math.max(0, input.stationHp - result.hpLost);
+    await updateStationHp(station.id, newHp, Date.now());
+
+    const event = {
+      stationId: station.id,
+      sectorX,
+      sectorY,
+      attackerLevel: pirateLevel,
+      stationHpBefore: input.stationHp,
+      outcome: result.outcome,
+      hpLost: result.hpLost,
+    };
+    // Client distinguishes a clean defence (clears overlay) from a hit (shows it).
+    client.send(result.outcome === 'defended' ? 'stationDefended' : 'stationUnderAttack', event);
   }
 
   /** Broadcast current player list to all connected clients */

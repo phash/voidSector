@@ -20,7 +20,18 @@ export interface PlayerStationRow {
   trade_volume: number;
   building_expansion: StationExpansionType | null;
   build_complete_at: string | null;
+  current_hp: number | null;
+  last_raid_at: number | null;
   created_at: string;
+}
+
+/** Set a station's current hit points (clamped at 0 by the caller). */
+export async function updateStationHp(stationId: string, hp: number, raidAt: number): Promise<void> {
+  await query('UPDATE player_stations SET current_hp = $2, last_raid_at = $3 WHERE id = $1', [
+    stationId,
+    hp,
+    raidAt,
+  ]);
 }
 
 /** Column name on player_stations for an expansion's level.

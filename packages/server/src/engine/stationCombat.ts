@@ -9,7 +9,7 @@ import {
 } from '@void-sector/shared';
 import { getConfig } from './gameConfigApply.js';
 
-interface StationCombatInput {
+export interface StationCombatInput {
   stationHp: number;
   stationMaxHp: number;
   stationShieldHp: number;
@@ -20,10 +20,36 @@ interface StationCombatInput {
   seed: number;
 }
 
-interface StationCombatResult {
+export interface StationCombatResult {
   outcome: 'defended' | 'damaged' | 'destroyed';
   hpLost: number;
   roundsPlayed: number;
+}
+
+/**
+ * Level-derived station defence (SP7). Player stations have no explicit combat
+ * stats — they scale off station level (HP, shield, turrets) and the shipyard
+ * (werft) level (ion cannon). `currentHp === null` means undamaged → full HP.
+ */
+export function deriveStationDefenseInput(
+  level: number,
+  werftLevel: number,
+  currentHp: number | null,
+  pirateLevel: number,
+  seed: number,
+): StationCombatInput {
+  const baseHp = (getConfig('STATION_BASE_HP') as number) ?? 500;
+  const stationMaxHp = baseHp * level;
+  return {
+    stationHp: currentHp ?? stationMaxHp,
+    stationMaxHp,
+    stationShieldHp: level * 60,
+    stationShieldRegen: level * 5,
+    turretDamage: level * 18,
+    ionCannonDamage: werftLevel * 25,
+    pirateLevel,
+    seed,
+  };
 }
 
 /** Seeded pseudo-random: returns 0..1 */
