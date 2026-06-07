@@ -178,17 +178,17 @@ describe('applyXpDecay', () => {
   };
 
   it('decays XP over time', () => {
-    // 10 hours: 600 - 1 * 10 = 590
+    // 10 hours at 0.1/hr: 600 - 0.1 * 10 = 599
     const now = new Date('2026-01-01T10:00:00Z');
     const result = applyXpDecay(baseStation, now);
-    expect(result.xp).toBe(590);
+    expect(result.xp).toBe(599);
     expect(result.level).toBe(2);
   });
 
   it('does not decay below current level threshold', () => {
-    // Level 2 threshold is 500. At 600 XP, decaying for 200 hours
-    // would be 600 - 200 = 400, but clamped to 500.
-    const now = new Date('2026-01-09T08:00:00Z'); // ~200 hours later
+    // Level 2 threshold is 500. At 600 XP and 0.1/hr, ~1416h would be
+    // 600 - 141.6 = 458, but clamped to 500.
+    const now = new Date('2026-03-01T00:00:00Z'); // ~1416 hours later
     const result = applyXpDecay(baseStation, now);
     expect(result.xp).toBe(500);
     expect(result.level).toBe(2);
@@ -212,8 +212,8 @@ describe('applyXpDecay', () => {
       level: 1,
       xp: 50,
     };
-    // 100 hours: 50 - 100 = clamped to level 1 threshold (0)
-    const now = new Date('2026-01-05T04:00:00Z');
+    // At 0.1/hr, ~744h: 50 - 74.4 < 0, clamped to level 1 threshold (0)
+    const now = new Date('2026-02-01T00:00:00Z');
     const result = applyXpDecay(lvl1Station, now);
     expect(result.xp).toBe(0);
     expect(result.level).toBe(1);

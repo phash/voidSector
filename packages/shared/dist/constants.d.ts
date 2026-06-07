@@ -120,7 +120,7 @@ export declare const NPC_STATION_LEVELS: readonly [{
     readonly xpThreshold: 15000;
 }];
 export declare const PRODUCTION_RECIPES: ProductionRecipe[];
-export declare const NPC_XP_DECAY_PER_HOUR = 1;
+export declare const NPC_XP_DECAY_PER_HOUR = 0.1;
 export declare const NPC_XP_VISIT = 5;
 export declare const NPC_XP_PER_TRADE_UNIT = 1;
 export declare const NPC_XP_QUEST_COMPLETE = 15;

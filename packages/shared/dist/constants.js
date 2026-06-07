@@ -234,7 +234,9 @@ export const PRODUCTION_RECIPES = [
         researchRequired: 'bio_extract_t1',
     },
 ];
-export const NPC_XP_DECAY_PER_HOUR = 1;
+// QW6: gentle decay (was 1) so unvisited stations keep surplus XP and can grow
+// toward higher levels instead of constantly eroding to their level floor.
+export const NPC_XP_DECAY_PER_HOUR = 0.1;
 export const NPC_XP_VISIT = 5;
 export const NPC_XP_PER_TRADE_UNIT = 1;
 export const NPC_XP_QUEST_COMPLETE = 15;
