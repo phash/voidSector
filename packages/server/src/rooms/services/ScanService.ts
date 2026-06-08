@@ -9,6 +9,7 @@ import { logger } from '../../utils/logger.js';
 import { addAcepXpForPlayer, getAcepXpSummary } from '../../engine/acepXpService.js';
 import { awardWissenAndNotify } from '../../engine/wissenService.js';
 import { recordCivContribution } from '../../engine/civilizationMeter.js';
+import { recordTrace, getSectorTraces, traceMessage } from '../../engine/playerTraceService.js';
 import { calculateTraits } from '../../engine/traitCalculator.js';
 import { getPersonalityComment } from '../../engine/personalityMessages.js';
 import { validateLocalScan, validateAreaScan } from '../../engine/commands.js';
@@ -157,6 +158,13 @@ export class ScanService {
       universeTick: getUniverseTickCount(),
     });
     client.send('apUpdate', result.newAP!);
+
+    // BB5: surface other pilots' recent traces in this sector ("X war hier").
+    const now = Date.now();
+    const traces = (await getSectorTraces(px, py)).filter((t) => t.playerId !== auth.userId);
+    for (const t of traces.slice(0, 3)) {
+      client.send('logEntry', traceMessage(t, now));
+    }
 
     // Phase 4: Check for scan events (pass environment for pirate frequency scaling)
     const env = (
@@ -338,6 +346,15 @@ export class ScanService {
       recordCivContribution('territory_explored', newlyDiscovered)
         .then((s) => this.ctx.broadcast('civMeterUpdate', s))
         .catch(() => {});
+      // BB5: leave an "explored here" trace for other pilots.
+      void recordTrace({
+        playerId: auth.userId,
+        playerName: auth.username,
+        action: 'explored',
+        x: sectorX,
+        y: sectorY,
+        ts: Date.now(),
+      });
     }
 
     // Phase 4: Check for scan events in scanned sectors (skip pirate ambush — remote scan can't trigger physical encounters)

@@ -14,6 +14,7 @@ import {
 } from '../../engine/combatV3Engine.js';
 import { generateNpcCombatStats } from '../../engine/npcCombatStats.js';
 import { recordCivContribution } from '../../engine/civilizationMeter.js';
+import { recordTrace } from '../../engine/playerTraceService.js';
 import { getActiveShip, updateShipModules, addCredits } from '../../db/queries.js';
 import { markCivShipDead } from '../../db/civQueries.js';
 import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
@@ -165,6 +166,15 @@ export class CombatV3Service {
       recordCivContribution('pirate_defeated')
         .then((s) => this.ctx.broadcast('civMeterUpdate', s))
         .catch(() => {});
+      // BB5: leave a "defeated pirates here" trace for other pilots.
+      void recordTrace({
+        playerId: auth.userId,
+        playerName: auth.username,
+        action: 'defeated_pirates',
+        x: this.ctx._px(client.sessionId),
+        y: this.ctx._py(client.sessionId),
+        ts: Date.now(),
+      });
     } else if (outcome === 'defeat') {
       try {
         await this.applyDefeatPenalty(auth.userId);
