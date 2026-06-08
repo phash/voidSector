@@ -3548,6 +3548,10 @@ export async function upsertVoidCluster(cluster: VoidClusterRow): Promise<void> 
 }
 
 export async function deleteVoidCluster(id: string): Promise<void> {
+  // Release any quadrants still controlled by this cluster first — otherwise the
+  // quadrant_control.void_cluster_id FK blocks the delete (the cluster is gone, so
+  // its quadrants become unclaimed, like releaseQuadrant).
+  await query('DELETE FROM quadrant_control WHERE void_cluster_id = $1', [id]);
   await query('DELETE FROM void_clusters WHERE id = $1', [id]);
 }
 
