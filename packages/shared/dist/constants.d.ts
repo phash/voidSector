@@ -163,6 +163,14 @@ export declare const BATTLE_NEGOTIATE_COST_PER_LEVEL = 10;
 export declare const BATTLE_FLEE_BASE_CHANCE = 0.6;
 export declare const PIRATE_LEVEL_DISTANCE_DIVISOR = 50;
 export declare const PIRATE_MAX_LEVEL = 10;
+/** ACEP XP per +1 pirate level (BB4 difficulty scaling). */
+export declare const PIRATE_ACEP_PER_LEVEL = 3000;
+/**
+ * BB4 — pirate threat scales with the pilot's power (ACEP total) and humanity's
+ * overall advancement (global civ meter 0..1), so the galaxy keeps pace with the
+ * player instead of staying trivial. distance = sqrt(x²+y²) from origin.
+ */
+export declare function scaledPirateLevel(distance: number, acepTotal: number, civLevel: number): number;
 export declare const PIRATE_BASE_HP = 20;
 export declare const PIRATE_HP_PER_LEVEL = 10;
 export declare const PIRATE_BASE_DAMAGE = 5;

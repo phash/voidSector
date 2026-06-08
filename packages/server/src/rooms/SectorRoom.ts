@@ -103,6 +103,7 @@ import {
   BASE_FUEL_CAPACITY,
   CONQUEST_POOL_MAX,
   CRAFT_TICK_INTERVAL_MS,
+  scaledPirateLevel,
 } from '@void-sector/shared';
 import type {
   SectorData,
@@ -175,6 +176,7 @@ import {
   updateStationHp,
 } from '../db/stationQueries.js';
 import { deriveStationDefenseInput, resolveStationCombat } from '../engine/stationCombat.js';
+import { getCivMeterState } from '../engine/civilizationMeter.js';
 
 interface SectorRoomOptions {
   quadrantX: number;
@@ -1995,9 +1997,11 @@ export class SectorRoom extends Room<SectorRoomState> {
    */
   private async maybeStartPirateCombat(client: Client, sectorX: number, sectorY: number): Promise<void> {
     const auth = client.auth as AuthPayload | undefined;
-    const pirateLevel = Math.min(10, Math.floor(
-      Math.sqrt(sectorX * sectorX + sectorY * sectorY) / 50,
-    ) + 1);
+    // BB4: scale threat with pilot power (ACEP) + humanity's advancement (civ meter).
+    const dist = Math.sqrt(sectorX * sectorX + sectorY * sectorY);
+    const acepTotal = this.state.players.get(client.sessionId)?.acepTotal ?? 0;
+    const civLevel = (await getCivMeterState().catch(() => null))?.level ?? 0;
+    const pirateLevel = scaledPirateLevel(dist, acepTotal, civLevel);
     if (auth?.userId) {
       const sensorLevel = await getPlayerSensorLevelInQuadrant(
         auth.userId, this.quadrantX, this.quadrantY,
@@ -2032,7 +2036,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     const RAID_COOLDOWN_MS = 10 * 60 * 1000;
     if (station.last_raid_at && Date.now() - station.last_raid_at < RAID_COOLDOWN_MS) return;
 
-    const pirateLevel = Math.min(10, Math.floor(Math.sqrt(sectorX * sectorX + sectorY * sectorY) / 50) + 1);
+    // BB4: raids scale with the owner's power + humanity's advancement.
+    const acepTotal = this.state.players.get(client.sessionId)?.acepTotal ?? 0;
+    const civLevel = (await getCivMeterState().catch(() => null))?.level ?? 0;
+    const pirateLevel = scaledPirateLevel(
+      Math.sqrt(sectorX * sectorX + sectorY * sectorY),
+      acepTotal,
+      civLevel,
+    );
     const seed = (Math.imul(sectorX, 92821) ^ Math.imul(sectorY, 53987) ^ (Date.now() & 0xffff)) >>> 0;
     const input = deriveStationDefenseInput(
       station.level,
