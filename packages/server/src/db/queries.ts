@@ -3202,6 +3202,11 @@ export async function getAllQuadrantControls(): Promise<QuadrantControlRow[]> {
   return res.rows;
 }
 
+/** Remove a quadrant's control row → unclaimed (getQuadrantControl returns null). */
+export async function deleteQuadrantControl(qx: number, qy: number): Promise<void> {
+  await query('DELETE FROM quadrant_control WHERE qx = $1 AND qy = $2', [qx, qy]);
+}
+
 export async function getBorderQuadrants(faction: string): Promise<QuadrantControlRow[]> {
   const res = await query<QuadrantControlRow>(
     `SELECT DISTINCT qc.*

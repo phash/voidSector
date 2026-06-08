@@ -14,6 +14,7 @@ import {
   deleteVoidHive,
   getAllQuadrantControls,
   upsertQuadrantControl,
+  deleteQuadrantControl,
 } from '../db/queries.js';
 import { getExpansionTarget } from './expansionEngine.js';
 import { logger } from '../utils/logger.js';
@@ -332,17 +333,10 @@ export class VoidLifecycleService {
   }
 
   private async releaseQuadrant(clusterId: string, qx: number, qy: number): Promise<void> {
-    await upsertQuadrantControl({
-      qx,
-      qy,
-      controlling_faction: null,
-      faction_shares: {},
-      attack_value: 0,
-      defense_value: 0,
-      friction_score: 0,
-      station_tier: 0,
-      void_cluster_id: null,
-    });
+    // Released = unclaimed. Delete the control row instead of upserting a null
+    // faction (controlling_faction is NOT NULL → the old null upsert threw every
+    // strategic tick). getQuadrantControl treats a missing row as unclaimed.
+    await deleteQuadrantControl(qx, qy);
     await deleteVoidHive(qx, qy);
     await deleteVoidClusterQuadrant(clusterId, qx, qy);
     await deleteVoidFrontierSectorsForQuadrant(clusterId, qx, qy);
