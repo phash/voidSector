@@ -8,6 +8,7 @@ import {
   HUMAN_CIVILIZATION_METER_MAX,
 } from '@void-sector/shared';
 import { getConfig } from './gameConfigApply.js';
+import { logger } from '../utils/logger.js';
 import type { CosmicFactionId } from '@void-sector/shared';
 
 export interface TickState {
@@ -176,9 +177,13 @@ export class UniverseTickEngine {
   };
   private territory: TerritoryState = initializeTerritoryState();
   private timer: ReturnType<typeof setInterval> | null = null;
-  private onTick: ((result: TickResult) => void) | null = null;
+  private onTick: ((result: TickResult) => Promise<void> | void) | null = null;
+  /** Re-entrancy guard: setInterval keeps firing every TICK_INTERVAL_MS even if the
+   *  async onTick callback runs long, so without this two ticks could overlap and
+   *  race the background-sweep cursor / pile up unbounded work. */
+  private ticking = false;
 
-  constructor(onTickCallback?: (result: TickResult) => void) {
+  constructor(onTickCallback?: (result: TickResult) => Promise<void> | void) {
     this.onTick = onTickCallback ?? null;
   }
 
@@ -186,8 +191,18 @@ export class UniverseTickEngine {
     if (this.state.isRunning) return;
     this.state.isRunning = true;
     this.timer = setInterval(() => {
-      const result = runUniverseTick(this.state, this.territory, 0, Math.random);
-      this.onTick?.(result);
+      if (this.ticking) return; // previous tick still running — skip to avoid overlap
+      this.ticking = true;
+      void (async () => {
+        try {
+          const result = runUniverseTick(this.state, this.territory, 0, Math.random);
+          await this.onTick?.(result);
+        } catch (err) {
+          logger.error({ err }, 'universe tick error');
+        } finally {
+          this.ticking = false;
+        }
+      })();
     }, TICK_INTERVAL_MS);
   }
 

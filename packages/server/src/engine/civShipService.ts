@@ -201,9 +201,11 @@ export async function processCivTick(anchors?: Array<{ x: number; y: number }>):
         const delivered = ship.resources_carried!;
         const resource = ship.mined_resource ?? 'ore';
         await query(
-          // BB2: new resource rows get a consumption sink (was 0,0 → piled forever).
+          // BB2: new resource rows get balanced restock≈consumption (~max_stock×0.015)
+          // so they neither pile to max forever (old 0,0) nor drain to nothing (0,7);
+          // trader export creates scarcity from genuine surplus instead.
           `INSERT INTO npc_station_inventory (station_x, station_y, item_type, stock, max_stock, restock_rate, consumption_rate, last_updated)
-           VALUES ($1, $2, $4, $3, 500, 0, 7, NOW())
+           VALUES ($1, $2, $4, $3, 500, 7, 7, NOW())
            ON CONFLICT (station_x, station_y, item_type)
            DO UPDATE SET stock = LEAST(npc_station_inventory.max_stock, npc_station_inventory.stock + $3), last_updated = NOW()`,
           [ship.home_x, ship.home_y, delivered, resource],
