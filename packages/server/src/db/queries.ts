@@ -3198,13 +3198,28 @@ export async function upsertQuadrantControl(data: {
 }
 
 export async function getAllQuadrantControls(): Promise<QuadrantControlRow[]> {
-  const res = await query<QuadrantControlRow>('SELECT * FROM quadrant_control');
+  // Deterministic order so border-pair iteration / tie-breaks are stable across ticks.
+  const res = await query<QuadrantControlRow>('SELECT * FROM quadrant_control ORDER BY qx, qy');
   return res.rows;
 }
 
 /** Remove a quadrant's control row → unclaimed (getQuadrantControl returns null). */
 export async function deleteQuadrantControl(qx: number, qy: number): Promise<void> {
   await query('DELETE FROM quadrant_control WHERE qx = $1 AND qy = $2', [qx, qy]);
+}
+
+/**
+ * Update ONLY a quadrant's friction_score. The strategic tick must never rewrite
+ * controlling_faction here from a stale snapshot — doing so reverted conquests
+ * made earlier in the same tick (BB3 review). Faction changes go through
+ * upsertQuadrantControl in processWarfareTick only.
+ */
+export async function updateQuadrantFriction(qx: number, qy: number, score: number): Promise<void> {
+  await query('UPDATE quadrant_control SET friction_score = $3 WHERE qx = $1 AND qy = $2', [
+    qx,
+    qy,
+    score,
+  ]);
 }
 
 export async function getBorderQuadrants(faction: string): Promise<QuadrantControlRow[]> {

@@ -1990,6 +1990,19 @@ export class SectorRoom extends Room<SectorRoomState> {
     }
   }
 
+  // Global civ-meter level, cached so pirate scaling (BB4) doesn't hit the DB on
+  // every sector entry / station raid. Refreshed at most every 30s.
+  private cachedCivLevel = 0;
+  private civLevelFetchedAt = 0;
+  private async getCivLevelCached(): Promise<number> {
+    const now = Date.now();
+    if (now - this.civLevelFetchedAt > 30_000) {
+      this.cachedCivLevel = (await getCivMeterState().catch(() => null))?.level ?? this.cachedCivLevel;
+      this.civLevelFetchedAt = now;
+    }
+    return this.cachedCivLevel;
+  }
+
   /**
    * Auto-start pirate_zone combat on sector entry — UNLESS the player owns a sensor
    * station in this quadrant and the sensor lets them avoid it, in which case the
@@ -2000,7 +2013,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     // BB4: scale threat with pilot power (ACEP) + humanity's advancement (civ meter).
     const dist = Math.sqrt(sectorX * sectorX + sectorY * sectorY);
     const acepTotal = this.state.players.get(client.sessionId)?.acepTotal ?? 0;
-    const civLevel = (await getCivMeterState().catch(() => null))?.level ?? 0;
+    const civLevel = await this.getCivLevelCached();
     const pirateLevel = scaledPirateLevel(dist, acepTotal, civLevel);
     if (auth?.userId) {
       const sensorLevel = await getPlayerSensorLevelInQuadrant(
@@ -2038,7 +2051,7 @@ export class SectorRoom extends Room<SectorRoomState> {
 
     // BB4: raids scale with the owner's power + humanity's advancement.
     const acepTotal = this.state.players.get(client.sessionId)?.acepTotal ?? 0;
-    const civLevel = (await getCivMeterState().catch(() => null))?.level ?? 0;
+    const civLevel = await this.getCivLevelCached();
     const pirateLevel = scaledPirateLevel(
       Math.sqrt(sectorX * sectorX + sectorY * sectorY),
       acepTotal,

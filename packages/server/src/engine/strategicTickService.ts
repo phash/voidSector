@@ -3,6 +3,7 @@ import type { Redis } from 'ioredis';
 import {
   getAllQuadrantControls,
   upsertQuadrantControl,
+  updateQuadrantFriction,
   createNpcFleet,
   getArrivedNpcFleets,
   deleteArrivedNpcFleets,
@@ -67,7 +68,6 @@ export class StrategicTickService {
       let attackerQ: QuadrantControlRow;
       let defenderQ: QuadrantControlRow;
       let attackerFaction: string;
-      let frictionQ: QuadrantControlRow; // quadrant whose friction_score we persist
 
       if (aHuman || bHuman) {
         const humanQ = aHuman ? a : b;
@@ -79,7 +79,6 @@ export class StrategicTickService {
         attackerQ = alienQ;
         defenderQ = humanQ;
         attackerFaction = alienFaction;
-        frictionQ = alienQ;
       } else {
         // alien↔alien or alien↔void: pair enmity, the higher-attack side attacks.
         const aggA = this.factionConfig.getConfig(a.controlling_faction)?.aggression ?? 1.0;
@@ -94,19 +93,11 @@ export class StrategicTickService {
           defenderQ = a;
         }
         attackerFaction = attackerQ.controlling_faction;
-        frictionQ = defenderQ;
       }
 
-      await upsertQuadrantControl({
-        qx: frictionQ.qx,
-        qy: frictionQ.qy,
-        controlling_faction: frictionQ.controlling_faction,
-        faction_shares: frictionQ.faction_shares as Record<string, number>,
-        attack_value: frictionQ.attack_value,
-        defense_value: frictionQ.defense_value,
-        friction_score: frictionResult.score,
-        station_tier: frictionQ.station_tier,
-      });
+      // Friction is informational — update the score ONLY (never the faction, which a
+      // stale snapshot would revert if this quadrant was conquered earlier this tick).
+      await updateQuadrantFriction(attackerQ.qx, attackerQ.qy, frictionResult.score);
 
       if (frictionResult.state === 'total_war') {
         await this.processWarfareTick(defenderQ, attackerQ, attackerFaction);
