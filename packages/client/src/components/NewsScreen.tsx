@@ -130,6 +130,7 @@ function NewsItem({
 export function NewsScreen() {
   const newsItems = useStore((s) => s.newsItems);
   const civMeter = useStore((s) => s.civMeter);
+  const galaxyActivity = useStore((s) => s.galaxyActivity);
   const showTip = useStore((s) => s.showTip);
   const [loading, setLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -139,6 +140,7 @@ export function NewsScreen() {
     setLoading(true);
     network.requestNews();
     network.requestCivMeter();
+    network.requestGalaxyActivity();
     setTimeout(() => {
       setLoading(false);
       setLastRefresh(new Date());
@@ -245,6 +247,20 @@ export function NewsScreen() {
           <div style={{ marginTop: 3, height: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--color-dim)' }}>
             <div style={{ height: '100%', width: `${Math.round(civMeter.level * 100)}%`, background: 'var(--color-primary)', transition: 'width 0.4s' }} />
           </div>
+        </div>
+      )}
+
+      {/* Galaxy pilot activity (BB5) */}
+      {galaxyActivity.length > 0 && (
+        <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--color-dim)', maxHeight: 110, overflowY: 'auto' }}>
+          <div style={{ fontSize: '0.58rem', color: 'var(--color-dim)', letterSpacing: '0.08em', marginBottom: 3 }}>
+            ◈ PILOTEN-AKTIVITÄT
+          </div>
+          {galaxyActivity.slice(0, 8).map((a, i) => (
+            <div key={i} style={{ fontSize: '0.62rem', color: 'var(--color-primary)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {a.text} <span style={{ color: 'var(--color-dim)' }}>[{a.qx}:{a.qy}]</span>
+            </div>
+          ))}
         </div>
       )}
 

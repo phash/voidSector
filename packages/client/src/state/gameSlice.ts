@@ -317,6 +317,8 @@ export interface GameSlice {
   tradeInvitePending: { tradeId: string; fromPlayerId: string; fromPlayerName: string } | null;
   // Global civilization meter (#SP8)
   civMeter: { total: number; level: number; tier: string } | null;
+  // Galaxy-wide recent pilot activity (#BB5)
+  galaxyActivity: Array<{ text: string; qx: number; qy: number; ts: number }>;
   channelAlerts: Record<string, boolean>;
 
   // Alerts
@@ -621,6 +623,7 @@ export interface GameSlice {
   setPlayerCardTarget: (playerCardTarget: PlayerCardData | null) => void;
   setActiveTrade: (activeTrade: TradeStateView | null) => void;
   setCivMeter: (civMeter: { total: number; level: number; tier: string } | null) => void;
+  setGalaxyActivity: (galaxyActivity: Array<{ text: string; qx: number; qy: number; ts: number }>) => void;
   setTradeInvitePending: (
     tradeInvitePending: { tradeId: string; fromPlayerId: string; fromPlayerName: string } | null,
   ) => void;
@@ -784,6 +787,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   activeTrade: null,
   tradeInvitePending: null,
   civMeter: null,
+  galaxyActivity: [],
   channelAlerts: {},
   alerts: {},
   selectedSector: null,
@@ -998,6 +1002,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setPlayerCardTarget: (playerCardTarget) => set({ playerCardTarget }),
   setActiveTrade: (activeTrade) => set({ activeTrade }),
   setCivMeter: (civMeter) => set({ civMeter }),
+  setGalaxyActivity: (galaxyActivity) => set({ galaxyActivity }),
   setTradeInvitePending: (tradeInvitePending) => set({ tradeInvitePending }),
   addFriend: (friend) => set((s) => ({ friends: [...s.friends, friend] })),
   removeFriendFromList: (friendId) => set((s) => ({

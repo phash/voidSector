@@ -117,6 +117,7 @@ import {
   getKontorOrders,
 } from '../../engine/kontorEngine.js';
 import { getCivMeterState } from '../../engine/civilizationMeter.js';
+import { getRecentActivity, traceMessage } from '../../engine/playerTraceService.js';
 import {
   getSector,
   getPlayerDiscoveries,
@@ -286,6 +287,15 @@ export class WorldService {
 
   async handleGetCivMeter(client: Client): Promise<void> {
     client.send('civMeterUpdate', await getCivMeterState());
+  }
+
+  async handleGetGalaxyActivity(client: Client): Promise<void> {
+    const now = Date.now();
+    const activity = (await getRecentActivity(20)).map((t) => {
+      const { qx, qy } = sectorToQuadrant(t.x, t.y);
+      return { text: traceMessage(t, now), qx, qy, ts: t.ts };
+    });
+    client.send('galaxyActivity', { activity });
   }
 
   async handleTransfer(

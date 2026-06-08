@@ -933,6 +933,14 @@ class GameNetwork {
       useStore.getState().setCivMeter(data);
     });
 
+    // Galaxy-wide recent pilot activity (BB5)
+    room.onMessage(
+      'galaxyActivity',
+      (data: { activity: Array<{ text: string; qx: number; qy: number; ts: number }> }) => {
+        useStore.getState().setGalaxyActivity(data.activity ?? []);
+      },
+    );
+
     // Transfer result
     room.onMessage('transferResult', (data: { success: boolean; error?: string }) => {
       const store = useStore.getState();
@@ -2417,6 +2425,10 @@ class GameNetwork {
 
   requestCivMeter() {
     this.sectorRoom?.send('getCivMeter');
+  }
+
+  requestGalaxyActivity() {
+    this.sectorRoom?.send('getGalaxyActivity');
   }
 
   requestCredits() {
