@@ -1,5 +1,40 @@
 import { describe, it, expect } from 'vitest';
-import { calculateFriction, repValueToTier } from '../engine/frictionEngine.js';
+import {
+  calculateFriction,
+  frictionFromBase,
+  pairEnmity,
+  repValueToTier,
+} from '../engine/frictionEngine.js';
+
+describe('pairEnmity (BB3)', () => {
+  it('is symmetric and deterministic', () => {
+    expect(pairEnmity('kthari', 'mycelians')).toBe(pairEnmity('mycelians', 'kthari'));
+  });
+  it('voids are hostile to everyone (high enmity)', () => {
+    expect(pairEnmity('voids', 'kthari')).toBe(75);
+    expect(pairEnmity('helions', 'voids')).toBe(75);
+  });
+  it('alien pairs fall in the 10..80 baseline band', () => {
+    for (const [a, b] of [['kthari', 'helions'], ['axioms', 'scrappers'], ['archivists', 'consortium']]) {
+      const e = pairEnmity(a, b);
+      expect(e).toBeGreaterThanOrEqual(10);
+      expect(e).toBeLessThanOrEqual(80);
+    }
+  });
+});
+
+describe('frictionFromBase (BB3)', () => {
+  it('high base + aggression escalates to total_war', () => {
+    expect(frictionFromBase(80, 1.5).state).toBe('total_war'); // 80 + 10 = 90
+  });
+  it('low base stays peaceful', () => {
+    expect(frictionFromBase(10, 1.0).state).toBe('peaceful_halt');
+  });
+  it('clamps score to [0,100]', () => {
+    expect(frictionFromBase(95, 2.0).score).toBe(100);
+    expect(frictionFromBase(0, 0.0).score).toBe(0);
+  });
+});
 
 describe('calculateFriction', () => {
   it('returns score 0 and peaceful_halt for ally rep', () => {

@@ -15,7 +15,8 @@ import { warBus } from '../warBus.js';
 import { resetDeadOutlaws } from '../db/civQueries.js';
 import type { QuadrantControlRow } from '../db/queries.js';
 import { FactionConfigService } from './factionConfigService.js';
-import { calculateFriction, repValueToTier } from './frictionEngine.js';
+import { calculateFriction, frictionFromBase, pairEnmity, repValueToTier } from './frictionEngine.js';
+import type { FrictionState } from './frictionEngine.js';
 import { findAllBorderPairs, getExpansionTarget } from './expansionEngine.js';
 import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
@@ -54,35 +55,61 @@ export class StrategicTickService {
     }
     const allControls = await getAllQuadrantControls();
 
-    // 1. Update friction + handle warfare at all human<→alien borders
+    // 1. Update friction + handle warfare at ALL borders. Human↔alien uses
+    //    humanity reputation; alien↔alien and alien↔void (BB3) use a deterministic
+    //    per-pair enmity so the whole galaxy is a living multi-faction conflict.
     const borderPairs = findAllBorderPairs(allControls);
     for (const { a, b } of borderPairs) {
-      if (a.controlling_faction !== 'humans' && b.controlling_faction !== 'humans') continue;
-      const alienFaction =
-        a.controlling_faction === 'humans' ? b.controlling_faction : a.controlling_faction;
-      const humanQ = a.controlling_faction === 'humans' ? a : b;
-      const alienQ = a.controlling_faction === 'humans' ? b : a;
+      const aHuman = a.controlling_faction === 'humans';
+      const bHuman = b.controlling_faction === 'humans';
 
-      const rep = repStore.get(alienFaction) ?? 0;
-      const repTier = repValueToTier(rep);
-      const factionCfg = this.factionConfig.getConfig(alienFaction);
-      const aggression = (factionCfg?.aggression ?? 1.0) * AGGRESSION_MUL;
-      const { score, state } = calculateFriction(repTier, aggression);
+      let frictionResult: { score: number; state: FrictionState };
+      let attackerQ: QuadrantControlRow;
+      let defenderQ: QuadrantControlRow;
+      let attackerFaction: string;
+      let frictionQ: QuadrantControlRow; // quadrant whose friction_score we persist
 
-      // Update friction score on the quadrant
+      if (aHuman || bHuman) {
+        const humanQ = aHuman ? a : b;
+        const alienQ = aHuman ? b : a;
+        const alienFaction = alienQ.controlling_faction;
+        const rep = repStore.get(alienFaction) ?? 0;
+        const aggression = (this.factionConfig.getConfig(alienFaction)?.aggression ?? 1.0) * AGGRESSION_MUL;
+        frictionResult = calculateFriction(repValueToTier(rep), aggression);
+        attackerQ = alienQ;
+        defenderQ = humanQ;
+        attackerFaction = alienFaction;
+        frictionQ = alienQ;
+      } else {
+        // alien↔alien or alien↔void: pair enmity, the higher-attack side attacks.
+        const aggA = this.factionConfig.getConfig(a.controlling_faction)?.aggression ?? 1.0;
+        const aggB = this.factionConfig.getConfig(b.controlling_faction)?.aggression ?? 1.0;
+        const enmity = pairEnmity(a.controlling_faction, b.controlling_faction);
+        frictionResult = frictionFromBase(enmity, Math.max(aggA, aggB) * AGGRESSION_MUL);
+        if (a.attack_value >= b.attack_value) {
+          attackerQ = a;
+          defenderQ = b;
+        } else {
+          attackerQ = b;
+          defenderQ = a;
+        }
+        attackerFaction = attackerQ.controlling_faction;
+        frictionQ = defenderQ;
+      }
+
       await upsertQuadrantControl({
-        qx: alienQ.qx,
-        qy: alienQ.qy,
-        controlling_faction: alienQ.controlling_faction,
-        faction_shares: alienQ.faction_shares as Record<string, number>,
-        attack_value: alienQ.attack_value,
-        defense_value: alienQ.defense_value,
-        friction_score: score,
-        station_tier: alienQ.station_tier,
+        qx: frictionQ.qx,
+        qy: frictionQ.qy,
+        controlling_faction: frictionQ.controlling_faction,
+        faction_shares: frictionQ.faction_shares as Record<string, number>,
+        attack_value: frictionQ.attack_value,
+        defense_value: frictionQ.defense_value,
+        friction_score: frictionResult.score,
+        station_tier: frictionQ.station_tier,
       });
 
-      if (state === 'total_war') {
-        await this.processWarfareTick(humanQ, alienQ, alienFaction);
+      if (frictionResult.state === 'total_war') {
+        await this.processWarfareTick(defenderQ, attackerQ, attackerFaction);
       }
     }
 
@@ -131,34 +158,35 @@ export class StrategicTickService {
   }
 
   private async processWarfareTick(
-    humanQ: QuadrantControlRow,
-    alienQ: QuadrantControlRow,
-    alienFaction: string,
+    defenderQ: QuadrantControlRow,
+    attackerQ: QuadrantControlRow,
+    attackerFaction: string,
   ): Promise<void> {
     const result = resolveStrategicTick({
-      attack: alienQ.attack_value,
-      defense: humanQ.defense_value,
+      attack: attackerQ.attack_value,
+      defense: defenderQ.defense_value,
     });
+    const defenderFaction = defenderQ.controlling_faction;
 
     if (result.conquest) {
       await upsertQuadrantControl({
-        qx: humanQ.qx,
-        qy: humanQ.qy,
-        controlling_faction: alienFaction,
-        faction_shares: { [alienFaction]: 100 },
+        qx: defenderQ.qx,
+        qy: defenderQ.qy,
+        controlling_faction: attackerFaction,
+        faction_shares: { [attackerFaction]: 100 },
         attack_value: 0,
-        defense_value: calculateBaseDefense(humanQ.station_tier, 200),
+        defense_value: calculateBaseDefense(defenderQ.station_tier, 200),
         friction_score: 0,
-        station_tier: humanQ.station_tier,
+        station_tier: defenderQ.station_tier,
       });
-      await logExpansionEvent(alienFaction, humanQ.qx, humanQ.qy, 'conquered');
-      await logExpansionEvent('humans', humanQ.qx, humanQ.qy, 'lost');
-      const msg = `${alienFaction.toUpperCase()} CONQUEST — Quadrant [${humanQ.qx}/${humanQ.qy}] lost`;
-      logger.warn({ alienFaction, qx: humanQ.qx, qy: humanQ.qy }, msg);
+      await logExpansionEvent(attackerFaction, defenderQ.qx, defenderQ.qy, 'conquered');
+      await logExpansionEvent(defenderFaction, defenderQ.qx, defenderQ.qy, 'lost');
+      const msg = `${attackerFaction.toUpperCase()} eroberten Quadrant [${defenderQ.qx}/${defenderQ.qy}] von ${defenderFaction.toUpperCase()}`;
+      logger.warn({ attackerFaction, defenderFaction, qx: defenderQ.qx, qy: defenderQ.qy }, msg);
       await this.pushWarTickerEvent(msg);
     } else if (result.invasionRepelled) {
-      const msg = `INVASION REPELLED — Quadrant [${humanQ.qx}/${humanQ.qy}] held`;
-      logger.info({ alienFaction, qx: humanQ.qx, qy: humanQ.qy }, msg);
+      const msg = `${defenderFaction.toUpperCase()} hielt Quadrant [${defenderQ.qx}/${defenderQ.qy}] gegen ${attackerFaction.toUpperCase()}`;
+      logger.info({ attackerFaction, defenderFaction, qx: defenderQ.qx, qy: defenderQ.qy }, msg);
       await this.pushWarTickerEvent(msg);
     }
   }
