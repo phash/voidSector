@@ -8,7 +8,7 @@
 import { redis } from '../rooms/services/RedisAPStore.js';
 import { logger } from '../utils/logger.js';
 
-export type TraceAction = 'explored' | 'defeated_pirates' | 'built';
+export type TraceAction = 'explored' | 'defeated_pirates' | 'built' | 'scanned' | 'traded' | 'mined';
 
 export interface PlayerTrace {
   playerId: string;
@@ -37,6 +37,9 @@ const ACTION_VERB: Record<TraceAction, string> = {
   explored: 'erkundete diesen Sektor',
   defeated_pirates: 'besiegte hier Piraten',
   built: 'errichtete hier eine Station',
+  scanned: 'vermaß diesen Sektor',
+  traded: 'handelte hier mit Waren',
+  mined: 'förderte hier Rohstoffe',
 };
 
 /** One-line trace message (pure). */
@@ -91,5 +94,19 @@ export async function getRecentActivity(limit = 20): Promise<PlayerTrace[]> {
   } catch (err) {
     logger.warn({ err }, 'getRecentActivity failed (Redis)');
     return [];
+  }
+}
+
+/** Record a trace at a sector ONLY (no global recent-activity feed). For NPCs
+ *  whose volume would otherwise drown real players' activity in NEWS. */
+export async function recordSectorTrace(t: PlayerTrace): Promise<void> {
+  try {
+    const entry = JSON.stringify(t);
+    const secKey = `trace:sec:${t.x}:${t.y}`;
+    await redis.lpush(secKey, entry);
+    await redis.ltrim(secKey, 0, SECTOR_TRACE_MAX - 1);
+    await redis.expire(secKey, TRACE_TTL_S);
+  } catch (err) {
+    logger.warn({ err }, 'recordSectorTrace failed (Redis)');
   }
 }

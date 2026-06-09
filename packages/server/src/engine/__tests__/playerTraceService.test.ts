@@ -43,3 +43,17 @@ describe('parseTraces (BB5)', () => {
     expect(parseTraces([])).toEqual([]);
   });
 });
+
+import type { TraceAction } from '../playerTraceService.js';
+
+describe('explorer trace actions (BB5/Phase 3)', () => {
+  const NOW2 = 1_000_000_000_000;
+  it('formats the new NPC actions with German verbs', () => {
+    const msg = (action: TraceAction) =>
+      traceMessage({ playerId: 'npc', playerName: 'Konsortium-Späher', action, x: 5, y: 5, ts: NOW2 }, NOW2);
+    expect(msg('scanned')).toContain('Konsortium-Späher');
+    expect(msg('scanned')).toMatch(/scannte|erfasste|vermaß/i);
+    expect(msg('traded')).toMatch(/handelte|Waren/i);
+    expect(msg('mined')).toMatch(/baute|förderte|schürfte/i);
+  });
+});
