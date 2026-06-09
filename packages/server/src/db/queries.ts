@@ -3937,7 +3937,7 @@ export async function getMyTradeableInventory(
   playerId: string,
 ): Promise<Array<{ item_type: string; item_id: string; quantity: number }>> {
   const res = await query<{ item_type: string; item_id: string; quantity: number }>(
-    `SELECT item_type, item_id, quantity FROM inventory WHERE player_id=$1 AND item_type IN ('resource','blueprint') AND quantity > 0 ORDER BY item_type, item_id`,
+    `SELECT item_type, item_id, quantity FROM inventory WHERE player_id=$1 AND quantity > 0 AND ((item_type='resource' AND item_id IN ('ore','gas','crystal')) OR item_type='blueprint') ORDER BY item_type, item_id`,
     [playerId],
   );
   return res.rows;

@@ -8,8 +8,9 @@ import {
   buyExchangeListing,
   cancelExchangeListing,
   getMyTradeableInventory,
+  getPlayerCredits,
 } from '../../db/queries.js';
-import { addToInventory, canAddResource } from '../../engine/inventoryService.js';
+import { addToInventory, canAddResource, getCargoState } from '../../engine/inventoryService.js';
 import { logger } from '../../utils/logger.js';
 
 export const EXCHANGE_MAX_PRICE = 100_000_000;
@@ -76,6 +77,7 @@ export class ExchangeService {
       });
       return;
     }
+    await this.pushHud(client, auth.userId);
     await this.sendState(client, auth.userId);
   }
 
@@ -114,6 +116,7 @@ export class ExchangeService {
         quantity: row.quantity,
         price: row.price,
       });
+      await this.pushHud(client, auth.userId, true);
     } catch (err: any) {
       const code =
         err?.code === 'INSUFFICIENT_CREDITS' ? 'INSUFFICIENT_CREDITS' : 'NOT_AVAILABLE';
@@ -141,11 +144,20 @@ export class ExchangeService {
     const auth = client.auth as AuthPayload | null;
     if (!auth?.userId) return;
     const row = await cancelExchangeListing(listingId, auth.userId);
-    if (row)
+    if (row) {
       await addToInventory(auth.userId, row.item_type as any, row.item_id, row.quantity).catch(
         (e) => logger.error({ err: e }, 'exchange refund failed'),
       );
+      await this.pushHud(client, auth.userId);
+    }
     await this.sendState(client, auth.userId);
+  }
+
+  private async pushHud(client: Client, userId: string, credits = false): Promise<void> {
+    this.ctx.send(client, 'cargoUpdate', await getCargoState(userId));
+    if (credits) {
+      this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(userId) });
+    }
   }
 
   async sendState(client: Client, userId: string): Promise<void> {
