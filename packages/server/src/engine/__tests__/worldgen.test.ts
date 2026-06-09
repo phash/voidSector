@@ -160,19 +160,15 @@ describe('worldgen', () => {
     expect(found).toBe(true);
   });
 
-  it('station sectors have station in contents', () => {
-    let found = false;
-    for (let x = -30; x <= 30 && !found; x++) {
-      for (let y = -30; y <= 30 && !found; y++) {
+  it('worldgen never mints station sectors (sole-station world: only 0:0 + player-built)', () => {
+    // CONTENT_WEIGHTS.station = 0 since the sole-station change — no randomly generated stations.
+    expect(CONTENT_WEIGHTS.station).toBe(0);
+    for (let x = -30; x <= 30; x++) {
+      for (let y = -30; y <= 30; y++) {
         const sector = generateSector(x, y, null);
-        if (sector.type === 'station') {
-          expect(sector.environment).toBe('empty');
-          expect(sector.contents).toContain('station');
-          found = true;
-        }
+        expect(sector.type).not.toBe('station');
       }
     }
-    expect(found).toBe(true);
   });
 
   it('pirate_zone sectors contain pirate_zone and asteroid_field in contents (hidden from radar)', () => {
@@ -224,23 +220,20 @@ describe('worldgen', () => {
     expect(count).toBeGreaterThan(100);
   });
 
-  it('nebula sectors can contain station content when NEBULA_CONTENT_ENABLED', () => {
-    // PR #219: NEBULA_ZONE_GRID=5000, radius 3-8 — nebulae are now rare blobs (~1-2 per quadrant).
-    // Instead of scanning a huge random area, verify the logic is enabled and the content weight is valid.
+  it('nebula sectors never contain station content (sole-station world)', () => {
+    // Sole-station model: CONTENT_WEIGHTS.station = 0, so nebulae cannot roll station content.
+    // NEBULA_CONTENT_ENABLED remains true (the flag controls other content types like asteroid_field).
     expect(NEBULA_CONTENT_ENABLED).toBe(true);
-    expect(CONTENT_WEIGHTS.station).toBeGreaterThan(0);
-    // Targeted scan near a known nebula-prone region
-    let found = false;
-    for (let x = 0; x <= 20000 && !found; x += 1) {
-      for (let y = 0; y <= 100 && !found; y += 1) {
+    expect(CONTENT_WEIGHTS.station).toBe(0);
+    // Spot-check: no nebula sector in a reasonable scan area has station content.
+    for (let x = 0; x <= 200; x += 1) {
+      for (let y = 0; y <= 50; y += 1) {
         const s = generateSector(x, y, null);
-        if (s.environment === 'nebula' && s.contents.includes('station')) {
-          expect(s.type).toBe('station');
-          found = true;
+        if (s.environment === 'nebula') {
+          expect(s.contents).not.toContain('station');
         }
       }
     }
-    // If not found in scan: behaviour is valid (rare combination), NEBULA_CONTENT_ENABLED check suffices
   });
 
   it('nebula sectors can contain asteroid_field content', () => {
@@ -314,11 +307,11 @@ describe('worldgen', () => {
         }
       }
     }
-    // Empty environment should have variety of content
+    // Empty environment should have variety of content (but no stations — sole-station world)
     expect(envContentPairs['empty']).toBeDefined();
     expect(envContentPairs['empty'].has('none')).toBe(true);
     expect(envContentPairs['empty'].has('asteroid_field')).toBe(true);
-    expect(envContentPairs['empty'].has('station')).toBe(true);
+    expect(envContentPairs['empty'].has('station')).toBe(false); // CONTENT_WEIGHTS.station = 0
   });
 
   it('strips pirate_zone content when isFrontier=false, keeps asteroid_field', () => {

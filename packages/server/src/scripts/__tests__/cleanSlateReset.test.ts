@@ -35,6 +35,7 @@ describe('cleanSlateReset — non-home delete SQL', () => {
     const { sql, params } = nonHomeDeleteSql(new Set(['0:0', '270:280']));
     expect(sql).toMatch(/DELETE FROM quadrant_control/i);
     expect(sql).toMatch(/NOT IN/i);
+    expect(sql).toMatch(/NOT IN \(\(\$1, \$2\), \(\$3, \$4\)\)/);
     expect(params).toEqual([0, 0, 270, 280]);
   });
   it('deletes ALL when there are no homes (defensive)', () => {

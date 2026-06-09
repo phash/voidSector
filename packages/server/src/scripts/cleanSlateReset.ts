@@ -42,6 +42,7 @@ export function nonHomeDeleteSql(homes: Set<string>): { sql: string; params: num
   if (homes.size === 0) return { sql: 'DELETE FROM quadrant_control', params: [] };
   const params: number[] = [];
   const tuples: string[] = [];
+  // Set preserves insertion order → params align 1:1 with the tuple placeholders.
   for (const key of homes) {
     const [qx, qy] = key.split(':').map(Number);
     tuples.push(`($${params.length + 1}, $${params.length + 2})`);
@@ -55,6 +56,7 @@ export function nonHomeDeleteSql(homes: Set<string>): { sql: string; params: num
 
 async function wipe(table: string): Promise<void> {
   try {
+    // table names are compile-time constants from CLEAN_SLATE_WIPE_TABLES — no injection risk.
     const del = await query(`DELETE FROM ${table}`);
     logger.info({ table, rowCount: del.rowCount }, 'clean-slate: cleared');
   } catch (err) {

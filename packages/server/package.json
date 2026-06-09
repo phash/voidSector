@@ -9,7 +9,8 @@
     "dev": "tsx watch --tsconfig tsconfig.json src/index.ts",
     "sim:server": "tsx --env-file=../../.env.sim src/index.ts",
     "test": "vitest run",
-    "reset:world": "tsx src/scripts/resetWorld.ts"
+    "reset:world": "tsx src/scripts/resetWorld.ts",
+    "clean-slate": "tsx src/scripts/cleanSlateReset.ts"
   },
   "dependencies": {
     "@colyseus/monitor": "^0.15.0",
