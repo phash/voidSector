@@ -5,6 +5,8 @@ import {
 } from '../alienHomeGuard.js';
 
 const S = 500;
+const SIZE = 500;
+const home = (faction_id: string, home_qx: number, home_qy: number) => ({ faction_id, home_qx, home_qy });
 
 describe('quadrantNearestSectorDistance', () => {
   it('uses the centered quadrant convention (matches sectorToQuadrant)', () => {
@@ -37,5 +39,25 @@ describe('assertAlienHomesFarFromOrigin', () => {
   it('ignores the human faction (live id is "humans")', () => {
     const homes = [{ faction_id: 'humans', home_qx: 0, home_qy: 0 }];
     expect(() => assertAlienHomesFarFromOrigin(homes, S, 1000)).not.toThrow();
+  });
+});
+
+describe('assertAlienHomesFarFromOrigin (min + max)', () => {
+  it('passes when all alien homes are within [min,max]', () => {
+    expect(() =>
+      assertAlienHomesFarFromOrigin([home('kthari', 3, 1), home('silent_swarm', -8, 4)], SIZE, 1000, 5000),
+    ).not.toThrow();
+  });
+  it('throws when a home is too close (below min)', () => {
+    expect(() => assertAlienHomesFarFromOrigin([home('kthari', 1, 0)], SIZE, 1000, 5000)).toThrow(/minimum 1000/);
+  });
+  it('throws when a home is too far (above max)', () => {
+    expect(() => assertAlienHomesFarFromOrigin([home('kthari', 20, 0)], SIZE, 1000, 5000)).toThrow(/maximum 5000/);
+  });
+  it('ignores the human faction', () => {
+    expect(() => assertAlienHomesFarFromOrigin([home('humans', 0, 0)], SIZE, 1000, 5000)).not.toThrow();
+  });
+  it('max is optional — backward compatible (min-only)', () => {
+    expect(() => assertAlienHomesFarFromOrigin([home('kthari', 20, 0)], SIZE, 1000)).not.toThrow();
   });
 });

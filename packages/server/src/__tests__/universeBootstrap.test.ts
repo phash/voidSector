@@ -34,7 +34,7 @@ vi.mock('../db/queries.js', () => ({
   getAllQuadrantControls: vi.fn().mockResolvedValue([]),
   getAllFactionConfigs: vi.fn().mockResolvedValue([
     { faction_id: 'human', home_qx: 0, home_qy: 0 },
-    { faction_id: 'kthari', home_qx: 20, home_qy: -15 },
+    { faction_id: 'kthari', home_qx: 3, home_qy: 1 }, // 1250 sectors — within [1000,5000] ring
   ]),
 }));
 

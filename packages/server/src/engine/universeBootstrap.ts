@@ -42,7 +42,7 @@ export async function startUniverseEngine(): Promise<void> {
   const alienSeeded = await ensureAlienHomeQuadrants();
   logger.info({ alienSeeded }, 'Universe seeded: Zentrum@(0,0) + alien homeworlds');
   const factionHomes = await getAllFactionConfigs();
-  assertAlienHomesFarFromOrigin(factionHomes, QUADRANT_SIZE, 1000);
+  assertAlienHomesFarFromOrigin(factionHomes, QUADRANT_SIZE, 1000, 5000);
 
   if (CIV_STATIONS_ENABLED) {
     await ensureCivStations();

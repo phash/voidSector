@@ -40,13 +40,15 @@ export function quadrantNearestSectorDistance(
 }
 
 /**
- * Throws if any non-human faction home is closer than minDist sectors to origin.
- * Used as a startup guardrail after alien homes are seeded.
+ * Throws if any non-human faction home is outside [minDist, maxDist] sectors of
+ * origin. `maxDist` is optional (omit for a min-only guard). Startup guardrail
+ * after alien homes are seeded.
  */
 export function assertAlienHomesFarFromOrigin(
   homes: FactionHome[],
   quadrantSize: number,
   minDist: number,
+  maxDist?: number,
 ): void {
   for (const h of homes) {
     // 'humans' is the live faction_config id (migration 063); 'human' kept for any pre-migration data.
@@ -56,6 +58,12 @@ export function assertAlienHomesFarFromOrigin(
       throw new Error(
         `Alien home "${h.faction_id}" at quadrant (${h.home_qx},${h.home_qy}) is only ` +
           `${dist} sectors from origin (minimum ${minDist}).`,
+      );
+    }
+    if (maxDist !== undefined && dist > maxDist) {
+      throw new Error(
+        `Alien home "${h.faction_id}" at quadrant (${h.home_qx},${h.home_qy}) is ` +
+          `${dist} sectors from origin (maximum ${maxDist}).`,
       );
     }
   }
