@@ -3787,3 +3787,114 @@ export async function expireBountiesForRefund(): Promise<
   );
   return res.rows;
 }
+
+// ─── Origin Hub Exchange ─────────────────────────────────────────────────────
+
+export interface ExchangeListingRow {
+  id: number;
+  seller_id: string;
+  seller_name: string;
+  item_type: string;
+  item_id: string;
+  quantity: number;
+  price: number;
+  status: string;
+  buyer_id: string | null;
+  buyer_name: string | null;
+  created_at: string;
+  sold_at: string | null;
+  expires_at: string;
+}
+
+export async function insertExchangeListing(
+  sellerId: string,
+  sellerName: string,
+  itemType: string,
+  itemId: string,
+  quantity: number,
+  price: number,
+): Promise<ExchangeListingRow | null> {
+  const res = await query<ExchangeListingRow>(
+    `INSERT INTO exchange_listings (seller_id, seller_name, item_type, item_id, quantity, price)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+    [sellerId, sellerName, itemType, itemId, quantity, price],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function getOpenExchangeListings(limit = 50): Promise<ExchangeListingRow[]> {
+  const res = await query<ExchangeListingRow>(
+    `SELECT * FROM exchange_listings WHERE status='open' AND expires_at > NOW() ORDER BY created_at DESC LIMIT $1`,
+    [limit],
+  );
+  return res.rows;
+}
+
+/** Atomic buy: claim + deduct buyer + pay seller + give item. Returns the sold row, or null/throws. */
+export async function buyExchangeListing(
+  listingId: number,
+  buyerId: string,
+  buyerName: string,
+): Promise<ExchangeListingRow> {
+  return withTransaction(async (client) => {
+    const claim = await client.query(
+      `UPDATE exchange_listings SET status='sold', buyer_id=$2, buyer_name=$3, sold_at=NOW()
+       WHERE id=$1 AND status='open' AND expires_at > NOW() AND seller_id <> $2
+       RETURNING *`,
+      [listingId, buyerId, buyerName],
+    );
+    if (claim.rows.length === 0) {
+      const e: any = new Error('NOT_AVAILABLE');
+      e.code = 'NOT_AVAILABLE';
+      throw e;
+    }
+    const row = claim.rows[0];
+    const deb = await client.query(
+      `UPDATE players SET credits = credits - $2 WHERE id=$1 AND credits >= $2`,
+      [buyerId, row.price],
+    );
+    if ((deb.rowCount ?? 0) === 0) {
+      const e: any = new Error('INSUFFICIENT_CREDITS');
+      e.code = 'INSUFFICIENT_CREDITS';
+      throw e;
+    }
+    await client.query(`UPDATE players SET credits = credits + $2 WHERE id=$1`, [
+      row.seller_id,
+      row.price,
+    ]);
+    await client.query(
+      `INSERT INTO inventory (player_id, item_type, item_id, quantity) VALUES ($1,$2,$3,$4)
+       ON CONFLICT (player_id, item_type, item_id) DO UPDATE SET quantity = inventory.quantity + $4`,
+      [buyerId, row.item_type, row.item_id, row.quantity],
+    );
+    return row as ExchangeListingRow;
+  });
+}
+
+export async function cancelExchangeListing(
+  listingId: number,
+  sellerId: string,
+): Promise<ExchangeListingRow | null> {
+  const res = await query<ExchangeListingRow>(
+    `UPDATE exchange_listings SET status='cancelled' WHERE id=$1 AND seller_id=$2 AND status='open' RETURNING *`,
+    [listingId, sellerId],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function expireExchangeListings(): Promise<ExchangeListingRow[]> {
+  const res = await query<ExchangeListingRow>(
+    `UPDATE exchange_listings SET status='expired' WHERE status='open' AND expires_at <= NOW() RETURNING *`,
+  );
+  return res.rows;
+}
+
+export async function getMyTradeableInventory(
+  playerId: string,
+): Promise<Array<{ item_type: string; item_id: string; quantity: number }>> {
+  const res = await query<{ item_type: string; item_id: string; quantity: number }>(
+    `SELECT item_type, item_id, quantity FROM inventory WHERE player_id=$1 AND item_type IN ('resource','blueprint') AND quantity > 0 ORDER BY item_type, item_id`,
+    [playerId],
+  );
+  return res.rows;
+}
