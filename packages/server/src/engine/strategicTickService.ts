@@ -11,6 +11,8 @@ import {
   getExpiredPlayerQuestsWithItems,
   updateQuestStatus,
   getHumanFrontierMaxDistance,
+  expireBountiesForRefund,
+  addCredits,
 } from '../db/queries.js';
 import { removeFromInventory } from './inventoryService.js';
 import { warBus } from '../warBus.js';
@@ -133,6 +135,10 @@ export class StrategicTickService {
 
     // 5. Cleanup expired quest items (prisoner, data_slate)
     await this.cleanupExpiredQuestItems();
+
+    // 6. Refund expired bounties to their posters
+    const _refunds = await expireBountiesForRefund().catch(() => []);
+    for (const _r of _refunds) await addCredits(_r.poster_id, _r.reward_credits).catch(() => undefined);
 
     this.tickCount++;
     if (this.tickCount % 10 === 0) {

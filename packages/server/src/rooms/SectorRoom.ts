@@ -158,6 +158,7 @@ import { RepairService } from './services/RepairService.js';
 import { NpcShipService } from './services/NpcShipService.js';
 import { CombatV3Service } from './services/CombatV3Service.js';
 import { NoticeService } from './services/NoticeService.js';
+import { BountyService } from './services/BountyService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -221,6 +222,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private npcShips!: NpcShipService;
   private combatV3!: CombatV3Service;
   private notice!: NoticeService;
+  private bounty!: BountyService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
   private revealedOutlaws = new Map<string, Set<number>>();
 
@@ -421,6 +423,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.npcShips = new NpcShipService(this.serviceCtx);
     this.combatV3 = new CombatV3Service(this.serviceCtx);
     this.notice = new NoticeService(this.serviceCtx);
+    this.bounty = new BountyService(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.combatV3 = this.combatV3;
@@ -435,6 +438,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.serviceCtx.contributeToCommunityQuest = this.communityQuests.contribute.bind(
       this.communityQuests,
     );
+    this.serviceCtx.tryFulfillBounty = this.bounty.tryFulfill.bind(this.bounty);
     this.serviceCtx.detectAndSendPlayerGate = this.navigation.detectAndSendPlayerGate.bind(
       this.navigation,
     );
@@ -768,6 +772,12 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getOriginNotices', async (client) => {
       await this.notice.handleGet(client);
     });
+
+    // ── Origin Hub Bounties ──────────────────────────────────────────
+    this.onMessage('postBounty', async (client, data: { objectiveType: string; objectiveData: any; reward: number }) => {
+      await this.bounty.handlePost(client, data ?? ({} as any), this._px(client.sessionId), this._py(client.sessionId));
+    });
+    this.onMessage('getBounties', async (client) => { await this.bounty.sendOpen(client); });
 
     // ── Chat ────────────────────────────────────────────────────────
     this.onMessage('chat', async (client, data: SendChatMessage) => {

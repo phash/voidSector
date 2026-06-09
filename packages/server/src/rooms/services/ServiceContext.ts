@@ -80,6 +80,7 @@ export interface ServiceContext {
     resource: string,
     amount: number,
   ) => Promise<void>;
+  tryFulfillBounty?: (playerId: string, playerName: string, x: number, y: number, kind: 'combat' | 'reach') => Promise<{ reward: number } | null>;
 
   // AP management
   deductAP: (playerId: string, cost: number) => Promise<boolean>;

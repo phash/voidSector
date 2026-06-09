@@ -180,6 +180,10 @@ export class ScanService {
       sectorY: this.ctx._py(client.sessionId),
     });
 
+    // Bounty fulfillment: check if a reach bounty matches this sector.
+    const _b = await this.ctx.tryFulfillBounty?.(auth.userId, auth.username, px, py, 'reach').catch(() => null);
+    if (_b) this.ctx.send(client, 'bountyClaimed', { reward: _b.reward, kind: 'reach' });
+
     // Community quest: auto-contribute scans
     this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_scan').catch(() => {});
 

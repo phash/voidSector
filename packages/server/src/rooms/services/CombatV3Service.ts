@@ -175,6 +175,10 @@ export class CombatV3Service {
         y: this.ctx._py(client.sessionId),
         ts: Date.now(),
       });
+      // Bounty fulfillment: check if a combat bounty matches this quadrant.
+      const _bx = this.ctx._px(client.sessionId), _by = this.ctx._py(client.sessionId);
+      const _bounty = await this.ctx.tryFulfillBounty?.(auth.userId, auth.username, _bx, _by, 'combat').catch(() => null);
+      if (_bounty) this.ctx.send(client, 'bountyClaimed', { reward: _bounty.reward, kind: 'combat' });
     } else if (outcome === 'defeat') {
       try {
         await this.applyDefeatPenalty(auth.userId);
