@@ -6,6 +6,7 @@
 // feed (shown in NEWS). Bounded by ltrim + TTL — no unbounded growth.
 
 import { redis } from '../rooms/services/RedisAPStore.js';
+import { logger } from '../utils/logger.js';
 
 export type TraceAction = 'explored' | 'defeated_pirates' | 'built';
 
@@ -43,6 +44,19 @@ export function traceMessage(t: PlayerTrace, now: number): string {
   return `◈ ${t.playerName} ${ACTION_VERB[t.action] ?? 'war hier'} (${formatTraceAge(t.ts, now)})`;
 }
 
+/** Parse a Redis trace list, skipping any individually-corrupt entry. */
+export function parseTraces(raw: string[]): PlayerTrace[] {
+  return raw
+    .map((r) => {
+      try {
+        return JSON.parse(r) as PlayerTrace;
+      } catch {
+        return null; // one bad entry must not nuke the whole list
+      }
+    })
+    .filter((t): t is PlayerTrace => t !== null);
+}
+
 /** Record a trace at a sector (per-sector list + global recent feed). */
 export async function recordTrace(t: PlayerTrace): Promise<void> {
   try {
@@ -53,17 +67,19 @@ export async function recordTrace(t: PlayerTrace): Promise<void> {
     await redis.expire(secKey, TRACE_TTL_S);
     await redis.lpush('trace:recent', entry);
     await redis.ltrim('trace:recent', 0, RECENT_MAX - 1);
-  } catch {
+    await redis.expire('trace:recent', TRACE_TTL_S); // bound the global feed too
+  } catch (err) {
     // traces are best-effort; never let them break a gameplay action
+    logger.warn({ err }, 'recordTrace failed (Redis)');
   }
 }
 
 /** Traces left at a sector (most recent first). Best-effort — never throws. */
 export async function getSectorTraces(x: number, y: number): Promise<PlayerTrace[]> {
   try {
-    const raw = await redis.lrange(`trace:sec:${x}:${y}`, 0, -1);
-    return raw.map((r) => JSON.parse(r) as PlayerTrace);
-  } catch {
+    return parseTraces(await redis.lrange(`trace:sec:${x}:${y}`, 0, -1));
+  } catch (err) {
+    logger.warn({ err }, 'getSectorTraces failed (Redis)');
     return [];
   }
 }
@@ -71,9 +87,9 @@ export async function getSectorTraces(x: number, y: number): Promise<PlayerTrace
 /** Recent galaxy-wide pilot activity (most recent first). Best-effort — never throws. */
 export async function getRecentActivity(limit = 20): Promise<PlayerTrace[]> {
   try {
-    const raw = await redis.lrange('trace:recent', 0, limit - 1);
-    return raw.map((r) => JSON.parse(r) as PlayerTrace);
-  } catch {
+    return parseTraces(await redis.lrange('trace:recent', 0, limit - 1));
+  } catch (err) {
+    logger.warn({ err }, 'getRecentActivity failed (Redis)');
     return [];
   }
 }

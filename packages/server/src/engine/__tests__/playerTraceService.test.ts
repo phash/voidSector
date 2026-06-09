@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { formatTraceAge, traceMessage } from '../playerTraceService.js';
+import { formatTraceAge, traceMessage, parseTraces } from '../playerTraceService.js';
+import type { PlayerTrace } from '../playerTraceService.js';
 
 const NOW = 1_000_000_000_000;
 
@@ -22,5 +23,23 @@ describe('traceMessage (BB5)', () => {
     expect(
       traceMessage({ playerId: 'p', playerName: 'Bob', action: 'defeated_pirates', x: 0, y: 0, ts: NOW }, NOW),
     ).toBe('◈ Bob besiegte hier Piraten (soeben)');
+  });
+});
+
+describe('parseTraces (BB5)', () => {
+  const good: PlayerTrace = { playerId: 'p', playerName: 'Alice', action: 'explored', x: 1, y: 2, ts: NOW };
+
+  it('parses a clean list', () => {
+    expect(parseTraces([JSON.stringify(good)])).toEqual([good]);
+  });
+
+  it('skips a single corrupt entry without dropping the rest', () => {
+    const raw = [JSON.stringify(good), 'not-json{', JSON.stringify({ ...good, playerName: 'Bob' })];
+    const parsed = parseTraces(raw);
+    expect(parsed.map((t) => t.playerName)).toEqual(['Alice', 'Bob']);
+  });
+
+  it('returns empty for an empty list', () => {
+    expect(parseTraces([])).toEqual([]);
   });
 });
