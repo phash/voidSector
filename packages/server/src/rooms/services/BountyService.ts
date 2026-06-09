@@ -68,16 +68,24 @@ export class BountyService {
       });
       return;
     }
-    const bounty = await insertOriginBounty(
-      auth.userId,
-      auth.username,
-      data.reward,
-      data.objectiveType,
-      od,
-    );
+    let bounty;
+    try {
+      bounty = await insertOriginBounty(
+        auth.userId,
+        auth.username,
+        data.reward,
+        data.objectiveType,
+        od,
+      );
+    } catch {
+      bounty = null;
+    }
     if (!bounty) {
-      await addCredits(auth.userId, data.reward);
-      this.ctx.send(client, 'error', { code: 'BOUNTY_FAILED', message: 'Fehlgeschlagen.' });
+      await addCredits(auth.userId, data.reward).catch(() => undefined); // refund the escrow
+      this.ctx.send(client, 'error', {
+        code: 'BOUNTY_FAILED',
+        message: 'Bounty fehlgeschlagen — Credits zurückerstattet.',
+      });
       return;
     }
     await this.sendOpen(client);
