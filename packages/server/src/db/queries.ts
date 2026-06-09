@@ -3822,6 +3822,42 @@ export async function insertExchangeListing(
   return res.rows[0] ?? null;
 }
 
+/** Atomically escrow an item out of inventory AND create the listing. Throws on
+ *  insufficient inventory (rolls back). Returns the created listing. */
+export async function createExchangeListingWithEscrow(
+  sellerId: string,
+  sellerName: string,
+  itemType: string,
+  itemId: string,
+  quantity: number,
+  price: number,
+): Promise<ExchangeListingRow> {
+  return withTransaction(async (client) => {
+    // escrow: exact-match delete, else decrement; throw if insufficient
+    const del = await client.query(
+      `DELETE FROM inventory WHERE player_id=$1 AND item_type=$2 AND item_id=$3 AND quantity=$4 RETURNING id`,
+      [sellerId, itemType, itemId, quantity],
+    );
+    if (del.rows.length === 0) {
+      const upd = await client.query(
+        `UPDATE inventory SET quantity = quantity - $4 WHERE player_id=$1 AND item_type=$2 AND item_id=$3 AND quantity > $4 RETURNING quantity`,
+        [sellerId, itemType, itemId, quantity],
+      );
+      if (upd.rows.length === 0) {
+        const e: any = new Error('INSUFFICIENT_ITEM');
+        e.code = 'INSUFFICIENT_ITEM';
+        throw e;
+      }
+    }
+    const ins = await client.query<ExchangeListingRow>(
+      `INSERT INTO exchange_listings (seller_id, seller_name, item_type, item_id, quantity, price)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [sellerId, sellerName, itemType, itemId, quantity, price],
+    );
+    return ins.rows[0];
+  });
+}
+
 export async function getExchangeListing(id: number): Promise<ExchangeListingRow | null> {
   const res = await query<ExchangeListingRow>(
     `SELECT * FROM exchange_listings WHERE id=$1`,

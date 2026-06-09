@@ -2,15 +2,14 @@ import type { Client } from 'colyseus';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import {
-  getInventoryItem,
-  insertExchangeListing,
+  createExchangeListingWithEscrow,
   getExchangeListing,
   getOpenExchangeListings,
   buyExchangeListing,
   cancelExchangeListing,
   getMyTradeableInventory,
 } from '../../db/queries.js';
-import { addToInventory, removeFromInventory, canAddResource } from '../../engine/inventoryService.js';
+import { addToInventory, canAddResource } from '../../engine/inventoryService.js';
 import { logger } from '../../utils/logger.js';
 
 export const EXCHANGE_MAX_PRICE = 100_000_000;
@@ -59,26 +58,9 @@ export class ExchangeService {
       this.ctx.send(client, 'error', { code: 'INVALID_LISTING', message: 'Ungültiges Angebot.' });
       return;
     }
-    const have = await getInventoryItem(auth.userId, data.itemType as any, data.itemId);
-    if (have < data.quantity) {
-      this.ctx.send(client, 'error', {
-        code: 'INSUFFICIENT_ITEM',
-        message: 'Nicht genug auf Lager.',
-      });
-      return;
-    }
-    try {
-      await removeFromInventory(auth.userId, data.itemType as any, data.itemId, data.quantity);
-    } catch {
-      this.ctx.send(client, 'error', {
-        code: 'INSUFFICIENT_ITEM',
-        message: 'Nicht genug auf Lager.',
-      });
-      return;
-    }
     let listing;
     try {
-      listing = await insertExchangeListing(
+      listing = await createExchangeListingWithEscrow(
         auth.userId,
         auth.username,
         data.itemType,
@@ -86,16 +68,11 @@ export class ExchangeService {
         data.quantity,
         data.price,
       );
-    } catch {
-      listing = null;
-    }
-    if (!listing) {
-      await addToInventory(auth.userId, data.itemType as any, data.itemId, data.quantity).catch(
-        (e) => logger.error({ err: e }, 'exchange refund failed'),
-      );
+    } catch (err: any) {
+      const code = err?.code === 'INSUFFICIENT_ITEM' ? 'INSUFFICIENT_ITEM' : 'LISTING_FAILED';
       this.ctx.send(client, 'error', {
-        code: 'LISTING_FAILED',
-        message: 'Angebot fehlgeschlagen — Ware zurück.',
+        code,
+        message: code === 'INSUFFICIENT_ITEM' ? 'Nicht genug auf Lager.' : 'Angebot fehlgeschlagen.',
       });
       return;
     }
