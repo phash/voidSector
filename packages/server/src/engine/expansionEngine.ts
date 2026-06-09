@@ -1,5 +1,16 @@
 // packages/server/src/engine/expansionEngine.ts
 import type { QuadrantControlRow } from '../db/queries.js';
+import { ALIEN_WAKE_FRONTIER_QUADRANTS, EXPANSION_FRONTIER_MARGIN } from '@void-sector/shared';
+
+/** True when aliens should transition from dormant to awake this tick. */
+export function shouldWakeAliens(alreadyAwake: boolean, humanFrontierQuadrants: number): boolean {
+  return !alreadyAwake && humanFrontierQuadrants >= ALIEN_WAKE_FRONTIER_QUADRANTS;
+}
+
+/** The outermost quadrant-distance aliens may expand to, given the human frontier. */
+export function expansionFrontierMax(humanFrontierQuadrants: number): number {
+  return humanFrontierQuadrants + EXPANSION_FRONTIER_MARGIN;
+}
 
 export interface BorderContactResult {
   hasContact: boolean;
@@ -30,6 +41,7 @@ export function getExpansionTarget(
   faction: string,
   allControls: QuadrantControlRow[],
   _style: 'sphere' | 'wave' | 'jumpgate',
+  maxDistance?: number,
 ): { qx: number; qy: number } | null {
   const claimedSet = new Set(allControls.map((q) => `${q.qx},${q.qy}`));
   const ownedQuadrants = allControls.filter((q) => q.controlling_faction === faction);
@@ -38,10 +50,16 @@ export function getExpansionTarget(
 
   const candidates = new Set<string>();
   for (const own of ownedQuadrants) {
+    // Frontier bound: don't generate candidates from quadrants already at or beyond the limit.
+    if (maxDistance !== undefined && Math.max(Math.abs(own.qx), Math.abs(own.qy)) >= maxDistance) continue;
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
         if (dx === 0 && dy === 0) continue;
-        const key = `${own.qx + dx},${own.qy + dy}`;
+        const nx = own.qx + dx;
+        const ny = own.qy + dy;
+        // Frontier bound: aliens only expand within the player frontier + margin.
+        if (maxDistance !== undefined && Math.max(Math.abs(nx), Math.abs(ny)) > maxDistance) continue;
+        const key = `${nx},${ny}`;
         if (!claimedSet.has(key)) {
           candidates.add(key);
         }
