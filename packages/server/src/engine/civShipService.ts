@@ -10,7 +10,7 @@ import { generateSector } from './worldgen.js';
 import { query } from '../db/client.js';
 import { applyTraderExport } from './npcStationEngine.js';
 import { logger } from '../utils/logger.js';
-import { nextTraderState, nextMilitaryState, nextOutlawState } from './npcShipAI.js';
+import { nextTraderState, nextMilitaryState, nextOutlawState, nextExplorerState } from './npcShipAI.js';
 import { redis, getPlayerPosition } from '../rooms/services/RedisAPStore.js';
 
 /** SP10 lazy ticking: only civ ships within this Manhattan range of an online
@@ -81,6 +81,7 @@ export function nextShipState(
   if (role === 'trader') return nextTraderState(ship);
   if (role === 'military') return nextMilitaryState(ship);
   if (role === 'outlaw') return nextOutlawState(ship);
+  if (role === 'explorer') return nextExplorerState(ship);
 
   switch (ship.state) {
     case 'idle':

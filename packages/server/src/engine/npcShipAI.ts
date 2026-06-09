@@ -127,6 +127,29 @@ export function nextOutlawState(ship: any): any {
   };
 }
 
+/** Deterministic far target for an explorer's leg. Direction + radius hashed
+ *  from (shipId, leg); radius in [1000, 12000] sectors (deep galaxy, beyond the
+ *  alien ring). Chebyshev radius so max(|x|,|y|) == radius exactly — both bounds
+ *  hold for all angles. Pure + stable so tests and the sim agree. */
+export function pickExplorerTarget(shipId: number, leg: number): { x: number; y: number } {
+  const h = (shipId * 2654435761 + leg * 40503 + 0x9e3779b9) >>> 0;
+  const angle = (h % 3600) / 3600 * Math.PI * 2;
+  const radius = 1000 + ((h >>> 12) % 11001);
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  const m = Math.max(Math.abs(dx), Math.abs(dy));
+  return { x: Math.round(dx / m * radius), y: Math.round(dy / m * radius) };
+}
+
+/** Explorer AI: one long-range hop per call to a fresh deep-galaxy target.
+ *  Advances the leg counter (stored in spiral_step). Always returns a change so
+ *  the background tick records a trace at the new location. */
+export function nextExplorerState(ship: any): any {
+  const leg = ship.spiral_step ?? 0;
+  const t = pickExplorerTarget(ship.id, leg);
+  return { x: t.x, y: t.y, spiral_step: leg + 1, state: 'exploring' };
+}
+
 function generateTraderInventory(seed: number): Record<string, number> {
   const h = (((seed >> 16) ^ seed) * 0x45d9f3b) >>> 0;
   return {
