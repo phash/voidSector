@@ -1566,7 +1566,7 @@ export interface CivShip {
   spiral_step?: number;
   resources_carried?: number;
   mined_resource?: string;
-  role?: 'drone' | 'trader' | 'military' | 'outlaw';
+  role?: 'drone' | 'trader' | 'military' | 'outlaw' | 'explorer';
   level?: number;
   name?: string;
   inventory?: Record<string, number>;
