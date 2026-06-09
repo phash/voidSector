@@ -157,6 +157,7 @@ import { StationProductionService } from './services/StationProductionService.js
 import { RepairService } from './services/RepairService.js';
 import { NpcShipService } from './services/NpcShipService.js';
 import { CombatV3Service } from './services/CombatV3Service.js';
+import { NoticeService } from './services/NoticeService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -219,6 +220,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private repair!: RepairService;
   private npcShips!: NpcShipService;
   private combatV3!: CombatV3Service;
+  private notice!: NoticeService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
   private revealedOutlaws = new Map<string, Set<number>>();
 
@@ -418,6 +420,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.stationProduction.registerHandlers(this);
     this.npcShips = new NpcShipService(this.serviceCtx);
     this.combatV3 = new CombatV3Service(this.serviceCtx);
+    this.notice = new NoticeService(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.combatV3 = this.combatV3;
@@ -756,6 +759,14 @@ export class SectorRoom extends Room<SectorRoomState> {
         getQuadrantDiscoveriesSince(30),
       ]);
       client.send('newsResult', { recentNews, discoveries30m });
+    });
+
+    // ── Origin Hub Notices ───────────────────────────────────────────
+    this.onMessage('postOriginNotice', async (client, data: { message: string }) => {
+      await this.notice.handlePost(client, data?.message ?? '', this._px(client.sessionId), this._py(client.sessionId));
+    });
+    this.onMessage('getOriginNotices', async (client) => {
+      await this.notice.handleGet(client);
     });
 
     // ── Chat ────────────────────────────────────────────────────────

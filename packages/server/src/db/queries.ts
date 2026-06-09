@@ -3690,3 +3690,33 @@ export async function getVoidHive(
   );
   return res.rows[0] ?? null;
 }
+
+// ── Origin Hub Notices ───────────────────────────────────────────────────────
+
+export interface OriginNoticeRow {
+  id: number;
+  player_id: string;
+  player_name: string;
+  message: string;
+  created_at: string;
+}
+
+export async function insertOriginNotice(
+  playerId: string,
+  playerName: string,
+  message: string,
+): Promise<OriginNoticeRow | null> {
+  const res = await query<OriginNoticeRow>(
+    `INSERT INTO origin_notices (player_id, player_name, message) VALUES ($1, $2, $3) RETURNING *`,
+    [playerId, playerName, message],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function getOriginNotices(limit = 50): Promise<OriginNoticeRow[]> {
+  const res = await query<OriginNoticeRow>(
+    'SELECT * FROM origin_notices ORDER BY created_at DESC LIMIT $1',
+    [limit],
+  );
+  return res.rows;
+}
