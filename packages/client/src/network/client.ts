@@ -2883,6 +2883,10 @@ class GameNetwork {
     this.sectorRoom?.send('getActiveCommunityQuest', {});
   }
 
+  contributeResourceCommunityQuest(resourceType: string, amount: number) {
+    this.sectorRoom?.send('contributeResourceCommunityQuest', { resourceType, amount });
+  }
+
   contributeToQuest(amount: number) {
     this.sectorRoom?.send('contributeToQuest', { amount });
   }
