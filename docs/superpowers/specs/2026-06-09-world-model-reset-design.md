@@ -241,3 +241,12 @@ beobachten (Baseline ~82–102 MiB; harte Grenze).
 - Finale Heimat-Koordinaten (am `alienHomeGuard` + Nebula-Check vorbei).
 - Preisboden-Höhe für den 0:0-Sink.
 - Exakte `EXPANSION_FRONTIER_MARGIN`- und Explorer-Seed-Defaults als game_config (tunbar).
+
+## 7. Entscheidungen / Scope-Notizen
+
+- **Void-Lifecycle bleibt aktiv (Entscheidung 2026-06-09).** Das `VoidLifecycleService`-System
+  (Void-Cluster + `voids`-Territorium, ungated im Strategic-Tick) ist **gewolltes Gameplay** und wird
+  vom Clean-Slate **nicht** eingefroren oder bereinigt. Nur NPC-Handelsstationen (`civ_stations`) und
+  Alien-Expansion sind in Phase 1 aus; Voids dürfen weiter Cluster spawnen und Quadranten beanspruchen.
+  → Phase 2 muss das **nicht** neu aufrollen. (Surfaced im Phase-1-Final-Review als Residual-Generator;
+  bewusst akzeptiert.)
