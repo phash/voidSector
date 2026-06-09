@@ -20,7 +20,7 @@ const RESOURCE_LABELS: Record<string, string> = {
 };
 
 function exchangeItemLabel(itemId: string): string {
-  if (itemId === 'ore') return 'ORZ';
+  if (itemId === 'ore') return 'ERZ';
   if (itemId === 'gas') return 'GAS';
   if (itemId === 'crystal') return 'KRISTALL';
   return itemId.replace(/^blueprint_/, '');
@@ -989,17 +989,21 @@ export function OriginHubScreen() {
                     </div>
                     {isOwn ? (
                       <button
-                        onClick={() => network.cancelExchange(l.id)}
+                        disabled={!atOrigin}
+                        onClick={() => {
+                          if (atOrigin) network.cancelExchange(l.id);
+                        }}
                         style={{
                           background: 'transparent',
                           border: '1px solid var(--color-dim)',
-                          color: 'var(--color-dim)',
+                          color: atOrigin ? 'var(--color-dim)' : 'var(--color-dim)',
                           fontFamily: 'monospace',
                           fontSize: '0.58rem',
-                          cursor: 'pointer',
+                          cursor: atOrigin ? 'pointer' : 'default',
                           padding: '2px 8px',
                           letterSpacing: '0.05em',
                           flexShrink: 0,
+                          opacity: atOrigin ? 1 : 0.5,
                         }}
                       >
                         ABBRECHEN
