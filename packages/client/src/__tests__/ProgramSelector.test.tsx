@@ -27,7 +27,7 @@ describe('ProgramSelector', () => {
     render(<ProgramSelector />);
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(ALL_PROGRAMS.length);
-    expect(ALL_PROGRAMS.length).toBe(15); // includes ACEP, FRIENDS, FABRIK, XENO
+    expect(ALL_PROGRAMS.length).toBe(16); // includes ACEP, FRIENDS, FABRIK, XENO, ORIGIN-HUB
   });
 
   it('renders a button for each program', () => {

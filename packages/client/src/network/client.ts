@@ -1371,6 +1371,15 @@ class GameNetwork {
       useStore.getState().setNewsItems(data.recentNews ?? []);
     });
 
+    room.onMessage('originNoticesResult', (data: { notices: any[] }) => {
+      useStore.getState().setOriginNotices(data.notices ?? []);
+    });
+
+    room.onMessage('originNoticePosted', (data: { notice: any }) => {
+      const s = useStore.getState();
+      s.setOriginNotices([data.notice, ...s.originNotices].slice(0, 50));
+    });
+
     room.onMessage(
       'territoryResult',
       (data: { success: boolean; message: string; claim?: any; combat?: any }) => {
@@ -2821,6 +2830,15 @@ class GameNetwork {
   // News
   requestNews() {
     this.sectorRoom?.send('getNews');
+  }
+
+  // Origin Hub
+  requestOriginNotices() {
+    this.sectorRoom?.send('getOriginNotices');
+  }
+
+  postOriginNotice(message: string) {
+    this.sectorRoom?.send('postOriginNotice', { message });
   }
 
   // Territory

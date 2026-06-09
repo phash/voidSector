@@ -30,6 +30,7 @@ import { BaseDetailPanel } from './BaseDetailPanel';
 import { BlueprintDialog } from './BlueprintDialog';
 import { QuadMapScreen } from './QuadMapScreen';
 import { NewsScreen } from './NewsScreen';
+import { OriginHubScreen } from './OriginHubScreen';
 import { MehrOverlay } from './MehrOverlay';
 import { StationTerminalOverlay } from './StationTerminalOverlay';
 import { useStore } from '../state/store';
@@ -350,6 +351,8 @@ function renderScreen(monitorId: string) {
       return <QuadMapScreen />;
     case MONITORS.NEWS:
       return <NewsScreen />;
+    case MONITORS.ORIGIN_HUB:
+      return <OriginHubScreen />;
     case MONITORS.ACEP:
       return <AcepProgram />;
     case MONITORS.FRIENDS:

@@ -532,6 +532,9 @@ export interface GameSlice {
     created_at: string;
   }>;
 
+  // Origin Hub notices
+  originNotices: Array<{ id: number; player_id: string; player_name: string; message: string; created_at: string }>;
+
   // Ancient Ruins
   activeAncientRuinScan: {
     fragmentIndex: number;
@@ -691,6 +694,7 @@ export interface GameSlice {
   setFirstContactEvent: (event: FirstContactEvent | null) => void;
   setActiveAncientRuinScan: (scan: GameSlice['activeAncientRuinScan']) => void;
   setNewsItems: (items: GameSlice['newsItems']) => void;
+  setOriginNotices: (originNotices: GameSlice['originNotices']) => void;
   setHyperdriveState: (state: HyperdriveState | null) => void;
   setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
   setNavTarget: (target: { x: number; y: number } | null) => void;
@@ -865,6 +869,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   activeAncientRuinScan: null,
   loreFragmentCount: 0,
   newsItems: [],
+  originNotices: [],
   hyperdriveState: null,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
   visitedQuadrants: new Set<string>(),
@@ -1107,6 +1112,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
       loreFragmentCount: activeAncientRuinScan ? s.loreFragmentCount + 1 : s.loreFragmentCount,
     })),
   setNewsItems: (newsItems) => set({ newsItems }),
+  setOriginNotices: (originNotices) => set({ originNotices }),
   setHyperdriveState: (hyperdriveState) => set({ hyperdriveState }),
   setAutoRefuelConfig: (autoRefuelConfig) => set({ autoRefuelConfig }),
   setNavTarget: (navTarget) => set({ navTarget }),

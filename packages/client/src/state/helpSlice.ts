@@ -419,6 +419,15 @@ export const HELP_TIPS: HelpTip[] = [
       + '→ Gestrichelte Linien = indirekte Verbindungen',
   },
   {
+    id: 'first_originhub',
+    title: '◈ ORIGIN HUB — PINNWAND',
+    body:
+      'Das galaktische Schwarze Brett am Zentrum (Sektor 0:0).\n\n' +
+      '→ Posten kannst du nur, wenn du im Sektor 0:0 bist\n' +
+      '→ Alle Piloten lesen die letzten 50 Meldungen\n' +
+      '→ Ort für Koordination, Handel und Geschichten',
+  },
+  {
     id: 'first_station_expansions',
     title: '◈ STATION VERWALTUNG',
     body: 'Deine Station wächst durch Handel (Betrieb-Punkte).\n\n'
