@@ -6,7 +6,6 @@ import {
   ensureZentrumQuadrant,
   ensureAlienHomeQuadrants,
   ensureKernweltStation,
-  getAllFactionConfigs,
 } from '../db/queries.js';
 import { ensureOriginTradeStation } from '../engine/npcStationEngine.js';
 
@@ -25,35 +24,6 @@ export const CLEAN_SLATE_WIPE_TABLES = [
   'expansion_log',
 ];
 
-/** Set of "qx:qy" keys for the home quadrants (human 0:0 + every alien home). */
-export function homeQuadrantSet(
-  factions: { faction_id: string; home_qx: number; home_qy: number }[],
-): Set<string> {
-  const homes = new Set<string>(['0:0']);
-  for (const f of factions) {
-    if (f.faction_id === 'humans') continue;
-    homes.add(`${f.home_qx}:${f.home_qy}`);
-  }
-  return homes;
-}
-
-/** Build the parameterised DELETE that keeps only the given home quadrants. */
-export function nonHomeDeleteSql(homes: Set<string>): { sql: string; params: number[] } {
-  if (homes.size === 0) return { sql: 'DELETE FROM quadrant_control', params: [] };
-  const params: number[] = [];
-  const tuples: string[] = [];
-  // Set preserves insertion order → params align 1:1 with the tuple placeholders.
-  for (const key of homes) {
-    const [qx, qy] = key.split(':').map(Number);
-    tuples.push(`($${params.length + 1}, $${params.length + 2})`);
-    params.push(qx, qy);
-  }
-  return {
-    sql: `DELETE FROM quadrant_control WHERE (qx, qy) NOT IN (${tuples.join(', ')})`,
-    params,
-  };
-}
-
 async function wipe(table: string): Promise<void> {
   try {
     // table names are compile-time constants from CLEAN_SLATE_WIPE_TABLES — no injection risk.
@@ -70,12 +40,14 @@ export async function cleanSlateReset(): Promise<void> {
   // 1. Wipe stations / NPC ships / in-flight expansion.
   for (const t of CLEAN_SLATE_WIPE_TABLES) await wipe(t);
 
-  // 2. Reduce quadrant_control to home quadrants, then re-seed the homes.
-  const factions = await getAllFactionConfigs();
-  const homes = homeQuadrantSet(factions);
-  const { sql, params } = nonHomeDeleteSql(homes);
-  const delRes = await query(sql, params);
-  logger.info({ rowCount: delRes.rowCount, kept: homes.size }, 'clean-slate: quadrant_control reduced to homes');
+  // 2. Drop ALL non-human quadrant control, then re-seed homes fresh from
+  //    faction_config. We delete rather than "keep home coords" because a ring
+  //    home quadrant may have been pre-claimed by ANOTHER faction during the old
+  //    sprawl; keeping it would leave the home owned by the wrong faction (and
+  //    ensureAlienHomeQuadrants' ON CONFLICT DO NOTHING can't fix it). A clean
+  //    delete + re-seed guarantees each alien home is owned by its own faction.
+  const delRes = await query("DELETE FROM quadrant_control WHERE controlling_faction IS DISTINCT FROM 'humans'");
+  logger.info({ rowCount: delRes.rowCount }, 'clean-slate: cleared non-human quadrant_control');
   await ensureZentrumQuadrant();
   await ensureAlienHomeQuadrants();
 
