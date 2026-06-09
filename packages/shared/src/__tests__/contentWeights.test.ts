@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CONTENT_WEIGHTS, CIV_STATIONS_ENABLED, ALIEN_EXPANSION_ENABLED } from '../constants';
+import { CONTENT_WEIGHTS, CIV_STATIONS_ENABLED } from '../constants';
 
 describe('CONTENT_WEIGHTS (worldgen)', () => {
   it('never rolls a station sector (only 0:0 is a station)', () => {
@@ -12,11 +12,8 @@ describe('CONTENT_WEIGHTS (worldgen)', () => {
   });
 });
 
-describe('world-generation kill-switches (sole-station launch)', () => {
+describe('world-generation kill-switch (sole-station launch)', () => {
   it('NPC civ-station generation is off', () => {
     expect(CIV_STATIONS_ENABLED).toBe(false);
-  });
-  it('alien expansion is frozen (Phase 2 replaces this with the wake-trigger)', () => {
-    expect(ALIEN_EXPANSION_ENABLED).toBe(false);
   });
 });

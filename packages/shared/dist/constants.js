@@ -808,12 +808,11 @@ export const AUTOPILOT_STEP_MS = 800; // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24; // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7; // coords-only after 7 days
 export const QUADRANT_SIZE = 500;
-// ── Sole-station world launch flags ────────────────────────────────────────
-// Only 0:0 is an NPC station; everything else is player-built. These freeze the
-// two generators that otherwise refill the galaxy. Phase 2 of the world-model
-// reset replaces ALIEN_EXPANSION_ENABLED with the `aliens_awakened` wake-trigger.
+// ── Sole-station world launch flag ──────────────────────────────────────────
+// Only 0:0 is an NPC station; everything else is player-built. This freezes the
+// civ-station generator that otherwise refills the galaxy. (Alien expansion is
+// governed separately by the runtime `aliens_awakened` wake-trigger, Phase 2.)
 export const CIV_STATIONS_ENABLED = false;
-export const ALIEN_EXPANSION_ENABLED = false;
 // ── Reachable-aliens (Phase 2) ──────────────────────────────────────────────
 // Aliens wake once a human has discovered a quadrant at least this many quadrants
 // from origin (2 q ≈ 1000 sectors = the inner edge of the alien ring).

@@ -413,7 +413,6 @@ export declare const STALENESS_DIM_HOURS = 24;
 export declare const STALENESS_FADE_DAYS = 7;
 export declare const QUADRANT_SIZE = 500;
 export declare const CIV_STATIONS_ENABLED = false;
-export declare const ALIEN_EXPANSION_ENABLED = false;
 export declare const ALIEN_WAKE_FRONTIER_QUADRANTS = 2;
 export declare const EXPANSION_FRONTIER_MARGIN = 5;
 /**
