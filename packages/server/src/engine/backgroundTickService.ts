@@ -59,8 +59,10 @@ export async function processBackgroundTick(): Promise<number> {
           : sectorType === 'station' ? 'traded'
           : 'scanned';
         const trace = { playerId: `npc-${ship.id}`, playerName: (ship as any).name || 'Kundschafter', action, x: nx, y: ny, ts: Date.now() };
-        // Per-sector always; global NEWS feed only ~1 leg in 6 (don't drown real players).
-        if (((upd.spiral_step ?? 0) % 6) === 0) { await recordTrace(trace); } else { await recordSectorTrace(trace); }
+        // Per-sector always; global NEWS feed only ~1/6 of explorers per sweep (spread
+        // by ship id so every sweep contributes roughly evenly instead of all-at-once
+        // every 6th step when explorers advance in lockstep).
+        if ((((ship.id as number) + (upd.spiral_step ?? 0)) % 6) === 0) { await recordTrace(trace); } else { await recordSectorTrace(trace); }
         continue;
       }
 

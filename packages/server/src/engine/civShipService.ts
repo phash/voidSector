@@ -179,6 +179,11 @@ export async function processCivTick(anchors?: Array<{ x: number; y: number }>):
     const quadrantShips = new Map<string, CivShip[]>();
 
     for (const ship of ships) {
+      // Explorers are driven exclusively by the slow background tick (5 min) where
+      // their trace is recorded. Skip them here so the anchor tick (5 s) never calls
+      // nextExplorerState, desyncs the leg counter, or moves them without a trace.
+      if ((ship as any).role === 'explorer') continue;
+
       const updates = nextShipState(ship, null, 0);
       if (Object.keys(updates).length === 0) continue;
 
