@@ -152,7 +152,7 @@ import { AlienInteractionService } from './services/AlienInteractionService.js';
 import type { AlienInteractMessage } from './services/AlienInteractionService.js';
 import { TerritoryService } from './services/TerritoryService.js';
 import { StoryQuestChainService } from './services/StoryQuestChainService.js';
-import { CommunityQuestService } from './services/CommunityQuestService.js';
+import { CommunityQuestService, validateContribution } from './services/CommunityQuestService.js';
 import { StationProductionService } from './services/StationProductionService.js';
 import { RepairService } from './services/RepairService.js';
 import { NpcShipService } from './services/NpcShipService.js';
@@ -1106,6 +1106,47 @@ export class SectorRoom extends Room<SectorRoomState> {
       const quest = await this.communityQuests.getActivePayload().catch(() => null);
       client.send('activeCommunityQuest', { quest });
     });
+
+    this.onMessage(
+      'contributeResourceCommunityQuest',
+      async (client, data: { resourceType: string; amount: number }) => {
+        // Gate: player must be at sector (0,0) — the Origin Hub
+        const px = this._px(client.sessionId);
+        const py = this._py(client.sessionId);
+        if (px !== 0 || py !== 0) {
+          client.send('error', {
+            code: 'NOT_AT_ORIGIN',
+            message: 'Nur am Zentrum (Sektor 0:0) kannst du beitragen.',
+          });
+          return;
+        }
+        const auth = client.auth as AuthPayload | null;
+        if (!auth?.userId) return;
+
+        const v = validateContribution(data?.resourceType, data?.amount);
+        if (!v.ok) {
+          client.send('error', { code: 'INVALID_CONTRIBUTION', message: 'Ungültiger Beitrag.' });
+          return;
+        }
+
+        const have = await getInventoryItem(auth.userId, 'resource', v.resourceType);
+        if (have < v.amount) {
+          client.send('error', {
+            code: 'INSUFFICIENT_RESOURCE',
+            message: `Nicht genug ${v.resourceType}.`,
+          });
+          return;
+        }
+
+        await removeFromInventory(auth.userId, 'resource', v.resourceType, v.amount);
+        await this.communityQuests.contribute(auth.userId, v.amount).catch(() => {});
+        const quest = await this.communityQuests.getActivePayload().catch(() => null);
+        client.send('activeCommunityQuest', { quest });
+        // Push updated cargo so the client sees the deducted resource immediately
+        const cargo = await getCargoState(auth.userId);
+        client.send('cargoUpdate', cargo);
+      },
+    );
 
     this.onMessage(
       'resolveAlienEncounter',

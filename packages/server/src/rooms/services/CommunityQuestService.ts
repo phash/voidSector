@@ -1,4 +1,19 @@
 // packages/server/src/rooms/services/CommunityQuestService.ts
+export const CQ_CONTRIB_RESOURCES = ['ore', 'gas', 'crystal'] as const;
+export const CQ_CONTRIB_MAX = 1000;
+
+/** Validate a hub resource contribution. */
+export function validateContribution(
+  resourceType: string,
+  amount: number,
+): { ok: true; resourceType: string; amount: number } | { ok: false; reason: string } {
+  if (!(CQ_CONTRIB_RESOURCES as readonly string[]).includes(resourceType))
+    return { ok: false, reason: 'BAD_RESOURCE' };
+  if (!Number.isInteger(amount) || amount < 1) return { ok: false, reason: 'BAD_AMOUNT' };
+  if (amount > CQ_CONTRIB_MAX) return { ok: false, reason: 'TOO_MUCH' };
+  return { ok: true, resourceType, amount };
+}
+
 import {
   getActiveCommunityAlienQuest,
   insertCommunityAlienQuest,
