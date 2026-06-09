@@ -184,20 +184,23 @@ export async function initStationInventory(x: number, y: number, maxStock: numbe
 const MEGASTATION_XP = 15000;
 
 /**
- * Ensure 0:0 is the galaxy's strong trade station: level 5 (Megastation,
- * maxStock 8000) with ore/gas/crystal seeded. Idempotent — upgrades an
- * existing level-1 Kernwelt row in place. Called at boot and by cleanSlateReset.
+ * Ensure 0:0 is the galaxy's strong trade station: at least level 5
+ * (Megastation, maxStock 8000) with ore/gas/crystal seeded. Idempotent and
+ * restart-safe — preserves any accumulated visit/trade stats on an existing
+ * row. Called at boot and by cleanSlateReset.
  */
 export async function ensureOriginTradeStation(): Promise<void> {
-  const level = getStationLevel(MEGASTATION_XP); // { level: 5, maxStock: 8000, ... }
+  const existing = await getStationData(0, 0);
+  const xp = Math.max(existing?.xp ?? 0, MEGASTATION_XP);
+  const level = getStationLevel(xp); // at least level 5 / maxStock 8000
   await upsertStationData({
     stationX: 0,
     stationY: 0,
     level: level.level,
-    xp: MEGASTATION_XP,
-    visitCount: 0,
-    tradeVolume: 0,
-    lastXpDecay: new Date().toISOString(),
+    xp,
+    visitCount: existing?.visitCount ?? 0,
+    tradeVolume: existing?.tradeVolume ?? 0,
+    lastXpDecay: existing?.lastXpDecay ?? new Date().toISOString(),
   });
   await initStationInventory(0, 0, level.maxStock);
 }
