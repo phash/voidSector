@@ -4,12 +4,14 @@ import type { AuthPayload } from '../../auth.js';
 import {
   getInventoryItem,
   insertExchangeListing,
+  getExchangeListing,
   getOpenExchangeListings,
   buyExchangeListing,
   cancelExchangeListing,
   getMyTradeableInventory,
 } from '../../db/queries.js';
-import { addToInventory, removeFromInventory } from '../../engine/inventoryService.js';
+import { addToInventory, removeFromInventory, canAddResource } from '../../engine/inventoryService.js';
+import { logger } from '../../utils/logger.js';
 
 export const EXCHANGE_MAX_PRICE = 100_000_000;
 const TRADE_RESOURCES = ['ore', 'gas', 'crystal'];
@@ -89,7 +91,7 @@ export class ExchangeService {
     }
     if (!listing) {
       await addToInventory(auth.userId, data.itemType as any, data.itemId, data.quantity).catch(
-        () => undefined,
+        (e) => logger.error({ err: e }, 'exchange refund failed'),
       );
       this.ctx.send(client, 'error', {
         code: 'LISTING_FAILED',
@@ -115,6 +117,18 @@ export class ExchangeService {
     }
     const auth = client.auth as AuthPayload | null;
     if (!auth?.userId) return;
+    const listing = await getExchangeListing(listingId);
+    if (!listing || listing.status !== 'open') {
+      this.ctx.send(client, 'error', { code: 'NOT_AVAILABLE', message: 'Angebot nicht mehr verfügbar.' });
+      return;
+    }
+    if (listing.item_type === 'resource') {
+      const canHold = await canAddResource(auth.userId, listing.quantity);
+      if (!canHold) {
+        this.ctx.send(client, 'error', { code: 'CARGO_FULL', message: 'Nicht genug Frachtraum.' });
+        return;
+      }
+    }
     try {
       const row = await buyExchangeListing(listingId, auth.userId, auth.username);
       this.ctx.send(client, 'exchangeBought', {
@@ -152,7 +166,7 @@ export class ExchangeService {
     const row = await cancelExchangeListing(listingId, auth.userId);
     if (row)
       await addToInventory(auth.userId, row.item_type as any, row.item_id, row.quantity).catch(
-        () => undefined,
+        (e) => logger.error({ err: e }, 'exchange refund failed'),
       );
     await this.sendState(client, auth.userId);
   }

@@ -3822,6 +3822,14 @@ export async function insertExchangeListing(
   return res.rows[0] ?? null;
 }
 
+export async function getExchangeListing(id: number): Promise<ExchangeListingRow | null> {
+  const res = await query<ExchangeListingRow>(
+    `SELECT * FROM exchange_listings WHERE id=$1`,
+    [id],
+  );
+  return res.rows[0] ?? null;
+}
+
 export async function getOpenExchangeListings(limit = 50): Promise<ExchangeListingRow[]> {
   const res = await query<ExchangeListingRow>(
     `SELECT * FROM exchange_listings WHERE status='open' AND expires_at > NOW() ORDER BY created_at DESC LIMIT $1`,
