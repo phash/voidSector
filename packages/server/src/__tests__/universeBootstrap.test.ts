@@ -38,6 +38,10 @@ vi.mock('../db/queries.js', () => ({
   ]),
 }));
 
+vi.mock('../engine/npcStationEngine.js', () => ({
+  ensureOriginTradeStation: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('../engine/civStationService.js', () => ({
   ensureCivStations: vi.fn().mockResolvedValue(undefined),
   spawnMissingDrones: vi.fn().mockResolvedValue(undefined),

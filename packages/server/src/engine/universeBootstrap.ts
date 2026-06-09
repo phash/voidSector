@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { UniverseTickEngine } from './universeTickEngine.js';
 import { StrategicTickService } from './strategicTickService.js';
 import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant, ensureAlienHomeQuadrants, getAllFactionConfigs } from '../db/queries.js';
+import { ensureOriginTradeStation } from './npcStationEngine.js';
 import { logger } from '../utils/logger.js';
 import { QUADRANT_SIZE, BACKGROUND_TICK_INTERVAL, CIV_STATIONS_ENABLED } from '@void-sector/shared';
 import { assertAlienHomesFarFromOrigin } from './alienHomeGuard.js';
@@ -36,6 +37,7 @@ export function getUniverseTickCount(): number {
  */
 export async function startUniverseEngine(): Promise<void> {
   await ensureKernweltStation();
+  await ensureOriginTradeStation(); // 0:0 → level-5 trade hub
   await ensureZentrumQuadrant();
   const alienSeeded = await ensureAlienHomeQuadrants();
   logger.info({ alienSeeded }, 'Universe seeded: Zentrum@(0,0) + alien homeworlds');
