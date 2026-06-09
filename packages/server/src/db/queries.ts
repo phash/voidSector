@@ -3720,3 +3720,70 @@ export async function getOriginNotices(limit = 50): Promise<OriginNoticeRow[]> {
   );
   return res.rows;
 }
+
+// ---------------------------------------------------------------------------
+// Origin Bounty Board
+// ---------------------------------------------------------------------------
+
+export interface OriginBountyRow {
+  id: number;
+  poster_id: string;
+  poster_name: string;
+  reward_credits: number;
+  objective_type: string;
+  objective_data: any;
+  status: string;
+  claimer_id: string | null;
+  claimer_name: string | null;
+  created_at: string;
+  completed_at: string | null;
+  expires_at: string;
+}
+
+export async function insertOriginBounty(
+  posterId: string,
+  posterName: string,
+  reward: number,
+  objectiveType: string,
+  objectiveData: object,
+): Promise<OriginBountyRow | null> {
+  const res = await query<OriginBountyRow>(
+    `INSERT INTO origin_bounties (poster_id, poster_name, reward_credits, objective_type, objective_data) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+    [posterId, posterName, reward, objectiveType, JSON.stringify(objectiveData)],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function getOpenBounties(limit = 50): Promise<OriginBountyRow[]> {
+  const res = await query<OriginBountyRow>(
+    `SELECT * FROM origin_bounties WHERE status='open' AND expires_at > NOW() ORDER BY reward_credits DESC, created_at DESC LIMIT $1`,
+    [limit],
+  );
+  return res.rows;
+}
+
+export async function fulfillBounty(
+  claimerId: string,
+  claimerName: string,
+  objectiveType: string,
+  dataMatch: object,
+): Promise<OriginBountyRow | null> {
+  const res = await query<OriginBountyRow>(
+    `UPDATE origin_bounties SET status='completed', claimer_id=$1, claimer_name=$2, completed_at=NOW()
+     WHERE id = ( SELECT id FROM origin_bounties
+       WHERE status='open' AND expires_at > NOW() AND objective_type=$3 AND objective_data @> $4::jsonb AND poster_id <> $1
+       ORDER BY reward_credits DESC, created_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED )
+     RETURNING *`,
+    [claimerId, claimerName, objectiveType, JSON.stringify(dataMatch)],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function expireBountiesForRefund(): Promise<
+  Array<{ poster_id: string; reward_credits: number }>
+> {
+  const res = await query<{ poster_id: string; reward_credits: number }>(
+    `UPDATE origin_bounties SET status='expired' WHERE status='open' AND expires_at <= NOW() RETURNING poster_id, reward_credits`,
+  );
+  return res.rows;
+}
