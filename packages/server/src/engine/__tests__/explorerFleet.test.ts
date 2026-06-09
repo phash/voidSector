@@ -5,11 +5,12 @@ describe('buildExplorerSpawnPlan', () => {
   it('plans exactly `count` ships', () => {
     expect(buildExplorerSpawnPlan(5).length).toBe(5);
   });
-  it('mixes trader (consortium) and tourist (tourist_guild) factions', () => {
+  it('mixes all four alien explorer flavors (trader/tourist/researcher/scout factions)', () => {
     const plan = buildExplorerSpawnPlan(EXPLORER_TARGET);
     const factions = new Set(plan.map((p) => p.faction));
-    expect(factions.has('consortium')).toBe(true);
-    expect(factions.has('tourist_guild')).toBe(true);
+    for (const f of ['consortium', 'tourist_guild', 'archivists', 'kthari']) {
+      expect(factions.has(f)).toBe(true);
+    }
   });
   it('every ship is role=explorer, spawns near origin, has a name', () => {
     for (const p of buildExplorerSpawnPlan(10)) {
