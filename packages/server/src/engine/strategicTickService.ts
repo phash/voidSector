@@ -10,6 +10,7 @@ import {
   logExpansionEvent,
   getExpiredPlayerQuestsWithItems,
   updateQuestStatus,
+  getHumanFrontierMaxDistance,
 } from '../db/queries.js';
 import { removeFromInventory } from './inventoryService.js';
 import { warBus } from '../warBus.js';
@@ -18,10 +19,11 @@ import type { QuadrantControlRow } from '../db/queries.js';
 import { FactionConfigService } from './factionConfigService.js';
 import { calculateFriction, frictionFromBase, pairEnmity, repValueToTier } from './frictionEngine.js';
 import type { FrictionState } from './frictionEngine.js';
-import { findAllBorderPairs, getExpansionTarget } from './expansionEngine.js';
+import { findAllBorderPairs, getExpansionTarget, shouldWakeAliens, expansionFrontierMax } from './expansionEngine.js';
 import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
-import { ALIEN_EXPANSION_ENABLED } from '@void-sector/shared';
+import { getConfig } from './gameConfigApply.js';
+import { gameConfig } from './gameConfigService.js';
 import { VoidLifecycleService } from './voidLifecycleService.js';
 import { tickWreckSpawns } from './wreckSpawnEngine.js';
 import { ConquestEngine } from './conquestEngine.js';
@@ -105,10 +107,18 @@ export class StrategicTickService {
       }
     }
 
-    // 2. Alien expansion into unclaimed space (frozen for the sole-station launch;
-    //    Phase 2 re-enables this behind the aliens_awakened wake-trigger).
-    if (ALIEN_EXPANSION_ENABLED) {
-      await this.processAlienExpansion(allControls);
+    // 2. Alien expansion — dormant until a human reaches the alien ring (~1000
+    //    sectors / 2 quadrants), then expands within the player frontier + margin.
+    const humanFrontier = await getHumanFrontierMaxDistance();
+    const alreadyAwake = (getConfig('aliens_awakened') as boolean) ?? false;
+    const waking = shouldWakeAliens(alreadyAwake, humanFrontier);
+    if (waking) {
+      await gameConfig.set('aliens_awakened', true, 'aliens', 'Humans reached the alien ring');
+      await this.pushWarTickerEvent('◆ Etwas Fremdes erwacht in der Tiefe…').catch(() => undefined);
+      logger.info({ humanFrontier }, 'Aliens awakened — expansion enabled');
+    }
+    if (alreadyAwake || waking) {
+      await this.processAlienExpansion(allControls, expansionFrontierMax(humanFrontier));
     }
 
     // 3. Player station conquest
@@ -218,6 +228,7 @@ export class StrategicTickService {
 
   private async processAlienExpansion(
     allControls: QuadrantControlRow[],
+    frontierMax: number,
   ): Promise<void> {
     const factions = this.factionConfig.getActiveFactions().filter((f) => f.faction_id !== 'humans');
 
@@ -226,6 +237,7 @@ export class StrategicTickService {
         faction.faction_id,
         allControls,
         faction.expansion_style as 'sphere' | 'wave' | 'jumpgate',
+        frontierMax,
       );
       if (!target) continue;
 
