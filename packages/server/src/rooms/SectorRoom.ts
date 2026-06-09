@@ -1138,8 +1138,20 @@ export class SectorRoom extends Room<SectorRoomState> {
           return;
         }
 
-        await removeFromInventory(auth.userId, 'resource', v.resourceType, v.amount);
-        await this.communityQuests.contribute(auth.userId, v.amount).catch(() => {});
+        try {
+          await removeFromInventory(auth.userId, 'resource', v.resourceType, v.amount);
+        } catch {
+          client.send('error', { code: 'INSUFFICIENT_RESOURCE', message: `Nicht genug ${v.resourceType}.` });
+          return;
+        }
+        try {
+          await this.communityQuests.contribute(auth.userId, v.amount);
+        } catch (err) {
+          // Contribution failed AFTER deduction — refund so the player isn't robbed.
+          await addToInventory(auth.userId, 'resource', v.resourceType, v.amount).catch(() => {});
+          client.send('error', { code: 'CONTRIBUTE_FAILED', message: 'Beitrag fehlgeschlagen — Ressourcen zurückerstattet.' });
+          return;
+        }
         const quest = await this.communityQuests.getActivePayload().catch(() => null);
         client.send('activeCommunityQuest', { quest });
         // Push updated cargo so the client sees the deducted resource immediately
