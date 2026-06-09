@@ -257,6 +257,19 @@ export interface BountyEncounterState {
   sectorY: number;
 }
 
+export interface ExchangeListingRow {
+  id: number;
+  seller_id: string;
+  seller_name: string;
+  item_type: string;
+  item_id: string;
+  quantity: number;
+  price: number;
+  status: string;
+  created_at: string;
+  expires_at: string | null;
+}
+
 export interface GameSlice {
   // Auth
   token: string | null;
@@ -538,6 +551,10 @@ export interface GameSlice {
   // Origin Hub bounties
   bounties: Array<{ id: number; poster_name: string; reward_credits: number; objective_type: string; objective_data: any; status: string; created_at: string; expires_at: string }>;
 
+  // Origin Hub exchange
+  exchangeListings: ExchangeListingRow[];
+  myTradeableItems: Array<{ item_type: string; item_id: string; quantity: number }>;
+
   // Ancient Ruins
   activeAncientRuinScan: {
     fragmentIndex: number;
@@ -699,6 +716,8 @@ export interface GameSlice {
   setNewsItems: (items: GameSlice['newsItems']) => void;
   setOriginNotices: (originNotices: GameSlice['originNotices']) => void;
   setBounties: (bounties: GameSlice['bounties']) => void;
+  setExchangeListings: (listings: ExchangeListingRow[]) => void;
+  setMyTradeableItems: (items: Array<{ item_type: string; item_id: string; quantity: number }>) => void;
   setHyperdriveState: (state: HyperdriveState | null) => void;
   setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
   setNavTarget: (target: { x: number; y: number } | null) => void;
@@ -875,6 +894,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   newsItems: [],
   originNotices: [],
   bounties: [],
+  exchangeListings: [],
+  myTradeableItems: [],
   hyperdriveState: null,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
   visitedQuadrants: new Set<string>(),
@@ -1119,6 +1140,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setNewsItems: (newsItems) => set({ newsItems }),
   setOriginNotices: (originNotices) => set({ originNotices }),
   setBounties: (bounties) => set({ bounties }),
+  setExchangeListings: (exchangeListings) => set({ exchangeListings }),
+  setMyTradeableItems: (myTradeableItems) => set({ myTradeableItems }),
   setHyperdriveState: (hyperdriveState) => set({ hyperdriveState }),
   setAutoRefuelConfig: (autoRefuelConfig) => set({ autoRefuelConfig }),
   setNavTarget: (navTarget) => set({ navTarget }),

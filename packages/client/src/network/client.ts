@@ -1383,6 +1383,19 @@ class GameNetwork {
       useStore.getState().showSuccessToast('◈ Kopfgeld erhalten: +' + data.reward + ' Credits');
     });
 
+    room.onMessage('exchangeListingsResult', (data: { listings: any[] }) => {
+      useStore.getState().setExchangeListings(data.listings ?? []);
+    });
+
+    room.onMessage('exchangeMyItems', (data: { items: Array<{ item_type: string; item_id: string; quantity: number }> }) => {
+      useStore.getState().setMyTradeableItems(data.items ?? []);
+    });
+
+    room.onMessage('exchangeBought', (data: { itemType: string; itemId: string; quantity: number; price: number }) => {
+      const label = data.itemId.replace(/^blueprint_/, '');
+      useStore.getState().showSuccessToast('◈ Gekauft: ' + data.quantity + '× ' + label + ' für ' + data.price + ' CR');
+    });
+
     room.onMessage('originNoticePosted', (data: { notice: any }) => {
       const s = useStore.getState();
       s.setOriginNotices([data.notice, ...s.originNotices].slice(0, 50));
@@ -2855,6 +2868,22 @@ class GameNetwork {
 
   postBounty(objectiveType: string, objectiveData: any, reward: number) {
     this.sectorRoom?.send('postBounty', { objectiveType, objectiveData, reward });
+  }
+
+  requestExchange() {
+    this.sectorRoom?.send('getExchange');
+  }
+
+  listExchange(itemType: string, itemId: string, quantity: number, price: number) {
+    this.sectorRoom?.send('listExchange', { itemType, itemId, quantity, price });
+  }
+
+  buyExchange(listingId: number) {
+    this.sectorRoom?.send('buyExchange', { listingId });
+  }
+
+  cancelExchange(listingId: number) {
+    this.sectorRoom?.send('cancelExchange', { listingId });
   }
 
   // Territory

@@ -426,7 +426,8 @@ export const HELP_TIPS: HelpTip[] = [
       '→ PINNWAND: Meldungen an alle Piloten posten\n' +
       '→ GEMEINSCHAFT: Galaktisches Gemeinschaftsprojekt\n' +
       '→ BOUNTY: Kopfgelder aussetzen und einlösen\n' +
-      '→ Posten und Aussetzen nur am Zentrum (0:0)',
+      '→ EXCHANGE: Waren + Blueprints galaktisch handeln\n' +
+      '→ Posten, Aussetzen und Anbieten nur am Zentrum (0:0)',
   },
   {
     id: 'first_station_expansions',

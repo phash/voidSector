@@ -11,13 +11,20 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 
-type Tab = 'PINNWAND' | 'GEMEINSCHAFT' | 'BOUNTY';
+type Tab = 'PINNWAND' | 'GEMEINSCHAFT' | 'BOUNTY' | 'EXCHANGE';
 
 const RESOURCE_LABELS: Record<string, string> = {
   ore: 'ERZ',
   gas: 'GAS',
   crystal: 'KRISTALL',
 };
+
+function exchangeItemLabel(itemId: string): string {
+  if (itemId === 'ore') return 'ORZ';
+  if (itemId === 'gas') return 'GAS';
+  if (itemId === 'crystal') return 'KRISTALL';
+  return itemId.replace(/^blueprint_/, '');
+}
 
 function inputStyle(enabled: boolean): React.CSSProperties {
   return {
@@ -41,6 +48,9 @@ export function OriginHubScreen() {
   const showTip = useStore((s) => s.showTip);
   const communityQuest = useStore((s) => s.activeCommunityQuest);
   const cargo = useStore((s) => s.cargo);
+  const exchangeListings = useStore((s) => s.exchangeListings);
+  const myTradeableItems = useStore((s) => s.myTradeableItems);
+  const ownPlayerId = useStore((s) => s.playerId);
 
   const atOrigin = position.x === 0 && position.y === 0;
 
@@ -59,6 +69,11 @@ export function OriginHubScreen() {
   const [bountySectorY, setBountySectorY] = useState(0);
   const [bountyReward, setBountyReward] = useState(100);
 
+  // Exchange form state
+  const [selectedExchangeIdx, setSelectedExchangeIdx] = useState<number | null>(null);
+  const [exchangeQty, setExchangeQty] = useState(1);
+  const [exchangePrice, setExchangePrice] = useState(100);
+
   useEffect(() => {
     showTip('first_originhub');
     if (atOrigin) network.requestOriginNotices();
@@ -71,9 +86,12 @@ export function OriginHubScreen() {
     if (tab === 'BOUNTY') {
       network.requestBounties();
     }
+    if (tab === 'EXCHANGE') {
+      network.requestExchange();
+    }
   }, [tab]);
 
-  const tabs: Tab[] = ['PINNWAND', 'GEMEINSCHAFT', 'BOUNTY'];
+  const tabs: Tab[] = ['PINNWAND', 'GEMEINSCHAFT', 'BOUNTY', 'EXCHANGE'];
 
   // Bounty form validation
   const bountyTargetValid =
@@ -85,6 +103,17 @@ export function OriginHubScreen() {
 
   const availableAmount = cargo[selectedResource] ?? 0;
   const canContribute = atOrigin && amount >= 1 && amount <= availableAmount;
+
+  // Exchange computed
+  const selectedExchangeItem =
+    selectedExchangeIdx !== null ? myTradeableItems[selectedExchangeIdx] ?? null : null;
+  const maxExchangeQty = selectedExchangeItem?.quantity ?? 0;
+  const canListExchange =
+    atOrigin &&
+    selectedExchangeItem !== null &&
+    exchangeQty >= 1 &&
+    exchangeQty <= maxExchangeQty &&
+    exchangePrice >= 1;
 
   const progressPct =
     communityQuest && communityQuest.targetCount > 0
@@ -881,6 +910,284 @@ export function OriginHubScreen() {
               </div>
             </>
           )}
+        </div>
+      )}
+      {/* EXCHANGE tab */}
+      {tab === 'EXCHANGE' && (
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '8px' }}>
+          {/* Listings */}
+          <div
+            style={{
+              color: 'var(--color-dim)',
+              fontSize: '0.6rem',
+              letterSpacing: '0.08em',
+              marginBottom: 8,
+            }}
+          >
+            ── ANGEBOTE ──
+          </div>
+
+          {exchangeListings.filter((l) => l.status === 'open').length === 0 ? (
+            <div
+              style={{
+                padding: '12px 0',
+                color: 'var(--color-dim)',
+                fontSize: '0.68rem',
+                textAlign: 'center',
+                letterSpacing: '0.06em',
+              }}
+            >
+              Keine Angebote.
+            </div>
+          ) : (
+            exchangeListings
+              .filter((l) => l.status === 'open')
+              .map((l) => {
+                const isOwn = l.seller_id === ownPlayerId;
+                return (
+                  <div
+                    key={l.id}
+                    style={{
+                      borderBottom: '1px solid var(--color-dim)',
+                      padding: '6px 4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span
+                        style={{
+                          color: 'var(--color-primary)',
+                          fontSize: '0.72rem',
+                          fontFamily: 'monospace',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {l.quantity}× {exchangeItemLabel(l.item_id)}
+                      </span>
+                      <span
+                        style={{
+                          color: 'var(--color-primary)',
+                          fontSize: '0.68rem',
+                          fontFamily: 'monospace',
+                          marginLeft: 8,
+                        }}
+                      >
+                        {l.price.toLocaleString()} CR
+                      </span>
+                      <span
+                        style={{
+                          color: 'var(--color-dim)',
+                          fontSize: '0.58rem',
+                          fontFamily: 'monospace',
+                          marginLeft: 8,
+                        }}
+                      >
+                        {isOwn ? '(deins)' : `von ${l.seller_name}`}
+                      </span>
+                    </div>
+                    {isOwn ? (
+                      <button
+                        onClick={() => network.cancelExchange(l.id)}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--color-dim)',
+                          color: 'var(--color-dim)',
+                          fontFamily: 'monospace',
+                          fontSize: '0.58rem',
+                          cursor: 'pointer',
+                          padding: '2px 8px',
+                          letterSpacing: '0.05em',
+                          flexShrink: 0,
+                        }}
+                      >
+                        ABBRECHEN
+                      </button>
+                    ) : (
+                      <button
+                        disabled={!atOrigin}
+                        onClick={() => {
+                          if (atOrigin) network.buyExchange(l.id);
+                        }}
+                        style={{
+                          background: atOrigin ? 'rgba(255,170,0,0.08)' : 'transparent',
+                          border: '1px solid var(--color-dim)',
+                          color: atOrigin ? 'var(--color-primary)' : 'var(--color-dim)',
+                          fontFamily: 'monospace',
+                          fontSize: '0.58rem',
+                          cursor: atOrigin ? 'pointer' : 'default',
+                          padding: '2px 8px',
+                          letterSpacing: '0.05em',
+                          opacity: atOrigin ? 1 : 0.5,
+                          flexShrink: 0,
+                        }}
+                      >
+                        KAUFEN
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+          )}
+
+          {/* Sell form */}
+          <div
+            style={{
+              borderTop: '1px solid var(--color-dim)',
+              paddingTop: 10,
+              marginTop: 10,
+            }}
+          >
+            <div
+              style={{
+                color: 'var(--color-dim)',
+                fontSize: '0.6rem',
+                letterSpacing: '0.08em',
+                marginBottom: 8,
+              }}
+            >
+              ── WARE ANBIETEN ──
+            </div>
+
+            {!atOrigin && (
+              <div
+                style={{
+                  color: 'var(--color-dim)',
+                  fontSize: '0.62rem',
+                  letterSpacing: '0.06em',
+                  fontStyle: 'italic',
+                  marginBottom: 8,
+                }}
+              >
+                ⚠ Anbieten nur am Zentrum (0:0)
+              </div>
+            )}
+
+            {myTradeableItems.length === 0 ? (
+              <div
+                style={{
+                  color: 'var(--color-dim)',
+                  fontSize: '0.65rem',
+                  fontStyle: 'italic',
+                  marginBottom: 8,
+                }}
+              >
+                Keine handelbaren Waren im Lager.
+              </div>
+            ) : (
+              <>
+                {/* Item picker */}
+                <div style={{ marginBottom: 8 }}>
+                  <span
+                    style={{ color: 'var(--color-dim)', fontSize: '0.6rem', marginRight: 6 }}
+                  >
+                    WARE:
+                  </span>
+                  <select
+                    disabled={!atOrigin}
+                    value={selectedExchangeIdx ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setSelectedExchangeIdx(v === '' ? null : parseInt(v, 10));
+                      setExchangeQty(1);
+                    }}
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid var(--color-dim)',
+                      color: 'var(--color-primary)',
+                      fontFamily: 'monospace',
+                      fontSize: '0.62rem',
+                      padding: '2px 4px',
+                      outline: 'none',
+                      opacity: atOrigin ? 1 : 0.5,
+                    }}
+                  >
+                    <option value="">-- wählen --</option>
+                    {myTradeableItems.map((item, idx) => (
+                      <option key={idx} value={idx}>
+                        {exchangeItemLabel(item.item_id)} ×{item.quantity}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Quantity + Price */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 12,
+                    marginBottom: 8,
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>MENGE:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={maxExchangeQty}
+                      value={exchangeQty}
+                      disabled={!atOrigin || !selectedExchangeItem}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10);
+                        if (!isNaN(v) && v >= 1)
+                          setExchangeQty(Math.min(v, maxExchangeQty));
+                      }}
+                      style={{ ...inputStyle(atOrigin && selectedExchangeItem !== null), width: 56 }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>PREIS (CR):</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100000000}
+                      value={exchangePrice}
+                      disabled={!atOrigin || !selectedExchangeItem}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10);
+                        if (!isNaN(v) && v >= 1)
+                          setExchangePrice(Math.min(v, 100000000));
+                      }}
+                      style={{ ...inputStyle(atOrigin && selectedExchangeItem !== null), width: 80 }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  disabled={!canListExchange}
+                  onClick={() => {
+                    if (!canListExchange || !selectedExchangeItem) return;
+                    network.listExchange(
+                      selectedExchangeItem.item_type,
+                      selectedExchangeItem.item_id,
+                      exchangeQty,
+                      exchangePrice,
+                    );
+                    setSelectedExchangeIdx(null);
+                    setExchangeQty(1);
+                    setExchangePrice(100);
+                  }}
+                  style={{
+                    background: canListExchange ? 'rgba(255,170,0,0.10)' : 'transparent',
+                    border: '1px solid var(--color-dim)',
+                    color: canListExchange ? 'var(--color-primary)' : 'var(--color-dim)',
+                    fontFamily: 'monospace',
+                    fontSize: '0.65rem',
+                    cursor: canListExchange ? 'pointer' : 'default',
+                    padding: '4px 16px',
+                    letterSpacing: '0.08em',
+                    fontWeight: 'bold',
+                    opacity: canListExchange ? 1 : 0.5,
+                  }}
+                >
+                  ANBIETEN
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
