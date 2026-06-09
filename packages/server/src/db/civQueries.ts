@@ -208,6 +208,14 @@ export const civQueries = {
     );
     return res.rows[0]?.conquest_pool ?? 0;
   },
+
+  async countAliveExplorers(): Promise<number> {
+    const { rows } = await query<{ n: string }>(
+      `SELECT COUNT(*)::int AS n FROM civ_ships
+       WHERE role = 'explorer' AND (dead_until IS NULL OR dead_until < NOW())`,
+    );
+    return Number(rows[0]?.n ?? 0);
+  },
 };
 
 export async function getNpcShipsInSector(x: number, y: number): Promise<any[]> {
