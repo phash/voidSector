@@ -323,8 +323,11 @@ export async function canSellToStation(
   if (!item) return { ok: false, capacity: 0, price: 0, effectiveAmount: 0 };
 
   const currentStock = calculateCurrentStock(item);
+  // 0:0 is the galaxy trade sink: it ALWAYS accepts basic resources (excess is
+  // sunk — EconomyService caps stored stock at maxStock). Reliable place to sell.
+  const isOriginSink = x === 0 && y === 0 && (itemType === 'ore' || itemType === 'gas' || itemType === 'crystal');
   const remainingCapacity = item.maxStock - currentStock;
-  const effectiveAmount = Math.min(amount, remainingCapacity);
+  const effectiveAmount = isOriginSink ? amount : Math.min(amount, remainingCapacity);
   const stockRatio = item.maxStock > 0 ? currentStock / item.maxStock : 0;
   const basePrice = NPC_PRICES[itemType as MineableResourceType] ?? 0;
   const dynamicPrice = calculatePrice(basePrice, stockRatio);
@@ -335,7 +338,7 @@ export async function canSellToStation(
 
   return {
     ok: effectiveAmount > 0,
-    capacity: remainingCapacity,
+    capacity: isOriginSink ? amount : remainingCapacity,
     price: totalPrice,
     effectiveAmount,
   };
