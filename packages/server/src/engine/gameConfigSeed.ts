@@ -418,6 +418,11 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   { key: 'WRECK_SLATE_SELL_BASE', category: 'wrecks', description: 'Base sell price for wreck data slates', getDefault: () => WRECK_SLATE_SELL_BASE },
   { key: 'WRECK_SLATE_SELL_PER_TIER', category: 'wrecks', description: 'Extra sell price per wreck tier', getDefault: () => WRECK_SLATE_SELL_PER_TIER },
   { key: 'WRECK_SLATE_JUMPGATE_HUMANITY_TAX', category: 'wrecks', description: 'Humanity tax for jumpgate data slates from wrecks', getDefault: () => WRECK_SLATE_JUMPGATE_HUMANITY_TAX },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // Aliens
+  // ══════════════════════════════════════════════════════════════════════════════
+  { key: 'aliens_awakened', category: 'aliens', description: 'Alien expansion has woken (a human reached the alien ring). Persistent; default false.', getDefault: () => false },
 ];
 
 // ─── Module seed entries (generated from MODULE_DEFINITIONS array) ────────────

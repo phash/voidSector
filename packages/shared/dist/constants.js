@@ -814,6 +814,13 @@ export const QUADRANT_SIZE = 500;
 // reset replaces ALIEN_EXPANSION_ENABLED with the `aliens_awakened` wake-trigger.
 export const CIV_STATIONS_ENABLED = false;
 export const ALIEN_EXPANSION_ENABLED = false;
+// ── Reachable-aliens (Phase 2) ──────────────────────────────────────────────
+// Aliens wake once a human has discovered a quadrant at least this many quadrants
+// from origin (2 q ≈ 1000 sectors = the inner edge of the alien ring).
+export const ALIEN_WAKE_FRONTIER_QUADRANTS = 2;
+// Once awake, a faction may only claim quadrants within this many quadrants of the
+// outermost human-discovered quadrant — expansion follows the player frontier.
+export const EXPANSION_FRONTIER_MARGIN = 5;
 /**
  * Convert absolute coordinate to inner sector coordinate (-half..half-1).
  * Origin (0) is at center of quadrant (0,0). Range: [-250, 249].

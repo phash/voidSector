@@ -3474,6 +3474,18 @@ export async function getVisitedQuadrantSet(playerId: string): Promise<Set<strin
   return new Set(rows.map((r) => `${r.qx}:${r.qy}`));
 }
 
+/**
+ * Max Chebyshev quadrant-distance from origin that ANY human has discovered.
+ * `player_quadrant_visits` is human-only and stores quadrant (qx,qy). 0 if empty.
+ */
+export async function getHumanFrontierMaxDistance(): Promise<number> {
+  const res = await query<{ max_dist: number }>(
+    `SELECT COALESCE(MAX(GREATEST(ABS(qx), ABS(qy))), 0)::int AS max_dist
+     FROM player_quadrant_visits`,
+  );
+  return res.rows[0]?.max_dist ?? 0;
+}
+
 // --- Kampfsystem v1: combat_log ---
 
 export async function insertCombatLog(params: {
