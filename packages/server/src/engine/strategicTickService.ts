@@ -27,6 +27,7 @@ import { gameConfig } from './gameConfigService.js';
 import { VoidLifecycleService } from './voidLifecycleService.js';
 import { tickWreckSpawns } from './wreckSpawnEngine.js';
 import { ConquestEngine } from './conquestEngine.js';
+import { ensureExplorerFleet } from './explorerFleet.js';
 
 const AGGRESSION_MUL = parseFloat(process.env.ALIEN_AGGRESSION_MUL ?? '1');
 const EXPANSION_RATE_MUL = parseFloat(process.env.ALIEN_EXPANSION_RATE_MUL ?? '1');
@@ -118,6 +119,7 @@ export class StrategicTickService {
       logger.info({ humanFrontier }, 'Aliens awakened — expansion enabled');
     }
     if (alreadyAwake || waking) {
+      await ensureExplorerFleet().catch((err) => logger.error({ err }, 'ensureExplorerFleet failed'));
       await this.processAlienExpansion(allControls, expansionFrontierMax(humanFrontier));
     }
 
