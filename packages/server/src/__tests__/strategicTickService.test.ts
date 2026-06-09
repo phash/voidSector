@@ -11,6 +11,8 @@ vi.mock('../db/queries.js', () => ({
   getArrivedNpcFleets: vi.fn(),
   deleteArrivedNpcFleets: vi.fn(),
   logExpansionEvent: vi.fn(),
+  // Phase 2: the tick queries the human frontier before the (dormant) expansion step.
+  getHumanFrontierMaxDistance: vi.fn().mockResolvedValue(0),
   getVoidClusters: vi.fn().mockResolvedValue([]),
   getVoidClusterQuadrants: vi.fn().mockResolvedValue([]),
   upsertVoidCluster: vi.fn().mockResolvedValue(undefined),
