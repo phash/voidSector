@@ -25,8 +25,15 @@ vi.mock('../db/queries.js', () => ({
   deleteVoidHive: vi.fn().mockResolvedValue(undefined),
   getExpiredPlayerQuestsWithItems: vi.fn().mockResolvedValue([]),
   expireBountiesForRefund: vi.fn().mockResolvedValue([]),
+  expireExchangeListings: vi.fn().mockResolvedValue([]),
   addCredits: vi.fn().mockResolvedValue(undefined),
   updateQuestStatus: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock inventoryService for exchange expire-return
+vi.mock('../engine/inventoryService.js', () => ({
+  removeFromInventory: vi.fn().mockResolvedValue(undefined),
+  addToInventory: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {

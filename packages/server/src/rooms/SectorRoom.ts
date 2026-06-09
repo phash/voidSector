@@ -159,6 +159,7 @@ import { NpcShipService } from './services/NpcShipService.js';
 import { CombatV3Service } from './services/CombatV3Service.js';
 import { NoticeService } from './services/NoticeService.js';
 import { BountyService } from './services/BountyService.js';
+import { ExchangeService } from './services/ExchangeService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -223,6 +224,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private combatV3!: CombatV3Service;
   private notice!: NoticeService;
   private bounty!: BountyService;
+  private exchange!: ExchangeService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
   private revealedOutlaws = new Map<string, Set<number>>();
 
@@ -424,6 +426,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.combatV3 = new CombatV3Service(this.serviceCtx);
     this.notice = new NoticeService(this.serviceCtx);
     this.bounty = new BountyService(this.serviceCtx);
+    this.exchange = new ExchangeService(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.combatV3 = this.combatV3;
@@ -778,6 +781,21 @@ export class SectorRoom extends Room<SectorRoomState> {
       await this.bounty.handlePost(client, data ?? ({} as any), this._px(client.sessionId), this._py(client.sessionId));
     });
     this.onMessage('getBounties', async (client) => { await this.bounty.sendOpen(client); });
+
+    // ── Origin Hub Exchange ──────────────────────────────────────────
+    this.onMessage('listExchange', async (client, data: { itemType: string; itemId: string; quantity: number; price: number }) => {
+      await this.exchange.handleList(client, data ?? ({} as any), this._px(client.sessionId), this._py(client.sessionId));
+    });
+    this.onMessage('buyExchange', async (client, data: { listingId: number }) => {
+      await this.exchange.handleBuy(client, data?.listingId, this._px(client.sessionId), this._py(client.sessionId));
+    });
+    this.onMessage('cancelExchange', async (client, data: { listingId: number }) => {
+      await this.exchange.handleCancel(client, data?.listingId, this._px(client.sessionId), this._py(client.sessionId));
+    });
+    this.onMessage('getExchange', async (client) => {
+      const a = client.auth as { userId?: string } | null;
+      await this.exchange.sendState(client, a?.userId ?? '');
+    });
 
     // ── Chat ────────────────────────────────────────────────────────
     this.onMessage('chat', async (client, data: SendChatMessage) => {

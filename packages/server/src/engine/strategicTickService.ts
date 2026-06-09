@@ -13,8 +13,9 @@ import {
   getHumanFrontierMaxDistance,
   expireBountiesForRefund,
   addCredits,
+  expireExchangeListings,
 } from '../db/queries.js';
-import { removeFromInventory } from './inventoryService.js';
+import { removeFromInventory, addToInventory } from './inventoryService.js';
 import { warBus } from '../warBus.js';
 import { resetDeadOutlaws } from '../db/civQueries.js';
 import type { QuadrantControlRow } from '../db/queries.js';
@@ -139,6 +140,10 @@ export class StrategicTickService {
     // 6. Refund expired bounties to their posters
     const _refunds = await expireBountiesForRefund().catch(() => []);
     for (const _r of _refunds) await addCredits(_r.poster_id, _r.reward_credits).catch(() => undefined);
+
+    // 7. Return expired exchange listings to their sellers
+    const _exExp = await expireExchangeListings().catch(() => []);
+    for (const _l of _exExp) await addToInventory(_l.seller_id, _l.item_type as any, _l.item_id, _l.quantity).catch(() => undefined);
 
     this.tickCount++;
     if (this.tickCount % 10 === 0) {
