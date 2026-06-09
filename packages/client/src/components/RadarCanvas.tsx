@@ -12,6 +12,7 @@ import { updateJumpAnimation } from '../canvas/JumpAnimation';
 import { updateScanAnimation, drawScanOverlay } from '../canvas/ScanAnimation';
 import { useStore } from '../state/store';
 import { COLOR_PROFILES } from '../styles/themes';
+import { radarTrailManager, classifyShip } from '../canvas/radarTrailManager';
 
 interface RadarCanvasProps {
   onSectorTap?: (x: number, y: number) => void;
@@ -57,6 +58,26 @@ export function RadarCanvas({ onSectorTap }: RadarCanvasProps = {}) {
       }
     }
 
+    // Build trail entries from current ship positions and call observe
+    const trailNow = performance.now();
+    const trailEntries = [
+      { key: 'self', x: state.position.x, y: state.position.y, kind: 'player' as const },
+      ...Object.values(state.players).map((p) => ({
+        key: `p:${p.sessionId}`,
+        x: p.x,
+        y: p.y,
+        kind: 'player' as const,
+      })),
+      ...(state.civShips ?? []).map((c) => ({
+        key: `n:${c.id}`,
+        x: c.x,
+        y: c.y,
+        kind: classifyShip({ role: (c as any).role }),
+      })),
+    ];
+    radarTrailManager.observe(trailEntries, trailNow);
+    const shipTrails = radarTrailManager.getTrails(trailNow);
+
     const radarState = {
       position: state.position,
       discoveries: state.discoveries,
@@ -85,6 +106,7 @@ export function RadarCanvas({ onSectorTap }: RadarCanvasProps = {}) {
       sectorWrecks: state.sectorWrecks,
       wreckDetection: state.ship?.acepEffects?.wreckDetection ?? false,
       constructionSites: state.constructionSites,
+      shipTrails,
       slowFlightPath:
         state.slowFlightActive && state.autopilot?.active
           ? [

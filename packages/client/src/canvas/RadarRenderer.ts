@@ -7,6 +7,8 @@ import {
   getAcepRadarPattern,
   COSMIC_FACTION_COLORS,
 } from '@void-sector/shared';
+import { TRAIL_COLORS } from './radarTrailManager';
+import type { RenderTrail } from './radarTrailManager';
 import type {
   SectorData,
   Coords,
@@ -108,6 +110,8 @@ interface RadarState {
   /** ACEP EXPLORER effect: reveals Tier 4/5 wrecks without local scan */
   wreckDetection?: boolean;
   constructionSites?: ConstructionSiteState[];
+  /** Fading colored trails for each tracked ship (player/NPC). */
+  shipTrails?: RenderTrail[];
 }
 
 function easeInOutCubic(t: number): number {
@@ -665,6 +669,53 @@ export function drawRadar(ctx: CanvasRenderingContext2D, state: RadarState) {
       }
       ctx.restore();
     }
+  }
+
+  // Draw ship trails (fading colored dots) — rendered BEFORE glyphs so ships sit on top
+  if (state.shipTrails && state.shipTrails.length > 0) {
+    for (const trail of state.shipTrails) {
+      const color = TRAIL_COLORS[trail.kind];
+      const pts = trail.points;
+      for (let i = 0; i < pts.length; i++) {
+        const pt = pts[i];
+        const tdx = pt.x - viewX;
+        const tdy = pt.y - viewY;
+        // Skip points outside the visible grid
+        if (Math.abs(tdx) > radiusX || Math.abs(tdy) > radiusY) continue;
+        const tx = gridCenterX + tdx * CELL_W;
+        const ty = gridCenterY + tdy * CELL_H;
+
+        // Connect consecutive visible points with a thin line
+        if (i > 0) {
+          const prev = pts[i - 1];
+          const pdx2 = prev.x - viewX;
+          const pdy2 = prev.y - viewY;
+          if (Math.abs(pdx2) <= radiusX && Math.abs(pdy2) <= radiusY) {
+            const prevTx = gridCenterX + pdx2 * CELL_W;
+            const prevTy = gridCenterY + pdy2 * CELL_H;
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = pt.alpha * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(prevTx, prevTy);
+            ctx.lineTo(tx, ty);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        // Draw the dot
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.globalAlpha = pt.alpha;
+        ctx.beginPath();
+        ctx.arc(tx, ty, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   // Draw other players — visible at all zoom levels, colored by dominant ACEP path
