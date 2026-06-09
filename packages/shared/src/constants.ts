@@ -637,10 +637,10 @@ export const DENSITY_DISTANCE_THRESHOLD = 5000; // Chebyshev distance in absolut
 // Target: 90% of all sectors completely empty; remaining 10% keep prior ratios.
 // Note: anomaly is no longer part of this roll — it uses its own environment-aware roll (see below).
 export const CONTENT_WEIGHTS: Record<string, number> = {
-  none: 0.91,
+  none: 0.926, // +0.016 absorbed from station (worldgen no longer mints stations; only 0:0 is one)
   asteroid_field: 0.05,
   pirate: 0.02,
-  station: 0.016,
+  station: 0, // sole-station world: stations are 0:0 + player-built only
   ruin: 0.004,
 };
 
