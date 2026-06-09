@@ -5,7 +5,7 @@ import { UniverseTickEngine } from './universeTickEngine.js';
 import { StrategicTickService } from './strategicTickService.js';
 import { getAllHumanityReps, ensureKernweltStation, ensureZentrumQuadrant, ensureAlienHomeQuadrants, getAllFactionConfigs } from '../db/queries.js';
 import { logger } from '../utils/logger.js';
-import { QUADRANT_SIZE, BACKGROUND_TICK_INTERVAL } from '@void-sector/shared';
+import { QUADRANT_SIZE, BACKGROUND_TICK_INTERVAL, CIV_STATIONS_ENABLED } from '@void-sector/shared';
 import { assertAlienHomesFarFromOrigin } from './alienHomeGuard.js';
 import { ensureCivStations, spawnMissingDrones } from './civStationService.js';
 import { processCivTick, getOnlinePlayerAnchors } from './civShipService.js';
@@ -42,10 +42,12 @@ export async function startUniverseEngine(): Promise<void> {
   const factionHomes = await getAllFactionConfigs();
   assertAlienHomesFarFromOrigin(factionHomes, QUADRANT_SIZE, 1000);
 
-  await ensureCivStations();
-  // SP10 (#512/#513/#537): drones now spawn LAZILY in-tick, only near online
-  // players (spawnMissingDrones(anchors)) — no startup all-stations sweep.
-  logger.info('CivShips: stations seeded (drones spawn lazily near players)');
+  if (CIV_STATIONS_ENABLED) {
+    await ensureCivStations();
+    logger.info('CivShips: stations seeded (drones spawn lazily near players)');
+  } else {
+    logger.info('CivShips: NPC station generation DISABLED (sole-station world)');
+  }
 
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   const strategicTick = new StrategicTickService(redis);

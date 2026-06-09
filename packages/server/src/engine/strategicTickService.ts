@@ -21,6 +21,7 @@ import type { FrictionState } from './frictionEngine.js';
 import { findAllBorderPairs, getExpansionTarget } from './expansionEngine.js';
 import { resolveStrategicTick, calculateBaseDefense } from './warfareEngine.js';
 import { logger } from '../utils/logger.js';
+import { ALIEN_EXPANSION_ENABLED } from '@void-sector/shared';
 import { VoidLifecycleService } from './voidLifecycleService.js';
 import { tickWreckSpawns } from './wreckSpawnEngine.js';
 import { ConquestEngine } from './conquestEngine.js';
@@ -104,8 +105,11 @@ export class StrategicTickService {
       }
     }
 
-    // 2. Alien expansion into unclaimed space
-    await this.processAlienExpansion(allControls);
+    // 2. Alien expansion into unclaimed space (frozen for the sole-station launch;
+    //    Phase 2 re-enables this behind the aliens_awakened wake-trigger).
+    if (ALIEN_EXPANSION_ENABLED) {
+      await this.processAlienExpansion(allControls);
+    }
 
     // 3. Player station conquest
     await this.conquestEngine.tick().catch((err) =>

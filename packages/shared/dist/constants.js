@@ -808,6 +808,12 @@ export const AUTOPILOT_STEP_MS = 800; // ms per sector during autopilot
 export const STALENESS_DIM_HOURS = 24; // dim sectors after 24h
 export const STALENESS_FADE_DAYS = 7; // coords-only after 7 days
 export const QUADRANT_SIZE = 500;
+// ── Sole-station world launch flags ────────────────────────────────────────
+// Only 0:0 is an NPC station; everything else is player-built. These freeze the
+// two generators that otherwise refill the galaxy. Phase 2 of the world-model
+// reset replaces ALIEN_EXPANSION_ENABLED with the `aliens_awakened` wake-trigger.
+export const CIV_STATIONS_ENABLED = false;
+export const ALIEN_EXPANSION_ENABLED = false;
 /**
  * Convert absolute coordinate to inner sector coordinate (-half..half-1).
  * Origin (0) is at center of quadrant (0,0). Range: [-250, 249].

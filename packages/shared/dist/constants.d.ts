@@ -412,6 +412,8 @@ export declare const AUTOPILOT_STEP_MS = 800;
 export declare const STALENESS_DIM_HOURS = 24;
 export declare const STALENESS_FADE_DAYS = 7;
 export declare const QUADRANT_SIZE = 500;
+export declare const CIV_STATIONS_ENABLED = false;
+export declare const ALIEN_EXPANSION_ENABLED = false;
 /**
  * Convert absolute coordinate to inner sector coordinate (-half..half-1).
  * Origin (0) is at center of quadrant (0,0). Range: [-250, 249].
