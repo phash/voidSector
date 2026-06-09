@@ -7,8 +7,18 @@ vi.mock('../../db/civQueries.js', () => ({
 vi.mock('../civShipService.js', () => ({
   nextShipState: vi.fn(),
 }));
+vi.mock('../npcShipAI.js', () => ({
+  nextExplorerState: vi.fn().mockReturnValue({ state: 'traveling', x: 10, y: 20, spiral_step: 0 }),
+}));
 vi.mock('../npcStationEngine.js', () => ({
   applyTraderExport: vi.fn().mockResolvedValue(null),
+}));
+vi.mock('../playerTraceService.js', () => ({
+  recordTrace: vi.fn().mockResolvedValue(undefined),
+  recordSectorTrace: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../worldgen.js', () => ({
+  generateSector: vi.fn().mockReturnValue({ type: 'empty' }),
 }));
 
 import {

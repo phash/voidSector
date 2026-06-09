@@ -10,7 +10,11 @@ import type { CivShip } from '@void-sector/shared';
 import { BACKGROUND_CHUNK_SIZE, BACKGROUND_CATCHUP_STEPS } from '@void-sector/shared';
 import { civQueries, getShipsAfterId } from '../db/civQueries.js';
 import { nextShipState } from './civShipService.js';
+import { nextExplorerState } from './npcShipAI.js';
 import { applyTraderExport } from './npcStationEngine.js';
+import { recordTrace, recordSectorTrace } from './playerTraceService.js';
+import type { TraceAction } from './playerTraceService.js';
+import { generateSector } from './worldgen.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -43,6 +47,23 @@ export async function processBackgroundTick(): Promise<number> {
     }
 
     for (const ship of ships) {
+      if (((ship as any).role) === 'explorer') {
+        const upd = nextExplorerState(ship);
+        const nx = upd.x as number, ny = upd.y as number;
+        await civQueries.updateShip(ship.id as number, {
+          state: upd.state, x: nx, y: ny, spiral_step: upd.spiral_step ?? 0,
+        });
+        const sectorType = generateSector(nx, ny, null).type;
+        const action: TraceAction =
+          sectorType === 'asteroid_field' || sectorType === 'nebula' || sectorType === 'anomaly' ? 'mined'
+          : sectorType === 'station' ? 'traded'
+          : 'scanned';
+        const trace = { playerId: `npc-${ship.id}`, playerName: (ship as any).name || 'Kundschafter', action, x: nx, y: ny, ts: Date.now() };
+        // Per-sector always; global NEWS feed only ~1 leg in 6 (don't drown real players).
+        if (((upd.spiral_step ?? 0) % 6) === 0) { await recordTrace(trace); } else { await recordSectorTrace(trace); }
+        continue;
+      }
+
       let s: any = { ...ship };
       for (let i = 0; i < BACKGROUND_CATCHUP_STEPS; i++) {
         const upd = nextShipState(s, null, 0);
