@@ -7,11 +7,11 @@
  * (CQ turn-in, bounty board, exchange) can be added later.
  */
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 
-type Tab = 'PINNWAND' | 'GEMEINSCHAFT';
+type Tab = 'PINNWAND' | 'GEMEINSCHAFT' | 'BOUNTY';
 
 const RESOURCE_LABELS: Record<string, string> = {
   ore: 'ERZ',
@@ -19,9 +19,25 @@ const RESOURCE_LABELS: Record<string, string> = {
   crystal: 'KRISTALL',
 };
 
+function inputStyle(enabled: boolean): React.CSSProperties {
+  return {
+    width: 52,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid var(--color-dim)',
+    color: 'var(--color-primary)',
+    fontFamily: 'monospace',
+    fontSize: '0.62rem',
+    padding: '2px 4px',
+    outline: 'none',
+    opacity: enabled ? 1 : 0.5,
+  };
+}
+
 export function OriginHubScreen() {
   const position = useStore((s) => s.position);
   const originNotices = useStore((s) => s.originNotices);
+  const bounties = useStore((s) => s.bounties);
+  const credits = useStore((s) => s.credits);
   const showTip = useStore((s) => s.showTip);
   const communityQuest = useStore((s) => s.activeCommunityQuest);
   const cargo = useStore((s) => s.cargo);
@@ -35,6 +51,14 @@ export function OriginHubScreen() {
   const [selectedResource, setSelectedResource] = useState<'ore' | 'gas' | 'crystal'>('ore');
   const [amount, setAmount] = useState(10);
 
+  // Bounty form state
+  const [bountyType, setBountyType] = useState<'pirate_defeat' | 'reach_sector'>('pirate_defeat');
+  const [bountyQx, setBountyQx] = useState(0);
+  const [bountyQy, setBountyQy] = useState(0);
+  const [bountySectorX, setBountySectorX] = useState(0);
+  const [bountySectorY, setBountySectorY] = useState(0);
+  const [bountyReward, setBountyReward] = useState(100);
+
   useEffect(() => {
     showTip('first_originhub');
     if (atOrigin) network.requestOriginNotices();
@@ -44,9 +68,20 @@ export function OriginHubScreen() {
     if (tab === 'GEMEINSCHAFT') {
       network.requestActiveCommunityQuest();
     }
+    if (tab === 'BOUNTY') {
+      network.requestBounties();
+    }
   }, [tab]);
 
-  const tabs: Tab[] = ['PINNWAND', 'GEMEINSCHAFT'];
+  const tabs: Tab[] = ['PINNWAND', 'GEMEINSCHAFT', 'BOUNTY'];
+
+  // Bounty form validation
+  const bountyTargetValid =
+    bountyType === 'pirate_defeat'
+      ? Number.isInteger(bountyQx) && Number.isInteger(bountyQy)
+      : Number.isInteger(bountySectorX) && Number.isInteger(bountySectorY);
+  const bountyRewardValid = bountyReward >= 1 && bountyReward <= credits;
+  const canPostBounty = atOrigin && bountyTargetValid && bountyRewardValid;
 
   const availableAmount = cargo[selectedResource] ?? 0;
   const canContribute = atOrigin && amount >= 1 && amount <= availableAmount;
@@ -289,6 +324,254 @@ export function OriginHubScreen() {
             </>
           )}
         </>
+      )}
+
+      {/* BOUNTY tab */}
+      {tab === 'BOUNTY' && (
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '8px' }}>
+          {/* Bounty list */}
+          <div
+            style={{
+              color: 'var(--color-dim)',
+              fontSize: '0.6rem',
+              letterSpacing: '0.08em',
+              marginBottom: 8,
+            }}
+          >
+            ── OFFENE KOPFGELDER ──
+          </div>
+          {bounties.filter((b) => b.status === 'open').length === 0 ? (
+            <div
+              style={{
+                padding: '12px 0',
+                color: 'var(--color-dim)',
+                fontSize: '0.68rem',
+                textAlign: 'center',
+                letterSpacing: '0.06em',
+              }}
+            >
+              Keine offenen Kopfgelder.
+            </div>
+          ) : (
+            bounties
+              .filter((b) => b.status === 'open')
+              .map((b) => (
+                <div
+                  key={b.id}
+                  style={{
+                    borderBottom: '1px solid var(--color-dim)',
+                    padding: '6px 4px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      marginBottom: 2,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: 'var(--color-primary)',
+                        fontSize: '0.72rem',
+                        fontWeight: 'bold',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      {b.reward_credits.toLocaleString()} CR
+                    </span>
+                    <span
+                      style={{
+                        color: 'var(--color-dim)',
+                        fontSize: '0.58rem',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      von {b.poster_name}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      color: 'var(--color-dim)',
+                      fontSize: '0.65rem',
+                      fontFamily: 'monospace',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {b.objective_type === 'pirate_defeat'
+                      ? `Piraten in Quadrant ${b.objective_data?.qx ?? '?'}:${b.objective_data?.qy ?? '?'} besiegen`
+                      : `Sektor ${b.objective_data?.sectorX ?? '?'}:${b.objective_data?.sectorY ?? '?'} erreichen`}
+                  </div>
+                  <div
+                    style={{
+                      color: 'var(--color-dim)',
+                      fontSize: '0.58rem',
+                      fontFamily: 'monospace',
+                      marginTop: 2,
+                      opacity: 0.7,
+                    }}
+                  >
+                    läuft ab: {new Date(b.expires_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))
+          )}
+
+          {/* Post bounty form */}
+          <div
+            style={{
+              borderTop: '1px solid var(--color-dim)',
+              paddingTop: 10,
+              marginTop: 10,
+            }}
+          >
+            <div
+              style={{
+                color: 'var(--color-dim)',
+                fontSize: '0.6rem',
+                letterSpacing: '0.08em',
+                marginBottom: 8,
+              }}
+            >
+              ── KOPFGELD AUSSETZEN ──
+            </div>
+
+            {!atOrigin && (
+              <div
+                style={{
+                  color: 'var(--color-dim)',
+                  fontSize: '0.62rem',
+                  letterSpacing: '0.06em',
+                  fontStyle: 'italic',
+                  marginBottom: 8,
+                }}
+              >
+                ⚠ Aussetzen nur am Zentrum (0:0)
+              </div>
+            )}
+
+            {/* Objective type selector */}
+            <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+              {(['pirate_defeat', 'reach_sector'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setBountyType(t)}
+                  disabled={!atOrigin}
+                  style={{
+                    background:
+                      bountyType === t ? 'rgba(255,170,0,0.12)' : 'transparent',
+                    border:
+                      bountyType === t
+                        ? '1px solid var(--color-primary)'
+                        : '1px solid var(--color-dim)',
+                    color:
+                      bountyType === t ? 'var(--color-primary)' : 'var(--color-dim)',
+                    fontFamily: 'monospace',
+                    fontSize: '0.58rem',
+                    cursor: atOrigin ? 'pointer' : 'default',
+                    padding: '2px 8px',
+                    letterSpacing: '0.05em',
+                    opacity: atOrigin ? 1 : 0.5,
+                  }}
+                >
+                  {t === 'pirate_defeat' ? 'PIRATEN-KOPFGELD' : 'SEKTOR-ZIEL'}
+                </button>
+              ))}
+            </div>
+
+            {/* Target inputs */}
+            {bountyType === 'pirate_defeat' ? (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>QUADRANT:</span>
+                <input
+                  type="number"
+                  value={bountyQx}
+                  disabled={!atOrigin}
+                  onChange={(e) => setBountyQx(parseInt(e.target.value, 10))}
+                  style={inputStyle(atOrigin)}
+                  placeholder="QX"
+                />
+                <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>:</span>
+                <input
+                  type="number"
+                  value={bountyQy}
+                  disabled={!atOrigin}
+                  onChange={(e) => setBountyQy(parseInt(e.target.value, 10))}
+                  style={inputStyle(atOrigin)}
+                  placeholder="QY"
+                />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>SEKTOR:</span>
+                <input
+                  type="number"
+                  value={bountySectorX}
+                  disabled={!atOrigin}
+                  onChange={(e) => setBountySectorX(parseInt(e.target.value, 10))}
+                  style={inputStyle(atOrigin)}
+                  placeholder="X"
+                />
+                <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>:</span>
+                <input
+                  type="number"
+                  value={bountySectorY}
+                  disabled={!atOrigin}
+                  onChange={(e) => setBountySectorY(parseInt(e.target.value, 10))}
+                  style={inputStyle(atOrigin)}
+                  placeholder="Y"
+                />
+              </div>
+            )}
+
+            {/* Reward input */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+              <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>BELOHNUNG:</span>
+              <input
+                type="number"
+                min={1}
+                max={Math.min(1000000, credits)}
+                value={bountyReward}
+                disabled={!atOrigin}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!isNaN(v) && v >= 1) setBountyReward(Math.min(v, Math.min(1000000, credits)));
+                }}
+                style={{ ...inputStyle(atOrigin), width: 80 }}
+              />
+              <span style={{ color: 'var(--color-dim)', fontSize: '0.58rem' }}>
+                CR (max: {Math.min(1000000, credits).toLocaleString()})
+              </span>
+            </div>
+
+            <button
+              disabled={!canPostBounty}
+              onClick={() => {
+                if (!canPostBounty) return;
+                const objectiveData =
+                  bountyType === 'pirate_defeat'
+                    ? { qx: bountyQx, qy: bountyQy }
+                    : { sectorX: bountySectorX, sectorY: bountySectorY };
+                network.postBounty(bountyType, objectiveData, bountyReward);
+              }}
+              style={{
+                background: canPostBounty ? 'rgba(255,170,0,0.10)' : 'transparent',
+                border: '1px solid var(--color-dim)',
+                color: canPostBounty ? 'var(--color-primary)' : 'var(--color-dim)',
+                fontFamily: 'monospace',
+                fontSize: '0.65rem',
+                cursor: canPostBounty ? 'pointer' : 'default',
+                padding: '4px 16px',
+                letterSpacing: '0.08em',
+                fontWeight: 'bold',
+                opacity: canPostBounty ? 1 : 0.5,
+              }}
+            >
+              AUSSETZEN
+            </button>
+          </div>
+        </div>
       )}
 
       {/* GEMEINSCHAFT tab */}

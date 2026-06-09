@@ -1375,6 +1375,14 @@ class GameNetwork {
       useStore.getState().setOriginNotices(data.notices ?? []);
     });
 
+    room.onMessage('bountiesResult', (data: { bounties: any[] }) => {
+      useStore.getState().setBounties(data.bounties ?? []);
+    });
+
+    room.onMessage('bountyClaimed', (data: { reward: number; kind: string }) => {
+      useStore.getState().showSuccessToast('◈ Kopfgeld erhalten: +' + data.reward + ' Credits');
+    });
+
     room.onMessage('originNoticePosted', (data: { notice: any }) => {
       const s = useStore.getState();
       s.setOriginNotices([data.notice, ...s.originNotices].slice(0, 50));
@@ -2839,6 +2847,14 @@ class GameNetwork {
 
   postOriginNotice(message: string) {
     this.sectorRoom?.send('postOriginNotice', { message });
+  }
+
+  requestBounties() {
+    this.sectorRoom?.send('getBounties');
+  }
+
+  postBounty(objectiveType: string, objectiveData: any, reward: number) {
+    this.sectorRoom?.send('postBounty', { objectiveType, objectiveData, reward });
   }
 
   // Territory

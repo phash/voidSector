@@ -535,6 +535,9 @@ export interface GameSlice {
   // Origin Hub notices
   originNotices: Array<{ id: number; player_id: string; player_name: string; message: string; created_at: string }>;
 
+  // Origin Hub bounties
+  bounties: Array<{ id: number; poster_name: string; reward_credits: number; objective_type: string; objective_data: any; status: string; created_at: string; expires_at: string }>;
+
   // Ancient Ruins
   activeAncientRuinScan: {
     fragmentIndex: number;
@@ -695,6 +698,7 @@ export interface GameSlice {
   setActiveAncientRuinScan: (scan: GameSlice['activeAncientRuinScan']) => void;
   setNewsItems: (items: GameSlice['newsItems']) => void;
   setOriginNotices: (originNotices: GameSlice['originNotices']) => void;
+  setBounties: (bounties: GameSlice['bounties']) => void;
   setHyperdriveState: (state: HyperdriveState | null) => void;
   setAutoRefuelConfig: (config: AutoRefuelConfig) => void;
   setNavTarget: (target: { x: number; y: number } | null) => void;
@@ -870,6 +874,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   loreFragmentCount: 0,
   newsItems: [],
   originNotices: [],
+  bounties: [],
   hyperdriveState: null,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
   visitedQuadrants: new Set<string>(),
@@ -1113,6 +1118,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     })),
   setNewsItems: (newsItems) => set({ newsItems }),
   setOriginNotices: (originNotices) => set({ originNotices }),
+  setBounties: (bounties) => set({ bounties }),
   setHyperdriveState: (hyperdriveState) => set({ hyperdriveState }),
   setAutoRefuelConfig: (autoRefuelConfig) => set({ autoRefuelConfig }),
   setNavTarget: (navTarget) => set({ navTarget }),

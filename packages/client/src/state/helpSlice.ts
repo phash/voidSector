@@ -420,12 +420,13 @@ export const HELP_TIPS: HelpTip[] = [
   },
   {
     id: 'first_originhub',
-    title: '◈ ORIGIN HUB — PINNWAND',
+    title: '◈ ORIGIN HUB',
     body:
       'Das galaktische Schwarze Brett am Zentrum (Sektor 0:0).\n\n' +
-      '→ Posten kannst du nur, wenn du im Sektor 0:0 bist\n' +
-      '→ Alle Piloten lesen die letzten 50 Meldungen\n' +
-      '→ Ort für Koordination, Handel und Geschichten',
+      '→ PINNWAND: Meldungen an alle Piloten posten\n' +
+      '→ GEMEINSCHAFT: Galaktisches Gemeinschaftsprojekt\n' +
+      '→ BOUNTY: Kopfgelder aussetzen und einlösen\n' +
+      '→ Posten und Aussetzen nur am Zentrum (0:0)',
   },
   {
     id: 'first_station_expansions',
