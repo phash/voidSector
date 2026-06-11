@@ -27,6 +27,7 @@ export function MiningScreen() {
   const cargo = useStore((s) => s.cargo);
   const ship = useStore((s) => s.ship);
   const setActiveProgram = useStore((s) => s.setActiveProgram);
+  const showTip = useStore((s) => s.showTip);
   const ap = useStore((s) => s.ap);
 
   const [miningProgress, setMiningProgress] = useState(0);
@@ -78,9 +79,17 @@ export function MiningScreen() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
       <div
-        style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '12px' }}
+        style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
       >
         MINING OPERATIONS
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', padding: '0 6px', flexShrink: 0 }}
+          title="Hilfe"
+          onClick={() => showTip('first_mining')}
+        >
+          [?]
+        </button>
       </div>
 
       <div style={{ fontSize: '0.85rem', marginBottom: '12px' }}>

@@ -19,8 +19,8 @@ describe('storyQuestChain', () => {
     expect(STORY_CHAPTERS[0].minQDist).toBe(6);
   });
 
-  it('chapter 1 requires qDist >= 40', () => {
-    expect(STORY_CHAPTERS[1].minQDist).toBe(40);
+  it('chapter 1 requires qDist >= 8', () => {
+    expect(STORY_CHAPTERS[1].minQDist).toBe(8);
   });
 
   it('canUnlockChapter returns false if distance too low', () => {
@@ -39,17 +39,19 @@ describe('storyQuestChain', () => {
       completedChapters: [],
       branchChoices: {},
     };
-    expect(canUnlockChapter(1, 50, noProgress)).toBe(false);
+    expect(canUnlockChapter(1, 10, noProgress)).toBe(false);
 
     const withCh0: StoryProgress = { currentChapter: 1, completedChapters: [0], branchChoices: {} };
-    expect(canUnlockChapter(1, 50, withCh0)).toBe(true);
+    expect(canUnlockChapter(1, 10, withCh0)).toBe(true);
   });
 
   it('getChapterForDistance returns correct chapter', () => {
     expect(getChapterForDistance(5)).toBe(null); // below ch0
     expect(getChapterForDistance(6)).toBe(0);
-    expect(getChapterForDistance(40)).toBe(1);
-    expect(getChapterForDistance(100)).toBe(2);
+    expect(getChapterForDistance(8)).toBe(1);
+    expect(getChapterForDistance(12)).toBe(2);
+    expect(getChapterForDistance(49)).toBe(7); // just below ch8 threshold
+    expect(getChapterForDistance(50)).toBe(8);
   });
 
   it('applyBranchEffects returns rep deltas for chapter 2 choice A', () => {

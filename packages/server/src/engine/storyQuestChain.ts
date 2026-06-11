@@ -33,7 +33,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
   {
     id: 1,
-    minQDist: 40,
+    minQDist: 8,
     title: 'DIE AUSSENPOSTEN-ANOMALIE',
     flavorText:
       'Das Signal ist... nicht menschlich. Das Ministerium für Zentrumsbestätigung wurde informiert. ' +
@@ -41,7 +41,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
   {
     id: 2,
-    minQDist: 100,
+    minQDist: 12,
     title: 'ERSTKONTAKT — DIE ARCHIVARE',
     flavorText:
       '"Ah. Ein Vertreter der äußeren Spezies. Ihre Koordinate 0:0 — Sie glauben das ist das Zentrum? ' +
@@ -64,7 +64,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
   {
     id: 3,
-    minQDist: 150,
+    minQDist: 15,
     title: 'DER ERSTE ZWEIFEL',
     flavorText:
       'Expeditions-Log 2381-03-14: "Die Archivare sagen, wir kommen aus einem Randsektor. ' +
@@ -73,7 +73,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
   {
     id: 4,
-    minQDist: 200,
+    minQDist: 18,
     title: "DER K'THARI-TEST",
     flavorText:
       '"Unbekannte Einheit. Eure Herkunftsregion 0:0 ist uns als unbedeutende Randzone bekannt. ' +
@@ -95,7 +95,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
   {
     id: 5,
-    minQDist: 300,
+    minQDist: 22,
     title: 'DIE LEBENDE WELT',
     flavorText:
       '"Das Netz... erinnert sich... an euch... kleines Randwesen. Ihr Planet... atmet nicht mehr... seit ihr kamt." ' +
@@ -123,7 +123,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
   {
     id: 6,
-    minQDist: 500,
+    minQDist: 28,
     title: 'TOURISTEN-INVASION',
     flavorText:
       '"Oh! Ein echter menschlicher Pilot! Aus dem berühmten 0:0-Cluster! Dürfen wir Fotos machen? ' +
@@ -146,7 +146,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
   {
     id: 7,
-    minQDist: 1000,
+    minQDist: 35,
     title: 'DAS UNMÖGLICHE ARTEFAKT',
     flavorText:
       '[AXIOM-PROTOKOLL 0000.7741.BETA] [EINHEIT REGISTRIERT] [EINHEIT: INTERESSANT — BEWERTUNG: AUSSTEHEND] ' +
@@ -154,7 +154,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
   },
   {
     id: 8,
-    minQDist: 3000,
+    minQDist: 50,
     title: 'DER RAND',
     flavorText:
       "Nach allem was ihr gesehen habt — den Archivaren die euch bemitleidet haben, den K'thari die euch getestet haben, " +

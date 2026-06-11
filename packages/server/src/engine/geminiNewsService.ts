@@ -1,5 +1,4 @@
 // packages/server/src/engine/geminiNewsService.ts
-import { spawn } from 'node:child_process';
 import type { AlienFactionId } from './alienReputationService.js';
 
 interface FactionPromptData {
@@ -71,51 +70,15 @@ export const FALLBACK_NEWS: Record<string, string> = {
     'EILMELDUNG: Erstkontakt mit den Axiomen. Kommunikation besteht aus Primzahlen. Bedeutung unklar.',
 };
 
-const TIMEOUT_MS = 3000;
-
 export async function generateFirstContactNews(
   factionId: AlienFactionId,
-  pilotName: string,
-  quadrantX: number,
-  quadrantY: number,
+  _pilotName: string,
+  _quadrantX: number,
+  _quadrantY: number,
 ): Promise<string> {
   const factionData = FACTION_PROMPT_DATA[factionId];
   if (!factionData)
     return FALLBACK_NEWS[factionId] ?? 'EILMELDUNG: Erstkontakt mit unbekannter Spezies.';
 
-  const prompt =
-    `Du schreibst eine Eilmeldung für einen CRT-Terminal-Nachrichtendienst im Stil eines retro Sci-Fi Spiels. ` +
-    `Ton: sachlich, leicht alarmiert, schwarzer Humor. ` +
-    `Pilot ${pilotName} hat bei Koordinaten ${quadrantX}:${quadrantY} Erstkontakt mit ${factionData.label} hergestellt. ` +
-    `${factionData.description} ` +
-    `Schreibe eine Eilmeldung in 2-3 Sätzen, max 200 Zeichen. Nur den Text, keine Anführungszeichen.`;
-
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      resolve(FALLBACK_NEWS[factionId] ?? 'ERSTKONTAKT BESTÄTIGT.');
-    }, TIMEOUT_MS);
-
-    try {
-      const proc = spawn('gemini', ['--model', 'gemini-2.0-flash']);
-      let output = '';
-      proc.stdout.on('data', (d: Buffer) => {
-        output += d.toString();
-      });
-      proc.on('close', () => {
-        clearTimeout(timeout);
-        resolve(
-          output.trim().slice(0, 300) || (FALLBACK_NEWS[factionId] ?? 'ERSTKONTAKT BESTÄTIGT.'),
-        );
-      });
-      proc.on('error', () => {
-        clearTimeout(timeout);
-        resolve(FALLBACK_NEWS[factionId] ?? 'ERSTKONTAKT BESTÄTIGT.');
-      });
-      proc.stdin.write(prompt);
-      proc.stdin.end();
-    } catch {
-      clearTimeout(timeout);
-      resolve(FALLBACK_NEWS[factionId] ?? 'ERSTKONTAKT BESTÄTIGT.');
-    }
-  });
+  return FALLBACK_NEWS[factionId] ?? 'ERSTKONTAKT BESTÄTIGT.';
 }

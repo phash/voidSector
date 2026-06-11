@@ -854,22 +854,18 @@ export const COSMIC_FACTION_IDS = [
 export const HUMAN_STARTING_TERRITORY = [
     [0, 0],
 ];
-// Alien starting regions (distant from humans, no overlap with 0:0–4:4)
+// Alien starting regions — mirrors faction_config (migration 093), the runtime source for alien homes.
+// Active faction coords match the 1000–5000 sector ring seeded by migration 093.
+// helions / axioms / scrappers are inactive at runtime and left unchanged.
 export const ALIEN_STARTING_REGIONS = {
     humans: [],
-    archivists: [
-        { qx: 95, qy: 105, radius: 3 },
-        { qx: 110, qy: 90, radius: 2 },
-    ],
-    consortium: [{ qx: 200, qy: 210, radius: 4 }],
-    kthari: [
-        { qx: 270, qy: 280, radius: 5 },
-        { qx: 290, qy: 260, radius: 3 },
-    ],
-    mycelians: [{ qx: 410, qy: 420, radius: 3 }],
-    mirror_minds: [{ qx: 550, qy: 560, radius: 2 }],
-    tourist_guild: [{ qx: 690, qy: 700, radius: 6 }],
-    silent_swarm: [{ qx: 1090, qy: 1100, radius: 8 }],
+    archivists: [{ qx: -1, qy: 4, radius: 0 }],
+    consortium: [{ qx: 5, qy: -2, radius: 0 }],
+    kthari: [{ qx: 3, qy: 1, radius: 0 }],
+    mycelians: [{ qx: -6, qy: -3, radius: 0 }],
+    mirror_minds: [{ qx: 2, qy: 7, radius: 0 }],
+    tourist_guild: [{ qx: 4, qy: -9, radius: 0 }],
+    silent_swarm: [{ qx: -8, qy: 4, radius: 0 }],
     helions: [{ qx: 1400, qy: 1390, radius: 4 }],
     axioms: [{ qx: 2800, qy: 2790, radius: 2 }],
     scrappers: [

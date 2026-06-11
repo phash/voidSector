@@ -87,6 +87,7 @@ export function CargoScreen() {
   const modules = inventory.filter((i) => i.itemType === 'module');
   const blueprints = inventory.filter((i) => i.itemType === 'blueprint');
   const setActiveProgram = useStore((s) => s.setActiveProgram);
+  const showTip = useStore((s) => s.showTip);
 
   useEffect(() => {
     network.requestMySlates();
@@ -117,9 +118,17 @@ export function CargoScreen() {
       }}
     >
       <div
-        style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '12px' }}
+        style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
       >
         CARGO HOLD
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', padding: '0 6px', flexShrink: 0 }}
+          title="Hilfe"
+          onClick={() => showTip('first_cargo')}
+        >
+          [?]
+        </button>
       </div>
 
       <div

@@ -67,12 +67,6 @@ export const HELP_TIPS: HelpTip[] = [
       '→ Zerstörte Module brauchen mehr Material als leicht beschädigte',
   },
   {
-    id: 'first_tech_tab',
-    title: 'TECH-BAUM',
-    body: 'Im TECH-Tab schaltest du Forschungsknoten mit Wissen frei. Höhere Stufen brauchen Voraussetzungen → erst Basis-Knoten, dann Spezialisierung freischalten.',
-    articleId: 'tech-tree',
-  },
-  {
     id: 'first_login',
     title: 'WILLKOMMEN AN BORD',
     body: 'Klicke auf eine Zelle im Radar-Grid um einen Sektor auszuwählen. Doppelklick zentriert die Ansicht. Scroll-Rad ändert den Zoom-Level.',
@@ -438,6 +432,35 @@ export const HELP_TIPS: HelpTip[] = [
       + '→ Markt: Ressourcen kaufen/verkaufen wenn MARKT ≥ LV1\n'
       + '→ Werft (LV1+): schaltet Minenschiffe frei\n'
       + '→ Immer nur eine Erweiterung gleichzeitig baubar',
+  },
+  {
+    id: 'first_cargo',
+    title: '◈ CARGO HOLD',
+    body: 'Dein Frachtraum für alle gesammelten Güter.\n\n'
+      + '→ Ressourcen: Ore, Gas, Kristall, Artefakte\n'
+      + '→ Module und Blueprints im Inventar\n'
+      + '→ Data Slates speichern Sektorkoordinaten\n'
+      + '→ [JETTISON] wirft Ressourcen bei Platzmangel ab\n'
+      + '→ Kapazität durch Fracht-Module erweiterbar',
+  },
+  {
+    id: 'first_faction',
+    title: '◈ FRAKTIONEN',
+    body: 'Schließe dich anderen Piloten zu einer Fraktion zusammen.\n\n'
+      + '→ [FOUND] gründet eine neue Fraktion (Name + Tag)\n'
+      + '→ [JOIN] tritt per Code oder Einladung bei\n'
+      + '→ Tier-Upgrades schalten Fraktionsboni frei\n'
+      + '→ Ruf steigt durch gemeinsame Erfolge\n'
+      + '→ Offiziere können Mitglieder einladen und verwalten',
+  },
+  {
+    id: 'first_log',
+    title: '◈ EVENT LOG',
+    body: 'Chronik aller deiner Aktionen im VOID.\n\n'
+      + '→ Protokoll: Scans, Kämpfe, Handel, Quests\n'
+      + '→ Statistiken: gescannte Sektoren, Quadranten, Piloten\n'
+      + '→ Notruf-Einträge werden rot hervorgehoben\n'
+      + '→ Neueste Einträge erscheinen unten',
   },
 ];
 

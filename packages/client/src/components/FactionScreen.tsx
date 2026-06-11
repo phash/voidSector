@@ -27,6 +27,7 @@ function FactionTabView() {
   const playerId = useStore((s) => s.playerId);
   const tab = (useStore((s) => s.monitorModes[MONITORS.FACTION]) ?? 'info') as FactionTab;
   const setMonitorMode = useStore((s) => s.setMonitorMode);
+  const showTip = useStore((s) => s.showTip);
 
   const myRank = members.find((m) => m.playerId === playerId)?.rank ?? 'member';
   const isLeader = myRank === 'leader';
@@ -61,6 +62,14 @@ function FactionTabView() {
             {t.label}
           </button>
         ))}
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', padding: '0 6px', flexShrink: 0 }}
+          title="Hilfe"
+          onClick={() => showTip('first_faction')}
+        >
+          [?]
+        </button>
       </div>
 
       {/* Tab content */}
@@ -284,11 +293,20 @@ function NoFactionView({ invites }: { invites: any[] }) {
   const [joinMode, setJoinMode] = useState<FactionJoinMode>('invite');
   const [code, setCode] = useState('');
   const setActiveProgram = useStore((s) => s.setActiveProgram);
+  const showTip = useStore((s) => s.showTip);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px' }}>
-      <div style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '8px' }}>
+      <div style={{ fontSize: '0.8rem', letterSpacing: '0.2em', opacity: 0.6, marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         FACTION
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', padding: '0 6px', flexShrink: 0 }}
+          title="Hilfe"
+          onClick={() => showTip('first_faction')}
+        >
+          [?]
+        </button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', fontFamily: 'monospace', color: '#555', marginBottom: '12px' }}>
         <div>NOT IN A FACTION</div>

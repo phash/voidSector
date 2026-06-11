@@ -3,6 +3,7 @@ import { useStore } from '../state/store';
 export function EventLog() {
   const log = useStore((s) => s.log);
   const stats = useStore((s) => s.playerStats);
+  const showTip = useStore((s) => s.showTip);
 
   return (
     <div
@@ -20,14 +21,24 @@ export function EventLog() {
           color: 'var(--color-primary)',
           borderBottom: '1px solid var(--color-primary)',
           flexShrink: 0,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
         }}
       >
-        SCANS: {stats.sectorsScanned} | QUADRANTEN: {stats.quadrantsVisited.length} | ENTDECKER:{' '}
-        {stats.quadrantsFirstDiscovered} | STATIONEN: {stats.stationsVisited.length} | PILOTEN:{' '}
-        {stats.playersEncountered}
+        <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          SCANS: {stats.sectorsScanned} | QUADRANTEN: {stats.quadrantsVisited.length} | ENTDECKER:{' '}
+          {stats.quadrantsFirstDiscovered} | STATIONEN: {stats.stationsVisited.length} | PILOTEN:{' '}
+          {stats.playersEncountered}
+        </span>
+        <button
+          className="vs-btn"
+          style={{ fontSize: '0.7rem', padding: '0 6px', flexShrink: 0 }}
+          title="Hilfe"
+          onClick={() => showTip('first_log')}
+        >
+          [?]
+        </button>
       </div>
       <div
         style={{

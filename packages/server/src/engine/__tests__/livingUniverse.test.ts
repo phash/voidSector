@@ -36,13 +36,16 @@ describe('initializeTerritoryState', () => {
     expect(state.dominantFactions.get('2:2')).not.toBe('humans');
   });
 
-  it('alien factions have territory far from origin', () => {
+  it('archivists are seeded in the reachable ring (#533), not the old far coords', () => {
     const state = initializeTerritoryState();
     const archivistQuads = state.factionQuadrants.get('archivists') ?? new Set();
-    // All archivist quadrants should be well beyond the human 5×5 area
+    // #533 / migration 093: the archivist home is in the reachable ring at -1:4 (was 95:105),
+    // so the strongest authored alien content is reachable from a 0:0 spawn.
+    expect(archivistQuads.has('-1:4')).toBe(true);
+    expect(archivistQuads.has('95:105')).toBe(false);
+    // and it never overlaps the single human starting quadrant
     for (const key of archivistQuads) {
-      const [qx, qy] = key.split(':').map(Number);
-      expect(qx > 4 || qy > 4).toBe(true); // Outside human starting zone
+      expect(key).not.toBe('0:0');
     }
   });
 

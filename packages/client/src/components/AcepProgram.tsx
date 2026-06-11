@@ -12,7 +12,7 @@ const TAB_TIP_MAP: Record<AcepTabId, string> = {
   acep: 'first_acep_tab',
   module: 'first_module_tab',
   shop: 'first_shop_tab',
-  tech: 'first_tech_tab',
+  tech: 'first_tech_tree',
   repair: 'first_repair_tab',
 };
 
