@@ -50,7 +50,7 @@ docker compose logs cloudflared | grep trycloudflare   # get current public URL
 curl -H "Authorization: Bearer vs-admin-2026" http://localhost:2567/admin/api/stories
 ```
 
-**DB Migrations**: auto-run on server startup. Next migration: **073**.
+**DB Migrations**: auto-run on server startup. Next migration: **099**.
 
 **DB queries (Docker)**: `psql -U postgres` fails — use env vars:
 ```bash
@@ -108,9 +108,9 @@ git push origin feat/<feature-name>
 
 ## DB Migrations
 
-`packages/server/src/db/migrations/` — **001–073**, auto-run on startup.
+`packages/server/src/db/migrations/` — **001–098**, auto-run on startup.
 All `CREATE TABLE IF NOT EXISTS` + `CREATE INDEX IF NOT EXISTS` (idempotent).
-Next: **074**.
+Next: **099**.
 
 ---
 
@@ -131,7 +131,7 @@ Next: **074**.
 
 - **AP**: lazy evaluation, no tick loop — `calculateCurrentAP(state, Date.now())` on each action
 - **World gen**: deterministic `hashCoords(x, y, seed)` — sectors generated on demand, saved to DB. Origin is **(0,0)** — world extends into positive x/y.
-- **Spawn**: new players spawn within **radius 5 of (0,0)** — coords x∈[1,5], y∈[1,5] (`engine/spawn.ts`)
+- **Spawn**: new players spawn **at the Origin Hub (0,0)** (default `lastPosition`; `engine/spawn.ts` existiert nicht mehr). Schiff startet flugbereit (Generator + Antrieb + Mining-Laser + Fabrik vorinstalliert), Tutorial-Kette + Starthilfe-Bounties führen zum ersten Loop
 - **Rooms**: per-quadrant. Intra-quadrant: `moveSector` message. Cross-quadrant: full leave/join
 - **Errors**: server sends `{ code, message }` → client logs + sets `actionError` for `InlineError`
   - Some services send plain string, others send `{ code, message }` — client handler must handle both
