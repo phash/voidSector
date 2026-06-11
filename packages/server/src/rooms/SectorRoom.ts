@@ -159,6 +159,7 @@ import { NpcShipService } from './services/NpcShipService.js';
 import { CombatV3Service } from './services/CombatV3Service.js';
 import { NoticeService } from './services/NoticeService.js';
 import { BountyService } from './services/BountyService.js';
+import { TutorialService } from './services/TutorialService.js';
 import { ExchangeService } from './services/ExchangeService.js';
 import {
   rollForEncounter,
@@ -225,6 +226,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private notice!: NoticeService;
   private bounty!: BountyService;
   private exchange!: ExchangeService;
+  private tutorial!: TutorialService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
   private revealedOutlaws = new Map<string, Set<number>>();
 
@@ -427,9 +429,16 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.notice = new NoticeService(this.serviceCtx);
     this.bounty = new BountyService(this.serviceCtx);
     this.exchange = new ExchangeService(this.serviceCtx);
+    this.tutorial = new TutorialService(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.combatV3 = this.combatV3;
+    this.serviceCtx.tutorial = {
+      onMove: this.tutorial.onMove.bind(this.tutorial),
+      onScan: this.tutorial.onScan.bind(this.tutorial),
+      onMined: this.tutorial.onMined.bind(this.tutorial),
+      onStarterBounty: this.tutorial.onStarterBounty.bind(this.tutorial),
+    };
     this.serviceCtx.checkQuestProgress = this.quests.checkQuestProgress.bind(this.quests);
     this.serviceCtx.onResourceSoldAtStation = this.quests.onResourceSoldAtStation.bind(this.quests);
     this.serviceCtx.applyReputationChange = this.quests.applyReputationChange.bind(this.quests);
@@ -781,6 +790,10 @@ export class SectorRoom extends Room<SectorRoomState> {
       await this.bounty.handlePost(client, data ?? ({} as any), this._px(client.sessionId), this._py(client.sessionId));
     });
     this.onMessage('getBounties', async (client) => { await this.bounty.sendOpen(client); });
+    this.onMessage('getStarterBounties', async (client) => { await this.bounty.sendStarter(client); });
+    this.onMessage('claimStarterBounty', async (client, data: { key: string }) => {
+      await this.bounty.handleClaimStarter(client, data ?? ({} as any), this._px(client.sessionId), this._py(client.sessionId));
+    });
 
     // ── Origin Hub Exchange ──────────────────────────────────────────
     this.onMessage('listExchange', async (client, data: { itemType: string; itemId: string; quantity: number; price: number }) => {
@@ -1716,10 +1729,8 @@ export class SectorRoom extends Room<SectorRoomState> {
       if (!shipRecord) {
         shipRecord = await createShip(auth.userId, 'AEGIS', (getConfig('BASE_FUEL_CAPACITY') as typeof BASE_FUEL_CAPACITY) ?? BASE_FUEL_CAPACITY);
         isNewPlayer = true;
-        // Give starter modules + resources to inventory
+        // Starter modules are pre-installed by createShip — only resources + credits here
         const { addToInventory } = await import('../engine/inventoryService.js');
-        await addToInventory(auth.userId, 'module', 'ion_drive_mk1', 1);
-        await addToInventory(auth.userId, 'module', 'mining_laser_mk1', 1);
         await addToInventory(auth.userId, 'resource', 'ore', 10);
         await addCredits(auth.userId, 100);
       }
@@ -1770,8 +1781,11 @@ export class SectorRoom extends Room<SectorRoomState> {
       const cargo = await getCargoState(auth.userId);
       client.send('cargoUpdate', cargo);
       if (isNewPlayer) {
-        client.send('logEntry', 'WILLKOMMEN! Starter-Module + 10 Ore + 100 CR erhalten. Öffne ACEP → MODULE zum Einbauen, dann TECH → MINING erforschen!');
+        client.send('logEntry', 'WILLKOMMEN! Dein Schiff ist startklar: Antrieb, Mining-Laser + Generator installiert. 10 Erz + 100 CR an Bord. Folge dem TUTORIAL auf dem Hauptmonitor!');
       }
+
+      // Tutorial-Kette: Neuspieler bekommen Fortschritts-Row, aktive Spieler den Stand
+      await this.tutorial.initOnJoin(client, auth.userId, isNewPlayer);
 
       // Send initial slates
       await this.world.handleGetMySlates(client);
@@ -2011,6 +2025,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   }
 
   async onLeave(client: Client, consented: boolean) {
+    this.tutorial.onLeave((client.auth as AuthPayload)?.userId);
     // Auto-stop mining when leaving
     try {
       const auth = client.auth as AuthPayload;

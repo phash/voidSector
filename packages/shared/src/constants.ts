@@ -1636,3 +1636,32 @@ export function getConquestPriceBonus(qx: number, qy: number): number {
   if (dist <= 100) return 90 + (dist - 50) * 3;
   return 240 + (dist - 100) * 5;
 }
+
+// ─── Onboarding: Starthilfe-Bounties + Tutorial-Kette ───────────────────────
+
+import type { StarterBountyDef, TutorialStepDef } from './types.js';
+
+/** Systemgestellte Lieferaufträge am Origin Hub — einmal pro Spieler einlösbar. */
+export const STARTER_BOUNTIES: StarterBountyDef[] = [
+  { key: 'starter_ore', title: 'ERZ-LIEFERUNG', resource: 'ore', amount: 5, rewardCredits: 60, rewardWissen: 3 },
+  { key: 'starter_gas', title: 'GAS-LIEFERUNG', resource: 'gas', amount: 3, rewardCredits: 80, rewardWissen: 4 },
+  { key: 'starter_crystal', title: 'KRISTALL-LIEFERUNG', resource: 'crystal', amount: 2, rewardCredits: 100, rewardWissen: 5 },
+];
+
+export function getStarterBountyDef(key: string): StarterBountyDef | null {
+  return STARTER_BOUNTIES.find((b) => b.key === key) ?? null;
+}
+
+/** Tutorial-Kette für Neuspieler — Schritte werden serverseitig aus Aktionen erkannt. */
+export const TUTORIAL_STEPS: TutorialStepDef[] = [
+  { id: 0, title: 'BEWEGEN', hint: 'Fliege mit den Richtungstasten (Sektion NAVIGATION) in einen Nachbarsektor.' },
+  { id: 1, title: 'SCANNEN', hint: 'Führe einen Scan aus → NAV-COM → [SCAN].' },
+  { id: 2, title: 'MINEN', hint: 'Finde ein Asteroidenfeld (◆ auf dem Radar) und baue 5 Erz ab → MINING → [ABBAU STARTEN].' },
+  { id: 3, title: 'LIEFERN', hint: 'Flieg zurück zum Origin Hub (0:0) und gib einen STARTHILFE-Auftrag ab → ORIGIN-HUB → BOUNTY.' },
+];
+
+export const TUTORIAL_TOTAL_STEPS = TUTORIAL_STEPS.length;
+export const TUTORIAL_MINE_ORE_TARGET = 5;
+export const TUTORIAL_REWARD_CREDITS = 200;
+/** 15 Wissen = exakt die Kosten der ersten Tier-2-Forschung. */
+export const TUTORIAL_REWARD_WISSEN = 15;

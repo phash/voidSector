@@ -82,6 +82,14 @@ export interface ServiceContext {
   ) => Promise<void>;
   tryFulfillBounty?: (playerId: string, playerName: string, x: number, y: number, kind: 'combat' | 'reach') => Promise<{ reward: number } | null>;
 
+  // Tutorial-Kette (Onboarding) — Hooks feuern aus Navigation/Scan/Mining/Bounty
+  tutorial?: {
+    onMove: (client: Client, playerId: string) => Promise<void>;
+    onScan: (client: Client, playerId: string) => Promise<void>;
+    onMined: (client: Client, playerId: string, resource: string, amount: number) => Promise<void>;
+    onStarterBounty: (client: Client, playerId: string) => Promise<void>;
+  };
+
   // AP management
   deductAP: (playerId: string, cost: number) => Promise<boolean>;
 

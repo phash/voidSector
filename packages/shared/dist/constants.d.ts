@@ -565,4 +565,15 @@ export declare const CONQUEST_RATE: Record<number, {
 }>;
 export declare const HYPERDRIVE_CHARGE_PER_GAS = 4;
 export declare function getConquestPriceBonus(qx: number, qy: number): number;
+import type { StarterBountyDef, TutorialStepDef } from './types.js';
+/** Systemgestellte Lieferaufträge am Origin Hub — einmal pro Spieler einlösbar. */
+export declare const STARTER_BOUNTIES: StarterBountyDef[];
+export declare function getStarterBountyDef(key: string): StarterBountyDef | null;
+/** Tutorial-Kette für Neuspieler — Schritte werden serverseitig aus Aktionen erkannt. */
+export declare const TUTORIAL_STEPS: TutorialStepDef[];
+export declare const TUTORIAL_TOTAL_STEPS: number;
+export declare const TUTORIAL_MINE_ORE_TARGET = 5;
+export declare const TUTORIAL_REWARD_CREDITS = 200;
+/** 15 Wissen = exakt die Kosten der ersten Tier-2-Forschung. */
+export declare const TUTORIAL_REWARD_WISSEN = 15;
 //# sourceMappingURL=constants.d.ts.map

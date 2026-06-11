@@ -184,6 +184,9 @@ export class ScanService {
     const _b = await this.ctx.tryFulfillBounty?.(auth.userId, auth.username, px, py, 'reach').catch(() => null);
     if (_b) this.ctx.send(client, 'bountyClaimed', { reward: _b.reward, kind: 'reach' });
 
+    // Tutorial: SCANNEN-Schritt
+    await this.ctx.tutorial?.onScan(client, auth.userId);
+
     // Community quest: auto-contribute scans
     this.ctx.contributeToCommunityQuest(auth.userId, 1, 'community_scan').catch(() => {});
 
@@ -440,6 +443,9 @@ export class ScanService {
     if (newSectorCount > 0) {
       await addWissen(auth.userId, newSectorCount).catch(() => {});
     }
+
+    // Tutorial: SCANNEN-Schritt
+    await this.ctx.tutorial?.onScan(client, auth.userId);
   }
 
   async checkAndEmitScanEvents(

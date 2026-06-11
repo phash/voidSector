@@ -1,13 +1,22 @@
 import type { Client } from 'colyseus';
+import { getStarterBountyDef } from '@void-sector/shared';
 import type { ServiceContext } from './ServiceContext.js';
 import type { AuthPayload } from '../../auth.js';
 import { sectorToQuadrant } from '../../engine/quadrantEngine.js';
+import { validateStarterClaim } from '../../engine/starterBountyEngine.js';
+import { awardWissenAndNotify } from '../../engine/wissenService.js';
+import { getCargoState, removeFromInventory } from '../../engine/inventoryService.js';
+import { logger } from '../../utils/logger.js';
 import {
   insertOriginBounty,
   getOpenBounties,
   fulfillBounty,
   deductCredits,
   addCredits,
+  getPlayerCredits,
+  getStarterBountyClaims,
+  insertStarterBountyClaim,
+  deleteStarterBountyClaim,
 } from '../../db/queries.js';
 
 export const BOUNTY_MAX_REWARD = 1_000_000;
@@ -93,6 +102,69 @@ export class BountyService {
 
   async sendOpen(client: Client): Promise<void> {
     this.ctx.send(client, 'bountiesResult', { bounties: await getOpenBounties(50) });
+  }
+
+  async sendStarter(client: Client): Promise<void> {
+    const auth = client.auth as AuthPayload | null;
+    if (!auth?.userId) return;
+    this.ctx.send(client, 'starterBountiesResult', {
+      claims: await getStarterBountyClaims(auth.userId),
+    });
+  }
+
+  async handleClaimStarter(
+    client: Client,
+    data: { key: string },
+    px: number,
+    py: number,
+  ): Promise<void> {
+    const auth = client.auth as AuthPayload | null;
+    if (!auth?.userId) return;
+    const def = getStarterBountyDef(data?.key ?? '');
+    if (!def) {
+      this.ctx.send(client, 'error', { code: 'INVALID_BOUNTY', message: 'Unbekannter Auftrag.' });
+      return;
+    }
+    const cargo = await getCargoState(auth.userId);
+    const v = validateStarterClaim(def, cargo, px, py);
+    if (!v.ok) {
+      const messages = {
+        NOT_AT_ORIGIN: 'Nur am Origin Hub (0:0) kannst du Starthilfe-Aufträge abgeben.',
+        INSUFFICIENT_RESOURCES: `Nicht genug ${def.resource.toUpperCase()} an Bord (${def.amount} benötigt).`,
+      };
+      this.ctx.send(client, 'error', { code: v.code, message: messages[v.code] });
+      return;
+    }
+    const claimed = await insertStarterBountyClaim(auth.userId, def.key);
+    if (!claimed) {
+      this.ctx.send(client, 'error', {
+        code: 'ALREADY_CLAIMED',
+        message: 'Diesen Starthilfe-Auftrag hast du bereits abgeschlossen.',
+      });
+      return;
+    }
+    try {
+      await removeFromInventory(auth.userId, 'resource', def.resource, def.amount);
+    } catch (err) {
+      logger.error({ err, key: def.key }, 'starter bounty deduction failed — rolling back claim');
+      await deleteStarterBountyClaim(auth.userId, def.key).catch(() => undefined);
+      this.ctx.send(client, 'error', {
+        code: 'INSUFFICIENT_RESOURCES',
+        message: `Nicht genug ${def.resource.toUpperCase()} an Bord (${def.amount} benötigt).`,
+      });
+      return;
+    }
+    await addCredits(auth.userId, def.rewardCredits);
+    awardWissenAndNotify(client, auth.userId, def.rewardWissen);
+    this.ctx.send(client, 'cargoUpdate', await getCargoState(auth.userId));
+    this.ctx.send(client, 'creditsUpdate', { credits: await getPlayerCredits(auth.userId) });
+    this.ctx.send(client, 'starterBountyClaimed', {
+      key: def.key,
+      rewardCredits: def.rewardCredits,
+      rewardWissen: def.rewardWissen,
+    });
+    await this.sendStarter(client);
+    await this.ctx.tutorial?.onStarterBounty(client, auth.userId);
   }
 
   async tryFulfill(

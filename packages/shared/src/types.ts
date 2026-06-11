@@ -1666,3 +1666,29 @@ export interface AlienInteractResult {
   repTier?: string;
   reputations?: Record<string, number>;
 }
+
+/** Systemgestellter Anfänger-Lieferauftrag am Origin Hub (einmal pro Spieler). */
+export interface StarterBountyDef {
+  key: string;
+  title: string;
+  resource: 'ore' | 'gas' | 'crystal';
+  amount: number;
+  rewardCredits: number;
+  rewardWissen: number;
+}
+
+/** Ein Schritt der Neuspieler-Tutorial-Kette. */
+export interface TutorialStepDef {
+  id: number;
+  title: string;
+  hint: string;
+}
+
+/** Server → Client: aktueller Tutorial-Fortschritt (`tutorialUpdate`). */
+export interface TutorialState {
+  step: number;
+  total: number;
+  oreMined: number;
+  oreTarget: number;
+  done: boolean;
+}

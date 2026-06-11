@@ -424,6 +424,27 @@ export const HELP_TIPS: HelpTip[] = [
       '→ Posten, Aussetzen und Anbieten nur am Zentrum (0:0)',
   },
   {
+    id: 'first_starter_bounty',
+    title: '◈ STARTHILFE-AUFTRÄGE',
+    body:
+      'Lieferaufträge für Einsteiger — einmal pro Pilot einlösbar.\n\n' +
+      '→ Ressource abbauen (MINING in Asteroidenfeldern ◆)\n' +
+      '→ Zurück zum Origin Hub (0:0) fliegen\n' +
+      '→ [ABGEBEN] zahlt Credits + Wissen sofort aus\n' +
+      '→ Wissen schaltet deine erste Forschung frei (TECH)',
+  },
+  {
+    id: 'first_tutorial',
+    title: '◈ TUTORIAL',
+    body:
+      'Deine ersten Schritte als Pilot — automatisch verfolgt.\n\n' +
+      '→ BEWEGEN: Richtungstasten in Sektion NAVIGATION\n' +
+      '→ SCANNEN: NAV-COM → [SCAN]\n' +
+      '→ MINEN: Asteroidenfeld ◆ ansteuern, MINING starten\n' +
+      '→ LIEFERN: Starthilfe-Auftrag am Origin Hub (0:0) abgeben\n' +
+      '→ Abschluss: 200 CR + 15 Wissen (erste Forschung!)',
+  },
+  {
     id: 'first_station_expansions',
     title: '◈ STATION VERWALTUNG',
     body: 'Deine Station wächst durch Handel (Betrieb-Punkte).\n\n'

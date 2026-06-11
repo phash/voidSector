@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { STARTER_BOUNTIES } from '@void-sector/shared';
 import { useStore } from '../state/store';
 import { network } from '../network/client';
 
@@ -48,6 +49,7 @@ export function OriginHubScreen() {
   const showTip = useStore((s) => s.showTip);
   const communityQuest = useStore((s) => s.activeCommunityQuest);
   const cargo = useStore((s) => s.cargo);
+  const starterBountyClaims = useStore((s) => s.starterBountyClaims);
   const exchangeListings = useStore((s) => s.exchangeListings);
   const myTradeableItems = useStore((s) => s.myTradeableItems);
   const ownPlayerId = useStore((s) => s.playerId);
@@ -85,6 +87,7 @@ export function OriginHubScreen() {
     }
     if (tab === 'BOUNTY') {
       network.requestBounties();
+      network.requestStarterBounties();
     }
     if (tab === 'EXCHANGE') {
       network.requestExchange();
@@ -358,13 +361,121 @@ export function OriginHubScreen() {
       {/* BOUNTY tab */}
       {tab === 'BOUNTY' && (
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '8px' }}>
+          {/* Starthilfe-Aufträge (systemgestellt, einmal pro Spieler) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              color: 'var(--color-dim)',
+              fontSize: '0.6rem',
+              letterSpacing: '0.08em',
+              marginBottom: 8,
+            }}
+          >
+            ── STARTHILFE ──
+            <button
+              onClick={() => showTip('first_starter_bounty')}
+              title="Hilfe"
+              data-testid="starter-bounty-help"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--color-dim)',
+                color: 'var(--color-dim)',
+                fontSize: '0.6rem',
+                cursor: 'pointer',
+                padding: '0px 5px',
+                fontFamily: 'monospace',
+              }}
+            >
+              ?
+            </button>
+          </div>
+          {STARTER_BOUNTIES.map((sb) => {
+            const claimed = starterBountyClaims.includes(sb.key);
+            const have = cargo[sb.resource] ?? 0;
+            const canClaim = atOrigin && !claimed && have >= sb.amount;
+            return (
+              <div
+                key={sb.key}
+                data-testid={`starter-bounty-item-${sb.key}`}
+                style={{
+                  borderBottom: '1px solid var(--color-dim)',
+                  padding: '6px 4px',
+                  opacity: claimed ? 0.45 : 1,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    marginBottom: 2,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: 'var(--color-primary)',
+                      fontSize: '0.72rem',
+                      fontWeight: 'bold',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {sb.title}
+                  </span>
+                  <span
+                    style={{ color: 'var(--color-dim)', fontSize: '0.58rem', fontFamily: 'monospace' }}
+                  >
+                    +{sb.rewardCredits} CR · +{sb.rewardWissen} Wissen
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    color: 'var(--color-dim)',
+                    fontSize: '0.65rem',
+                    fontFamily: 'monospace',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  <span>
+                    Liefere {sb.amount} {RESOURCE_LABELS[sb.resource]} ({have}/{sb.amount} an Bord)
+                  </span>
+                  {claimed ? (
+                    <span style={{ color: 'var(--color-dim)', fontSize: '0.6rem' }}>✓ ERLEDIGT</span>
+                  ) : (
+                    <button
+                      onClick={() => network.claimStarterBounty(sb.key)}
+                      disabled={!canClaim}
+                      data-testid={`starter-bounty-claim-${sb.key}`}
+                      style={{
+                        background: 'transparent',
+                        border: `1px solid ${canClaim ? 'var(--color-primary)' : 'var(--color-dim)'}`,
+                        color: canClaim ? 'var(--color-primary)' : 'var(--color-dim)',
+                        fontSize: '0.6rem',
+                        cursor: canClaim ? 'pointer' : 'default',
+                        opacity: canClaim ? 1 : 0.5,
+                        padding: '2px 8px',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      [ABGEBEN]
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
           {/* Bounty list */}
           <div
             style={{
               color: 'var(--color-dim)',
               fontSize: '0.6rem',
               letterSpacing: '0.08em',
-              marginBottom: 8,
+              margin: '14px 0 8px',
             }}
           >
             ── OFFENE KOPFGELDER ──

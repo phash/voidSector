@@ -3,6 +3,7 @@ import { CockpitLayout } from './CockpitLayout';
 import { useTranslation } from 'react-i18next';
 import { btn } from '../ui-helpers';
 import { RadarCanvas } from './RadarCanvas';
+import { TutorialPanel } from './TutorialPanel';
 import { StatusBar, SectorInfo } from './HUD';
 import { NavControls } from './NavControls';
 import { EventLog } from './EventLog';
@@ -313,6 +314,7 @@ function NavComScreen() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
           <RadarCanvas />
+          <TutorialPanel />
         </div>
         <BookmarkBar />
       </div>
@@ -400,6 +402,7 @@ function CockpitNavCom() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
           <RadarCanvas />
+          <TutorialPanel />
         </div>
         <BookmarkBar />
       </div>

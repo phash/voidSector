@@ -140,6 +140,7 @@ export class NavigationService {
     this.ctx.playerSectorData.set(client.sessionId, sectorData);
     await savePlayerPosition(auth.userId, sectorX, sectorY);
     await addDiscovery(auth.userId, sectorX, sectorY);
+    await this.ctx.tutorial?.onMove(client, auth.userId);
 
     // Enrich station sectors with civ faction info for conquest UI
     if (sectorData.type === 'station') {

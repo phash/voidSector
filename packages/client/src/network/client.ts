@@ -1383,6 +1383,27 @@ class GameNetwork {
       useStore.getState().showSuccessToast('◈ Kopfgeld erhalten: +' + data.reward + ' Credits');
     });
 
+    room.onMessage('starterBountiesResult', (data: { claims: string[] }) => {
+      useStore.getState().setStarterBountyClaims(data.claims ?? []);
+    });
+
+    room.onMessage('starterBountyClaimed', (data: { key: string; rewardCredits: number; rewardWissen: number }) => {
+      useStore
+        .getState()
+        .showSuccessToast(`◈ Starthilfe abgeschlossen: +${data.rewardCredits} CR, +${data.rewardWissen} Wissen`);
+    });
+
+    room.onMessage('tutorialUpdate', (data: { step: number; total: number; oreMined: number; oreTarget: number; done: boolean }) => {
+      useStore.getState().setTutorial(data);
+    });
+
+    room.onMessage('tutorialComplete', (data: { rewardCredits: number; rewardWissen: number }) => {
+      useStore.getState().setTutorial(null);
+      useStore
+        .getState()
+        .showSuccessToast(`◈ TUTORIAL ABGESCHLOSSEN: +${data.rewardCredits} CR, +${data.rewardWissen} Wissen`);
+    });
+
     room.onMessage('exchangeListingsResult', (data: { listings: any[] }) => {
       useStore.getState().setExchangeListings(data.listings ?? []);
     });
@@ -2868,6 +2889,14 @@ class GameNetwork {
 
   postBounty(objectiveType: string, objectiveData: any, reward: number) {
     this.sectorRoom?.send('postBounty', { objectiveType, objectiveData, reward });
+  }
+
+  requestStarterBounties() {
+    this.sectorRoom?.send('getStarterBounties');
+  }
+
+  claimStarterBounty(key: string) {
+    this.sectorRoom?.send('claimStarterBounty', { key });
   }
 
   requestExchange() {

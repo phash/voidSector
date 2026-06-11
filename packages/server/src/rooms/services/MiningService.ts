@@ -121,6 +121,7 @@ export class MiningService {
         addAcepXpForPlayer(playerId, 'miner', miningXp).catch(() => {});
       }
       awardWissenAndNotify(client, playerId, 1);  // +1 per mining load
+      await this.ctx.tutorial?.onMined(client, playerId, result.resource, result.mined);
     }
     // Deplete sector resources regardless of cargo (result.mined could be 0 if cargo full)
     if (result.resource && mining.sectorYield > 0) {
@@ -317,6 +318,7 @@ export class MiningService {
         addAcepXpForPlayer(auth.userId, 'miner', miningXp).catch(() => {});
       }
       awardWissenAndNotify(client, auth.userId, 1);  // +1 per mining load
+      await this.ctx.tutorial?.onMined(client, auth.userId, result.resource, result.mined);
     }
 
     await saveMiningState(auth.userId, result.newState);

@@ -259,9 +259,11 @@ export async function createShip(
     [playerId, name, initialFuel],
   );
   const row = rows[0];
-  // New ships start with generator + factory installed; drive + mining laser go to inventory
+  // New ships start fully flight-ready: generator, drive, mining laser + factory installed
   const initialModules: ShipModule[] = [
     { moduleId: 'fusion_cell_mk1', slotIndex: 0, source: 'standard', powerLevel: 'high', currentHp: 20 },
+    { moduleId: 'ion_drive_mk1', slotIndex: 1, source: 'standard', powerLevel: 'high', currentHp: 20 },
+    { moduleId: 'mining_laser_mk1', slotIndex: 6, source: 'standard', powerLevel: 'high', currentHp: 20 },
     { moduleId: 'factory_mk1', slotIndex: 8, source: 'standard', powerLevel: 'high', currentHp: 20 },
   ];
   await query('UPDATE ships SET modules = $1 WHERE id = $2', [JSON.stringify(initialModules), row.id]);
@@ -3941,4 +3943,72 @@ export async function getMyTradeableInventory(
     [playerId],
   );
   return res.rows;
+}
+
+// ─── Starthilfe-Bounties (Onboarding) ────────────────────────────────────────
+
+export async function getStarterBountyClaims(playerId: string): Promise<string[]> {
+  const res = await query<{ bounty_key: string }>(
+    'SELECT bounty_key FROM starter_bounty_claims WHERE player_id = $1',
+    [playerId],
+  );
+  return res.rows.map((r) => r.bounty_key);
+}
+
+/** Atomarer Einmal-Claim — false wenn bereits eingelöst. */
+export async function insertStarterBountyClaim(playerId: string, bountyKey: string): Promise<boolean> {
+  const res = await query(
+    `INSERT INTO starter_bounty_claims (player_id, bounty_key) VALUES ($1, $2)
+     ON CONFLICT DO NOTHING RETURNING bounty_key`,
+    [playerId, bountyKey],
+  );
+  return res.rows.length > 0;
+}
+
+/** Rollback bei fehlgeschlagener Abbuchung nach Claim-Insert. */
+export async function deleteStarterBountyClaim(playerId: string, bountyKey: string): Promise<void> {
+  await query('DELETE FROM starter_bounty_claims WHERE player_id = $1 AND bounty_key = $2', [
+    playerId,
+    bountyKey,
+  ]);
+}
+
+// ─── Tutorial-Kette (Onboarding) ─────────────────────────────────────────────
+
+export interface TutorialProgressRow {
+  player_id: string;
+  step: number;
+  ore_mined: number;
+  completed_at: string | null;
+}
+
+export async function getTutorialProgress(playerId: string): Promise<TutorialProgressRow | null> {
+  const res = await query<TutorialProgressRow>(
+    'SELECT player_id, step, ore_mined, completed_at FROM tutorial_progress WHERE player_id = $1',
+    [playerId],
+  );
+  return res.rows[0] ?? null;
+}
+
+/** Nur für Neuspieler beim ersten Join — Bestandsspieler bekommen kein Tutorial. */
+export async function createTutorialProgress(playerId: string): Promise<void> {
+  await query(
+    'INSERT INTO tutorial_progress (player_id) VALUES ($1) ON CONFLICT DO NOTHING',
+    [playerId],
+  );
+}
+
+export async function saveTutorialProgress(
+  playerId: string,
+  step: number,
+  oreMined: number,
+  completed: boolean,
+): Promise<void> {
+  await query(
+    `UPDATE tutorial_progress
+     SET step = $2, ore_mined = $3,
+         completed_at = CASE WHEN $4 AND completed_at IS NULL THEN NOW() ELSE completed_at END
+     WHERE player_id = $1`,
+    [playerId, step, oreMined, completed],
+  );
 }

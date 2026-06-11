@@ -551,6 +551,12 @@ export interface GameSlice {
   // Origin Hub bounties
   bounties: Array<{ id: number; poster_name: string; reward_credits: number; objective_type: string; objective_data: any; status: string; created_at: string; expires_at: string }>;
 
+  // Starthilfe-Bounties: Keys der bereits eingelösten Aufträge
+  starterBountyClaims: string[];
+
+  // Tutorial-Kette für Neuspieler (null = kein Tutorial aktiv / abgeschlossen ausgeblendet)
+  tutorial: { step: number; total: number; oreMined: number; oreTarget: number; done: boolean } | null;
+
   // Origin Hub exchange
   exchangeListings: ExchangeListingRow[];
   myTradeableItems: Array<{ item_type: string; item_id: string; quantity: number }>;
@@ -716,6 +722,8 @@ export interface GameSlice {
   setNewsItems: (items: GameSlice['newsItems']) => void;
   setOriginNotices: (originNotices: GameSlice['originNotices']) => void;
   setBounties: (bounties: GameSlice['bounties']) => void;
+  setStarterBountyClaims: (claims: string[]) => void;
+  setTutorial: (tutorial: GameSlice['tutorial']) => void;
   setExchangeListings: (listings: ExchangeListingRow[]) => void;
   setMyTradeableItems: (items: Array<{ item_type: string; item_id: string; quantity: number }>) => void;
   setHyperdriveState: (state: HyperdriveState | null) => void;
@@ -894,6 +902,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   newsItems: [],
   originNotices: [],
   bounties: [],
+  starterBountyClaims: [],
+  tutorial: null,
   exchangeListings: [],
   myTradeableItems: [],
   hyperdriveState: null,
@@ -1140,6 +1150,8 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   setNewsItems: (newsItems) => set({ newsItems }),
   setOriginNotices: (originNotices) => set({ originNotices }),
   setBounties: (bounties) => set({ bounties }),
+  setStarterBountyClaims: (starterBountyClaims) => set({ starterBountyClaims }),
+  setTutorial: (tutorial) => set({ tutorial }),
   setExchangeListings: (exchangeListings) => set({ exchangeListings }),
   setMyTradeableItems: (myTradeableItems) => set({ myTradeableItems }),
   setHyperdriveState: (hyperdriveState) => set({ hyperdriveState }),
