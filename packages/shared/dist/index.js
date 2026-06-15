@@ -8,4 +8,7 @@ export * from './techGating.js';
 export * from './stationProduction.js';
 export { MODULE_DEFINITIONS, MODULE_MAP } from './moduleDefinitions.js';
 export { RESEARCH_DEFINITIONS } from './researchDefinitions.js';
+export { compileProgram, compileAst } from './automation/compiler.js';
+export { parseProgram } from './automation/parser.js';
+export * from './automation/types.js';
 //# sourceMappingURL=index.js.map

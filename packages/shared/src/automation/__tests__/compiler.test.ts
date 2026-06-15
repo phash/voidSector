@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { compileProgram } from '../compiler.js';
+import { AUTOMATION_PROGRAM_LIMITS } from '../types.js';
 
 const MK5 = { level: 5, maxLength: 120 };
 
@@ -114,5 +115,37 @@ describe('compiler — level gating', () => {
     const src = ['repeat:', '  if not full:', '    mine until full', '  if station:', '    sell all'].join('\n');
     expect(compileProgram(src, at(3)).ok).toBe(true);
     expect(compileProgram('repeat 3 times:\n  scan', at(3)).ok).toBe(true);
+  });
+});
+
+describe('compiler — length limit & full example', () => {
+  it('rejects a program longer than the MK level limit', () => {
+    const longSrc = Array.from({ length: 11 }, () => 'scan').join('\n'); // 11 > MK.I limit 10
+    const res = compileProgram(longSrc, { level: 1, maxLength: AUTOMATION_PROGRAM_LIMITS[1] });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.errors[0].message).toContain('zu lang');
+  });
+
+  it('compiles the spec example at MK.III', () => {
+    const src = [
+      'repeat:',
+      '  fly 3:5',
+      '  scan',
+      '  if resources:',
+      '    mine until full',
+      '  else:',
+      '    fly 7:9',
+      '    scan',
+      '    mine until full',
+      '  if full:',
+      '    fly 0:0',
+      '    sell all',
+    ].join('\n');
+    const res = compileProgram(src, { level: 3, maxLength: AUTOMATION_PROGRAM_LIMITS[3] });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    // sanity: first op opens the loop, last op closes it
+    expect(res.instructions[0].op).toBe('PUSH_LOOP');
+    expect(res.instructions[res.instructions.length - 1].op).toBe('LOOP_NEXT');
   });
 });
