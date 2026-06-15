@@ -31,7 +31,16 @@ function emit(ast: Stmt[], out: Instr[]): void {
         }
         break;
       }
-      // 'repeat' handled in Task 7
+      case 'repeat': {
+        out.push({ op: 'PUSH_LOOP', count: s.count, line: s.line });
+        const checkPc = out.length;
+        const check = { op: 'LOOP_CHECK' as const, target: -1, line: s.line };
+        out.push(check);
+        emit(s.body, out);
+        out.push({ op: 'LOOP_NEXT', target: checkPc, line: s.line });
+        check.target = out.length; // jump here when the loop is done
+        break;
+      }
     }
   }
 }

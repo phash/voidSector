@@ -55,3 +55,29 @@ describe('compiler — if/else', () => {
     ]);
   });
 });
+
+describe('compiler — loops', () => {
+  it('compiles infinite repeat with count -1 and a back-edge to LOOP_CHECK', () => {
+    // 0: PUSH_LOOP -1
+    // 1: LOOP_CHECK -> 4
+    // 2: SCAN
+    // 3: LOOP_NEXT -> 1
+    // (4: end)
+    const res = compileProgram('repeat:\n  scan', { level: 5, maxLength: 120 });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.instructions).toEqual([
+      { op: 'PUSH_LOOP', count: -1, line: 1 },
+      { op: 'LOOP_CHECK', target: 4, line: 1 },
+      { op: 'SCAN', line: 2 },
+      { op: 'LOOP_NEXT', target: 1, line: 1 },
+    ]);
+  });
+
+  it('compiles `repeat 3 times` with count 3', () => {
+    const res = compileProgram('repeat 3 times:\n  scan', { level: 5, maxLength: 120 });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.instructions[0]).toEqual({ op: 'PUSH_LOOP', count: 3, line: 1 });
+  });
+});
