@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseProgram } from '../parser.js';
+import { parseProgram, parseCondition } from '../parser.js';
 
 describe('parser — commands', () => {
   it('parses fly/scan/mine/sell on separate lines', () => {
@@ -38,5 +38,36 @@ describe('parser — commands', () => {
   it('rejects tabs and non-multiple-of-2 indentation', () => {
     expect(parseProgram('\tscan').errors.some((e) => e.message.includes('Tabs'))).toBe(true);
     expect(parseProgram(' scan').errors.some((e) => e.message.includes('Einrückung'))).toBe(true);
+  });
+});
+
+describe('parser — conditions', () => {
+  function cond(text: string) {
+    const errors: { line: number; message: string }[] = [];
+    const c = parseCondition(text, 1, errors);
+    return { c, errors };
+  }
+
+  it('parses simple flag conditions', () => {
+    expect(cond('resources').c).toEqual({ kind: 'resources', negate: false });
+    expect(cond('full').c).toEqual({ kind: 'full', negate: false });
+    expect(cond('empty').c).toEqual({ kind: 'empty', negate: false });
+    expect(cond('station').c).toEqual({ kind: 'station', negate: false });
+  });
+
+  it('parses `not <cond>`', () => {
+    expect(cond('not resources').c).toEqual({ kind: 'resources', negate: true });
+  });
+
+  it('parses `fuel < N` and `at X:Y`', () => {
+    expect(cond('fuel < 500').c).toEqual({ kind: 'fuel_lt', value: 500, negate: false });
+    expect(cond('at 0:0').c).toEqual({ kind: 'at', x: 0, y: 0, negate: false });
+    expect(cond('not at -3:4').c).toEqual({ kind: 'at', x: -3, y: 4, negate: true });
+  });
+
+  it('records an error for an unknown condition', () => {
+    const { errors } = cond('weather sunny');
+    expect(errors[0]).toMatchObject({ line: 1 });
+    expect(errors[0].message).toContain("Unbekannte Bedingung");
   });
 });

@@ -82,7 +82,22 @@ function parseBlock(lines: Line[], cursor: { i: number }, indent: number, errors
   return stmts;
 }
 
-// placeholder so Task 3 can import without a forward-reference error
-export function parseCondition(_text: string, _line: number, _errors: CompileError[]): Condition {
-  return { kind: 'resources', negate: false };
+export function parseCondition(text: string, line: number, errors: CompileError[]): Condition {
+  let negate = false;
+  let body = text.trim();
+  const notM = body.match(/^not\s+(.+)$/);
+  if (notM) {
+    negate = true;
+    body = notM[1].trim();
+  }
+  if (body === 'resources') return { kind: 'resources', negate };
+  if (body === 'full') return { kind: 'full', negate };
+  if (body === 'empty') return { kind: 'empty', negate };
+  if (body === 'station') return { kind: 'station', negate };
+  const fuel = body.match(/^fuel\s*<\s*(\d+)$/);
+  if (fuel) return { kind: 'fuel_lt', value: Number(fuel[1]), negate };
+  const at = body.match(/^at\s+(-?\d+):(-?\d+)$/);
+  if (at) return { kind: 'at', x: Number(at[1]), y: Number(at[2]), negate };
+  errors.push({ line, message: `Unbekannte Bedingung: '${text}'.` });
+  return { kind: 'resources', negate }; // shape placeholder; compile fails due to the recorded error
 }
