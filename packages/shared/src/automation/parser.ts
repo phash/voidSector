@@ -63,8 +63,6 @@ export function parseProgram(source: string): ParseResult {
   return { ast, errors };
 }
 
-// parseBlock / parseStatement / parseCondition are completed in Task 3 & 4.
-// For Task 2, provide a minimal parseBlock that only handles flat command lines:
 function parseBlock(lines: Line[], cursor: { i: number }, indent: number, errors: CompileError[]): Stmt[] {
   const stmts: Stmt[] = [];
   while (cursor.i < lines.length) {
@@ -75,11 +73,55 @@ function parseBlock(lines: Line[], cursor: { i: number }, indent: number, errors
       cursor.i++;
       continue;
     }
-    cursor.i++;
-    const stmt = parseCommand(ln.text, ln.line, errors);
+    const stmt = parseStatement(lines, cursor, indent, errors);
     if (stmt) stmts.push(stmt);
   }
   return stmts;
+}
+
+function parseStatement(lines: Line[], cursor: { i: number }, indent: number, errors: CompileError[]): Stmt | null {
+  const ln = lines[cursor.i];
+  const text = ln.text;
+
+  if (text === 'repeat:') {
+    cursor.i++;
+    const body = parseBlock(lines, cursor, indent + 1, errors);
+    if (body.length === 0) errors.push({ line: ln.line, message: '`repeat` braucht einen eingerückten Block.' });
+    return { type: 'repeat', count: -1, body, line: ln.line };
+  }
+
+  const repN = text.match(/^repeat\s+(\d+)\s+times:$/);
+  if (repN) {
+    cursor.i++;
+    const body = parseBlock(lines, cursor, indent + 1, errors);
+    if (body.length === 0) errors.push({ line: ln.line, message: '`repeat N times` braucht einen eingerückten Block.' });
+    return { type: 'repeat', count: Number(repN[1]), body, line: ln.line };
+  }
+
+  const ifm = text.match(/^if\s+(.+):$/);
+  if (ifm) {
+    cursor.i++;
+    const cond = parseCondition(ifm[1].trim(), ln.line, errors);
+    const thenBlock = parseBlock(lines, cursor, indent + 1, errors);
+    if (thenBlock.length === 0) errors.push({ line: ln.line, message: '`if` braucht einen eingerückten Block.' });
+    let otherwise: Stmt[] | null = null;
+    if (cursor.i < lines.length && lines[cursor.i].indent === indent && lines[cursor.i].text === 'else:') {
+      const elseLn = lines[cursor.i];
+      cursor.i++;
+      otherwise = parseBlock(lines, cursor, indent + 1, errors);
+      if (otherwise.length === 0) errors.push({ line: elseLn.line, message: '`else` braucht einen eingerückten Block.' });
+    }
+    return { type: 'if', cond, then: thenBlock, otherwise, line: ln.line };
+  }
+
+  if (text === 'else:') {
+    cursor.i++;
+    errors.push({ line: ln.line, message: '`else` ohne zugehöriges `if`.' });
+    return null;
+  }
+
+  cursor.i++;
+  return parseCommand(text, ln.line, errors);
 }
 
 export function parseCondition(text: string, line: number, errors: CompileError[]): Condition {

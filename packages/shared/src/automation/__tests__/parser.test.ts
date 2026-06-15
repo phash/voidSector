@@ -71,3 +71,43 @@ describe('parser — conditions', () => {
     expect(errors[0].message).toContain("Unbekannte Bedingung");
   });
 });
+
+describe('parser — control blocks', () => {
+  it('parses if/else with indented blocks', () => {
+    const src = ['if resources:', '  mine until full', 'else:', '  fly 7:9'].join('\n');
+    const { ast, errors } = parseProgram(src);
+    expect(errors).toEqual([]);
+    expect(ast).toEqual([
+      {
+        type: 'if',
+        cond: { kind: 'resources', negate: false },
+        then: [{ type: 'mine', mode: 'until_full', amount: 0, line: 2 }],
+        otherwise: [{ type: 'fly', x: 7, y: 9, line: 4 }],
+        line: 1,
+      },
+    ]);
+  });
+
+  it('parses repeat (infinite) and repeat N times', () => {
+    expect(parseProgram('repeat:\n  scan').ast[0]).toEqual({
+      type: 'repeat',
+      count: -1,
+      body: [{ type: 'scan', line: 2 }],
+      line: 1,
+    });
+    expect(parseProgram('repeat 3 times:\n  scan').ast[0]).toMatchObject({ type: 'repeat', count: 3 });
+  });
+
+  it('nests control structures', () => {
+    const src = ['repeat:', '  if full:', '    sell all'].join('\n');
+    const ast = parseProgram(src).ast as any;
+    expect(ast[0].type).toBe('repeat');
+    expect(ast[0].body[0].type).toBe('if');
+    expect(ast[0].body[0].then[0]).toEqual({ type: 'sell', target: 'all', line: 3 });
+  });
+
+  it('errors on an if without a body and an else without an if', () => {
+    expect(parseProgram('if resources:').errors.some((e) => e.message.includes('eingerückten Block'))).toBe(true);
+    expect(parseProgram('else:\n  scan').errors.some((e) => e.message.includes('ohne zugehöriges'))).toBe(true);
+  });
+});
