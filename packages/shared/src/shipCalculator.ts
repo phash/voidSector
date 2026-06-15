@@ -269,3 +269,13 @@ export function calculateApRegen(modules: ShipModule[]): number {
   }
   return regen;
 }
+
+/** Highest tier among installed `computer` modules (the ship-computer level); 0 if none. */
+export function getShipComputerLevel(modules: Array<{ moduleId: string }>): number {
+  let level = 0;
+  for (const m of modules) {
+    const def = MODULE_MAP.get(m.moduleId);
+    if (def?.category === 'computer' && def.tier > level) level = def.tier;
+  }
+  return level;
+}

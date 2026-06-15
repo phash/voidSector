@@ -1,6 +1,6 @@
 export * from './types.js';
 export * from './constants.js';
-export { calculateShipStats, validateModuleInstall, getAcepLevel, getExtraSlotCount, getActiveDrawbacks, getDamageState, getModuleEffectivePowerLevel, calculateApRegen } from './shipCalculator.js';
+export { calculateShipStats, validateModuleInstall, getAcepLevel, getExtraSlotCount, getActiveDrawbacks, getDamageState, getModuleEffectivePowerLevel, calculateApRegen, getShipComputerLevel } from './shipCalculator.js';
 export type { DamageState } from './shipCalculator.js';
 export {
   calcHyperjumpAP,

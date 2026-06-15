@@ -34,4 +34,8 @@ export declare function getDamageState(currentHp: number, maxHp: number): Damage
 export declare function getModuleEffectivePowerLevel(mod: ShipModule): 'off' | 'low' | 'mid' | 'high';
 /** Calculates AP/s based on installed generator module + base hull regen */
 export declare function calculateApRegen(modules: ShipModule[]): number;
+/** Highest tier among installed `computer` modules (the ship-computer level); 0 if none. */
+export declare function getShipComputerLevel(modules: Array<{
+    moduleId: string;
+}>): number;
 //# sourceMappingURL=shipCalculator.d.ts.map
