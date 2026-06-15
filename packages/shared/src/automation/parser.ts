@@ -1,0 +1,88 @@
+import type { CompileError, Condition, ResourceId, Stmt } from './types.js';
+import { SELLABLE_RESOURCES } from './types.js';
+
+interface Line {
+  indent: number; // in indent units (2 spaces = 1)
+  text: string; // trimmed, comment-stripped
+  line: number; // 1-based source line number
+}
+
+export interface ParseResult {
+  ast: Stmt[];
+  errors: CompileError[];
+}
+
+const INDENT_UNIT = 2;
+
+function lex(source: string): { lines: Line[]; errors: CompileError[] } {
+  const errors: CompileError[] = [];
+  const lines: Line[] = [];
+  const raw = source.replace(/\r\n/g, '\n').split('\n');
+  raw.forEach((original, i) => {
+    const lineNo = i + 1;
+    const noComment = original.replace(/#.*$/, '');
+    if (noComment.trim() === '') return; // blank or comment-only
+    if (/\t/.test(noComment)) {
+      errors.push({ line: lineNo, message: 'Tabs nicht erlaubt — bitte 2 Leerzeichen je Ebene.' });
+    }
+    const leading = noComment.length - noComment.trimStart().length;
+    if (leading % INDENT_UNIT !== 0) {
+      errors.push({ line: lineNo, message: `Einrückung muss ein Vielfaches von ${INDENT_UNIT} Leerzeichen sein.` });
+    }
+    lines.push({ indent: Math.floor(leading / INDENT_UNIT), text: noComment.trim(), line: lineNo });
+  });
+  return { lines, errors };
+}
+
+function parseCommand(text: string, line: number, errors: CompileError[]): Stmt | null {
+  const fly = text.match(/^fly\s+(-?\d+):(-?\d+)$/);
+  if (fly) return { type: 'fly', x: Number(fly[1]), y: Number(fly[2]), line };
+  if (text === 'scan') return { type: 'scan', line };
+  if (text === 'mine' || text === 'mine until full') return { type: 'mine', mode: 'until_full', amount: 0, line };
+  const mineN = text.match(/^mine\s+(\d+)$/);
+  if (mineN) return { type: 'mine', mode: 'amount', amount: Number(mineN[1]), line };
+  if (text === 'sell all') return { type: 'sell', target: 'all', line };
+  const sellR = text.match(/^sell\s+(\w+)$/);
+  if (sellR) {
+    const r = sellR[1] as ResourceId;
+    if ((SELLABLE_RESOURCES as string[]).includes(r)) return { type: 'sell', target: r, line };
+    errors.push({ line, message: `Unbekannter Rohstoff '${sellR[1]}'. Erlaubt: ${SELLABLE_RESOURCES.join(', ')}, all.` });
+    return null;
+  }
+  errors.push({ line, message: `Unbekannter Befehl: '${text}'.` });
+  return null;
+}
+
+export function parseProgram(source: string): ParseResult {
+  const { lines, errors } = lex(source);
+  const cursor = { i: 0 };
+  const ast = parseBlock(lines, cursor, 0, errors);
+  if (cursor.i < lines.length) {
+    errors.push({ line: lines[cursor.i].line, message: 'Unerwartete Einrückung.' });
+  }
+  return { ast, errors };
+}
+
+// parseBlock / parseStatement / parseCondition are completed in Task 3 & 4.
+// For Task 2, provide a minimal parseBlock that only handles flat command lines:
+function parseBlock(lines: Line[], cursor: { i: number }, indent: number, errors: CompileError[]): Stmt[] {
+  const stmts: Stmt[] = [];
+  while (cursor.i < lines.length) {
+    const ln = lines[cursor.i];
+    if (ln.indent < indent) break;
+    if (ln.indent > indent) {
+      errors.push({ line: ln.line, message: 'Unerwartete Einrückung.' });
+      cursor.i++;
+      continue;
+    }
+    cursor.i++;
+    const stmt = parseCommand(ln.text, ln.line, errors);
+    if (stmt) stmts.push(stmt);
+  }
+  return stmts;
+}
+
+// placeholder so Task 3 can import without a forward-reference error
+export function parseCondition(_text: string, _line: number, _errors: CompileError[]): Condition {
+  return { kind: 'resources', negate: false };
+}
