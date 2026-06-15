@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { MODULE_DEFINITIONS } from '../moduleDefinitions.js';
 
 describe('MODULE_DEFINITIONS', () => {
-  it('has 76 modules', () => { expect(MODULE_DEFINITIONS).toHaveLength(76); });
+  it('has 81 modules', () => { expect(MODULE_DEFINITIONS).toHaveLength(81); });
   it('all have required fields', () => {
     for (const m of MODULE_DEFINITIONS) {
       expect(m.id).toBeTruthy();
