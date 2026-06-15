@@ -16,7 +16,22 @@ function emit(ast: Stmt[], out: Instr[]): void {
       case 'sell':
         out.push({ op: 'SELL', target: s.target, line: s.line });
         break;
-      // 'if' and 'repeat' handled in Task 6 & 7
+      case 'if': {
+        const jif = { op: 'JUMP_IF_FALSE' as const, cond: s.cond, target: -1, line: s.line };
+        out.push(jif);
+        emit(s.then, out);
+        if (s.otherwise) {
+          const jmp = { op: 'JUMP' as const, target: -1, line: s.line };
+          out.push(jmp);
+          jif.target = out.length; // else block starts here
+          emit(s.otherwise, out);
+          jmp.target = out.length; // continue after else
+        } else {
+          jif.target = out.length; // continue after then
+        }
+        break;
+      }
+      // 'repeat' handled in Task 7
     }
   }
 }

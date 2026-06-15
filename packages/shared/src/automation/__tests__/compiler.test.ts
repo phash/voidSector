@@ -24,3 +24,34 @@ describe('compiler — sequential commands', () => {
     expect(res.errors[0].message).toContain('Unbekannter Befehl');
   });
 });
+
+describe('compiler — if/else', () => {
+  it('compiles if-without-else: JUMP_IF_FALSE skips the then-block', () => {
+    // 0: JUMP_IF_FALSE -> 2
+    // 1: SCAN
+    // (2: end)
+    const res = compileProgram('if resources:\n  scan', { level: 5, maxLength: 120 });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.instructions).toEqual([
+      { op: 'JUMP_IF_FALSE', cond: { kind: 'resources', negate: false }, target: 2, line: 1 },
+      { op: 'SCAN', line: 2 },
+    ]);
+  });
+
+  it('compiles if/else: false jumps to else, then-block jumps over else', () => {
+    // 0: JUMP_IF_FALSE -> 3 (else start)
+    // 1: SCAN (then)
+    // 2: JUMP -> 4 (after else)
+    // 3: FLY (else)
+    const res = compileProgram('if full:\n  scan\nelse:\n  fly 0:0', { level: 5, maxLength: 120 });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.instructions).toEqual([
+      { op: 'JUMP_IF_FALSE', cond: { kind: 'full', negate: false }, target: 3, line: 1 },
+      { op: 'SCAN', line: 2 },
+      { op: 'JUMP', target: 4, line: 1 },
+      { op: 'FLY', x: 0, y: 0, line: 4 },
+    ]);
+  });
+});
