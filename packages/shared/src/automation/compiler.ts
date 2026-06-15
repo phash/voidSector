@@ -1,4 +1,4 @@
-import type { CompileError, CompileOptions, CompileResult, Instr, Stmt } from './types.js';
+import type { CompileError, Condition, CompileOptions, CompileResult, Instr, Stmt } from './types.js';
 import { parseProgram } from './parser.js';
 
 function emit(ast: Stmt[], out: Instr[]): void {
@@ -59,8 +59,33 @@ function countStatements(ast: Stmt[]): number {
   return n;
 }
 
+function checkCondition(c: Condition, level: number, line: number, errors: CompileError[]): void {
+  if (c.negate && level < 3) errors.push({ line, message: '`not` braucht Computer MK.III.' });
+  if ((c.kind === 'fuel_lt' || c.kind === 'at' || c.kind === 'station') && level < 3) {
+    errors.push({ line, message: `Bedingung '${c.kind}' braucht Computer MK.III.` });
+  }
+}
+
+function checkGating(ast: Stmt[], level: number, errors: CompileError[], depth = 0): void {
+  for (const s of ast) {
+    if (s.type === 'if') {
+      if (level < 2) errors.push({ line: s.line, message: '`if` braucht Computer MK.II.' });
+      if (depth >= 1 && level < 3) errors.push({ line: s.line, message: 'Verschachtelte Kontrollstrukturen brauchen Computer MK.III.' });
+      checkCondition(s.cond, level, s.line, errors);
+      checkGating(s.then, level, errors, depth + 1);
+      if (s.otherwise) checkGating(s.otherwise, level, errors, depth + 1);
+    } else if (s.type === 'repeat') {
+      if (level < 2) errors.push({ line: s.line, message: '`repeat` braucht Computer MK.II.' });
+      if (s.count >= 0 && level < 3) errors.push({ line: s.line, message: '`repeat N times` braucht Computer MK.III.' });
+      if (depth >= 1 && level < 3) errors.push({ line: s.line, message: 'Verschachtelte Kontrollstrukturen brauchen Computer MK.III.' });
+      checkGating(s.body, level, errors, depth + 1);
+    }
+  }
+}
+
 export function compileAst(ast: Stmt[], opts: CompileOptions): CompileResult {
   const errors: CompileError[] = [];
+  checkGating(ast, opts.level, errors);
   const count = countStatements(ast);
   if (count > opts.maxLength) {
     errors.push({

@@ -81,3 +81,38 @@ describe('compiler — loops', () => {
     expect(res.instructions[0]).toEqual({ op: 'PUSH_LOOP', count: 3, line: 1 });
   });
 });
+
+describe('compiler — level gating', () => {
+  const at = (level: number) => ({ level, maxLength: 120 });
+
+  it('MK.I rejects if and repeat but allows a plain sequence', () => {
+    expect(compileProgram('scan\nfly 1:1', at(1)).ok).toBe(true);
+    const ifRes = compileProgram('if resources:\n  scan', at(1));
+    expect(ifRes.ok).toBe(false);
+    if (!ifRes.ok) expect(ifRes.errors[0].message).toContain('MK.II');
+    const repRes = compileProgram('repeat:\n  scan', at(1));
+    expect(repRes.ok).toBe(false);
+  });
+
+  it('MK.II allows if/else + infinite repeat + basic conditions', () => {
+    const src = ['repeat:', '  if resources:', '    mine until full'].join('\n');
+    // nested (if inside repeat) → needs MK.III, so this fails at MK.II
+    expect(compileProgram(src, at(2)).ok).toBe(false);
+    // flat if at MK.II with a basic condition → ok
+    expect(compileProgram('if full:\n  scan', at(2)).ok).toBe(true);
+  });
+
+  it('MK.II rejects repeat N times, `not`, and advanced conditions', () => {
+    expect(compileProgram('repeat 2 times:\n  scan', at(2)).ok).toBe(false);
+    expect(compileProgram('if not full:\n  scan', at(2)).ok).toBe(false);
+    expect(compileProgram('if fuel < 100:\n  scan', at(2)).ok).toBe(false);
+    expect(compileProgram('if at 0:0:\n  scan', at(2)).ok).toBe(false);
+    expect(compileProgram('if station:\n  sell all', at(2)).ok).toBe(false);
+  });
+
+  it('MK.III allows nesting, repeat N times, not, and advanced conditions', () => {
+    const src = ['repeat:', '  if not full:', '    mine until full', '  if station:', '    sell all'].join('\n');
+    expect(compileProgram(src, at(3)).ok).toBe(true);
+    expect(compileProgram('repeat 3 times:\n  scan', at(3)).ok).toBe(true);
+  });
+});
