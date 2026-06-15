@@ -1,0 +1,57 @@
+import type { CompileError, CompileOptions, CompileResult, Instr, Stmt } from './types.js';
+import { parseProgram } from './parser.js';
+
+function emit(ast: Stmt[], out: Instr[]): void {
+  for (const s of ast) {
+    switch (s.type) {
+      case 'fly':
+        out.push({ op: 'FLY', x: s.x, y: s.y, line: s.line });
+        break;
+      case 'scan':
+        out.push({ op: 'SCAN', line: s.line });
+        break;
+      case 'mine':
+        out.push({ op: 'MINE', mode: s.mode, amount: s.amount, line: s.line });
+        break;
+      case 'sell':
+        out.push({ op: 'SELL', target: s.target, line: s.line });
+        break;
+      // 'if' and 'repeat' handled in Task 6 & 7
+    }
+  }
+}
+
+function countStatements(ast: Stmt[]): number {
+  let n = 0;
+  for (const s of ast) {
+    n++;
+    if (s.type === 'if') {
+      n += countStatements(s.then);
+      if (s.otherwise) n += countStatements(s.otherwise);
+    } else if (s.type === 'repeat') {
+      n += countStatements(s.body);
+    }
+  }
+  return n;
+}
+
+export function compileAst(ast: Stmt[], opts: CompileOptions): CompileResult {
+  const errors: CompileError[] = [];
+  const count = countStatements(ast);
+  if (count > opts.maxLength) {
+    errors.push({
+      line: 1,
+      message: `Programm zu lang: ${count} Anweisungen (Limit ${opts.maxLength} bei MK.${opts.level}).`,
+    });
+  }
+  if (errors.length) return { ok: false, errors };
+  const instructions: Instr[] = [];
+  emit(ast, instructions);
+  return { ok: true, instructions, statementCount: count };
+}
+
+export function compileProgram(source: string, opts: CompileOptions): CompileResult {
+  const { ast, errors } = parseProgram(source);
+  if (errors.length) return { ok: false, errors };
+  return compileAst(ast, opts);
+}
