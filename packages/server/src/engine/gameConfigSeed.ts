@@ -168,6 +168,12 @@ import {
   WRECK_SLATE_SELL_BASE,
   WRECK_SLATE_SELL_PER_TIER,
   WRECK_SLATE_JUMPGATE_HUMANITY_TAX,
+  AUTOMATION_PROGRAM_LIMITS,
+  AUTOMATION_OFFLINE_WINDOW_HOURS_MK4,
+  AUTOMATION_OFFLINE_WINDOW_HOURS_MK5,
+  AUTOMATION_MAX_CONCURRENT_OFFLINE,
+  AUTOMATION_TICK_WORK_BUDGET,
+  AUTOMATION_SCHEDULER_INTERVAL_MS,
 } from '@void-sector/shared';
 
 export interface ConfigSeedEntry {
@@ -423,6 +429,20 @@ const STATIC_SEED: ConfigSeedEntry[] = [
   // Aliens
   // ══════════════════════════════════════════════════════════════════════════════
   { key: 'aliens_awakened', category: 'aliens', description: 'Alien expansion has woken (a human reached the alien ring). Persistent; default false.', getDefault: () => false },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // Automation
+  // ══════════════════════════════════════════════════════════════════════════════
+  { key: 'AUTOMATION_MAXLEN_MK1', category: 'automation', description: 'Max Programm-Anweisungen (Computer MK.I)', getDefault: () => AUTOMATION_PROGRAM_LIMITS[1] },
+  { key: 'AUTOMATION_MAXLEN_MK2', category: 'automation', description: 'Max Programm-Anweisungen (Computer MK.II)', getDefault: () => AUTOMATION_PROGRAM_LIMITS[2] },
+  { key: 'AUTOMATION_MAXLEN_MK3', category: 'automation', description: 'Max Programm-Anweisungen (Computer MK.III)', getDefault: () => AUTOMATION_PROGRAM_LIMITS[3] },
+  { key: 'AUTOMATION_MAXLEN_MK4', category: 'automation', description: 'Max Programm-Anweisungen (Computer MK.IV)', getDefault: () => AUTOMATION_PROGRAM_LIMITS[4] },
+  { key: 'AUTOMATION_MAXLEN_MK5', category: 'automation', description: 'Max Programm-Anweisungen (Computer MK.V)', getDefault: () => AUTOMATION_PROGRAM_LIMITS[5] },
+  { key: 'AUTOMATION_OFFLINE_WINDOW_HOURS_MK4', category: 'automation', description: 'Offline-Fenster Stunden (MK.IV)', getDefault: () => AUTOMATION_OFFLINE_WINDOW_HOURS_MK4 },
+  { key: 'AUTOMATION_OFFLINE_WINDOW_HOURS_MK5', category: 'automation', description: 'Offline-Fenster Stunden (MK.V)', getDefault: () => AUTOMATION_OFFLINE_WINDOW_HOURS_MK5 },
+  { key: 'AUTOMATION_MAX_CONCURRENT_OFFLINE', category: 'automation', description: 'Max gleichzeitige Offline-Programme im Scheduler', getDefault: () => AUTOMATION_MAX_CONCURRENT_OFFLINE },
+  { key: 'AUTOMATION_TICK_WORK_BUDGET', category: 'automation', description: 'Max Instruktions-Schritte pro Scheduler-Tick', getDefault: () => AUTOMATION_TICK_WORK_BUDGET },
+  { key: 'AUTOMATION_SCHEDULER_INTERVAL_MS', category: 'automation', description: 'Scheduler-Tick-Intervall (ms)', getDefault: () => AUTOMATION_SCHEDULER_INTERVAL_MS },
 ];
 
 // ─── Module seed entries (generated from MODULE_DEFINITIONS array) ────────────

@@ -116,4 +116,11 @@ export interface CompileOptions {
 }
 /** Default program-length limits per computer level (MK.I-V). Server may override via game_config. */
 export declare const AUTOMATION_PROGRAM_LIMITS: Record<number, number>;
+/** Offline-execution window (hours) per computer tier. Server may override via game_config. */
+export declare const AUTOMATION_OFFLINE_WINDOW_HOURS_MK4 = 4;
+export declare const AUTOMATION_OFFLINE_WINDOW_HOURS_MK5 = 12;
+/** Offline-scheduler safety caps (used by Plan 3). Server may override via game_config. */
+export declare const AUTOMATION_MAX_CONCURRENT_OFFLINE = 50;
+export declare const AUTOMATION_TICK_WORK_BUDGET = 200;
+export declare const AUTOMATION_SCHEDULER_INTERVAL_MS = 1000;
 //# sourceMappingURL=types.d.ts.map
