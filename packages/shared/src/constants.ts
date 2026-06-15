@@ -515,11 +515,11 @@ export const ACEP_PATH_SLOT_UNLOCKS: AcepSlotDef[] = [
   { path: 'explorer', level: 3, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
   { path: 'explorer', level: 6, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
   { path: 'explorer', level: 9, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
-  // AUSBAU: engine/gen/repair slots at 2, 4, 8, 10
-  { path: 'ausbau', level: 2, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
-  { path: 'ausbau', level: 4, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
-  { path: 'ausbau', level: 8, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
-  { path: 'ausbau', level: 10, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+  // AUSBAU: engine/gen/repair/computer slots at 2, 4, 8, 10
+  { path: 'ausbau', level: 2, label: 'ENG', categories: ['drive', 'generator', 'repair', 'computer'] },
+  { path: 'ausbau', level: 4, label: 'ENG', categories: ['drive', 'generator', 'repair', 'computer'] },
+  { path: 'ausbau', level: 8, label: 'ENG', categories: ['drive', 'generator', 'repair', 'computer'] },
+  { path: 'ausbau', level: 10, label: 'ENG', categories: ['drive', 'generator', 'repair', 'computer'] },
 ];
 
 /** Get unlocked extra slots based on ACEP path levels */
