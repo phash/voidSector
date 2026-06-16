@@ -265,6 +265,7 @@ export async function createShip(
     { moduleId: 'ion_drive_mk1', slotIndex: 1, source: 'standard', powerLevel: 'high', currentHp: 20 },
     { moduleId: 'mining_laser_mk1', slotIndex: 6, source: 'standard', powerLevel: 'high', currentHp: 20 },
     { moduleId: 'factory_mk1', slotIndex: 8, source: 'standard', powerLevel: 'high', currentHp: 20 },
+    { moduleId: 'computer_mk1', slotIndex: 9, source: 'standard', powerLevel: 'high', currentHp: 15 },
   ];
   await query('UPDATE ships SET modules = $1 WHERE id = $2', [JSON.stringify(initialModules), row.id]);
   return {

@@ -154,6 +154,13 @@ const DRAW_ROUTINES: Record<ModuleCategory, DrawFn> = {
     ctx.arc(24 * s, 38 * s, 4 * s, 0, 2 * Math.PI);
     ctx.fill();
   },
+
+  computer: (ctx, s) => {
+    ctx.strokeRect(10 * s, 12 * s, 28 * s, 22 * s); // monitor frame
+    ctx.strokeRect(13 * s, 15 * s, 22 * s, 16 * s); // screen
+    for (let i = 0; i < 3; i++) ctx.fillRect(15 * s, (18 + i * 4) * s, 18 * s, 1 * s); // scan lines
+    ctx.fillRect(22 * s, 36 * s, 4 * s, 2 * s); // stand
+  },
 };
 
 export function ModuleArtwork({ category, tier }: ModuleArtworkProps) {
