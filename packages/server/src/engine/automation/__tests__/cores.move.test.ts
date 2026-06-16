@@ -23,6 +23,12 @@ vi.mock('../../inventoryService.js', () => ({
   getCargoState: m.getCargoState, getResourceTotal: m.getResourceTotal,
   addToInventory: m.addToInventory, removeFromInventory: m.removeFromInventory,
 }));
+vi.mock('../../../db/npcStationQueries.js', () => ({
+  getStationData: vi.fn(), getStationInventoryItem: vi.fn(), upsertInventoryItem: vi.fn(),
+}));
+vi.mock('../../npcStationEngine.js', () => ({
+  canSellToStation: vi.fn(), calculateCurrentStock: vi.fn(), recordTrade: vi.fn(),
+}));
 
 import { coreMoveOneSector } from '../cores.js';
 

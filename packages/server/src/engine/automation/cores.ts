@@ -13,9 +13,32 @@ import {
   getFuelState,
   saveFuelState,
 } from '../../rooms/services/RedisAPStore.js';
-import { getActiveShip, getSector, saveSector, addDiscovery } from '../../db/queries.js';
+import {
+  getActiveShip,
+  getSector,
+  saveSector,
+  addDiscovery,
+  updateSectorResources,
+  addCredits,
+} from '../../db/queries.js';
+import {
+  getStationData,
+  getStationInventoryItem,
+  upsertInventoryItem,
+} from '../../db/npcStationQueries.js';
 import { generateSector } from '../worldgen.js';
 import { calculateShipStats } from '@void-sector/shared';
+import {
+  getCargoState,
+  getResourceTotal,
+  addToInventory,
+  removeFromInventory,
+} from '../inventoryService.js';
+import {
+  canSellToStation,
+  calculateCurrentStock,
+  recordTrade,
+} from '../npcStationEngine.js';
 
 /** AP cost for a local sector scan — mirrors AP_COSTS_LOCAL_SCAN from shared. */
 const SCAN_AP_COST = 1;
@@ -163,4 +186,121 @@ export async function coreScan(playerId: string): Promise<ScanResult> {
       crystal: resources.crystal,
     },
   };
+}
+
+// ─── coreMine ─────────────────────────────────────────────────────────────────
+
+export type MineResult = CoreResult<{ mined: number }>;
+
+/** Mining mode: fill cargo to capacity, or extract a fixed amount. */
+export type MineMode = 'until_full' | 'amount';
+
+/**
+ * Mines resources from the player's current sector.
+ * Does NOT consume AP/fuel — mining is a manual action step only.
+ * Loops ore → gas → crystal, taking as much as cargo space allows (and amount
+ * cap allows in 'amount' mode).
+ */
+export async function coreMine(
+  playerId: string,
+  mode: MineMode,
+  amount: number,
+): Promise<MineResult> {
+  const [pos, stats, resourceTotal] = await Promise.all([
+    getPlayerPosition(playerId),
+    shipStats(playerId),
+    getResourceTotal(playerId),
+  ]);
+
+  const x = pos?.x ?? 0;
+  const y = pos?.y ?? 0;
+  const cargoCap = stats.cargoCap ?? 20;
+  let space = cargoCap - resourceTotal;
+
+  if (space <= 0) {
+    return { ok: false, reason: 'Frachtraum voll' };
+  }
+
+  if (mode === 'amount') {
+    space = Math.min(space, amount);
+  }
+
+  const sector = await ensureSector(x, y, playerId);
+  const res = { ...( sector.resources ?? { ore: 0, gas: 0, crystal: 0 }) };
+
+  const resourceOrder: Array<'ore' | 'gas' | 'crystal'> = ['ore', 'gas', 'crystal'];
+  let totalMined = 0;
+
+  for (const r of resourceOrder) {
+    if (space <= 0) break;
+    const avail = res[r] ?? 0;
+    if (avail <= 0) continue;
+
+    const take = Math.min(avail, space);
+    res[r] -= take;
+    space -= take;
+    totalMined += take;
+
+    await addToInventory(playerId, 'resource', r, take);
+    await updateSectorResources(x, y, res, r);
+  }
+
+  return { ok: true, mined: totalMined };
+}
+
+// ─── coreSell ─────────────────────────────────────────────────────────────────
+
+export type SellMode = 'all';
+export type SellResult = CoreResult<{ credits: number }>;
+
+/**
+ * Sells the player's cargo resources at the NPC station in the current sector.
+ * Uses the same canSellToStation / price logic as EconomyService.handleNpcTrade
+ * so prices are always consistent.
+ *
+ * Implementation note: sell logic is inlined here (not extracted from EconomyService)
+ * to avoid altering the Colyseus-coupled service class and risking regressions.
+ * Both paths call the same underlying npcStationEngine functions so prices match.
+ */
+export async function coreSell(playerId: string, _mode: SellMode): Promise<SellResult> {
+  const pos = await getPlayerPosition(playerId);
+  const sx = pos?.x ?? 0;
+  const sy = pos?.y ?? 0;
+
+  // Check that a station exists at this sector
+  const station = await getStationData(sx, sy);
+  if (!station) {
+    return { ok: false, reason: 'Keine Station hier zum Verkaufen' };
+  }
+
+  const cargo = await getCargoState(playerId);
+  const resources: Array<'ore' | 'gas' | 'crystal'> = ['ore', 'gas', 'crystal'];
+
+  let totalCredits = 0;
+
+  for (const r of resources) {
+    const qty = cargo[r] ?? 0;
+    if (qty <= 0) continue;
+
+    const sellCheck = await canSellToStation(sx, sy, r, qty);
+    if (!sellCheck.ok) continue;
+
+    const effectiveAmount = sellCheck.effectiveAmount;
+    await removeFromInventory(playerId, 'resource', r, effectiveAmount);
+
+    // Update station stock
+    const invItem = await getStationInventoryItem(sx, sy, r);
+    if (invItem) {
+      const currentStock = calculateCurrentStock(invItem);
+      invItem.stock = Math.min(currentStock + effectiveAmount, invItem.maxStock);
+      invItem.lastUpdated = new Date().toISOString();
+      await upsertInventoryItem(invItem);
+    }
+
+    await addCredits(playerId, sellCheck.price);
+    totalCredits += sellCheck.price;
+    recordTrade(sx, sy, effectiveAmount).catch(() => {});
+  }
+
+  return { ok: true, credits: totalCredits };
 }

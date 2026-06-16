@@ -12,6 +12,12 @@ vi.mock('../../../db/queries.js', () => ({ getActiveShip: m.getActiveShip, getSe
 vi.mock('../../worldgen.js', () => ({ generateSector: m.generateSector }));
 vi.mock('@void-sector/shared', () => ({ calculateShipStats: m.calculateShipStats }));
 vi.mock('../../inventoryService.js', () => ({ getCargoState: vi.fn(), getResourceTotal: vi.fn(), addToInventory: vi.fn(), removeFromInventory: vi.fn() }));
+vi.mock('../../../db/npcStationQueries.js', () => ({
+  getStationData: vi.fn(), getStationInventoryItem: vi.fn(), upsertInventoryItem: vi.fn(),
+}));
+vi.mock('../../npcStationEngine.js', () => ({
+  canSellToStation: vi.fn(), calculateCurrentStock: vi.fn(), recordTrade: vi.fn(),
+}));
 import { coreScan } from '../cores.js';
 beforeEach(() => {
   vi.clearAllMocks();
