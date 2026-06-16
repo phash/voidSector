@@ -12,3 +12,6 @@ test-results/
 playwright-report/
 *.png
 .superpowers/
+
+# PindeX index data
+.pindex/

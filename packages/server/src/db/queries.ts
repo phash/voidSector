@@ -3694,6 +3694,29 @@ export async function getVoidHive(
   return res.rows[0] ?? null;
 }
 
+/**
+ * One-time migration: clean up legacy void cluster data (pre-GoL system).
+ * Removes old frontier sectors, cluster quadrants, hives, and clusters.
+ * Preserves the master GoL cluster and re-points quadrant_control references.
+ */
+export async function cleanupLegacyVoidData(keepClusterId: string): Promise<void> {
+  await withTransaction(async (client) => {
+    // Delete all frontier sectors (no longer used in GoL mode)
+    await client.query('DELETE FROM void_frontier_sectors');
+    // Delete all cluster quadrants (no longer used in GoL mode)
+    await client.query('DELETE FROM void_cluster_quadrants');
+    // Delete hives from legacy clusters
+    await client.query('DELETE FROM void_hives WHERE cluster_id != $1', [keepClusterId]);
+    // Re-point void quadrant_control references to the master cluster
+    await client.query(
+      'UPDATE quadrant_control SET void_cluster_id = $1 WHERE controlling_faction = $2',
+      [keepClusterId, 'voids'],
+    );
+    // Delete legacy clusters
+    await client.query('DELETE FROM void_clusters WHERE id != $1', [keepClusterId]);
+  });
+}
+
 // ── Origin Hub Notices ───────────────────────────────────────────────────────
 
 export interface OriginNoticeRow {

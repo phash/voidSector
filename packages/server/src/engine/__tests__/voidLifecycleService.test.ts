@@ -1,158 +1,241 @@
 // packages/server/src/engine/__tests__/voidLifecycleService.test.ts
 import { describe, it, expect } from 'vitest';
 import {
-  computeFrontierSectors,
-  pickSpawnPoint,
-  computeSplitGroups,
-  pickDyingClusters,
+  computeNextGeneration,
+  pickGoLSpawnPoints,
+  R_PENTOMINO,
+  ACORN,
+  DIEHARD,
+  VOID_ORIGIN_EXCLUSION,
 } from '../voidLifecycleService.js';
-import type { VoidClusterRow, VoidClusterQuadrantRow } from '../../db/queries.js';
 
-function makeCluster(id: string, overrides: Partial<VoidClusterRow> = {}): VoidClusterRow {
-  return {
-    id,
-    state: 'growing',
-    size: 0,
-    split_threshold: 12,
-    spawned_at: new Date('2026-01-01'),
-    origin_qx: 200,
-    origin_qy: 200,
-    ...overrides,
-  };
-}
+// ─── computeNextGeneration ───────────────────────────────────────────────────
 
-function makeQRow(clusterId: string, qx: number, qy: number, progress = 100): VoidClusterQuadrantRow {
-  return { cluster_id: clusterId, qx, qy, progress };
-}
+describe('computeNextGeneration', () => {
+  it('blinker oscillates between horizontal and vertical', () => {
+    // Horizontal blinker: (-1,0), (0,0), (1,0)
+    const alive = new Set(['-1:0', '0:0', '1:0']);
+    const { born, died } = computeNextGeneration(alive);
 
-// ─── computeFrontierSectors ───────────────────────────────────────────────────
-describe('computeFrontierSectors', () => {
-  it('returns empty array for progress 0', () => {
-    expect(computeFrontierSectors(5, 5, 0)).toHaveLength(0);
+    // Ends die (1 neighbor each), center survives (2 neighbors)
+    expect(died.sort()).toEqual(['-1:0', '1:0']);
+    // (0,-1) and (0,1) each have exactly 3 neighbors → born
+    expect(born.sort()).toEqual(['0:-1', '0:1']);
   });
 
-  it('returns 100 sectors for any progress 1–99', () => {
-    expect(computeFrontierSectors(5, 5, 1)).toHaveLength(100);
-    expect(computeFrontierSectors(5, 5, 50)).toHaveLength(100);
-    expect(computeFrontierSectors(5, 5, 99)).toHaveLength(100);
+  it('blinker returns to original after two generations', () => {
+    const gen0 = new Set(['-1:0', '0:0', '1:0']);
+    const step1 = computeNextGeneration(gen0);
+    const gen1 = new Set(gen0);
+    for (const k of step1.died) gen1.delete(k);
+    for (const k of step1.born) gen1.add(k);
+
+    const step2 = computeNextGeneration(gen1);
+    const gen2 = new Set(gen1);
+    for (const k of step2.died) gen2.delete(k);
+    for (const k of step2.born) gen2.add(k);
+
+    expect([...gen2].sort()).toEqual([...gen0].sort());
   });
 
-  it('returns empty array for progress 100 (fully void, no frontier needed)', () => {
-    expect(computeFrontierSectors(5, 5, 100)).toHaveLength(0);
+  it('block (2×2 still life) does not change', () => {
+    const alive = new Set(['0:0', '0:1', '1:0', '1:1']);
+    const { born, died } = computeNextGeneration(alive);
+    expect(born).toHaveLength(0);
+    expect(died).toHaveLength(0);
   });
 
-  it('frontier y advances with progress', () => {
-    const at1 = computeFrontierSectors(5, 5, 1);
-    const at50 = computeFrontierSectors(5, 5, 50);
-    const fy1 = at1[0].y;
-    const fy50 = at50[0].y;
-    expect(fy50).toBeGreaterThan(fy1);
+  it('beehive (still life) does not change', () => {
+    // Beehive: (1,0),(2,0),(0,1),(3,1),(1,2),(2,2)
+    const alive = new Set(['1:0', '2:0', '0:1', '3:1', '1:2', '2:2']);
+    const { born, died } = computeNextGeneration(alive);
+    expect(born).toHaveLength(0);
+    expect(died).toHaveLength(0);
   });
 
-  it('all x values are within quadrant bounds', () => {
-    const sectors = computeFrontierSectors(5, 5, 50);
-    const ox = 5 * 10000;
-    for (const s of sectors) {
-      expect(s.x).toBeGreaterThanOrEqual(ox);
-      expect(s.x).toBeLessThan(ox + 100);
-    }
+  it('single cell dies (underpopulation)', () => {
+    const alive = new Set(['5:5']);
+    const { born, died } = computeNextGeneration(alive);
+    expect(died).toEqual(['5:5']);
+    expect(born).toHaveLength(0);
+  });
+
+  it('two adjacent cells both die', () => {
+    const alive = new Set(['0:0', '1:0']);
+    const { born, died } = computeNextGeneration(alive);
+    expect(died.sort()).toEqual(['0:0', '1:0']);
+  });
+
+  it('overcrowded center cell dies', () => {
+    // Cross pattern: center has 4 neighbors
+    const alive = new Set(['0:0', '0:1', '0:-1', '1:0', '-1:0']);
+    const { born, died } = computeNextGeneration(alive);
+    expect(died).toContain('0:0');
+  });
+
+  it('glider moves after one step and has 5 cells', () => {
+    // Glider:
+    //  .X.
+    //  ..X
+    //  XXX
+    const alive = new Set(['1:0', '2:1', '0:2', '1:2', '2:2']);
+    const { born, died } = computeNextGeneration(alive);
+
+    const next = new Set(alive);
+    for (const k of died) next.delete(k);
+    for (const k of born) next.add(k);
+
+    expect(next.size).toBe(5);
+    // Glider should have moved — at least one cell not in original position
+    const moved = [...next].some((k) => !alive.has(k));
+    expect(moved).toBe(true);
+  });
+
+  it('respects origin exclusion zone — blocks births within zone', () => {
+    // Place 3 cells just outside exclusion zone so a 4th would be born inside
+    const excl = 10;
+    const alive = new Set([`${excl + 1}:${excl}`, `${excl}:${excl + 1}`, `${excl + 1}:${excl + 1}`]);
+    const { born } = computeNextGeneration(alive, excl);
+
+    const blockedBirths = born.filter((key) => {
+      const [qx, qy] = key.split(':').map(Number);
+      return Math.max(Math.abs(qx), Math.abs(qy)) <= excl;
+    });
+    expect(blockedBirths).toHaveLength(0);
+  });
+
+  it('allows births outside exclusion zone', () => {
+    const excl = 10;
+    const alive = new Set([`${excl + 1}:${excl + 1}`, `${excl + 2}:${excl + 1}`, `${excl + 1}:${excl + 2}`]);
+    const { born } = computeNextGeneration(alive, excl);
+
+    // (excl+2, excl+2) should be born — it's outside exclusion
+    expect(born).toContain(`${excl + 2}:${excl + 2}`);
+  });
+
+  it('returns empty arrays for empty input', () => {
+    const alive = new Set<string>();
+    const { born, died } = computeNextGeneration(alive);
+    expect(born).toHaveLength(0);
+    expect(died).toHaveLength(0);
+  });
+
+  it('handles negative coordinates', () => {
+    const alive = new Set(['-1:-1', '0:-1', '-1:0']);
+    const { born, died } = computeNextGeneration(alive);
+    // L-shape with 3 cells: each has 2 neighbors → all survive
+    expect(died).toHaveLength(0);
+    // (0,0) has exactly 3 neighbors → born
+    expect(born).toContain('0:0');
   });
 });
 
-// ─── pickSpawnPoint ───────────────────────────────────────────────────────────
-describe('pickSpawnPoint', () => {
-  it('returns null when there are no unclaimed quadrants far enough away', () => {
-    // Claim all quadrants outside exclusion zone within search radius
-    // With searchRadius=11, minDistance=1, and VOID_ORIGIN_EXCLUSION=10:
-    // eligible coords are those where max(|qx|,|qy|) > 10 AND qx/qy in [-11,11]
-    const claimed = new Set<string>();
-    for (let qx = -11; qx <= 11; qx++) {
-      for (let qy = -11; qy <= 11; qy++) {
-        if (Math.max(Math.abs(qx), Math.abs(qy)) > 10) {
-          claimed.add(`${qx}:${qy}`);
-        }
+// ─── pickGoLSpawnPoints ──────────────────────────────────────────────────────
+
+describe('pickGoLSpawnPoints', () => {
+  it('returns requested number of spawn points', () => {
+    const points = pickGoLSpawnPoints(15, 100, 80);
+    expect(points).toHaveLength(15);
+  });
+
+  it('returns fewer points if ring exhausted before count', () => {
+    // Very tight constraints with huge minDistance
+    const points = pickGoLSpawnPoints(100, 100, 5000);
+    expect(points.length).toBeGreaterThan(0);
+    expect(points.length).toBeLessThanOrEqual(100);
+  });
+
+  it('all points are outside origin exclusion zone', () => {
+    const points = pickGoLSpawnPoints(15, 100, 80);
+    for (const { qx, qy } of points) {
+      expect(Math.max(Math.abs(qx), Math.abs(qy))).toBeGreaterThan(100);
+    }
+  });
+
+  it('points maintain minimum distance from each other', () => {
+    const points = pickGoLSpawnPoints(15, 100, 80);
+    for (let i = 0; i < points.length; i++) {
+      for (let j = i + 1; j < points.length; j++) {
+        const dist =
+          Math.abs(points[i].qx - points[j].qx) +
+          Math.abs(points[i].qy - points[j].qy);
+        expect(dist).toBeGreaterThanOrEqual(80);
       }
     }
-    const result = pickSpawnPoint(claimed, 11, 1);
-    expect(result).toBeNull();
   });
 
-  it('returns a point outside the origin exclusion zone', () => {
-    const claimed = new Set<string>();
-    const result = pickSpawnPoint(claimed, 50, 5);
-    if (result) {
-      // VOID_ORIGIN_EXCLUSION is 10, so returned point should be > 10 from origin
-      const distFromOrigin = Math.max(Math.abs(result.qx), Math.abs(result.qy));
-      expect(distFromOrigin).toBeGreaterThan(10);
+  it('distributes points across multiple quadrants (pos/neg coordinates)', () => {
+    const points = pickGoLSpawnPoints(8, 100, 80);
+    const hasPositiveX = points.some((p) => p.qx > 0);
+    const hasNegativeX = points.some((p) => p.qx < 0);
+    const hasPositiveY = points.some((p) => p.qy > 0);
+    const hasNegativeY = points.some((p) => p.qy < 0);
+    expect(hasPositiveX).toBe(true);
+    expect(hasNegativeX).toBe(true);
+    expect(hasPositiveY).toBe(true);
+    expect(hasNegativeY).toBe(true);
+  });
+});
+
+// ─── GoL Patterns ────────────────────────────────────────────────────────────
+
+describe('GoL patterns', () => {
+  it('R-pentomino has 5 cells', () => {
+    expect(R_PENTOMINO).toHaveLength(5);
+  });
+
+  it('Acorn has 7 cells', () => {
+    expect(ACORN).toHaveLength(7);
+  });
+
+  it('Diehard has 7 cells', () => {
+    expect(DIEHARD).toHaveLength(7);
+  });
+
+  it('R-pentomino produces changes after one generation (it is a methuselah)', () => {
+    const alive = new Set(
+      R_PENTOMINO.map(({ dx, dy }) => `${200 + dx}:${200 + dy}`),
+    );
+    const { born, died } = computeNextGeneration(alive);
+    expect(born.length + died.length).toBeGreaterThan(0);
+  });
+
+  it('Acorn produces changes after one generation', () => {
+    const alive = new Set(
+      ACORN.map(({ dx, dy }) => `${200 + dx}:${200 + dy}`),
+    );
+    const { born, died } = computeNextGeneration(alive);
+    expect(born.length + died.length).toBeGreaterThan(0);
+  });
+
+  it('Diehard produces changes after one generation', () => {
+    const alive = new Set(
+      DIEHARD.map(({ dx, dy }) => `${200 + dx}:${200 + dy}`),
+    );
+    const { born, died } = computeNextGeneration(alive);
+    expect(born.length + died.length).toBeGreaterThan(0);
+  });
+
+  it('R-pentomino grows over multiple generations', () => {
+    let alive = new Set(
+      R_PENTOMINO.map(({ dx, dy }) => `${200 + dx}:${200 + dy}`),
+    );
+
+    // Run 10 generations and check the population changes
+    for (let gen = 0; gen < 10; gen++) {
+      const { born, died } = computeNextGeneration(alive);
+      for (const k of died) alive.delete(k);
+      for (const k of born) alive.add(k);
     }
-  });
-});
 
-// ─── computeSplitGroups ───────────────────────────────────────────────────────
-describe('computeSplitGroups', () => {
-  it('splits 10 quadrants into 2 groups', () => {
-    const quadrants = [
-      makeQRow('c1', 200, 200), makeQRow('c1', 201, 200), makeQRow('c1', 202, 200),
-      makeQRow('c1', 200, 201), makeQRow('c1', 201, 201),
-      makeQRow('c1', 205, 205), makeQRow('c1', 206, 205), makeQRow('c1', 207, 205),
-      makeQRow('c1', 205, 206), makeQRow('c1', 206, 206),
-    ];
-    const groups = computeSplitGroups(quadrants, 2);
-    expect(groups.groups).toHaveLength(2);
-    expect(groups.abandoned.length).toBeGreaterThanOrEqual(0);
-    // Every quadrant is either in a group or abandoned
-    const allAssigned = [
-      ...groups.groups.flatMap((g) => g),
-      ...groups.abandoned,
-    ];
-    expect(allAssigned).toHaveLength(quadrants.length);
+    // R-pentomino should have grown significantly after 10 generations
+    expect(alive.size).toBeGreaterThan(R_PENTOMINO.length);
   });
 
-  it('marks isolated quadrants (groups with <2 members) as abandoned', () => {
-    // 1 quadrant alone, far away — will be isolated
-    const quadrants = [
-      makeQRow('c1', 200, 200), makeQRow('c1', 201, 200),
-      makeQRow('c1', 210, 210), // isolated
-    ];
-    const groups = computeSplitGroups(quadrants, 2);
-    // The isolated one should be abandoned
-    const abandonedCoords = groups.abandoned.map((q) => `${q.qx}:${q.qy}`);
-    expect(abandonedCoords).toContain('210:210');
-  });
-});
-
-// ─── pickDyingClusters ────────────────────────────────────────────────────────
-describe('pickDyingClusters', () => {
-  it('returns empty when count <= 48', () => {
-    const clusters = Array.from({ length: 48 }, (_, i) =>
-      makeCluster(`c${i}`, { spawned_at: new Date(2026, 0, i + 1) }),
-    );
-    expect(pickDyingClusters(clusters)).toHaveLength(0);
-  });
-
-  it('marks oldest clusters when count > 48', () => {
-    const clusters = Array.from({ length: 50 }, (_, i) =>
-      makeCluster(`c${i}`, { spawned_at: new Date(2026, 0, i + 1) }),
-    );
-    const dying = pickDyingClusters(clusters);
-    // count=50, floor((50-48)/2)+1 = 2
-    expect(dying).toHaveLength(2);
-    // oldest = c0, c1
-    expect(dying.map((c) => c.id)).toContain('c0');
-    expect(dying.map((c) => c.id)).toContain('c1');
-  });
-
-  it('does not pick already-dying clusters', () => {
-    const clusters = Array.from({ length: 50 }, (_, i) =>
-      makeCluster(`c${i}`, {
-        spawned_at: new Date(2026, 0, i + 1),
-        state: i < 5 ? 'dying' : 'growing',
-      }),
-    );
-    const dying = pickDyingClusters(clusters);
-    // Should only pick from non-dying
-    for (const c of dying) {
-      expect(c.state).not.toBe('dying');
+  it('patterns have no duplicate cells', () => {
+    for (const pattern of [R_PENTOMINO, ACORN, DIEHARD]) {
+      const keys = pattern.map(({ dx, dy }) => `${dx}:${dy}`);
+      expect(new Set(keys).size).toBe(keys.length);
     }
   });
 });
