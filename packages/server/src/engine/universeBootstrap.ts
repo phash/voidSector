@@ -15,6 +15,7 @@ import { processConstructionTick } from './constructionTickService.js';
 import { processStationBuildTick } from './stationBuildTick.js';
 import { processStationMiningTick } from './stationMiningService.js';
 import { runStationFuelProductionTick } from './stationFuelEngine.js';
+import { startOfflineScheduler } from './automation/offlineScheduler.js';
 
 dotenv.config();
 
@@ -99,4 +100,8 @@ export async function startUniverseEngine(): Promise<void> {
   _engine = engine;
   engine.start();
   logger.info('UniverseTickEngine started');
+
+  // Plan 3: capped global offline program scheduler — advances offline players'
+  // active ship programs (computer MK.IV+) so automated ships keep working away.
+  startOfflineScheduler();
 }
