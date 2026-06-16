@@ -30,6 +30,7 @@ import { StoryEventOverlay } from './overlays/StoryEventOverlay';
 import { FirstContactNewsOverlay } from './overlays/FirstContactNewsOverlay';
 import { AlienEncounterToast } from './overlays/AlienEncounterToast';
 import { QuestCompleteOverlay } from './overlays/QuestCompleteOverlay';
+import { QuestTurnInOffer } from './overlays/QuestTurnInOffer';
 import { LocalScanResultOverlay } from './overlays/LocalScanResultOverlay';
 import { PlayerCardModal } from './PlayerCardModal';
 import { TradeWindow } from './TradeWindow';
@@ -246,6 +247,7 @@ export function CockpitLayout({ renderScreen }: CockpitLayoutProps) {
       <FirstContactNewsOverlay />
       <AlienEncounterToast />
       <QuestCompleteOverlay />
+      <QuestTurnInOffer />
       <SuccessToast />
     </div>
   );
