@@ -161,6 +161,7 @@ import { NoticeService } from './services/NoticeService.js';
 import { BountyService } from './services/BountyService.js';
 import { TutorialService } from './services/TutorialService.js';
 import { ExchangeService } from './services/ExchangeService.js';
+import { ShipComputerService } from './services/ShipComputerService.js';
 import {
   rollForEncounter,
   isInteractiveEncounter,
@@ -227,6 +228,7 @@ export class SectorRoom extends Room<SectorRoomState> {
   private bounty!: BountyService;
   private exchange!: ExchangeService;
   private tutorial!: TutorialService;
+  private shipComputer!: ShipComputerService;
   private encounterSteps = new Map<string, number>(); // playerId -> steps since last encounter
   private revealedOutlaws = new Map<string, Set<number>>();
 
@@ -430,6 +432,7 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.bounty = new BountyService(this.serviceCtx);
     this.exchange = new ExchangeService(this.serviceCtx);
     this.tutorial = new TutorialService(this.serviceCtx);
+    this.shipComputer = new ShipComputerService(this.serviceCtx);
 
     // Wire cross-service callbacks
     this.serviceCtx.combatV3 = this.combatV3;
@@ -808,6 +811,58 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('getExchange', async (client) => {
       const a = client.auth as { userId?: string } | null;
       await this.exchange.sendState(client, a?.userId ?? '');
+    });
+
+    // ── Ship Computer (programmable automation) ──────────────────────
+    this.onMessage('saveProgram', async (client, data: { name: string; source: string; mode: string }) => {
+      try {
+        await this.shipComputer.handleSaveProgram(client, data ?? ({} as any));
+      } catch (err) {
+        logger.error({ err }, 'saveProgram error');
+        captureError(err as Error, 'saveProgram').catch(() => {});
+        client.send('error', { code: 'PROGRAM_SAVE_FAILED', message: 'Programm konnte nicht gespeichert werden' });
+      }
+    });
+    this.onMessage('listPrograms', async (client) => {
+      try {
+        await this.shipComputer.handleListPrograms(client);
+      } catch (err) {
+        logger.error({ err }, 'listPrograms error');
+        client.send('error', { code: 'PROGRAM_LIST_FAILED', message: 'Programme konnten nicht geladen werden' });
+      }
+    });
+    this.onMessage('deleteProgram', async (client, data: { id: string }) => {
+      try {
+        await this.shipComputer.handleDeleteProgram(client, data ?? ({} as any));
+      } catch (err) {
+        logger.error({ err }, 'deleteProgram error');
+        client.send('error', { code: 'PROGRAM_DELETE_FAILED', message: 'Programm konnte nicht gelöscht werden' });
+      }
+    });
+    this.onMessage('setActiveProgram', async (client, data: { id: string }) => {
+      try {
+        await this.shipComputer.handleSetActive(client, data ?? ({} as any));
+      } catch (err) {
+        logger.error({ err }, 'setActiveProgram error');
+        client.send('error', { code: 'PROGRAM_ACTIVATE_FAILED', message: 'Programm konnte nicht aktiviert werden' });
+      }
+    });
+    this.onMessage('startProgram', async (client, data: { id: string }) => {
+      try {
+        await this.shipComputer.handleStartProgram(client, data ?? ({} as any));
+      } catch (err) {
+        logger.error({ err }, 'startProgram error');
+        captureError(err as Error, 'startProgram').catch(() => {});
+        client.send('error', { code: 'PROGRAM_START_FAILED', message: 'Programm konnte nicht gestartet werden' });
+      }
+    });
+    this.onMessage('stopProgram', async (client) => {
+      try {
+        await this.shipComputer.handleStopProgram(client);
+      } catch (err) {
+        logger.error({ err }, 'stopProgram error');
+        client.send('error', { code: 'PROGRAM_STOP_FAILED', message: 'Programm konnte nicht gestoppt werden' });
+      }
     });
 
     // ── Chat ────────────────────────────────────────────────────────
@@ -1787,6 +1842,9 @@ export class SectorRoom extends Room<SectorRoomState> {
       // Tutorial-Kette: Neuspieler bekommen Fortschritts-Row, aktive Spieler den Stand
       await this.tutorial.initOnJoin(client, auth.userId, isNewPlayer);
 
+      // Resume a live ship-computer program if one is still 'running'
+      await this.shipComputer.resumeIfActive(client, auth.userId);
+
       // Send initial slates
       await this.world.handleGetMySlates(client);
 
@@ -2064,6 +2122,10 @@ export class SectorRoom extends Room<SectorRoomState> {
     if (leaveAuthForOnline?.userId) {
       await onlineRedis.srem('online_players', leaveAuthForOnline.userId);
     }
+
+    // Stop the live ship-computer executor (leave persisted status as-is so the
+    // offline scheduler can resume it server-side).
+    this.shipComputer.stopExecutor(client.sessionId);
 
     // Clean up autopilot timer and pause DB route for resume on rejoin
     const autopilotTimer = this.autopilotTimers.get(client.sessionId);
