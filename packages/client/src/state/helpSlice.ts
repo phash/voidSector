@@ -434,6 +434,18 @@ export const HELP_TIPS: HelpTip[] = [
       '→ Wissen schaltet deine erste Forschung frei (TECH)',
   },
   {
+    id: 'first_automat',
+    title: '◈ AUTOMAT — SCHIFF PROGRAMMIEREN',
+    body:
+      'Lass dein Schiff Abläufe selbst erledigen.\n' +
+      '→ Skript schreiben, z.B.: fly 3:5; scan; mine until full\n' +
+      '→ Palette zeigt, was dein Bordcomputer kann (MK.I–V)\n' +
+      '→ Vorlage laden oder eigenes Skript [SPEICHERN]\n' +
+      '→ [START] führt es aus; das Log zeigt jeden Schritt\n' +
+      '→ Ab MK.IV läuft es auch offline weiter',
+    articleId: 'schiffsprogrammierung',
+  },
+  {
     id: 'first_tutorial',
     title: '◈ TUTORIAL',
     body:
