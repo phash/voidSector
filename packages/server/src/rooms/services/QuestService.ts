@@ -41,7 +41,6 @@ import {
   getAcceptedQuestTemplateIds,
   addWissen,
   getQuestById,
-  getCargoCapForPlayer,
   getInventory,
 } from '../../db/queries.js';
 import {
@@ -131,24 +130,6 @@ export class QuestService {
     let objectives = questTemplate.objectives;
     let title = questTemplate.title;
     let description = questTemplate.description;
-
-    // Fetch quest: check cargo capacity before accepting
-    const fetchObj = objectives.find((o) => o.type === 'fetch');
-    if (fetchObj?.amount) {
-      const [cargoState, cargoCap] = await Promise.all([
-        getCargoState(auth.userId),
-        getCargoCapForPlayer(auth.userId),
-      ]);
-      const currentUsed =
-        cargoState.ore + cargoState.gas + cargoState.crystal + cargoState.slates + cargoState.artefact;
-      if (currentUsed + fetchObj.amount > cargoCap) {
-        this.ctx.send(client, 'acceptQuestResult', {
-          success: false,
-          error: 'Zu wenig Laderaum für diese Quest',
-        });
-        return;
-      }
-    }
 
     // Bounty chase: generate trail at accept time
     if (objectives[0]?.type === 'bounty_trail') {

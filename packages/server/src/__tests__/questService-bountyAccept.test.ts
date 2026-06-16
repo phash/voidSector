@@ -58,6 +58,8 @@ vi.mock('../rooms/services/RedisAPStore.js', () => ({
 
 import { QuestService } from '../rooms/services/QuestService.js';
 import { insertQuest } from '../db/queries.js';
+import { generateStationQuests } from '../engine/questgen.js';
+import { getCargoState } from '../engine/inventoryService.js';
 
 function makeCtx(overrides = {}) {
   return {
@@ -168,5 +170,62 @@ describe('QuestService.handleAcceptQuest — bounty_chase', () => {
     expect(deliverObj.stationX).toBe(10);
     expect(deliverObj.stationY).toBe(10);
     expect(deliverObj.fulfilled).toBe(false);
+  });
+});
+
+describe('QuestService.handleAcceptQuest — fetch quest with full cargo', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('accepts a fetch quest even when cargo is full (delivery verifies items, not accept)', async () => {
+    // A fetch quest: "beschaffe 2 Crystal".
+    vi.mocked(generateStationQuests).mockReturnValue([
+      {
+        templateId: 'fetch_crystal',
+        npcName: 'Quartermaster',
+        npcFactionId: 'humanity',
+        title: 'Beschaffe 2 Crystal',
+        description: 'Liefere 2 Crystal an die Station.',
+        objectives: [
+          {
+            type: 'fetch',
+            description: 'Beschaffe 2 Crystal',
+            fulfilled: false,
+            resource: 'crystal',
+            amount: 2,
+          },
+        ],
+        rewards: { credits: 80, xp: 20, reputation: 5, wissen: 1 },
+        requiredTier: 'neutral',
+      },
+    ] as any);
+
+    // Cargo completely full — the old accept-time check would have rejected here.
+    vi.mocked(getCargoState).mockResolvedValue({
+      ore: 50,
+      gas: 50,
+      crystal: 50,
+      slates: 0,
+      artefact: 0,
+    } as any);
+
+    const ctx = makeCtx() as any;
+    const service = new QuestService(ctx);
+    const client = makeClient() as any;
+
+    await service.handleAcceptQuest(client, {
+      templateId: 'fetch_crystal',
+      stationX: 10,
+      stationY: 10,
+    });
+
+    const sendCalls = (ctx.send as any).mock.calls;
+    const acceptResult = sendCalls.find((c: any[]) => c[1] === 'acceptQuestResult');
+    expect(acceptResult).toBeDefined();
+    // Must NOT be rejected for cargo space.
+    expect(acceptResult[2].error).not.toBe('Zu wenig Laderaum für diese Quest');
+    expect(acceptResult[2].success).toBe(true);
+    expect(insertQuest).toHaveBeenCalled();
   });
 });

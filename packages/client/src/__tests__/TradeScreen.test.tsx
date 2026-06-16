@@ -26,6 +26,64 @@ describe('TradeScreen', () => {
     mockStoreState({ baseStructures: [] });
   });
 
+  it('requests NPC station data when rendered at a station', () => {
+    mockStoreState({
+      baseStructures: [],
+      position: { x: 10, y: 10 },
+      currentSector: {
+        x: 10,
+        y: 10,
+        type: 'station',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: ['station' as const],
+      },
+      credits: 200,
+      cargo: {
+        ore: 0,
+        gas: 0,
+        crystal: 0,
+        slates: 0,
+        artefact: 0,
+        artefact_drive: 0,
+        artefact_cargo: 0,
+        artefact_scanner: 0,
+        artefact_armor: 0,
+        artefact_weapon: 0,
+        artefact_shield: 0,
+        artefact_defense: 0,
+        artefact_special: 0,
+        artefact_mining: 0,
+      },
+      npcStationData: null,
+    });
+    render(<TradeScreen />);
+    expect(network.requestNpcStationData).toHaveBeenCalled();
+  });
+
+  it('does not request NPC station data when not at a station and no base', () => {
+    mockStoreState({
+      baseStructures: [],
+      position: { x: 5, y: 5 },
+      currentSector: {
+        x: 5,
+        y: 5,
+        type: 'empty',
+        seed: 42,
+        discoveredBy: null,
+        discoveredAt: null,
+        metadata: {},
+        environment: 'empty' as const,
+        contents: [],
+      },
+    });
+    render(<TradeScreen />);
+    expect(network.requestNpcStationData).not.toHaveBeenCalled();
+  });
+
   it('shows no trade available when not at station or home base', () => {
     mockStoreState({
       baseStructures: [],
