@@ -41,6 +41,7 @@ import { MobileDashboard } from './MobileDashboard';
 import { MobileNavTab } from './MobileNavTab';
 import { MobileMineTab } from './MobileMineTab';
 import { MONITORS } from '@void-sector/shared';
+import { AutomatScreen } from './AutomatScreen';
 import { COLOR_PROFILES, type ColorProfileName } from '../styles/themes';
 
 // --- SHIP-SYS: Settings + Modules ---
@@ -363,6 +364,8 @@ function renderScreen(monitorId: string) {
       return <FabrikPanel />;
     case MONITORS.XENO:
       return <XenoScreen />;
+    case MONITORS.AUTOMAT:
+      return <AutomatScreen />;
     default:
       return <div style={{ padding: 12 }}>UNKNOWN MONITOR</div>;
   }

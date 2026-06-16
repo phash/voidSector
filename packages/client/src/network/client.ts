@@ -2208,6 +2208,34 @@ class GameNetwork {
       useStore.getState().setPlayerCardTarget(data);
     });
 
+    // ── Ship Programs ──────────────────────────────────────────────────────────
+
+    room.onMessage('programList', (rows: any[]) => {
+      useStore.getState().setShipPrograms(Array.isArray(rows) ? rows : []);
+    });
+
+    room.onMessage('programSaved', () => {
+      network.sendListPrograms();
+    });
+
+    room.onMessage('programState', (data: { status: string; pc: number; log?: { level: string; message: string } }) => {
+      useStore.getState().setShipProgramRun({ status: data.status, pc: data.pc });
+      if (data.log) useStore.getState().appendShipProgramLog(data.log.message);
+    });
+
+    room.onMessage('programLog', (data: { level: string; message: string }) => {
+      useStore.getState().appendShipProgramLog(data.message);
+    });
+
+    room.onMessage('programError', (data: { errors?: Array<{ line: number; message: string }>; message?: string }) => {
+      const msg = data.errors?.map((e) => `Zeile ${e.line}: ${e.message}`).join('\n') ?? data.message ?? 'Programmfehler';
+      useStore.getState().appendShipProgramLog(`FEHLER: ${msg}`);
+      const setErr = (useStore.getState() as any).setActionError;
+      if (typeof setErr === 'function') setErr({ code: 'PROGRAM', message: msg });
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     room.onLeave(async (code) => {
       if (this.intentionalLeave) {
         this.intentionalLeave = false;
@@ -3113,6 +3141,32 @@ class GameNetwork {
 
   requestCategoryTech() {
     this.sectorRoom?.send('getCategoryTech');
+  }
+
+  // ── Ship Programs ──────────────────────────────────────────────────────────
+
+  sendSaveProgram(name: string, source: string, mode: string) {
+    this.sectorRoom?.send('saveProgram', { name, source, mode });
+  }
+
+  sendListPrograms() {
+    this.sectorRoom?.send('listPrograms', {});
+  }
+
+  sendDeleteProgram(id: string) {
+    this.sectorRoom?.send('deleteProgram', { id });
+  }
+
+  sendSetActiveProgram(id: string) {
+    this.sectorRoom?.send('setActiveProgram', { id });
+  }
+
+  sendStartProgram(id: string) {
+    this.sectorRoom?.send('startProgram', { id });
+  }
+
+  sendStopProgram() {
+    this.sectorRoom?.send('stopProgram', {});
   }
 }
 

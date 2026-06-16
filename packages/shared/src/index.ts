@@ -1,6 +1,6 @@
 export * from './types.js';
 export * from './constants.js';
-export { calculateShipStats, validateModuleInstall, getAcepLevel, getExtraSlotCount, getActiveDrawbacks, getDamageState, getModuleEffectivePowerLevel, calculateApRegen } from './shipCalculator.js';
+export { calculateShipStats, validateModuleInstall, getAcepLevel, getExtraSlotCount, getActiveDrawbacks, getDamageState, getModuleEffectivePowerLevel, calculateApRegen, getShipComputerLevel } from './shipCalculator.js';
 export type { DamageState } from './shipCalculator.js';
 export {
   calcHyperjumpAP,
@@ -16,3 +16,9 @@ export { MODULE_DEFINITIONS, MODULE_MAP } from './moduleDefinitions.js';
 export type { ModuleDefinition } from './moduleDefinitions.js';
 export { RESEARCH_DEFINITIONS } from './researchDefinitions.js';
 export type { ResearchNode } from './researchDefinitions.js';
+export { compileProgram, compileAst } from './automation/compiler.js';
+export { parseProgram } from './automation/parser.js';
+export type { ParseResult } from './automation/parser.js';
+export * from './automation/types.js';
+export { PROGRAM_TEMPLATES } from './automation/templates.js';
+export type { ProgramTemplate } from './automation/templates.js';

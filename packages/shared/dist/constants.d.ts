@@ -304,6 +304,7 @@ export declare const MONITORS: {
     readonly FABRIK: "FABRIK";
     readonly XENO: "XENO";
     readonly ORIGIN_HUB: "ORIGIN-HUB";
+    readonly AUTOMAT: "AUTOMAT";
 };
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
 /** Programs selectable in Section 1 of the cockpit layout (#107) */

@@ -2,6 +2,8 @@
 // Compendium — In-game wiki: alle verfügbaren Spielsysteme (kein Alien-Content)
 // ---------------------------------------------------------------------------
 
+import { PROGRAM_TEMPLATES } from '@void-sector/shared';
+
 export type CompendiumCategory =
   | 'grundlagen'
   | 'navigation'
@@ -43,6 +45,10 @@ export const COMPENDIUM_CATEGORIES: {
 // ---------------------------------------------------------------------------
 // Articles
 // ---------------------------------------------------------------------------
+
+const AUTOMAT_TEMPLATE_DOCS = PROGRAM_TEMPLATES.map(
+  (t) => `**${t.name}** (ab MK.${t.minLevel}) — ${t.description}\n\n\`\`\`\n${t.source}\n\`\`\``,
+).join('\n\n');
 
 export const COMPENDIUM_ARTICLES: CompendiumArticle[] = [
   // ==========================================================================
@@ -2069,6 +2075,46 @@ Außer wenn dein AUSBAU-Level 1 ist. Dann ist es identisch frustrierend, nur and
 ![Schema: 8 Spezialisierte Slots plus Extra-Slots. Mehrere davon leer mit ??? beschriftet.](img:acep/acep-slots-diagram)`,
     seeAlso: ['acep-monitor', 'acep-pfade', 'acep-intro'],
     tags: ['acep', 'slots', 'module', 'ausbau', 'gating', 'fabrik'],
+  },
+
+  // ==========================================================================
+  // TECHNIK — AUTOMAT
+  // ==========================================================================
+
+  {
+    id: 'schiffsprogrammierung',
+    title: 'SCHIFFSPROGRAMMIERUNG (AUTOMAT)',
+    category: 'technik',
+    icon: '⚙',
+    summary: 'Programmiere dein Schiff mit der AUTOMAT-Sprache — Befehle, Bedingungen, Schleifen, Beispiel-Skripte.',
+    body: `Mit dem Bordcomputer (Modul) programmierst du Abläufe, die dein Schiff selbst ausführt — online, ab MK.IV auch offline.
+
+## Befehle
+- \`fly X:Y\` — fliegt zum Sektor X:Y (kostet AP + Treibstoff)
+- \`scan\` — scannt den aktuellen Sektor
+- \`mine\` / \`mine until full\` / \`mine <n>\` — baut ab (bis voll / feste Menge)
+- \`sell all\` / \`sell <rohstoff>\` — verkauft an einer Station (ore/gas/crystal)
+
+## Bedingungen (in \`if\`)
+\`resources\` (Rohstoffe da) · \`full\` · \`empty\` · \`station\` (Station hier) · \`fuel < N\` · \`at X:Y\` · \`not <bedingung>\`
+
+## Kontrollfluss
+- \`if <bedingung>:\` … \`else:\` … (Einrückung = 2 Leerzeichen)
+- \`repeat:\` (Endlosschleife) bzw. \`repeat N times:\`
+
+## Computer-Stufen
+- MK.I: nur Befehlsfolgen (fly/scan/mine/sell)
+- MK.II: + if/else, repeat, einfache Bedingungen
+- MK.III: + repeat N times, Verschachtelung, not, fuel/at/station
+- MK.IV: + Offline-Ausführung (bis 4h)
+- MK.V: längste Programme, Offline bis 12h
+
+## Beispiel-Skripte
+${AUTOMAT_TEMPLATE_DOCS}
+
+Tipp: Im AUTOMAT-Tab kannst du diese Vorlagen mit einem Klick laden.`,
+    seeAlso: ['forschung', 'acep-intro'],
+    tags: ['automat', 'programmierung', 'dsl', 'automation', 'computer', 'skript'],
   },
 ];
 

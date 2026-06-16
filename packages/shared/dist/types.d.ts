@@ -72,7 +72,7 @@ export interface WreckExhaustedPayload {
     sectorX: number;
     sectorY: number;
 }
-export type ArtefactType = 'drive' | 'cargo' | 'scanner' | 'armor' | 'weapon' | 'shield' | 'defense' | 'special' | 'mining' | 'generator' | 'repair' | 'factory';
+export type ArtefactType = 'drive' | 'cargo' | 'scanner' | 'armor' | 'weapon' | 'shield' | 'defense' | 'special' | 'mining' | 'generator' | 'repair' | 'factory' | 'computer';
 export declare const ARTEFACT_TYPES: ArtefactType[];
 /** Maps module category name to its matching ArtefactType (1:1) */
 export declare const ARTEFACT_TYPE_FOR_CATEGORY: Record<ArtefactType, ArtefactType>;

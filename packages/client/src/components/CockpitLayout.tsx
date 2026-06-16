@@ -18,6 +18,7 @@ import { FactionDetailPanel } from './FactionDetailPanel';
 import { ShipDetailPanel } from './ShipDetailPanel';
 import { AcepDetailPanel } from './AcepDetailPanel';
 import { WreckPanel } from './WreckPanel';
+import { AutomatDetailPanel } from './AutomatDetailPanel';
 import { SectorInfo, StatusBar } from './HUD';
 import { NavControls } from './NavControls';
 import { ShipBlock, CargoBlock, StatsBlock } from './ShipBlock';
@@ -65,6 +66,8 @@ function getDetailForProgram(programId: string): ReactNode | null {
       return <ShipDetailPanel />;
     case 'ACEP':
       return <AcepDetailPanel />;
+    case 'AUTOMAT':
+      return <AutomatDetailPanel />;
     default:
       return null;
   }

@@ -515,11 +515,11 @@ export const ACEP_PATH_SLOT_UNLOCKS: AcepSlotDef[] = [
   { path: 'explorer', level: 3, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
   { path: 'explorer', level: 6, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
   { path: 'explorer', level: 9, label: 'EXP', categories: ['cargo', 'mining', 'scanner', 'repair'] },
-  // AUSBAU: engine/gen/repair slots at 2, 4, 8, 10
-  { path: 'ausbau', level: 2, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
-  { path: 'ausbau', level: 4, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
-  { path: 'ausbau', level: 8, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
-  { path: 'ausbau', level: 10, label: 'ENG', categories: ['drive', 'generator', 'repair'] },
+  // AUSBAU: engine/gen/repair/computer slots at 2, 4, 8, 10
+  { path: 'ausbau', level: 2, label: 'ENG', categories: ['drive', 'generator', 'repair', 'computer'] },
+  { path: 'ausbau', level: 4, label: 'ENG', categories: ['drive', 'generator', 'repair', 'computer'] },
+  { path: 'ausbau', level: 8, label: 'ENG', categories: ['drive', 'generator', 'repair', 'computer'] },
+  { path: 'ausbau', level: 10, label: 'ENG', categories: ['drive', 'generator', 'repair', 'computer'] },
 ];
 
 /** Get unlocked extra slots based on ACEP path levels */
@@ -760,6 +760,7 @@ export const MONITORS = {
   FABRIK: 'FABRIK',
   XENO: 'XENO',
   ORIGIN_HUB: 'ORIGIN-HUB',
+  AUTOMAT: 'AUTOMAT',
 } as const;
 
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
@@ -782,6 +783,7 @@ export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.FRIENDS,
   MONITORS.FABRIK,
   MONITORS.XENO,
+  MONITORS.AUTOMAT,
 ];
 
 /** Labels for cockpit program buttons */
@@ -803,6 +805,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
   FABRIK: 'FABRIK',
   XENO: 'XENO',
   'ORIGIN-HUB': 'HUB',
+  AUTOMAT: 'AUTOMAT',
 };
 
 // --- Phase 5: Deep Systems ---

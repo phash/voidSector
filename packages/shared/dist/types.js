@@ -25,6 +25,7 @@ export const ARTEFACT_TYPE_FOR_CATEGORY = {
     generator: 'generator',
     repair: 'repair',
     factory: 'factory',
+    computer: 'computer',
 };
 /** Derive legacy SectorType from environment + contents (for backward compat) */
 export function legacySectorType(env, contents) {

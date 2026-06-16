@@ -1,0 +1,1 @@
+{"version":3,"file":"templates.d.ts","sourceRoot":"","sources":["../../src/automation/templates.ts"],"names":[],"mappings":"AAAA,2EAA2E;AAC3E,MAAM,WAAW,eAAe;IAC9B,4BAA4B;IAC5B,IAAI,EAAE,MAAM,CAAC;IACb,iFAAiF;IACjF,QAAQ,EAAE,MAAM,CAAC;IACjB,wDAAwD;IACxD,WAAW,EAAE,MAAM,CAAC;IACpB,yCAAyC;IACzC,MAAM,EAAE,MAAM,CAAC;CAChB;AAED,8EAA8E;AAC9E,eAAO,MAAM,iBAAiB,EAAE,eAAe,EA2E9C,CAAC"}
