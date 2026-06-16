@@ -1223,6 +1223,13 @@ class GameNetwork {
       useStore.getState().showTip('first_quest_complete');
     });
 
+    room.onMessage(
+      'questTurnInOffer',
+      (data: { questId: string; title: string; rewardCredits?: number }) => {
+        useStore.getState().setQuestTurnInOffer(data);
+      },
+    );
+
     room.onMessage('trackedQuestsUpdate', (data: { quests: TrackedQuest[] }) => {
       useStore.getState().setTrackedQuests(data.quests);
     });
@@ -2596,6 +2603,10 @@ class GameNetwork {
       return;
     }
     this.sectorRoom.send('deliverQuest', { questId });
+  }
+
+  sendTurnInQuest(questId: string) {
+    this.sectorRoom?.send('turnInQuest', { questId });
   }
 
   sendDeliverQuestResources(questId: string, sectorX: number, sectorY: number) {

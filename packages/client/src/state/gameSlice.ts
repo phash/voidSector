@@ -578,6 +578,9 @@ export interface GameSlice {
   // Quest completion
   questCompleteQueue: QuestCompleteEntry[];
 
+  // Interactive quest turn-in offer (server re-offers on next arrival if dismissed)
+  questTurnInOffer: { questId: string; title: string; rewardCredits?: number } | null;
+
   // AQ Story / Community
   storyEvent: StoryEventPayload | null;
   alienEncounterEvent: AlienEncounterEventPayload | null;
@@ -740,6 +743,9 @@ export interface GameSlice {
   setVisitedQuadrants: (quadrants: Array<{ qx: number; qy: number }>) => void;
   addQuestComplete: (entry: QuestCompleteEntry) => void;
   shiftQuestComplete: () => void;
+  setQuestTurnInOffer: (
+    offer: { questId: string; title: string; rewardCredits?: number } | null,
+  ) => void;
   setStoryEvent: (e: StoryEventPayload | null) => void;
   setAlienEncounterEvent: (e: AlienEncounterEventPayload | null) => void;
   setStoryProgress: (p: StoryProgressPayload | null) => void;
@@ -910,6 +916,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
   autoRefuelConfig: { enabled: false, maxPricePerUnit: 10 },
   visitedQuadrants: new Set<string>(),
   questCompleteQueue: [],
+  questTurnInOffer: null,
   storyEvent: null,
   alienEncounterEvent: null,
   storyProgress: null,
@@ -1188,6 +1195,7 @@ export const createGameSlice: StateCreator<GameSlice, [], [], GameSlice> = (set,
     set((s) => ({ questCompleteQueue: [...s.questCompleteQueue, entry] })),
   shiftQuestComplete: () =>
     set((s) => ({ questCompleteQueue: s.questCompleteQueue.slice(1) })),
+  setQuestTurnInOffer: (offer) => set({ questTurnInOffer: offer }),
   setStoryEvent: (e) => set({ storyEvent: e }),
   setAlienEncounterEvent: (e) => set({ alienEncounterEvent: e }),
   setStoryProgress: (p) => set({ storyProgress: p }),
