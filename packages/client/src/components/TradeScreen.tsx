@@ -83,6 +83,10 @@ export function TradeScreen() {
     }
   }, [tier]);
 
+  useEffect(() => {
+    if (isStation) network.requestNpcStationData();
+  }, [isStation]);
+
   if (!canTrade) {
     const nearest = findNearestStation(position, discoveries);
     return (
