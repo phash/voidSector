@@ -730,6 +730,14 @@ export class SectorRoom extends Room<SectorRoomState> {
     this.onMessage('deliverQuest', async (client, data: { questId: string }) => {
       await this.quests.handleDeliverQuest(client, data.questId, this._px(client.sessionId), this._py(client.sessionId));
     });
+    this.onMessage('turnInQuest', async (client, data: { questId: string }) => {
+      try {
+        await this.quests.handleTurnInQuest(client, data ?? ({} as any));
+      } catch (err) {
+        logger.error({ err }, 'turnInQuest error');
+        client.send('error', { code: 'TURNIN_FAIL', message: 'Quest konnte nicht abgegeben werden' });
+      }
+    });
     this.onMessage('getReputation', async (client) => {
       await this.quests.handleGetReputation(client);
     });

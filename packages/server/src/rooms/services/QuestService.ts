@@ -363,6 +363,68 @@ export class QuestService {
     await this.sendActiveQuests(client, auth.userId);
   }
 
+  // Player confirmed the turn-in offer (questTurnInOffer → turnInQuest). Verify
+  // the player is at the giver station with all scans done, robustly consume the
+  // data slate, and complete the quest via the shared completion path.
+  async handleTurnInQuest(client: Client, data: { questId: string }): Promise<void> {
+    const auth = client.auth as AuthPayload;
+    const row = await getQuestById(data.questId, auth.userId);
+
+    if (!row) {
+      this.ctx.send(client, 'error', { code: 'TURNIN_FAIL', message: 'Quest nicht gefunden' });
+      return;
+    }
+    if (row.status !== 'active') {
+      this.ctx.send(client, 'error', { code: 'TURNIN_FAIL', message: 'Quest nicht aktiv' });
+      return;
+    }
+
+    const objectives = row.objectives as QuestObjective[];
+    const deliverObj = objectives.find((o) => o.type === 'scan_deliver');
+    if (!deliverObj) {
+      this.ctx.send(client, 'error', { code: 'TURNIN_FAIL', message: 'Keine Abgabe für diese Quest' });
+      return;
+    }
+    if (deliverObj.fulfilled) {
+      this.ctx.send(client, 'error', { code: 'TURNIN_FAIL', message: 'Quest bereits abgeschlossen' });
+      return;
+    }
+
+    // Must be physically at the giver station.
+    const playerX = this.ctx._px(client.sessionId);
+    const playerY = this.ctx._py(client.sessionId);
+    if (deliverObj.stationX !== playerX || deliverObj.stationY !== playerY) {
+      this.ctx.send(client, 'error', { code: 'TURNIN_FAIL', message: 'Nicht an der Auftrags-Station' });
+      return;
+    }
+
+    // All non-(scan_deliver) objectives (i.e. the scan(s)) must be fulfilled.
+    const scansDone = objectives.filter((o) => o.type !== 'scan_deliver').every((o) => o.fulfilled);
+    if (!scansDone) {
+      this.ctx.send(client, 'error', { code: 'TURNIN_FAIL', message: 'Quest noch nicht abgeschlossen' });
+      return;
+    }
+
+    // Robustly consume the data slate — do NOT block completion if it is missing.
+    try {
+      const hasSlate = await getInventoryItem(auth.userId, 'data_slate', row.id);
+      if (hasSlate > 0) {
+        await removeFromInventory(auth.userId, 'data_slate', row.id, 1);
+      }
+    } catch {
+      /* ignore — slate may not exist */
+    }
+
+    deliverObj.fulfilled = true;
+    await updateQuestObjectives(row.id, objectives);
+    this.ctx.send(client, 'questProgress', { questId: row.id, objectives });
+
+    // Complete via the shared path (rewards granted + questComplete sent).
+    await this.completeQuest(client, auth.userId, row);
+    const updatedTracked = await getTrackedQuests(auth.userId);
+    this.ctx.send(client, 'trackedQuestsUpdate', { quests: updatedTracked });
+  }
+
   async handleGetTrackedQuests(client: Client): Promise<void> {
     const auth = client.auth as AuthPayload;
     const trackedQuests = await getTrackedQuests(auth.userId);
@@ -678,19 +740,29 @@ export class QuestService {
           }
         }
 
-        // scan_deliver: player returns data slate to quest station
+        // scan_deliver: player returns to quest station with scans done →
+        // OFFER turn-in instead of silently auto-completing. The client shows a
+        // popup; only when the player confirms (turnInQuest) does the quest
+        // complete via handleTurnInQuest. "Später" → re-offered on next arrival.
         if (
           obj.type === 'scan_deliver' &&
           action === 'arrive' &&
           obj.stationX === context.sectorX &&
           obj.stationY === context.sectorY
         ) {
-          const hasSlate = await getInventoryItem(playerId, 'data_slate', row.id);
-          if (hasSlate > 0) {
-            await removeFromInventory(playerId, 'data_slate', row.id, 1);
-            obj.fulfilled = true;
-            updated = true;
+          // Ready only when every OTHER objective (i.e. the scan(s)) is fulfilled.
+          const otherObjectivesDone = objectives
+            .filter((o) => o !== obj)
+            .every((o) => o.fulfilled);
+          if (otherObjectivesDone) {
+            const rewardCredits = (row.rewards as QuestRewards | undefined)?.credits;
+            this.ctx.send(client, 'questTurnInOffer', {
+              questId: row.id,
+              title: row.title ?? row.template_id,
+              ...(rewardCredits != null ? { rewardCredits } : {}),
+            });
           }
+          // Do NOT consume the slate, mark fulfilled, or complete here.
         }
 
         if (
