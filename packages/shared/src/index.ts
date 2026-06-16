@@ -20,3 +20,5 @@ export { compileProgram, compileAst } from './automation/compiler.js';
 export { parseProgram } from './automation/parser.js';
 export type { ParseResult } from './automation/parser.js';
 export * from './automation/types.js';
+export { PROGRAM_TEMPLATES } from './automation/templates.js';
+export type { ProgramTemplate } from './automation/templates.js';

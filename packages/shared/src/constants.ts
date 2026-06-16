@@ -760,6 +760,7 @@ export const MONITORS = {
   FABRIK: 'FABRIK',
   XENO: 'XENO',
   ORIGIN_HUB: 'ORIGIN-HUB',
+  AUTOMAT: 'AUTOMAT',
 } as const;
 
 export type MonitorId = (typeof MONITORS)[keyof typeof MONITORS];
@@ -782,6 +783,7 @@ export const COCKPIT_PROGRAMS: MonitorId[] = [
   MONITORS.FRIENDS,
   MONITORS.FABRIK,
   MONITORS.XENO,
+  MONITORS.AUTOMAT,
 ];
 
 /** Labels for cockpit program buttons */
@@ -803,6 +805,7 @@ export const COCKPIT_PROGRAM_LABELS: Record<string, string> = {
   FABRIK: 'FABRIK',
   XENO: 'XENO',
   'ORIGIN-HUB': 'HUB',
+  AUTOMAT: 'AUTOMAT',
 };
 
 // --- Phase 5: Deep Systems ---
