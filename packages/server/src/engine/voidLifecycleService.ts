@@ -1,458 +1,328 @@
 // packages/server/src/engine/voidLifecycleService.ts
+// Game of Life implementation for Void civilization expansion.
+// Each quadrant is a cell: alive (void) or dead (not void).
+// Every strategic tick (60s), GoL rules are applied.
 import type { Redis } from 'ioredis';
-import type { VoidClusterRow, VoidClusterQuadrantRow } from '../db/queries.js';
+import type { VoidClusterRow } from '../db/queries.js';
 import {
   getVoidClusters,
-  getVoidClusterQuadrants,
   upsertVoidCluster,
-  deleteVoidCluster,
-  upsertVoidClusterQuadrant,
-  deleteVoidClusterQuadrant,
-  replaceVoidFrontierSectors,
-  deleteVoidFrontierSectorsForQuadrant,
-  createVoidHive,
-  deleteVoidHive,
   getAllQuadrantControls,
   upsertQuadrantControl,
   deleteQuadrantControl,
+  createVoidHive,
+  deleteVoidHive,
+  cleanupLegacyVoidData,
 } from '../db/queries.js';
-import { getExpansionTarget } from './expansionEngine.js';
 import { logger } from '../utils/logger.js';
 
 export const QUADRANT_SIZE = 10_000;
-const VOID_SPAWN_INTERVAL_TICKS = 10;
-const VOID_MIN_CLUSTER_COUNT = 32;
-const VOID_MAX_CLUSTER_COUNT = 48;
-// TODO: Für Produktion auf 100+ erhöhen — alle Alien-Zivilisationen sollen
-// weiter vom Zentrum starten und größer werden dürfen. Aktuell nah für Tests.
-const VOID_ORIGIN_EXCLUSION = 10;
-const VOID_SPAWN_MIN_DISTANCE = 5;
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+/** Single master cluster ID for the GoL void grid (FK reference for hives) */
+export const VOID_GOL_CLUSTER_ID = 'void_gol';
+
+/** Don't birth void cells within ±N quadrants of (0,0) */
+export const VOID_ORIGIN_EXCLUSION = 100;
+
+/** Number of initial GoL patterns to spawn */
+const VOID_SPAWN_COUNT = 15;
+
+/** Minimum Manhattan distance between spawn points */
+const VOID_SPAWN_MIN_DISTANCE = 80;
+
+/** After N consecutive stable ticks (no changes), inject a new pattern */
+const VOID_STABLE_RESEED_TICKS = 20;
+
+// ─── GoL Seed Patterns ──────────────────────────────────────────────────────
+
+/** R-pentomino: classic methuselah, 5 cells → chaotic growth for ~1103 generations */
+export const R_PENTOMINO: ReadonlyArray<{ dx: number; dy: number }> = [
+  { dx: 1, dy: 0 }, { dx: 2, dy: 0 },
+  { dx: 0, dy: 1 }, { dx: 1, dy: 1 },
+  { dx: 1, dy: 2 },
+];
+
+/** Acorn: runs for 5206 generations, 7 cells */
+export const ACORN: ReadonlyArray<{ dx: number; dy: number }> = [
+  { dx: 1, dy: 0 },
+  { dx: 3, dy: 1 },
+  { dx: 0, dy: 2 }, { dx: 1, dy: 2 }, { dx: 4, dy: 2 }, { dx: 5, dy: 2 }, { dx: 6, dy: 2 },
+];
+
+/** Diehard: dies completely after 130 generations, 7 cells */
+export const DIEHARD: ReadonlyArray<{ dx: number; dy: number }> = [
+  { dx: 6, dy: 0 },
+  { dx: 0, dy: 1 }, { dx: 1, dy: 1 },
+  { dx: 1, dy: 2 }, { dx: 5, dy: 2 }, { dx: 6, dy: 2 }, { dx: 7, dy: 2 },
+];
+
+export const GOL_PATTERNS = [R_PENTOMINO, ACORN, DIEHARD];
 
 // ─── Pure Helpers (exported for testing) ─────────────────────────────────────
 
 /**
- * Compute the 100-sector frontier line for a quadrant at the given progress.
- * Returns empty array at progress=0 or progress=100.
+ * Core Game of Life: compute which cells are born and which die.
+ * Uses Moore neighborhood (8 neighbors).
+ * Rules: alive + 2-3 neighbors → survive; dead + exactly 3 neighbors → born.
+ * Cells cannot be born within the origin exclusion zone.
  */
-export function computeFrontierSectors(
-  qx: number,
-  qy: number,
-  progress: number,
-): Array<{ x: number; y: number }> {
-  if (progress <= 0 || progress >= 100) return [];
-  const ox = qx * QUADRANT_SIZE;
-  const oy = qy * QUADRANT_SIZE;
-  const fy = oy + Math.floor((progress / 100) * QUADRANT_SIZE);
-  const sectors: Array<{ x: number; y: number }> = [];
-  for (let x = ox; x < ox + 100; x++) {
-    sectors.push({ x, y: fy });
+export function computeNextGeneration(
+  alive: Set<string>,
+  originExclusion = 0,
+): { born: string[]; died: string[] } {
+  const neighborCounts = new Map<string, number>();
+
+  for (const key of alive) {
+    const [qx, qy] = key.split(':').map(Number);
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        if (dx === 0 && dy === 0) continue;
+        const nKey = `${qx + dx}:${qy + dy}`;
+        neighborCounts.set(nKey, (neighborCounts.get(nKey) ?? 0) + 1);
+      }
+    }
   }
-  return sectors;
+
+  const died: string[] = [];
+  for (const key of alive) {
+    const count = neighborCounts.get(key) ?? 0;
+    if (count < 2 || count > 3) {
+      died.push(key);
+    }
+  }
+
+  const born: string[] = [];
+  for (const [key, count] of neighborCounts) {
+    if (alive.has(key)) continue;
+    if (count === 3) {
+      if (originExclusion > 0) {
+        const [qx, qy] = key.split(':').map(Number);
+        if (Math.max(Math.abs(qx), Math.abs(qy)) <= originExclusion) continue;
+      }
+      born.push(key);
+    }
+  }
+
+  return { born, died };
 }
 
 /**
- * Find a valid spawn point for a new void cluster.
+ * Pick spawn points for initial GoL patterns.
+ * Distributes points across 8 directions at increasing distances from origin.
  */
-export function pickSpawnPoint(
-  claimedKeys: Set<string>,
-  searchRadius: number,
+export function pickGoLSpawnPoints(
+  count: number,
+  originExclusion: number,
   minDistance: number,
-): { qx: number; qy: number } | null {
-  const claimedCoords: Array<{ qx: number; qy: number }> = [];
-  for (const key of claimedKeys) {
-    const [qxStr, qyStr] = key.split(':');
-    claimedCoords.push({ qx: Number(qxStr), qy: Number(qyStr) });
-  }
+): Array<{ qx: number; qy: number }> {
+  const points: Array<{ qx: number; qy: number }> = [];
 
-  for (let qx = -searchRadius; qx <= searchRadius; qx++) {
-    for (let qy = -searchRadius; qy <= searchRadius; qy++) {
-      const key = `${qx}:${qy}`;
-      if (claimedKeys.has(key)) continue;
+  for (let ring = originExclusion + 20; points.length < count; ring += minDistance) {
+    const dirs: Array<{ qx: number; qy: number }> = [
+      { qx: ring, qy: ring },
+      { qx: -ring, qy: ring },
+      { qx: ring, qy: -ring },
+      { qx: -ring, qy: -ring },
+      { qx: ring, qy: 0 },
+      { qx: -ring, qy: 0 },
+      { qx: 0, qy: ring },
+      { qx: 0, qy: -ring },
+    ];
 
-      if (Math.max(Math.abs(qx), Math.abs(qy)) <= VOID_ORIGIN_EXCLUSION) continue;
-
-      const tooClose = claimedCoords.some(
-        (c) => Math.abs(c.qx - qx) + Math.abs(c.qy - qy) < minDistance,
+    for (const pt of dirs) {
+      if (points.length >= count) break;
+      const tooClose = points.some(
+        (p) => Math.abs(p.qx - pt.qx) + Math.abs(p.qy - pt.qy) < minDistance,
       );
-      if (tooClose) continue;
-
-      return { qx, qy };
+      if (!tooClose) points.push(pt);
     }
   }
-  return null;
-}
 
-/**
- * Partition quadrants into n groups using nearest-centroid (k-means seed selection).
- */
-export function computeSplitGroups(
-  quadrants: VoidClusterQuadrantRow[],
-  n: number,
-): { groups: VoidClusterQuadrantRow[][]; abandoned: VoidClusterQuadrantRow[] } {
-  if (quadrants.length === 0) return { groups: [], abandoned: [] };
-  if (n >= quadrants.length) return { groups: quadrants.map((q) => [q]), abandoned: [] };
-
-  const seeds: VoidClusterQuadrantRow[] = [quadrants[0]];
-  while (seeds.length < n) {
-    let bestDist = -1;
-    let bestQ = quadrants[0];
-    for (const q of quadrants) {
-      if (seeds.includes(q)) continue;
-      const minDist = Math.min(
-        ...seeds.map((s) => Math.abs(s.qx - q.qx) + Math.abs(s.qy - q.qy)),
-      );
-      if (minDist > bestDist) {
-        bestDist = minDist;
-        bestQ = q;
-      }
-    }
-    seeds.push(bestQ);
-  }
-
-  const groups: VoidClusterQuadrantRow[][] = seeds.map(() => []);
-  for (const q of quadrants) {
-    let bestIdx = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i < seeds.length; i++) {
-      const d = Math.abs(seeds[i].qx - q.qx) + Math.abs(seeds[i].qy - q.qy);
-      if (d < bestDist) {
-        bestDist = d;
-        bestIdx = i;
-      }
-    }
-    groups[bestIdx].push(q);
-  }
-
-  const abandoned: VoidClusterQuadrantRow[] = [];
-  const validGroups: VoidClusterQuadrantRow[][] = [];
-  for (const g of groups) {
-    if (g.length < 2) {
-      abandoned.push(...g);
-    } else {
-      validGroups.push(g);
-    }
-  }
-  return { groups: validGroups, abandoned };
-}
-
-/**
- * Pick which clusters should start dying (oldest first, already-dying excluded).
- */
-export function pickDyingClusters(clusters: VoidClusterRow[]): VoidClusterRow[] {
-  const count = clusters.length;
-  if (count <= VOID_MAX_CLUSTER_COUNT) return [];
-  const numToDie = Math.floor((count - VOID_MAX_CLUSTER_COUNT) / 2) + 1;
-  const eligible = clusters
-    .filter((c) => c.state !== 'dying')
-    .sort((a, b) => a.spawned_at.getTime() - b.spawned_at.getTime());
-  return eligible.slice(0, numToDie);
+  return points;
 }
 
 // ─── VoidLifecycleService ─────────────────────────────────────────────────────
 
 export class VoidLifecycleService {
-  private tickCount = 0;
+  private initialized = false;
+  private stableTicks = 0;
 
   constructor(private redis: Redis) {}
 
   async tick(): Promise<void> {
-    this.tickCount++;
-    const clusters = await getVoidClusters();
-
-    const toDie = pickDyingClusters(clusters);
-    for (const c of toDie) {
-      await upsertVoidCluster({ ...c, state: 'dying' });
-      logger.info({ clusterId: c.id }, 'Void cluster marked dying (pop-cap)');
+    if (!this.initialized) {
+      await this.initialize();
+      this.initialized = true;
     }
 
-    const refreshed = await getVoidClusters();
-    for (const cluster of refreshed) {
-      await this.processCluster(cluster);
-    }
-
-    if (this.tickCount % VOID_SPAWN_INTERVAL_TICKS === 0) {
-      const current = await getVoidClusters();
-      if (current.length < VOID_MIN_CLUSTER_COUNT) {
-        await this.trySpawn();
-      }
-    }
-  }
-
-  private async processCluster(cluster: VoidClusterRow): Promise<void> {
-    switch (cluster.state) {
-      case 'growing':
-        await this.processGrowing(cluster);
-        break;
-      case 'splitting':
-        await this.processSplitting(cluster);
-        break;
-      case 'dying':
-        await this.processDying(cluster);
-        break;
-    }
-  }
-
-  private async processGrowing(cluster: VoidClusterRow): Promise<void> {
     const allControls = await getAllQuadrantControls();
-    const quadrants = await getVoidClusterQuadrants(cluster.id);
-    const activeQuadrants = quadrants.filter((q) => q.progress < 100);
-
-    let newSize = cluster.size;
-
-    for (const q of activeQuadrants) {
-      const newProgress = Math.min(100, q.progress + 1);
-      await upsertVoidClusterQuadrant(cluster.id, q.qx, q.qy, newProgress);
-
-      if (newProgress === 100) {
-        await upsertQuadrantControl({
-          qx: q.qx,
-          qy: q.qy,
-          controlling_faction: 'voids',
-          faction_shares: { voids: 100 },
-          attack_value: 0,
-          defense_value: 0,
-          friction_score: 0,
-          station_tier: 0,
-          void_cluster_id: cluster.id,
-        });
-        await createVoidHive(q.qx, q.qy, cluster.id);
-        await deleteVoidFrontierSectorsForQuadrant(cluster.id, q.qx, q.qy);
-        newSize++;
-
-        const completedSet = new Set(
-          quadrants
-            .filter((cq) => cq.progress === 100 || (cq.qx === q.qx && cq.qy === q.qy))
-            .map((cq) => `${cq.qx}:${cq.qy}`),
-        );
-        const syntheticControls = allControls.map((c) =>
-          completedSet.has(`${c.qx}:${c.qy}`)
-            ? { ...c, controlling_faction: 'voids' }
-            : c,
-        );
-        const target = getExpansionTarget('voids', syntheticControls, 'sphere');
-        if (target) {
-          await upsertVoidClusterQuadrant(cluster.id, target.qx, target.qy, 0);
-          logger.debug(
-            { clusterId: cluster.id, qx: target.qx, qy: target.qy },
-            'Void expanding',
-          );
-        }
-      } else {
-        const sectors = computeFrontierSectors(q.qx, q.qy, newProgress);
-        await replaceVoidFrontierSectors(cluster.id, q.qx, q.qy, sectors);
-      }
-    }
-
-    const shouldSplit = newSize >= cluster.split_threshold;
-    await upsertVoidCluster({
-      ...cluster,
-      size: newSize,
-      state: shouldSplit ? 'splitting' : 'growing',
-    });
-
-    if (shouldSplit) {
-      logger.info(
-        { clusterId: cluster.id, size: newSize },
-        'Void cluster reached split threshold',
-      );
-    }
-
-    await this.checkCollision(cluster.id);
-  }
-
-  private async processSplitting(cluster: VoidClusterRow): Promise<void> {
-    const quadrants = await getVoidClusterQuadrants(cluster.id);
-    const complete = quadrants.filter((q) => q.progress === 100);
-
-    const n = Math.random() < 0.33 ? 3 : 2;
-    const { groups, abandoned } = computeSplitGroups(complete, n);
-
-    for (const q of abandoned) {
-      await this.releaseQuadrant(cluster.id, q.qx, q.qy);
-    }
-
-    for (const group of groups) {
-      const newId = `vc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      const threshold = 8 + Math.floor(Math.random() * 9);
-      const newCluster: VoidClusterRow = {
-        id: newId,
-        state: 'growing',
-        size: group.length,
-        split_threshold: threshold,
-        spawned_at: new Date(),
-        origin_qx: group[0].qx,
-        origin_qy: group[0].qy,
-      };
-      await upsertVoidCluster(newCluster);
-      for (const q of group) {
-        await upsertVoidClusterQuadrant(newId, q.qx, q.qy, q.progress);
-        await upsertQuadrantControl({
-          qx: q.qx,
-          qy: q.qy,
-          controlling_faction: 'voids',
-          faction_shares: { voids: 100 },
-          attack_value: 0,
-          defense_value: 0,
-          friction_score: 0,
-          station_tier: 0,
-          void_cluster_id: newId,
-        });
-      }
-    }
-
-    const inProgress = quadrants.filter((q) => q.progress < 100);
-    for (const q of inProgress) {
-      await deleteVoidClusterQuadrant(cluster.id, q.qx, q.qy);
-      await deleteVoidFrontierSectorsForQuadrant(cluster.id, q.qx, q.qy);
-    }
-
-    await deleteVoidCluster(cluster.id);
-    logger.info(
-      { clusterId: cluster.id, groups: groups.length, abandoned: abandoned.length },
-      'Void cluster split',
+    const alive = new Set(
+      allControls
+        .filter((c) => c.controlling_faction === 'voids')
+        .map((c) => `${c.qx}:${c.qy}`),
     );
-  }
 
-  private async processDying(cluster: VoidClusterRow): Promise<void> {
-    const quadrants = await getVoidClusterQuadrants(cluster.id);
-    if (quadrants.length === 0) {
-      await deleteVoidCluster(cluster.id);
+    // No voids → seed initial GoL patterns
+    if (alive.size === 0) {
+      await this.seed(allControls.map((c) => `${c.qx}:${c.qy}`));
+      this.stableTicks = 0;
       return;
     }
 
-    const sorted = [...quadrants].sort((a, b) => a.progress - b.progress);
-    const toRelease = sorted[0];
+    // Compute next generation
+    const { born: rawBorn, died } = computeNextGeneration(alive, VOID_ORIGIN_EXCLUSION);
 
-    if (toRelease.progress === 100) {
-      await this.releaseQuadrant(cluster.id, toRelease.qx, toRelease.qy);
-      await upsertVoidCluster({ ...cluster, size: Math.max(0, cluster.size - 1) });
-    } else {
-      await deleteVoidClusterQuadrant(cluster.id, toRelease.qx, toRelease.qy);
-      await deleteVoidFrontierSectorsForQuadrant(cluster.id, toRelease.qx, toRelease.qy);
+    // Filter births: don't overwrite quadrants already controlled by other factions
+    const claimedByOthers = new Set(
+      allControls
+        .filter((c) => c.controlling_faction && c.controlling_faction !== 'voids')
+        .map((c) => `${c.qx}:${c.qy}`),
+    );
+    const born = rawBorn.filter((key) => !claimedByOthers.has(key));
+
+    if (born.length === 0 && died.length === 0) {
+      this.stableTicks++;
+      if (this.stableTicks >= VOID_STABLE_RESEED_TICKS) {
+        // Inject a new pattern to keep things evolving
+        await this.injectPattern(alive, allControls.map((c) => `${c.qx}:${c.qy}`));
+        this.stableTicks = 0;
+      }
+      return;
+    }
+
+    this.stableTicks = 0;
+
+    // Apply deaths
+    for (const key of died) {
+      const [qx, qy] = key.split(':').map(Number);
+      await this.releaseQuadrant(qx, qy);
+    }
+
+    // Apply births
+    for (const key of born) {
+      const [qx, qy] = key.split(':').map(Number);
+      await this.claimQuadrant(qx, qy);
+    }
+
+    logger.info(
+      { born: born.length, died: died.length, total: alive.size - died.length + born.length },
+      'Void GoL tick',
+    );
+  }
+
+  private async initialize(): Promise<void> {
+    const clusters = await getVoidClusters();
+    const hasMaster = clusters.some((c) => c.id === VOID_GOL_CLUSTER_ID);
+
+    if (!hasMaster) {
+      // Create master GoL cluster
+      await upsertVoidCluster({
+        id: VOID_GOL_CLUSTER_ID,
+        state: 'growing',
+        size: 0,
+        split_threshold: 999999,
+        spawned_at: new Date(),
+        origin_qx: 0,
+        origin_qy: 0,
+      });
+
+      // Clean up legacy void data (old cluster system)
+      if (clusters.length > 0) {
+        await cleanupLegacyVoidData(VOID_GOL_CLUSTER_ID);
+        logger.info(
+          { legacyClusters: clusters.length },
+          'Cleaned up legacy void cluster data',
+        );
+      }
     }
   }
 
-  private async releaseQuadrant(clusterId: string, qx: number, qy: number): Promise<void> {
+  private async seed(claimedKeys: string[]): Promise<void> {
+    const claimed = new Set(claimedKeys);
+    const spawnPoints = pickGoLSpawnPoints(
+      VOID_SPAWN_COUNT,
+      VOID_ORIGIN_EXCLUSION,
+      VOID_SPAWN_MIN_DISTANCE,
+    );
+
+    let totalCells = 0;
+    for (let i = 0; i < spawnPoints.length; i++) {
+      const { qx, qy } = spawnPoints[i];
+      const pattern = GOL_PATTERNS[i % GOL_PATTERNS.length];
+
+      for (const { dx, dy } of pattern) {
+        const cellQx = qx + dx;
+        const cellQy = qy + dy;
+        const key = `${cellQx}:${cellQy}`;
+        if (claimed.has(key)) continue;
+        if (Math.max(Math.abs(cellQx), Math.abs(cellQy)) <= VOID_ORIGIN_EXCLUSION) continue;
+
+        await this.claimQuadrant(cellQx, cellQy);
+        claimed.add(key);
+        totalCells++;
+      }
+    }
+
+    logger.info(
+      { spawnPoints: spawnPoints.length, totalCells },
+      'Void GoL seeded',
+    );
+  }
+
+  /** Inject a single R-pentomino near existing void territory to restart evolution */
+  private async injectPattern(
+    alive: Set<string>,
+    claimedKeys: string[],
+  ): Promise<void> {
+    const claimed = new Set(claimedKeys);
+
+    // Pick a random alive cell and place R-pentomino offset from it
+    const aliveArr = [...alive];
+    for (let attempt = 0; attempt < aliveArr.length; attempt++) {
+      const key = aliveArr[attempt];
+      const [qx, qy] = key.split(':').map(Number);
+      const ox = qx + 5;
+      const oy = qy + 5;
+      if (Math.max(Math.abs(ox), Math.abs(oy)) <= VOID_ORIGIN_EXCLUSION) continue;
+
+      let placed = 0;
+      for (const { dx, dy } of R_PENTOMINO) {
+        const cellKey = `${ox + dx}:${oy + dy}`;
+        if (claimed.has(cellKey)) continue;
+        await this.claimQuadrant(ox + dx, oy + dy);
+        claimed.add(cellKey);
+        placed++;
+      }
+
+      if (placed > 0) {
+        logger.info({ qx: ox, qy: oy, placed }, 'Void GoL injected pattern (stable reseed)');
+        return;
+      }
+    }
+  }
+
+  private async claimQuadrant(qx: number, qy: number): Promise<void> {
+    await upsertQuadrantControl({
+      qx,
+      qy,
+      controlling_faction: 'voids',
+      faction_shares: { voids: 100 },
+      attack_value: 0,
+      defense_value: 0,
+      friction_score: 0,
+      station_tier: 0,
+      void_cluster_id: VOID_GOL_CLUSTER_ID,
+    });
+    await createVoidHive(qx, qy, VOID_GOL_CLUSTER_ID);
+  }
+
+  private async releaseQuadrant(qx: number, qy: number): Promise<void> {
     // Released = unclaimed. Delete the control row instead of upserting a null
     // faction (controlling_faction is NOT NULL → the old null upsert threw every
-    // strategic tick). getQuadrantControl treats a missing row as unclaimed.
+    // strategic tick). A missing row is treated as unclaimed. (upstream fix 73a0bca)
     await deleteQuadrantControl(qx, qy);
     await deleteVoidHive(qx, qy);
-    await deleteVoidClusterQuadrant(clusterId, qx, qy);
-    await deleteVoidFrontierSectorsForQuadrant(clusterId, qx, qy);
-    logger.debug({ clusterId, qx, qy }, 'Void released quadrant');
   }
-
-  private async checkCollision(clusterId: string): Promise<void> {
-    const allClusters = await getVoidClusters();
-    const allControls = await getAllQuadrantControls();
-
-    const ownQuadrants = allControls.filter(
-      (c) => c.void_cluster_id === clusterId && c.controlling_faction === 'voids',
-    );
-
-    for (const other of allClusters) {
-      if (other.id === clusterId) continue;
-      const otherQuadrants = allControls.filter(
-        (c) => c.void_cluster_id === other.id && c.controlling_faction === 'voids',
-      );
-
-      let hasCollision = false;
-      for (const a of ownQuadrants) {
-        for (const b of otherQuadrants) {
-          if (Math.abs(a.qx - b.qx) + Math.abs(a.qy - b.qy) === 1) {
-            hasCollision = true;
-            break;
-          }
-        }
-        if (hasCollision) break;
-      }
-
-      if (hasCollision) {
-        await this.resolveCollision(
-          clusterId,
-          ownQuadrants.map((q) => ({ qx: q.qx, qy: q.qy })),
-          other.id,
-          otherQuadrants.map((q) => ({ qx: q.qx, qy: q.qy })),
-        );
-      }
-    }
-  }
-
-  private async resolveCollision(
-    idA: string,
-    quadrantsA: Array<{ qx: number; qy: number }>,
-    idB: string,
-    quadrantsB: Array<{ qx: number; qy: number }>,
-  ): Promise<void> {
-    const centroidB = {
-      qx: mean(quadrantsB.map((q) => q.qx)),
-      qy: mean(quadrantsB.map((q) => q.qy)),
-    };
-    const centroidA = {
-      qx: mean(quadrantsA.map((q) => q.qx)),
-      qy: mean(quadrantsA.map((q) => q.qy)),
-    };
-
-    const keepA = [...quadrantsA]
-      .sort((a, b) => dist(b, centroidB) - dist(a, centroidB))
-      .slice(0, Math.max(3, Math.ceil(quadrantsA.length / 2)));
-    const keepB = [...quadrantsB]
-      .sort((a, b) => dist(b, centroidA) - dist(a, centroidA))
-      .slice(0, Math.max(3, Math.ceil(quadrantsB.length / 2)));
-
-    const toReleaseA = quadrantsA.filter(
-      (q) => !keepA.some((k) => k.qx === q.qx && k.qy === q.qy),
-    );
-    const toReleaseB = quadrantsB.filter(
-      (q) => !keepB.some((k) => k.qx === q.qx && k.qy === q.qy),
-    );
-
-    for (const q of toReleaseA) await this.releaseQuadrant(idA, q.qx, q.qy);
-    for (const q of toReleaseB) await this.releaseQuadrant(idB, q.qx, q.qy);
-
-    logger.info(
-      { idA, idB, releasedA: toReleaseA.length, releasedB: toReleaseB.length },
-      'Void cluster collision resolved',
-    );
-  }
-
-  private async trySpawn(): Promise<void> {
-    const allControls = await getAllQuadrantControls();
-    const claimedKeys = new Set(allControls.map((c) => `${c.qx}:${c.qy}`));
-    const point = pickSpawnPoint(claimedKeys, 500, VOID_SPAWN_MIN_DISTANCE);
-    if (!point) {
-      logger.debug('Void spawn: no valid spawn point found');
-      return;
-    }
-
-    const id = `vc_${Date.now()}`;
-    const threshold = 8 + Math.floor(Math.random() * 9);
-    const cluster: VoidClusterRow = {
-      id,
-      state: 'growing',
-      size: 0,
-      split_threshold: threshold,
-      spawned_at: new Date(),
-      origin_qx: point.qx,
-      origin_qy: point.qy,
-    };
-    await upsertVoidCluster(cluster);
-    await upsertVoidClusterQuadrant(id, point.qx, point.qy, 0);
-    logger.info(
-      { clusterId: id, qx: point.qx, qy: point.qy, threshold },
-      'Void cluster spawned',
-    );
-  }
-}
-
-function dist(
-  a: { qx: number; qy: number },
-  b: { qx: number; qy: number },
-): number {
-  return Math.abs(a.qx - b.qx) + Math.abs(a.qy - b.qy);
-}
-
-function mean(arr: number[]): number {
-  return arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length;
 }
